@@ -488,8 +488,8 @@ void append_side_seams(
 	// For each outer voxel on the side of the chunk (using side-relative coordinates)
 	for (int x = pad; x < size_x - pad; ++x) {
 		for (int y = pad; y < size_y - pad; ++y) {
-			const int i = x * jump.x + y * jump.y + z_base;
-			const int v = buffer[i];
+			const int buffer_index = x * jump.x + y * jump.y + z_base;
+			const int v = buffer[buffer_index];
 
 			if (v == AIR) {
 				continue;
@@ -497,10 +497,10 @@ void append_side_seams(
 
 			// Check if the voxel is exposed to air
 
-			const int nv0 = buffer[i - jump.x];
-			const int nv1 = buffer[i + jump.x];
-			const int nv2 = buffer[i - jump.y];
-			const int nv3 = buffer[i + jump.y];
+			const int nv0 = buffer[buffer_index - jump.x];
+			const int nv1 = buffer[buffer_index + jump.x];
+			const int nv2 = buffer[buffer_index - jump.y];
+			const int nv3 = buffer[buffer_index + jump.y];
 
 			if (nv0 != AIR && nv1 != AIR && nv2 != AIR && nv3 != AIR) {
 				continue;
@@ -509,7 +509,7 @@ void append_side_seams(
 			// Check if the outer voxel occludes an inner voxel
 			// (this check is not actually accurate, maybe we'd have to do a full occlusion check using the library?)
 
-			const int nv4 = buffer[i - side_sign * jump.z];
+			const int nv4 = buffer[buffer_index - side_sign * jump.z];
 			if (nv4 == AIR) {
 				continue;
 			}
