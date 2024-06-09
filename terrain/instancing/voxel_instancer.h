@@ -11,9 +11,8 @@
 #include "../../util/godot/direct_multimesh_instance.h"
 #include "../../util/math/box3i.h"
 #include "../../util/memory/memory.h"
-#include "voxel_instance_generator.h"
-#include "voxel_instance_library.h"
-#include "voxel_instance_library_multimesh_item.h"
+#include "instance_library_item_listener.h"
+#include "up_mode.h"
 
 #ifdef TOOLS_ENABLED
 #include "../../util/godot/core/version.h"
@@ -33,13 +32,16 @@ namespace voxel {
 class VoxelNode;
 class VoxelInstancerRigidBody;
 class VoxelInstanceComponent;
+class VoxelInstanceLibrary;
+class VoxelInstanceLibraryItem;
 class VoxelInstanceLibrarySceneItem;
 class VoxelTool;
 class SaveBlockDataTask;
 class BufferedTaskScheduler;
 struct InstanceBlockData;
-struct VoxelInstancerQuickReloadingCache;
-struct VoxelInstancerTaskOutputQueue;
+struct InstancerQuickReloadingCache;
+struct InstancerTaskOutputQueue;
+struct InstanceLibraryMultiMeshItemSettings;
 
 // Note: a large part of this node could be made generic to support the sole idea of instancing within octants?
 // Even nodes like gridmaps could be rebuilt on top of this, if its concept of "grid" was decoupled.
@@ -47,16 +49,16 @@ struct VoxelInstancerTaskOutputQueue;
 
 // Add-on to voxel nodes, allowing to spawn elements on the surface.
 // These elements are rendered with hardware instancing, can have collisions, and also be persistent.
-class VoxelInstancer : public Node3D, public VoxelInstanceLibrary::IListener {
+class VoxelInstancer : public Node3D, public IInstanceLibraryItemListener {
 	GDCLASS(VoxelInstancer, Node3D)
 public:
 	static const int MAX_LOD = 8;
 
-	enum UpMode {
-		UP_MODE_POSITIVE_Y = VoxelInstanceGenerator::UP_MODE_POSITIVE_Y,
-		UP_MODE_SPHERE = VoxelInstanceGenerator::UP_MODE_SPHERE,
-		UP_MODE_COUNT = VoxelInstanceGenerator::UP_MODE_COUNT
-	};
+	// I didn't want this enum to be here on the C++ side, because it prevents forward-declaring the class it is in.
+	// However Godot is forcing me to.
+	// `VARIANT_ENUM_CAST(ns1::ns2::Enum)` assumes the enum is in a class, so it generates its name as being `ns2.Enum`,
+	// which confuses docs and GDExtension dumps. There doesn't seem to be a way to register that enum as global either.
+	using UpMode = zylann::voxel::UpMode;
 
 	VoxelInstancer();
 	~VoxelInstancer();
@@ -197,7 +199,7 @@ private:
 			Vector3 block_local_position
 	);
 
-	void on_library_item_changed(int item_id, VoxelInstanceLibraryItem::ChangeType change) override;
+	void on_library_item_changed(int item_id, IInstanceLibraryItemListener::ChangeType change) override;
 
 	struct Block;
 
@@ -219,7 +221,7 @@ private:
 
 	static void update_mesh_from_mesh_lod(
 			Block &block,
-			const VoxelInstanceLibraryMultiMeshItem::Settings &settings,
+			const InstanceLibraryMultiMeshItemSettings &settings,
 			bool hide_beyond_max_lod,
 			bool instancer_is_visible
 	);
@@ -291,7 +293,7 @@ private:
 		// Keys follows the data block coordinate system.
 		StdUnorderedSet<Vector3i> edited_data_blocks;
 
-		std::shared_ptr<VoxelInstancerQuickReloadingCache> quick_reload_cache;
+		std::shared_ptr<InstancerQuickReloadingCache> quick_reload_cache;
 
 		// FixedArray<MeshLodDistances, VoxelInstanceLibraryMultiMeshItem::MAX_MESH_LODS> mesh_lod_distances;
 	};
@@ -316,7 +318,7 @@ private:
 	// float _mesh_lod_update_camera_threshold_distance = 8.f;
 	unsigned int _mesh_lod_time_sliced_block_index = 0;
 
-	std::shared_ptr<VoxelInstancerTaskOutputQueue> _loading_results;
+	std::shared_ptr<InstancerTaskOutputQueue> _loading_results;
 
 #ifdef TOOLS_ENABLED
 	zylann::godot::DebugRenderer _debug_renderer;

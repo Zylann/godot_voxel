@@ -13,11 +13,39 @@
 
 namespace zylann::voxel {
 
+struct CollisionShapeInfo {
+	Transform3D transform;
+	Ref<Shape3D> shape;
+};
+
+struct InstanceLibraryMultiMeshItemSettings {
+	static const int MAX_MESH_LODS = 4;
+
+	FixedArray<Ref<Mesh>, MAX_MESH_LODS> mesh_lods;
+	unsigned int mesh_lod_count = 1;
+	int render_layer = 1;
+
+	// It is preferred to have materials on the mesh already,
+	// but this is in case OBJ meshes are used, which often dont have a material of their own
+	Ref<Material> material_override;
+
+	RenderingServer::ShadowCastingSetting shadow_casting_setting = RenderingServer::SHADOW_CASTING_SETTING_ON;
+	GeometryInstance3D::GIMode gi_mode = GeometryInstance3D::GIMode::GI_MODE_STATIC;
+
+	int collision_mask = 1;
+	int collision_layer = 1;
+	StdVector<CollisionShapeInfo> collision_shapes;
+	// Groups that will be added to colliders if they use nodes
+	StdVector<StringName> group_names;
+};
+
 // Settings for a model that can be used by VoxelInstancer
 class VoxelInstanceLibraryMultiMeshItem : public VoxelInstanceLibraryItem {
 	GDCLASS(VoxelInstanceLibraryMultiMeshItem, VoxelInstanceLibraryItem)
 public:
-	static const int MAX_MESH_LODS = 4;
+	using Settings = InstanceLibraryMultiMeshItemSettings;
+
+	static const int MAX_MESH_LODS = Settings::MAX_MESH_LODS;
 	static const char *MANUAL_SETTINGS_GROUP_NAME;
 	static const char *SCENE_SETTINGS_GROUP_NAME;
 
@@ -25,11 +53,6 @@ public:
 	// Can be higher than 1 because when used with VoxelTerrain it is based on the half-extents of the visible area,
 	// which is square, so the circular area covered by mesh lods can actually extend a bit further if desired.
 	static constexpr float MAX_DISTANCE_RATIO = 2.f;
-
-	struct CollisionShapeInfo {
-		Transform3D transform;
-		Ref<Shape3D> shape;
-	};
 
 	VoxelInstanceLibraryMultiMeshItem();
 
@@ -76,25 +99,6 @@ public:
 	void set_hide_beyond_max_lod(bool enabled);
 
 	// Internal
-
-	struct Settings {
-		FixedArray<Ref<Mesh>, MAX_MESH_LODS> mesh_lods;
-		unsigned int mesh_lod_count = 1;
-		int render_layer = 1;
-
-		// It is preferred to have materials on the mesh already,
-		// but this is in case OBJ meshes are used, which often dont have a material of their own
-		Ref<Material> material_override;
-
-		RenderingServer::ShadowCastingSetting shadow_casting_setting = RenderingServer::SHADOW_CASTING_SETTING_ON;
-		GeometryInstance3D::GIMode gi_mode = GeometryInstance3D::GIMode::GI_MODE_STATIC;
-
-		int collision_mask = 1;
-		int collision_layer = 1;
-		StdVector<CollisionShapeInfo> collision_shapes;
-		// Groups that will be added to colliders if they use nodes
-		StdVector<StringName> group_names;
-	};
 
 	// If a scene is assigned to the item, returns settings converted from it.
 	// If no scene is assigned, returns manual settings.

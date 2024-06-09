@@ -19,10 +19,12 @@
 #include "../../util/string/format.h"
 #include "../fixed_lod/voxel_terrain.h"
 #include "../variable_lod/voxel_lod_terrain.h"
+#include "instancer_quick_reloading_cache.h"
 #include "load_instance_block_task.h"
 #include "voxel_instance_component.h"
+#include "voxel_instance_generator.h"
+#include "voxel_instance_library_multimesh_item.h"
 #include "voxel_instance_library_scene_item.h"
-#include "voxel_instancer_quick_reloading_cache.h"
 #include "voxel_instancer_rigidbody.h"
 
 #ifdef TOOLS_ENABLED
@@ -47,7 +49,7 @@ StdVector<Transform3f> &get_tls_transform_cache() {
 VoxelInstancer::VoxelInstancer() {
 	set_notify_transform(true);
 	set_process_internal(true);
-	_loading_results = make_shared_instance<VoxelInstancerTaskOutputQueue>();
+	_loading_results = make_shared_instance<InstancerTaskOutputQueue>();
 	fill(_mesh_lod_distances, 0.f);
 }
 
@@ -220,8 +222,8 @@ void VoxelInstancer::process() {
 
 void VoxelInstancer::process_task_results() {
 	ZN_PROFILE_SCOPE();
-	static thread_local StdVector<VoxelInstanceLoadingTaskOutput> tls_results;
-	StdVector<VoxelInstanceLoadingTaskOutput> &results = tls_results;
+	static thread_local StdVector<InstanceLoadingTaskOutput> tls_results;
+	StdVector<InstanceLoadingTaskOutput> &results = tls_results;
 #ifdef DEBUG_ENABLED
 	if (results.size()) {
 		ZN_PRINT_ERROR("Results were not cleaned up?");
@@ -230,7 +232,7 @@ void VoxelInstancer::process_task_results() {
 	{
 		MutexLock mlock(_loading_results->mutex);
 		// Copy results to temporary buffer
-		StdVector<VoxelInstanceLoadingTaskOutput> &src = _loading_results->results;
+		StdVector<InstanceLoadingTaskOutput> &src = _loading_results->results;
 		results.resize(src.size());
 		for (unsigned int i = 0; i < src.size(); ++i) {
 			results[i] = std::move(src[i]);
@@ -252,7 +254,7 @@ void VoxelInstancer::process_task_results() {
 	const int mesh_block_size_base = (1 << _parent_mesh_block_size_po2);
 	const int render_to_data_factor = mesh_block_size_base / data_block_size_base;
 
-	for (VoxelInstanceLoadingTaskOutput &output : results) {
+	for (InstanceLoadingTaskOutput &output : results) {
 		auto layer_it = _layers.find(output.layer_id);
 		if (layer_it == _layers.end()) {
 			// Layer was removed since?
@@ -701,8 +703,12 @@ void VoxelInstancer::regenerate_layer(uint16_t layer_id, bool regenerate_blocks)
 
 		if (parent_vlt != nullptr) {
 			parent_vlt->get_meshed_block_positions_at_lod(layer.lod_index, positions);
+
 		} else if (parent_vt != nullptr) {
-			parent_vt->get_meshed_block_positions(positions);
+			// Only LOD 0 is supported
+			if (layer.lod_index == 0) {
+				parent_vt->get_meshed_block_positions(positions);
+			}
 		}
 
 		for (unsigned int i = 0; i < positions.size(); ++i) {
@@ -805,7 +811,7 @@ void VoxelInstancer::regenerate_layer(uint16_t layer_id, bool regenerate_blocks)
 				block.lod_index,
 				layer_id,
 				surface_arrays,
-				static_cast<VoxelInstanceGenerator::UpMode>(_up_mode),
+				_up_mode,
 				octant_mask,
 				lod_block_size
 		);
@@ -889,7 +895,7 @@ void VoxelInstancer::update_layer_scenes(int layer_id) {
 	}
 }
 
-void VoxelInstancer::on_library_item_changed(int item_id, VoxelInstanceLibraryItem::ChangeType change) {
+void VoxelInstancer::on_library_item_changed(int item_id, IInstanceLibraryItemListener::ChangeType change) {
 	ERR_FAIL_COND(_library.is_null());
 
 	// TODO It's unclear yet if some code paths do the right thing in case instances got edited
@@ -899,7 +905,7 @@ void VoxelInstancer::on_library_item_changed(int item_id, VoxelInstanceLibraryIt
 	// before assigning it to the instancer.
 
 	switch (change) {
-		case VoxelInstanceLibraryItem::CHANGE_ADDED: {
+		case IInstanceLibraryItemListener::CHANGE_ADDED: {
 			Ref<VoxelInstanceLibraryItem> item = _library->get_item(item_id);
 			ERR_FAIL_COND(item.is_null());
 			add_layer(item_id, item->get_lod_index());
@@ -907,24 +913,24 @@ void VoxelInstancer::on_library_item_changed(int item_id, VoxelInstanceLibraryIt
 			update_configuration_warnings();
 		} break;
 
-		case VoxelInstanceLibraryItem::CHANGE_REMOVED:
+		case IInstanceLibraryItemListener::CHANGE_REMOVED:
 			remove_layer(item_id);
 			update_configuration_warnings();
 			break;
 
-		case VoxelInstanceLibraryItem::CHANGE_GENERATOR:
+		case IInstanceLibraryItemListener::CHANGE_GENERATOR:
 			regenerate_layer(item_id, false);
 			break;
 
-		case VoxelInstanceLibraryItem::CHANGE_VISUAL:
+		case IInstanceLibraryItemListener::CHANGE_VISUAL:
 			update_layer_meshes(item_id);
 			break;
 
-		case VoxelInstanceLibraryItem::CHANGE_SCENE:
+		case IInstanceLibraryItemListener::CHANGE_SCENE:
 			update_layer_scenes(item_id);
 			break;
 
-		case VoxelInstanceLibraryItem::CHANGE_LOD_INDEX: {
+		case IInstanceLibraryItemListener::CHANGE_LOD_INDEX: {
 			Ref<VoxelInstanceLibraryItem> item = _library->get_item(item_id);
 			ERR_FAIL_COND(item.is_null());
 
@@ -1284,8 +1290,7 @@ void VoxelInstancer::update_block_from_transforms( //
 		}
 
 		// Update bodies
-		Span<const VoxelInstanceLibraryMultiMeshItem::CollisionShapeInfo> collision_shapes =
-				to_span(settings.collision_shapes);
+		Span<const CollisionShapeInfo> collision_shapes = to_span(settings.collision_shapes);
 		if (collision_shapes.size() > 0) {
 			ZN_PROFILE_SCOPE_NAMED("Update multimesh bodies");
 
@@ -1318,7 +1323,7 @@ void VoxelInstancer::update_block_from_transforms( //
 					body->set_collision_mask(settings.collision_mask);
 
 					for (unsigned int i = 0; i < collision_shapes.size(); ++i) {
-						const VoxelInstanceLibraryMultiMeshItem::CollisionShapeInfo &shape_info = collision_shapes[i];
+						const CollisionShapeInfo &shape_info = collision_shapes[i];
 						CollisionShape3D *cs = memnew(CollisionShape3D);
 						cs->set_shape(shape_info.shape);
 						cs->set_transform(shape_info.transform);
@@ -1608,7 +1613,7 @@ SaveBlockDataTask *VoxelInstancer::save_block(
 		UniquePtr<InstanceBlockData> saving_cache = make_unique_instance<InstanceBlockData>();
 		block_data->copy_to(*saving_cache);
 		if (lod_mutable.quick_reload_cache == nullptr) {
-			lod_mutable.quick_reload_cache = make_shared_instance<VoxelInstancerQuickReloadingCache>();
+			lod_mutable.quick_reload_cache = make_shared_instance<InstancerQuickReloadingCache>();
 		}
 		{
 			MutexLock mlock(lod_mutable.quick_reload_cache->mutex);
@@ -2132,6 +2137,20 @@ void VoxelInstancer::get_configuration_warnings(PackedStringArray &warnings) con
 
 	} else {
 		zylann::godot::get_resource_configuration_warnings(**_library, warnings, []() { return "library: "; });
+
+		VoxelTerrain *vt = Object::cast_to<VoxelTerrain>(_parent);
+		if (vt != nullptr) {
+			_library->for_each_item([&warnings](int id, const VoxelInstanceLibraryItem &item) {
+				const int lod_index = item.get_lod_index();
+				if (lod_index > 0) {
+					warnings.append(
+							String(ZN_TTR("library: item {0}: LOD index is set to higher than 0 ({1}), but the parent "
+										  "terrain doesn't have LOD support. Instances will not be generated."))
+									.format(varray(id, lod_index))
+					);
+				}
+			});
+		}
 	}
 }
 

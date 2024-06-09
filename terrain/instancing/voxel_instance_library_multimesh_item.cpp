@@ -14,10 +14,10 @@ const char *VoxelInstanceLibraryMultiMeshItem::SCENE_SETTINGS_GROUP_NAME = "Scen
 
 namespace {
 
-Array serialize_collision_shape_infos(const StdVector<VoxelInstanceLibraryMultiMeshItem::CollisionShapeInfo> &infos) {
+Array serialize_collision_shape_infos(const StdVector<CollisionShapeInfo> &infos) {
 	Array a;
 	for (unsigned int i = 0; i < infos.size(); ++i) {
-		const VoxelInstanceLibraryMultiMeshItem::CollisionShapeInfo &info = infos[i];
+		const CollisionShapeInfo &info = infos[i];
 		ERR_FAIL_COND_V(info.shape.is_null(), Array());
 		// TODO Shape might or might not be shared, could have odd side-effects,
 		// but not sure how to properly fix these edge cases without convoluted code
@@ -27,14 +27,11 @@ Array serialize_collision_shape_infos(const StdVector<VoxelInstanceLibraryMultiM
 	return a;
 }
 
-bool deserialize_collision_shape_infos(
-		Array a,
-		StdVector<VoxelInstanceLibraryMultiMeshItem::CollisionShapeInfo> &out_infos
-) {
+bool deserialize_collision_shape_infos(Array a, StdVector<CollisionShapeInfo> &out_infos) {
 	ERR_FAIL_COND_V(a.size() % 2 != 0, false);
 
 	for (int i = 0; i < a.size(); i += 2) {
-		VoxelInstanceLibraryMultiMeshItem::CollisionShapeInfo info;
+		CollisionShapeInfo info;
 		info.shape = a[i];
 		info.transform = a[i + 1];
 
@@ -111,7 +108,7 @@ void VoxelInstanceLibraryMultiMeshItem::set_mesh(Ref<Mesh> mesh, int mesh_lod_in
 	}
 	settings.mesh_lod_count = count;
 
-	notify_listeners(CHANGE_VISUAL);
+	notify_listeners(IInstanceLibraryItemListener::CHANGE_VISUAL);
 }
 
 int VoxelInstanceLibraryMultiMeshItem::get_mesh_lod_count() const {
@@ -148,7 +145,7 @@ void VoxelInstanceLibraryMultiMeshItem::set_render_layer(int render_layer) {
 		return;
 	}
 	settings.render_layer = render_layer;
-	notify_listeners(CHANGE_VISUAL);
+	notify_listeners(IInstanceLibraryItemListener::CHANGE_VISUAL);
 }
 
 int VoxelInstanceLibraryMultiMeshItem::get_render_layer() const {
@@ -162,7 +159,7 @@ void VoxelInstanceLibraryMultiMeshItem::set_material_override(Ref<Material> mate
 		return;
 	}
 	settings.material_override = material;
-	notify_listeners(CHANGE_VISUAL);
+	notify_listeners(IInstanceLibraryItemListener::CHANGE_VISUAL);
 }
 
 Ref<Material> VoxelInstanceLibraryMultiMeshItem::get_material_override() const {
@@ -176,7 +173,7 @@ void VoxelInstanceLibraryMultiMeshItem::set_cast_shadows_setting(RenderingServer
 		return;
 	}
 	settings.shadow_casting_setting = mode;
-	notify_listeners(CHANGE_VISUAL);
+	notify_listeners(IInstanceLibraryItemListener::CHANGE_VISUAL);
 }
 
 void VoxelInstanceLibraryMultiMeshItem::set_gi_mode(GeometryInstance3D::GIMode mode) {
@@ -185,7 +182,7 @@ void VoxelInstanceLibraryMultiMeshItem::set_gi_mode(GeometryInstance3D::GIMode m
 		return;
 	}
 	settings.gi_mode = mode;
-	notify_listeners(CHANGE_VISUAL);
+	notify_listeners(IInstanceLibraryItemListener::CHANGE_VISUAL);
 }
 
 GeometryInstance3D::GIMode VoxelInstanceLibraryMultiMeshItem::get_gi_mode() const {
@@ -452,7 +449,7 @@ bool setup_from_template(Node *root, VoxelInstanceLibraryMultiMeshItem::Settings
 			CollisionShape3D *cs = Object::cast_to<CollisionShape3D>(physics_body->get_child(i));
 
 			if (cs != nullptr) {
-				VoxelInstanceLibraryMultiMeshItem::CollisionShapeInfo info;
+				CollisionShapeInfo info;
 				info.shape = cs->get_shape();
 				info.transform = cs->get_transform();
 
@@ -475,7 +472,7 @@ void VoxelInstanceLibraryMultiMeshItem::setup_from_template(Object *root_o) {
 	Node *root = Object::cast_to<Node>(root_o);
 #endif
 	ERR_FAIL_COND(!zylann::voxel::setup_from_template(root, _manual_settings));
-	notify_listeners(CHANGE_VISUAL);
+	notify_listeners(IInstanceLibraryItemListener::CHANGE_VISUAL);
 }
 
 void VoxelInstanceLibraryMultiMeshItem::set_scene(Ref<PackedScene> scene) {
@@ -489,7 +486,7 @@ void VoxelInstanceLibraryMultiMeshItem::set_scene(Ref<PackedScene> scene) {
 		ERR_FAIL_COND(!zylann::voxel::setup_from_template(root, _scene_settings));
 		memdelete(root);
 	}
-	notify_listeners(CHANGE_VISUAL);
+	notify_listeners(IInstanceLibraryItemListener::CHANGE_VISUAL);
 #ifdef TOOLS_ENABLED
 	notify_property_list_changed();
 #endif
@@ -550,7 +547,7 @@ void VoxelInstanceLibraryMultiMeshItem::deserialize_multimesh_item_properties(Ar
 	settings.collision_shapes.clear();
 	deserialize_collision_shape_infos(a[ai++], settings.collision_shapes);
 	deserialize_group_names(a[ai++], settings.group_names);
-	notify_listeners(CHANGE_VISUAL);
+	notify_listeners(IInstanceLibraryItemListener::CHANGE_VISUAL);
 }
 
 void VoxelInstanceLibraryMultiMeshItem::_b_set_collision_shapes(Array shape_infos) {

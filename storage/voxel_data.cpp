@@ -318,7 +318,11 @@ void VoxelData::copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsigned int cha
 		// could be done in a single transaction? Might need a proper transaction API eventually
 
 		RWLockRead rlock(data_lod0.map_lock);
-		data_lod0.map.copy(min_pos, dst_buffer, channels_mask, &gctx,
+		data_lod0.map.copy(
+				min_pos,
+				dst_buffer,
+				channels_mask,
+				&gctx,
 				// Generate on the fly in areas where blocks aren't edited
 				[](void *callback_data, VoxelBuffer &voxels, Vector3i pos) {
 					// Suffixed with `2` because GCC warns it shadows a previous local...
@@ -326,12 +330,17 @@ void VoxelData::copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsigned int cha
 					VoxelGenerator::VoxelQueryData q{ voxels, pos, 0 };
 					gctx2->generator.generate_block(q);
 					gctx2->modifiers.apply(voxels, AABB(pos, voxels.get_size()));
-				});
+				}
+		);
 	}
 }
 
 void VoxelData::paste(
-		Vector3i min_pos, const VoxelBuffer &src_buffer, unsigned int channels_mask, bool create_new_blocks) {
+		Vector3i min_pos,
+		const VoxelBuffer &src_buffer,
+		unsigned int channels_mask,
+		bool create_new_blocks
+) {
 	ZN_PROFILE_SCOPE();
 
 	Lod &data_lod0 = _lods[0];
@@ -350,8 +359,14 @@ void VoxelData::paste(
 	}
 }
 
-void VoxelData::paste_masked(Vector3i min_pos, const VoxelBuffer &src_buffer, unsigned int channels_mask,
-		uint8_t mask_channel, uint64_t mask_value, bool create_new_blocks) {
+void VoxelData::paste_masked(
+		Vector3i min_pos,
+		const VoxelBuffer &src_buffer,
+		unsigned int channels_mask,
+		uint8_t mask_channel,
+		uint64_t mask_value,
+		bool create_new_blocks
+) {
 	ZN_PROFILE_SCOPE();
 
 	Lod &data_lod0 = _lods[0];
@@ -462,8 +477,15 @@ bool VoxelData::is_area_loaded(const Box3i p_voxels_box) const {
 	}
 }
 
-void VoxelData::pre_generate_box(Box3i voxel_box, Span<Lod> lods, unsigned int data_block_size, bool streaming,
-		unsigned int lod_count, Ref<VoxelGenerator> generator, VoxelModifierStack &modifiers) {
+void VoxelData::pre_generate_box(
+		Box3i voxel_box,
+		Span<Lod> lods,
+		unsigned int data_block_size,
+		bool streaming,
+		unsigned int lod_count,
+		Ref<VoxelGenerator> generator,
+		VoxelModifierStack &modifiers
+) {
 	// This is mostly used by VoxelLodTerrain, in cases non-edited blocks aren't cached.
 
 	ZN_PROFILE_SCOPE();
@@ -533,7 +555,9 @@ void VoxelData::pre_generate_box(Box3i voxel_box, Span<Lod> lods, unsigned int d
 		if (generator.is_valid()) {
 			ZN_PROFILE_SCOPE_NAMED("Generate");
 			VoxelGenerator::VoxelQueryData q{ //
-				*task.voxels, task.block_pos * (data_block_size << task.lod_index), task.lod_index
+											  *task.voxels,
+											  task.block_pos * (data_block_size << task.lod_index),
+											  task.lod_index
 			};
 			generator->generate_block(q);
 			modifiers.apply(q.voxel_buffer, AABB(q.origin_in_voxels, q.voxel_buffer.get_size() << q.lod));
@@ -603,7 +627,10 @@ void VoxelData::clear_cached_blocks_in_voxel_area(Box3i p_voxel_box) {
 }
 
 void VoxelData::mark_area_modified(
-		Box3i p_voxel_box, StdVector<Vector3i> *lod0_new_blocks_to_lod, bool require_lod_updates) {
+		Box3i p_voxel_box,
+		StdVector<Vector3i> *lod0_new_blocks_to_lod,
+		bool require_lod_updates
+) {
 	// TODO We should probably merge this with edits, because that means two separate locks occur. There is some time in
 	// between where we end up with modified voxels yet not marked as modified yet.
 
@@ -648,8 +675,9 @@ void VoxelData::mark_area_modified(
 
 bool VoxelData::try_set_block(Vector3i block_position, const VoxelDataBlock &block) {
 	bool inserted = true;
-	try_set_block(block_position, block,
-			[&inserted](VoxelDataBlock &existing, const VoxelDataBlock &incoming) { inserted = false; });
+	try_set_block(block_position, block, [&inserted](VoxelDataBlock &existing, const VoxelDataBlock &incoming) {
+		inserted = false;
+	});
 	return inserted;
 }
 
@@ -777,24 +805,30 @@ void VoxelData::update_lods(Span<const Vector3i> modified_lod0_blocks, StdVector
 			src_block->set_needs_lodding(false);
 
 			struct L {
-				static std::shared_ptr<VoxelBuffer> generate_voxels(Vector3i dst_bpos, uint8_t dst_lod_index,
-						int data_block_size, int data_block_size_po2, Ref<VoxelGenerator> generator,
-						const VoxelModifierStack &modifiers) {
+				static std::shared_ptr<VoxelBuffer> generate_voxels(
+						Vector3i dst_bpos,
+						uint8_t dst_lod_index,
+						int data_block_size,
+						int data_block_size_po2,
+						Ref<VoxelGenerator> generator,
+						const VoxelModifierStack &modifiers
+				) {
 					//
 					std::shared_ptr<VoxelBuffer> voxels =
 							make_shared_instance<VoxelBuffer>(VoxelBuffer::ALLOCATOR_POOL);
 					voxels->create(Vector3iUtil::create(data_block_size));
 					VoxelGenerator::VoxelQueryData q{ //
-						*voxels, //
-						dst_bpos << (dst_lod_index + data_block_size_po2), //
-						dst_lod_index
+													  *voxels, //
+													  dst_bpos << (dst_lod_index + data_block_size_po2), //
+													  dst_lod_index
 					};
 					if (generator.is_valid()) {
 						ZN_PROFILE_SCOPE_NAMED("Generate");
 						generator->generate_block(q);
 					}
 					modifiers.apply(
-							q.voxel_buffer, AABB(q.origin_in_voxels, q.voxel_buffer.get_size() << dst_lod_index));
+							q.voxel_buffer, AABB(q.origin_in_voxels, q.voxel_buffer.get_size() << dst_lod_index)
+					);
 
 					return voxels;
 				}
@@ -805,7 +839,8 @@ void VoxelData::update_lods(Span<const Vector3i> modified_lod0_blocks, StdVector
 					// TODO Doing this on the main thread can be very demanding and cause a stall.
 					// We should find a way to make it asynchronous, not need mips, or not edit outside viewers area.
 					std::shared_ptr<VoxelBuffer> voxels = L::generate_voxels(
-							dst_bpos, dst_lod_index, data_block_size, data_block_size_po2, generator, _modifiers);
+							dst_bpos, dst_lod_index, data_block_size, data_block_size_po2, generator, _modifiers
+					);
 
 					{
 						RWLockWrite wlock(dst_data_lod.map_lock);
@@ -813,8 +848,11 @@ void VoxelData::update_lods(Span<const Vector3i> modified_lod0_blocks, StdVector
 					}
 
 				} else {
-					ZN_PRINT_ERROR(format("Destination block {} not found when cascading edits on LOD {}", dst_bpos,
-							static_cast<int>(dst_lod_index)));
+					ZN_PRINT_ERROR(
+							format("Destination block {} not found when cascading edits on LOD {}",
+								   dst_bpos,
+								   static_cast<int>(dst_lod_index))
+					);
 					continue;
 				}
 			}
@@ -834,7 +872,8 @@ void VoxelData::update_lods(Span<const Vector3i> modified_lod0_blocks, StdVector
 				// The destination block is loaded but wasn't caching voxels. We'll need to generate them in order to
 				// update it.
 				std::shared_ptr<VoxelBuffer> voxels = L::generate_voxels(
-						dst_bpos, dst_lod_index, data_block_size, data_block_size_po2, generator, _modifiers);
+						dst_bpos, dst_lod_index, data_block_size, data_block_size_po2, generator, _modifiers
+				);
 				dst_block->set_voxels(voxels);
 			}
 
@@ -857,7 +896,8 @@ void VoxelData::update_lods(Span<const Vector3i> modified_lod0_blocks, StdVector
 				// Maybe it hasn't been done so far because nothing else accesses higher LOD indices yet, or because we
 				// are holding a lock on the map that contains it
 				src_block->get_voxels().downscale_to(
-						dst_block->get_voxels(), Vector3i(), src_block->get_voxels_const().get_size(), rel * half_bs);
+						dst_block->get_voxels(), Vector3i(), src_block->get_voxels_const().get_size(), rel * half_bs
+				);
 			}
 		}
 
@@ -945,7 +985,10 @@ void VoxelData::consume_all_modifications(StdVector<BlockToSave> &to_save, bool 
 }
 
 void VoxelData::get_missing_blocks(
-		Span<const Vector3i> block_positions, unsigned int lod_index, StdVector<Vector3i> &out_missing) const {
+		Span<const Vector3i> block_positions,
+		unsigned int lod_index,
+		StdVector<Vector3i> &out_missing
+) const {
 	const Lod &lod = _lods[lod_index];
 	RWLockRead rlock(lod.map_lock);
 	for (const Vector3i &pos : block_positions) {
@@ -971,7 +1014,10 @@ void VoxelData::get_missing_blocks(Box3i p_blocks_box, unsigned int lod_index, S
 }
 
 void VoxelData::get_blocks_with_voxel_data(
-		Box3i p_blocks_box, unsigned int lod_index, Span<std::shared_ptr<VoxelBuffer>> out_blocks) const {
+		Box3i p_blocks_box,
+		unsigned int lod_index,
+		Span<std::shared_ptr<VoxelBuffer>> out_blocks
+) const {
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT(int64_t(out_blocks.size()) >= Vector3iUtil::get_volume(p_blocks_box.size));
 
@@ -1046,8 +1092,13 @@ bool VoxelData::has_blocks_with_voxels_in_area_broad_mip_test(Box3i box_in_voxel
 	return true;
 }
 
-void VoxelData::view_area(Box3i blocks_box, unsigned int lod_index, StdVector<Vector3i> *missing_blocks,
-		StdVector<Vector3i> *found_blocks_positions, StdVector<VoxelDataBlock> *found_blocks) {
+void VoxelData::view_area(
+		Box3i blocks_box,
+		unsigned int lod_index,
+		StdVector<Vector3i> *missing_blocks,
+		StdVector<Vector3i> *found_blocks_positions,
+		StdVector<VoxelDataBlock> *found_blocks
+) {
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT_RETURN(lod_index < _lods.size());
 
@@ -1079,8 +1130,13 @@ void VoxelData::view_area(Box3i blocks_box, unsigned int lod_index, StdVector<Ve
 	});
 }
 
-void VoxelData::unview_area(Box3i blocks_box, unsigned int lod_index, StdVector<Vector3i> *removed_blocks,
-		StdVector<Vector3i> *missing_blocks, StdVector<BlockToSave> *to_save) {
+void VoxelData::unview_area(
+		Box3i blocks_box,
+		unsigned int lod_index,
+		StdVector<Vector3i> *removed_blocks,
+		StdVector<Vector3i> *missing_blocks,
+		StdVector<BlockToSave> *to_save
+) {
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT_RETURN(lod_index < _lods.size());
 

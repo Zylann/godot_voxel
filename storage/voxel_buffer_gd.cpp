@@ -158,7 +158,7 @@ void VoxelBuffer::remap_values(unsigned int channel_index, PackedInt32Array map)
 	switch (depth) {
 		case zylann::voxel::VoxelBuffer::DEPTH_8_BIT: {
 			Span<uint8_t> values;
-			ZN_ASSERT_RETURN(_buffer->get_channel_raw(channel_index, values));
+			ZN_ASSERT_RETURN(_buffer->get_channel_as_bytes(channel_index, values));
 			for (uint8_t &v : values) {
 				if (v < map_r.size()) {
 					v = map_r[v];

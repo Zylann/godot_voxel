@@ -4,7 +4,7 @@
 		Voxel volume using variable level of detail.
 	</brief_description>
 	<description>
-		Renders large terrain using variable level of details. This is preferably used with smooth meshing such as [VoxelMesherTransvoxel].
+		Renders large terrain using variable level of details. This is preferably used with smooth meshing such as [VoxelMesherTransvoxel]. Blocky meshers can be used, but currently don't have as much support for LOD.
 	</description>
 	<tutorials>
 	</tutorials>

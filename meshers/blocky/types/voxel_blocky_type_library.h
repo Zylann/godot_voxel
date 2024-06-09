@@ -13,6 +13,8 @@ namespace zylann::voxel {
 class VoxelBlockyTypeLibrary : public VoxelBlockyLibraryBase {
 	GDCLASS(VoxelBlockyTypeLibrary, VoxelBlockyLibraryBase)
 public:
+	static constexpr unsigned int MAX_TYPES = 65536;
+
 	void clear() override;
 	void load_default() override;
 	void bake() override;

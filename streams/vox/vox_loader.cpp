@@ -6,8 +6,12 @@
 
 namespace zylann::voxel {
 
-int /*Error*/ VoxelVoxLoader::load_from_file(String fpath, Ref<godot::VoxelBuffer> p_voxels,
-		Ref<VoxelColorPalette> palette, godot::VoxelBuffer::ChannelId dst_channel) {
+int /*Error*/ VoxelVoxLoader::load_from_file(
+		String fpath,
+		Ref<godot::VoxelBuffer> p_voxels,
+		Ref<VoxelColorPalette> palette,
+		godot::VoxelBuffer::ChannelId dst_channel
+) {
 	ZN_DSTACK();
 	ERR_FAIL_INDEX_V(dst_channel, godot::VoxelBuffer::MAX_CHANNELS, ERR_INVALID_PARAMETER);
 	ERR_FAIL_COND_V(p_voxels.is_null(), ERR_INVALID_PARAMETER);
@@ -25,7 +29,7 @@ int /*Error*/ VoxelVoxLoader::load_from_file(String fpath, Ref<godot::VoxelBuffe
 	Span<uint8_t> dst_raw;
 	voxels.create(model.size);
 	voxels.decompress_channel(dst_channel);
-	CRASH_COND(!voxels.get_channel_raw(dst_channel, dst_raw));
+	CRASH_COND(!voxels.get_channel_as_bytes(dst_channel, dst_raw));
 
 	if (palette.is_valid()) {
 		for (size_t i = 0; i < src_palette.size(); ++i) {
@@ -76,8 +80,12 @@ int /*Error*/ VoxelVoxLoader::load_from_file(String fpath, Ref<godot::VoxelBuffe
 }
 
 void VoxelVoxLoader::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("load_from_file", "fpath", "voxels", "palette", "dst_channel"),
-			&VoxelVoxLoader::load_from_file, DEFVAL(godot::VoxelBuffer::CHANNEL_COLOR));
+	ClassDB::bind_static_method(
+			VoxelVoxLoader::get_class_static(),
+			D_METHOD("load_from_file", "fpath", "voxels", "palette", "dst_channel"),
+			&VoxelVoxLoader::load_from_file,
+			DEFVAL(godot::VoxelBuffer::CHANNEL_COLOR)
+	);
 }
 
 } // namespace zylann::voxel
