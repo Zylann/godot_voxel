@@ -78,6 +78,7 @@ void VoxelModifierMesh::_on_mesh_sdf_baked() {
 #ifdef TOOLS_ENABLED
 
 void VoxelModifierMesh::get_configuration_warnings(PackedStringArray &warnings) const {
+	VoxelModifier::get_configuration_warnings(warnings);
 	if (_mesh_sdf.is_null()) {
 		warnings.append(
 				ZN_TTR("A {0} resource is required for {1} to function.")

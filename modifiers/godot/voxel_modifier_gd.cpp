@@ -10,9 +10,7 @@
 
 namespace zylann::voxel::godot {
 
-VoxelModifier::VoxelModifier() {
-	set_notify_local_transform(true);
-}
+VoxelModifier::VoxelModifier() { }
 
 zylann::voxel::VoxelModifier *VoxelModifier::create(zylann::voxel::VoxelModifierStack &modifiers, uint32_t id) {
 	ZN_PRINT_ERROR("Not implemented");
@@ -75,38 +73,111 @@ float VoxelModifier::get_smoothness() const {
 	return _smoothness;
 }
 
+// Not sure where the best place to put this is, probably one of the math files?
+#include <core/math/math_funcs.h>
+bool transform3d_is_equal_approx(Transform3D a, Transform3D b) {
+	return Math::is_equal_approx(b.basis.rows[0].x, b.basis.rows[0].x) && 
+		   Math::is_equal_approx(a.basis.rows[0].y, b.basis.rows[0].y) && 
+		   Math::is_equal_approx(a.basis.rows[0].z, b.basis.rows[0].z) && 
+		   Math::is_equal_approx(a.basis.rows[1].x, b.basis.rows[1].x) && 
+		   Math::is_equal_approx(a.basis.rows[1].y, b.basis.rows[1].y) && 
+		   Math::is_equal_approx(a.basis.rows[1].z, b.basis.rows[1].z) && 
+		   Math::is_equal_approx(a.basis.rows[2].x, b.basis.rows[2].x) && 
+		   Math::is_equal_approx(a.basis.rows[2].y, b.basis.rows[2].y) && 
+		   Math::is_equal_approx(a.basis.rows[2].z, b.basis.rows[2].z) && 
+		   Math::is_equal_approx(a.origin.x, b.origin.x) && 
+		   Math::is_equal_approx(a.origin.y, b.origin.y) && 
+		   Math::is_equal_approx(a.origin.z, b.origin.z);
+}
+
+VoxelLodTerrain *VoxelModifier::find_volume() {
+	if (_volume != nullptr) {
+		return _volume;
+	}
+	Node *parent = get_parent();
+	VoxelLodTerrain *volume = Object::cast_to<VoxelLodTerrain>(parent);
+	
+	if (volume != nullptr) {
+		mark_as_immediate_child(true);
+	} else {
+		Node3D *grandparent = get_parent_node_3d();
+		volume = Object::cast_to<VoxelLodTerrain>(grandparent);
+		while (grandparent != nullptr && volume == nullptr) {				
+			grandparent = grandparent->get_parent_node_3d();
+			volume = Object::cast_to<VoxelLodTerrain>(grandparent);
+		}
+		if (volume) {
+			mark_as_immediate_child(false);
+		}
+	}
+	_volume = volume;
+
+	if (_volume == nullptr) {
+		return nullptr;
+	}
+	VoxelData &voxel_data = _volume->get_storage();
+	VoxelModifierStack &modifiers = voxel_data.get_modifiers();
+	const uint32_t id = modifiers.allocate_id();
+	zylann::voxel::VoxelModifier *modifier = create(modifiers, id);
+
+	if (modifier->is_sdf()) {
+		zylann::voxel::VoxelModifierSdf *sdf_modifier =
+				static_cast<zylann::voxel::VoxelModifierSdf *>(modifier);
+		sdf_modifier->set_operation(to_op(_operation));
+		sdf_modifier->set_smoothness(_smoothness);
+	}
+	modifier->set_transform(get_transform());
+	_modifier_id = id;
+	// TODO Optimize: on loading of a scene, this could be very bad for performance because there could be,
+	// a lot of modifiers on the map, but there is no distinction possible in Godot at the moment...
+	post_edit_modifier(*_volume, modifier->get_aabb());
+	update_configuration_warnings();
+	return _volume;
+}
+
+void VoxelModifier::update_volume() {
+	VoxelLodTerrain *volume = find_volume();
+
+	if (volume != nullptr && is_inside_tree()) {
+		VoxelData &voxel_data = volume->get_storage();
+		VoxelModifierStack &modifiers = voxel_data.get_modifiers();
+		zylann::voxel::VoxelModifier *modifier = modifiers.get_modifier(_modifier_id);
+		ZN_ASSERT_RETURN(modifier != nullptr);
+
+		const AABB prev_aabb = modifier->get_aabb();
+
+		if (_is_immediate_child) {
+			modifier->set_transform(get_transform());
+		} else {
+			Transform3D terrain_local = volume->get_global_transform().affine_inverse() * get_global_transform();
+			// If the terrain moved, the modifiers do not need to be updated.
+			if (transform3d_is_equal_approx(terrain_local, modifier->get_transform())) {
+				return;
+			}
+			modifier->set_transform(terrain_local);
+		}
+		const AABB aabb = modifier->get_aabb();
+		post_edit_modifier(*volume, prev_aabb);
+		post_edit_modifier(*volume, aabb);
+	}
+}
+
+void VoxelModifier::mark_as_immediate_child(bool v) {
+	_is_immediate_child = v;
+	if (_is_immediate_child) {
+		set_notify_local_transform(true);
+		set_notify_transform(false);
+	} else {
+		set_notify_local_transform(false);
+		set_notify_transform(true);
+	}
+}
+
 void VoxelModifier::_notification(int p_what) {
 	switch (p_what) {
 		case NOTIFICATION_PARENTED: {
-			Node *parent = get_parent();
-			ZN_ASSERT_RETURN(parent != nullptr);
-			ZN_ASSERT_RETURN(_volume == nullptr);
-			VoxelLodTerrain *volume = Object::cast_to<VoxelLodTerrain>(parent);
-			_volume = volume;
-
-			if (_volume != nullptr) {
-				VoxelData &voxel_data = _volume->get_storage();
-				VoxelModifierStack &modifiers = voxel_data.get_modifiers();
-				const uint32_t id = modifiers.allocate_id();
-				zylann::voxel::VoxelModifier *modifier = create(modifiers, id);
-
-				if (modifier->is_sdf()) {
-					zylann::voxel::VoxelModifierSdf *sdf_modifier =
-							static_cast<zylann::voxel::VoxelModifierSdf *>(modifier);
-					sdf_modifier->set_operation(to_op(_operation));
-					sdf_modifier->set_smoothness(_smoothness);
-				}
-
-				modifier->set_transform(get_transform());
-				_modifier_id = id;
-				// TODO Optimize: on loading of a scene, this could be very bad for performance because there could be,
-				// a lot of modifiers on the map, but there is no distinction possible in Godot at the moment...
-				post_edit_modifier(*_volume, modifier->get_aabb());
-			}
-
-			update_configuration_warnings();
+			find_volume();
 		} break;
-
 		case NOTIFICATION_UNPARENTED: {
 			if (_volume != nullptr) {
 				VoxelData &voxel_data = _volume->get_storage();
@@ -119,25 +190,12 @@ void VoxelModifier::_notification(int p_what) {
 				_modifier_id = 0;
 			}
 		} break;
-
+		case NOTIFICATION_POST_ENTER_TREE: {
+			update_volume();
+		} break;
+		case Node3D::NOTIFICATION_TRANSFORM_CHANGED:
 		case Node3D::NOTIFICATION_LOCAL_TRANSFORM_CHANGED: {
-			if (_volume != nullptr && is_inside_tree()) {
-				VoxelData &voxel_data = _volume->get_storage();
-				VoxelModifierStack &modifiers = voxel_data.get_modifiers();
-				zylann::voxel::VoxelModifier *modifier = modifiers.get_modifier(_modifier_id);
-				ZN_ASSERT_RETURN(modifier != nullptr);
-
-				const AABB prev_aabb = modifier->get_aabb();
-				modifier->set_transform(get_transform());
-				const AABB aabb = modifier->get_aabb();
-				post_edit_modifier(*_volume, prev_aabb);
-				post_edit_modifier(*_volume, aabb);
-
-				// TODO Handle nesting properly, though it's a pain in the ass
-				// When the terrain is moved, the local transform of modifiers technically changes too.
-				// However it did not change relative to the terrain. But because we don't have a way to check that,
-				// all modifiers will trigger updates at the same time...
-			}
+			update_volume();
 		} break;
 	}
 }
@@ -160,8 +218,11 @@ PackedStringArray VoxelModifier::_get_configuration_warnings() const {
 
 void VoxelModifier::get_configuration_warnings(PackedStringArray &warnings) const {
 	if (_volume == nullptr) {
-		warnings.append(ZN_TTR("The parent of this node must be of type {0}.")
+		warnings.append(ZN_TTR("This node must be a child of a node of type {0}.")
 								.format(varray(VoxelLodTerrain::get_class_static())));
+	}
+	if (!_is_immediate_child) {
+		warnings.append(ZN_TTR("Avoid nested voxel modifiers when possible"));
 	}
 }
 
