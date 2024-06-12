@@ -52,7 +52,7 @@
 		<method name="get_aabb" qualifiers="const">
 			<return type="AABB" />
 			<description>
-				Get the reference bounding box of the baked shape. This may be a bit larger than the original mesh's AABB because of the [member margin] property.
+				Get the reference bounding box of the baked shape. This may be a bit larger than the original mesh's AABB because of the [member margin_ratio] property.
 			</description>
 		</method>
 		<method name="get_voxel_buffer" qualifiers="const">
