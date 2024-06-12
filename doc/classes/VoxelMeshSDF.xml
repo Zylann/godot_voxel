@@ -99,6 +99,7 @@
 		</member>
 		<member name="partition_subdiv" type="int" setter="set_partition_subdiv" getter="get_partition_subdiv" default="32">
 			Controls how many subdivisions to use across the baking area when using the [constant BAKE_MODE_ACCURATE_PARTITIONED] and [constant BAKE_MODE_APPROX_FLOODFILL] modes.
+			When using [constant BAKE_MODE_ACCURATE_PARTITIONED], that value may be proportionally adjusted based on the amount of triangles the mesh has, due to an imperfection of the algorithm. If the mesh has few triangles, lower values will perform better. If it has a lot of small triangles, higher values will perform better. However, if triangles are large or few and the value is big, this will also potentially create artifacts.
 		</member>
 	</members>
 	<signals>
