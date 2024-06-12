@@ -111,7 +111,7 @@
 	</signals>
 	<constants>
 		<constant name="BAKE_MODE_ACCURATE_NAIVE" value="0" enum="BakeMode">
-			Checks every triangle from every cell to find the closest distances. It's accurate, but much slower than other techniques. The mesh must be closed, otherwise the SDF will contain errors. Signs are calculated by doing several raycasts from the center of each cell: if the ray hits a backface, the cell is assumed to be inside. Otherwise, it is assumed to be outside.
+			Checks every triangle from every cell to find the closest distances. It tries to be accurate, but is much slower than other techniques. The mesh must be closed, otherwise the SDF will contain errors. Signs are calculated by getting the closest triangle and checking which side of the triangle the center of the cell is.
 		</constant>
 		<constant name="BAKE_MODE_ACCURATE_PARTITIONED" value="1" enum="BakeMode">
 			Similar to the naive method, but subdivides space into partitions in order to more easily skip triangles that don't need to be checked. Faster than the naive method, but still relatively slow.
@@ -120,7 +120,7 @@
 			Experimental method subdividing space in 4x4x4 cells, and skipping SDF calculations by interpolating 8 corners instead if no triangles are present in those cells. Faster than the naive method, but not particularly interesting. Might be removed.
 		</constant>
 		<constant name="BAKE_MODE_APPROX_FLOODFILL" value="3" enum="BakeMode">
-			Approximates the SDF by calculating a thin "hull" of accurate values near triangles, then propagates those values with a 26-way floodfill. While technically not accurate, it is currently the fastest method and results are often good enough.
+			Approximates the SDF by calculating a thin "hull" of accurate values near triangles, then propagates those values with a 26-way floodfill. Signs are calculated only on the initial hull by doing several raycasts from the center of each cell: if the ray hits a backface, the cell is assumed to be inside. Otherwise, it is assumed to be outside. Signs are propagated as part of the floodfill. While technically not accurate, it is currently the fastest method and results are often good enough.
 		</constant>
 		<constant name="BAKE_MODE_COUNT" value="4" enum="BakeMode">
 			How many baking modes there are.
