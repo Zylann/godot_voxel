@@ -98,7 +98,7 @@
 			Setting this property back to null will not erase the baked result, so you don't need the original mesh to be loaded in order to use the SDF.
 		</member>
 		<member name="partition_subdiv" type="int" setter="set_partition_subdiv" getter="get_partition_subdiv" default="32">
-			Controls how many subdivisions to use across the baking area when using the BAKE_MODE_ACCURATE_PARTITIONED mode.
+			Controls how many subdivisions to use across the baking area when using the [constant BAKE_MODE_ACCURATE_PARTITIONED] and [constant BAKE_MODE_APPROX_FLOODFILL] modes.
 		</member>
 	</members>
 	<signals>
