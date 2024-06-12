@@ -25,6 +25,7 @@ Primarily developped with Godot 4.3.
         - Fixed `set_key_cache_enabled(true)` caused nothing to load
         - Fixed slow loading when the database path contains `res://` or `user://`
     - `VoxelInstancer`: Fixed instances with LOD > 0 were generated on `VoxelTerrain` even though LOD isn't supported (ending up in weird positions). No instances should generate.
+    - `VoxelModifierMesh`: Fixed setting `isolevel` had no effect
 
 - Breaking changes
     - `VoxelVoxLoader`: methods are now static, so no instance of the class need to be created
