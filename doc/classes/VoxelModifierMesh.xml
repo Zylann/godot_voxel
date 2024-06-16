@@ -9,7 +9,7 @@
 	</tutorials>
 	<members>
 		<member name="isolevel" type="float" setter="set_isolevel" getter="get_isolevel" default="0.0">
-			Offsets isolevel of SDF mesh. Increasing this value makes object appear thicker and vice versa.
+			Offsets isolevel of SDF mesh. Positive value makes object appear thicker as well as smoother and negative value - thinner.
 		</member>
 		<member name="mesh_sdf" type="VoxelMeshSDF" setter="set_mesh_sdf" getter="get_mesh_sdf">
 			SDF mesh that is used for modifier.

@@ -12,7 +12,7 @@
 	</tutorials>
 	<members>
 		<member name="operation" type="int" setter="set_operation" getter="get_operation" enum="VoxelModifier.Operation" default="0">
-			An operation modifier performs on the terrain or to other modifiers.
+			An operation that the modifier performs on the terrain or on the other modifiers.
 		</member>
 		<member name="smoothness" type="float" setter="set_smoothness" getter="get_smoothness" default="0.0">
 			Increasing this value makes the shape "merge" with its surroundings across a more or less large distance. 
