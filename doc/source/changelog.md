@@ -17,6 +17,7 @@ Primarily developped with Godot 4.3.
 - `VoxelMesherTransvoxel`:
     - added `edge_clamp_margin` property to prevent triangles from becoming too small, at the cost of slightly lower fidelity
     - reverted removal of degenerate triangles
+- `VoxelStreamSQLite`: Added option to change the coordinate format, now defaulting to a format allowing larger coordinates. Existing saves keep their original format.
 - `VoxelToolLodTerrain`: added `run_blocky_random_tick`
 - `VoxelViewer`: added `view_distance_vertical_ratio` to use different vertical view distance proportionally to the horizontal distance
 
