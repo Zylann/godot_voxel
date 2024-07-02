@@ -115,7 +115,8 @@ struct BlockLocation {
 		res = string_base10_to_int32(s.substr(pos), lod_index);
 		ZN_ASSERT_RETURN_V(res > 0, false);
 		pos += res;
-		ZN_ASSERT_RETURN_V(lod_index < constants::MAX_LOD, false);
+		ZN_ASSERT_RETURN_V(lod_index >= 0, false);
+		ZN_ASSERT_RETURN_V(lod_index < static_cast<int32_t>(constants::MAX_LOD), false);
 		location.lod = lod_index;
 
 		out_location = location;
