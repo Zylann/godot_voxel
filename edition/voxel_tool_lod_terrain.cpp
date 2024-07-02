@@ -190,7 +190,7 @@ void VoxelToolLodTerrain::do_box(Vector3i begin, Vector3i end) {
 	op.strength = get_sdf_strength();
 
 	if (!is_area_editable(op.box)) {
-		ZN_PRINT_VERBOSE("Area not editable");
+		ZN_PRINT_WARNING("Area not editable");
 		return;
 	}
 
@@ -226,7 +226,7 @@ void VoxelToolLodTerrain::do_sphere(Vector3 center, float radius) {
 	op.strength = get_sdf_strength();
 
 	if (!is_area_editable(op.box)) {
-		ZN_PRINT_VERBOSE("Area not editable");
+		ZN_PRINT_WARNING("Area not editable");
 		return;
 	}
 
@@ -258,7 +258,7 @@ void VoxelToolLodTerrain::do_hemisphere(Vector3 center, float radius, Vector3 fl
 	op.strength = get_sdf_strength();
 
 	if (!is_area_editable(op.box)) {
-		ZN_PRINT_VERBOSE("Area not editable");
+		ZN_PRINT_WARNING("Area not editable");
 		return;
 	}
 
@@ -325,7 +325,7 @@ void VoxelToolLodTerrain::do_sphere_async(Vector3 center, float radius) {
 	op.strength = get_sdf_strength();
 
 	if (!is_area_editable(op.box)) {
-		ZN_PRINT_VERBOSE("Area not editable");
+		ZN_PRINT_WARNING("Area not editable");
 		return;
 	}
 
@@ -350,7 +350,7 @@ void VoxelToolLodTerrain::paste(Vector3i pos, const VoxelBuffer &src, uint8_t ch
 	}
 	const Box3i box(pos, src.get_size());
 	if (!is_area_editable(box)) {
-		ZN_PRINT_VERBOSE("Area not editable");
+		ZN_PRINT_WARNING("Area not editable");
 		return;
 	}
 
@@ -959,7 +959,7 @@ void VoxelToolLodTerrain::stamp_sdf(
 	// This could be avoided with a box/transformed-box intersection algorithm. Might investigate if the use case
 	// occurs. It won't happen with full load mode. This also affects other shapes.
 	if (!is_area_editable(voxel_box)) {
-		ZN_PRINT_VERBOSE("Area not editable");
+		ZN_PRINT_WARNING("Area not editable");
 		return;
 	}
 
@@ -1011,7 +1011,7 @@ void VoxelToolLodTerrain::do_graph(Ref<VoxelGeneratorGraph> graph, Transform3D t
 							  .clipped(_terrain->get_voxel_bounds());
 
 	if (!is_area_editable(box)) {
-		ZN_PRINT_VERBOSE("Area not editable");
+		ZN_PRINT_WARNING("Area not editable");
 		return;
 	}
 

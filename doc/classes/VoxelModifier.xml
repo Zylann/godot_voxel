@@ -10,6 +10,8 @@
 		<member name="operation" type="int" setter="set_operation" getter="get_operation" enum="VoxelModifier.Operation" default="0">
 		</member>
 		<member name="smoothness" type="float" setter="set_smoothness" getter="get_smoothness" default="0.0">
+			Increasing this value makes the shape "merge" with its surroundings across a more or less large distance. 
+			Note, it assumes the base generator produces consistent gradients. This is not always the case. Notably, it is a common optimization for generators to avoid calculating gradients beyond a certain distance from surfaces. If smoothness is too large, or if the generator's cutoff distance is too low, it can lead to gaps in the resulting mesh, usually at chunk boundaries.
 		</member>
 	</members>
 	<constants>

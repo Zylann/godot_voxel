@@ -119,7 +119,6 @@ nav:
     - 'specs/region_format_v3.md'
     - 'specs/sqlite_format_v0.md'
     - 'specs/sqlite_format_v1.md'
-    - '___2.md'
 
 markdown_extensions:
     # Makes permalinks appear on headings
