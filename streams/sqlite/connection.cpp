@@ -159,7 +159,7 @@ struct TransactionScope {
 static bool prepare(sqlite3 *db, sqlite3_stmt **s, const char *sql) {
 	const int rc = sqlite3_prepare_v2(db, sql, -1, s, nullptr);
 	if (rc != SQLITE_OK) {
-		ERR_PRINT(String("Preparing statement failed: {0}").format(varray(sqlite3_errmsg(db))));
+		ZN_PRINT_ERROR(format("Preparing statement failed: {}", sqlite3_errmsg(db)));
 		return false;
 	}
 	return true;
@@ -222,7 +222,7 @@ bool Connection::open(const char *fpath, const BlockLocation::CoordinateFormat p
 	for (size_t i = 0; i < 3; ++i) {
 		rc = sqlite3_exec(db, tables[i], nullptr, nullptr, &error_message);
 		if (rc != SQLITE_OK) {
-			ERR_PRINT(String("Failed to create table: {0}").format(varray(error_message)));
+			ZN_PRINT_ERROR(format("Failed to create table: {}", error_message));
 			sqlite3_free(error_message);
 			close();
 			return false;
@@ -717,11 +717,11 @@ Connection::Meta Connection::load_meta() {
 			const int index = sqlite3_column_int(load_channels_statement, 0);
 			const int depth = sqlite3_column_int(load_channels_statement, 1);
 			if (index < 0 || index >= static_cast<int>(meta.channels.size())) {
-				ERR_PRINT(String("Channel index {0} is invalid").format(varray(index)));
+				ZN_PRINT_ERROR(format("Channel index {} is invalid", index));
 				continue;
 			}
 			if (depth < 0 || depth >= VoxelBuffer::DEPTH_COUNT) {
-				ERR_PRINT(String("Depth {0} is invalid").format(varray(depth)));
+				ZN_PRINT_ERROR(format("Depth {} is invalid", depth));
 				continue;
 			}
 			Meta::Channel &channel = meta.channels[index];
