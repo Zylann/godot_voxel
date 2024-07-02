@@ -14,13 +14,13 @@ using namespace godot;
 
 namespace zylann::voxel {
 
-void copy_from_chunked_storage( //
-		VoxelBuffer &dst_buffer, //
-		Vector3i min_pos, //
-		unsigned int block_size_po2, //
-		uint32_t channels_mask, //
-		const VoxelBuffer *(*get_block_func)(void *, Vector3i), //
-		void *get_block_func_ctx //
+void copy_from_chunked_storage(
+		VoxelBuffer &dst_buffer,
+		Vector3i min_pos,
+		unsigned int block_size_po2,
+		uint32_t channels_mask,
+		const VoxelBuffer *(*get_block_func)(void *, Vector3i),
+		void *get_block_func_ctx
 ) {
 	ZN_ASSERT_RETURN_MSG(Vector3iUtil::get_volume(dst_buffer.get_size()) > 0, "The area to copy is empty");
 	ZN_ASSERT_RETURN(get_block_func != nullptr);
@@ -67,16 +67,16 @@ void copy_from_chunked_storage( //
 	}
 }
 
-void paste_to_chunked_storage( //
-		const VoxelBuffer &src_buffer, //
-		Vector3i min_pos, //
-		unsigned int block_size_po2, //
-		unsigned int channels_mask, //
-		bool use_mask, //
-		uint8_t mask_channel, //
-		uint64_t mask_value, //
-		VoxelBuffer *(*get_block_func)(void *, Vector3i), //
-		void *get_block_func_ctx //
+void paste_to_chunked_storage(
+		const VoxelBuffer &src_buffer,
+		Vector3i min_pos,
+		unsigned int block_size_po2,
+		unsigned int channels_mask,
+		bool use_mask,
+		uint8_t mask_channel,
+		uint64_t mask_value,
+		VoxelBuffer *(*get_block_func)(void *, Vector3i),
+		void *get_block_func_ctx
 ) {
 	ZN_ASSERT_RETURN(get_block_func != nullptr);
 	const Vector3i max_pos = min_pos + src_buffer.get_size();
