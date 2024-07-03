@@ -14,9 +14,9 @@ namespace zylann::voxel::sqlite {
 // One connection to the database, with our prepared statements
 class Connection {
 public:
-	static const int VERSION_V0 = 0;
-	static const int VERSION_V1 = 1;
-	static const int VERSION_LATEST = VERSION_V1;
+	static constexpr int VERSION_V0 = 0;
+	static constexpr int VERSION_V1 = 1;
+	static constexpr int VERSION_LATEST = VERSION_V1;
 
 	struct Meta {
 		int version = -1;
