@@ -117,6 +117,8 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: qarmin/Qarminer
+          # At the time of writing, qarmin did not put out later than 4.1 versions, but claims that it works with Godot versions up to 4.3+
+          # See https://github.com/qarmin/Qarminer/issues/32
           ref: 4.1
           path: fuzzer
 
