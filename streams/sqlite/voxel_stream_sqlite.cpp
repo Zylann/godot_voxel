@@ -435,9 +435,9 @@ Connection *VoxelStreamSQLite::get_connection() {
 			return nullptr;
 		}
 		if (_connection_pool.size() != 0) {
-			sqlite::Connection *s = _connection_pool.back();
+			sqlite::Connection *existing_connection = _connection_pool.back();
 			_connection_pool.pop_back();
-			return s;
+			return existing_connection;
 		}
 		// First connection we get since we set the database path
 		fpath = _globalized_connection_path;
@@ -450,7 +450,7 @@ Connection *VoxelStreamSQLite::get_connection() {
 	sqlite::Connection *con = new sqlite::Connection();
 	if (!con->open(fpath.data(), to_internal_coordinate_format(preferred_coordinate_format))) {
 		delete con;
-		con = nullptr;
+		return nullptr;
 	}
 	if (_block_keys_cache_enabled) {
 		RWLockWrite wlock(_block_keys_cache.rw_lock);
