@@ -52,7 +52,7 @@
 		<method name="get_aabb" qualifiers="const">
 			<return type="AABB" />
 			<description>
-				Get the reference bounding box of the baked shape. This may be a bit larger than the original mesh's AABB because of the [member margin] property.
+				Get the reference bounding box of the baked shape. This may be a bit larger than the original mesh's AABB because of the [member margin_ratio] property.
 			</description>
 		</method>
 		<method name="get_voxel_buffer" qualifiers="const">
@@ -98,7 +98,8 @@
 			Setting this property back to null will not erase the baked result, so you don't need the original mesh to be loaded in order to use the SDF.
 		</member>
 		<member name="partition_subdiv" type="int" setter="set_partition_subdiv" getter="get_partition_subdiv" default="32">
-			Controls how many subdivisions to use across the baking area when using the BAKE_MODE_ACCURATE_PARTITIONED mode.
+			Controls how many subdivisions to use across the baking area when using the [constant BAKE_MODE_ACCURATE_PARTITIONED] and [constant BAKE_MODE_APPROX_FLOODFILL] modes.
+			When using [constant BAKE_MODE_ACCURATE_PARTITIONED], that value may be proportionally adjusted based on the amount of triangles the mesh has, due to an imperfection of the algorithm. If the mesh has few triangles, lower values will perform better. If it has a lot of small triangles, higher values will perform better. However, if triangles are large or few and the value is big, this will also potentially create artifacts.
 		</member>
 	</members>
 	<signals>
@@ -110,7 +111,7 @@
 	</signals>
 	<constants>
 		<constant name="BAKE_MODE_ACCURATE_NAIVE" value="0" enum="BakeMode">
-			Checks every triangle from every cell to find the closest distances. It's accurate, but much slower than other techniques. The mesh must be closed, otherwise the SDF will contain errors. Signs are calculated by doing several raycasts from the center of each cell: if the ray hits a backface, the cell is assumed to be inside. Otherwise, it is assumed to be outside.
+			Checks every triangle from every cell to find the closest distances. It tries to be accurate, but is much slower than other techniques. The mesh must be closed, otherwise the SDF will contain errors. Signs are calculated by getting the closest triangle and checking which side of the triangle the center of the cell is.
 		</constant>
 		<constant name="BAKE_MODE_ACCURATE_PARTITIONED" value="1" enum="BakeMode">
 			Similar to the naive method, but subdivides space into partitions in order to more easily skip triangles that don't need to be checked. Faster than the naive method, but still relatively slow.
@@ -119,7 +120,7 @@
 			Experimental method subdividing space in 4x4x4 cells, and skipping SDF calculations by interpolating 8 corners instead if no triangles are present in those cells. Faster than the naive method, but not particularly interesting. Might be removed.
 		</constant>
 		<constant name="BAKE_MODE_APPROX_FLOODFILL" value="3" enum="BakeMode">
-			Approximates the SDF by calculating a thin "hull" of accurate values near triangles, then propagates those values with a 26-way floodfill. While technically not accurate, it is currently the fastest method and results are often good enough.
+			Approximates the SDF by calculating a thin "hull" of accurate values near triangles, then propagates those values with a 26-way floodfill. Signs are calculated only on the initial hull by doing several raycasts from the center of each cell: if the ray hits a backface, the cell is assumed to be inside. Otherwise, it is assumed to be outside. Signs are propagated as part of the floodfill. While technically not accurate, it is currently the fastest method and results are often good enough.
 		</constant>
 		<constant name="BAKE_MODE_COUNT" value="4" enum="BakeMode">
 			How many baking modes there are.

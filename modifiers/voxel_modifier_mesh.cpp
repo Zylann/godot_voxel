@@ -17,7 +17,7 @@ void VoxelModifierMesh::set_mesh_sdf(Ref<VoxelMeshSDF> mesh_sdf) {
 
 void VoxelModifierMesh::set_isolevel(float isolevel) {
 	RWLockWrite wlock(_rwlock);
-	if (isolevel == isolevel) {
+	if (_isolevel == isolevel) {
 		return;
 	}
 	_isolevel = isolevel;

@@ -1,6 +1,9 @@
 SQLite format
 ================
 
+!!! warning
+    This document is about an old version of the format. You may check the most recent version.
+
 This page describes the database schema used by `VoxelStreamSQLite`.
 
 
@@ -36,7 +39,7 @@ Contains every block of the volume. There can be thousands of them.
 
 - `loc` is a 64-bit integer packing the coordinates and LOD index of the block using little-endian. Coordinates are equal to the origin of the block in voxels, divided by the size of the block + lod index using euclidean division (`coord >> (block_size_po2 + lod_index)`). XYZ are 16-bit signed integers, and LOD is a 8-bit unsigned integer: `0LXXYYZZ`
 - `vb` contains compressed voxel data using the [Block format](block_format_v4.md).
-- `instances` contains compressed instance data using the [Instance format](instances_format.md).
+- `instances` contains compressed instance data using the [Instance format](instances_format_v0.md).
 
 
 ### `channels`

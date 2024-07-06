@@ -10,6 +10,7 @@
 #include "util/test_math_funcs.h"
 #include "util/test_slot_map.h"
 #include "util/test_spatial_lock.h"
+#include "util/test_string_funcs.h"
 #include "util/test_threaded_task_runner.h"
 
 #include "voxel/test_block_serializer.h"
@@ -46,6 +47,8 @@ void run_voxel_tests() {
 	using namespace zylann::tests;
 
 	VOXEL_TEST(test_wrap);
+	VOXEL_TEST(test_int32_to_string_base10);
+	VOXEL_TEST(test_string_base10_to_int32);
 	VOXEL_TEST(test_voxel_buffer_paste_masked);
 	VOXEL_TEST(test_image_range_grid);
 	VOXEL_TEST(test_box3i_intersects);
@@ -119,7 +122,10 @@ void run_voxel_tests() {
 	VOXEL_TEST(test_spatial_lock_spam);
 	VOXEL_TEST(test_spatial_lock_dependent_map_chunks);
 	VOXEL_TEST(test_discord_soakil_copypaste);
+	VOXEL_TEST(test_voxel_stream_sqlite_key_string_csd_encoding);
+	VOXEL_TEST(test_voxel_stream_sqlite_key_blob80_encoding);
 	VOXEL_TEST(test_voxel_stream_sqlite_basic);
+	VOXEL_TEST(test_voxel_stream_sqlite_coordinate_format);
 
 	print_line("------------ Voxel tests end -------------");
 }

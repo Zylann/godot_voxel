@@ -17,6 +17,7 @@ Primarily developped with Godot 4.3.
 - `VoxelMesherTransvoxel`:
     - added `edge_clamp_margin` property to prevent triangles from becoming too small, at the cost of slightly lower fidelity
     - reverted removal of degenerate triangles
+- `VoxelStreamSQLite`: Added option to change the coordinate format, now defaulting to a format allowing larger coordinates. Existing saves keep their original format.
 - `VoxelToolLodTerrain`: added `run_blocky_random_tick`
 - `VoxelViewer`: added `view_distance_vertical_ratio` to use different vertical view distance proportionally to the horizontal distance
 
@@ -24,7 +25,12 @@ Primarily developped with Godot 4.3.
     - `VoxelStreamSQLite`: 
         - Fixed `set_key_cache_enabled(true)` caused nothing to load
         - Fixed slow loading when the database path contains `res://` or `user://`
+        - Fixed crash if the database has an invalid path and `flush()` is called after `set_key_cache_enabled(true)`
     - `VoxelInstancer`: Fixed instances with LOD > 0 were generated on `VoxelTerrain` even though LOD isn't supported (ending up in weird positions). No instances should generate.
+    - `VoxelMeshSDF`: Fixed error in the editor when trying to visualize the last slice (which turns out to be off by 1)
+    - `VoxelModifierMesh`: 
+        - Fixed setting `isolevel` had no effect
+        - Fixed missing configuration warning when parenting under `VoxelTerrain` (only `VoxelLodTerrain` is supported)
 
 - Breaking changes
     - `VoxelVoxLoader`: methods are now static, so no instance of the class need to be created

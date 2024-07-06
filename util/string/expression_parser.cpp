@@ -70,6 +70,8 @@ std::string_view get_name(const std::string_view text, unsigned int &pos) {
 }
 
 bool get_number_token(const std::string_view text, unsigned int &pos, Token &out_token, bool negative) {
+	// TODO Handle overflow errors, use common code
+
 	// Integer part
 	int64_t n = 0;
 	char c = 0;
@@ -341,7 +343,11 @@ const Function *find_function_by_name(std::string_view name, Span<const Function
 }
 
 Result parse_expression(
-		Tokenizer &tokenizer, bool in_argument_list, Span<const Function> functions, Token *out_last_token);
+		Tokenizer &tokenizer,
+		bool in_argument_list,
+		Span<const Function> functions,
+		Token *out_last_token
+);
 
 Error parse_function(Tokenizer &tokenizer, StdVector<UniquePtr<Node>> &operand_stack, Span<const Function> functions) {
 	std::string_view fname;
@@ -411,7 +417,11 @@ Error parse_function(Tokenizer &tokenizer, StdVector<UniquePtr<Node>> &operand_s
 // }
 
 Result parse_expression(
-		Tokenizer &tokenizer, bool in_argument_list, Span<const Function> functions, Token *out_last_token) {
+		Tokenizer &tokenizer,
+		bool in_argument_list,
+		Span<const Function> functions,
+		Token *out_last_token
+) {
 	Token token;
 
 	StdVector<OpEntry> operations_stack;
