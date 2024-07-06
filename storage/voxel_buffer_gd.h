@@ -171,13 +171,13 @@ public:
 
 	// Checks if float/SDF values from a channel of the source buffer are lower than a threshold, and sets an integer
 	// value into the destination buffer depending on the result of that comparison.
-	void op_select_less_src_f_dst_i_values( //
-			Ref<VoxelBuffer> src_ref, //
-			VoxelBuffer::ChannelId src_channel, //
-			float threshold, //
-			int value_if_less, //
-			int value_if_more, //
-			VoxelBuffer::ChannelId dst_channel //
+	void op_select_less_src_f_dst_i_values(
+			Ref<VoxelBuffer> src_ref,
+			const VoxelBuffer::ChannelId src_channel,
+			const float threshold,
+			const int value_if_less,
+			const int value_if_more,
+			const VoxelBuffer::ChannelId dst_channel
 	);
 
 	// Metadata
