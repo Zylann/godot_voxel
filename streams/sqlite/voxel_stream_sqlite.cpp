@@ -500,6 +500,7 @@ int VoxelStreamSQLite::get_lod_count() const {
 }
 
 void VoxelStreamSQLite::set_preferred_coordinate_format(CoordinateFormat format) {
+	ZN_ASSERT_RETURN(format >= 0 && format < COORDINATE_FORMAT_COUNT);
 	_preferred_coordinate_format = format;
 }
 
