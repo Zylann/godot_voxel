@@ -484,8 +484,8 @@ void VoxelBlockyType::get_configuration_warnings(PackedStringArray &out_warnings
 		}
 	}
 
-	if (unspecified_keys_count > 0) {
-		out_warnings.push_back(String("{0} with name '{1}' has {2} unspecified variants.")
+	if (unspecified_keys_count > 0 && _base_model.is_null()) {
+		out_warnings.push_back(String("{0} with name '{1}' has {2} unspecified variants and no base model.")
 									   .format(varray(get_class(), get_unique_name(), unspecified_keys_count)));
 	}
 }
