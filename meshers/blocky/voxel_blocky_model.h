@@ -139,6 +139,7 @@ public:
 
 	void set_material_override(int index, Ref<Material> material);
 	Ref<Material> get_material_override(int index) const;
+	bool has_material_override() const;
 
 	void set_mesh_collision_enabled(int surface_index, bool enabled);
 	bool is_mesh_collision_enabled(int surface_index) const;
