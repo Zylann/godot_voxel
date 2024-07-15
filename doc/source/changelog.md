@@ -23,6 +23,8 @@ Primarily developped with Godot 4.3.
 - `VoxelViewer`: added `view_distance_vertical_ratio` to use different vertical view distance proportionally to the horizontal distance
 
 - Fixes
+    - `VoxelBlockyModelMesh`: Fixed materials present directly in the mesh resource were not applied (only overrides in the model or on the terrain were applied)
+    - `VoxelBlockyType`: Fixed configuration warning about missing variants when there is a base model specified
     - `VoxelStreamSQLite`: 
         - Fixed `set_key_cache_enabled(true)` caused nothing to load
         - Fixed slow loading when the database path contains `res://` or `user://`
