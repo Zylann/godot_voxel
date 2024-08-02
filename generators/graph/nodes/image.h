@@ -166,7 +166,7 @@ void register_image_nodes(Span<NodeType> types) {
 			const Image &im = *p.image;
 			// Cache image size to reduce API calls in GDExtension
 			const int w = im.get_width();
-			const int h = im.get_width();
+			const int h = im.get_height();
 			// TODO Optimized path for most used formats, `get_pixel` is kinda slow
 			if (p.filter == FILTER_NEAREST) {
 				for (uint32_t i = 0; i < out.size; ++i) {

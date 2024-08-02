@@ -2189,4 +2189,37 @@ void test_voxel_graph_many_subdivisions() {
 	generator->generate_block(VoxelGenerator::VoxelQueryData{ vb, Vector3i(0, 0, 0), 0 });
 }
 
+void test_voxel_graph_non_square_image() {
+	// There was a bug where the Image node was using with for X and Y instead of using height for Y.
+
+	Ref<VoxelGeneratorGraph> generator;
+	generator.instantiate();
+	{
+		VoxelGraphFunction &g = **generator->get_main_function();
+
+		const uint32_t n_x = g.create_node(VoxelGraphFunction::NODE_INPUT_X);
+		const uint32_t n_y = g.create_node(VoxelGraphFunction::NODE_INPUT_Y);
+		const uint32_t n_z = g.create_node(VoxelGraphFunction::NODE_INPUT_Z);
+		const uint32_t n_image = g.create_node(VoxelGraphFunction::NODE_IMAGE_2D);
+		const uint32_t n_add = g.create_node(VoxelGraphFunction::NODE_ADD);
+		const uint32_t n_out_sdf = g.create_node(VoxelGraphFunction::NODE_OUTPUT_SDF);
+
+		Ref<Image> image = Image::create_empty(400, 300, false, Image::FORMAT_R8);
+		image->fill(Color(1, 0, 0));
+		g.set_node_param(n_image, 0, image);
+
+		g.add_connection(n_x, 0, n_image, 0);
+		g.add_connection(n_z, 0, n_image, 1);
+		g.add_connection(n_y, 0, n_add, 0);
+		g.add_connection(n_image, 0, n_add, 1);
+		g.add_connection(n_add, 0, n_out_sdf, 0);
+
+		CompilationResult result = generator->compile(false);
+		ZN_TEST_ASSERT(result.success);
+	}
+
+	const VoxelSingleValue sd = generator->generate_single(Vector3i(405, 2, 305), VoxelBuffer::CHANNEL_SDF);
+	ZN_TEST_ASSERT(sd.f > 2.9f && sd.f < 3.1);
+}
+
 } // namespace zylann::voxel::tests
