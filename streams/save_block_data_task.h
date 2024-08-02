@@ -15,14 +15,26 @@ namespace voxel {
 class SaveBlockDataTask : public IThreadedTask {
 public:
 	// For saving voxels only
-	SaveBlockDataTask(VolumeID p_volume_id, Vector3i p_block_pos, uint8_t p_lod, std::shared_ptr<VoxelBuffer> p_voxels,
-			std::shared_ptr<StreamingDependency> p_stream_dependency, std::shared_ptr<AsyncDependencyTracker> p_tracker,
-			bool flush_on_last_tracked_task);
+	SaveBlockDataTask(
+			VolumeID p_volume_id,
+			Vector3i p_block_pos,
+			uint8_t p_lod,
+			std::shared_ptr<VoxelBuffer> p_voxels,
+			std::shared_ptr<StreamingDependency> p_stream_dependency,
+			std::shared_ptr<AsyncDependencyTracker> p_tracker,
+			bool flush_on_last_tracked_task
+	);
 
 	// For saving instances only
-	SaveBlockDataTask(VolumeID p_volume_id, Vector3i p_block_pos, uint8_t p_lod,
-			UniquePtr<InstanceBlockData> p_instances, std::shared_ptr<StreamingDependency> p_stream_dependency,
-			std::shared_ptr<AsyncDependencyTracker> p_tracker, bool flush_on_last_tracked_task);
+	SaveBlockDataTask(
+			VolumeID p_volume_id,
+			Vector3i p_block_pos,
+			uint8_t p_lod,
+			UniquePtr<InstanceBlockData> p_instances,
+			std::shared_ptr<StreamingDependency> p_stream_dependency,
+			std::shared_ptr<AsyncDependencyTracker> p_tracker,
+			bool flush_on_last_tracked_task
+	);
 
 	~SaveBlockDataTask();
 
