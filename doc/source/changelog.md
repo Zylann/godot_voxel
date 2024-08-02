@@ -36,6 +36,7 @@ Primarily developped with Godot 4.3.
         - Fixed missing configuration warning when parenting under `VoxelTerrain` (only `VoxelLodTerrain` is supported)
 
 - Breaking changes
+    - `VoxelRaycastResult`: position properties are now `Vector3i` instead of `Vector3` (they were always integer but forgot to change them when Godot introduced `Vector3i`)
     - `VoxelVoxLoader`: methods are now static, so no instance of the class need to be created
 
 
