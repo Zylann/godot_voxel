@@ -41,6 +41,7 @@ Primarily developped with Godot 4.3.
 - Breaking changes
     - `VoxelRaycastResult`: position properties are now `Vector3i` instead of `Vector3` (they were always integer but forgot to change them when Godot introduced `Vector3i`)
     - `VoxelVoxLoader`: methods are now static, so no instance of the class need to be created
+    - Removed `VoxelMesherDMC`
 
 
 1.2 - 20/04/2024 - branch `1.2` - tag `v1.2.0`

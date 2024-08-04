@@ -31,7 +31,6 @@
 #include "meshers/blocky/voxel_blocky_model_mesh.h"
 #include "meshers/blocky/voxel_mesher_blocky.h"
 #include "meshers/cubes/voxel_mesher_cubes.h"
-#include "meshers/dmc/voxel_mesher_dmc.h"
 #include "meshers/transvoxel/voxel_mesher_transvoxel.h"
 #include "modifiers/godot/voxel_modifier_gd.h"
 #include "modifiers/godot/voxel_modifier_mesh_gd.h"
@@ -302,7 +301,6 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_abstract_class<VoxelMesher>();
 		ClassDB::register_class<VoxelMesherBlocky>();
 		ClassDB::register_class<VoxelMesherTransvoxel>();
-		ClassDB::register_class<VoxelMesherDMC>();
 		ClassDB::register_class<VoxelMesherCubes>();
 
 #ifdef ZN_GODOT_EXTENSION
