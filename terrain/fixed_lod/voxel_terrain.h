@@ -161,6 +161,9 @@ public:
 	void debug_set_draw_flag(DebugDrawFlag flag_index, bool enabled);
 	bool debug_get_draw_flag(DebugDrawFlag flag_index) const;
 
+	void debug_set_draw_shadow_occluders(bool enable);
+	bool debug_get_draw_shadow_occluders() const;
+
 	// Internal
 
 	void set_instancer(VoxelInstancer *instancer);
@@ -369,6 +372,8 @@ private:
 	uint8_t _debug_draw_flags = 0;
 
 	zylann::godot::DebugRenderer _debug_renderer;
+
+	bool _debug_draw_shadow_occluders = false;
 #endif
 };
 

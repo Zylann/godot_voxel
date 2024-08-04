@@ -1923,12 +1923,22 @@ void VoxelTerrain::apply_mesh_update(const VoxelEngine::BlockMeshOutput &ob) {
 		}
 	}
 
+#ifdef TOOLS_ENABLED
+	const RenderingServer::ShadowCastingSetting shadow_occluder_mode = _debug_draw_shadow_occluders
+			? RenderingServer::SHADOW_CASTING_SETTING_ON
+			: RenderingServer::SHADOW_CASTING_SETTING_SHADOWS_ONLY;
+#endif
+
 	block->set_mesh(
 			mesh,
 			get_gi_mode(),
 			static_cast<RenderingServer::ShadowCastingSetting>(get_shadow_casting()),
 			get_render_layers_mask(),
 			shadow_occluder_mesh
+#ifdef TOOLS_ENABLED
+			,
+			shadow_occluder_mode
+#endif
 	);
 
 	if (_material_override.is_valid()) {
@@ -2101,6 +2111,30 @@ bool VoxelTerrain::debug_get_draw_flag(DebugDrawFlag flag_index) const {
 #ifdef TOOLS_ENABLED
 	ERR_FAIL_INDEX_V(flag_index, DEBUG_DRAW_FLAGS_COUNT, false);
 	return (_debug_draw_flags & (1 << flag_index)) != 0;
+#else
+	return false;
+#endif
+}
+
+void VoxelTerrain::debug_set_draw_shadow_occluders(bool enable) {
+#ifdef TOOLS_ENABLED
+	if (enable == _debug_draw_shadow_occluders) {
+		return;
+	}
+	_debug_draw_shadow_occluders = enable;
+	const RenderingServer::ShadowCastingSetting mode =
+			enable ? RenderingServer::SHADOW_CASTING_SETTING_ON : RenderingServer::SHADOW_CASTING_SETTING_SHADOWS_ONLY;
+	_mesh_map.for_each_block([mode](VoxelMeshBlockVT &block) {
+		if (block.shadow_occluder.is_valid()) {
+			block.shadow_occluder.set_cast_shadows_setting(mode);
+		}
+	});
+#endif
+}
+
+bool VoxelTerrain::debug_get_draw_shadow_occluders() const {
+#ifdef TOOLS_ENABLED
+	return _debug_draw_shadow_occluders;
 #else
 	return false;
 #endif
@@ -2291,6 +2325,11 @@ void VoxelTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("debug_set_draw_flag", "flag_index", "enabled"), &Self::debug_set_draw_flag);
 	ClassDB::bind_method(D_METHOD("debug_get_draw_flag", "flag_index"), &Self::debug_get_draw_flag);
 
+	ClassDB::bind_method(
+			D_METHOD("debug_set_draw_shadow_occluders", "enabled"), &Self::debug_set_draw_shadow_occluders
+	);
+	ClassDB::bind_method(D_METHOD("debug_get_draw_shadow_occluders"), &Self::debug_get_draw_shadow_occluders);
+
 #ifdef ZN_GODOT
 	GDVIRTUAL_BIND(_on_data_block_entered, "info");
 	GDVIRTUAL_BIND(_on_area_edited, "area_origin", "area_size");
@@ -2365,7 +2404,7 @@ void VoxelTerrain::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "mesh_block_size"), "set_mesh_block_size", "get_mesh_block_size");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "use_gpu_generation"), "set_generator_use_gpu", "get_generator_use_gpu");
 
-	ADD_GROUP("Debug Drawing", "debug_");
+	ADD_GROUP("Debug", "debug_");
 
 	// Debug drawing is not persistent
 
@@ -2387,6 +2426,12 @@ void VoxelTerrain::_bind_methods() {
 	);
 
 	ADD_DEBUG_DRAW_FLAG("debug_draw_volume_bounds", DEBUG_DRAW_VOLUME_BOUNDS);
+
+	ADD_PROPERTY(
+			PropertyInfo(Variant::BOOL, "debug_draw_shadow_occluders", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR),
+			"debug_set_draw_shadow_occluders",
+			"debug_get_draw_shadow_occluders"
+	);
 
 	// TODO Add back access to block, but with an API securing multithreaded access
 	ADD_SIGNAL(MethodInfo("block_loaded", PropertyInfo(Variant::VECTOR3I, "position")));

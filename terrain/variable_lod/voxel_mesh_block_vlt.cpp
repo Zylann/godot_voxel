@@ -55,6 +55,10 @@ void VoxelMeshBlockVLT::set_mesh(
 		RenderingServer::ShadowCastingSetting shadow_casting,
 		int render_layers_mask,
 		Ref<Mesh> shadow_occluder_mesh
+#ifdef TOOLS_ENABLED
+		,
+		RenderingServer::ShadowCastingSetting shadow_occluder_mode
+#endif
 ) {
 	// TODO Don't add mesh instance to the world if it's not visible.
 	// I suspect Godot is trying to include invisible mesh instances into the culling process,
@@ -69,7 +73,11 @@ void VoxelMeshBlockVLT::set_mesh(
 		if (!_shadow_occluder.is_valid()) {
 			_shadow_occluder.create();
 			_shadow_occluder.set_render_layers_mask(render_layers_mask);
+#ifdef TOOLS_ENABLED
+			_shadow_occluder.set_cast_shadows_setting(shadow_occluder_mode);
+#else
 			_shadow_occluder.set_cast_shadows_setting(RenderingServer::SHADOW_CASTING_SETTING_SHADOWS_ONLY);
+#endif
 			// TODO Should we hide it if shadow casting is off?
 			// TBH it would be even better for the user to simply turn these off in the mesher...
 			set_mesh_instance_visible(_shadow_occluder, _visible && _parent_visible);

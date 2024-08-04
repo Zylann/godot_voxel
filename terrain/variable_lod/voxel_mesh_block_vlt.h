@@ -59,6 +59,10 @@ public:
 			RenderingServer::ShadowCastingSetting shadow_casting,
 			int render_layers_mask,
 			Ref<Mesh> shadow_occluder_mesh
+#ifdef TOOLS_ENABLED
+			,
+			RenderingServer::ShadowCastingSetting shadow_occluder_mode
+#endif
 	);
 	void drop_visuals();
 
@@ -104,6 +108,12 @@ public:
 			}
 		}
 	}
+
+#ifdef TOOLS_ENABLED
+	inline void set_shadow_occluder_mode(RenderingServer::ShadowCastingSetting mode) {
+		_shadow_occluder.set_cast_shadows_setting(mode);
+	}
+#endif
 
 private:
 	void set_material_override_internal(Ref<Material> material);

@@ -62,6 +62,10 @@ public:
 			RenderingServer::ShadowCastingSetting shadow_setting,
 			int render_layers_mask,
 			Ref<Mesh> shadow_occluder_mesh
+#ifdef TOOLS_ENABLED
+			,
+			RenderingServer::ShadowCastingSetting shadow_occluder_mode
+#endif
 	) {
 		if (shadow_occluder_mesh.is_null()) {
 			if (shadow_occluder.is_valid()) {
@@ -72,7 +76,11 @@ public:
 				// Create instance if it doesn't exist
 				shadow_occluder.create();
 				shadow_occluder.set_render_layers_mask(render_layers_mask);
+#ifdef TOOLS_ENABLED
+				shadow_occluder.set_cast_shadows_setting(shadow_occluder_mode);
+#else
 				shadow_occluder.set_cast_shadows_setting(RenderingServer::SHADOW_CASTING_SETTING_SHADOWS_ONLY);
+#endif
 				set_mesh_instance_visible(shadow_occluder, _visible && _parent_visible);
 			}
 			shadow_occluder.set_mesh(shadow_occluder_mesh);
