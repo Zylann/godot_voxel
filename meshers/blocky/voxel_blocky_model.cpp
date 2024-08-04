@@ -186,6 +186,15 @@ Ref<Material> VoxelBlockyModel::get_material_override(int index) const {
 	return _surface_params[index].material_override;
 }
 
+bool VoxelBlockyModel::has_material_override() const {
+	for (const SurfaceParams &sp : _surface_params) {
+		if (sp.material_override.is_valid()) {
+			return true;
+		}
+	}
+	return false;
+}
+
 void VoxelBlockyModel::set_mesh_collision_enabled(int surface_index, bool enabled) {
 	// TODO Can't check for `_surface_count` instead, because there is no guarantee about the order in which Godot will
 	// set properties when loading the resource. The mesh could be set later, so we can't know the number of surfaces.
@@ -265,12 +274,12 @@ void VoxelBlockyModel::bake(BakedData &baked_data, bool bake_tangents, MaterialI
 	for (unsigned int surface_index = 0; surface_index < model.surface_count; ++surface_index) {
 		if (surface_index < _surface_count) {
 			const SurfaceParams &surface_params = _surface_params[surface_index];
-			const Ref<Material> material = surface_params.material_override;
-
 			BakedData::Surface &surface = model.surfaces[surface_index];
 
-			const unsigned int material_index = materials.get_or_create_index(material);
-			surface.material_id = material_index;
+			if (surface_params.material_override.is_valid()) {
+				const unsigned int material_index = materials.get_or_create_index(surface_params.material_override);
+				surface.material_id = material_index;
+			}
 
 			surface.collision_enabled = surface_params.collision_enabled;
 		}

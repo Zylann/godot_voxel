@@ -150,12 +150,17 @@ int VoxelStreamMemory::get_artificial_save_latency_usec() const {
 
 void VoxelStreamMemory::_bind_methods() {
 	ClassDB::bind_method(
-			D_METHOD("set_artificial_save_latency_usec", "usec"), &VoxelStreamMemory::set_artificial_save_latency_usec);
+			D_METHOD("set_artificial_save_latency_usec", "usec"), &VoxelStreamMemory::set_artificial_save_latency_usec
+	);
 	ClassDB::bind_method(
-			D_METHOD("get_artificial_save_latency_usec"), &VoxelStreamMemory::get_artificial_save_latency_usec);
+			D_METHOD("get_artificial_save_latency_usec"), &VoxelStreamMemory::get_artificial_save_latency_usec
+	);
 
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "artificial_save_latency_usec"), "set_artificial_save_latency_usec",
-			"get_artificial_save_latency_usec");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::INT, "artificial_save_latency_usec"),
+			"set_artificial_save_latency_usec",
+			"get_artificial_save_latency_usec"
+	);
 }
 
 } // namespace zylann::voxel

@@ -110,10 +110,10 @@ void VoxelMeshSDFViewer::_on_slice_spinbox_value_changed(float value) {
 	if (_slice_spinbox_ignored) {
 		return;
 	}
-	int slice_y = value;
+	const int slice_y = value;
 	ZN_ASSERT_RETURN(_mesh_sdf.is_valid() && _mesh_sdf->is_baked());
 	ZN_ASSERT_RETURN(slice_y >= 0 && slice_y < _mesh_sdf->get_voxel_buffer()->get_size().y);
-	_slice_y = value;
+	_slice_y = slice_y;
 	update_view();
 }
 
@@ -151,7 +151,7 @@ void VoxelMeshSDFViewer::update_slice_spinbox() {
 	_slice_spinbox->set_editable(true);
 	_slice_spinbox->set_min(0);
 	Ref<godot::VoxelBuffer> vb = _mesh_sdf->get_voxel_buffer();
-	_slice_spinbox->set_max(vb->get_size().y);
+	_slice_spinbox->set_max(vb->get_size().y - 1);
 	_slice_spinbox->set_step(1);
 	_slice_spinbox->set_value(_slice_y);
 

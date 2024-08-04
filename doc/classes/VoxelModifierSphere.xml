@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="VoxelModifierSphere" inherits="VoxelModifier" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
+		Voxel modifier that uses sphere shape.
 	</brief_description>
 	<description>
 	</description>
@@ -8,6 +9,7 @@
 	</tutorials>
 	<members>
 		<member name="radius" type="float" setter="set_radius" getter="get_radius" default="10.0">
+			Radius of the sphere.
 		</member>
 	</members>
 </class>

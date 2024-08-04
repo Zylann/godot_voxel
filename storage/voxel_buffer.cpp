@@ -297,7 +297,7 @@ uint64_t VoxelBuffer::get_voxel(int x, int y, int z, unsigned int channel_index)
 void VoxelBuffer::set_voxel(uint64_t value, int x, int y, int z, unsigned int channel_index) {
 	ZN_DSTACK();
 	ZN_ASSERT_RETURN(channel_index < MAX_CHANNELS);
-	ZN_ASSERT_RETURN_MSG(is_position_valid(x, y, z), format("At position ({}, {}, {})", x, y, z));
+	ZN_ASSERT_RETURN_MSG(is_position_valid(x, y, z), format("Invalid position ({}, {}, {})", x, y, z));
 
 	Channel &channel = _channels[channel_index];
 

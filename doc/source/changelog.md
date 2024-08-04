@@ -13,20 +13,31 @@ Semver is not yet in place, so each version can have breaking changes, although 
 Primarily developped with Godot 4.3.
 
 - Added project setting `voxel/ownership_checks` to turn off sanity checks done by certain virtual functions that pass an object (such as `_generate_block`). Relevant for C#, where the garbage collection model prevents such checks from working properly.
+- `VoxelBuffer`: Added several functions to do arithmetic operations on all voxels
 - `VoxelMesherBlocky`: can be used with `VoxelLodTerrain`. Basic support: meshes scale with LOD and LOD>1 chunks have extra geometry to reduce cracks between LODs
 - `VoxelMesherTransvoxel`:
     - added `edge_clamp_margin` property to prevent triangles from becoming too small, at the cost of slightly lower fidelity
     - reverted removal of degenerate triangles
+- `VoxelStreamSQLite`: Added option to change the coordinate format, now defaulting to a format allowing larger coordinates. Existing saves keep their original format.
 - `VoxelToolLodTerrain`: added `run_blocky_random_tick`
 - `VoxelViewer`: added `view_distance_vertical_ratio` to use different vertical view distance proportionally to the horizontal distance
 
 - Fixes
+    - `VoxelBlockyModelMesh`: Fixed materials present directly in the mesh resource were not applied (only overrides in the model or on the terrain were applied)
+    - `VoxelBlockyType`: Fixed configuration warning about missing variants when there is a base model specified
+    - `VoxelGeneratorGraph`: Fixed crash when using the `Image` node with a non-square image
     - `VoxelStreamSQLite`: 
         - Fixed `set_key_cache_enabled(true)` caused nothing to load
         - Fixed slow loading when the database path contains `res://` or `user://`
+        - Fixed crash if the database has an invalid path and `flush()` is called after `set_key_cache_enabled(true)`
     - `VoxelInstancer`: Fixed instances with LOD > 0 were generated on `VoxelTerrain` even though LOD isn't supported (ending up in weird positions). No instances should generate.
+    - `VoxelMeshSDF`: Fixed error in the editor when trying to visualize the last slice (which turns out to be off by 1)
+    - `VoxelModifierMesh`: 
+        - Fixed setting `isolevel` had no effect
+        - Fixed missing configuration warning when parenting under `VoxelTerrain` (only `VoxelLodTerrain` is supported)
 
 - Breaking changes
+    - `VoxelRaycastResult`: position properties are now `Vector3i` instead of `Vector3` (they were always integer but forgot to change them when Godot introduced `Vector3i`)
     - `VoxelVoxLoader`: methods are now static, so no instance of the class need to be created
 
 

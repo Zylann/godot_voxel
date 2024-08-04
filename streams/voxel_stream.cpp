@@ -73,6 +73,13 @@ int VoxelStream::get_lod_count() const {
 	return 1;
 }
 
+Box3i VoxelStream::get_supported_block_range() const {
+	return Box3i::from_min_max(
+			Vector3iUtil::create(DEFAULT_MIN_SUPPORTED_BLOCK_COORDINATE),
+			Vector3iUtil::create(DEFAULT_MAX_SUPPORTED_BLOCK_COORDINATE)
+	);
+}
+
 void VoxelStream::flush() {
 	// Can be implemented in subclasses
 }
@@ -80,7 +87,10 @@ void VoxelStream::flush() {
 // Binding land
 
 VoxelStream::ResultCode VoxelStream::_b_load_voxel_block(
-		Ref<godot::VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod_index) {
+		Ref<godot::VoxelBuffer> out_buffer,
+		Vector3i origin_in_voxels,
+		int lod_index
+) {
 	ERR_FAIL_COND_V(lod_index < 0, RESULT_ERROR);
 	ERR_FAIL_COND_V(lod_index >= static_cast<int>(constants::MAX_LOD), RESULT_ERROR);
 	ERR_FAIL_COND_V(out_buffer.is_null(), RESULT_ERROR);
@@ -98,7 +108,10 @@ void VoxelStream::_b_save_voxel_block(Ref<godot::VoxelBuffer> buffer, Vector3i o
 }
 
 VoxelStream::ResultCode VoxelStream::_b_emerge_block(
-		Ref<godot::VoxelBuffer> out_buffer, Vector3 origin_in_voxels, int lod_index) {
+		Ref<godot::VoxelBuffer> out_buffer,
+		Vector3 origin_in_voxels,
+		int lod_index
+) {
 	ERR_PRINT("VoxelStream.emerge_block is deprecated. Use `load_voxel_block` instead.");
 	return _b_load_voxel_block(out_buffer, origin_in_voxels, lod_index);
 }
@@ -119,14 +132,19 @@ Vector3 VoxelStream::_b_get_block_size() const {
 void VoxelStream::_bind_methods() {
 	// Deprecated methods
 	ClassDB::bind_method(
-			D_METHOD("emerge_block", "out_buffer", "origin_in_voxels", "lod_index"), &VoxelStream::_b_emerge_block);
+			D_METHOD("emerge_block", "out_buffer", "origin_in_voxels", "lod_index"), &VoxelStream::_b_emerge_block
+	);
 	ClassDB::bind_method(
-			D_METHOD("immerge_block", "buffer", "origin_in_voxels", "lod_index"), &VoxelStream::_b_immerge_block);
+			D_METHOD("immerge_block", "buffer", "origin_in_voxels", "lod_index"), &VoxelStream::_b_immerge_block
+	);
 
-	ClassDB::bind_method(D_METHOD("load_voxel_block", "out_buffer", "origin_in_voxels", "lod_index"),
-			&VoxelStream::_b_load_voxel_block);
 	ClassDB::bind_method(
-			D_METHOD("save_voxel_block", "buffer", "origin_in_voxels", "lod_index"), &VoxelStream::_b_save_voxel_block);
+			D_METHOD("load_voxel_block", "out_buffer", "origin_in_voxels", "lod_index"),
+			&VoxelStream::_b_load_voxel_block
+	);
+	ClassDB::bind_method(
+			D_METHOD("save_voxel_block", "buffer", "origin_in_voxels", "lod_index"), &VoxelStream::_b_save_voxel_block
+	);
 	ClassDB::bind_method(D_METHOD("get_used_channels_mask"), &VoxelStream::_b_get_used_channels_mask);
 
 	ClassDB::bind_method(D_METHOD("set_save_generator_output", "enabled"), &VoxelStream::set_save_generator_output);
@@ -136,8 +154,11 @@ void VoxelStream::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("flush"), &VoxelStream::flush);
 
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "save_generator_output"), "set_save_generator_output",
-			"get_save_generator_output");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::BOOL, "save_generator_output"),
+			"set_save_generator_output",
+			"get_save_generator_output"
+	);
 
 	BIND_ENUM_CONSTANT(RESULT_ERROR);
 	BIND_ENUM_CONSTANT(RESULT_BLOCK_FOUND);
