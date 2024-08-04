@@ -1826,12 +1826,14 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 	VoxelMesher::Output &mesh_data = ob.surfaces;
 
 	Ref<ArrayMesh> mesh;
+	Ref<ArrayMesh> shadow_occluder_mesh;
 	if (ob.visual_was_required && visual_expected) {
 		// TODO Candidate for temp allocator
 		StdVector<uint16_t> material_indices;
 		if (ob.has_mesh_resource) {
 			// The mesh was already built as part of the threaded task
 			mesh = ob.mesh;
+			shadow_occluder_mesh = ob.shadow_occluder_mesh;
 			// It can be empty
 			material_indices = std::move(ob.mesh_material_indices);
 		} else {
@@ -1842,6 +1844,7 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 					mesh_data.mesh_flags,
 					material_indices
 			);
+			shadow_occluder_mesh = build_mesh(ob.surfaces.shadow_occluder);
 		}
 		if (mesh.is_valid()) {
 			const unsigned int surface_count = mesh->get_surface_count();
@@ -1945,11 +1948,22 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 			block->set_transition_mask(transition_mask);
 		}
 
+#ifdef TOOLS_ENABLED
+		const RenderingServer::ShadowCastingSetting shadow_occluder_mode = _debug_draw_shadow_occluders
+				? RenderingServer::SHADOW_CASTING_SETTING_ON
+				: RenderingServer::SHADOW_CASTING_SETTING_SHADOWS_ONLY;
+#endif
+
 		block->set_mesh(
 				mesh,
 				get_gi_mode(),
 				RenderingServer::ShadowCastingSetting(get_shadow_casting()),
-				get_render_layers_mask()
+				get_render_layers_mask(),
+				shadow_occluder_mesh
+#ifdef TOOLS_ENABLED
+				,
+				shadow_occluder_mode
+#endif
 		);
 	}
 
@@ -3147,6 +3161,30 @@ void VoxelLodTerrain::debug_set_draw_flags(uint32_t mask) {
 }
 #endif
 
+void VoxelLodTerrain::debug_set_draw_shadow_occluders(bool enable) {
+#ifdef TOOLS_ENABLED
+	if (enable == _debug_draw_shadow_occluders) {
+		return;
+	}
+	_debug_draw_shadow_occluders = enable;
+	const RenderingServer::ShadowCastingSetting mode =
+			enable ? RenderingServer::SHADOW_CASTING_SETTING_ON : RenderingServer::SHADOW_CASTING_SETTING_SHADOWS_ONLY;
+	for (VoxelMeshMap<VoxelMeshBlockVLT> &mesh_map : _mesh_maps_per_lod) {
+		mesh_map.for_each_block([mode](VoxelMeshBlockVLT &block) { //
+			block.set_shadow_occluder_mode(mode);
+		});
+	}
+#endif
+}
+
+bool VoxelLodTerrain::debug_get_draw_shadow_occluders() const {
+#ifdef TOOLS_ENABLED
+	return _debug_draw_shadow_occluders;
+#else
+	return false;
+#endif
+}
+
 #ifdef TOOLS_ENABLED
 
 void VoxelLodTerrain::update_gizmos() {
@@ -3671,6 +3709,11 @@ void VoxelLodTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("debug_set_draw_flag", "flag_index", "enabled"), &Self::debug_set_draw_flag);
 	ClassDB::bind_method(D_METHOD("debug_get_draw_flag", "flag_index"), &Self::debug_get_draw_flag);
 
+	ClassDB::bind_method(
+			D_METHOD("debug_set_draw_shadow_occluders", "enabled"), &Self::debug_set_draw_shadow_occluders
+	);
+	ClassDB::bind_method(D_METHOD("debug_get_draw_shadow_occluders"), &Self::debug_get_draw_shadow_occluders);
+
 	// ClassDB::bind_method(D_METHOD("_on_stream_params_changed"), &Self::_on_stream_params_changed);
 
 	BIND_ENUM_CONSTANT(PROCESS_CALLBACK_IDLE);
@@ -3831,6 +3874,12 @@ void VoxelLodTerrain::_bind_methods() {
 	ADD_DEBUG_DRAW_FLAG("debug_draw_viewer_clipboxes", DEBUG_DRAW_VIEWER_CLIPBOXES);
 	ADD_DEBUG_DRAW_FLAG("debug_draw_loaded_visual_and_collision_blocks", DEBUG_DRAW_LOADED_VISUAL_AND_COLLISION_BLOCKS);
 	ADD_DEBUG_DRAW_FLAG("debug_draw_active_visual_and_collision_blocks", DEBUG_DRAW_ACTIVE_VISUAL_AND_COLLISION_BLOCKS);
+
+	ADD_PROPERTY(
+			PropertyInfo(Variant::BOOL, "debug_draw_shadow_occluders", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR),
+			"debug_set_draw_shadow_occluders",
+			"debug_get_draw_shadow_occluders"
+	);
 }
 
 } // namespace zylann::voxel

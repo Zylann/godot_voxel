@@ -221,6 +221,7 @@ VoxelAboutWindow::VoxelAboutWindow() {
 						"[b]Gold supporters:[/b]\n"
 						"Aaron Franke (aaronfranke)\n"
 						"Bewildering\n"
+						"Eerrikki\n"
 						"\n"
 						"[b]Silver supporters:[/b]\n"
 						"TheConceptBoy\n"

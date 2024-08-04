@@ -7,7 +7,7 @@
 	<tutorials>
 	</tutorials>
 	<methods>
-		<method name="load_from_file">
+		<method name="load_from_file" qualifiers="static">
 			<return type="int" />
 			<param index="0" name="fpath" type="String" />
 			<param index="1" name="voxels" type="VoxelBuffer" />

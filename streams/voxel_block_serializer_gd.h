@@ -16,7 +16,11 @@ class VoxelBlockSerializer : public RefCounted {
 public:
 	static int serialize_to_stream_peer(Ref<StreamPeer> peer, Ref<VoxelBuffer> voxel_buffer, bool compress);
 	static void deserialize_from_stream_peer(
-			Ref<StreamPeer> peer, Ref<VoxelBuffer> voxel_buffer, int size, bool decompress);
+			Ref<StreamPeer> peer,
+			Ref<VoxelBuffer> voxel_buffer,
+			int size,
+			bool decompress
+	);
 
 	static PackedByteArray serialize_to_byte_array(Ref<VoxelBuffer> voxel_buffer, bool compress);
 	static void deserialize_from_byte_array(PackedByteArray bytes, Ref<VoxelBuffer> voxel_buffer, bool decompress);

@@ -163,11 +163,17 @@ void bake_cube_geometry(
 		const VoxelBlockyModelCube &config,
 		VoxelBlockyModel::BakedData &baked_data,
 		Vector2i p_atlas_size,
+		blocky::MaterialIndexer &material_indexer,
 		bool bake_tangents
 ) {
 	const float height = config.get_height();
 
 	baked_data.model.surface_count = 1;
+
+	VoxelBlockyModel::Surface &surface = baked_data.model.surfaces[0];
+	// The only way to specify materials in this model is via "material overrides", since there is no base mesh.
+	// Even if none are specified, we should at least index the "empty" material.
+	surface.material_id = material_indexer.get_or_create_index(config.get_material_override(0));
 
 	make_cube_sides_vertices_tangents(to_span(baked_data.model.sides_surfaces), config.get_height(), bake_tangents);
 
@@ -216,7 +222,8 @@ void VoxelBlockyModelCube::bake(blocky::ModelBakingContext &ctx) const {
 	VoxelBlockyModel::BakedData &baked_data = ctx.model;
 
 	baked_data.clear();
-	bake_cube_geometry(*this, baked_data, _atlas_size_in_tiles, ctx.tangents_enabled);
+
+	bake_cube_geometry(*this, baked_data, _atlas_size_in_tiles, ctx.material_indexer, ctx.tangents_enabled);
 	VoxelBlockyModel::bake(ctx);
 }
 
@@ -229,7 +236,9 @@ Ref<Mesh> VoxelBlockyModelCube::get_preview_mesh() const {
 
 	VoxelBlockyModel::BakedData baked_data;
 	baked_data.color = get_color();
-	bake_cube_geometry(*this, baked_data, _atlas_size_in_tiles, bake_tangents);
+	StdVector<Ref<Material>> materials;
+	blocky::MaterialIndexer material_indexer{ materials };
+	bake_cube_geometry(*this, baked_data, _atlas_size_in_tiles, material_indexer, bake_tangents);
 
 	Ref<Mesh> mesh = make_mesh_from_baked_data(baked_data, bake_tangents);
 

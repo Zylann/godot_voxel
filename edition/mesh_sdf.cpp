@@ -420,6 +420,18 @@ void compute_near_chunks(ChunkGrid &chunk_grid) {
 				// This is to account for the fact the closest chunk might contain a triangle further away than
 				// a closer triangle found in a farther chunk.
 
+				// TODO This creates artifacts when the mesh has few/big triangles and subdivision is high.
+				// A diagonal triangle D could have an AABB so large that it intersects many chunks while not
+				// relatively being close to them. Yet, 2 chunks away (>sqrt(3)) there could be a chunk intersected by
+				// an axis-aligned triangle A that would be closer than D. Yet it won't be detected.
+				//
+				// To fix this we could:
+				// - Increase the margin we use to add more triangles? That might work but reduce efficiency.
+				// - Instead of using AABBs to figure if a triangle is in a chunk, we could attempt a box/triangle
+				//   intersection, or 3D rasterization. Then we could keep using the sqrt(3) margin since we know if
+				//   a triangle is in a chunk, and if we pick any point on the sides of hat chunk, the distance from
+				//   that point to the triangle is always closer than the diagonal of that chunk.
+
 				const int margin_distance_squared =
 						math::squared(sqrtf(closest_chunk_distance_squared) + math::SQRT3_32);
 

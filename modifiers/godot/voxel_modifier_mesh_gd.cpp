@@ -78,18 +78,22 @@ void VoxelModifierMesh::_on_mesh_sdf_baked() {
 #ifdef TOOLS_ENABLED
 
 void VoxelModifierMesh::get_configuration_warnings(PackedStringArray &warnings) const {
+	VoxelModifier::get_configuration_warnings(warnings);
+
 	if (_mesh_sdf.is_null()) {
-		warnings.append(
-				ZN_TTR("A {0} resource is required for {1} to function.")
-						.format(varray(VoxelMeshSDF::get_class_static(), VoxelModifierMesh::get_class_static())));
+		warnings.append(ZN_TTR("A {0} resource is required for {1} to function.")
+								.format(varray(VoxelMeshSDF::get_class_static(), VoxelModifierMesh::get_class_static()))
+		);
 	} else {
 		if (_mesh_sdf->get_mesh().is_null()) {
 			warnings.append(
-					ZN_TTR("The {0} resource has no mesh assigned.").format(varray(VoxelMeshSDF::get_class_static())));
+					ZN_TTR("The {0} resource has no mesh assigned.").format(varray(VoxelMeshSDF::get_class_static()))
+			);
 
 		} else if (!_mesh_sdf->is_baked()) {
 			warnings.append(
-					ZN_TTR("The {0} resource needs to be baked.").format(varray(VoxelMeshSDF::get_class_static())));
+					ZN_TTR("The {0} resource needs to be baked.").format(varray(VoxelMeshSDF::get_class_static()))
+			);
 		}
 	}
 }
@@ -105,9 +109,14 @@ void VoxelModifierMesh::_bind_methods() {
 
 	ADD_PROPERTY(
 			PropertyInfo(Variant::OBJECT, "mesh_sdf", PROPERTY_HINT_RESOURCE_TYPE, VoxelMeshSDF::get_class_static()),
-			"set_mesh_sdf", "get_mesh_sdf");
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "isolevel", PROPERTY_HINT_RANGE, "-100.0, 100.0, 0.01"), "set_isolevel",
-			"get_isolevel");
+			"set_mesh_sdf",
+			"get_mesh_sdf"
+	);
+	ADD_PROPERTY(
+			PropertyInfo(Variant::FLOAT, "isolevel", PROPERTY_HINT_RANGE, "-100.0, 100.0, 0.01"),
+			"set_isolevel",
+			"get_isolevel"
+	);
 }
 
 } // namespace zylann::voxel::godot

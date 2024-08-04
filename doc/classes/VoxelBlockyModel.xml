@@ -68,9 +68,6 @@
 			Determines how transparency is handled when the sides of the model are culled by neighbor voxels.
 			If the neighbor voxel at a given side has a transparency index lower or equal to the current voxel, the side will be culled.
 		</member>
-		<member name="transparent" type="bool" setter="set_transparent" getter="is_transparent" default="false" is_deprecated="true" deprecated="Use [member transparency_index] instead.">
-			Tells if the model is transparent in the context of sides being culled by neighbor voxels.
-		</member>
 	</members>
 	<constants>
 		<constant name="SIDE_NEGATIVE_X" value="1" enum="Side">

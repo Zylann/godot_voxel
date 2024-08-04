@@ -34,6 +34,7 @@ void test_voxel_graph_image();
 void test_voxel_graph_many_weight_outputs();
 void test_image_range_grid();
 void test_voxel_graph_many_subdivisions();
+void test_voxel_graph_non_square_image();
 
 } // namespace zylann::voxel::tests
 

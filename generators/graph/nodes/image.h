@@ -37,8 +37,18 @@ inline math::Interval skew3(math::Interval x) {
 }
 
 // This is mostly useful for generating planets from an existing heightmap
-inline float sdf_sphere_heightmap(float x, float y, float z, float r, float m, const Image &im, float min_h,
-		float max_h, float norm_x, float norm_y) {
+inline float sdf_sphere_heightmap(
+		float x,
+		float y,
+		float z,
+		float r,
+		float m,
+		const Image &im,
+		float min_h,
+		float max_h,
+		float norm_x,
+		float norm_y
+) {
 	const float d = Math::sqrt(x * x + y * y + z * z) + 0.0001f;
 	const float sd = d - r;
 	// Optimize when far enough from heightmap.
@@ -63,8 +73,16 @@ inline float sdf_sphere_heightmap(float x, float y, float z, float r, float m, c
 	return sd - m * h;
 }
 
-inline math::Interval sdf_sphere_heightmap(math::Interval x, math::Interval y, math::Interval z, float r, float m,
-		const ImageRangeGrid *im_range, float norm_x, float norm_y) {
+inline math::Interval sdf_sphere_heightmap(
+		math::Interval x,
+		math::Interval y,
+		math::Interval z,
+		float r,
+		float m,
+		const ImageRangeGrid *im_range,
+		float norm_x,
+		float norm_y
+) {
 	using namespace math;
 
 	const Interval d = get_length(x, y, z) + 0.0001f;
@@ -148,7 +166,7 @@ void register_image_nodes(Span<NodeType> types) {
 			const Image &im = *p.image;
 			// Cache image size to reduce API calls in GDExtension
 			const int w = im.get_width();
-			const int h = im.get_width();
+			const int h = im.get_height();
 			// TODO Optimized path for most used formats, `get_pixel` is kinda slow
 			if (p.filter == FILTER_NEAREST) {
 				for (uint32_t i = 0; i < out.size; ++i) {
@@ -232,8 +250,18 @@ void register_image_nodes(Span<NodeType> types) {
 			const Params p = ctx.get_params<Params>();
 			const Image &im = *p.image;
 			for (uint32_t i = 0; i < out.size; ++i) {
-				out.data[i] = sdf_sphere_heightmap(x.data[i], y.data[i], z.data[i], p.radius, p.factor, im,
-						p.min_height, p.max_height, p.norm_x, p.norm_y);
+				out.data[i] = sdf_sphere_heightmap(
+						x.data[i],
+						y.data[i],
+						z.data[i],
+						p.radius,
+						p.factor,
+						im,
+						p.min_height,
+						p.max_height,
+						p.norm_x,
+						p.norm_y
+				);
 			}
 		};
 
@@ -243,7 +271,8 @@ void register_image_nodes(Span<NodeType> types) {
 			const Interval z = ctx.get_input(2);
 			const Params p = ctx.get_params<Params>();
 			ctx.set_output(
-					0, sdf_sphere_heightmap(x, y, z, p.radius, p.factor, p.image_range_grid, p.norm_x, p.norm_y));
+					0, sdf_sphere_heightmap(x, y, z, p.radius, p.factor, p.image_range_grid, p.norm_x, p.norm_y)
+			);
 		};
 	}
 }

@@ -8,14 +8,6 @@
 	<tutorials>
 	</tutorials>
 	<methods>
-		<method name="emerge_block" is_deprecated="true" deprecated="Use [method load_voxel_block] instead.">
-			<return type="int" enum="VoxelStream.ResultCode" />
-			<param index="0" name="out_buffer" type="VoxelBuffer" />
-			<param index="1" name="origin_in_voxels" type="Vector3" />
-			<param index="2" name="lod_index" type="int" />
-			<description>
-			</description>
-		</method>
 		<method name="flush">
 			<return type="void" />
 			<description>
@@ -31,14 +23,6 @@
 		</method>
 		<method name="get_used_channels_mask" qualifiers="const">
 			<return type="int" />
-			<description>
-			</description>
-		</method>
-		<method name="immerge_block" is_deprecated="true" deprecated="Use [method save_voxel_block] instead.">
-			<return type="void" />
-			<param index="0" name="buffer" type="VoxelBuffer" />
-			<param index="1" name="origin_in_voxels" type="Vector3" />
-			<param index="2" name="lod_index" type="int" />
 			<description>
 			</description>
 		</method>
