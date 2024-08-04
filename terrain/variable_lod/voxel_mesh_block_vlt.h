@@ -57,7 +57,8 @@ public:
 			Ref<Mesh> mesh,
 			GeometryInstance3D::GIMode gi_mode,
 			RenderingServer::ShadowCastingSetting shadow_casting,
-			int render_layers_mask
+			int render_layers_mask,
+			Ref<Mesh> shadow_occluder_mesh
 	);
 	void drop_visuals();
 
@@ -117,6 +118,11 @@ private:
 	FixedArray<zylann::godot::DirectMeshInstance, Cube::SIDE_COUNT> _transition_mesh_instances;
 
 	uint8_t _transition_mask = 0;
+
+	// See VoxelMesherBlocky.
+	// This unfortunately has to be a whole separate mesh instance because Godot doesn't support setting
+	// `cast_shadow` mode per mesh surface. This might have an impact on performance.
+	zylann::godot::DirectMeshInstance _shadow_occluder;
 
 #ifdef VOXEL_DEBUG_LOD_MATERIALS
 	Ref<Material> _debug_material;

@@ -1824,12 +1824,14 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 	VoxelMesher::Output &mesh_data = ob.surfaces;
 
 	Ref<ArrayMesh> mesh;
+	Ref<ArrayMesh> shadow_occluder_mesh;
 	if (ob.visual_was_required && visual_expected) {
 		// TODO Candidate for temp allocator
 		StdVector<uint16_t> material_indices;
 		if (ob.has_mesh_resource) {
 			// The mesh was already built as part of the threaded task
 			mesh = ob.mesh;
+			shadow_occluder_mesh = ob.shadow_occluder_mesh;
 			// It can be empty
 			material_indices = std::move(ob.mesh_material_indices);
 		} else {
@@ -1840,6 +1842,7 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 					mesh_data.mesh_flags,
 					material_indices
 			);
+			shadow_occluder_mesh = build_mesh(ob.surfaces.shadow_occluder);
 		}
 		if (mesh.is_valid()) {
 			const unsigned int surface_count = mesh->get_surface_count();
@@ -1947,7 +1950,8 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 				mesh,
 				get_gi_mode(),
 				RenderingServer::ShadowCastingSetting(get_shadow_casting()),
-				get_render_layers_mask()
+				get_render_layers_mask(),
+				shadow_occluder_mesh
 		);
 	}
 
