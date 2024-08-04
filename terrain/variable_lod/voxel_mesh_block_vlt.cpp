@@ -147,6 +147,7 @@ void VoxelMeshBlockVLT::set_gi_mode(GeometryInstance3D::GIMode mode) {
 
 void VoxelMeshBlockVLT::set_shadow_casting(RenderingServer::ShadowCastingSetting mode) {
 	VoxelMeshBlock::set_shadow_casting(mode);
+
 	for (unsigned int i = 0; i < _transition_mesh_instances.size(); ++i) {
 		DirectMeshInstance &mi = _transition_mesh_instances[i];
 		if (mi.is_valid()) {
