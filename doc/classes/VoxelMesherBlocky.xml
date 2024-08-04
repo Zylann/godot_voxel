@@ -50,4 +50,18 @@
 			When enabled, generates a quad covering the positive Z side of the chunk if it is fully covered by opaque voxels, in order to force directional lights to project a shadow.
 		</member>
 	</members>
+	<constants>
+		<constant name="SIDE_NEGATIVE_X" value="0" enum="Side">
+		</constant>
+		<constant name="SIDE_POSITIVE_X" value="1" enum="Side">
+		</constant>
+		<constant name="SIDE_NEGATIVE_Y" value="2" enum="Side">
+		</constant>
+		<constant name="SIDE_POSITIVE_Y" value="3" enum="Side">
+		</constant>
+		<constant name="SIDE_NEGATIVE_Z" value="4" enum="Side">
+		</constant>
+		<constant name="SIDE_POSITIVE_Z" value="5" enum="Side">
+		</constant>
+	</constants>
 </class>
