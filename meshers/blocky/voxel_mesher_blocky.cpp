@@ -429,15 +429,15 @@ struct OccluderArrays {
 	StdVector<int32_t> indices;
 };
 
-void generate_occluders_geometry( //
-		OccluderArrays &out_arrays, //
-		const Vector3f maxf, //
-		bool positive_x, //
-		bool positive_y, //
-		bool positive_z, //
-		bool negative_x, //
-		bool negative_y, //
-		bool negative_z //
+void generate_occluders_geometry(
+		OccluderArrays &out_arrays,
+		const Vector3f maxf,
+		bool positive_x,
+		bool positive_y,
+		bool positive_z,
+		bool negative_x,
+		bool negative_y,
+		bool negative_z
 ) {
 	const unsigned int quad_count = //
 			static_cast<unsigned int>(positive_x) + //
@@ -600,27 +600,27 @@ void generate_occluders_geometry( //
 }
 
 template <typename TModelID>
-void classify_chunk_occlusion_from_voxels( //
-		Span<const TModelID> id_buffer, //
-		const VoxelBlockyLibraryBase::BakedData &baked_data, //
-		const Vector3i block_size, //
-		const Vector3i min, //
-		const Vector3i max, //
-		const uint8_t enabled_mask, //
-		bool &out_positive_x, //
-		bool &out_positive_y, //
-		bool &out_positive_z, //
-		bool &out_negative_x, //
-		bool &out_negative_y, //
-		bool &out_negative_z //
+void classify_chunk_occlusion_from_voxels(
+		Span<const TModelID> id_buffer,
+		const VoxelBlockyLibraryBase::BakedData &baked_data,
+		const Vector3i block_size,
+		const Vector3i min,
+		const Vector3i max,
+		const uint8_t enabled_mask,
+		bool &out_positive_x,
+		bool &out_positive_y,
+		bool &out_positive_z,
+		bool &out_negative_x,
+		bool &out_negative_y,
+		bool &out_negative_z
 ) {
 	struct L {
-		static inline bool is_fully_occluded( //
-				const TModelID v0, //
-				const TModelID v1, //
-				const VoxelBlockyLibraryBase::BakedData &baked_data, //
-				const uint8_t side0_mask, //
-				const uint8_t side1_mask //
+		static inline bool is_fully_occluded(
+				const TModelID v0,
+				const TModelID v1,
+				const VoxelBlockyLibraryBase::BakedData &baked_data,
+				const uint8_t side0_mask,
+				const uint8_t side1_mask
 		) {
 			if (v0 >= baked_data.models.size() || v1 >= baked_data.models.size()) {
 				return false;
@@ -643,13 +643,13 @@ void classify_chunk_occlusion_from_voxels( //
 			return true;
 		}
 
-		static bool is_chunk_side_occluded_x( //
-				const Vector3i min, //
-				const Vector3i max, //
-				Span<const TModelID> id_buffer, //
-				const Vector3i block_size, //
-				const int sign, //
-				const VoxelBlockyLibraryBase::BakedData &baked_data //
+		static bool is_chunk_side_occluded_x(
+				const Vector3i min,
+				const Vector3i max,
+				Span<const TModelID> id_buffer,
+				const Vector3i block_size,
+				const int sign,
+				const VoxelBlockyLibraryBase::BakedData &baked_data
 		) {
 			const Cube::SideAxis side0 = sign < 0 ? Cube::SIDE_NEGATIVE_X : Cube::SIDE_POSITIVE_X;
 			const Cube::SideAxis side1 = sign < 0 ? Cube::SIDE_POSITIVE_X : Cube::SIDE_NEGATIVE_X;
@@ -673,13 +673,13 @@ void classify_chunk_occlusion_from_voxels( //
 			return true;
 		}
 
-		static bool is_chunk_side_occluded_y( //
-				const Vector3i min, //
-				const Vector3i max, //
-				Span<const TModelID> id_buffer, //
-				const Vector3i block_size, //
-				const int sign, //
-				const VoxelBlockyLibraryBase::BakedData &baked_data //
+		static bool is_chunk_side_occluded_y(
+				const Vector3i min,
+				const Vector3i max,
+				Span<const TModelID> id_buffer,
+				const Vector3i block_size,
+				const int sign,
+				const VoxelBlockyLibraryBase::BakedData &baked_data
 		) {
 			const Cube::SideAxis side0 = sign < 0 ? Cube::SIDE_NEGATIVE_Y : Cube::SIDE_POSITIVE_Y;
 			const Cube::SideAxis side1 = sign < 0 ? Cube::SIDE_POSITIVE_Y : Cube::SIDE_NEGATIVE_Y;
@@ -703,13 +703,13 @@ void classify_chunk_occlusion_from_voxels( //
 			return true;
 		}
 
-		static bool is_chunk_side_occluded_z( //
-				const Vector3i min, //
-				const Vector3i max, //
-				Span<const TModelID> id_buffer, //
-				const Vector3i block_size, //
-				const int sign, //
-				const VoxelBlockyLibraryBase::BakedData &baked_data //
+		static bool is_chunk_side_occluded_z(
+				const Vector3i min,
+				const Vector3i max,
+				Span<const TModelID> id_buffer,
+				const Vector3i block_size,
+				const int sign,
+				const VoxelBlockyLibraryBase::BakedData &baked_data
 		) {
 			const Cube::SideAxis side0 = sign < 0 ? Cube::SIDE_NEGATIVE_Z : Cube::SIDE_POSITIVE_Z;
 			const Cube::SideAxis side1 = sign < 0 ? Cube::SIDE_POSITIVE_Z : Cube::SIDE_NEGATIVE_Z;
@@ -751,13 +751,13 @@ void classify_chunk_occlusion_from_voxels( //
 	out_negative_z = negative_z_enabled && L::is_chunk_side_occluded_z(min, max, id_buffer, block_size, -1, baked_data);
 }
 
-void generate_shadow_occluders( //
-		OccluderArrays &out_arrays, //
-		const Span<const uint8_t> id_buffer_raw, //
-		const VoxelBuffer::Depth depth, //
-		const Vector3i block_size, //
-		const VoxelBlockyLibraryBase::BakedData &baked_data, //
-		const uint8_t enabled_mask //
+void generate_shadow_occluders(
+		OccluderArrays &out_arrays,
+		const Span<const uint8_t> id_buffer_raw,
+		const VoxelBuffer::Depth depth,
+		const Vector3i block_size,
+		const VoxelBlockyLibraryBase::BakedData &baked_data,
+		const uint8_t enabled_mask
 ) {
 	ZN_PROFILE_SCOPE();
 
@@ -770,8 +770,6 @@ void generate_shadow_occluders( //
 	// up with lots of useless occluders across all space instead of just near chunks that actually have meshes. That
 	// would in turn require to lookup neighbor chunks, which introduces dependencies that complicate multi-threading
 	// and sorting.
-
-	// TODO Allow to turn off sides, not all games will project shadows from below, or even lateral sides
 
 	// Rendering idea: instead of baking this into every mesh, batch all occluders into a single mesh? Then rebuild it
 	// at most once per frame if there was any change? Means we have to store occlusion info somewhere that is fast
@@ -786,36 +784,36 @@ void generate_shadow_occluders( //
 
 	switch (depth) {
 		case VoxelBuffer::DEPTH_8_BIT:
-			classify_chunk_occlusion_from_voxels( //
-					id_buffer_raw, //
-					baked_data, //
-					block_size, //
-					min, //
-					max, //
-					enabled_mask, //
-					positive_x, //
-					positive_y, //
-					positive_z, //
-					negative_x, //
-					negative_y, //
-					negative_z //
+			classify_chunk_occlusion_from_voxels(
+					id_buffer_raw,
+					baked_data,
+					block_size,
+					min,
+					max,
+					enabled_mask,
+					positive_x,
+					positive_y,
+					positive_z,
+					negative_x,
+					negative_y,
+					negative_z
 			);
 			break;
 
 		case VoxelBuffer::DEPTH_16_BIT:
-			classify_chunk_occlusion_from_voxels( //
-					id_buffer_raw.reinterpret_cast_to<const uint16_t>(), //
-					baked_data, //
-					block_size, //
-					min, //
-					max, //
-					enabled_mask, //
-					positive_x, //
-					positive_y, //
-					positive_z, //
-					negative_x, //
-					negative_y, //
-					negative_z //
+			classify_chunk_occlusion_from_voxels(
+					id_buffer_raw.reinterpret_cast_to<const uint16_t>(),
+					baked_data,
+					block_size,
+					min,
+					max,
+					enabled_mask,
+					positive_x,
+					positive_y,
+					positive_z,
+					negative_x,
+					negative_y,
+					negative_z
 			);
 			break;
 
@@ -824,15 +822,8 @@ void generate_shadow_occluders( //
 			return;
 	}
 
-	generate_occluders_geometry( //
-			out_arrays, //
-			to_vec3f(max - min), //
-			positive_x, //
-			positive_y, //
-			positive_z, //
-			negative_x, //
-			negative_y, //
-			negative_z //
+	generate_occluders_geometry(
+			out_arrays, to_vec3f(max - min), positive_x, positive_y, positive_z, negative_x, negative_y, negative_z
 	);
 }
 
