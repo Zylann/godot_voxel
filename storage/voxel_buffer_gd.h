@@ -210,8 +210,6 @@ public:
 	static Ref<Image> debug_print_sdf_z_slice(const zylann::voxel::VoxelBuffer &buffer, float scale, int z);
 
 private:
-	void _b_deprecated_optimize();
-
 	// In GDExtension, `create` is defined by `GDCLASS`, preventing anyone from binding a `create` function directly
 	void _b_create(int x, int y, int z) {
 		create(x, y, z);

@@ -141,9 +141,6 @@ private:
 	void _b_save_voxel_block(Ref<godot::VoxelBuffer> buffer, Vector3i origin_in_voxels, int lod_index);
 	int _b_get_used_channels_mask() const;
 	Vector3 _b_get_block_size() const;
-	// Deprecated
-	ResultCode _b_emerge_block(Ref<godot::VoxelBuffer> out_buffer, Vector3 origin_in_voxels, int lod_index);
-	void _b_immerge_block(Ref<godot::VoxelBuffer> buffer, Vector3 origin_in_voxels, int lod_index);
 
 	struct Parameters {
 		bool save_generator_output = false;

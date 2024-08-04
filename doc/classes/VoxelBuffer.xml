@@ -292,11 +292,6 @@
 				Computes the subtraction of corresponding voxels between the current buffer and the other buffer ([code]current - other[/code]), and stores the result in the current buffer. Voxels are interpreted as signed distances (usually the [constant VoxelBuffer.CHANNEL_SDF] channel).
 			</description>
 		</method>
-		<method name="optimize" is_deprecated="true" deprecated="Use [method compress_uniform_channels] instead.">
-			<return type="void" />
-			<description>
-			</description>
-		</method>
 		<method name="remap_values">
 			<return type="void" />
 			<param index="0" name="channel" type="int" />

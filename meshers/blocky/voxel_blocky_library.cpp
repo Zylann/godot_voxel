@@ -228,11 +228,6 @@ void VoxelBlockyLibrary::_b_set_models(TypedArray<VoxelBlockyModel> models) {
 	_needs_baking = true;
 }
 
-int VoxelBlockyLibrary::_b_deprecated_get_voxel_index_from_name(String p_name) const {
-	WARN_DEPRECATED_MSG("Use `get_model_index_from_resource_name` instead.");
-	return get_model_index_from_resource_name(p_name);
-}
-
 void VoxelBlockyLibrary::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_models"), &VoxelBlockyLibrary::_b_get_models);
 	ClassDB::bind_method(D_METHOD("set_models"), &VoxelBlockyLibrary::_b_set_models);
@@ -243,11 +238,6 @@ void VoxelBlockyLibrary::_bind_methods() {
 	ClassDB::bind_method(
 			D_METHOD("get_model_index_from_resource_name", "name"),
 			&VoxelBlockyLibrary::get_model_index_from_resource_name
-	);
-
-	// Legacy
-	ClassDB::bind_method(
-			D_METHOD("get_voxel_index_from_name", "name"), &VoxelBlockyLibrary::_b_deprecated_get_voxel_index_from_name
 	);
 
 	ADD_PROPERTY(

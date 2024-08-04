@@ -209,16 +209,6 @@ bool VoxelBlockyModel::is_mesh_collision_enabled(int surface_index) const {
 	return _surface_params[surface_index].collision_enabled;
 }
 
-void VoxelBlockyModel::set_transparent(bool t) {
-	if (t) {
-		if (_transparency_index == 0) {
-			_transparency_index = 1;
-		}
-	} else {
-		_transparency_index = 0;
-	}
-}
-
 void VoxelBlockyModel::set_transparency_index(int i) {
 	_transparency_index = math::clamp(i, 0, 255);
 }
@@ -545,9 +535,6 @@ void VoxelBlockyModel::_bind_methods() {
 	);
 	ClassDB::bind_method(D_METHOD("get_material_override", "index"), &VoxelBlockyModel::get_material_override);
 
-	ClassDB::bind_method(D_METHOD("set_transparent", "transparent"), &VoxelBlockyModel::set_transparent);
-	ClassDB::bind_method(D_METHOD("is_transparent"), &VoxelBlockyModel::is_transparent);
-
 	ClassDB::bind_method(
 			D_METHOD("set_transparency_index", "transparency_index"), &VoxelBlockyModel::set_transparency_index
 	);
@@ -578,12 +565,6 @@ void VoxelBlockyModel::_bind_methods() {
 
 	// TODO Update to StringName in Godot 4
 	ADD_PROPERTY(PropertyInfo(Variant::COLOR, "color"), "set_color", "get_color");
-	// TODO Might become obsolete
-	ADD_PROPERTY(
-			PropertyInfo(Variant::BOOL, "transparent", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE),
-			"set_transparent",
-			"is_transparent"
-	);
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "transparency_index"), "set_transparency_index", "get_transparency_index");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "culls_neighbors"), "set_culls_neighbors", "get_culls_neighbors");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "random_tickable"), "set_random_tickable", "is_random_tickable");

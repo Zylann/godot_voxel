@@ -146,12 +146,6 @@ public:
 	void set_mesh_collision_enabled(int surface_index, bool enabled);
 	bool is_mesh_collision_enabled(int surface_index) const;
 
-	// TODO Might become obsoleted by transparency index
-	void set_transparent(bool t = true);
-	_FORCE_INLINE_ bool is_transparent() const {
-		return _transparency_index != 0;
-	}
-
 	void set_transparency_index(int i);
 	int get_transparency_index() const {
 		return _transparency_index;

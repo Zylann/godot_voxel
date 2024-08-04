@@ -39,7 +39,13 @@ Primarily developped with Godot 4.3.
         - Fixed missing configuration warning when parenting under `VoxelTerrain` (only `VoxelLodTerrain` is supported)
 
 - Breaking changes
+    - `VoxelBlockyLibrary`: removed deprecated method `get_voxel_index_from_name`, use `get_model_index_from_resource_name` instead
+    - `VoxelBlockyModel`: removed `transparent` deprecated property, use `transparency_index` instead
+    - `VoxelBuffer`: removed `optimize` deprecated method, use `compress_uniform_channels` instead
     - `VoxelRaycastResult`: position properties are now `Vector3i` instead of `Vector3` (they were always integer but forgot to change them when Godot introduced `Vector3i`)
+    - `VoxelStream`:
+        - removed `emerge_block` deprecated method, use `load_voxel_block` instead
+        - removed `immerge_block` deprecated method, use `save_voxel_block` instead
     - `VoxelVoxLoader`: methods are now static, so no instance of the class need to be created
     - Removed `VoxelMesherDMC`
 

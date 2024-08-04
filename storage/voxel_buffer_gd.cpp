@@ -641,11 +641,6 @@ TypedArray<Image> VoxelBuffer::debug_print_sdf_y_slices(float scale) const {
 	return images;
 }
 
-void VoxelBuffer::_b_deprecated_optimize() {
-	ERR_PRINT_ONCE("VoxelBuffer.optimize() is deprecated. Use compress_uniform_channels() instead.");
-	compress_uniform_channels();
-}
-
 void VoxelBuffer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("create", "sx", "sy", "sz"), &VoxelBuffer::_b_create);
 
@@ -678,7 +673,6 @@ void VoxelBuffer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("downscale_to", "dst", "src_min", "src_max", "dst_min"), &VoxelBuffer::downscale_to);
 
 	ClassDB::bind_method(D_METHOD("is_uniform", "channel"), &VoxelBuffer::is_uniform);
-	ClassDB::bind_method(D_METHOD("optimize"), &VoxelBuffer::_b_deprecated_optimize);
 	ClassDB::bind_method(D_METHOD("compress_uniform_channels"), &VoxelBuffer::compress_uniform_channels);
 	ClassDB::bind_method(D_METHOD("get_channel_compression", "channel"), &VoxelBuffer::get_channel_compression);
 	ClassDB::bind_method(D_METHOD("decompress_channel", "channel"), &VoxelBuffer::decompress_channel);

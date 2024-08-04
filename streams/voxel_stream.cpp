@@ -107,20 +107,6 @@ void VoxelStream::_b_save_voxel_block(Ref<godot::VoxelBuffer> buffer, Vector3i o
 	save_voxel_block(q);
 }
 
-VoxelStream::ResultCode VoxelStream::_b_emerge_block(
-		Ref<godot::VoxelBuffer> out_buffer,
-		Vector3 origin_in_voxels,
-		int lod_index
-) {
-	ERR_PRINT("VoxelStream.emerge_block is deprecated. Use `load_voxel_block` instead.");
-	return _b_load_voxel_block(out_buffer, origin_in_voxels, lod_index);
-}
-
-void VoxelStream::_b_immerge_block(Ref<godot::VoxelBuffer> buffer, Vector3 origin_in_voxels, int lod_index) {
-	ERR_PRINT("VoxelStream.immerge_block is deprecated. Use `save_voxel_block` instead.");
-	return _b_save_voxel_block(buffer, origin_in_voxels, lod_index);
-}
-
 int VoxelStream::_b_get_used_channels_mask() const {
 	return get_used_channels_mask();
 }
@@ -130,14 +116,6 @@ Vector3 VoxelStream::_b_get_block_size() const {
 }
 
 void VoxelStream::_bind_methods() {
-	// Deprecated methods
-	ClassDB::bind_method(
-			D_METHOD("emerge_block", "out_buffer", "origin_in_voxels", "lod_index"), &VoxelStream::_b_emerge_block
-	);
-	ClassDB::bind_method(
-			D_METHOD("immerge_block", "buffer", "origin_in_voxels", "lod_index"), &VoxelStream::_b_immerge_block
-	);
-
 	ClassDB::bind_method(
 			D_METHOD("load_voxel_block", "out_buffer", "origin_in_voxels", "lod_index"),
 			&VoxelStream::_b_load_voxel_block
