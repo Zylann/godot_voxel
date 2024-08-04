@@ -4,6 +4,7 @@
 #include "../meshers/blocky/voxel_mesher_blocky.h"
 #include "../meshers/voxel_mesher.h"
 #include "../streams/voxel_stream.h"
+#include "../util/godot/classes/rendering_server.h"
 #include "../util/godot/classes/script.h"
 #include "../util/godot/core/string.h"
 
