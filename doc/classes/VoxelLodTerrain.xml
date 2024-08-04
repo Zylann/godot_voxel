@@ -274,6 +274,8 @@
 		</member>
 		<member name="debug_draw_octree_nodes" type="bool" setter="debug_set_draw_flag" getter="debug_get_draw_flag" default="false">
 		</member>
+		<member name="debug_draw_shadow_occluders" type="bool" setter="debug_set_draw_shadow_occluders" getter="debug_get_draw_shadow_occluders" default="false">
+		</member>
 		<member name="debug_draw_viewer_clipboxes" type="bool" setter="debug_set_draw_flag" getter="debug_get_draw_flag" default="false">
 		</member>
 		<member name="debug_draw_volume_bounds" type="bool" setter="debug_set_draw_flag" getter="debug_get_draw_flag" default="false">

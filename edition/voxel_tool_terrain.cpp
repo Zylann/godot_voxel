@@ -243,7 +243,7 @@ void VoxelToolTerrain::do_box(Vector3i begin, Vector3i end) {
 	op.strength = get_sdf_strength();
 
 	if (!is_area_editable(op.box)) {
-		ZN_PRINT_VERBOSE("Area not editable");
+		ZN_PRINT_WARNING("Area not editable");
 		return;
 	}
 
@@ -277,7 +277,7 @@ void VoxelToolTerrain::do_sphere(Vector3 center, float radius) {
 	op.strength = get_sdf_strength();
 
 	if (!is_area_editable(op.box)) {
-		ZN_PRINT_VERBOSE("Area not editable");
+		ZN_PRINT_WARNING("Area not editable");
 		return;
 	}
 
@@ -308,7 +308,7 @@ void VoxelToolTerrain::do_hemisphere(Vector3 center, float radius, Vector3 flat_
 	op.strength = get_sdf_strength();
 
 	if (!is_area_editable(op.box)) {
-		ZN_PRINT_VERBOSE("Area not editable");
+		ZN_PRINT_WARNING("Area not editable");
 		return;
 	}
 

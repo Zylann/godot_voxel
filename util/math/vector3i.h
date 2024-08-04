@@ -188,6 +188,10 @@ inline Vector3i operator&(const Vector3i &a, uint32_t b) {
 	return Vector3i(a.x & b, a.y & b, a.z & b);
 }
 
+inline Vector3i operator%(const Vector3i &a, int b) {
+	return Vector3i(a.x % b, a.y % b, a.z % b);
+}
+
 ZN_GODOT_NAMESPACE_END
 
 // For Godot

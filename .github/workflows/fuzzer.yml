@@ -59,6 +59,16 @@ jobs:
             ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}
             ${{github.job}}-${{env.GODOT_BASE_BRANCH}}
 
+      # Fix the issue of running out of disk space during Compilation stage
+      # Taken from here: https://github.com/orgs/community/discussions/26351#discussioncomment-3251595
+      - name: Free disk space
+        run: |
+          sudo swapoff -a
+          sudo rm -f /swapfile
+          sudo apt-get clean
+          docker rmi $(docker image ls -aq)
+          df -h
+
       # NO-PIE is for more detailed bactraces with line symbols
       - name: Compilation
         env:
@@ -107,7 +117,9 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: qarmin/Qarminer
-          ref: ${{ env.GODOT_BASE_BRANCH }}
+          # At the time of writing, qarmin did not put out later than 4.1 versions, but claims that it works with Godot versions up to 4.3+
+          # See https://github.com/qarmin/Qarminer/issues/32
+          ref: 4.1
           path: fuzzer
 
       - name: Copy fuzzer settings

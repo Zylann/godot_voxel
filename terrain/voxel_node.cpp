@@ -1,6 +1,7 @@
 #include "voxel_node.h"
 #include "../edition/voxel_tool.h"
 #include "../generators/voxel_generator.h"
+#include "../meshers/blocky/voxel_mesher_blocky.h"
 #include "../meshers/voxel_mesher.h"
 #include "../streams/voxel_stream.h"
 #include "../util/godot/classes/script.h"
@@ -112,7 +113,8 @@ void VoxelNode::get_configuration_warnings(PackedStringArray &warnings) const {
 			if ((stream_channels & mesher_channels) == 0) {
 				warnings.append(
 						ZN_TTR("The current stream is providing voxel data only on channels that are not used by "
-							   "the current mesher. This will result in nothing being visible."));
+							   "the current mesher. This will result in nothing being visible.")
+				);
 			}
 		}
 	}
@@ -140,13 +142,25 @@ void VoxelNode::get_configuration_warnings(PackedStringArray &warnings) const {
 			if ((generator_channels & mesher_channels) == 0) {
 				warnings.append(
 						ZN_TTR("The current generator is providing voxel data only on channels that are not used by "
-							   "the current mesher. This will result in nothing being visible."));
+							   "the current mesher. This will result in nothing being visible.")
+				);
 			}
 		}
 	}
 
 	if (mesher.is_valid()) {
 		mesher->get_configuration_warnings(warnings);
+
+		Ref<VoxelMesherBlocky> blocky_mesher = mesher;
+		if (blocky_mesher.is_valid()) {
+			if (blocky_mesher->get_shadow_occluder_mask() > 0 &&
+				get_shadow_casting() == GeometryInstance3D::SHADOW_CASTING_SETTING_OFF) {
+				warnings.append(ZN_TTR(
+						"Shadow casting is turned off on the terrain, but the mesher generates shadow occluders. You "
+						"may want to turn that off too."
+				));
+			}
+		}
 	}
 }
 
@@ -221,20 +235,36 @@ void VoxelNode::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_render_layers_mask", "mask"), &VoxelNode::set_render_layers_mask);
 	ClassDB::bind_method(D_METHOD("get_render_layers_mask"), &VoxelNode::get_render_layers_mask);
 
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "stream", PROPERTY_HINT_RESOURCE_TYPE, VoxelStream::get_class_static()),
-			"set_stream", "get_stream");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::OBJECT, "stream", PROPERTY_HINT_RESOURCE_TYPE, VoxelStream::get_class_static()),
+			"set_stream",
+			"get_stream"
+	);
 	ADD_PROPERTY(
 			PropertyInfo(Variant::OBJECT, "generator", PROPERTY_HINT_RESOURCE_TYPE, VoxelGenerator::get_class_static()),
-			"set_generator", "get_generator");
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "mesher", PROPERTY_HINT_RESOURCE_TYPE, VoxelMesher::get_class_static()),
-			"set_mesher", "get_mesher");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "gi_mode", PROPERTY_HINT_ENUM, zylann::godot::GI_MODE_ENUM_HINT_STRING),
-			"set_gi_mode", "get_gi_mode");
+			"set_generator",
+			"get_generator"
+	);
+	ADD_PROPERTY(
+			PropertyInfo(Variant::OBJECT, "mesher", PROPERTY_HINT_RESOURCE_TYPE, VoxelMesher::get_class_static()),
+			"set_mesher",
+			"get_mesher"
+	);
+	ADD_PROPERTY(
+			PropertyInfo(Variant::INT, "gi_mode", PROPERTY_HINT_ENUM, zylann::godot::GI_MODE_ENUM_HINT_STRING),
+			"set_gi_mode",
+			"get_gi_mode"
+	);
 	ADD_PROPERTY(
 			PropertyInfo(Variant::INT, "cast_shadow", PROPERTY_HINT_ENUM, zylann::godot::CAST_SHADOW_ENUM_HINT_STRING),
-			"set_shadow_casting", "get_shadow_casting");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "render_layers_mask", PROPERTY_HINT_LAYERS_3D_RENDER),
-			"set_render_layers_mask", "get_render_layers_mask");
+			"set_shadow_casting",
+			"get_shadow_casting"
+	);
+	ADD_PROPERTY(
+			PropertyInfo(Variant::INT, "render_layers_mask", PROPERTY_HINT_LAYERS_3D_RENDER),
+			"set_render_layers_mask",
+			"get_render_layers_mask"
+	);
 }
 
 } // namespace zylann::voxel

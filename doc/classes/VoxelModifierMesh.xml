@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="VoxelModifierMesh" inherits="VoxelModifier" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
+		Voxel modifier that uses [VoxelMeshSDF].
 	</brief_description>
 	<description>
 	</description>
@@ -8,8 +9,10 @@
 	</tutorials>
 	<members>
 		<member name="isolevel" type="float" setter="set_isolevel" getter="get_isolevel" default="0.0">
+			Offsets isolevel of SDF mesh. Positive value makes object appear thicker as well as smoother and negative value - thinner.
 		</member>
 		<member name="mesh_sdf" type="VoxelMeshSDF" setter="set_mesh_sdf" getter="get_mesh_sdf">
+			SDF mesh that is used for modifier.
 		</member>
 	</members>
 </class>

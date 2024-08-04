@@ -286,6 +286,16 @@ Ref<ArrayMesh> build_mesh(
 	return mesh;
 }
 
+Ref<ArrayMesh> build_mesh(Array surface) {
+	if (surface.is_empty()) {
+		return Ref<ArrayMesh>();
+	}
+	Ref<ArrayMesh> mesh;
+	mesh.instantiate();
+	mesh->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, surface);
+	return mesh;
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 namespace {
@@ -537,12 +547,18 @@ void MeshBlockTask::build_mesh() {
 
 	if (require_visual && VoxelEngine::get_singleton().is_threaded_graphics_resource_building_enabled()) {
 		// This can only run if the engine supports building meshes from multiple threads
+
 		_mesh = zylann::voxel::build_mesh(
 				to_span(_surfaces_output.surfaces),
 				_surfaces_output.primitive_type,
 				_surfaces_output.mesh_flags,
 				_mesh_material_indices
 		);
+
+		if (_surfaces_output.shadow_occluder.size() > 0) {
+			_shadow_occluder_mesh = zylann::voxel::build_mesh(_surfaces_output.shadow_occluder);
+		}
+
 		_has_mesh_resource = true;
 
 	} else {
@@ -587,6 +603,7 @@ void MeshBlockTask::apply_result() {
 			o.lod = lod_index;
 			o.surfaces = std::move(_surfaces_output);
 			o.mesh = _mesh;
+			o.shadow_occluder_mesh = _shadow_occluder_mesh;
 			o.mesh_material_indices = std::move(_mesh_material_indices);
 			o.has_mesh_resource = _has_mesh_resource;
 			o.visual_was_required = require_visual;
