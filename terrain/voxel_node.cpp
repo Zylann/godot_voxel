@@ -4,7 +4,6 @@
 #include "../meshers/blocky/voxel_mesher_blocky.h"
 #include "../meshers/voxel_mesher.h"
 #include "../streams/voxel_stream.h"
-#include "../util/godot/classes/rendering_server.h"
 #include "../util/godot/classes/script.h"
 #include "../util/godot/core/string.h"
 
@@ -155,7 +154,7 @@ void VoxelNode::get_configuration_warnings(PackedStringArray &warnings) const {
 		Ref<VoxelMesherBlocky> blocky_mesher = mesher;
 		if (blocky_mesher.is_valid()) {
 			if (blocky_mesher->get_shadow_occluder_mask() > 0 &&
-				get_shadow_casting() == RenderingServer::SHADOW_CASTING_SETTING_OFF) {
+				get_shadow_casting() == GeometryInstance3D::SHADOW_CASTING_SETTING_OFF) {
 				warnings.append(ZN_TTR(
 						"Shadow casting is turned off on the terrain, but the mesher generates shadow occluders. You "
 						"may want to turn that off too."
