@@ -42,6 +42,7 @@ public:
 
 	void set_shadow_occluder_side(Side side, bool enabled);
 	bool get_shadow_occluder_side(Side side) const;
+	uint8_t get_shadow_occluder_mask() const;
 
 	void build(VoxelMesher::Output &output, const VoxelMesher::Input &input) override;
 

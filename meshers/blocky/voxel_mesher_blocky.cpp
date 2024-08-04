@@ -1089,6 +1089,11 @@ bool VoxelMesherBlocky::get_shadow_occluder_side(Side side) const {
 	return (_parameters.shadow_occluders_mask & (1 << side)) != 0;
 }
 
+uint8_t VoxelMesherBlocky::get_shadow_occluder_mask() const {
+	RWLockRead rlock(_parameters_lock);
+	return _parameters.shadow_occluders_mask;
+}
+
 void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::Input &input) {
 	const VoxelBuffer::ChannelId channel = VoxelBuffer::CHANNEL_TYPE;
 	Parameters params;
