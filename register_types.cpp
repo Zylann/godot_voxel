@@ -32,6 +32,7 @@
 #include "meshers/blocky/voxel_mesher_blocky.h"
 #include "meshers/cubes/voxel_mesher_cubes.h"
 #include "meshers/transvoxel/voxel_mesher_transvoxel.h"
+#include "meshers/voxel_mesher_dmc.h"
 #include "modifiers/godot/voxel_modifier_gd.h"
 #include "modifiers/godot/voxel_modifier_mesh_gd.h"
 #include "modifiers/godot/voxel_modifier_sphere_gd.h"
@@ -302,6 +303,7 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_class<VoxelMesherBlocky>();
 		ClassDB::register_class<VoxelMesherTransvoxel>();
 		ClassDB::register_class<VoxelMesherCubes>();
+		ClassDB::register_class<VoxelMesherDMC>();
 
 #ifdef ZN_GODOT_EXTENSION
 		// TODO GDX: I don't want to expose these classes, but there is no way not to expose them

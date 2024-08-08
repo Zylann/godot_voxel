@@ -23,13 +23,13 @@ struct Vector3T {
 		T coords[3];
 	};
 
-	Vector3T() : x(0), y(0), z(0) {}
+	constexpr Vector3T() : x(0), y(0), z(0) {}
 
 	// It is recommended to use `explicit` because otherwise it would open the door to plenty of implicit conversions
 	// which would make many cases ambiguous.
-	explicit Vector3T(T p_v) : x(p_v), y(p_v), z(p_v) {}
+	constexpr explicit Vector3T(T p_v) : x(p_v), y(p_v), z(p_v) {}
 
-	Vector3T(T p_x, T p_y, T p_z) : x(p_x), y(p_y), z(p_z) {}
+	constexpr Vector3T(T p_x, T p_y, T p_z) : x(p_x), y(p_y), z(p_z) {}
 
 	inline const T &operator[](const unsigned int p_axis) const {
 #ifdef DEBUG_ENABLED
@@ -131,6 +131,11 @@ struct Vector3T {
 			return y < p_v.y;
 		}
 		return x < p_v.x;
+	}
+
+	template <typename TOther>
+	inline Vector3T<TOther> cast() const {
+		return Vector3T<TOther>(static_cast<TOther>(x), static_cast<TOther>(y), static_cast<TOther>(z));
 	}
 
 	// Swizzling

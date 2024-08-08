@@ -11,6 +11,7 @@
 #include "vector3f.h"
 #include "vector3i.h"
 #include "vector3i16.h"
+#include "vector3u32.h"
 #include <limits>
 
 namespace zylann {
@@ -59,6 +60,10 @@ inline Vector3f to_vec3f(Vector3 v) {
 
 inline Vector3i16 to_vec3i16(const Vector3i v) {
 	return Vector3i16(v.x, v.y, v.z);
+}
+
+inline Vector3u32 to_vec3u32(const Vector3i v) {
+	return Vector3u32(v.x, v.y, v.z);
 }
 
 inline Basis3f to_basis3f(const Basis &src) {

@@ -101,6 +101,14 @@ inline T cubed(const T x) {
 	return x * x * x;
 }
 
+inline float lerp(float a, float b, float t) {
+	return a + t * (b - a);
+}
+
+inline double lerp(double a, double b, double t) {
+	return a + t * (b - a);
+}
+
 // Performs euclidean division, aka floored division.
 // This implementation expects a strictly positive divisor.
 //
@@ -429,6 +437,25 @@ inline constexpr int32_t sign_extend_to_32bit(int32_t i) {
 		int32_t v : NBits;
 	};
 	return S{ i }.v;
+}
+
+inline uint32_t count_bits_u32(uint32_t i) {
+	i = i - ((i >> 1) & 0x55555555);
+	i = (i & 0x33333333) + ((i >> 2) & 0x33333333);
+	i = (i + (i >> 4)) & 0x0F0F0F0F;
+	return (i * 0x01010101) >> 24;
+
+	// Godot uses C++17 so we can't use that...
+	// return std::popcount(i);
+}
+
+inline uint8_t count_bits_u8(uint8_t i) {
+	static constexpr uint8_t nibble_counts[] = { 0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4 };
+	return nibble_counts[i & 0xf] + nibble_counts[i >> 4];
+}
+
+inline uint16_t count_bits_u16(uint16_t i) {
+	return count_bits_u8(i & 0xff) + count_bits_u8(i >> 8);
 }
 
 } // namespace zylann::math
