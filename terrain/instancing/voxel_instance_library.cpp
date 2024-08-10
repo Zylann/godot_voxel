@@ -51,7 +51,7 @@ void VoxelInstanceLibrary::add_item(int p_id, Ref<VoxelInstanceLibraryItem> item
 }
 
 void VoxelInstanceLibrary::remove_item(int p_id) {
-	ZN_ASSERT_RETURN(p_id < 0 || p_id >= MAX_ID);
+	ZN_ASSERT_RETURN(p_id >= 0 && p_id < MAX_ID);
 	const unsigned int id = p_id;
 	auto it = _items.find(id);
 	ERR_FAIL_COND_MSG(it == _items.end(), "Cannot remove unregistered item");
