@@ -96,6 +96,11 @@ inline Vector3i to_vec3i(const Vector3T<T> v) {
 }
 
 template <typename T>
+inline Vector3u32 to_vec3u32(const Vector3T<T> v) {
+	return Vector3u32(v.x, v.y, v.z);
+}
+
+template <typename T>
 inline Vector3 to_vec3(const Vector3T<T> v) {
 	return Vector3(v.x, v.y, v.z);
 }

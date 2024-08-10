@@ -1,6 +1,7 @@
 #include "voxel_mesher_dmc.h"
 #include "../storage/voxel_buffer.h"
 #include "../thirdparty/robin_hood/robin_hood.h"
+#include "../util/containers/fixed_array.h"
 #include "../util/containers/span.h"
 #include "../util/containers/std_unordered_map.h"
 #include "../util/containers/std_vector.h"
@@ -405,6 +406,9 @@ uint32_t get_vert_index(
 		StdVector<VertexData> &vertex_data,
 		robin_hood::unordered_flat_map<uint64_t, uint32_t> &vert_index_map
 ) {
+	// Accesses 2x2x2 voxels where `cell_index` is the one towards negative coordinates, and generates a vertex inside.
+	// For normals, a 4x4x4 region may be accessed.
+
 	uint32_t cell_code = 0;
 	if (density_array[cell_index] > isolevel) {
 		cell_code |= 1;
@@ -649,10 +653,12 @@ void build_mesh(
 
 				const float density = density_values[cell_index];
 
+				const float density_x = density_values[cell_index + STEP_X];
+				const float density_y = density_values[cell_index + STEP_Y];
+				const float density_z = density_values[cell_index + STEP_Z];
+
 				// construct quad for x edge
 				{
-					const float density_x = density_values[cell_index + STEP_X];
-
 					// is edge intersected?
 					if ((density <= isolevel) ^ (density_x <= isolevel)) {
 						// generate quad
@@ -713,8 +719,6 @@ void build_mesh(
 
 				// construct quad for y edge
 				{
-					const float density_y = density_values[cell_index + STEP_Y];
-
 					// is edge intersected?
 					if ((density <= isolevel) ^ (density_y <= isolevel)) {
 						// generate quad
@@ -843,6 +847,218 @@ void build_mesh(
 	}
 }
 
+struct WeightedIndex {
+	uint8_t index;
+	uint8_t weight;
+};
+
+template <typename TArray>
+void insert_combine(TArray &array, uint32_t &num, WeightedIndex e) {
+	for (uint32_t i = 0; i < num; ++i) {
+		if (array[i].index == e.index) {
+			array[i].weight += e.weight;
+			return;
+		}
+	}
+	array[num] = e;
+	++num;
+}
+
+template <typename TArray>
+FixedArray<uint8_t, 2> sort_filter_materials(TArray input_materials, uint8_t num) {
+	FixedArray<uint8_t, 2> selected_materials;
+
+	switch (num) {
+		case 0:
+			ZN_PRINT_ERROR("Unexpected");
+			selected_materials[0] = 0;
+			selected_materials[1] = 0;
+			break;
+
+		case 1:
+			selected_materials[0] = input_materials[0].index;
+			selected_materials[1] = input_materials[0].index;
+			break;
+
+		case 2:
+			selected_materials[0] = input_materials[0].index;
+			selected_materials[1] = input_materials[1].index;
+			break;
+
+		case 3:
+			math::sort3_array(input_materials, [](WeightedIndex a, WeightedIndex b) { return a.weight > b.weight; });
+			selected_materials[0] = input_materials[0].index;
+			selected_materials[1] = input_materials[1].index;
+			break;
+
+		case 4:
+			math::sort4_array(input_materials, [](WeightedIndex a, WeightedIndex b) { return a.weight > b.weight; });
+			selected_materials[0] = input_materials[0].index;
+			selected_materials[1] = input_materials[1].index;
+			break;
+
+		default: {
+			// Rare cases, use general sorting algorithm
+			struct Comparator {
+				inline bool operator()(const WeightedIndex &a, const WeightedIndex &b) const {
+					return a.weight > b.weight;
+				}
+			};
+			SortArray<WeightedIndex, Comparator> sorter;
+			sorter.sort(input_materials.data(), num);
+
+			selected_materials[0] = input_materials[0].index;
+			selected_materials[1] = input_materials[1].index;
+			break;
+		}
+	}
+
+	return selected_materials;
+}
+
+// V1I8_S2I81W8: 1 8-bit material index per voxel, 2 material indices and 1 blend weight per vertex
+void build_materials_v_1i8_s_2i8_1w8(
+		const StdVector<VertexData> &src_vertices,
+		const StdVector<uint32_t> &src_indices,
+		const Span<const float> densities,
+		const Span<const uint8_t> material_indices,
+		const Vector3u32 padded_resolution,
+		StdVector<Vector3f> &dst_vertices,
+		StdVector<Vector3f> &dst_normals,
+		StdVector<uint32_t> &dst_material_data,
+		StdVector<uint32_t> &dst_indices
+) {
+	ZN_PROFILE_SCOPE();
+
+	// We know DMC generates quads only
+	ZN_ASSERT((src_indices.size() % 6) == 0);
+	const uint32_t quad_count = src_indices.size() / 6;
+
+	const uint32_t STEP_X = padded_resolution.x;
+	const uint32_t STEP_Y = 1;
+	const uint32_t STEP_Z = padded_resolution.x * padded_resolution.y;
+
+	// TODO Temp allocator?
+	robin_hood::unordered_flat_map<uint64_t, uint32_t> vertex_map;
+
+	for (uint32_t quad_index = 0; quad_index < quad_count; ++quad_index) {
+		const uint32_t src_ii0 = quad_index * 6;
+		const uint32_t src_ii5 = src_ii0 + 5;
+
+		const uint32_t src_i0 = src_indices[src_ii0];
+		const uint32_t src_i5 = src_indices[src_ii5];
+
+		// We know the first vertex of a quad uses the cube located in positive coordinates when polygonizing a 3x3x3
+		// cell, and the last is in negatives
+		const Vector3f vert0 = src_vertices[src_i0].position;
+		const Vector3f vert3 = src_vertices[src_i5].position;
+
+		const Vector3i cell_pos_min = to_vec3i(math::floor(vert3));
+		const Vector3i cell_pos_max = to_vec3i(math::floor(vert0)) + Vector3iUtil::create(1);
+		const Vector3i cell_dim = cell_pos_max - cell_pos_min;
+
+		// TODO In theory this array could have a lower capacity.
+		// Because some voxels will always not be solid, since the quad means there is a surface there.
+		FixedArray<WeightedIndex, 3 * 3 * 2> weighted_materials;
+		uint32_t num_materials = 0;
+
+		FixedArray<WeightedIndex, 3 * 3 * 2> material_grid;
+
+		// Find material indices
+		// TODO Should we weight them based on vertices already?
+		{
+			unsigned int ri = 0;
+			for (int32_t z = cell_pos_min.z; z < cell_pos_max.z; ++z) {
+				for (int32_t x = cell_pos_min.x; x < cell_pos_max.x; ++x) {
+					for (int32_t y = cell_pos_min.y; y < cell_pos_max.y; ++y) {
+						const uint32_t voxel_index = x * STEP_X + y * STEP_Y + z * STEP_Z;
+						const float density = densities[voxel_index];
+						if (density >= 0.f) {
+							const uint8_t material_index = material_indices[voxel_index];
+							insert_combine(weighted_materials, num_materials, { material_index, 1 });
+							material_grid[ri] = { material_index, 1 };
+						} else {
+							material_grid[ri] = { 0, 0 };
+						}
+						++ri;
+					}
+				}
+			}
+		}
+		// The first one is the most represented
+		FixedArray<uint8_t, 2> selected_materials = sort_filter_materials(weighted_materials, num_materials);
+		const uint16_t selected_materials_key = selected_materials[0] | (selected_materials[1] << 8);
+		const uint32_t selected_materials_vd = static_cast<uint32_t>(selected_materials_key) << 8;
+
+		// FixedArray<float, 3 * 3 * 2> weight_grid;
+		// for (unsigned int i = 0; i < material_grid.size(); ++i) {
+		// 	const WeightedIndex src = material_grid[i];
+		// 	const float w = src.index == selected_materials[1] ? 1.f : 0.f;
+		// 	weight_grid[i] = w;
+		// }
+		struct WeightGrid {
+			uint32_t data = 0;
+			inline float operator[](uint32_t i) const {
+				return static_cast<float>((data >> i) & 1);
+			}
+		};
+		WeightGrid weight_grid;
+		for (unsigned int i = 0; i < material_grid.size(); ++i) {
+			const WeightedIndex src = material_grid[i];
+			// If a voxel uses material 1, blend is 1.
+			// If a voxel uses material 0, blend is 0.
+			// If a voxel uses a material that wasn't selected, fallback on the most represented one, which is also 0.
+			// If a voxel is not solid, still use 0.
+			const uint32_t m = (src.index == selected_materials[1] ? 1.f : 0.f);
+			weight_grid.data |= (m << i);
+		}
+
+		// TODO Avoid computing 6 vertices, there are 4
+
+		const uint32_t rc_step_x = cell_dim.x;
+		const uint32_t rc_step_y = 1;
+		const uint32_t rc_step_z = cell_dim.x * cell_dim.z;
+
+		for (unsigned int ri = 0; ri < 6; ++ri) {
+			const uint32_t src_ii = src_ii0 + ri;
+			const uint32_t src_i = src_indices[src_ii];
+			const uint32_t dst_i = dst_vertices.size();
+
+			const uint64_t key = static_cast<uint64_t>(src_i << 16) | static_cast<uint64_t>(selected_materials_key);
+			const auto res = vertex_map.try_emplace(key, dst_i);
+			if (!res.second) {
+				dst_indices.emplace_back(res.first->second);
+				continue;
+			}
+
+			const VertexData vert = src_vertices[src_i];
+			const Vector3f fvert = math::floor(vert.position);
+			const Vector3i cell_rpos = math::max(to_vec3i(fvert), Vector3iUtil::create(0));
+			const uint32_t rci0 = cell_rpos.x * rc_step_x + cell_rpos.y * rc_step_y + cell_rpos.z * rc_step_z;
+
+			const float w0 = weight_grid[rci0];
+			const float w1 = weight_grid[rci0 + rc_step_x];
+			const float w2 = weight_grid[rci0 + rc_step_y];
+			const float w3 = weight_grid[rci0 + rc_step_x + rc_step_y];
+			const float w4 = weight_grid[rci0 + rc_step_z];
+			const float w5 = weight_grid[rci0 + rc_step_x + rc_step_z];
+			const float w6 = weight_grid[rci0 + rc_step_y + rc_step_z];
+			const float w7 = weight_grid[rci0 + rc_step_x + rc_step_y + rc_step_z];
+
+			const Vector3f rv = vert.position - fvert;
+			const float w = math::interpolate_trilinear_b(w0, w1, w2, w3, w4, w5, w6, w7, rv);
+
+			const uint32_t w8 = math::clamp(static_cast<uint32_t>(w * 255.f), 0u, 255u);
+			const uint32_t md = selected_materials_vd | w8;
+
+			dst_vertices.emplace_back(vert.position);
+			dst_normals.emplace_back(vert.normal);
+			dst_material_data.emplace_back(md);
+			dst_indices.emplace_back(dst_i);
+		}
+	}
+}
+
 } // namespace dmc
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -859,6 +1075,15 @@ bool VoxelMesherDMC::is_skirts_enabled() const {
 
 void VoxelMesherDMC::set_skirts_enabled(bool enabled) {
 	update_padding();
+}
+
+VoxelMesherDMC::MaterialMode VoxelMesherDMC::get_material_mode() const {
+	return _material_mode;
+}
+
+void VoxelMesherDMC::set_material_mode(MaterialMode mode) {
+	ZN_ASSERT_RETURN(mode >= 0 && mode < MATERIAL_MODE_COUNT);
+	_material_mode = mode;
 }
 
 void VoxelMesherDMC::update_padding() {
@@ -889,34 +1114,111 @@ void VoxelMesherDMC::build(VoxelMesher::Output &output, const VoxelMesher::Input
 
 	dmc::build_mesh(0.f, to_span(temp_sd), to_vec3u32(input.voxels.get_size()), dmc_vertices, dmc_indices);
 
-	if (input.lod_index > 0) {
-		for (dmc::VertexData &vd : dmc_vertices) {
-			vd.position *= scale;
-		}
-	}
-
-	PackedVector3Array gd_vertices;
-	PackedVector3Array gd_normals;
-	gd_vertices.resize(dmc_vertices.size());
-	gd_normals.resize(dmc_vertices.size());
-	{
-		Vector3 *gd_vertices_w = gd_vertices.ptrw();
-		Vector3 *gd_normals_w = gd_normals.ptrw();
-		for (unsigned int i = 0; i < dmc_vertices.size(); ++i) {
-			const dmc::VertexData vd = dmc_vertices[i];
-			gd_vertices_w[i] = to_vec3(vd.position);
-			gd_normals_w[i] = to_vec3(vd.normal);
-		}
-	}
-
-	PackedInt32Array gd_indices;
-	zylann::godot::copy_to(gd_indices, to_span(dmc_indices).reinterpret_cast_to<int32_t>());
-
 	Array arrays;
 	arrays.resize(Mesh::ARRAY_MAX);
-	arrays[Mesh::ARRAY_VERTEX] = gd_vertices;
-	arrays[Mesh::ARRAY_NORMAL] = gd_normals;
-	arrays[Mesh::ARRAY_INDEX] = gd_indices;
+
+	switch (_material_mode) {
+		case MATERIAL_MODE_NONE: {
+			if (input.lod_index > 0) {
+				for (dmc::VertexData &vd : dmc_vertices) {
+					vd.position *= scale;
+				}
+			}
+
+			PackedVector3Array gd_vertices;
+			PackedVector3Array gd_normals;
+			gd_vertices.resize(dmc_vertices.size());
+			gd_normals.resize(dmc_vertices.size());
+			{
+				Vector3 *gd_vertices_w = gd_vertices.ptrw();
+				Vector3 *gd_normals_w = gd_normals.ptrw();
+				for (unsigned int i = 0; i < dmc_vertices.size(); ++i) {
+					const dmc::VertexData vd = dmc_vertices[i];
+					gd_vertices_w[i] = to_vec3(vd.position);
+					gd_normals_w[i] = to_vec3(vd.normal);
+				}
+			}
+
+			PackedInt32Array gd_indices;
+			zylann::godot::copy_to(gd_indices, to_span(dmc_indices).reinterpret_cast_to<int32_t>());
+
+			arrays[Mesh::ARRAY_VERTEX] = gd_vertices;
+			arrays[Mesh::ARRAY_NORMAL] = gd_normals;
+			arrays[Mesh::ARRAY_INDEX] = gd_indices;
+		} break;
+
+		case MATERIAL_MODE_V_1I8_S_2I8_1W8: {
+			// TODO Temp allocator
+			StdVector<Vector3f> dmc_tex_vertices;
+			// TODO Temp allocator
+			StdVector<Vector3f> dmc_tex_normals;
+			// TODO Temp allocator
+			StdVector<uint32_t> dmc_tex_material_data;
+			// TODO Temp allocator
+			StdVector<uint32_t> dmc_tex_indices;
+
+			const uint32_t material_channel = VoxelBuffer::CHANNEL_INDICES;
+
+			// TODO Temp allocator
+			StdVector<uint8_t> backing_material_indices;
+			Span<const uint8_t> material_indices;
+
+			if (input.voxels.get_channel_compression(material_channel) == VoxelBuffer::COMPRESSION_UNIFORM) {
+				// TODO Optimized version of material building taking predefined indices for the whole chunk
+				backing_material_indices.resize(temp_sd.size());
+				const uint8_t v = input.voxels.get_voxel(Vector3i(0, 0, 0), material_channel);
+				for (uint8_t &dst : backing_material_indices) {
+					dst = v;
+				}
+				material_indices = to_span(backing_material_indices);
+			} else {
+				ZN_ASSERT_RETURN_MSG(
+						input.voxels.get_channel_data_read_only<uint8_t>(material_channel, material_indices),
+						"Channel used for material indices has the wrong format"
+				);
+			}
+
+			dmc::build_materials_v_1i8_s_2i8_1w8(
+					dmc_vertices,
+					dmc_indices,
+					to_span(temp_sd),
+					material_indices,
+					to_vec3u32(input.voxels.get_size()),
+					dmc_tex_vertices,
+					dmc_tex_normals,
+					dmc_tex_material_data,
+					dmc_tex_indices
+			);
+
+			if (input.lod_index > 0) {
+				for (Vector3f &v : dmc_tex_vertices) {
+					v *= scale;
+				}
+			}
+
+			PackedVector3Array gd_vertices;
+			PackedVector3Array gd_normals;
+			PackedFloat32Array gd_material_data;
+
+			zylann::godot::copy_to(gd_vertices, dmc_tex_vertices);
+			zylann::godot::copy_to(gd_normals, dmc_tex_normals);
+			zylann::godot::copy_to(gd_material_data, to_span(dmc_tex_material_data).reinterpret_cast_to<const float>());
+
+			PackedInt32Array gd_indices;
+			zylann::godot::copy_to(gd_indices, to_span(dmc_indices).reinterpret_cast_to<const int32_t>());
+
+			arrays[Mesh::ARRAY_VERTEX] = gd_vertices;
+			arrays[Mesh::ARRAY_NORMAL] = gd_normals;
+			arrays[Mesh::ARRAY_CUSTOM0] = gd_material_data;
+			arrays[Mesh::ARRAY_INDEX] = gd_indices;
+
+			output.mesh_flags |= (RenderingServer::ARRAY_CUSTOM_R_FLOAT << Mesh::ARRAY_FORMAT_CUSTOM0_SHIFT);
+		} break;
+
+		default: {
+			ZN_PRINT_ERROR("Unhandled material mode");
+		} break;
+	}
 
 	output.surfaces.resize(1);
 	Output::Surface &surface = output.surfaces.back();
@@ -931,7 +1233,14 @@ void VoxelMesherDMC::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_skirts_enabled", "channel"), &VoxelMesherDMC::set_skirts_enabled);
 	ClassDB::bind_method(D_METHOD("is_skirts_enabled"), &VoxelMesherDMC::is_skirts_enabled);
 
+	ClassDB::bind_method(D_METHOD("set_material_mode", "mode"), &VoxelMesherDMC::set_material_mode);
+	ClassDB::bind_method(D_METHOD("get_material_mode"), &VoxelMesherDMC::get_material_mode);
+
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "skirts_enabled"), "set_skirts_enabled", "is_skirts_enabled");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "material_mode"), "set_material_mode", "get_material_mode");
+
+	BIND_ENUM_CONSTANT(MATERIAL_MODE_NONE);
+	BIND_ENUM_CONSTANT(MATERIAL_MODE_V_1I8_S_2I8_1W8);
 }
 
 } // namespace voxel

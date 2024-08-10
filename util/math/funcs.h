@@ -305,6 +305,38 @@ inline void sort(T &a, T &b, T &c, T &d) {
 	sort(b, c);
 }
 
+template <typename TArray, typename TLess>
+inline void sort3_array(TArray array, TLess less) {
+	if (less(array[1], array[0])) {
+		std::swap(array[1], array[0]);
+	}
+	if (less(array[2], array[0])) {
+		std::swap(array[2], array[0]);
+	}
+	if (less(array[2], array[1])) {
+		std::swap(array[2], array[1]);
+	}
+}
+
+template <typename TArray, typename TLess>
+inline void sort4_array(TArray &array, TLess less) {
+	if (less(array[1], array[0])) {
+		std::swap(array[1], array[0]);
+	}
+	if (less(array[3], array[2])) {
+		std::swap(array[3], array[2]);
+	}
+	if (less(array[2], array[0])) {
+		std::swap(array[2], array[0]);
+	}
+	if (less(array[3], array[1])) {
+		std::swap(array[3], array[1]);
+	}
+	if (less(array[2], array[1])) {
+		std::swap(array[2], array[1]);
+	}
+}
+
 // Returns -1 if `x` is negative, and 1 otherwise.
 // Contrary to a usual version like GLSL, this one returns 1 when `x` is 0, instead of 0.
 template <typename T>
@@ -344,6 +376,33 @@ inline T interpolate_trilinear(
 		const T v110,
 		const T v111,
 		const T v011,
+		Vec3_T p
+) {
+	//
+	const T v00 = v000 + p.x * (v100 - v000);
+	const T v10 = v010 + p.x * (v110 - v010);
+	const T v01 = v001 + p.x * (v101 - v001);
+	const T v11 = v011 + p.x * (v111 - v011);
+
+	const T v0 = v00 + p.y * (v10 - v00);
+	const T v1 = v01 + p.y * (v11 - v01);
+
+	const T v = v0 + p.z * (v1 - v0);
+
+	return v;
+}
+
+// TODO This should probably be the only function for trilinear interpolation?
+template <typename T, typename Vec3_T>
+inline T interpolate_trilinear_b(
+		const T v000,
+		const T v100,
+		const T v010,
+		const T v110,
+		const T v001,
+		const T v101,
+		const T v011,
+		const T v111,
 		Vec3_T p
 ) {
 	//
