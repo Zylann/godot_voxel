@@ -617,7 +617,8 @@ void build_mesh(
 		Span<const float> density_values,
 		Vector3u32 padded_resolution,
 		StdVector<VertexData> &vertex_data,
-		StdVector<uint32_t> &indices
+		StdVector<uint32_t> &indices,
+		StdVector<uint32_t> *quad_info
 ) {
 	ZN_PROFILE_SCOPE();
 
@@ -630,9 +631,9 @@ void build_mesh(
 	constexpr uint32_t PADDING = POSITIVE_PADDING + NEGATIVE_PADDING;
 	const Vector3u32 unpadded_resolution = padded_resolution - Vector3u32(PADDING);
 
-	const uint32_t STEP_X = padded_resolution.x;
+	const uint32_t STEP_X = padded_resolution.y;
 	const uint32_t STEP_Y = 1;
-	const uint32_t STEP_Z = padded_resolution.x * padded_resolution.y;
+	const uint32_t STEP_Z = padded_resolution.y * padded_resolution.x;
 
 	// TODO Temp allocator?
 	robin_hood::unordered_flat_map<uint64_t, uint32_t> vert_index_map;
@@ -643,13 +644,13 @@ void build_mesh(
 	uint32_t cell_index = (STEP_X + STEP_Y + STEP_Z) * 2;
 
 	for (uint32_t z = 0; z < unpadded_resolution.z; z++) {
-		cell_offset.z = static_cast<float>(static_cast<int32_t>(z) - 1);
+		cell_offset.z = static_cast<float>(static_cast<int32_t>(z) - 0);
 
 		for (uint32_t x = 0; x < unpadded_resolution.x; x++) {
-			cell_offset.x = static_cast<float>(static_cast<int32_t>(x) - 1);
+			cell_offset.x = static_cast<float>(static_cast<int32_t>(x) - 0);
 
 			for (uint32_t y = 0; y < unpadded_resolution.y; y++) {
-				cell_offset.y = static_cast<float>(static_cast<int32_t>(y) - 1);
+				cell_offset.y = static_cast<float>(static_cast<int32_t>(y) - 0);
 
 				const float density = density_values[cell_index];
 
@@ -661,6 +662,10 @@ void build_mesh(
 				{
 					// is edge intersected?
 					if ((density <= isolevel) ^ (density_x <= isolevel)) {
+						if (quad_info != nullptr) {
+							quad_info->emplace_back((cell_index << 2) | 0);
+						}
+
 						// generate quad
 						const uint32_t quad_vert_indices[] = {
 							get_vert_index(
@@ -721,6 +726,9 @@ void build_mesh(
 				{
 					// is edge intersected?
 					if ((density <= isolevel) ^ (density_y <= isolevel)) {
+						if (quad_info != nullptr) {
+							quad_info->emplace_back((cell_index << 2) | 1);
+						}
 						// generate quad
 						const uint32_t quad_vert_indices[] = {
 							get_vert_index(
@@ -783,6 +791,10 @@ void build_mesh(
 
 					// is edge intersected?
 					if ((density <= isolevel) ^ (density_z <= isolevel)) {
+						if (quad_info != nullptr) {
+							quad_info->emplace_back((cell_index << 2) | 2);
+						}
+
 						// generate quad
 						const uint32_t quad_vert_indices[] = {
 							get_vert_index(
@@ -868,9 +880,11 @@ template <typename TArray>
 FixedArray<uint8_t, 2> sort_filter_materials(TArray input_materials, uint8_t num) {
 	FixedArray<uint8_t, 2> selected_materials;
 
+	// TODO If we have weighted inputs, we can just do evicting insertion sort
+
 	switch (num) {
 		case 0:
-			ZN_PRINT_ERROR("Unexpected");
+			ZN_PRINT_ERROR("No materials to sort, this case is unexpected");
 			selected_materials[0] = 0;
 			selected_materials[1] = 0;
 			break;
@@ -916,13 +930,20 @@ FixedArray<uint8_t, 2> sort_filter_materials(TArray input_materials, uint8_t num
 	return selected_materials;
 }
 
+inline Vector3i get_cell_dim_from_axis(uint32_t axis) {
+	Vector3i s(3, 3, 3);
+	s[axis] -= 1;
+	return s;
+}
+
 // V1I8_S2I81W8: 1 8-bit material index per voxel, 2 material indices and 1 blend weight per vertex
 void build_materials_v_1i8_s_2i8_1w8(
 		const StdVector<VertexData> &src_vertices,
 		const StdVector<uint32_t> &src_indices,
+		const StdVector<uint32_t> &quad_infos,
 		const Span<const float> densities,
 		const Span<const uint8_t> material_indices,
-		const Vector3u32 padded_resolution,
+		const Vector3i padded_resolution,
 		StdVector<Vector3f> &dst_vertices,
 		StdVector<Vector3f> &dst_normals,
 		StdVector<uint32_t> &dst_material_data,
@@ -934,35 +955,56 @@ void build_materials_v_1i8_s_2i8_1w8(
 	ZN_ASSERT((src_indices.size() % 6) == 0);
 	const uint32_t quad_count = src_indices.size() / 6;
 
-	const uint32_t STEP_X = padded_resolution.x;
-	const uint32_t STEP_Y = 1;
-	const uint32_t STEP_Z = padded_resolution.x * padded_resolution.y;
+	const int32_t STEP_X = padded_resolution.y;
+	const int32_t STEP_Y = 1;
+	const int32_t STEP_Z = padded_resolution.y * padded_resolution.x;
 
 	// TODO Temp allocator?
 	robin_hood::unordered_flat_map<uint64_t, uint32_t> vertex_map;
 
+	const Vector3f vert_offset(2);
+
 	for (uint32_t quad_index = 0; quad_index < quad_count; ++quad_index) {
 		const uint32_t src_ii0 = quad_index * 6;
-		const uint32_t src_ii5 = src_ii0 + 5;
 
-		const uint32_t src_i0 = src_indices[src_ii0];
-		const uint32_t src_i5 = src_indices[src_ii5];
+		const uint32_t quad_info = quad_infos[quad_index];
+		const uint32_t quad_cell_index = quad_info >> 2;
+		const uint32_t quad_axis = quad_info & 3;
 
-		// We know the first vertex of a quad uses the cube located in positive coordinates when polygonizing a 3x3x3
-		// cell, and the last is in negatives
-		const Vector3f vert0 = src_vertices[src_i0].position;
-		const Vector3f vert3 = src_vertices[src_i5].position;
+		const Vector3i cell_dim = get_cell_dim_from_axis(quad_axis);
 
-		const Vector3i cell_pos_min = to_vec3i(math::floor(vert3));
-		const Vector3i cell_pos_max = to_vec3i(math::floor(vert0)) + Vector3iUtil::create(1);
-		const Vector3i cell_dim = cell_pos_max - cell_pos_min;
+		Vector3i coff(1, 1, 1);
+		coff[quad_axis] = 0;
+		const Vector3i cell_pos_min = Vector3iUtil::from_zxy_index(quad_cell_index, padded_resolution) - coff;
+
+		const Vector3i cell_pos_max = cell_pos_min + cell_dim;
+
+		// TODO We really need info about the cells used for this quad...
+		// const uint32_t src_i0 = src_indices[src_ii0];
+		// Vector3f min_vert = src_vertices[src_i0].position + vert_offset;
+		// Vector3f max_vert = min_vert;
+		// for (unsigned int ri = 1; ri < 6; ++ri) {
+		// 	const uint32_t src_ii = src_ii0 + ri;
+		// 	const uint32_t src_i = src_indices[src_ii];
+		// 	const Vector3f v = src_vertices[src_i].position + vert_offset;
+		// 	min_vert = math::min(min_vert, v);
+		// 	max_vert = math::max(max_vert, v);
+		// }
+
+		// // TODO And of course we have to handle the edge case where vertices are ON the side
+		// const Vector3i cell_pos_min = to_vec3i(math::floor(min_vert));
+		// const Vector3i cell_pos_max = to_vec3i(math::floor(max_vert)) + Vector3iUtil::create(1);
+		// // const Vector3i cell_pos_max = to_vec3i(math::ceil(max_vert));
+
+		// const Vector3i cell_dim = cell_pos_max - cell_pos_min;
 
 		// TODO In theory this array could have a lower capacity.
-		// Because some voxels will always not be solid, since the quad means there is a surface there.
+		// Because some voxels will always not be solid, since the quad means there is a surface
+		// there.
 		FixedArray<WeightedIndex, 3 * 3 * 2> weighted_materials;
 		uint32_t num_materials = 0;
 
-		FixedArray<WeightedIndex, 3 * 3 * 2> material_grid;
+		FixedArray<uint8_t, 3 * 3 * 2> material_grid;
 
 		// Find material indices
 		// TODO Should we weight them based on vertices already?
@@ -973,13 +1015,31 @@ void build_materials_v_1i8_s_2i8_1w8(
 					for (int32_t y = cell_pos_min.y; y < cell_pos_max.y; ++y) {
 						const uint32_t voxel_index = x * STEP_X + y * STEP_Y + z * STEP_Z;
 						const float density = densities[voxel_index];
-						if (density >= 0.f) {
-							const uint8_t material_index = material_indices[voxel_index];
-							insert_combine(weighted_materials, num_materials, { material_index, 1 });
-							material_grid[ri] = { material_index, 1 };
-						} else {
-							material_grid[ri] = { 0, 0 };
-						}
+
+						// TODO I wish I could automatically exclude empty voxels (SDF>0) from this, but I can't...
+						//
+						// The motivation for doing this, for example, is for ores: if you have a voxel of gold
+						// surrounded by stone, if you remove all matter from the voxel of gold, you'd expect to no
+						// longer see gold anywhere. But you will still see it because vertices close to it will
+						// interpolate it. Similarly, generating ore patches could end up placing gold in the air and
+						// have it become visible, despite there being no solid gold to mine.
+						//
+						// So we could think, let's automatically replace the material of empty voxels with some default
+						// value? That doesn't work here, because due to the dual nature of DMC, surface is generated
+						// in between voxels, so we end up "half-tinting" the surface with that default material
+						// everywhere, which leads to bad results. It also acts as a "3rd" material in many situations,
+						// which makes transitions look blocky because we support only 2 blended materials.
+						//
+						// But then if we have to sample all materials, those in the air must be consistent with those
+						// in the ground...
+						//
+						// It would be nice if we could somehow really interpolate between only solid voxels, such that
+						// the air voxels would not weight into the result at all?
+
+						// const uint8_t material_index = density >= 0.f ? material_indices[voxel_index] : 0;
+						const uint8_t material_index = material_indices[voxel_index];
+						insert_combine(weighted_materials, num_materials, { material_index, 1 });
+						material_grid[ri] = material_index;
 						++ri;
 					}
 				}
@@ -987,8 +1047,9 @@ void build_materials_v_1i8_s_2i8_1w8(
 		}
 		// The first one is the most represented
 		FixedArray<uint8_t, 2> selected_materials = sort_filter_materials(weighted_materials, num_materials);
-		const uint16_t selected_materials_key = selected_materials[0] | (selected_materials[1] << 8);
-		const uint32_t selected_materials_vd = static_cast<uint32_t>(selected_materials_key) << 8;
+		const uint32_t selected_materials_key =
+				static_cast<uint32_t>(selected_materials[0]) | (static_cast<uint32_t>(selected_materials[1]) << 8);
+		const uint32_t selected_materials_vd = selected_materials_key << 8;
 
 		// FixedArray<float, 3 * 3 * 2> weight_grid;
 		// for (unsigned int i = 0; i < material_grid.size(); ++i) {
@@ -1004,20 +1065,20 @@ void build_materials_v_1i8_s_2i8_1w8(
 		};
 		WeightGrid weight_grid;
 		for (unsigned int i = 0; i < material_grid.size(); ++i) {
-			const WeightedIndex src = material_grid[i];
+			const uint8_t src = material_grid[i];
 			// If a voxel uses material 1, blend is 1.
 			// If a voxel uses material 0, blend is 0.
 			// If a voxel uses a material that wasn't selected, fallback on the most represented one, which is also 0.
 			// If a voxel is not solid, still use 0.
-			const uint32_t m = (src.index == selected_materials[1] ? 1.f : 0.f);
+			const uint32_t m = (src == selected_materials[1] ? 1 : 0);
 			weight_grid.data |= (m << i);
 		}
 
 		// TODO Avoid computing 6 vertices, there are 4
 
-		const uint32_t rc_step_x = cell_dim.x;
+		const uint32_t rc_step_x = cell_dim.y;
 		const uint32_t rc_step_y = 1;
-		const uint32_t rc_step_z = cell_dim.x * cell_dim.z;
+		const uint32_t rc_step_z = cell_dim.y * cell_dim.x;
 
 		for (unsigned int ri = 0; ri < 6; ++ri) {
 			const uint32_t src_ii = src_ii0 + ri;
@@ -1027,13 +1088,15 @@ void build_materials_v_1i8_s_2i8_1w8(
 			const uint64_t key = static_cast<uint64_t>(src_i << 16) | static_cast<uint64_t>(selected_materials_key);
 			const auto res = vertex_map.try_emplace(key, dst_i);
 			if (!res.second) {
+				// Re-use existing vertex
 				dst_indices.emplace_back(res.first->second);
 				continue;
 			}
 
 			const VertexData vert = src_vertices[src_i];
-			const Vector3f fvert = math::floor(vert.position);
-			const Vector3i cell_rpos = math::max(to_vec3i(fvert), Vector3iUtil::create(0));
+			const Vector3f vert_position = vert.position + vert_offset;
+			const Vector3f fvert = math::floor(vert_position);
+			const Vector3i cell_rpos = math::max(to_vec3i(fvert) - cell_pos_min, Vector3iUtil::create(0));
 			const uint32_t rci0 = cell_rpos.x * rc_step_x + cell_rpos.y * rc_step_y + cell_rpos.z * rc_step_z;
 
 			const float w0 = weight_grid[rci0];
@@ -1045,7 +1108,7 @@ void build_materials_v_1i8_s_2i8_1w8(
 			const float w6 = weight_grid[rci0 + rc_step_y + rc_step_z];
 			const float w7 = weight_grid[rci0 + rc_step_x + rc_step_y + rc_step_z];
 
-			const Vector3f rv = vert.position - fvert;
+			const Vector3f rv = vert_position - fvert;
 			const float w = math::interpolate_trilinear_b(w0, w1, w2, w3, w4, w5, w6, w7, rv);
 
 			const uint32_t w8 = math::clamp(static_cast<uint32_t>(w * 255.f), 0u, 255u);
@@ -1074,6 +1137,7 @@ bool VoxelMesherDMC::is_skirts_enabled() const {
 }
 
 void VoxelMesherDMC::set_skirts_enabled(bool enabled) {
+	_skirts_enabled = enabled;
 	update_padding();
 }
 
@@ -1111,8 +1175,19 @@ void VoxelMesherDMC::build(VoxelMesher::Output &output, const VoxelMesher::Input
 	StdVector<dmc::VertexData> dmc_vertices;
 	// TODO Temp allocator
 	StdVector<uint32_t> dmc_indices;
+	// TODO Temp allocator
+	StdVector<uint32_t> quad_info;
 
-	dmc::build_mesh(0.f, to_span(temp_sd), to_vec3u32(input.voxels.get_size()), dmc_vertices, dmc_indices);
+	static constexpr float isolevel = 0.f;
+
+	dmc::build_mesh(
+			isolevel,
+			to_span(temp_sd),
+			to_vec3u32(input.voxels.get_size()),
+			dmc_vertices,
+			dmc_indices,
+			_material_mode != MATERIAL_MODE_NONE ? &quad_info : nullptr
+	);
 
 	Array arrays;
 	arrays.resize(Mesh::ARRAY_MAX);
@@ -1181,9 +1256,10 @@ void VoxelMesherDMC::build(VoxelMesher::Output &output, const VoxelMesher::Input
 			dmc::build_materials_v_1i8_s_2i8_1w8(
 					dmc_vertices,
 					dmc_indices,
+					quad_info,
 					to_span(temp_sd),
 					material_indices,
-					to_vec3u32(input.voxels.get_size()),
+					input.voxels.get_size(),
 					dmc_tex_vertices,
 					dmc_tex_normals,
 					dmc_tex_material_data,
@@ -1205,7 +1281,7 @@ void VoxelMesherDMC::build(VoxelMesher::Output &output, const VoxelMesher::Input
 			zylann::godot::copy_to(gd_material_data, to_span(dmc_tex_material_data).reinterpret_cast_to<const float>());
 
 			PackedInt32Array gd_indices;
-			zylann::godot::copy_to(gd_indices, to_span(dmc_indices).reinterpret_cast_to<const int32_t>());
+			zylann::godot::copy_to(gd_indices, to_span(dmc_tex_indices).reinterpret_cast_to<const int32_t>());
 
 			arrays[Mesh::ARRAY_VERTEX] = gd_vertices;
 			arrays[Mesh::ARRAY_NORMAL] = gd_normals;
