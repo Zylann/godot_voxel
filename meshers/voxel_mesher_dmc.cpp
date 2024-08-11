@@ -895,6 +895,7 @@ FixedArray<uint8_t, 2> sort_filter_materials(TArray input_materials, uint8_t num
 			break;
 
 		case 2:
+			math::sort2_array(input_materials, [](WeightedIndex a, WeightedIndex b) { return a.weight > b.weight; });
 			selected_materials[0] = input_materials[0].index;
 			selected_materials[1] = input_materials[1].index;
 			break;
@@ -954,6 +955,7 @@ void build_materials_v_1i8_s_2i8_1w8(
 	// We know DMC generates quads only
 	ZN_ASSERT((src_indices.size() % 6) == 0);
 	const uint32_t quad_count = src_indices.size() / 6;
+	ZN_ASSERT(quad_count == quad_infos.size());
 
 	const int32_t STEP_X = padded_resolution.y;
 	const int32_t STEP_Y = 1;
@@ -978,25 +980,6 @@ void build_materials_v_1i8_s_2i8_1w8(
 		const Vector3i cell_pos_min = Vector3iUtil::from_zxy_index(quad_cell_index, padded_resolution) - coff;
 
 		const Vector3i cell_pos_max = cell_pos_min + cell_dim;
-
-		// TODO We really need info about the cells used for this quad...
-		// const uint32_t src_i0 = src_indices[src_ii0];
-		// Vector3f min_vert = src_vertices[src_i0].position + vert_offset;
-		// Vector3f max_vert = min_vert;
-		// for (unsigned int ri = 1; ri < 6; ++ri) {
-		// 	const uint32_t src_ii = src_ii0 + ri;
-		// 	const uint32_t src_i = src_indices[src_ii];
-		// 	const Vector3f v = src_vertices[src_i].position + vert_offset;
-		// 	min_vert = math::min(min_vert, v);
-		// 	max_vert = math::max(max_vert, v);
-		// }
-
-		// // TODO And of course we have to handle the edge case where vertices are ON the side
-		// const Vector3i cell_pos_min = to_vec3i(math::floor(min_vert));
-		// const Vector3i cell_pos_max = to_vec3i(math::floor(max_vert)) + Vector3iUtil::create(1);
-		// // const Vector3i cell_pos_max = to_vec3i(math::ceil(max_vert));
-
-		// const Vector3i cell_dim = cell_pos_max - cell_pos_min;
 
 		// TODO In theory this array could have a lower capacity.
 		// Because some voxels will always not be solid, since the quad means there is a surface
@@ -1027,8 +1010,9 @@ void build_materials_v_1i8_s_2i8_1w8(
 						// So we could think, let's automatically replace the material of empty voxels with some default
 						// value? That doesn't work here, because due to the dual nature of DMC, surface is generated
 						// in between voxels, so we end up "half-tinting" the surface with that default material
-						// everywhere, which leads to bad results. It also acts as a "3rd" material in many situations,
-						// which makes transitions look blocky because we support only 2 blended materials.
+						// everywhere, which leads to bad results. Also if that material is always the same value, it
+						// often acts as a "3rd" material in many situations, which makes transitions look blocky
+						// because we support only 2 blended materials.
 						//
 						// But then if we have to sample all materials, those in the air must be consistent with those
 						// in the ground...
