@@ -16,6 +16,7 @@
 			<param index="1" name="transform" type="Transform3D" />
 			<param index="2" name="area_size" type="Vector3" />
 			<description>
+				Allows using a [VoxelGeneratorGraph] as a brush, which opens possibility for various advanced scenarios. See [related article](../Generators.md#using-voxelgeneratorgraph-as-a-brush).
 			</description>
 		</method>
 		<method name="do_hemisphere">
@@ -25,6 +26,7 @@
 			<param index="2" name="flat_direction" type="Vector3" />
 			<param index="3" name="smoothness" type="float" default="0.0" />
 			<description>
+				See [method VoxelToolTerrain.do_hemisphere].
 			</description>
 		</method>
 		<method name="do_sphere_async">
