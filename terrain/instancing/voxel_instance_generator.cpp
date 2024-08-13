@@ -12,8 +12,12 @@
 namespace zylann::voxel {
 
 namespace {
-const float MAX_DENSITY = 1.f;
-const char *DENSITY_HINT_STRING = "0.0, 1.0, 0.01";
+
+// This cap is for sanity, to prevent potential crashing.
+const float MAX_DENSITY = 10.f;
+// We expose a slider going below max density as it should not often be needed, but we allow greater if really necessary
+const char *DENSITY_HINT_STRING = "0.0, 1.0, 0.01, or_greater";
+
 } // namespace
 
 void VoxelInstanceGenerator::generate_transforms(
@@ -93,8 +97,10 @@ void VoxelInstanceGenerator::generate_transforms(
 				// so it's possible a different emit mode will produce different amounts of instances.
 				// I had to use `uint64` and clamp it because floats can't contain `0xffffffff` accurately. Instead
 				// it results in `0x100000000`, one unit above.
+				const float density = math::clamp(_density, 0.f, 1.f);
+				static constexpr float max_density = 1.f;
 				const uint32_t density_u32 =
-						math::min(uint64_t(double(0xffffffff) * _density / MAX_DENSITY), uint64_t(0xffffffff));
+						math::min(uint64_t(double(0xffffffff) * density / max_density), uint64_t(0xffffffff));
 				const int size = vertices.size();
 				const float margin = block_size - block_size * 0.01f;
 				for (int i = 0; i < size; ++i) {
@@ -578,7 +584,7 @@ void VoxelInstanceGenerator::generate_transforms(
 }
 
 void VoxelInstanceGenerator::set_density(float density) {
-	density = math::max(density, 0.f);
+	density = math::clamp(density, 0.f, MAX_DENSITY);
 	if (density == _density) {
 		return;
 	}
