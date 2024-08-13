@@ -33,7 +33,9 @@ Primarily developped with Godot 4.3.
         - Fixed `set_key_cache_enabled(true)` caused nothing to load
         - Fixed slow loading when the database path contains `res://` or `user://`
         - Fixed crash if the database has an invalid path and `flush()` is called after `set_key_cache_enabled(true)`
-    - `VoxelInstancer`: Fixed instances with LOD > 0 were generated on `VoxelTerrain` even though LOD isn't supported (ending up in weird positions). No instances should generate.
+    - `VoxelInstancer`:
+        - Fixed instances with LOD > 0 were generated on `VoxelTerrain` even though LOD isn't supported (ending up in weird positions). No instances should generate.
+        - Fixed error spam in the editor when instancing the node without a terrain parent
     - `VoxelInstanceLibrary`: Fixed `Assertion failed: "p_id < 0 || p_id >= MAX_ID" is false` when removing items from a VoxelInstanceLibrary
     - `VoxelMeshSDF`: Fixed error in the editor when trying to visualize the last slice (which turns out to be off by 1)
     - `VoxelModifierMesh`: 
