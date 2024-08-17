@@ -6,7 +6,9 @@ namespace zylann {
 
 using namespace math;
 
-static Interval get_fnl_cellular_value_range_2d(const ZN_FastNoiseLite &noise, Interval x, Interval y) {
+namespace {
+
+Interval get_fnl_cellular_value_range_2d(const ZN_FastNoiseLite &noise, Interval x, Interval y) {
 	const float c0 = noise.get_noise_2d(x.min, y.min);
 	const float c1 = noise.get_noise_2d(x.max, y.min);
 	const float c2 = noise.get_noise_2d(x.min, y.max);
@@ -17,8 +19,7 @@ static Interval get_fnl_cellular_value_range_2d(const ZN_FastNoiseLite &noise, I
 	return Interval{ -1, 1 };
 }
 
-static Interval get_fnl_cellular_value_range_3d(
-		const fast_noise_lite::FastNoiseLite &fn, Interval x, Interval y, Interval z) {
+Interval get_fnl_cellular_value_range_3d(const fast_noise_lite::FastNoiseLite &fn, Interval x, Interval y, Interval z) {
 	const float c0 = fn.GetNoise(x.min, y.min, z.min);
 	const float c1 = fn.GetNoise(x.max, y.min, z.min);
 	const float c2 = fn.GetNoise(x.min, y.max, z.min);
@@ -33,7 +34,7 @@ static Interval get_fnl_cellular_value_range_3d(
 	return Interval{ -1, 1 };
 }
 
-static Interval get_fnl_cellular_range(const ZN_FastNoiseLite &noise) {
+Interval get_fnl_cellular_range(const ZN_FastNoiseLite &noise) {
 	// There are many combinations with Cellular noise so instead of implementing them with intervals,
 	// I used empiric tests to figure out some bounds.
 
@@ -153,7 +154,12 @@ void fnl_transform_noise_coordinate(const fast_noise_lite::FastNoiseLite &fn, In
 }
 
 Interval fnl_single_opensimplex2(
-		const fast_noise_lite::FastNoiseLite &fn, int seed, Interval p_x, Interval p_y, Interval p_z) {
+		const fast_noise_lite::FastNoiseLite &fn,
+		int seed,
+		Interval p_x,
+		Interval p_y,
+		Interval p_z
+) {
 	// According to OpenSimplex2 author, the 3D version is supposed to have a max derivative around 4.23718
 	// https://www.wolframalpha.com/input/?i=max+d%2Fdx+32.69428253173828125+*+x+*+%28%280.6-x%5E2%29%5E4%29+from+-0.6+to+0.6
 	// But empiric measures have shown it around 8. Discontinuities do exist in this noise though,
@@ -162,17 +168,30 @@ Interval fnl_single_opensimplex2(
 			[&fn, seed](real_t x, real_t y, real_t z) { //
 				return fn.SingleOpenSimplex2(seed, x, y, z);
 			},
-			p_x, p_y, p_z, 4.23718f);
+			p_x,
+			p_y,
+			p_z,
+			4.23718f
+	);
 }
 
 Interval fnl_single_opensimplex2s(
-		const fast_noise_lite::FastNoiseLite &fn, int seed, Interval p_x, Interval p_y, Interval p_z) {
+		const fast_noise_lite::FastNoiseLite &fn,
+		int seed,
+		Interval p_x,
+		Interval p_y,
+		Interval p_z
+) {
 	return get_noise_range_3d(
 			[&fn, seed](real_t x, real_t y, real_t z) { //
 				return fn.SingleOpenSimplex2(seed, x, y, z);
 			},
 			// Max derivative found from empiric tests
-			p_x, p_y, p_z, 2.5f);
+			p_x,
+			p_y,
+			p_z,
+			2.5f
+	);
 }
 
 Interval fnl_single_cellular(const ZN_FastNoiseLite &noise, Interval x, Interval y, Interval z) {
@@ -184,33 +203,60 @@ Interval fnl_single_cellular(const ZN_FastNoiseLite &noise, Interval x, Interval
 }
 
 Interval fnl_single_perlin(
-		const fast_noise_lite::FastNoiseLite &fn, int seed, Interval p_x, Interval p_y, Interval p_z) {
+		const fast_noise_lite::FastNoiseLite &fn,
+		int seed,
+		Interval p_x,
+		Interval p_y,
+		Interval p_z
+) {
 	return get_noise_range_3d(
 			[&fn, seed](real_t x, real_t y, real_t z) { //
 				return fn.SinglePerlin(seed, x, y, z);
 			},
 			// Max derivative found from empiric tests
-			p_x, p_y, p_z, 3.2f);
+			p_x,
+			p_y,
+			p_z,
+			3.2f
+	);
 }
 
 Interval fnl_single_value_cubic(
-		const fast_noise_lite::FastNoiseLite &fn, int seed, Interval p_x, Interval p_y, Interval p_z) {
+		const fast_noise_lite::FastNoiseLite &fn,
+		int seed,
+		Interval p_x,
+		Interval p_y,
+		Interval p_z
+) {
 	return get_noise_range_3d(
 			[&fn, seed](real_t x, real_t y, real_t z) { //
 				return fn.SingleValueCubic(seed, x, y, z);
 			},
 			// Max derivative found from empiric tests
-			p_x, p_y, p_z, 1.2f);
+			p_x,
+			p_y,
+			p_z,
+			1.2f
+	);
 }
 
 Interval fnl_single_value(
-		const fast_noise_lite::FastNoiseLite &fn, int seed, Interval p_x, Interval p_y, Interval p_z) {
+		const fast_noise_lite::FastNoiseLite &fn,
+		int seed,
+		Interval p_x,
+		Interval p_y,
+		Interval p_z
+) {
 	return get_noise_range_3d(
 			[&fn, seed](real_t x, real_t y, real_t z) { //
 				return fn.SingleValue(seed, x, y, z);
 			},
 			// Max derivative found from empiric tests
-			p_x, p_y, p_z, 3.0f);
+			p_x,
+			p_y,
+			p_z,
+			3.0f
+	);
 }
 
 Interval fnl_gen_noise_single(const ZN_FastNoiseLite &noise, int seed, Interval x, Interval y, Interval z) {
@@ -246,8 +292,10 @@ Interval fnl_gen_fractal_fbm(const ZN_FastNoiseLite &p_noise, Interval x, Interv
 	for (int i = 0; i < fn.mOctaves; i++) {
 		Interval noise = fnl_gen_noise_single(p_noise, seed++, x, y, z);
 		sum += noise * amp;
-		amp *= lerp(Interval::from_single_value(1.0f), (noise + Interval::from_single_value(1.0f)) * 0.5f,
-				Interval::from_single_value(fn.mWeightedStrength));
+		amp *=
+				lerp(Interval::from_single_value(1.0f),
+					 (noise + Interval::from_single_value(1.0f)) * 0.5f,
+					 Interval::from_single_value(fn.mWeightedStrength));
 
 		x *= fn.mLacunarity;
 		y *= fn.mLacunarity;
@@ -269,8 +317,10 @@ Interval fnl_gen_fractal_ridged(const ZN_FastNoiseLite &p_noise, Interval x, Int
 	for (int i = 0; i < fn.mOctaves; i++) {
 		Interval noise = abs(fnl_gen_noise_single(p_noise, seed++, x, y, z));
 		sum += (noise * -2 + 1) * amp;
-		amp *= lerp(Interval::from_single_value(1.0f), Interval::from_single_value(1.0f) - noise,
-				Interval::from_single_value(fn.mWeightedStrength));
+		amp *=
+				lerp(Interval::from_single_value(1.0f),
+					 Interval::from_single_value(1.0f) - noise,
+					 Interval::from_single_value(fn.mWeightedStrength));
 
 		x *= fn.mLacunarity;
 		y *= fn.mLacunarity;
@@ -299,6 +349,8 @@ Interval fnl_get_noise(const ZN_FastNoiseLite &noise, Interval x, Interval y, In
 			return Interval(-1.f, 1.f);
 	}
 }
+
+} // namespace
 
 Interval get_fnl_range_2d(const ZN_FastNoiseLite &noise, Interval x, Interval y) {
 	// TODO More precise analysis using derivatives
@@ -334,8 +386,8 @@ math::Interval2 get_fnl_gradient_range_2d(const ZN_FastNoiseLiteGradient &noise,
 	// TODO More precise analysis
 	const float amp = Math::abs(noise.get_amplitude());
 	return math::Interval2{ //
-		Interval{ x.min - amp, x.max + amp }, //
-		Interval{ y.min - amp, y.max + amp }
+							Interval{ x.min - amp, x.max + amp }, //
+							Interval{ y.min - amp, y.max + amp }
 	};
 }
 

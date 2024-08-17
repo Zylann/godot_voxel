@@ -4,7 +4,7 @@
 
 namespace zylann::voxel {
 
-void add_uniform_params(const std::vector<ComputeShaderParameter> &params, Array &uniforms) {
+void add_uniform_params(const StdVector<ComputeShaderParameter> &params, Array &uniforms) {
 	for (const ComputeShaderParameter &p : params) {
 		ZN_ASSERT(p.resource != nullptr);
 		ZN_ASSERT(p.resource->is_valid());

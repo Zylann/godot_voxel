@@ -19,7 +19,8 @@
 						"general": {
 							"tasks": int,
 							"active_threads": int,
-							"thread_count": int
+							"thread_count": int,
+							"task_names": PackedStringArray
 						}
 					},
 					"tasks": {
@@ -31,10 +32,31 @@
 					"memory_pools": {
 						"voxel_used": int,
 						"voxel_total": int,
-						"block_count": int
+						"block_count": int,
+						"std_allocated": int,
+						"std_deallocated": int,
+						"std_current": int
 					}
 				}
 				[/codeblock]
+			</description>
+		</method>
+		<method name="get_version_major" qualifiers="const">
+			<return type="int" />
+			<description>
+				Gets the major version number of the voxel engine. For example, in [code]1.2.0[/code], [code]1[/code] is the major version.
+			</description>
+		</method>
+		<method name="get_version_minor" qualifiers="const">
+			<return type="int" />
+			<description>
+				Gets the minor version number of the voxel engine. For example, in [code]1.2.0[/code], [code]2[/code] is the minor version.
+			</description>
+		</method>
+		<method name="get_version_patch" qualifiers="const">
+			<return type="int" />
+			<description>
+				Gets the patch version number of the voxel engine. For example, in [code]1.2.0[/code], [code]0[/code] is the patch version.
 			</description>
 		</method>
 	</methods>

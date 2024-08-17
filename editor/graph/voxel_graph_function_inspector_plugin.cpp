@@ -6,7 +6,6 @@
 #include "../../util/godot/classes/label.h"
 #include "../../util/godot/classes/v_box_container.h"
 #include "../../util/godot/classes/v_separator.h"
-#include "../../util/godot/core/callable.h"
 #include "../../util/godot/core/string.h"
 #include "voxel_graph_editor_plugin.h"
 
@@ -18,7 +17,8 @@ bool VoxelGraphFunctionInspectorPlugin::_zn_can_handle(const Object *obj) const 
 	return Object::cast_to<VoxelGraphFunction>(obj) != nullptr;
 }
 
-static VBoxContainer *create_ports_control(Span<const VoxelGraphFunction::Port> ports, String title) {
+namespace {
+VBoxContainer *create_ports_control(Span<const VoxelGraphFunction::Port> ports, String title) {
 	VBoxContainer *vb = memnew(VBoxContainer);
 	vb->set_h_size_flags(Control::SIZE_EXPAND_FILL);
 
@@ -36,6 +36,7 @@ static VBoxContainer *create_ports_control(Span<const VoxelGraphFunction::Port> 
 
 	return vb;
 }
+} // namespace
 
 bool VoxelGraphFunctionInspectorPlugin::_zn_parse_property(Object *p_object, const Variant::Type p_type,
 		const String &p_path, const PropertyHint p_hint, const String &p_hint_text,
@@ -60,8 +61,7 @@ bool VoxelGraphFunctionInspectorPlugin::_zn_parse_property(Object *p_object, con
 			edit_io_button->set_text(ZN_TTR("Edit inputs/outputs..."));
 
 			edit_io_button->connect("pressed",
-					ZN_GODOT_CALLABLE_MP(this, VoxelGraphFunctionInspectorPlugin, _on_edit_io_button_pressed)
-							.bind(graph_ref));
+					callable_mp(this, &VoxelGraphFunctionInspectorPlugin::_on_edit_io_button_pressed).bind(graph_ref));
 
 			add_custom_control(edit_io_button);
 		}
@@ -84,9 +84,6 @@ void VoxelGraphFunctionInspectorPlugin::set_listener(VoxelGraphEditorPlugin *plu
 	_listener = plugin;
 }
 
-void VoxelGraphFunctionInspectorPlugin::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("_on_edit_io_button_pressed", "graph"),
-			&VoxelGraphFunctionInspectorPlugin::_on_edit_io_button_pressed);
-}
+void VoxelGraphFunctionInspectorPlugin::_bind_methods() {}
 
 } // namespace zylann::voxel

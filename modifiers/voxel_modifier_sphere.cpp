@@ -2,7 +2,7 @@
 #include "../engine/voxel_engine.h"
 #include "../util/godot/core/packed_arrays.h"
 #include "../util/math/sdf.h"
-#include "../util/memory.h"
+#include "../util/memory/memory.h"
 #include "../util/profiling.h"
 
 namespace zylann::voxel {
@@ -69,7 +69,7 @@ void VoxelModifierSphere::get_shader_data(ShaderData &out_shader_data) {
 		SphereParams sphere_params;
 		sphere_params.radius = _radius;
 		PackedByteArray pba;
-		copy_bytes_to(pba, sphere_params);
+		zylann::godot::copy_bytes_to(pba, sphere_params);
 
 		if (_shader_data->params.size() < 2) {
 			std::shared_ptr<ComputeShaderResource> res = make_shared_instance<ComputeShaderResource>();

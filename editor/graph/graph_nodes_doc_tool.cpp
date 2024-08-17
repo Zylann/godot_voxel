@@ -1,10 +1,10 @@
 #include "../../generators/graph/node_type_db.h"
+#include "../../util/containers/std_vector.h"
 #include "../../util/errors.h"
 #include "../../util/godot/classes/file_access.h"
 #include "../../util/godot/classes/xml_parser.h"
 #include "../../util/godot/core/array.h"
 #include <unordered_map>
-#include <vector>
 
 namespace zylann::voxel {
 
@@ -15,7 +15,7 @@ struct GraphNodeDocumentation {
 	String category;
 };
 
-GraphNodeDocumentation *find_node_by_name(std::vector<GraphNodeDocumentation> &nodes, String name) {
+GraphNodeDocumentation *find_node_by_name(StdVector<GraphNodeDocumentation> &nodes, String name) {
 	for (GraphNodeDocumentation &node : nodes) {
 		if (node.name == name) {
 			return &node;
@@ -24,7 +24,7 @@ GraphNodeDocumentation *find_node_by_name(std::vector<GraphNodeDocumentation> &n
 	return nullptr;
 }
 
-bool parse_graph_nodes_doc_xml(XMLParser &parser, std::vector<GraphNodeDocumentation> &nodes) {
+bool parse_graph_nodes_doc_xml(XMLParser &parser, StdVector<GraphNodeDocumentation> &nodes) {
 	ZN_ASSERT_RETURN_V(parser.read() == OK, false);
 
 	// For some reason Godot considers `<?xml` as `NODE_UNKNOWN` and `get_node_name` returns the ENTIRE line without
@@ -130,7 +130,7 @@ String strip_eols(String text) {
 }
 
 void write_graph_nodes_doc_xml(
-		FileAccess &f, const std::vector<GraphNodeDocumentation> &nodes_doc, const pg::NodeTypeDB &type_db) {
+		FileAccess &f, const StdVector<GraphNodeDocumentation> &nodes_doc, const pg::NodeTypeDB &type_db) {
 	class CodeWriter {
 	public:
 		CodeWriter(FileAccess &f) : _f(f) {}
@@ -276,7 +276,8 @@ void write_graph_nodes_doc_xml(
 void run_graph_nodes_doc_tool(String src_xml_fpath, String dst_xml_fpath) {
 	ZN_PRINT_VERBOSE("Running Voxel graph nodes doc tool");
 
-	Ref<XMLParser> parser = memnew(XMLParser);
+	Ref<XMLParser> parser;
+	parser.instantiate();
 	{
 		const Error err = parser->open(src_xml_fpath);
 		if (err != OK) {
@@ -286,7 +287,7 @@ void run_graph_nodes_doc_tool(String src_xml_fpath, String dst_xml_fpath) {
 
 	const pg::NodeTypeDB &type_db = pg::NodeTypeDB::get_singleton();
 
-	std::vector<GraphNodeDocumentation> nodes;
+	StdVector<GraphNodeDocumentation> nodes;
 
 	// First populate with all known node types
 	for (int node_type_id = 0; node_type_id < type_db.get_type_count(); ++node_type_id) {

@@ -1,6 +1,6 @@
 #include "editor_plugin.h"
 
-namespace zylann {
+namespace zylann::godot {
 
 #if defined(ZN_GODOT)
 
@@ -63,4 +63,4 @@ EditorPlugin::AfterGUIInput ZN_EditorPlugin::_zn_forward_3d_gui_input(
 	return AFTER_GUI_INPUT_PASS;
 }
 
-} // namespace zylann
+} // namespace zylann::godot

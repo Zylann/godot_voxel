@@ -56,6 +56,9 @@ public:
 	void set_visible(bool visible);
 	bool is_visible() const;
 
+	void set_parent_visible(bool parent_visible);
+	void set_parent_transform(const Transform3D &parent_transform);
+
 	// Collisions
 
 	void set_collision_shape(Ref<Shape3D> shape, bool debug_collision, Node3D *node, float margin);
@@ -69,15 +72,10 @@ public:
 	void set_collision_enabled(bool enable);
 	bool is_collision_enabled() const;
 
-	// State
-
-	void set_parent_visible(bool parent_visible);
-	void set_parent_transform(const Transform3D &parent_transform);
-
 protected:
 	void _set_visible(bool visible);
 
-	inline void set_mesh_instance_visible(DirectMeshInstance &mi, bool visible) {
+	inline void set_mesh_instance_visible(zylann::godot::DirectMeshInstance &mi, bool visible) {
 		if (visible) {
 			mi.set_world(*_world);
 		} else {
@@ -87,8 +85,8 @@ protected:
 
 	Vector3i _position_in_voxels;
 
-	DirectMeshInstance _mesh_instance;
-	DirectStaticBody _static_body;
+	zylann::godot::DirectMeshInstance _mesh_instance;
+	zylann::godot::DirectStaticBody _static_body;
 	Ref<World3D> _world;
 
 	// Must match default value of `active`

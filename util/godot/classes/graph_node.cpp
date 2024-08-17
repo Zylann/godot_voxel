@@ -1,7 +1,7 @@
 #include "graph_node.h"
 #include "../core/version.h"
 
-namespace zylann {
+namespace zylann::godot {
 
 // There were changes to GraphNode in Godot PR #79311 2167694965ca2f4f16cfc1362d32a2fa01e817a2
 
@@ -35,4 +35,4 @@ Color get_graph_node_input_port_color(GraphNode &node, int port_index) {
 #endif
 }
 
-} // namespace zylann
+} // namespace zylann::godot

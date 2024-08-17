@@ -10,8 +10,8 @@ namespace zylann::voxel {
 
 class VoxelInstanceLibraryEditorPlugin;
 
-class VoxelInstanceLibraryInspectorPlugin : public ZN_EditorInspectorPlugin {
-	GDCLASS(VoxelInstanceLibraryInspectorPlugin, ZN_EditorInspectorPlugin)
+class VoxelInstanceLibraryInspectorPlugin : public zylann::godot::ZN_EditorInspectorPlugin {
+	GDCLASS(VoxelInstanceLibraryInspectorPlugin, zylann::godot::ZN_EditorInspectorPlugin)
 public:
 	enum Buttons { //
 		BUTTON_ADD_MULTIMESH_ITEM,

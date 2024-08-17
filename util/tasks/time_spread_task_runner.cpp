@@ -1,6 +1,7 @@
 #include "time_spread_task_runner.h"
+#include "../containers/std_vector.h"
 #include "../godot/classes/time.h"
-#include "../memory.h"
+#include "../memory/memory.h"
 #include "../profiling.h"
 
 namespace zylann {
@@ -27,7 +28,7 @@ void TimeSpreadTaskRunner::process(uint64_t time_budget_usec) {
 	ZN_PROFILE_SCOPE();
 	const Time &time = *Time::get_singleton();
 
-	static thread_local FixedArray<std::vector<ITimeSpreadTask *>, PRIORITY_COUNT> tls_postponed_tasks;
+	static thread_local FixedArray<StdVector<ITimeSpreadTask *>, PRIORITY_COUNT> tls_postponed_tasks;
 	for (unsigned int i = 0; i < tls_postponed_tasks.size(); ++i) {
 		ZN_ASSERT(tls_postponed_tasks[i].size() == 0);
 	}
@@ -68,7 +69,7 @@ void TimeSpreadTaskRunner::process(uint64_t time_budget_usec) {
 
 	// Push postponed task back into queues
 	for (unsigned int queue_index = 0; queue_index < tls_postponed_tasks.size(); ++queue_index) {
-		std::vector<ITimeSpreadTask *> &tasks = tls_postponed_tasks[queue_index];
+		StdVector<ITimeSpreadTask *> &tasks = tls_postponed_tasks[queue_index];
 		if (tasks.size() > 0) {
 			push(to_span(tasks), Priority(queue_index));
 			tasks.clear();

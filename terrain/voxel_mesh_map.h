@@ -2,10 +2,9 @@
 #define VOXEL_MESH_MAP_H
 
 #include "../engine/voxel_engine.h"
+#include "../util/containers/std_unordered_map.h"
+#include "../util/containers/std_vector.h"
 #include "../util/macros.h"
-
-#include <unordered_map>
-#include <vector>
 
 namespace zylann::voxel {
 
@@ -106,7 +105,7 @@ public:
 			if (block == nullptr) {
 				ERR_PRINT("Unexpected nullptr in VoxelMap::clear()");
 			} else {
-				memdelete(block);
+				ZN_DELETE(block);
 			}
 		}
 		_blocks.clear();
@@ -124,9 +123,8 @@ public:
 
 	template <typename Op_T>
 	inline void for_each_block(Op_T op) {
-		for (auto it = _blocks.begin(); it != _blocks.end(); ++it) {
-			MeshBlock_T *block = *it;
-#ifdef DEBUG_ENABLED
+		for (MeshBlock_T *block : _blocks) {
+#ifdef DEV_ENABLED
 			CRASH_COND(block == nullptr);
 #endif
 			op(*block);
@@ -135,9 +133,8 @@ public:
 
 	template <typename Op_T>
 	inline void for_each_block(Op_T op) const {
-		for (auto it = _blocks.begin(); it != _blocks.end(); ++it) {
-			const MeshBlock_T *block = *it;
-#ifdef DEBUG_ENABLED
+		for (const MeshBlock_T *block : _blocks) {
+#ifdef DEV_ENABLED
 			CRASH_COND(block == nullptr);
 #endif
 			op(*block);
@@ -151,7 +148,7 @@ private:
 		unsigned int index;
 	};
 
-	void remove_block_internal(typename std::unordered_map<Vector3i, MapItem>::iterator rm_it, unsigned int index) {
+	void remove_block_internal(typename StdUnorderedMap<Vector3i, MapItem>::iterator rm_it, unsigned int index) {
 		// TODO `erase` can occasionally be very slow (milliseconds) if the map contains lots of items.
 		// This might be caused by internal rehashing/resizing.
 		// We should look for a faster container, or reduce the number of entries.
@@ -178,22 +175,22 @@ private:
 		// TODO Could it be enough to do both render and physic deallocation with the task in ~MeshBlock_T()?
 		struct FreeMeshBlockTask : public zylann::ITimeSpreadTask {
 			void run(TimeSpreadTaskContext &ctx) override {
-				memdelete(block);
+				ZN_DELETE(block);
 			}
 			MeshBlock_T *block = nullptr;
 		};
 		ERR_FAIL_COND(block == nullptr);
-		FreeMeshBlockTask *task = memnew(FreeMeshBlockTask);
+		FreeMeshBlockTask *task = ZN_NEW(FreeMeshBlockTask);
 		task->block = block;
 		VoxelEngine::get_singleton().push_main_thread_time_spread_task(task);
 	}
 
 private:
 	// Blocks stored with a spatial hash in all 3D directions.
-	std::unordered_map<Vector3i, MapItem> _blocks_map;
+	StdUnorderedMap<Vector3i, MapItem> _blocks_map;
 	// Blocks are stored in a vector to allow faster iteration over all of them.
 	// Use cases for this include updating the transform of the meshes
-	std::vector<MeshBlock_T *> _blocks;
+	StdVector<MeshBlock_T *> _blocks;
 
 	// Voxel access will most frequently be in contiguous areas, so the same blocks are accessed.
 	// To prevent too much hashing, this reference is checked before.

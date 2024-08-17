@@ -4,18 +4,18 @@
 #include "../../engine/voxel_engine.h"
 #include "../../meshers/mesh_block_task.h"
 #include "../../storage/voxel_data.h"
-#include "../../util/godot/shader_material_pool.h"
+#include "../../util/containers/std_map.h"
+#include "../../util/containers/std_unordered_map.h"
+#include "../../util/containers/std_vector.h"
 #include "../voxel_mesh_map.h"
 #include "../voxel_node.h"
 #include "lod_octree.h"
+#include "shader_material_pool_vlt.h"
 #include "voxel_lod_terrain_update_data.h"
 #include "voxel_mesh_block_vlt.h"
 
-#include <map>
-#include <unordered_set>
-
 #ifdef TOOLS_ENABLED
-#include "../../editor/voxel_debug.h"
+#include "../../util/godot/debug_renderer.h"
 #endif
 
 namespace zylann::voxel {
@@ -24,11 +24,6 @@ class VoxelTool;
 class VoxelStream;
 class VoxelInstancer;
 class VoxelSaveCompletionTracker;
-
-class ShaderMaterialPoolVLT : public ShaderMaterialPool {
-public:
-	void recycle(Ref<ShaderMaterial> material);
-};
 
 // Paged terrain made of voxel blocks of variable level of detail.
 // Designed for highest view distances, preferably using smooth voxels.
@@ -234,6 +229,9 @@ public:
 	void debug_set_draw_flag(DebugDrawFlag flag_index, bool enabled);
 	bool debug_get_draw_flag(DebugDrawFlag flag_index) const;
 
+	void debug_set_draw_shadow_occluders(bool enable);
+	bool debug_get_draw_shadow_occluders() const;
+
 #ifdef TOOLS_ENABLED
 	void debug_set_draw_flags(uint32_t mask);
 #endif
@@ -261,7 +259,7 @@ public:
 	}
 
 	Array get_mesh_block_surface(Vector3i block_pos, int lod_index) const;
-	void get_meshed_block_positions_at_lod(int lod_index, std::vector<Vector3i> &out_positions) const;
+	void get_meshed_block_positions_at_lod(int lod_index, StdVector<Vector3i> &out_positions) const;
 
 	inline VoxelData &get_storage() const {
 		ZN_ASSERT(_data != nullptr);
@@ -283,13 +281,17 @@ protected:
 
 private:
 	void process(float delta);
+	void apply_quick_reloading_blocks();
 	void apply_main_thread_update_tasks();
 
 	void apply_mesh_update(VoxelEngine::BlockMeshOutput &ob);
 	void apply_data_block_response(VoxelEngine::BlockDataOutput &ob);
 	void apply_detail_texture_update(VoxelEngine::BlockDetailTextureOutput &ob);
 	void apply_detail_texture_update_to_block(
-			VoxelMeshBlockVLT &block, DetailTextureOutput &ob, unsigned int lod_index);
+			VoxelMeshBlockVLT &block,
+			DetailTextureOutput &ob,
+			unsigned int lod_index
+	);
 	void try_apply_parent_detail_texture_to_block(VoxelMeshBlockVLT &block, Vector3i bpos, unsigned int lod_index);
 
 	void start_updater();
@@ -363,7 +365,7 @@ private:
 	struct FadingOutMesh {
 		// Position in space coordinates local to the volume
 		Vector3 local_position;
-		DirectMeshInstance mesh_instance;
+		zylann::godot::DirectMeshInstance mesh_instance;
 		// Changing properties is the reason we may want to fade the mesh, so we may hold on a copy of the material with
 		// properties before the fade starts.
 		Ref<ShaderMaterial> shader_material;
@@ -372,20 +374,20 @@ private:
 	};
 
 	// These are "fire and forget"
-	std::vector<FadingOutMesh> _fading_out_meshes;
+	StdVector<FadingOutMesh> _fading_out_meshes;
 
 	unsigned int _collision_lod_count = 0;
 	unsigned int _collision_layer = 1;
 	unsigned int _collision_mask = 1;
 	float _collision_margin = constants::DEFAULT_COLLISION_MARGIN;
 	int _collision_update_delay = 0;
-	FixedArray<std::vector<Vector3i>, constants::MAX_LOD> _deferred_collision_updates_per_lod;
+	FixedArray<StdVector<Vector3i>, constants::MAX_LOD> _deferred_collision_updates_per_lod;
 
 	float _lod_fade_duration = 0.f;
 	// Note, direct pointers to mesh blocks should be safe because these blocks are always destroyed from the same
 	// thread that updates fading blocks. If a mesh block is destroyed, these maps should be updated at the same time.
 	// TODO Optimization: use FlatMap? Need to check how many blocks get in there, probably not many
-	FixedArray<std::map<Vector3i, VoxelMeshBlockVLT *>, constants::MAX_LOD> _fading_blocks_per_lod;
+	FixedArray<StdMap<Vector3i, VoxelMeshBlockVLT *>, constants::MAX_LOD> _fading_blocks_per_lod;
 
 	struct FadingDetailTexture {
 		Vector3i block_position;
@@ -393,7 +395,7 @@ private:
 		float progress;
 	};
 
-	std::vector<FadingDetailTexture> _fading_detail_textures;
+	StdVector<FadingDetailTexture> _fading_detail_textures;
 
 	VoxelInstancer *_instancer = nullptr;
 
@@ -414,14 +416,15 @@ private:
 		VoxelEngine::BlockMeshOutput data;
 	};
 
-	FixedArray<std::unordered_map<Vector3i, RefCount>, constants::MAX_LOD> _queued_main_thread_mesh_updates;
+	FixedArray<StdUnorderedMap<Vector3i, RefCount>, constants::MAX_LOD> _queued_main_thread_mesh_updates;
 
 #ifdef TOOLS_ENABLED
 	bool _debug_draw_enabled = false;
 	uint8_t _edited_blocks_gizmos_lod_index = 0;
+	bool _debug_draw_shadow_occluders = false;
 	uint16_t _debug_draw_flags = 0;
 
-	DebugRenderer _debug_renderer;
+	zylann::godot::DebugRenderer _debug_renderer;
 
 	struct DebugMeshUpdateItem {
 		static constexpr uint32_t LINGER_FRAMES = 10;
@@ -430,7 +433,7 @@ private:
 		uint32_t remaining_frames;
 	};
 
-	std::vector<DebugMeshUpdateItem> _debug_mesh_update_items;
+	StdVector<DebugMeshUpdateItem> _debug_mesh_update_items;
 
 	struct DebugEditItem {
 		static constexpr uint32_t LINGER_FRAMES = 10;
@@ -438,7 +441,7 @@ private:
 		uint32_t remaining_frames;
 	};
 
-	std::vector<DebugEditItem> _debug_edit_items;
+	StdVector<DebugEditItem> _debug_edit_items;
 #endif
 
 	Stats _stats;

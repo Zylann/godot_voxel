@@ -2,6 +2,7 @@
 #define VOXEL_GRAPH_NODE_DIALOG_H
 
 #include "../../generators/graph/voxel_graph_function.h"
+#include "../../util/containers/std_vector.h"
 #include "../../util/godot/classes/confirmation_dialog.h"
 #include "../../util/godot/macros.h"
 
@@ -57,8 +58,8 @@ private:
 		int id = -1;
 	};
 
-	std::vector<Item> _items;
-	std::vector<String> _category_names;
+	StdVector<Item> _items;
+	StdVector<String> _category_names;
 	Tree *_tree = nullptr;
 	LineEdit *_filter_line_edit = nullptr;
 	RichTextLabel *_description_label = nullptr;

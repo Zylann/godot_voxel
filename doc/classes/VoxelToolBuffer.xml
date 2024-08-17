@@ -5,6 +5,7 @@
 	</brief_description>
 	<description>
 		There are no functions specific to [VoxelBuffer]. You may check generic ones in [VoxelTool].
+		Note: contrary to other implementations, this one allows editing even if the area is partially out of bounds.
 	</description>
 	<tutorials>
 	</tutorials>

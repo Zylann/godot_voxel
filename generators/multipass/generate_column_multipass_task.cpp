@@ -1,10 +1,11 @@
 #include "generate_column_multipass_task.h"
+#include "../../engine/buffered_task_scheduler.h"
 #include "../../engine/voxel_engine.h"
 #include "../../storage/voxel_data.h"
-
+#include "../../util/containers/std_vector.h"
 #include "../../util/dstack.h"
 #include "../../util/godot/classes/time.h"
-#include "../../util/string_funcs.h"
+#include "../../util/string/format.h"
 
 namespace zylann::voxel {
 
@@ -12,13 +13,13 @@ namespace {
 #ifdef ZN_PROFILER_ENABLED
 std::atomic_int g_task_count[VoxelGeneratorMultipassCB::MAX_SUBPASSES] = { 0 };
 const char *g_profiling_task_names[VoxelGeneratorMultipassCB::MAX_SUBPASSES] = {
-	"GenerateColumnMultipassTasks_subpass0",
-	"GenerateColumnMultipassTasks_subpass1",
-	"GenerateColumnMultipassTasks_subpass2",
-	"GenerateColumnMultipassTasks_subpass3",
-	"GenerateColumnMultipassTasks_subpass4",
-	"GenerateColumnMultipassTasks_subpass5",
-	"GenerateColumnMultipassTasks_subpass6",
+	"GenerateColumnMultipassTasks_subpass0", //
+	"GenerateColumnMultipassTasks_subpass1", //
+	"GenerateColumnMultipassTasks_subpass2", //
+	"GenerateColumnMultipassTasks_subpass3", //
+	"GenerateColumnMultipassTasks_subpass4", //
+	"GenerateColumnMultipassTasks_subpass5", //
+	"GenerateColumnMultipassTasks_subpass6", //
 };
 #endif
 
@@ -26,11 +27,16 @@ const char *g_profiling_task_names[VoxelGeneratorMultipassCB::MAX_SUBPASSES] = {
 
 using namespace VoxelGeneratorMultipassCBStructs;
 
-GenerateColumnMultipassTask::GenerateColumnMultipassTask(Vector2i p_column_position, uint8_t p_block_size,
-		uint8_t p_subpass_index, std::shared_ptr<Internal> p_generator_internal,
-		Ref<VoxelGeneratorMultipassCB> p_generator, TaskPriority p_priority, IThreadedTask *p_caller,
-		std::shared_ptr<std::atomic_int> p_caller_dependency_count) {
-	//
+GenerateColumnMultipassTask::GenerateColumnMultipassTask(
+		Vector2i p_column_position,
+		uint8_t p_block_size,
+		uint8_t p_subpass_index,
+		std::shared_ptr<Internal> p_generator_internal,
+		Ref<VoxelGeneratorMultipassCB> p_generator,
+		TaskPriority p_priority,
+		IThreadedTask *p_caller,
+		std::shared_ptr<std::atomic_int> p_caller_dependency_count
+) {
 	_column_position = p_column_position;
 	_priority = p_priority;
 	_block_size = p_block_size;
@@ -89,7 +95,8 @@ void GenerateColumnMultipassTask::run(ThreadedTaskContext &ctx) {
 				return;
 			}
 			SpatialLock2D::UnlockWriteOnScopeExit swlock(
-					map.spatial_lock, BoxBounds2i::from_position(_column_position));
+					map.spatial_lock, BoxBounds2i::from_position(_column_position)
+			);
 
 			MutexLock mlock(map.mutex);
 			auto column_it = map.columns.find(_column_position);
@@ -120,14 +127,15 @@ void GenerateColumnMultipassTask::run(ThreadedTaskContext &ctx) {
 		ZN_ASSERT(pass.dependency_extents > 0);
 	}
 
-	const Box2i neighbors_box = Box2i::from_min_max( //
+	const Box2i neighbors_box = Box2i::from_min_max(
 			_column_position - Vector2iUtil::create(pass.dependency_extents),
-			_column_position + Vector2iUtil::create(pass.dependency_extents + 1));
+			_column_position + Vector2iUtil::create(pass.dependency_extents + 1)
+	);
 
 	const unsigned int central_block_index =
 			Vector2iUtil::get_yx_index(Vector2iUtil::create(pass.dependency_extents), neighbors_box.size);
 
-	std::vector<Column *> columns;
+	StdVector<Column *> columns;
 	// TODO Cache memory
 	columns.reserve(Vector2iUtil::get_area(neighbors_box.size));
 
@@ -172,7 +180,6 @@ void GenerateColumnMultipassTask::run(ThreadedTaskContext &ctx) {
 
 		bool spawned_subtasks = false;
 		bool postpone = false;
-		int debug_subtask_count = 0;
 
 		// Check loading levels
 		{
@@ -180,8 +187,8 @@ void GenerateColumnMultipassTask::run(ThreadedTaskContext &ctx) {
 
 			Vector2i cpos;
 
-			const Vector2i cpos_min = neighbors_box.pos;
-			const Vector2i cpos_max = neighbors_box.pos + neighbors_box.size;
+			const Vector2i cpos_min = neighbors_box.position;
+			const Vector2i cpos_max = neighbors_box.position + neighbors_box.size;
 
 			std::shared_ptr<std::atomic_int> dependency_counter = nullptr;
 
@@ -240,16 +247,22 @@ void GenerateColumnMultipassTask::run(ThreadedTaskContext &ctx) {
 							}
 							++(*dependency_counter);
 
-							GenerateColumnMultipassTask *subtask =
-									ZN_NEW(GenerateColumnMultipassTask(cpos, _block_size, prev_subpass_index,
-											_generator_internal, _generator, _priority, this, dependency_counter));
+							GenerateColumnMultipassTask *subtask = ZN_NEW(GenerateColumnMultipassTask(
+									cpos,
+									_block_size,
+									prev_subpass_index,
+									_generator_internal,
+									_generator,
+									_priority,
+									this,
+									dependency_counter
+							));
 							subtask->_caller_mp_task = this;
 							task_scheduler.push_main_task(subtask);
 
 							column->pending_subpass_tasks_mask |= (1 << prev_subpass_index);
 
 							spawned_subtasks = true;
-							++debug_subtask_count;
 						}
 						// TODO If a column got deallocated after it was returned once, restart its generation process.
 						// This would be to cover cases where blocks of a column get requested more than once. In the
@@ -267,8 +280,6 @@ void GenerateColumnMultipassTask::run(ThreadedTaskContext &ctx) {
 
 		if (spawned_subtasks) {
 			ctx.status = ThreadedTaskContext::STATUS_TAKEN_OUT;
-			// println(format("task {} {} {} spawned {} subtasks", _subpass_index, _column_position.x,
-			// _column_position.y, 		debug_subtask_count));
 
 		} else if (postpone) {
 			ctx.status = ThreadedTaskContext::STATUS_POSTPONED;
@@ -305,7 +316,7 @@ void GenerateColumnMultipassTask::run(ThreadedTaskContext &ctx) {
 					const int column_base_y_blocks = _generator_internal->column_base_y_blocks;
 
 					// TODO Cache memory
-					std::vector<Block *> blocks;
+					StdVector<Block *> blocks;
 					blocks.reserve(columns.size() * column_height_blocks);
 					// Compose grid of blocks indexed as ZXY (index+1 goes up along Y).
 					// ZXY indexing is convenient here, since columns are indexed with YX (aka ZX, because Y in 2D is Z
@@ -319,7 +330,8 @@ void GenerateColumnMultipassTask::run(ThreadedTaskContext &ctx) {
 					PassInput input;
 					input.grid = to_span(blocks);
 					input.grid_size = Vector3i(neighbors_box.size.x, column_height_blocks, neighbors_box.size.y);
-					input.grid_origin = Vector3i(neighbors_box.pos.x, column_base_y_blocks, neighbors_box.pos.y);
+					input.grid_origin =
+							Vector3i(neighbors_box.position.x, column_base_y_blocks, neighbors_box.position.y);
 					input.main_block_position = Vector3i(_column_position.x, column_base_y_blocks, _column_position.y);
 					input.pass_index = pass_index;
 					input.block_size = _block_size;

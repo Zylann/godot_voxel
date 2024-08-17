@@ -1,6 +1,6 @@
 #include "voxel_string_names.h"
 #include "../util/errors.h"
-#include "../util/memory.h"
+#include "../util/memory/memory.h"
 
 namespace zylann::voxel {
 

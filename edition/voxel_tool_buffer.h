@@ -9,17 +9,23 @@ class VoxelToolBuffer : public VoxelTool {
 	GDCLASS(VoxelToolBuffer, VoxelTool)
 public:
 	VoxelToolBuffer() {}
-	VoxelToolBuffer(Ref<gd::VoxelBuffer> vb);
+	VoxelToolBuffer(Ref<godot::VoxelBuffer> vb);
 
 	bool is_area_editable(const Box3i &box) const override;
-	void paste(Vector3i p_pos, const VoxelBufferInternal &src, uint8_t channels_mask) override;
-	void paste_masked(Vector3i p_pos, Ref<gd::VoxelBuffer> p_voxels, uint8_t channels_mask, uint8_t mask_channel,
-			uint64_t mask_value) override;
+	void paste(Vector3i p_pos, const VoxelBuffer &src, uint8_t channels_mask) override;
+	void paste_masked(
+			Vector3i p_pos,
+			Ref<godot::VoxelBuffer> p_voxels,
+			uint8_t channels_mask,
+			uint8_t mask_channel,
+			uint64_t mask_value
+	) override;
 
 	void set_voxel_metadata(Vector3i pos, Variant meta) override;
 	Variant get_voxel_metadata(Vector3i pos) const override;
 
 	void do_sphere(Vector3 center, float radius) override;
+	void do_box(Vector3i begin, Vector3i end) override;
 	void do_path(Span<const Vector3> positions, Span<const float> radii) override;
 
 protected:
@@ -30,7 +36,10 @@ protected:
 	void _post_edit(const Box3i &box) override;
 
 private:
-	Ref<gd::VoxelBuffer> _buffer;
+	// When compiling with GodotCpp, `_bind_methods` is not optional.
+	static void _bind_methods() {}
+
+	Ref<godot::VoxelBuffer> _buffer;
 };
 
 } // namespace zylann::voxel

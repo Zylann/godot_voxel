@@ -10,8 +10,7 @@
 #include "../../util/godot/core/version.h"
 #endif
 
-namespace zylann::voxel {
-namespace gd {
+namespace zylann::voxel::godot {
 
 class VoxelModifier : public Node3D {
 	GDCLASS(VoxelModifier, Node3D)
@@ -32,17 +31,9 @@ public:
 
 #ifdef TOOLS_ENABLED
 #if defined(ZN_GODOT)
-#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR <= 2
 	PackedStringArray get_configuration_warnings() const override;
-#else
-	Array get_configuration_warnings() const override;
-#endif
 #elif defined(ZN_GODOT_EXTENSION)
-#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR <= 2
 	PackedStringArray _get_configuration_warnings() const override;
-#else
-	Array _get_configuration_warnings() const override;
-#endif
 #endif
 	virtual void get_configuration_warnings(PackedStringArray &warnings) const;
 #endif
@@ -75,9 +66,8 @@ T *get_modifier(VoxelLodTerrain &volume, uint32_t id, zylann::voxel::VoxelModifi
 	return static_cast<T *>(modifier);
 }
 
-} // namespace gd
-} // namespace zylann::voxel
+} // namespace zylann::voxel::godot
 
-VARIANT_ENUM_CAST(zylann::voxel::gd::VoxelModifier::Operation);
+VARIANT_ENUM_CAST(zylann::voxel::godot::VoxelModifier::Operation);
 
 #endif // VOXEL_MODIFIER_GD_H

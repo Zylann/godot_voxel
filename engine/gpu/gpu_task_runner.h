@@ -1,16 +1,16 @@
 #ifndef VOXEL_GPU_TASK_RUNNER_H
 #define VOXEL_GPU_TASK_RUNNER_H
 
+#include "../../util/containers/span.h"
+#include "../../util/containers/std_vector.h"
 #include "../../util/godot/core/packed_byte_array.h"
 #include "../../util/godot/core/rid.h"
 #include "../../util/godot/macros.h"
 #include "../../util/macros.h"
-#include "../../util/containers/span.h"
 #include "../../util/thread/mutex.h"
 #include "../../util/thread/semaphore.h"
 #include "../../util/thread/thread.h"
 #include <atomic>
-#include <vector>
 
 ZN_GODOT_FORWARD_DECLARE(class RenderingDevice)
 #ifdef ZN_GODOT_EXTENSION
@@ -65,7 +65,7 @@ private:
 
 	RenderingDevice *_rendering_device = nullptr;
 	GPUStorageBufferPool *_storage_buffer_pool = nullptr;
-	std::vector<IGPUTask *> _shared_tasks;
+	StdVector<IGPUTask *> _shared_tasks;
 	Mutex _mutex;
 	Semaphore _semaphore;
 	// Using a thread because so far it looks like the only way to submit and receive data with RenderingDevice is to

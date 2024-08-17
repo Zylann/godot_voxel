@@ -1,11 +1,11 @@
 #ifndef PRIORITY_DEPENDENCY_H
 #define PRIORITY_DEPENDENCY_H
 
+#include "../util/containers/std_vector.h"
 #include "../util/math/vector3f.h"
 #include "../util/tasks/task_priority.h"
 #include <atomic>
 #include <memory>
-#include <vector>
 
 namespace zylann::voxel {
 
@@ -18,7 +18,7 @@ struct PriorityDependency {
 		// a task will run much sooner or later than expected, but it will run in any case.
 		// This vector is never resized after the instance is created. It is just big enough to have room for all
 		// viewers.
-		std::vector<Vector3f> viewers;
+		StdVector<Vector3f> viewers;
 		// Use this count instead of `viewers.size()`. Can change, but will always be <= `viewers.size()`
 		std::atomic_uint32_t viewers_count;
 		float highest_view_distance = 999999;

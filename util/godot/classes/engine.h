@@ -8,9 +8,9 @@
 using namespace godot;
 #endif
 
-namespace zylann {
+namespace zylann::godot {
 
-inline void add_godot_singleton(const char *name, Object *object) {
+inline void add_singleton(const char *name, Object *object) {
 #if defined(ZN_GODOT)
 	Engine::get_singleton()->add_singleton(Engine::Singleton(name, object));
 #elif defined(ZN_GODOT_EXTENSION)
@@ -18,7 +18,7 @@ inline void add_godot_singleton(const char *name, Object *object) {
 #endif
 }
 
-inline void remove_godot_singleton(const char *name) {
+inline void remove_singleton(const char *name) {
 #if defined(ZN_GODOT)
 	Engine::get_singleton()->remove_singleton(name);
 #elif defined(ZN_GODOT_EXTENSION)
@@ -26,6 +26,6 @@ inline void remove_godot_singleton(const char *name) {
 #endif
 }
 
-} // namespace zylann
+} // namespace zylann::godot
 
 #endif // ZN_GODOT_ENGINE_H

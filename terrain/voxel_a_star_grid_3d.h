@@ -1,9 +1,11 @@
 #ifndef VOXEL_A_STAR_GRID_3D_H
 #define VOXEL_A_STAR_GRID_3D_H
 
+#include "../storage/voxel_buffer.h"
 #include "../storage/voxel_data.h"
 #include "../util/a_star_grid_3d.h"
 #include "../util/containers/dynamic_bitset.h"
+#include "../util/containers/std_vector.h"
 #include <atomic>
 
 namespace zylann::voxel {
@@ -12,6 +14,8 @@ class VoxelTerrain;
 
 class VoxelAStarGrid3DInternal : public AStarGrid3D {
 public:
+	VoxelAStarGrid3DInternal();
+
 	// Referring to VoxelData instead of using a VoxelTool because it allows to run the search in a threaded task.
 	// VoxelTool can't be used yet in threads because it holds a pointer to a terrain node, which could get deleted at
 	// any time.
@@ -42,14 +46,14 @@ private:
 	};
 
 	// Cached 3D bitmap
-	std::vector<Chunk> _grid_cache;
+	StdVector<Chunk> _grid_cache;
 	Vector3i _grid_cache_size;
 
 	// Tracks which chunks are loaded
 	DynamicBitset _grid_chunk_states;
 
 	// Temporary buffer used to read voxels from the main voxel storage
-	VoxelBufferInternal _voxel_buffer;
+	VoxelBuffer _voxel_buffer;
 };
 
 // Godot-facing API for voxel grid A* pathfinding. Suitable for blocky terrains.

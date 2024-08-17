@@ -2,7 +2,7 @@
 #include "../../engine/voxel_engine.h"
 #include "../../generators/multipass/generate_column_multipass_task.h"
 #include "../../generators/multipass/voxel_generator_multipass_cb.h"
-#include "../../storage/voxel_buffer_internal.h"
+#include "../../storage/voxel_buffer.h"
 #include "../../storage/voxel_data.h"
 #include "../../streams/save_block_data_task.h"
 #include "../../util/dstack.h"
@@ -10,7 +10,7 @@
 #include "../../util/io/log.h"
 #include "../../util/math/conv.h"
 #include "../../util/profiling.h"
-#include "../../util/string_funcs.h"
+#include "../../util/string/format.h"
 #include "../../util/tasks/async_dependency_tracker.h"
 
 namespace zylann::voxel {
@@ -118,11 +118,18 @@ void GenerateBlockMultipassCBTask::run(zylann::ThreadedTaskContext &ctx) {
 			if ((column->pending_subpass_tasks_mask & (1 << final_subpass_index)) == 0) {
 				// No tasks working on it, and we are the first top-level task.
 				// Spawn a subtask to bring this column to final state.
-				GenerateColumnMultipassTask *subtask = ZN_NEW(GenerateColumnMultipassTask(column_position, _block_size,
-						final_subpass_index, multipass_generator_internal, multipass_generator, ctx.task_priority,
+				GenerateColumnMultipassTask *subtask = ZN_NEW(GenerateColumnMultipassTask(
+						column_position,
+						_block_size,
+						final_subpass_index,
+						multipass_generator_internal,
+						multipass_generator,
+						ctx.task_priority,
 						// The subtask takes ownership of the current task, it will schedule it back when it
 						// finishes (or cancels)
-						this, make_shared_instance<std::atomic_int>(1)));
+						this,
+						make_shared_instance<std::atomic_int>(1)
+				));
 
 				column->pending_subpass_tasks_mask |= (1 << final_subpass_index);
 
@@ -148,9 +155,10 @@ void GenerateBlockMultipassCBTask::run(zylann::ThreadedTaskContext &ctx) {
 
 			// TODO Take out voxel data from this block to save memory, it must not be touched by generation anymore
 			// (if we do, we need to change the column's spatial lock to WRITE)
-			voxels = make_shared_instance<VoxelBufferInternal>();
+			voxels = make_shared_instance<VoxelBuffer>(VoxelBuffer::ALLOCATOR_POOL);
 			voxels->create(block.voxels.get_size());
-			voxels->copy_from(block.voxels);
+			voxels->copy_channels_from(block.voxels);
+			// TODO Metadata?
 
 			run_stream_saving_and_finish();
 		}
@@ -160,7 +168,7 @@ void GenerateBlockMultipassCBTask::run(zylann::ThreadedTaskContext &ctx) {
 	// Single-pass generation
 
 	if (voxels == nullptr) {
-		voxels = make_shared_instance<VoxelBufferInternal>();
+		voxels = make_shared_instance<VoxelBuffer>(VoxelBuffer::ALLOCATOR_POOL);
 		voxels->create(_block_size, _block_size, _block_size);
 	}
 
@@ -184,18 +192,20 @@ void GenerateBlockMultipassCBTask::run_stream_saving_and_finish() {
 		// TODO In some cases we don't want this to run all the time, do we?
 		// Like in full load mode, where non-edited blocks remain generated on the fly...
 		if (stream.is_valid() && stream->get_save_generator_output()) {
-			ZN_PRINT_VERBOSE(format(
-					"Requesting save of generator output for block {} lod {}", _block_position, int(_lod_index)));
+			ZN_PRINT_VERBOSE(
+					format("Requesting save of generator output for block {} lod {}", _block_position, int(_lod_index))
+			);
 
 			// TODO Optimization: `voxels` doesn't actually need to be shared
-			std::shared_ptr<VoxelBufferInternal> voxels_copy = make_shared_instance<VoxelBufferInternal>();
-			voxels->duplicate_to(*voxels_copy, true);
+			std::shared_ptr<VoxelBuffer> voxels_copy = make_shared_instance<VoxelBuffer>(VoxelBuffer::ALLOCATOR_POOL);
+			voxels->copy_to(*voxels_copy, true);
 
 			// No instances, generators are not designed to produce them at this stage yet.
 			// No priority data, saving doesn't need sorting.
 
-			SaveBlockDataTask *save_task = memnew(SaveBlockDataTask(_volume_id, _block_position, _lod_index,
-					_block_size, voxels_copy, _stream_dependency, nullptr, false));
+			SaveBlockDataTask *save_task = ZN_NEW(SaveBlockDataTask(
+					_volume_id, _block_position, _lod_index, voxels_copy, _stream_dependency, nullptr, false
+			));
 
 			VoxelEngine::get_singleton().push_async_io_task(save_task);
 		}
@@ -207,7 +217,8 @@ void GenerateBlockMultipassCBTask::run_stream_saving_and_finish() {
 TaskPriority GenerateBlockMultipassCBTask::get_priority() {
 	float closest_viewer_distance_sq;
 	const TaskPriority p = _priority_dependency.evaluate(
-			_lod_index, constants::TASK_PRIORITY_GENERATE_BAND2, &closest_viewer_distance_sq);
+			_lod_index, constants::TASK_PRIORITY_GENERATE_BAND2, &closest_viewer_distance_sq
+	);
 	_too_far = _drop_beyond_max_distance && closest_viewer_distance_sq > _priority_dependency.drop_distance_squared;
 	return p;
 }

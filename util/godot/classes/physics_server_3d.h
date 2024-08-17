@@ -8,7 +8,7 @@
 using namespace godot;
 #endif
 
-namespace zylann {
+namespace zylann::godot {
 
 inline void free_physics_server_rid(PhysicsServer3D &ps, const RID &rid) {
 #if defined(ZN_GODOT)
@@ -18,6 +18,6 @@ inline void free_physics_server_rid(PhysicsServer3D &ps, const RID &rid) {
 #endif
 }
 
-} // namespace zylann
+} // namespace zylann::godot
 
 #endif // ZN_GODOT_PHYSICS_SERVER_3D_H

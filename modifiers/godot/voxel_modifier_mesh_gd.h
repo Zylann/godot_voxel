@@ -4,7 +4,7 @@
 #include "../../edition/voxel_mesh_sdf_gd.h"
 #include "voxel_modifier_gd.h"
 
-namespace zylann::voxel::gd {
+namespace zylann::voxel::godot {
 
 class VoxelModifierMesh : public VoxelModifier {
 	GDCLASS(VoxelModifierMesh, VoxelModifier);
@@ -32,6 +32,6 @@ private:
 	float _isolevel = 0.0f;
 };
 
-} // namespace zylann::voxel::gd
+} // namespace zylann::voxel::godot
 
 #endif // VOXEL_MODIFIER_MESH_GD_H

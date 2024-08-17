@@ -1,13 +1,12 @@
 #ifndef ZN_SPATIAL_LOCK_2D_H
 #define ZN_SPATIAL_LOCK_2D_H
 
+#include "../containers/std_vector.h"
 #include "../math/box_bounds_2i.h"
 #include "mutex.h"
 #include "semaphore.h"
 #include "short_lock.h"
 #include "thread.h"
-
-#include <vector>
 
 #ifdef TOOLS_ENABLED
 #define ZN_SPATIAL_LOCK_2D_CHECKS
@@ -209,7 +208,7 @@ private:
 	// List of boxes currently locked.
 	// In practice, each thread can lock up to 1 box at once (maybe a few more in rare cases that would allow it), so
 	// there won't be many boxes to store.
-	std::vector<Box> _boxes;
+	StdVector<Box> _boxes;
 	// This mutex is supposed to be locked for very small periods of time, just to lookup, add or remove boxes.
 	// So we lock it even in `try_*` methods. The long-period locking states are the boxes themselves.
 	// Also it is not a recursive mutex for performance. Do not lock it again once you successfully locked it.

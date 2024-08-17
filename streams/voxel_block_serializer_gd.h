@@ -5,7 +5,7 @@
 
 ZN_GODOT_FORWARD_DECLARE(class StreamPeer);
 
-namespace zylann::voxel::gd {
+namespace zylann::voxel::godot {
 
 class VoxelBuffer;
 
@@ -16,7 +16,11 @@ class VoxelBlockSerializer : public RefCounted {
 public:
 	static int serialize_to_stream_peer(Ref<StreamPeer> peer, Ref<VoxelBuffer> voxel_buffer, bool compress);
 	static void deserialize_from_stream_peer(
-			Ref<StreamPeer> peer, Ref<VoxelBuffer> voxel_buffer, int size, bool decompress);
+			Ref<StreamPeer> peer,
+			Ref<VoxelBuffer> voxel_buffer,
+			int size,
+			bool decompress
+	);
 
 	static PackedByteArray serialize_to_byte_array(Ref<VoxelBuffer> voxel_buffer, bool compress);
 	static void deserialize_from_byte_array(PackedByteArray bytes, Ref<VoxelBuffer> voxel_buffer, bool decompress);
@@ -24,6 +28,6 @@ public:
 	static void _bind_methods();
 };
 
-} // namespace zylann::voxel::gd
+} // namespace zylann::voxel::godot
 
 #endif // VOXEL_BLOCK_SERIALIZER_GD_H

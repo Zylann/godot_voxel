@@ -52,6 +52,7 @@
 		<member name="collision_mask" type="int" setter="set_collision_mask" getter="get_collision_mask" default="1">
 		</member>
 		<member name="collision_shapes" type="Array" setter="set_collision_shapes" getter="get_collision_shapes" default="[]">
+			Alternating list of [CollisionShape] and [Transform3D]. Shape comes first, followed by its local transform relative to the instance. Setting up collision shapes in the editor may require using a scene instead.
 		</member>
 		<member name="gi_mode" type="int" setter="set_gi_mode" getter="get_gi_mode" enum="GeometryInstance3D.GIMode" default="1">
 		</member>

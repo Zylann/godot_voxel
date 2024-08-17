@@ -2,9 +2,9 @@
 #define ZYLANN_TIME_SPREAD_TASK_RUNNER_H
 
 #include "../containers/span.h"
+#include "../containers/std_queue.h"
 #include "../thread/mutex.h"
 #include <cstdint>
-#include <queue>
 
 namespace zylann {
 
@@ -42,7 +42,7 @@ public:
 
 private:
 	struct Queue {
-		std::queue<ITimeSpreadTask *> tasks;
+		StdQueue<ITimeSpreadTask *> tasks;
 		// TODO Optimization: naive thread safety. Should be enough for now.
 		BinaryMutex tasks_mutex;
 	};

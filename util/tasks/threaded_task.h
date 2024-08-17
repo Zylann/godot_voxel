@@ -7,7 +7,7 @@
 namespace zylann {
 
 struct ThreadedTaskContext {
-	enum Status {
+	enum Status : uint8_t {
 		// The task is complete and will be put in the list of completed tasks by the TaskRunner. It will be deleted
 		// later. This is the default status.
 		STATUS_COMPLETE = 0,
@@ -24,8 +24,18 @@ struct ThreadedTaskContext {
 	const uint8_t thread_index;
 	// May be set by the task to signal its status after run
 	Status status;
-	// Cached priority of the current task.
+	// Cached priority of the current task. May be useful to copy if the current task spawns other related tasks.
 	const TaskPriority task_priority;
+	// If this is set to a non-null task, it will run right after the current one on the same thread.
+	// By doing so, ownership is given to ThreadedTaskRunner. These tasks must not have been owned by the runner
+	// already. Priority of such tasks is not relevant.
+	// IThreadedTask *next_immediate_task;
+
+	ThreadedTaskContext(uint8_t p_thread_index, TaskPriority p_priority) :
+			thread_index(p_thread_index),
+			// By default, if the task does not set this status, it will be considered complete after run
+			status(STATUS_COMPLETE),
+			task_priority(p_priority) {}
 
 	// To allow scheduling tasks from within tasks, without having to pass it in or use a global
 	// ThreadedTaskRunner &runner;

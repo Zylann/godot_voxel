@@ -1,10 +1,10 @@
 #include "save_block_data_task.h"
 #include "../engine/voxel_engine.h"
 #include "../generators/generate_block_task.h"
-#include "../storage/voxel_buffer_internal.h"
+#include "../storage/voxel_buffer.h"
 #include "../util/io/log.h"
 #include "../util/profiling.h"
-#include "../util/string_funcs.h"
+#include "../util/string/format.h"
 #include "../util/tasks/async_dependency_tracker.h"
 
 namespace zylann::voxel {
@@ -13,14 +13,19 @@ namespace {
 std::atomic_int g_debug_save_block_tasks_count = { 0 };
 }
 
-SaveBlockDataTask::SaveBlockDataTask(VolumeID p_volume_id, Vector3i p_block_pos, uint8_t p_lod, uint8_t p_block_size,
-		std::shared_ptr<VoxelBufferInternal> p_voxels, std::shared_ptr<StreamingDependency> p_stream_dependency,
-		std::shared_ptr<AsyncDependencyTracker> p_tracker, bool flush_on_last_tracked_task) :
+SaveBlockDataTask::SaveBlockDataTask(
+		VolumeID p_volume_id,
+		Vector3i p_block_pos,
+		uint8_t p_lod,
+		std::shared_ptr<VoxelBuffer> p_voxels,
+		std::shared_ptr<StreamingDependency> p_stream_dependency,
+		std::shared_ptr<AsyncDependencyTracker> p_tracker,
+		bool flush_on_last_tracked_task
+) :
 		_voxels(p_voxels),
 		_position(p_block_pos),
 		_volume_id(p_volume_id),
 		_lod(p_lod),
-		_block_size(p_block_size),
 		_save_instances(false),
 		_save_voxels(true),
 		_flush_on_last_tracked_task(flush_on_last_tracked_task),
@@ -30,14 +35,19 @@ SaveBlockDataTask::SaveBlockDataTask(VolumeID p_volume_id, Vector3i p_block_pos,
 	++g_debug_save_block_tasks_count;
 }
 
-SaveBlockDataTask::SaveBlockDataTask(VolumeID p_volume_id, Vector3i p_block_pos, uint8_t p_lod, uint8_t p_block_size,
-		UniquePtr<InstanceBlockData> p_instances, std::shared_ptr<StreamingDependency> p_stream_dependency,
-		std::shared_ptr<AsyncDependencyTracker> p_tracker, bool flush_on_last_tracked_task) :
+SaveBlockDataTask::SaveBlockDataTask(
+		VolumeID p_volume_id,
+		Vector3i p_block_pos,
+		uint8_t p_lod,
+		UniquePtr<InstanceBlockData> p_instances,
+		std::shared_ptr<StreamingDependency> p_stream_dependency,
+		std::shared_ptr<AsyncDependencyTracker> p_tracker,
+		bool flush_on_last_tracked_task
+) :
 		_instances(std::move(p_instances)),
 		_position(p_block_pos),
 		_volume_id(p_volume_id),
 		_lod(p_lod),
-		_block_size(p_block_size),
 		_save_instances(true),
 		_save_voxels(false),
 		_flush_on_last_tracked_task(flush_on_last_tracked_task),
@@ -71,15 +81,14 @@ void SaveBlockDataTask::run(zylann::ThreadedTaskContext &ctx) {
 			return;
 		}
 
-		VoxelBufferInternal voxels_copy;
+		VoxelBuffer voxels_copy(VoxelBuffer::ALLOCATOR_POOL);
 		// Note, we are not locking voxels here. This is supposed to be done at the time this task is scheduled.
 		// If this is not a copy, it means the map it came from is getting unloaded anyways.
 		// TODO Optimization: is that copy necessary? It's possible it was already done while issuing the
 		// request
-		_voxels->duplicate_to(voxels_copy, true);
+		_voxels->copy_to(voxels_copy, true);
 		_voxels = nullptr;
-		const Vector3i origin_in_voxels = (_position << _lod) * _block_size;
-		VoxelStream::VoxelQueryData q{ voxels_copy, origin_in_voxels, _lod, VoxelStream::RESULT_ERROR };
+		VoxelStream::VoxelQueryData q{ voxels_copy, _position, _lod, VoxelStream::RESULT_ERROR };
 		stream->save_voxel_block(q);
 	}
 
@@ -91,8 +100,9 @@ void SaveBlockDataTask::run(zylann::ThreadedTaskContext &ctx) {
 
 		ZN_PRINT_VERBOSE(format("Saving instance block {} lod {} with data {}", _position, _lod, _instances.get()));
 
-		VoxelStream::InstancesQueryData instances_query{ std::move(_instances), _position, _lod,
-			VoxelStream::RESULT_ERROR };
+		VoxelStream::InstancesQueryData instances_query{
+			std::move(_instances), _position, _lod, VoxelStream::RESULT_ERROR
+		};
 		stream->save_instance_blocks(Span<VoxelStream::InstancesQueryData>(&instances_query, 1));
 	}
 
@@ -128,6 +138,8 @@ void SaveBlockDataTask::apply_result() {
 			o.dropped = !_has_run;
 			o.max_lod_hint = false; // Unused
 			o.initial_load = false; // Unused
+			o.had_instances = _save_instances;
+			o.had_voxels = _save_voxels;
 			o.type = VoxelEngine::BlockDataOutput::TYPE_SAVED;
 
 			VoxelEngine::VolumeCallbacks callbacks = VoxelEngine::get_singleton().get_volume_callbacks(_volume_id);

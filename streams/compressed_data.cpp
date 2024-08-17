@@ -2,13 +2,13 @@
 #include "../thirdparty/lz4/lz4.h"
 #include "../util/io/serialization.h"
 #include "../util/profiling.h"
-#include "../util/string_funcs.h"
+#include "../util/string/format.h"
 
 #include <limits>
 
 namespace zylann::voxel::CompressedData {
 
-bool decompress_lz4(MemoryReader &f, Span<const uint8_t> src, std::vector<uint8_t> &dst) {
+bool decompress_lz4(MemoryReader &f, Span<const uint8_t> src, StdVector<uint8_t> &dst) {
 	const int decompressed_size = f.get_32();
 	ZN_ASSERT_RETURN_V(decompressed_size >= 0, false);
 
@@ -28,10 +28,10 @@ bool decompress_lz4(MemoryReader &f, Span<const uint8_t> src, std::vector<uint8_
 	return true;
 }
 
-bool decompress(Span<const uint8_t> src, std::vector<uint8_t> &dst) {
+bool decompress(Span<const uint8_t> src, StdVector<uint8_t> &dst) {
 	ZN_PROFILE_SCOPE();
 
-	MemoryReader f(src, ENDIANESS_LITTLE_ENDIAN);
+	MemoryReader f(src, ENDIANNESS_LITTLE_ENDIAN);
 
 	const Compression comp = static_cast<Compression>(f.get_8());
 	ZN_ASSERT_RETURN_V(comp >= 0 && comp < COMPRESSION_COUNT, false);
@@ -46,7 +46,7 @@ bool decompress(Span<const uint8_t> src, std::vector<uint8_t> &dst) {
 
 		case COMPRESSION_LZ4_BE:
 			// Legacy format
-			f.endianess = ENDIANESS_BIG_ENDIAN;
+			f.endianness = ENDIANNESS_BIG_ENDIAN;
 			ZN_ASSERT_RETURN_V(decompress_lz4(f, src, dst), false);
 			break;
 
@@ -62,7 +62,7 @@ bool decompress(Span<const uint8_t> src, std::vector<uint8_t> &dst) {
 	return true;
 }
 
-bool compress_lz4(MemoryWriter &f, Span<const uint8_t> src, std::vector<uint8_t> &dst) {
+bool compress_lz4(MemoryWriter &f, Span<const uint8_t> src, StdVector<uint8_t> &dst) {
 	ZN_ASSERT_RETURN_V(src.size() <= std::numeric_limits<uint32_t>::max(), false);
 
 	f.store_32(src.size());
@@ -81,7 +81,7 @@ bool compress_lz4(MemoryWriter &f, Span<const uint8_t> src, std::vector<uint8_t>
 	return true;
 }
 
-bool compress(Span<const uint8_t> src, std::vector<uint8_t> &dst, Compression comp) {
+bool compress(Span<const uint8_t> src, StdVector<uint8_t> &dst, Compression comp) {
 	ZN_PROFILE_SCOPE();
 
 	switch (comp) {
@@ -94,7 +94,7 @@ bool compress(Span<const uint8_t> src, std::vector<uint8_t> &dst, Compression co
 		case COMPRESSION_LZ4_BE: {
 			ZN_PRINT_ERROR("Using deprecated LZ4_BE compression!");
 			dst.clear();
-			MemoryWriter f(dst, ENDIANESS_LITTLE_ENDIAN);
+			MemoryWriter f(dst, ENDIANNESS_LITTLE_ENDIAN);
 			f.store_8(comp);
 			compress_lz4(f, src, dst);
 		} break;
@@ -103,7 +103,7 @@ bool compress(Span<const uint8_t> src, std::vector<uint8_t> &dst, Compression co
 			// Write header
 			// Must clear first because MemoryWriter writes from the end
 			dst.clear();
-			MemoryWriter f(dst, ENDIANESS_LITTLE_ENDIAN);
+			MemoryWriter f(dst, ENDIANNESS_LITTLE_ENDIAN);
 			f.store_8(comp);
 			compress_lz4(f, src, dst);
 		} break;

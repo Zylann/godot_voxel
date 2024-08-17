@@ -8,6 +8,11 @@
 	<tutorials>
 	</tutorials>
 	<methods>
+		<method name="get_preferred_coordinate_format" qualifiers="const">
+			<return type="int" enum="VoxelStreamSQLite.CoordinateFormat" />
+			<description>
+			</description>
+		</method>
 		<method name="is_key_cache_enabled" qualifiers="const">
 			<return type="bool" />
 			<description>
@@ -17,6 +22,14 @@
 			<return type="void" />
 			<param index="0" name="enabled" type="bool" />
 			<description>
+				Enables caching keys of the database to speed up loading queries in terrains that only save sparse edited blocks. This won't provide any benefit if your terrain saves all its blocks (for example if the output of the generator is saved).
+				This must be called before any call to [code]load_voxel_block[/code] (before the terrain starts using it), otherwise it won't work properly. You may use a script to do this.
+			</description>
+		</method>
+		<method name="set_preferred_coordinate_format">
+			<return type="void" />
+			<param index="0" name="format" type="int" enum="VoxelStreamSQLite.CoordinateFormat" />
+			<description>
 			</description>
 		</method>
 	</methods>
@@ -24,5 +37,24 @@
 		<member name="database_path" type="String" setter="set_database_path" getter="get_database_path" default="&quot;&quot;">
 			Path to the database file. [code]res://[/code] and [code]user://[/code] are not supported at the moment. The path can be relative to the game's executable. Directories in the path must exist. If the file does not exist, it will be created.
 		</member>
+		<member name="preferred_coordinate_format" type="String" setter="set_database_path" getter="get_database_path" default="&quot;&quot;">
+			Sets which block coordinate format will be used when creating new databases. This affects the range of supported coordinates and how quickly SQLite can execute queries (to a minor extent). When opening existing databases, this setting will be ignored, and the format of the database will be used instead. Changing the format of an existing database is currently not possible, and may require using a script to load individual blocks from one stream and save them to a new one.
+		</member>
 	</members>
+	<constants>
+		<constant name="COORDINATE_FORMAT_INT64_X16_Y16_Z16_L16" value="0" enum="CoordinateFormat">
+			Coordinates are stored in a 64-bit integer key, where X, Y, Z and LOD are 16-bit signed integers.
+		</constant>
+		<constant name="COORDINATE_FORMAT_INT64_X19_Y19_Z19_L7" value="1" enum="CoordinateFormat">
+			Coordinates are stored in a 64-bit integer key, where X, Y and Z are 19-bit signed integers, and LOD is a 7-bit unsigned integer.
+		</constant>
+		<constant name="COORDINATE_FORMAT_STRING_CSD" value="2" enum="CoordinateFormat">
+			Coordinates are stored in strings of comma-separated base 10 numbers "X,Y,Z,LOD".
+		</constant>
+		<constant name="COORDINATE_FORMAT_BLOB80_X25_Y25_Z25_L5" value="3" enum="CoordinateFormat">
+			Coordinates are stored in 80-bit blobs, where X, Y and Z are 25-bit signed integers and LOD is a 5-bit unsigned integer.
+		</constant>
+		<constant name="COORDINATE_FORMAT_COUNT" value="4" enum="CoordinateFormat">
+		</constant>
+	</constants>
 </class>

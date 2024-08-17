@@ -13,7 +13,7 @@
 ZN_GODOT_FORWARD_DECLARE(class World3D);
 ZN_GODOT_FORWARD_DECLARE(class Material);
 
-namespace zylann {
+namespace zylann::godot {
 
 // Thin wrapper around VisualServer multimesh instance API
 class DirectMultiMeshInstance : public zylann::NonCopyable {
@@ -43,7 +43,9 @@ public:
 	};
 
 	static void make_transform_and_color8_3d_bulk_array(
-			Span<const TransformAndColor8> data, PackedFloat32Array &bulk_array);
+			Span<const TransformAndColor8> data,
+			PackedFloat32Array &bulk_array
+	);
 
 	struct TransformAndColor32 {
 		Transform3D transform;
@@ -51,13 +53,15 @@ public:
 	};
 
 	static void make_transform_and_color32_3d_bulk_array(
-			Span<const TransformAndColor32> data, PackedFloat32Array &bulk_array);
+			Span<const TransformAndColor32> data,
+			PackedFloat32Array &bulk_array
+	);
 
 private:
 	RID _multimesh_instance;
 	Ref<MultiMesh> _multimesh;
 };
 
-} // namespace zylann
+} // namespace zylann::godot
 
 #endif // DIRECT_MULTIMESH_INSTANCE_H

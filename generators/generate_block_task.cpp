@@ -1,13 +1,13 @@
 #include "generate_block_task.h"
 #include "../engine/voxel_engine.h"
-#include "../storage/voxel_buffer_internal.h"
+#include "../storage/voxel_buffer.h"
 #include "../storage/voxel_data.h"
 #include "../streams/save_block_data_task.h"
 #include "../util/dstack.h"
 #include "../util/io/log.h"
 #include "../util/math/conv.h"
 #include "../util/profiling.h"
-#include "../util/string_funcs.h"
+#include "../util/string/format.h"
 #include "../util/tasks/async_dependency_tracker.h"
 
 namespace zylann::voxel {
@@ -45,7 +45,7 @@ void GenerateBlockTask::run(zylann::ThreadedTaskContext &ctx) {
 	ERR_FAIL_COND(generator.is_null());
 
 	if (_voxels == nullptr) {
-		_voxels = make_shared_instance<VoxelBufferInternal>();
+		_voxels = make_shared_instance<VoxelBuffer>(VoxelBuffer::ALLOCATOR_POOL);
 		_voxels->create(_block_size, _block_size, _block_size);
 	}
 
@@ -86,7 +86,7 @@ void GenerateBlockTask::run_gpu_task(zylann::ThreadedTaskContext &ctx) {
 
 	const Vector3i resolution = Vector3iUtil::create(_block_size);
 
-	GenerateBlockGPUTask *gpu_task = memnew(GenerateBlockGPUTask);
+	GenerateBlockGPUTask *gpu_task = ZN_NEW(GenerateBlockGPUTask);
 	gpu_task->boxes_to_generate.push_back(Box3i(Vector3i(), resolution));
 	gpu_task->generator_shader = generator_shader;
 	gpu_task->generator_shader_params = generator->get_block_rendering_shader_parameters();
@@ -97,7 +97,7 @@ void GenerateBlockTask::run_gpu_task(zylann::ThreadedTaskContext &ctx) {
 
 	if (_data != nullptr) {
 		const AABB aabb_voxels(to_vec3(origin_in_voxels), to_vec3(resolution << _lod_index));
-		std::vector<VoxelModifier::ShaderData> modifiers_shader_data;
+		StdVector<VoxelModifier::ShaderData> modifiers_shader_data;
 		const VoxelModifierStack &modifiers = _data->get_modifiers();
 		modifiers.apply_for_gpu_rendering(modifiers_shader_data, aabb_voxels, VoxelModifier::ShaderData::TYPE_BLOCK);
 		for (const VoxelModifier::ShaderData &d : modifiers_shader_data) {
@@ -112,7 +112,7 @@ void GenerateBlockTask::run_gpu_task(zylann::ThreadedTaskContext &ctx) {
 	VoxelEngine::get_singleton().push_gpu_task(gpu_task);
 }
 
-void GenerateBlockTask::set_gpu_results(std::vector<GenerateBlockGPUTaskResult> &&results) {
+void GenerateBlockTask::set_gpu_results(StdVector<GenerateBlockGPUTaskResult> &&results) {
 	_gpu_generation_results = std::move(results);
 	_stage = 1;
 }
@@ -132,8 +132,10 @@ void GenerateBlockTask::run_cpu_generation() {
 	_max_lod_hint = result.max_lod_hint;
 
 	if (_data != nullptr) {
-		_data->get_modifiers().apply(query_data.voxel_buffer,
-				AABB(query_data.origin_in_voxels, query_data.voxel_buffer.get_size() << _lod_index));
+		_data->get_modifiers().apply(
+				query_data.voxel_buffer,
+				AABB(query_data.origin_in_voxels, query_data.voxel_buffer.get_size() << _lod_index)
+		);
 	}
 }
 
@@ -145,17 +147,19 @@ void GenerateBlockTask::run_stream_saving_and_finish() {
 		// Like in full load mode, where non-edited blocks remain generated on the fly...
 		if (stream.is_valid() && stream->get_save_generator_output()) {
 			ZN_PRINT_VERBOSE(
-					format("Requesting save of generator output for block {} lod {}", _position, int(_lod_index)));
+					format("Requesting save of generator output for block {} lod {}", _position, int(_lod_index))
+			);
 
 			// TODO Optimization: `voxels` doesn't actually need to be shared
-			std::shared_ptr<VoxelBufferInternal> voxels_copy = make_shared_instance<VoxelBufferInternal>();
-			_voxels->duplicate_to(*voxels_copy, true);
+			std::shared_ptr<VoxelBuffer> voxels_copy = make_shared_instance<VoxelBuffer>(VoxelBuffer::ALLOCATOR_POOL);
+			_voxels->copy_to(*voxels_copy, true);
 
 			// No instances, generators are not designed to produce them at this stage yet.
 			// No priority data, saving doesn't need sorting.
 
-			SaveBlockDataTask *save_task = memnew(SaveBlockDataTask(
-					_volume_id, _position, _lod_index, _block_size, voxels_copy, _stream_dependency, nullptr, false));
+			SaveBlockDataTask *save_task = ZN_NEW(SaveBlockDataTask(
+					_volume_id, _position, _lod_index, voxels_copy, _stream_dependency, nullptr, false
+			));
 
 			VoxelEngine::get_singleton().push_async_io_task(save_task);
 		}
@@ -167,7 +171,8 @@ void GenerateBlockTask::run_stream_saving_and_finish() {
 TaskPriority GenerateBlockTask::get_priority() {
 	float closest_viewer_distance_sq;
 	const TaskPriority p = _priority_dependency.evaluate(
-			_lod_index, constants::TASK_PRIORITY_GENERATE_BAND2, &closest_viewer_distance_sq);
+			_lod_index, constants::TASK_PRIORITY_GENERATE_BAND2, &closest_viewer_distance_sq
+	);
 	_too_far = _drop_beyond_max_distance && closest_viewer_distance_sq > _priority_dependency.drop_distance_squared;
 	return p;
 }

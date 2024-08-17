@@ -43,7 +43,8 @@ void AStarGrid3D::start(Vector3i from_position, Vector3i target_position) {
 	_fitting_offset = Vector3f( //
 			(int(_agent_size.x) & 1) == 1 ? 0.5f : 0.f, //
 			(int(_agent_size.y) & 1) == 1 ? 0.5f : 0.f, //
-			(int(_agent_size.z) & 1) == 1 ? 0.5f : 0.f);
+			(int(_agent_size.z) & 1) == 1 ? 0.5f : 0.f
+	);
 
 	if (!_region.contains(from_position)) {
 		return;
@@ -176,13 +177,15 @@ bool AStarGrid3D::is_ground_close_enough(Vector3i pos) {
 
 bool AStarGrid3D::fits(Vector3f pos, Vector3f agent_extents) {
 	const Box3i box = Box3i::from_min_max( //
-			to_vec3i(math::floor(pos - agent_extents)), //
-			to_vec3i(math::ceil(pos + agent_extents)))
+							  to_vec3i(math::floor(pos - agent_extents)),
+							  to_vec3i(math::ceil(pos + agent_extents))
+	)
 							  .clipped(_region);
 	return box.all_cells_match([this](const Vector3i ipos) { return !is_solid(ipos); });
 }
 
 namespace {
+// clang-format off
 const Vector3i g_directions_2d[8] = {
 	Vector3i(-1, 0, -1),
 	Vector3i(0, 0, -1),
@@ -193,9 +196,10 @@ const Vector3i g_directions_2d[8] = {
 	Vector3i(0, 0, 1),
 	Vector3i(1, 0, 1),
 };
-}
+// clang-format on
+} // namespace
 
-void AStarGrid3D::get_neighbor_positions(Vector3i pos, std::vector<Vector3i> &out_positions) {
+void AStarGrid3D::get_neighbor_positions(Vector3i pos, StdVector<Vector3i> &out_positions) {
 	// Implementation specialized for agents walking on top of solid surfaces
 
 	ZN_PROFILE_SCOPE();
@@ -318,7 +322,7 @@ float AStarGrid3D::evaluate_heuristic(Vector3i pos, Vector3i target_pos) const {
 	return Math::abs(diff.x) + Math::abs(diff.y) + Math::abs(diff.z);
 }
 
-void AStarGrid3D::debug_get_visited_points(std::vector<Vector3i> &out_positions) const {
+void AStarGrid3D::debug_get_visited_points(StdVector<Vector3i> &out_positions) const {
 	out_positions.reserve(out_positions.size() + _points_map.size());
 	for (auto it = _points_map.begin(); it != _points_map.end(); ++it) {
 		out_positions.push_back(it->first);

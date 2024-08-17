@@ -1,6 +1,6 @@
 #include "voxel_modifier_sdf.h"
 #include "../util/godot/core/packed_arrays.h"
-#include "../util/memory.h"
+#include "../util/memory/memory.h"
 
 namespace zylann::voxel {
 
@@ -39,7 +39,7 @@ void VoxelModifierSdf::update_base_shader_data_no_lock() {
 	base_params.smoothness = get_smoothness();
 	base_params.sd_scale = get_largest_coord(get_transform().get_basis().get_scale());
 	PackedByteArray pba0;
-	copy_bytes_to(pba0, base_params);
+	godot::copy_bytes_to(pba0, base_params);
 
 	if (_shader_data == nullptr) {
 		_shader_data = make_shared_instance<ComputeShaderParameters>();

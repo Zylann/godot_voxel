@@ -7,16 +7,22 @@
 #include "../util/godot/classes/array_mesh.h"
 #include "../util/godot/classes/mesh.h"
 #include "../util/godot/classes/shader_material.h"
+#include "../util/profiling.h"
 #include "transvoxel/transvoxel_cell_iterator.h"
+
+using namespace zylann::godot;
 
 namespace zylann::voxel {
 
 Ref<Mesh> VoxelMesher::build_mesh(
-		Ref<gd::VoxelBuffer> voxels, TypedArray<Material> materials, Dictionary additional_data) {
-	ERR_FAIL_COND_V(voxels.is_null(), Ref<ArrayMesh>());
+		const VoxelBuffer &voxels,
+		TypedArray<Material> materials,
+		Dictionary additional_data
+) {
+	ZN_PROFILE_SCOPE();
 
 	Output output;
-	Input input = { voxels->get_buffer(), nullptr, nullptr, Vector3i(), 0, false, false, false };
+	Input input = { voxels, nullptr, nullptr, Vector3i(), 0, false, false, false };
 
 	DetailRenderingSettings detail_texture_settings;
 	detail_texture_settings.begin_lod_index = 0;
@@ -31,10 +37,11 @@ Ref<Mesh> VoxelMesher::build_mesh(
 				additional_data.get("octahedral_normal_encoding_enabled", false);
 		detail_texture_settings.tile_resolution_min = int(additional_data.get("normalmap_tile_resolution", 16));
 		detail_texture_settings.tile_resolution_max = detail_texture_settings.tile_resolution_min;
-		detail_texture_settings.max_deviation_degrees =
-				math::clamp(int(additional_data.get("normalmap_max_deviation_degrees", 0)),
-						int(DetailRenderingSettings::MIN_DEVIATION_DEGREES),
-						int(DetailRenderingSettings::MAX_DEVIATION_DEGREES));
+		detail_texture_settings.max_deviation_degrees = math::clamp(
+				int(additional_data.get("normalmap_max_deviation_degrees", 0)),
+				int(DetailRenderingSettings::MIN_DEVIATION_DEGREES),
+				int(DetailRenderingSettings::MAX_DEVIATION_DEGREES)
+		);
 		input.detail_texture_hint = detail_texture_settings.enabled;
 	}
 
@@ -83,17 +90,32 @@ Ref<Mesh> VoxelMesher::build_mesh(
 			TransvoxelCellIterator cell_iterator(cell_infos);
 			DetailTextureData nm_data;
 
-			compute_detail_texture_data(cell_iterator, to_span(mesh_arrays.vertices), to_span(mesh_arrays.normals),
-					to_span(mesh_arrays.indices), nm_data, detail_texture_settings.tile_resolution_min,
-					*input.generator, nullptr, input.origin_in_voxels, input.voxels.get_size(), input.lod_index,
+			compute_detail_texture_data(
+					cell_iterator,
+					to_span(mesh_arrays.vertices),
+					to_span(mesh_arrays.normals),
+					to_span(mesh_arrays.indices),
+					nm_data,
+					detail_texture_settings.tile_resolution_min,
+					*input.generator,
+					nullptr,
+					input.origin_in_voxels,
+					input.voxels.get_size(),
+					input.lod_index,
 					detail_texture_settings.octahedral_encoding_enabled,
-					math::deg_to_rad(float(detail_texture_settings.max_deviation_degrees)), false);
+					math::deg_to_rad(float(detail_texture_settings.max_deviation_degrees)),
+					false
+			);
 
 			const Vector3i block_size =
 					input.voxels.get_size() - Vector3iUtil::create(get_minimum_padding() + get_maximum_padding());
 
-			DetailImages images = store_normalmap_data_to_images(nm_data, detail_texture_settings.tile_resolution_min,
-					block_size, detail_texture_settings.octahedral_encoding_enabled);
+			DetailImages images = store_normalmap_data_to_images(
+					nm_data,
+					detail_texture_settings.tile_resolution_min,
+					block_size,
+					detail_texture_settings.octahedral_encoding_enabled
+			);
 
 			const DetailTextures textures = store_normalmap_data_to_textures(images);
 			// That should be in return value, but for now I just want this for testing with GDScript, so it gotta go
@@ -130,7 +152,12 @@ Ref<Material> VoxelMesher::get_material_by_index(unsigned int i) const {
 	return Ref<Material>();
 }
 
-bool VoxelMesher::is_mesh_empty(const std::vector<Output::Surface> &surfaces) {
+unsigned int VoxelMesher::get_material_index_count() const {
+	// May be implemented in some meshers
+	return 0;
+}
+
+bool VoxelMesher::is_mesh_empty(const StdVector<Output::Surface> &surfaces) {
 	if (surfaces.size() == 0) {
 		return true;
 	}
@@ -146,12 +173,24 @@ Ref<ShaderMaterial> VoxelMesher::get_default_lod_material() const {
 	return Ref<ShaderMaterial>();
 }
 
+Ref<Mesh> VoxelMesher::_b_build_mesh(
+		Ref<godot::VoxelBuffer> voxels,
+		TypedArray<Material> materials,
+		Dictionary additional_data
+) {
+	ERR_FAIL_COND_V(voxels.is_null(), Ref<ArrayMesh>());
+	return build_mesh(voxels->get_buffer(), materials, additional_data);
+}
+
 void VoxelMesher::_bind_methods() {
 	// Shortcut if you want to generate a mesh directly from a fixed grid of voxels.
 	// Useful for testing the different meshers.
 	// TODO Have an object type to specify input
-	ClassDB::bind_method(D_METHOD("build_mesh", "voxel_buffer", "materials", "additional_data"),
-			&VoxelMesher::build_mesh, DEFVAL(Dictionary()));
+	ClassDB::bind_method(
+			D_METHOD("build_mesh", "voxel_buffer", "materials", "additional_data"),
+			&VoxelMesher::_b_build_mesh,
+			DEFVAL(Dictionary())
+	);
 	ClassDB::bind_method(D_METHOD("get_minimum_padding"), &VoxelMesher::get_minimum_padding);
 	ClassDB::bind_method(D_METHOD("get_maximum_padding"), &VoxelMesher::get_maximum_padding);
 }

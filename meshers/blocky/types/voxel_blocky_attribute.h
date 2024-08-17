@@ -2,8 +2,8 @@
 #define VOXEL_BLOCKY_ATTRIBUTE_H
 
 #include "../../../util/containers/span.h"
+#include "../../../util/containers/std_vector.h"
 #include "../../../util/godot/classes/resource.h"
-#include <vector>
 
 namespace zylann::voxel {
 
@@ -54,12 +54,12 @@ protected:
 	StringName _name;
 	uint8_t _default_value = 0;
 	bool _is_rotation = false;
-	std::vector<StringName> _value_names;
-	std::vector<uint8_t> _ortho_rotations;
+	StdVector<StringName> _value_names;
+	StdVector<uint8_t> _ortho_rotations;
 
 	// Attributes don't necessarily use all the values in their range, some can be unused. But they should not take part
 	// into the baking process (no "holes").
-	std::vector<uint8_t> _used_values;
+	StdVector<uint8_t> _used_values;
 };
 
 } // namespace zylann::voxel

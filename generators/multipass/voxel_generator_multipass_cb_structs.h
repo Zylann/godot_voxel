@@ -1,18 +1,18 @@
 #ifndef VOXEL_GENERATOR_MULTIPASS_CB_STRUCTS_H
 #define VOXEL_GENERATOR_MULTIPASS_CB_STRUCTS_H
 
-#include "../../storage/voxel_buffer_internal.h"
+#include "../../storage/voxel_buffer.h"
 #include "../../util/containers/small_vector.h"
 #include "../../util/containers/span.h"
+#include "../../util/containers/std_unordered_map.h"
+#include "../../util/containers/std_vector.h"
 #include "../../util/math/vector2i.h"
 #include "../../util/math/vector3i.h"
 #include "../../util/ref_count.h"
 #include "../../util/thread/mutex.h"
 #include "../../util/thread/spatial_lock_2d.h"
 
-#include <unordered_map>
 #include <utility>
-#include <vector>
 
 // Data structures used internally in multipass generation.
 
@@ -38,7 +38,7 @@ static constexpr int MAX_SUBPASSES = MAX_PASSES * 2 - 1; // get_subpass_count_fr
 // moved outside of the class, which is inconvenient
 
 struct Block {
-	VoxelBufferInternal voxels;
+	VoxelBuffer voxels;
 
 	// If set, this task will be scheduled when the block's generation is complete.
 	// Only a non-scheduled, non-running task can be referenced here.
@@ -48,9 +48,9 @@ struct Block {
 	// be multiple block requests for one column.
 	IThreadedTask *final_pending_task = nullptr;
 
-	Block() {}
+	Block() : voxels(VoxelBuffer::ALLOCATOR_POOL) {}
 
-	Block(Block &&other) {
+	Block(Block &&other) : Block() {
 		voxels = std::move(other.voxels);
 		final_pending_task = other.final_pending_task;
 	}
@@ -88,7 +88,7 @@ struct Column {
 
 	// Vertical stack of blocks. Must never be resized, except when loaded or unloaded.
 	// TODO Maybe replace with a dynamic non-resizeable array?
-	std::vector<Block> blocks;
+	StdVector<Block> blocks;
 
 	// Column() {
 	// 	fill(subpass_iterations, uint8_t(0));
@@ -96,7 +96,7 @@ struct Column {
 };
 
 struct Map {
-	std::unordered_map<Vector2i, Column> columns;
+	StdUnorderedMap<Vector2i, Column> columns;
 	// Protects the hashmap itself
 	Mutex mutex;
 	// Protects columns

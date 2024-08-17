@@ -1,7 +1,7 @@
 #include "vox_mesh_importer.h"
 #include "../../constants/voxel_string_names.h"
 #include "../../meshers/cubes/voxel_mesher_cubes.h"
-#include "../../storage/voxel_buffer_internal.h"
+#include "../../storage/voxel_buffer.h"
 #include "../../storage/voxel_memory_pool.h"
 #include "../../streams/vox/vox_data.h"
 #include "../../util/dstack.h"
@@ -11,9 +11,11 @@
 #include "../../util/godot/core/array.h"
 #include "../../util/macros.h"
 #include "../../util/math/conv.h"
-#include "../../util/memory.h"
+#include "../../util/memory/memory.h"
 #include "../../util/profiling.h"
 #include "vox_import_funcs.h"
+
+using namespace zylann::godot;
 
 namespace zylann::voxel::magica {
 
@@ -53,16 +55,23 @@ double VoxelVoxMeshImporter::_zn_get_priority() const {
 }
 
 void VoxelVoxMeshImporter::_zn_get_import_options(
-		std::vector<GodotImportOption> &out_options, const String &path, int preset_index) const {
+		StdVector<ImportOptionWrapper> &out_options,
+		const String &path,
+		int preset_index
+) const {
 	// const VoxelStringNames &sn = VoxelStringNames::get_singleton();
-	out_options.push_back(GodotImportOption(PropertyInfo(Variant::BOOL, "store_colors_in_texture"), false));
-	out_options.push_back(GodotImportOption(PropertyInfo(Variant::FLOAT, "scale"), 1.f));
-	out_options.push_back(GodotImportOption(
-			PropertyInfo(Variant::INT, "pivot_mode", PROPERTY_HINT_ENUM, "LowerCorner,SceneOrigin,Center"), 1));
+	out_options.push_back(ImportOptionWrapper(PropertyInfo(Variant::BOOL, "store_colors_in_texture"), false));
+	out_options.push_back(ImportOptionWrapper(PropertyInfo(Variant::FLOAT, "scale"), 1.f));
+	out_options.push_back(ImportOptionWrapper(
+			PropertyInfo(Variant::INT, "pivot_mode", PROPERTY_HINT_ENUM, "LowerCorner,SceneOrigin,Center"), 1
+	));
 }
 
 bool VoxelVoxMeshImporter::_zn_get_option_visibility(
-		const String &path, const StringName &option_name, const GodotKeyValueWrapper options) const {
+		const String &path,
+		const StringName &option_name,
+		const KeyValueWrapper options
+) const {
 	return true;
 }
 
@@ -83,8 +92,9 @@ Error for_each_model_instance_in_scene_graph(const Data &data, int node_id, Tran
 		case Node::TYPE_TRANSFORM: {
 			const TransformNode *vox_transform_node = reinterpret_cast<const TransformNode *>(vox_node);
 			// Calculate global transform of the child
-			const Transform3D child_trans(transform.basis * vox_transform_node->rotation.basis,
-					transform.xform(vox_transform_node->position));
+			const Transform3D child_trans(
+					transform.basis * vox_transform_node->rotation.basis, transform.xform(vox_transform_node->position)
+			);
 			for_each_model_instance_in_scene_graph(data, vox_transform_node->child_node_id, child_trans, depth + 1, f);
 		} break;
 
@@ -135,12 +145,12 @@ void for_each_model_instance(const Data &vox_data, F f) {
 
 struct ModelInstance {
 	// Model with baked rotation
-	UniquePtr<VoxelBufferInternal> voxels;
+	UniquePtr<VoxelBuffer> voxels;
 	// Lowest corner position
 	Vector3i position;
 };
 
-void extract_model_instances(const Data &vox_data, std::vector<ModelInstance> &out_instances) {
+void extract_model_instances(const Data &vox_data, StdVector<ModelInstance> &out_instances) {
 	ZN_DSTACK();
 	// Gather all models and bake their rotations
 	for_each_model_instance(vox_data, [&out_instances](ForEachModelInstanceArgs args) {
@@ -151,7 +161,7 @@ void extract_model_instances(const Data &vox_data, std::vector<ModelInstance> &o
 		Vector3i dst_size = model.size;
 
 		// Using temporary copy to rotate the data
-		std::vector<uint8_t> temp_voxels;
+		StdVector<uint8_t> temp_voxels;
 
 		if (args.basis == Basis()) {
 			// No transformation
@@ -170,12 +180,12 @@ void extract_model_instances(const Data &vox_data, std::vector<ModelInstance> &o
 		// TODO Optimization: implement transformation for VoxelBuffers so we can avoid using a temporary copy.
 		// Didn't do it yet because VoxelBuffers also have metadata and the `transform_3d_array_zxy` function only works
 		// on arrays.
-		UniquePtr<VoxelBufferInternal> voxels = make_unique_instance<VoxelBufferInternal>();
+		UniquePtr<VoxelBuffer> voxels = make_unique_instance<VoxelBuffer>(VoxelBuffer::ALLOCATOR_DEFAULT);
 		voxels->create(dst_size);
-		voxels->decompress_channel(VoxelBufferInternal::CHANNEL_COLOR);
+		voxels->decompress_channel(VoxelBuffer::CHANNEL_COLOR);
 
 		Span<uint8_t> dst_color_indices;
-		ERR_FAIL_COND(!voxels->get_channel_raw(VoxelBufferInternal::CHANNEL_COLOR, dst_color_indices));
+		ERR_FAIL_COND(!voxels->get_channel_as_bytes(VoxelBuffer::CHANNEL_COLOR, dst_color_indices));
 
 		CRASH_COND(src_color_indices.size() != dst_color_indices.size());
 		memcpy(dst_color_indices.data(), src_color_indices.data(), dst_color_indices.size() * sizeof(uint8_t));
@@ -187,8 +197,7 @@ void extract_model_instances(const Data &vox_data, std::vector<ModelInstance> &o
 	});
 }
 
-bool make_single_voxel_grid(
-		Span<const ModelInstance> instances, Vector3i &out_origin, VoxelBufferInternal &out_voxels) {
+bool make_single_voxel_grid(Span<const ModelInstance> instances, Vector3i &out_origin, VoxelBuffer &out_voxels) {
 	// Determine total size
 	const ModelInstance &first_instance = instances[0];
 	Box3i bounding_box(first_instance.position, first_instance.voxels->get_size());
@@ -201,29 +210,40 @@ bool make_single_voxel_grid(
 	// 3 gigabytes
 	const size_t limit = 3'000'000'000ull;
 	const size_t volume = Vector3iUtil::get_volume(bounding_box.size);
-	ERR_FAIL_COND_V_MSG(volume > limit, false,
+	ERR_FAIL_COND_V_MSG(
+			volume > limit,
+			false,
 			String("Vox data is too big to be meshed as a single mesh ({0}: {0} bytes)")
-					.format(varray(bounding_box.size, ZN_SIZE_T_TO_VARIANT(volume))));
+					.format(varray(bounding_box.size, ZN_SIZE_T_TO_VARIANT(volume)))
+	);
 
 	out_voxels.create(bounding_box.size + Vector3iUtil::create(VoxelMesherCubes::PADDING * 2));
-	out_voxels.set_channel_depth(VoxelBufferInternal::CHANNEL_COLOR, VoxelBufferInternal::DEPTH_8_BIT);
-	out_voxels.decompress_channel(VoxelBufferInternal::CHANNEL_COLOR);
+	out_voxels.set_channel_depth(VoxelBuffer::CHANNEL_COLOR, VoxelBuffer::DEPTH_8_BIT);
+	out_voxels.decompress_channel(VoxelBuffer::CHANNEL_COLOR);
 
 	for (unsigned int instance_index = 0; instance_index < instances.size(); ++instance_index) {
 		const ModelInstance &mi = instances[instance_index];
 		ERR_FAIL_COND_V(mi.voxels == nullptr, false);
-		out_voxels.copy_from(*mi.voxels, Vector3i(), mi.voxels->get_size(),
-				mi.position - bounding_box.pos + Vector3iUtil::create(VoxelMesherCubes::PADDING),
-				VoxelBufferInternal::CHANNEL_COLOR);
+		out_voxels.copy_channel_from(
+				*mi.voxels,
+				Vector3i(),
+				mi.voxels->get_size(),
+				mi.position - bounding_box.position + Vector3iUtil::create(VoxelMesherCubes::PADDING),
+				VoxelBuffer::CHANNEL_COLOR
+		);
 	}
 
-	out_origin = bounding_box.pos;
+	out_origin = bounding_box.position;
 	return true;
 }
 
-Error VoxelVoxMeshImporter::_zn_import(const String &p_source_file, const String &p_save_path,
-		const GodotKeyValueWrapper p_options, GodotStringListWrapper out_platform_variants,
-		GodotStringListWrapper out_gen_files) const {
+Error VoxelVoxMeshImporter::_zn_import(
+		const String &p_source_file,
+		const String &p_save_path,
+		const KeyValueWrapper p_options,
+		StringListWrapper out_platform_variants,
+		StringListWrapper out_gen_files
+) const {
 	//
 	const bool p_store_colors_in_textures = p_options.get("store_colors_in_texture");
 	const float p_scale = p_options.get("scale");
@@ -250,9 +270,9 @@ Error VoxelVoxMeshImporter::_zn_import(const String &p_source_file, const String
 
 	Ref<Image> atlas;
 	Ref<Mesh> mesh;
-	std::vector<unsigned int> surface_index_to_material;
+	StdVector<unsigned int> surface_index_to_material;
 	{
-		std::vector<ModelInstance> model_instances;
+		StdVector<ModelInstance> model_instances;
 		extract_model_instances(vox_data, model_instances);
 
 		// From this point we no longer need vox data so we can free some memory
@@ -261,7 +281,7 @@ Error VoxelVoxMeshImporter::_zn_import(const String &p_source_file, const String
 		// TODO Optimization: this approach uses a lot of memory, might fail on scenes with a large bounding box.
 		// One workaround would be to mesh the scene incrementally in chunks, giving up greedy meshing beyond 256 or so.
 		Vector3i bounding_box_origin;
-		VoxelBufferInternal voxels;
+		VoxelBuffer voxels(VoxelBuffer::ALLOCATOR_DEFAULT);
 		const bool single_grid_succeeded =
 				make_single_voxel_grid(to_span_const(model_instances), bounding_box_origin, voxels);
 		ERR_FAIL_COND_V(!single_grid_succeeded, ERR_CANT_CREATE);
@@ -363,7 +383,8 @@ Error VoxelVoxMeshImporter::_zn_import(const String &p_source_file, const String
 		String mesh_save_path = String("{0}.mesh").format(varray(p_save_path));
 		const Error mesh_save_err = save_resource(mesh, mesh_save_path, ResourceSaver::FLAG_NONE);
 		ERR_FAIL_COND_V_MSG(
-				mesh_save_err != OK, mesh_save_err, String("Failed to save {0}").format(varray(mesh_save_path)));
+				mesh_save_err != OK, mesh_save_err, String("Failed to save {0}").format(varray(mesh_save_path))
+		);
 	}
 
 	return OK;

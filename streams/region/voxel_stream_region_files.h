@@ -2,8 +2,9 @@
 #define VOXEL_STREAM_REGION_H
 
 #include "../../util/containers/fixed_array.h"
+#include "../../util/containers/std_vector.h"
+#include "../../util/godot/file_utils.h"
 #include "../../util/thread/mutex.h"
-#include "../file_utils.h"
 #include "../voxel_stream.h"
 #include "region_file.h"
 
@@ -66,11 +67,11 @@ private:
 		EMERGE_FAILED
 	};
 
-	EmergeResult _load_block(VoxelBufferInternal &out_buffer, Vector3i origin_in_voxels, int lod);
-	void _save_block(VoxelBufferInternal &voxel_buffer, Vector3i origin_in_voxels, int lod);
+	EmergeResult _load_block(VoxelBuffer &out_buffer, Vector3i block_pos, int lod);
+	void _save_block(VoxelBuffer &voxel_buffer, Vector3i block_pos, int lod);
 
-	FileResult save_meta();
-	FileResult load_meta();
+	zylann::godot::FileResult save_meta();
+	zylann::godot::FileResult load_meta();
 	Vector3i get_block_position_from_voxels(const Vector3i &origin_in_voxels) const;
 	Vector3i get_region_position_from_blocks(const Vector3i &block_position) const;
 	void close_all_regions();
@@ -85,7 +86,7 @@ private:
 		uint8_t lod_count = 0;
 		uint8_t block_size_po2 = 0; // How many voxels in a cubic block
 		uint8_t region_size_po2 = 0; // How many blocks in one cubic region
-		FixedArray<VoxelBufferInternal::Depth, VoxelBufferInternal::MAX_CHANNELS> channel_depths;
+		FixedArray<VoxelBuffer::Depth, VoxelBuffer::MAX_CHANNELS> channel_depths;
 		uint32_t sector_size = 0; // Blocks are stored at offsets multiple of that size
 	};
 
@@ -99,13 +100,13 @@ private:
 		// operator<
 		_FORCE_INLINE_ bool operator()(
 				const VoxelStream::VoxelQueryData &a, const VoxelStream::VoxelQueryData &b) const {
-			if (a.lod < b.lod) {
+			if (a.lod_index < b.lod_index) {
 				return true;
-			} else if (a.lod > b.lod) {
+			} else if (a.lod_index > b.lod_index) {
 				return false;
 			}
-			Vector3i bpos_a = self->get_block_position_from_voxels(a.origin_in_voxels);
-			Vector3i bpos_b = self->get_block_position_from_voxels(b.origin_in_voxels);
+			Vector3i bpos_a = a.position_in_blocks;
+			Vector3i bpos_b = b.position_in_blocks;
 			Vector3i rpos_a = self->get_region_position_from_blocks(bpos_a);
 			Vector3i rpos_b = self->get_region_position_from_blocks(bpos_b);
 			return rpos_a < rpos_b;
@@ -129,7 +130,7 @@ private:
 	Meta _meta;
 	bool _meta_loaded = false;
 	bool _meta_saved = false;
-	std::vector<CachedRegion *> _region_cache;
+	StdVector<CachedRegion *> _region_cache;
 	// TODO Add memory caches to increase capacity.
 	unsigned int _max_open_regions = MIN(8, FOPEN_MAX);
 

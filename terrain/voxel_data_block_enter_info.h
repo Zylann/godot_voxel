@@ -6,7 +6,7 @@
 
 namespace zylann::voxel {
 
-namespace gd {
+namespace godot {
 class VoxelBuffer;
 }
 
@@ -24,7 +24,7 @@ public:
 
 private:
 	int _b_get_network_peer_id() const;
-	Ref<gd::VoxelBuffer> _b_get_voxels() const;
+	Ref<godot::VoxelBuffer> _b_get_voxels() const;
 	Vector3i _b_get_position() const;
 	int _b_get_lod_index() const;
 	bool _b_are_voxels_edited() const;

@@ -212,6 +212,8 @@ bool VoxelMeshBlock::is_collision_enabled() const {
 
 Ref<ConcavePolygonShape3D> make_collision_shape_from_mesher_output(
 		const VoxelMesher::Output &mesher_output, const VoxelMesher &mesher) {
+	using namespace zylann::godot;
+
 	Ref<ConcavePolygonShape3D> shape;
 
 	if (mesher.is_generating_collision_surface()) {
@@ -230,7 +232,7 @@ Ref<ConcavePolygonShape3D> make_collision_shape_from_mesher_output(
 
 	} else {
 		// Use render mesh
-		static thread_local std::vector<Array> tls_render_surfaces;
+		static thread_local StdVector<Array> tls_render_surfaces;
 		ZN_ASSERT(tls_render_surfaces.size() == 0);
 
 		for (unsigned int i = 0; i < mesher_output.surfaces.size(); ++i) {

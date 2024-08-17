@@ -25,6 +25,7 @@ nav:
   - 'instancing.md'
   - 'editor.md'
   - 'multiplayer.md'
+  - 'navigation.md'
   - 'scripting.md'
   - 'procedural_generation.md'
   - 'performance.md'
@@ -33,6 +34,7 @@ nav:
   - '___.md'
   - 'Scripting API':
     # <generated_class_list>
+    - api/all_classes.md
     - api/FastNoise2.md
     - api/VoxelAStarGrid3D.md
     - api/VoxelBlockSerializer.md
@@ -87,6 +89,7 @@ nav:
     - api/VoxelRaycastResult.md
     - api/VoxelSaveCompletionTracker.md
     - api/VoxelStream.md
+    - api/VoxelStreamMemory.md
     - api/VoxelStreamRegionFiles.md
     - api/VoxelStreamSQLite.md
     - api/VoxelStreamScript.md
@@ -114,8 +117,8 @@ nav:
     - 'specs/instances_format_v1.md'
     - 'specs/region_format_v2.md'
     - 'specs/region_format_v3.md'
-    - 'specs/sqlite_format.md'
-    - '___2.md'
+    - 'specs/sqlite_format_v0.md'
+    - 'specs/sqlite_format_v1.md'
 
 markdown_extensions:
     # Makes permalinks appear on headings

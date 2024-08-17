@@ -1,13 +1,13 @@
 #ifndef ZN_GODOT_NODE_BUCKETS_STRATEGY_H
 #define ZN_GODOT_NODE_BUCKETS_STRATEGY_H
 
+#include "../containers/std_vector.h"
 #include "../errors.h"
 #include "macros.h"
-#include <vector>
 
 ZN_GODOT_FORWARD_DECLARE(class Node)
 
-namespace zylann {
+namespace zylann::godot {
 
 // A workaround for the fact Godot is very slow at removing nodes from the scene tree if they have many siblings...
 // See https://github.com/godotengine/godot/issues/61929
@@ -48,10 +48,10 @@ public:
 
 private:
 	Node &_parent;
-	std::vector<TBucket *> _free_buckets;
-	std::vector<TBucket *> _used_buckets;
+	StdVector<TBucket *> _free_buckets;
+	StdVector<TBucket *> _used_buckets;
 };
 
-} // namespace zylann
+} // namespace zylann::godot
 
 #endif // ZN_GODOT_NODE_BUCKETS_STRATEGY_H

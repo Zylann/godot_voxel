@@ -3,7 +3,7 @@
 #include "../profiling.h"
 #include "classes/rendering_server.h"
 
-namespace zylann {
+namespace zylann::godot {
 
 void ShaderMaterialPool::set_template(Ref<ShaderMaterial> tpl) {
 	_template_material = tpl;
@@ -14,10 +14,10 @@ void ShaderMaterialPool::set_template(Ref<ShaderMaterial> tpl) {
 		Ref<Shader> shader = _template_material->get_shader();
 
 		if (shader.is_valid()) {
-			std::vector<GodotShaderParameterInfo> params;
+			StdVector<godot::ShaderParameterInfo> params;
 			get_shader_parameter_list(shader->get_rid(), params);
 
-			for (const GodotShaderParameterInfo &pi : params) {
+			for (const godot::ShaderParameterInfo &pi : params) {
 				_shader_params_cache.push_back(pi.name);
 			}
 		}
@@ -77,4 +77,4 @@ void copy_shader_params(const ShaderMaterial &src, ShaderMaterial &dst, Span<con
 	}
 }
 
-} // namespace zylann
+} // namespace zylann::godot

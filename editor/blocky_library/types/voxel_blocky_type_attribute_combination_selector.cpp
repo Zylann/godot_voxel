@@ -2,7 +2,6 @@
 #include "../../../constants/voxel_string_names.h"
 #include "../../../util/godot/classes/label.h"
 #include "../../../util/godot/classes/option_button.h"
-#include "../../../util/godot/core/callable.h"
 #include "../../../util/godot/editor_scale.h"
 
 namespace zylann::voxel {
@@ -16,14 +15,14 @@ VoxelBlockyTypeAttributeCombinationSelector::VoxelBlockyTypeAttributeCombination
 void VoxelBlockyTypeAttributeCombinationSelector::set_type(Ref<VoxelBlockyType> type) {
 	if (_type.is_valid()) {
 		_type->disconnect(VoxelStringNames::get_singleton().changed,
-				ZN_GODOT_CALLABLE_MP(this, VoxelBlockyTypeAttributeCombinationSelector, _on_type_changed));
+				callable_mp(this, &VoxelBlockyTypeAttributeCombinationSelector::_on_type_changed));
 	}
 
 	_type = type;
 
 	if (_type.is_valid()) {
 		_type->connect(VoxelStringNames::get_singleton().changed,
-				ZN_GODOT_CALLABLE_MP(this, VoxelBlockyTypeAttributeCombinationSelector, _on_type_changed));
+				callable_mp(this, &VoxelBlockyTypeAttributeCombinationSelector::_on_type_changed));
 	}
 
 	update_attribute_editors();
@@ -32,7 +31,7 @@ void VoxelBlockyTypeAttributeCombinationSelector::set_type(Ref<VoxelBlockyType> 
 VoxelBlockyType::VariantKey VoxelBlockyTypeAttributeCombinationSelector::get_variant_key() const {
 	ZN_ASSERT_RETURN_V(_type.is_valid(), VoxelBlockyType::VariantKey());
 
-	std::vector<Ref<VoxelBlockyAttribute>> attributes;
+	StdVector<Ref<VoxelBlockyAttribute>> attributes;
 	_type->get_checked_attributes(attributes);
 
 	VoxelBlockyType::VariantKey key;
@@ -87,7 +86,7 @@ void VoxelBlockyTypeAttributeCombinationSelector::remove_attribute_editor(unsign
 	_attribute_editors.erase(_attribute_editors.begin() + index);
 }
 
-bool contains_attribute_with_name(const std::vector<Ref<VoxelBlockyAttribute>> &attribs, const StringName &name) {
+bool contains_attribute_with_name(const StdVector<Ref<VoxelBlockyAttribute>> &attribs, const StringName &name) {
 	for (const Ref<VoxelBlockyAttribute> &attrib : attribs) {
 		if (attrib->get_attribute_name() == name) {
 			return true;
@@ -97,7 +96,7 @@ bool contains_attribute_with_name(const std::vector<Ref<VoxelBlockyAttribute>> &
 }
 
 void VoxelBlockyTypeAttributeCombinationSelector::update_attribute_editors() {
-	std::vector<Ref<VoxelBlockyAttribute>> attributes;
+	StdVector<Ref<VoxelBlockyAttribute>> attributes;
 	_type->get_checked_attributes(attributes);
 
 	GridContainer *attributes_container = this;
@@ -155,8 +154,7 @@ void VoxelBlockyTypeAttributeCombinationSelector::update_attribute_editors() {
 		ed.selector->select(index_to_select);
 
 		ed.selector->connect("item_selected",
-				ZN_GODOT_CALLABLE_MP(
-						this, VoxelBlockyTypeAttributeCombinationSelector, _on_attribute_editor_value_selected)
+				callable_mp(this, &VoxelBlockyTypeAttributeCombinationSelector::_on_attribute_editor_value_selected)
 						.bind(editor_index));
 
 		// Make a copy so we can detect changes later. It should be cheap as attributes are small resources.
@@ -191,11 +189,6 @@ void VoxelBlockyTypeAttributeCombinationSelector::_on_attribute_editor_value_sel
 }
 
 void VoxelBlockyTypeAttributeCombinationSelector::_bind_methods() {
-#ifdef ZN_GODOT_EXTENSION
-	ClassDB::bind_method(D_METHOD("_on_type_changed"), &VoxelBlockyTypeAttributeCombinationSelector::_on_type_changed);
-	ClassDB::bind_method(D_METHOD("_on_attribute_editor_value_selected"),
-			&VoxelBlockyTypeAttributeCombinationSelector::_on_attribute_editor_value_selected);
-#endif
 	ADD_SIGNAL(MethodInfo(SIGNAL_COMBINATION_CHANGED));
 }
 

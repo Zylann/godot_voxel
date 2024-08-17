@@ -1,6 +1,6 @@
 #include "dstack.h"
 #include "containers/fixed_array.h"
-#include "string_funcs.h"
+#include "string/format.h"
 
 #include <string>
 

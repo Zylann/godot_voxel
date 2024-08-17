@@ -12,7 +12,6 @@
 #include "../../util/godot/classes/v_box_container.h"
 #include "../../util/godot/classes/v_separator.h"
 #include "../../util/godot/core/array.h"
-#include "../../util/godot/core/callable.h"
 #include "../../util/godot/editor_scale.h"
 
 namespace zylann::voxel {
@@ -29,7 +28,7 @@ VoxelGraphEditorIODialog::VoxelGraphEditorIODialog() {
 	_auto_generate_button = memnew(Button);
 	_auto_generate_button->set_text(ZN_TTR("Auto-generate"));
 	_auto_generate_button->connect(
-			"pressed", ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditorIODialog, _on_auto_generate_button_pressed));
+			"pressed", callable_mp(this, &VoxelGraphEditorIODialog::_on_auto_generate_button_pressed));
 	vb->add_child(_auto_generate_button);
 
 	HBoxContainer *hb = memnew(HBoxContainer);
@@ -43,7 +42,7 @@ VoxelGraphEditorIODialog::VoxelGraphEditorIODialog() {
 
 	add_child(vb);
 
-	get_ok_button()->connect("pressed", ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditorIODialog, _on_ok_pressed));
+	get_ok_button()->connect("pressed", callable_mp(this, &VoxelGraphEditorIODialog::_on_ok_pressed));
 
 	// Godot devs added more shadowing warnings around may 2023 but with MSVC it prevents us to use local variable names
 	// that are the same as PRIVATE variables from inherited classes (and Godot does not prefix members)... So sometimes
@@ -206,7 +205,7 @@ void VoxelGraphEditorIODialog::_notification(int p_what) {
 
 // Using polling instead of signals. Seems cleaner. We'll see how it holds later.
 
-void VoxelGraphEditorIODialog::copy_ui_to_data(const PortsUI &ui, std::vector<VoxelGraphFunction::Port> &ports) {
+void VoxelGraphEditorIODialog::copy_ui_to_data(const PortsUI &ui, StdVector<VoxelGraphFunction::Port> &ports) {
 	const unsigned int item_count = ui.item_list->get_item_count();
 
 	if (ports.size() != item_count) {
@@ -229,7 +228,7 @@ void VoxelGraphEditorIODialog::copy_ui_to_data(const PortsUI &ui, std::vector<Vo
 	}
 }
 
-void VoxelGraphEditorIODialog::copy_data_to_ui(PortsUI &ui, const std::vector<VoxelGraphFunction::Port> &ports) {
+void VoxelGraphEditorIODialog::copy_data_to_ui(PortsUI &ui, const StdVector<VoxelGraphFunction::Port> &ports) {
 	if (ui.item_list->get_item_count() != int(ports.size())) {
 		PackedInt32Array selection = ui.item_list->get_selected_items();
 
@@ -268,7 +267,7 @@ void VoxelGraphEditorIODialog::process() {
 	process_ui(_outputs_ui, _outputs);
 }
 
-void VoxelGraphEditorIODialog::process_ui(PortsUI &ui, std::vector<VoxelGraphFunction::Port> &ports) {
+void VoxelGraphEditorIODialog::process_ui(PortsUI &ui, StdVector<VoxelGraphFunction::Port> &ports) {
 	PackedInt32Array selection = ui.item_list->get_selected_items();
 	const int port_index = selection.size() == 0 ? -1 : selection[0];
 	if (port_index != ui.selected_item) {
@@ -326,11 +325,6 @@ void VoxelGraphEditorIODialog::reshow(Ref<VoxelGraphFunction> graph) {
 }
 
 void VoxelGraphEditorIODialog::_bind_methods() {
-#ifdef ZN_GODOT_EXTENSION
-	ClassDB::bind_method(
-			D_METHOD("_on_auto_generate_button_pressed"), &VoxelGraphEditorIODialog::_on_auto_generate_button_pressed);
-	ClassDB::bind_method(D_METHOD("_on_ok_pressed"), &VoxelGraphEditorIODialog::_on_ok_pressed);
-#endif
 	ClassDB::bind_method(D_METHOD("reshow"), &VoxelGraphEditorIODialog::reshow);
 }
 

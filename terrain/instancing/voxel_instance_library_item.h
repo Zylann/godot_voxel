@@ -2,6 +2,8 @@
 #define VOXEL_INSTANCE_LIBRARY_ITEM_H
 
 #include "../../util/containers/fixed_array.h"
+#include "../../util/containers/std_vector.h"
+#include "instance_library_item_listener.h"
 #include "voxel_instance_generator.h"
 
 namespace zylann::voxel {
@@ -9,21 +11,6 @@ namespace zylann::voxel {
 class VoxelInstanceLibraryItem : public Resource {
 	GDCLASS(VoxelInstanceLibraryItem, Resource)
 public:
-	enum ChangeType { //
-		CHANGE_LOD_INDEX,
-		CHANGE_GENERATOR,
-		CHANGE_VISUAL,
-		CHANGE_ADDED,
-		CHANGE_REMOVED,
-		CHANGE_SCENE
-	};
-
-	class IListener {
-	public:
-		virtual ~IListener() {}
-		virtual void on_library_item_changed(int id, ChangeType change) = 0;
-	};
-
 	void set_item_name(String p_name);
 	String get_item_name() const;
 
@@ -38,15 +25,15 @@ public:
 
 	// Internal
 
-	void add_listener(IListener *listener, int id);
-	void remove_listener(IListener *listener, int id);
+	void add_listener(IInstanceLibraryItemListener *listener, int id);
+	void remove_listener(IInstanceLibraryItemListener *listener, int id);
 
 #ifdef TOOLS_ENABLED
 	virtual void get_configuration_warnings(PackedStringArray &warnings) const;
 #endif
 
 protected:
-	void notify_listeners(ChangeType change);
+	void notify_listeners(IInstanceLibraryItemListener::ChangeType change);
 
 private:
 	void _on_generator_changed();
@@ -69,7 +56,7 @@ private:
 	Ref<VoxelInstanceGenerator> _generator;
 
 	struct ListenerSlot {
-		IListener *listener;
+		IInstanceLibraryItemListener *listener;
 		int id;
 
 		inline bool operator==(const ListenerSlot &other) const {
@@ -77,7 +64,7 @@ private:
 		}
 	};
 
-	std::vector<ListenerSlot> _listeners;
+	StdVector<ListenerSlot> _listeners;
 };
 
 } // namespace zylann::voxel

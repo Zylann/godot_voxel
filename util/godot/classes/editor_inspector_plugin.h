@@ -8,7 +8,7 @@
 using namespace godot;
 #endif
 
-namespace zylann {
+namespace zylann::godot {
 
 class ZN_EditorInspectorPlugin : public EditorInspectorPlugin {
 	GDCLASS(ZN_EditorInspectorPlugin, EditorInspectorPlugin)
@@ -38,11 +38,11 @@ protected:
 			const PropertyHint p_hint, const String &p_hint_text, const BitField<PropertyUsageFlags> p_usage,
 			const bool p_wide);
 
-protected:
+private:
 	// When compiling with GodotCpp, `_bind_methods` is not optional
 	static void _bind_methods() {}
 };
 
-} // namespace zylann
+} // namespace zylann::godot
 
 #endif // ZN_GODOT_EDITOR_INSPECTOR_PLUGIN_H

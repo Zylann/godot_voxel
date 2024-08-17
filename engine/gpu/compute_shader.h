@@ -3,7 +3,7 @@
 
 #include "../../util/godot/core/rid.h"
 #include "../../util/godot/core/string.h"
-#include "../../util/memory.h"
+#include "../../util/memory/memory.h"
 
 namespace zylann::voxel {
 

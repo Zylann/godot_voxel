@@ -2,116 +2,20 @@
 #define VOXEL_EDITION_FUNCS_H
 
 #include "../storage/funcs.h"
+#include "../storage/materials_4i4w.h"
 #include "../storage/voxel_data_grid.h"
+#include "../util/containers/dynamic_bitset.h"
 #include "../util/containers/fixed_array.h"
+#include "../util/godot/macros.h"
 #include "../util/math/conv.h"
 #include "../util/math/sdf.h"
 #include "../util/math/transform_3d.h"
 #include "../util/profiling.h"
 
+ZN_GODOT_FORWARD_DECLARE(class Callable);
+ZN_GODOT_FORWARD_DECLARE(class RandomPCG);
+
 namespace zylann::voxel {
-
-inline void _normalize_weights_preserving(FixedArray<float, 4> &weights, unsigned int preserved_index,
-		unsigned int other0, unsigned int other1, unsigned int other2) {
-	const float part_sum = weights[other0] + weights[other1] + weights[other2];
-	// It is assumed the preserved channel is already clamped to [0, 1]
-	const float expected_part_sum = 1.f - weights[preserved_index];
-
-	if (part_sum < 0.0001f) {
-		weights[other0] = expected_part_sum / 3.f;
-		weights[other1] = expected_part_sum / 3.f;
-		weights[other2] = expected_part_sum / 3.f;
-
-	} else {
-		const float scale = expected_part_sum / part_sum;
-		weights[other0] *= scale;
-		weights[other1] *= scale;
-		weights[other2] *= scale;
-	}
-}
-
-inline void normalize_weights_preserving(FixedArray<float, 4> &weights, unsigned int preserved_index) {
-	switch (preserved_index) {
-		case 0:
-			_normalize_weights_preserving(weights, 0, 1, 2, 3);
-			break;
-		case 1:
-			_normalize_weights_preserving(weights, 1, 0, 2, 3);
-			break;
-		case 2:
-			_normalize_weights_preserving(weights, 2, 1, 0, 3);
-			break;
-		default:
-			_normalize_weights_preserving(weights, 3, 1, 2, 0);
-			break;
-	}
-}
-
-/*inline void normalize_weights(FixedArray<float, 4> &weights) {
-	float sum = 0;
-	for (unsigned int i = 0; i < weights.size(); ++i) {
-		sum += weights[i];
-	}
-	const float sum_inv = 255.f / sum;
-	for (unsigned int i = 0; i < weights.size(); ++i) {
-		weights[i] = clamp(weights[i] * sum_inv, 0.f, 255.f);
-	}
-}*/
-
-inline void blend_texture_packed_u16(
-		int texture_index, float target_weight, uint16_t &encoded_indices, uint16_t &encoded_weights) {
-#ifdef DEBUG_ENABLED
-	ZN_ASSERT_RETURN(target_weight >= 0.f && target_weight <= 1.f);
-#endif
-
-	FixedArray<uint8_t, 4> indices = decode_indices_from_packed_u16(encoded_indices);
-	FixedArray<uint8_t, 4> weights = decode_weights_from_packed_u16(encoded_weights);
-
-	// Search if our texture index is already present
-	unsigned int component_index = 4;
-	for (unsigned int i = 0; i < indices.size(); ++i) {
-		if (indices[i] == texture_index) {
-			component_index = i;
-			break;
-		}
-	}
-
-	bool index_was_changed = false;
-	if (component_index >= indices.size()) {
-		// Our texture index is not present, we'll replace the lowest weight
-		uint8_t lowest_weight = 255;
-		// Default to 0 in the hypothetic case where all weights are maxed
-		component_index = 0;
-		for (unsigned int i = 0; i < weights.size(); ++i) {
-			if (weights[i] < lowest_weight) {
-				lowest_weight = weights[i];
-				component_index = i;
-			}
-		}
-		indices[component_index] = texture_index;
-		index_was_changed = true;
-	}
-
-	// TODO Optimization in case target_weight is 1?
-
-	FixedArray<float, 4> weights_f;
-	for (unsigned int i = 0; i < weights.size(); ++i) {
-		weights_f[i] = weights[i] / 255.f;
-	}
-
-	if (weights_f[component_index] < target_weight || index_was_changed) {
-		weights_f[component_index] = target_weight;
-
-		normalize_weights_preserving(weights_f, component_index);
-
-		for (unsigned int i = 0; i < weights_f.size(); ++i) {
-			weights[i] = math::clamp(weights_f[i] * 255.f, 0.f, 255.f);
-		}
-
-		encoded_indices = encode_indices_to_packed_u16(indices[0], indices[1], indices[2], indices[3]);
-		encoded_weights = encode_weights_to_packed_u16_lossy(weights[0], weights[1], weights[2], weights[3]);
-	}
-}
 
 // Interpolates values from a 3D grid at a given position, using trilinear interpolation.
 // If the position is outside the grid, values are clamped.
@@ -136,7 +40,8 @@ inline float interpolate_trilinear(Span<const float> grid, const Vector3i res, c
 	const unsigned int i111 = i110 + n001;
 
 	return math::interpolate_trilinear(
-			grid[i000], grid[i100], grid[i101], grid[i001], grid[i010], grid[i110], grid[i111], grid[i011], pf);
+			grid[i000], grid[i100], grid[i101], grid[i001], grid[i010], grid[i110], grid[i111], grid[i011], pf
+	);
 }
 
 template <typename Volume_F>
@@ -156,16 +61,195 @@ float get_sdf_interpolated(const Volume_F &f, Vector3 pos) {
 }
 
 // Standalone helper function to copy voxels from any 3D chunked container
-void copy_from_chunked_storage(VoxelBufferInternal &dst_buffer, Vector3i min_pos, unsigned int block_size_po2,
-		uint32_t channels_mask, const VoxelBufferInternal *(*get_block_func)(void *, Vector3i),
-		void *get_block_func_ctx);
+void copy_from_chunked_storage( //
+		VoxelBuffer &dst_buffer, //
+		Vector3i min_pos, //
+		unsigned int block_size_po2, //
+		uint32_t channels_mask, //
+		const VoxelBuffer *(*get_block_func)(void *, Vector3i), //
+		void *get_block_func_ctx //
+);
 
 // Standalone helper function to paste voxels to any 3D chunked container
-void paste_to_chunked_storage(const VoxelBufferInternal &src_buffer, Vector3i min_pos, unsigned int block_size_po2,
-		unsigned int channels_mask, bool use_mask, uint8_t mask_channel, uint64_t mask_value,
-		VoxelBufferInternal *(*get_block_func)(void *, Vector3i), void *get_block_func_ctx);
+void paste_to_chunked_storage( //
+		const VoxelBuffer &src_buffer, //
+		Vector3i min_pos, //
+		unsigned int block_size_po2, //
+		unsigned int channels_mask, //
+		bool use_mask, //
+		uint8_t mask_channel, //
+		uint64_t mask_value, //
+		VoxelBuffer *(*get_block_func)(void *, Vector3i), //
+		void *get_block_func_ctx //
+);
+
+template <typename FGetBlock, typename FPaste>
+void paste_to_chunked_storage_tp( //
+		const VoxelBuffer &src_buffer, //
+		Vector3i min_pos, //
+		unsigned int block_size_po2, //
+		unsigned int channels_mask, //
+		FGetBlock get_block_func, // (position) -> VoxelBuffer*
+		FPaste paste_func // (channels, src_buffer, dst_buffer, dst_base_pos) -> void
+) {
+	const Vector3i max_pos = min_pos + src_buffer.get_size();
+
+	const Vector3i min_block_pos = min_pos >> block_size_po2;
+	const Vector3i max_block_pos = ((max_pos - Vector3i(1, 1, 1)) >> block_size_po2) + Vector3i(1, 1, 1);
+
+	const SmallVector<uint8_t, VoxelBuffer::MAX_CHANNELS> channels = VoxelBuffer::mask_to_channels_list(channels_mask);
+
+	Vector3i bpos;
+	for (bpos.z = min_block_pos.z; bpos.z < max_block_pos.z; ++bpos.z) {
+		for (bpos.x = min_block_pos.x; bpos.x < max_block_pos.x; ++bpos.x) {
+			for (bpos.y = min_block_pos.y; bpos.y < max_block_pos.y; ++bpos.y) {
+				VoxelBuffer *dst_buffer = get_block_func(bpos);
+
+				if (dst_buffer == nullptr) {
+					continue;
+				}
+
+				const Vector3i dst_block_origin = bpos << block_size_po2;
+				const Vector3i dst_base_pos = min_pos - dst_block_origin;
+
+				paste_func(to_span(channels), src_buffer, *dst_buffer, dst_base_pos);
+			}
+		}
+	}
+}
+
+namespace paste_functors {
+
+// Wraps calls to paste functions due to a few differences for now.
+
+struct Default {
+	void operator()(Span<const uint8_t> channels, const VoxelBuffer &src, VoxelBuffer &dst, Vector3i dst_base_pos) {
+		paste(channels, src, dst, dst_base_pos, true);
+	}
+};
+
+struct SrcMasked {
+	uint8_t src_mask_channel;
+	uint64_t src_mask_value;
+
+	void operator()(Span<const uint8_t> channels, const VoxelBuffer &src, VoxelBuffer &dst, Vector3i dst_base_pos) {
+		paste_src_masked(channels, src, src_mask_channel, src_mask_value, dst, dst_base_pos, true);
+	}
+};
+
+struct SrcMasked_DstWritableValue {
+	const uint8_t src_mask_channel;
+	const uint8_t dst_mask_channel;
+	const uint64_t src_mask_value;
+	const uint64_t dst_mask_value;
+
+	void operator()(Span<const uint8_t> channels, const VoxelBuffer &src, VoxelBuffer &dst, Vector3i dst_base_pos) {
+		paste_src_masked_dst_writable_value( //
+				channels, //
+				src, //
+				src_mask_channel, //
+				src_mask_value, //
+				dst, //
+				dst_base_pos, //
+				dst_mask_channel, //
+				dst_mask_value, //
+				true //
+		);
+	}
+};
+
+struct SrcMasked_DstWritableBitArray {
+	const uint8_t src_mask_channel;
+	const uint8_t dst_mask_channel;
+	const uint64_t src_mask_value;
+	const DynamicBitset &bitarray;
+
+	void operator()(Span<const uint8_t> channels, const VoxelBuffer &src, VoxelBuffer &dst, Vector3i dst_base_pos) {
+		paste_src_masked_dst_writable_bitarray( //
+				channels, //
+				src, //
+				src_mask_channel, //
+				src_mask_value, //
+				dst, //
+				dst_base_pos, //
+				dst_mask_channel, //
+				bitarray, //
+				true //
+		);
+	}
+};
+
+} // namespace paste_functors
+
+bool indices_to_bitarray_u16(Span<const int32_t> indices, DynamicBitset &bitarray);
+
+template <typename FGetBlock>
+void paste_to_chunked_storage_masked_writable_list( //
+		const VoxelBuffer &src, //
+		Vector3i min_pos, //
+		uint8_t block_size_po2, //
+		uint8_t channels_mask, //
+		FGetBlock get_block_func, // (position) -> VoxelBuffer*
+		uint8_t src_mask_channel, //
+		uint64_t src_mask_value, //
+		uint8_t dst_mask_channel, //
+		Span<const int32_t> dst_writable_values //
+) {
+	using namespace paste_functors;
+
+	if (dst_writable_values.size() == 1) {
+		const uint64_t dst_mask_value = dst_writable_values[0];
+		paste_to_chunked_storage_tp(
+				src,
+				min_pos,
+				block_size_po2,
+				channels_mask, //
+				get_block_func, //
+				SrcMasked_DstWritableValue{ src_mask_channel, dst_mask_channel, src_mask_value, dst_mask_value } //
+		);
+
+	} else {
+		// TODO Candidate for TempAllocator
+		DynamicBitset bitarray;
+		indices_to_bitarray_u16(dst_writable_values, bitarray);
+		paste_to_chunked_storage_tp(
+				src,
+				min_pos,
+				block_size_po2,
+				channels_mask, //
+				get_block_func, //
+				SrcMasked_DstWritableBitArray{ src_mask_channel, dst_mask_channel, src_mask_value, bitarray } //
+		);
+	}
+}
 
 AABB get_path_aabb(Span<const Vector3> positions, Span<const float> radii);
+
+class VoxelData;
+class VoxelBlockyLibraryBase;
+
+// For easier unit testing (the regular one needs a terrain setup etc, harder to test atm)
+// The `_static` suffix is because it otherwise conflicts with the non-static method when registering the class
+void run_blocky_random_tick(
+		VoxelData &data,
+		Box3i voxel_box,
+		const VoxelBlockyLibraryBase &lib,
+		RandomPCG &random,
+		int voxel_count,
+		int batch_count,
+		void *callback_data,
+		bool (*callback)(void *, Vector3i, int64_t)
+);
+
+void run_blocky_random_tick(
+		VoxelData &data,
+		AABB voxel_box_f,
+		const VoxelBlockyLibraryBase &lib,
+		RandomPCG &random,
+		int voxel_count,
+		int batch_count,
+		const Callable &callback
+);
 
 } // namespace zylann::voxel
 
@@ -182,7 +266,10 @@ struct SdfOperation16bit {
 	Op op;
 	Shape shape;
 	inline int16_t operator()(Vector3i pos, int16_t sdf) const {
-		return snorm_to_s16(op(s16_to_snorm(sdf), shape(Vector3(pos))));
+		return snorm_to_s16(
+				op(s16_to_snorm(sdf) * constants::QUANTIZED_SDF_16_BITS_SCALE_INV, shape(Vector3(pos))) *
+				constants::QUANTIZED_SDF_16_BITS_SCALE
+		);
 	}
 };
 
@@ -218,8 +305,9 @@ struct BlockySetOperation {
 
 inline Box3i get_sdf_sphere_box(Vector3 center, real_t radius) {
 	return Box3i::from_min_max( //
-			math::floor_to_int(center - Vector3(radius, radius, radius)),
-			math::ceil_to_int(center + Vector3(radius, radius, radius)))
+				   math::floor_to_int(center - Vector3(radius, radius, radius)),
+				   math::ceil_to_int(center + Vector3(radius, radius, radius))
+	)
 			// That padding is for SDF to have some margin
 			// TODO Don't add padding from here, it must be done at higher level, where we know the type of operation
 			.padded(2);
@@ -264,7 +352,9 @@ struct SdfHemisphere {
 		return sdf_scale *
 				math::sdf_smooth_subtract( //
 						math::sdf_sphere(pos, center, radius), //
-						math::sdf_plane(pos, flat_direction, plane_d), smoothness);
+						math::sdf_plane(pos, flat_direction, plane_d),
+						smoothness
+				);
 	}
 
 	inline bool is_inside(Vector3 pos) const {
@@ -291,9 +381,9 @@ struct SdfBufferShape {
 		// Transform terrain-space position to buffer-space
 		const Vector3f lpos = to_vec3f(world_to_buffer.xform(wpos));
 		if (lpos.x < 0 || lpos.y < 0 || lpos.z < 0 || lpos.x >= buffer_size.x || lpos.y >= buffer_size.y ||
-				lpos.z >= buffer_size.z) {
+			lpos.z >= buffer_size.z) {
 			// Outside the buffer
-			return 100;
+			return constants::SDF_FAR_OUTSIDE;
 		}
 		// TODO Trilinear looks bad when the shape is scaled up.
 		// Use Hermite in 3D https://www.researchgate.net/publication/360206102_Hermite_interpolation_of_heightmaps
@@ -302,6 +392,31 @@ struct SdfBufferShape {
 
 	inline const char *name() const {
 		return "SdfBufferShape";
+	}
+};
+
+struct SdfAxisAlignedBox {
+	Vector3 center;
+	Vector3 half_size;
+	real_t sdf_scale;
+
+	inline real_t operator()(Vector3 pos) const {
+		return sdf_scale * math::sdf_box(pos - center, half_size);
+	}
+
+	inline bool is_inside(Vector3 pos) const {
+		return AABB(center - half_size, 2 * half_size).has_point(pos);
+	}
+
+	inline Box3i get_box() {
+		return Box3i::from_min_max( //
+					   math::floor_to_int(center - half_size),
+					   math::ceil_to_int(center + half_size)
+		)
+				// That padding is for SDF to have some margin
+				// TODO Don't add padding from here, it must be done at higher level, where we know the type of
+				// operation
+				.padded(2);
 	}
 };
 
@@ -378,7 +493,32 @@ enum Mode { //
 	MODE_TEXTURE_PAINT
 };
 
-// This one is implemented manually for a fast-path in texture paint
+// Single-value helper. Prefer using bulk APIs otherwise.
+inline float sdf_blend(float src_value, float dst_value, Mode mode) {
+	float res;
+	switch (mode) {
+		case MODE_ADD:
+			res = zylann::math::sdf_union(src_value, dst_value);
+			break;
+
+		case MODE_REMOVE:
+			// Relative complement (or difference)
+			res = zylann::math::sdf_subtract(dst_value, src_value);
+			break;
+
+		case MODE_SET:
+			res = src_value;
+			break;
+
+		default:
+			res = 0;
+			break;
+	}
+	return res;
+}
+
+// This one is implemented manually for a fast-path in texture paint.
+// Also handles locking...
 // TODO Find a nicer way to do this without copypasta
 struct DoSphere {
 	SdfSphere shape;
@@ -386,40 +526,44 @@ struct DoSphere {
 	VoxelDataGrid blocks;
 	Box3i box;
 	TextureParams texture_params;
-	VoxelBufferInternal::ChannelId channel;
+	VoxelBuffer::ChannelId channel;
 	uint32_t blocky_value;
 	float strength;
 
 	void operator()() {
 		ZN_PROFILE_SCOPE();
 
-		if (channel == VoxelBufferInternal::CHANNEL_SDF) {
+		if (channel == VoxelBuffer::CHANNEL_SDF) {
 			switch (mode) {
 				case MODE_ADD: {
 					// TODO Support other depths, format should be accessible from the volume
 					SdfOperation16bit<SdfUnion, SdfSphere> op;
 					op.shape = shape;
 					op.op.strength = strength;
-					blocks.write_box(box, VoxelBufferInternal::CHANNEL_SDF, op);
+					blocks.write_box(box, VoxelBuffer::CHANNEL_SDF, op);
 				} break;
 
 				case MODE_REMOVE: {
 					SdfOperation16bit<SdfSubtract, SdfSphere> op;
 					op.shape = shape;
 					op.op.strength = strength;
-					blocks.write_box(box, VoxelBufferInternal::CHANNEL_SDF, op);
+					blocks.write_box(box, VoxelBuffer::CHANNEL_SDF, op);
 				} break;
 
 				case MODE_SET: {
 					SdfOperation16bit<SdfSet, SdfSphere> op;
 					op.shape = shape;
 					op.op.strength = strength;
-					blocks.write_box(box, VoxelBufferInternal::CHANNEL_SDF, op);
+					blocks.write_box(box, VoxelBuffer::CHANNEL_SDF, op);
 				} break;
 
 				case MODE_TEXTURE_PAINT: {
-					blocks.write_box_2(box, VoxelBufferInternal::CHANNEL_INDICES, VoxelBufferInternal::CHANNEL_WEIGHTS,
-							TextureBlendSphereOp(shape.center, shape.radius, texture_params));
+					blocks.write_box_2(
+							box,
+							VoxelBuffer::CHANNEL_INDICES,
+							VoxelBuffer::CHANNEL_WEIGHTS,
+							TextureBlendSphereOp(shape.center, shape.radius, texture_params)
+					);
 				} break;
 
 				default:
@@ -436,30 +580,32 @@ struct DoSphere {
 };
 
 template <typename TBlockAccess, typename FBlockAction>
-void process_chunked_storage(Box3i voxel_box,
-		// VoxelBufferInternal *get_block(Vector3i bpos)
+void process_chunked_storage(
+		Box3i voxel_box,
+		// VoxelBuffer *get_block(Vector3i bpos)
 		// unsigned int get_block_size_po2()
 		TBlockAccess block_access,
-		// void(VoxelBufferInternal &vb, Box3i local_box, Vector3i origin)
-		FBlockAction op_func) {
+		// void(VoxelBuffer &vb, Box3i local_box, Vector3i origin)
+		FBlockAction op_func
+) {
 	//
-	const Vector3i max_pos = voxel_box.pos + voxel_box.size;
+	const Vector3i max_pos = voxel_box.position + voxel_box.size;
 
 	const unsigned int block_size_po2 = block_access.get_block_size_po2();
 
-	const Vector3i min_block_pos = voxel_box.pos >> block_size_po2;
+	const Vector3i min_block_pos = voxel_box.position >> block_size_po2;
 	const Vector3i max_block_pos = ((max_pos - Vector3i(1, 1, 1)) >> block_size_po2) + Vector3i(1, 1, 1);
 
 	Vector3i bpos;
 	for (bpos.z = min_block_pos.z; bpos.z < max_block_pos.z; ++bpos.z) {
 		for (bpos.x = min_block_pos.x; bpos.x < max_block_pos.x; ++bpos.x) {
 			for (bpos.y = min_block_pos.y; bpos.y < max_block_pos.y; ++bpos.y) {
-				VoxelBufferInternal *block = block_access.get_block(bpos);
+				VoxelBuffer *block = block_access.get_block(bpos);
 				if (block == nullptr) {
 					continue;
 				}
 				const Vector3i block_origin = bpos << block_size_po2;
-				const Box3i local_box = Box3i(voxel_box.pos - block_origin, voxel_box.size)
+				const Box3i local_box = Box3i(voxel_box.position - block_origin, voxel_box.size)
 												.clipped(Box3i(Vector3i(), Vector3iUtil::create(1 << block_size_po2)));
 
 				op_func(*block, local_box, block_origin);
@@ -471,29 +617,43 @@ void process_chunked_storage(Box3i voxel_box,
 template <typename TBlockAccess, typename FOp>
 inline void write_box_in_chunked_storage_1_channel(
 		// D process(D src, Vector3i position)
-		const FOp &op, TBlockAccess &block_access, Box3i box, VoxelBufferInternal::ChannelId channel_id) {
+		const FOp &op,
+		TBlockAccess &block_access,
+		Box3i box,
+		VoxelBuffer::ChannelId channel_id
+) {
 	//
 	process_chunked_storage(
-			box, block_access, [&op, channel_id](VoxelBufferInternal &vb, const Box3i local_box, Vector3i origin) {
+			box,
+			block_access,
+			[&op, channel_id](VoxelBuffer &vb, const Box3i local_box, Vector3i origin) {
 				vb.write_box(local_box, channel_id, op, origin);
-			});
+			}
+	);
 }
 
 template <typename TBlockAccess, typename FOp>
 inline void write_box_in_chunked_storage_2_channels(
 		// D process(D src, Vector3i position)
-		const FOp &op, TBlockAccess &block_access, Box3i box, VoxelBufferInternal::ChannelId channel0_id,
-		VoxelBufferInternal::ChannelId channel1_id) {
+		const FOp &op,
+		TBlockAccess &block_access,
+		Box3i box,
+		VoxelBuffer::ChannelId channel0_id,
+		VoxelBuffer::ChannelId channel1_id
+) {
 	//
-	process_chunked_storage(box, block_access,
-			[&op, channel0_id, channel1_id](VoxelBufferInternal &vb, const Box3i local_box, Vector3i origin) {
+	process_chunked_storage(
+			box,
+			block_access,
+			[&op, channel0_id, channel1_id](VoxelBuffer &vb, const Box3i local_box, Vector3i origin) {
 				vb.write_box_2_template<FOp, uint16_t, uint16_t>(local_box, channel0_id, channel1_id, op, origin);
-			});
+			}
+	);
 }
 
 struct VoxelDataGridAccess {
 	VoxelDataGrid *grid = nullptr;
-	inline VoxelBufferInternal *get_block(const Vector3i &bpos) {
+	inline VoxelBuffer *get_block(const Vector3i &bpos) {
 		return grid->get_block_no_lock(bpos);
 	}
 	inline unsigned int get_block_size_po2() const {
@@ -506,11 +666,11 @@ template <typename TShape, typename TBlockAccess>
 struct DoShapeChunked {
 	TShape shape;
 	Mode mode;
-	// VoxelBufferInternal *get_block(Vector3i bpos)
+	// VoxelBuffer *get_block(Vector3i bpos)
 	// unsigned int get_block_size_po2()
 	TBlockAccess block_access;
 	Box3i box;
-	VoxelBufferInternal::ChannelId channel;
+	VoxelBuffer::ChannelId channel;
 	TextureParams texture_params;
 	uint32_t blocky_value;
 	float strength;
@@ -518,36 +678,37 @@ struct DoShapeChunked {
 	void operator()() {
 		ZN_PROFILE_SCOPE();
 
-		if (channel == VoxelBufferInternal::CHANNEL_SDF) {
+		if (channel == VoxelBuffer::CHANNEL_SDF) {
 			switch (mode) {
 				case MODE_ADD: {
 					// TODO Support other depths, format should be accessible from the volume. Or separate encoding?
 					SdfOperation16bit<SdfUnion, TShape> op;
 					op.shape = shape;
 					op.op.strength = strength;
-					write_box_in_chunked_storage_1_channel(op, block_access, box, VoxelBufferInternal::CHANNEL_SDF);
+					write_box_in_chunked_storage_1_channel(op, block_access, box, VoxelBuffer::CHANNEL_SDF);
 				} break;
 
 				case MODE_REMOVE: {
 					SdfOperation16bit<SdfSubtract, TShape> op;
 					op.shape = shape;
 					op.op.strength = strength;
-					write_box_in_chunked_storage_1_channel(op, block_access, box, VoxelBufferInternal::CHANNEL_SDF);
+					write_box_in_chunked_storage_1_channel(op, block_access, box, VoxelBuffer::CHANNEL_SDF);
 				} break;
 
 				case MODE_SET: {
 					SdfOperation16bit<SdfSet, TShape> op;
 					op.shape = shape;
 					op.op.strength = strength;
-					write_box_in_chunked_storage_1_channel(op, block_access, box, VoxelBufferInternal::CHANNEL_SDF);
+					write_box_in_chunked_storage_1_channel(op, block_access, box, VoxelBuffer::CHANNEL_SDF);
 				} break;
 
 				case MODE_TEXTURE_PAINT: {
 					TextureBlendOp<TShape> op;
 					op.shape = shape;
 					op.texture_params = texture_params;
-					write_box_in_chunked_storage_2_channels(op, block_access, box, VoxelBufferInternal::CHANNEL_INDICES,
-							VoxelBufferInternal::CHANNEL_WEIGHTS);
+					write_box_in_chunked_storage_2_channels(
+							op, block_access, box, VoxelBuffer::CHANNEL_INDICES, VoxelBuffer::CHANNEL_WEIGHTS
+					);
 				} break;
 
 				default:
@@ -564,15 +725,77 @@ struct DoShapeChunked {
 	}
 };
 
+template <typename TShape>
+struct DoShapeSingleBuffer {
+	TShape shape;
+	Mode mode;
+	VoxelBuffer *buffer = nullptr;
+	Box3i box; // Should be clipped by the user
+	VoxelBuffer::ChannelId channel;
+	TextureParams texture_params;
+	uint32_t blocky_value;
+	float strength;
+
+	void operator()() {
+		ZN_PROFILE_SCOPE();
+		ZN_ASSERT(buffer != nullptr);
+
+		// const Box3i clipped_box = box.clip(Box3i(Vector3i(), buffer.get_size()));
+
+		if (channel == VoxelBuffer::CHANNEL_SDF) {
+			switch (mode) {
+				case MODE_ADD: {
+					// TODO Support other depths, format should be accessible from the volume. Or separate encoding?
+					SdfOperation16bit<SdfUnion, TShape> op;
+					op.shape = shape;
+					op.op.strength = strength;
+					buffer->write_box(box, channel, op, Vector3i());
+				} break;
+
+				case MODE_REMOVE: {
+					SdfOperation16bit<SdfSubtract, TShape> op;
+					op.shape = shape;
+					op.op.strength = strength;
+					buffer->write_box(box, channel, op, Vector3i());
+				} break;
+
+				case MODE_SET: {
+					SdfOperation16bit<SdfSet, TShape> op;
+					op.shape = shape;
+					op.op.strength = strength;
+					buffer->write_box(box, channel, op, Vector3i());
+				} break;
+
+				case MODE_TEXTURE_PAINT: {
+					TextureBlendOp<TShape> op;
+					op.shape = shape;
+					op.texture_params = texture_params;
+					buffer->write_box_2_template<TextureBlendOp<TShape>, uint16_t, uint16_t>(
+							box, VoxelBuffer::CHANNEL_INDICES, VoxelBuffer::CHANNEL_WEIGHTS, op, Vector3i()
+					);
+				} break;
+
+				default:
+					ERR_PRINT("Unknown mode");
+					break;
+			}
+
+		} else {
+			BlockySetOperation<uint32_t, TShape> op;
+			op.shape = shape;
+			op.value = blocky_value;
+			buffer->write_box(box, channel, op, Vector3i());
+		}
+	}
+};
+
 #ifdef DEBUG_ENABLED
-void box_blur_slow_ref(
-		const VoxelBufferInternal &src, VoxelBufferInternal &dst, int radius, Vector3f sphere_pos, float sphere_radius);
+void box_blur_slow_ref(const VoxelBuffer &src, VoxelBuffer &dst, int radius, Vector3f sphere_pos, float sphere_radius);
 #endif
 
-void box_blur(
-		const VoxelBufferInternal &src, VoxelBufferInternal &dst, int radius, Vector3f sphere_pos, float sphere_radius);
+void box_blur(const VoxelBuffer &src, VoxelBuffer &dst, int radius, Vector3f sphere_pos, float sphere_radius);
 
-void grow_sphere(VoxelBufferInternal &src, float strength, Vector3f sphere_pos, float sphere_radius);
+void grow_sphere(VoxelBuffer &src, float strength, Vector3f sphere_pos, float sphere_radius);
 
 } // namespace zylann::voxel::ops
 

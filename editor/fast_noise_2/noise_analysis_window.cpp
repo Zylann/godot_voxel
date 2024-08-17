@@ -1,4 +1,5 @@
 #include "noise_analysis_window.h"
+#include "../../util/containers/std_vector.h"
 #include "../../util/godot/core/packed_arrays.h"
 #include "../../util/godot/editor_scale.h"
 #include "chart_view.h"
@@ -165,12 +166,12 @@ void NoiseAnalysisWindow::set_noise(Ref<FastNoise2> noise) {
 }
 
 namespace {
-std::vector<Vector2> &get_tls_precomputed_unit_vectors_2d() {
-	static thread_local std::vector<Vector2> tls_precomputed_unit_vectors_2d;
+StdVector<Vector2> &get_tls_precomputed_unit_vectors_2d() {
+	static thread_local StdVector<Vector2> tls_precomputed_unit_vectors_2d;
 	return tls_precomputed_unit_vectors_2d;
 }
-std::vector<Vector3> &get_tls_precomputed_unit_vectors_3d() {
-	static thread_local std::vector<Vector3> tls_precomputed_unit_vectors_3d;
+StdVector<Vector3> &get_tls_precomputed_unit_vectors_3d() {
+	static thread_local StdVector<Vector3> tls_precomputed_unit_vectors_3d;
 	return tls_precomputed_unit_vectors_3d;
 }
 } // namespace
@@ -204,14 +205,14 @@ void NoiseAnalysisWindow::_on_calculate_button_pressed() {
 	// Precompute unit vectors
 	const int precomputed_vectors_count = 256;
 	if (_analysis_params.dimension == DIMENSION_2D) {
-		std::vector<Vector2> &precomputed_unit_vectors_2d = get_tls_precomputed_unit_vectors_2d();
+		StdVector<Vector2> &precomputed_unit_vectors_2d = get_tls_precomputed_unit_vectors_2d();
 		precomputed_unit_vectors_2d.resize(precomputed_vectors_count);
 		for (int i = 0; i < precomputed_vectors_count; ++i) {
 			const float a = Math_TAU * float(i) / float(precomputed_vectors_count);
 			precomputed_unit_vectors_2d[i] = Vector2(Math::cos(a), Math::sin(a));
 		}
 	} else {
-		std::vector<Vector3> &precomputed_unit_vectors_3d = get_tls_precomputed_unit_vectors_3d();
+		StdVector<Vector3> &precomputed_unit_vectors_3d = get_tls_precomputed_unit_vectors_3d();
 		precomputed_unit_vectors_3d.resize(precomputed_vectors_count);
 		for (int i = 0; i < precomputed_vectors_count; ++i) {
 			// TODO Uniform repartition of 3D vectors?
@@ -256,11 +257,11 @@ void NoiseAnalysisWindow::_process() {
 	const float step_length = Math::lerp(_analysis_params.step_minimum_length, _analysis_params.step_maximum_length,
 			float(_current_step) / _analysis_params.step_count);
 
-	std::vector<float> x_cache;
-	std::vector<float> y_cache;
-	std::vector<float> z_cache;
-	std::vector<float> noise_cache;
-	std::vector<float> noise_cache2;
+	StdVector<float> x_cache;
+	StdVector<float> y_cache;
+	StdVector<float> z_cache;
+	StdVector<float> noise_cache;
+	StdVector<float> noise_cache2;
 
 	x_cache.clear();
 	y_cache.clear();
@@ -284,7 +285,7 @@ void NoiseAnalysisWindow::_process() {
 
 		_noise->get_noise_2d_series(to_span_const(x_cache), to_span_const(y_cache), to_span(noise_cache));
 
-		std::vector<Vector2> &precomputed_unit_vectors_2d = get_tls_precomputed_unit_vectors_2d();
+		StdVector<Vector2> &precomputed_unit_vectors_2d = get_tls_precomputed_unit_vectors_2d();
 
 		for (size_t i = 0; i < noise_cache.size(); ++i) {
 			const Vector2 u = step_length * precomputed_unit_vectors_2d[i % precomputed_unit_vectors_2d.size()];
@@ -305,7 +306,7 @@ void NoiseAnalysisWindow::_process() {
 			z_cache[i] = z;
 		}
 
-		std::vector<Vector3> &precomputed_unit_vectors_3d = get_tls_precomputed_unit_vectors_3d();
+		StdVector<Vector3> &precomputed_unit_vectors_3d = get_tls_precomputed_unit_vectors_3d();
 
 		_noise->get_noise_3d_series(
 				to_span_const(x_cache), to_span_const(y_cache), to_span_const(z_cache), to_span(noise_cache));

@@ -6,6 +6,7 @@
 	<description>
 		Contains a graph that can be used to generate voxel data (when used as main function of a generator), or to be re-used into other graphs (like a sub-graph).
 		Currently this class only stores a graph, it cannot run actual processing on its own. To generate voxels with it, see [VoxelGeneratorGraph].
+		Note: node types are identified with the enum [enum VoxelGraphFunction.NodeTypeID]. This enum shouldn't be used in persistent contexts (such as save files) as its values may change between versions.
 	</description>
 	<tutorials>
 	</tutorials>
@@ -128,6 +129,30 @@
 			<return type="Dictionary" />
 			<param index="0" name="type_id" type="int" />
 			<description>
+				Gets information about a node type from [enum VoxelGraphFunction.NodeTypeID].
+				The returned data has this structure:
+				[codeblock]
+				{
+					"name": String,
+					"inputs": [
+						{"name": String},
+						...
+					],
+					"outputs": [
+						{"name": String},
+						...
+					],
+					"params": [
+						{
+							"name": String,
+							"type": int (Variant::Type),
+							"class_name": String,
+							"default_value": Variant
+						},
+						...
+					]
+				}
+				[/codeblock]
 			</description>
 		</method>
 		<method name="paste_graph_with_pre_generated_ids">
@@ -252,9 +277,9 @@
 		</constant>
 		<constant name="NODE_OUTPUT_SDF" value="4" enum="NodeTypeID">
 		</constant>
-		<constant name="NODE_CUSTOM_INPUT" value="54" enum="NodeTypeID">
+		<constant name="NODE_CUSTOM_INPUT" value="52" enum="NodeTypeID">
 		</constant>
-		<constant name="NODE_CUSTOM_OUTPUT" value="55" enum="NodeTypeID">
+		<constant name="NODE_CUSTOM_OUTPUT" value="53" enum="NodeTypeID">
 		</constant>
 		<constant name="NODE_ADD" value="5" enum="NodeTypeID">
 		</constant>
@@ -332,31 +357,31 @@
 		</constant>
 		<constant name="NODE_OUTPUT_WEIGHT" value="43" enum="NodeTypeID">
 		</constant>
-		<constant name="NODE_FAST_NOISE_2_2D" value="45" enum="NodeTypeID">
+		<constant name="NODE_OUTPUT_SINGLE_TEXTURE" value="45" enum="NodeTypeID">
 		</constant>
-		<constant name="NODE_FAST_NOISE_2_3D" value="46" enum="NodeTypeID">
+		<constant name="NODE_EXPRESSION" value="46" enum="NodeTypeID">
 		</constant>
-		<constant name="NODE_OUTPUT_SINGLE_TEXTURE" value="47" enum="NodeTypeID">
+		<constant name="NODE_POWI" value="47" enum="NodeTypeID">
 		</constant>
-		<constant name="NODE_EXPRESSION" value="48" enum="NodeTypeID">
+		<constant name="NODE_POW" value="48" enum="NodeTypeID">
 		</constant>
-		<constant name="NODE_POWI" value="49" enum="NodeTypeID">
+		<constant name="NODE_INPUT_SDF" value="49" enum="NodeTypeID">
 		</constant>
-		<constant name="NODE_POW" value="50" enum="NodeTypeID">
+		<constant name="NODE_COMMENT" value="50" enum="NodeTypeID">
 		</constant>
-		<constant name="NODE_INPUT_SDF" value="51" enum="NodeTypeID">
+		<constant name="NODE_FUNCTION" value="51" enum="NodeTypeID">
 		</constant>
-		<constant name="NODE_COMMENT" value="52" enum="NodeTypeID">
+		<constant name="NODE_RELAY" value="54" enum="NodeTypeID">
 		</constant>
-		<constant name="NODE_FUNCTION" value="53" enum="NodeTypeID">
+		<constant name="NODE_SPOTS_2D" value="55" enum="NodeTypeID">
 		</constant>
-		<constant name="NODE_RELAY" value="56" enum="NodeTypeID">
-		</constant>
-		<constant name="NODE_SPOTS_2D" value="57" enum="NodeTypeID">
-		</constant>
-		<constant name="NODE_SPOTS_3D" value="58" enum="NodeTypeID">
+		<constant name="NODE_SPOTS_3D" value="56" enum="NodeTypeID">
 		</constant>
 		<constant name="NODE_TYPE_COUNT" value="59" enum="NodeTypeID">
+		</constant>
+		<constant name="NODE_FAST_NOISE_2_2D" value="57" enum="NodeTypeID">
+		</constant>
+		<constant name="NODE_FAST_NOISE_2_3D" value="58" enum="NodeTypeID">
 		</constant>
 	</constants>
 </class>

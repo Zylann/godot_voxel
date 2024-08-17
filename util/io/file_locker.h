@@ -1,12 +1,11 @@
 #ifndef ZN_FILE_LOCKER_H
 #define ZN_FILE_LOCKER_H
 
+#include "../containers/std_unordered_map.h"
 #include "../errors.h"
+#include "../string/std_string.h"
 #include "../thread/mutex.h"
 #include "../thread/rw_lock.h"
-
-#include <string>
-#include <unordered_map>
 
 namespace zylann {
 
@@ -14,15 +13,15 @@ namespace zylann {
 // so that multiple threads (controlled by this module) wanting to access the same file will lock a shared mutex.
 class FileLocker {
 public:
-	void lock_read(const std::string &fpath) {
+	void lock_read(const StdString &fpath) {
 		lock(fpath, true);
 	}
 
-	void lock_write(const std::string &fpath) {
+	void lock_write(const StdString &fpath) {
 		lock(fpath, false);
 	}
 
-	void unlock(const std::string &fpath) {
+	void unlock(const StdString &fpath) {
 		unlock_internal(fpath);
 	}
 
@@ -32,7 +31,7 @@ private:
 		bool read_only;
 	};
 
-	void lock(const std::string &fpath, bool read_only) {
+	void lock(const StdString &fpath, bool read_only) {
 		File *fp = nullptr;
 		{
 			MutexLock lock(_files_mutex);
@@ -53,7 +52,7 @@ private:
 		}
 	}
 
-	void unlock_internal(const std::string &fpath) {
+	void unlock_internal(const StdString &fpath) {
 		File *fp = nullptr;
 		{
 			MutexLock lock(_files_mutex);
@@ -75,7 +74,7 @@ private:
 
 private:
 	Mutex _files_mutex;
-	std::unordered_map<std::string, File> _files;
+	StdUnorderedMap<StdString, File> _files;
 };
 
 } // namespace zylann

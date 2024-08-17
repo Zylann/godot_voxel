@@ -4,7 +4,10 @@
 #include "../containers/container_funcs.h"
 #include "../containers/fixed_array.h"
 #include "../containers/span.h"
+#include "../containers/std_queue.h"
+#include "../containers/std_vector.h"
 #include "../profiling.h"
+#include "../string/std_string.h"
 #include "../thread/mutex.h"
 #include "../thread/semaphore.h"
 #include "../thread/thread.h"
@@ -14,12 +17,10 @@
 // #define ZN_THREADED_TASK_RUNNER_CHECK_DUPLICATE_TASKS
 
 #ifdef ZN_THREADED_TASK_RUNNER_CHECK_DUPLICATE_TASKS
-#include <unordered_map>
+#include "../containers/std_unordered_map.h"
 #endif
 
 #include <atomic>
-#include <queue>
-#include <string>
 
 namespace zylann {
 
@@ -70,7 +71,7 @@ public:
 	template <typename F>
 	void dequeue_completed_tasks(F f) {
 		ZN_PROFILE_SCOPE();
-		std::vector<IThreadedTask *> &temp = get_completed_tasks_temp_tls();
+		StdVector<IThreadedTask *> &temp = get_completed_tasks_temp_tls();
 		ZN_ASSERT(temp.size() == 0);
 		{
 			MutexLock lock(_completed_tasks_mutex);
@@ -96,13 +97,13 @@ public:
 	unsigned int get_debug_remaining_tasks() const;
 
 private:
-	static std::vector<IThreadedTask *> &get_completed_tasks_temp_tls();
+	static StdVector<IThreadedTask *> &get_completed_tasks_temp_tls();
 
 	struct TaskItem {
 		IThreadedTask *task = nullptr;
 		TaskPriority cached_priority;
 		bool is_serial = false;
-		uint8_t status = ThreadedTaskContext::STATUS_COMPLETE;
+		ThreadedTaskContext::Status status = ThreadedTaskContext::STATUS_COMPLETE;
 	};
 
 	struct ThreadData {
@@ -112,7 +113,7 @@ private:
 		bool stop = false;
 		bool waiting = false;
 		State debug_state = STATE_STOPPED;
-		std::string name;
+		StdString name;
 		std::atomic<const char *> debug_running_task_name = { nullptr };
 
 		void wait_to_finish_and_reset() {
@@ -142,21 +143,21 @@ private:
 
 	// Scheduled tasks are put here first. They will be moved to the main waiting queue by the next available thread.
 	// This is because the main waiting queue can be locked for longer due to dynamic priority sorting.
-	std::vector<TaskItem> _staged_tasks;
+	StdVector<TaskItem> _staged_tasks;
 	Mutex _staged_tasks_mutex;
 
 	// Main waiting list. Tasks are picked from it by priority. Priority can also change while tasks are in this list,
 	// so we can't use a simple queue or sort at insertion. Every available thread has to find it and potentially update
 	// it every once in a while.
-	std::vector<TaskItem> _tasks;
+	StdVector<TaskItem> _tasks;
 	Mutex _tasks_mutex;
 	Semaphore _tasks_semaphore;
 
 	// Ongoing tasks that may take more than one iteration
-	std::queue<TaskItem> _spinning_tasks;
+	StdQueue<TaskItem> _spinning_tasks;
 	Mutex _spinning_tasks_mutex;
 
-	std::vector<IThreadedTask *> _completed_tasks;
+	StdVector<IThreadedTask *> _completed_tasks;
 	Mutex _completed_tasks_mutex;
 
 	uint32_t _priority_update_period_ms = 32;
@@ -166,14 +167,14 @@ private:
 	// Tasks marked as "serial" must be executed by only one thread at a time.
 	bool _is_serial_task_running = false;
 
-	std::string _name;
+	StdString _name;
 
 	unsigned int _debug_received_tasks = 0;
 	unsigned int _debug_completed_tasks = 0;
 	unsigned int _debug_taken_out_tasks = 0;
 
 #ifdef ZN_THREADED_TASK_RUNNER_CHECK_DUPLICATE_TASKS
-	std::unordered_map<IThreadedTask *, std::string> _debug_owned_tasks;
+	StdUnorderedMap<IThreadedTask *, StdString> _debug_owned_tasks;
 	Mutex _debug_owned_tasks_mutex;
 #endif
 };

@@ -70,6 +70,7 @@ public:
 
 	void set_material_by_index(Materials id, Ref<Material> material);
 	Ref<Material> get_material_by_index(unsigned int i) const override;
+	unsigned int get_material_index_count() const override;
 
 	static Ref<Mesh> generate_mesh_from_image(Ref<Image> image, float voxel_size);
 
@@ -78,11 +79,11 @@ public:
 	// Using std::vector because they make this mesher twice as fast than Godot Vectors.
 	// See why: https://github.com/godotengine/godot/issues/24731
 	struct Arrays {
-		std::vector<Vector3f> positions;
-		std::vector<Vector3f> normals;
-		std::vector<Color> colors;
-		std::vector<Vector2f> uvs;
-		std::vector<int> indices;
+		StdVector<Vector3f> positions;
+		StdVector<Vector3f> normals;
+		StdVector<Color> colors;
+		StdVector<Vector2f> uvs;
+		StdVector<int> indices;
 
 		void clear() {
 			positions.clear();
@@ -101,8 +102,8 @@ public:
 			unsigned int size_y;
 			unsigned int surface_index;
 		};
-		std::vector<Color8> colors;
-		std::vector<ImageInfo> images;
+		StdVector<Color8> colors;
+		StdVector<ImageInfo> images;
 
 		void clear() {
 			colors.clear();
@@ -128,7 +129,7 @@ private:
 
 	struct Cache {
 		FixedArray<Arrays, MATERIAL_COUNT> arrays_per_material;
-		std::vector<uint8_t> mask_memory_pool;
+		StdVector<uint8_t> mask_memory_pool;
 		GreedyAtlasData greedy_atlas_data;
 	};
 

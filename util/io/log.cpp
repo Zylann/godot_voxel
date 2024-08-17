@@ -1,6 +1,6 @@
 #include "../godot/classes/os.h"
 #include "../godot/core/print_string.h"
-#include "../string_funcs.h"
+#include "../string/format.h"
 
 #ifdef ZN_DEBUG_LOG_FILE_ENABLED
 #include "thread/mutex.h"
@@ -42,7 +42,7 @@ bool is_verbose_output_enabled() {
 	return OS::get_singleton()->is_stdout_verbose();
 }
 
-void println(const char *cstr) {
+void print_line(const char *cstr) {
 #ifdef ZN_DEBUG_LOG_FILE_ENABLED
 	if (g_log_to_file) {
 		MutexLock mlock(g_log_file_mutex);
@@ -54,16 +54,16 @@ void println(const char *cstr) {
 #else
 
 #if defined(ZN_GODOT)
-	print_line(cstr);
+	::print_line(cstr);
 #elif defined(ZN_GODOT_EXTENSION)
-	godot::UtilityFunctions::print(cstr);
+	::godot::UtilityFunctions::print(cstr);
 #endif
 
 #endif
 }
 
-void println(const FwdConstStdString &s) {
-	println(s.s.c_str());
+void print_line(const FwdConstStdString &s) {
+	print_line(s.s.c_str());
 }
 
 void print_warning(const char *warning, const char *func, const char *file, int line) {

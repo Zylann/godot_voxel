@@ -1,12 +1,13 @@
 #ifndef ZN_ASTAR_GRID_3D_H
 #define ZN_ASTAR_GRID_3D_H
 
+#include "../util/containers/std_unordered_map.h"
+#include "../util/containers/std_vector.h"
 #include "../util/godot/core/sort_array.h"
 #include "../util/math/box3i.h"
 #include "../util/math/vector3f.h"
 #include <limits>
 #include <unordered_map>
-#include <vector>
 
 namespace zylann {
 
@@ -41,7 +42,7 @@ public:
 
 	// Debug
 
-	void debug_get_visited_points(std::vector<Vector3i> &out_positions) const;
+	void debug_get_visited_points(StdVector<Vector3i> &out_positions) const;
 	bool debug_get_next_step_point(Vector3i &out_pos) const;
 
 protected:
@@ -50,7 +51,7 @@ protected:
 private:
 	float evaluate_heuristic(Vector3i pos, Vector3i target_pos) const;
 	void reconstruct_path(uint32_t end_point_index);
-	void get_neighbor_positions(Vector3i pos, std::vector<Vector3i> &out_positions);
+	void get_neighbor_positions(Vector3i pos, StdVector<Vector3i> &out_positions);
 	bool is_ground_close_enough(Vector3i pos);
 	bool fits(Vector3f pos, Vector3f agent_extents);
 
@@ -72,7 +73,7 @@ private:
 	};
 
 	struct ComparePoints {
-		std::vector<Point> *pool;
+		StdVector<Point> *pool;
 
 		inline bool operator()(uint32_t ai, uint32_t bi) const {
 			const Point &a = (*pool)[ai];
@@ -95,7 +96,7 @@ private:
 
 	struct PriorityQueue {
 		SortArray<uint32_t, ComparePoints> sorter;
-		std::vector<uint32_t> items;
+		StdVector<uint32_t> items;
 
 		inline uint32_t peek() const {
 			return items[0];
@@ -151,16 +152,16 @@ private:
 	float _max_path_cost = 1000.f;
 
 	Box3i _region;
-	std::vector<Point> _points_pool;
+	StdVector<Point> _points_pool;
 	PriorityQueue _open_list;
 
 	// Only visited points will be in this map. Should use less memory than if we made a big 3D grid of points, because
 	// in practice we may only visit a fraction of them.
 	// Eventually we could try a chunked grid if that's faster?
-	std::unordered_map<Vector3i, uint32_t> _points_map;
+	StdUnorderedMap<Vector3i, uint32_t> _points_map;
 
-	std::vector<Vector3i> _path;
-	std::vector<Vector3i> _neighbor_positions;
+	StdVector<Vector3i> _path;
+	StdVector<Vector3i> _neighbor_positions;
 };
 
 } // namespace zylann

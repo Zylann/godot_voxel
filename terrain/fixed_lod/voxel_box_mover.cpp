@@ -1,12 +1,17 @@
 #include "voxel_box_mover.h"
 #include "../../meshers/blocky/voxel_mesher_blocky.h"
 #include "../../meshers/cubes/voxel_mesher_cubes.h"
+#include "../../storage/voxel_buffer.h"
 #include "../../storage/voxel_data.h"
+#include "../../util/containers/std_vector.h"
+#include "../../util/profiling.h"
 #include "voxel_terrain.h"
 
 namespace zylann::voxel {
 
-static AABB expand_with_vector(AABB box, Vector3 v) {
+namespace {
+
+AABB expand_with_vector(AABB box, Vector3 v) {
 	if (v.x > 0) {
 		box.size.x += v.x;
 	} else if (v.x < 0) {
@@ -31,7 +36,7 @@ static AABB expand_with_vector(AABB box, Vector3 v) {
 	return box;
 }
 
-static real_t calculate_i_offset(const AABB &box, AABB other, real_t motion, int i, int j, int k) {
+real_t calculate_i_offset(const AABB &box, AABB other, real_t motion, int i, int j, int k) {
 	const real_t EPSILON = 0.001;
 
 	const Vector3 other_end = other.position + other.size;
@@ -80,12 +85,12 @@ static real_t calculate_i_offset(const AABB &box, AABB other, real_t motion, int
 //
 // TODO one way to fix this would be to try a "hot side" projection instead
 //
-static Vector3 get_motion(AABB box, Vector3 motion, Span<const AABB> environment_boxes) {
+Vector3 get_motion(AABB box, Vector3 motion, Span<const AABB> environment_boxes) {
 	// The bounding box is expanded to include it's estimated version at next update.
 	// This also makes the algorithm tunnelling-free
 	const AABB expanded_box = expand_with_vector(box, motion);
 
-	std::vector<AABB> colliding_boxes;
+	StdVector<AABB> colliding_boxes;
 	for (size_t i = 0; i < environment_boxes.size(); ++i) {
 		const AABB &other = environment_boxes[i];
 		if (expanded_box.intersects(other)) {
@@ -119,7 +124,7 @@ static Vector3 get_motion(AABB box, Vector3 motion, Span<const AABB> environment
 	return new_motion;
 }
 
-// static bool raycast_down(Span<const AABB> aabbs, Vector3 ray_origin, real_t &out_hit_y) {
+// bool raycast_down(Span<const AABB> aabbs, Vector3 ray_origin, real_t &out_hit_y) {
 // 	if (aabbs.size() == 0) {
 // 		return false;
 // 	}
@@ -150,7 +155,7 @@ inline Vector2 get_xz(Vector3 v) {
 	return Vector2(v.x, v.z);
 }
 
-static bool boxcast_down(Span<const AABB> aabbs, Vector2 box_pos, Vector2 box_size, real_t &out_hit_y) {
+bool boxcast_down(Span<const AABB> aabbs, Vector2 box_pos, Vector2 box_size, real_t &out_hit_y) {
 	if (aabbs.size() == 0) {
 		return false;
 	}
@@ -172,7 +177,7 @@ static bool boxcast_down(Span<const AABB> aabbs, Vector2 box_pos, Vector2 box_si
 	return hit;
 }
 
-static bool intersects(Span<const AABB> aabbs, const AABB &box) {
+bool intersects(Span<const AABB> aabbs, const AABB &box) {
 	for (unsigned int i = 0; i < aabbs.size(); ++i) {
 		if (aabbs[i].intersects(box)) {
 			return true;
@@ -181,8 +186,8 @@ static bool intersects(Span<const AABB> aabbs, const AABB &box) {
 	return false;
 }
 
-static void collect_boxes(
-		VoxelTerrain &p_terrain, AABB query_box, uint32_t collision_nask, std::vector<AABB> &potential_boxes) {
+void collect_boxes(VoxelTerrain &p_terrain, AABB query_box, uint32_t collision_nask, StdVector<AABB> &potential_boxes) {
+	ZN_PROFILE_SCOPE();
 	const VoxelData &voxels = p_terrain.get_storage();
 
 	const int min_x = int(Math::floor(query_box.position.x));
@@ -199,14 +204,14 @@ static void collect_boxes(
 	Ref<VoxelMesherBlocky> mesher_blocky;
 	Ref<VoxelMesherCubes> mesher_cubes;
 
-	if (try_get_as(p_terrain.get_mesher(), mesher_blocky)) {
+	if (zylann::godot::try_get_as(p_terrain.get_mesher(), mesher_blocky)) {
 		Ref<VoxelBlockyLibraryBase> library_ref = mesher_blocky->get_library();
 		ERR_FAIL_COND_MSG(library_ref.is_null(), "VoxelMesherBlocky has no library assigned");
-		const int channel = VoxelBufferInternal::CHANNEL_TYPE;
+		const int channel = VoxelBuffer::CHANNEL_TYPE;
 		VoxelSingleValue defval;
 		defval.i = 0;
 
-		const VoxelBlockyLibraryBase::BakedData baked_data = library_ref->get_baked_data();
+		const VoxelBlockyLibraryBase::BakedData &baked_data = library_ref->get_baked_data();
 
 		// TODO Optimization: read the whole box of voxels at once, querying individually is slower
 		for (i.z = min_z; i.z < max_z; ++i.z) {
@@ -231,8 +236,8 @@ static void collect_boxes(
 			}
 		}
 
-	} else if (try_get_as(p_terrain.get_mesher(), mesher_cubes)) {
-		const int channel = VoxelBufferInternal::CHANNEL_COLOR;
+	} else if (zylann::godot::try_get_as(p_terrain.get_mesher(), mesher_cubes)) {
+		const int channel = VoxelBuffer::CHANNEL_COLOR;
 		VoxelSingleValue defval;
 		defval.i = 0;
 
@@ -250,7 +255,10 @@ static void collect_boxes(
 	}
 }
 
+} // namespace
+
 Vector3 VoxelBoxMover::get_motion(Vector3 p_pos, Vector3 p_motion, AABB p_aabb, VoxelTerrain &p_terrain) {
+	ZN_PROFILE_SCOPE();
 	// The mesher is required to know how collisions should be processed
 	ERR_FAIL_COND_V(p_terrain.get_mesher().is_null(), Vector3());
 
@@ -264,8 +272,8 @@ Vector3 VoxelBoxMover::get_motion(Vector3 p_pos, Vector3 p_motion, AABB p_aabb, 
 	const AABB box(aabb.position + pos, aabb.size);
 	const AABB expanded_box = expand_with_vector(box, motion);
 
-	static thread_local std::vector<AABB> s_colliding_boxes;
-	std::vector<AABB> &potential_boxes = s_colliding_boxes;
+	static thread_local StdVector<AABB> s_colliding_boxes;
+	StdVector<AABB> &potential_boxes = s_colliding_boxes;
 	potential_boxes.clear();
 
 	// Collect potential collisions with the terrain (broad phase)

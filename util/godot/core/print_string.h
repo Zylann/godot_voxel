@@ -1,7 +1,7 @@
 #ifndef ZN_GODOT_PRINT_STRING_H
 #define ZN_GODOT_PRINT_STRING_H
 
-// Access to `print_line`
+// Access to `print_line` the same as defined in core
 
 #if defined(ZN_GODOT)
 #include <core/string/print_string.h>

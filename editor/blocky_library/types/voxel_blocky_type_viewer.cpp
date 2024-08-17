@@ -3,7 +3,6 @@
 #include "../../../util/godot/classes/label.h"
 #include "../../../util/godot/classes/mesh_instance_3d.h"
 #include "../../../util/godot/classes/option_button.h"
-#include "../../../util/godot/core/callable.h"
 #include "../../../util/godot/editor_scale.h"
 #include "voxel_blocky_type_attribute_combination_selector.h"
 
@@ -27,21 +26,21 @@ void VoxelBlockyTypeViewer::set_combination_selector(VoxelBlockyTypeAttributeCom
 	// Supposed to be setup only once.
 	ZN_ASSERT_RETURN(_combination_selector == nullptr);
 	selector->connect(VoxelBlockyTypeAttributeCombinationSelector::SIGNAL_COMBINATION_CHANGED,
-			ZN_GODOT_CALLABLE_MP(this, VoxelBlockyTypeViewer, _on_combination_changed));
+			callable_mp(this, &VoxelBlockyTypeViewer::_on_combination_changed));
 	_combination_selector = selector;
 }
 
 void VoxelBlockyTypeViewer::set_type(Ref<VoxelBlockyType> type) {
 	if (_type.is_valid()) {
-		_type->disconnect(VoxelStringNames::get_singleton().changed,
-				ZN_GODOT_CALLABLE_MP(this, VoxelBlockyTypeViewer, _on_type_changed));
+		_type->disconnect(
+				VoxelStringNames::get_singleton().changed, callable_mp(this, &VoxelBlockyTypeViewer::_on_type_changed));
 	}
 
 	_type = type;
 
 	if (_type.is_valid()) {
-		_type->connect(VoxelStringNames::get_singleton().changed,
-				ZN_GODOT_CALLABLE_MP(this, VoxelBlockyTypeViewer, _on_type_changed));
+		_type->connect(
+				VoxelStringNames::get_singleton().changed, callable_mp(this, &VoxelBlockyTypeViewer::_on_type_changed));
 	}
 
 	update_model();
@@ -63,11 +62,6 @@ void VoxelBlockyTypeViewer::_on_combination_changed() {
 	update_model();
 }
 
-void VoxelBlockyTypeViewer::_bind_methods() {
-#ifdef ZN_GODOT_EXTENSION
-	ClassDB::bind_method(D_METHOD("_on_type_changed"), &VoxelBlockyTypeViewer::_on_type_changed);
-	ClassDB::bind_method(D_METHOD("_on_combination_changed"), &VoxelBlockyTypeViewer::_on_combination_changed);
-#endif
-}
+void VoxelBlockyTypeViewer::_bind_methods() {}
 
 } // namespace zylann::voxel

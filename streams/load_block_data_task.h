@@ -4,7 +4,7 @@
 #include "../engine/ids.h"
 #include "../engine/priority_dependency.h"
 #include "../engine/streaming_dependency.h"
-#include "../util/memory.h"
+#include "../util/memory/memory.h"
 #include "../util/tasks/threaded_task.h"
 
 namespace zylann::voxel {
@@ -33,7 +33,7 @@ public:
 
 private:
 	PriorityDependency _priority_dependency;
-	std::shared_ptr<VoxelBufferInternal> _voxels;
+	std::shared_ptr<VoxelBuffer> _voxels;
 	UniquePtr<InstanceBlockData> _instances;
 	Vector3i _position; // In data blocks of the specified lod
 	VolumeID _volume_id;

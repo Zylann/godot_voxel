@@ -7,8 +7,8 @@
 
 namespace zylann {
 
-class ZN_FastNoiseLiteEditorInspectorPlugin : public ZN_EditorInspectorPlugin {
-	GDCLASS(ZN_FastNoiseLiteEditorInspectorPlugin, ZN_EditorInspectorPlugin)
+class ZN_FastNoiseLiteEditorInspectorPlugin : public zylann::godot::ZN_EditorInspectorPlugin {
+	GDCLASS(ZN_FastNoiseLiteEditorInspectorPlugin, zylann::godot::ZN_EditorInspectorPlugin)
 protected:
 	bool _zn_can_handle(const Object *p_object) const override;
 	void _zn_parse_begin(Object *p_object) override;

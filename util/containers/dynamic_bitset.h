@@ -2,8 +2,8 @@
 #define ZN_DYNAMIC_BITSET_H
 
 #include "../errors.h"
+#include "std_vector.h"
 #include <cstdint>
-#include <vector>
 
 namespace zylann {
 
@@ -14,8 +14,8 @@ public:
 		return _size;
 	}
 
-	inline void resize(unsigned int size) {
-		// non-initializing resize
+	inline void resize_no_init(unsigned int size) {
+		// non-initializing resize (no guaranteed values)
 		_bits.resize((size + 63) / 64);
 		_size = size;
 	}
@@ -58,7 +58,7 @@ public:
 	}
 
 private:
-	std::vector<uint64_t> _bits;
+	StdVector<uint64_t> _bits;
 	unsigned int _size = 0;
 };
 

@@ -3,7 +3,7 @@
 #include "../storage/voxel_data.h"
 #include "../util/io/log.h"
 #include "../util/profiling.h"
-#include "../util/string_funcs.h"
+#include "../util/string/format.h"
 
 namespace zylann::voxel {
 

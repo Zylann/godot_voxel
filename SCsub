@@ -16,28 +16,22 @@ FAST_NOISE_2_SRC = env["voxel_fast_noise_2"]
 if not env["arch"].startswith("x86"):
 	FAST_NOISE_2_SRC = False
 
-RUN_TESTS = env["voxel_tests"]
+INCLUDE_TESTS = env["voxel_tests"]
 
 env_voxel = env_modules.Clone()
 
-voxel_files = common.get_sources(env_voxel, env.editor_build)
+voxel_files = common.get_sources(env_voxel, env.editor_build, INCLUDE_TESTS)
 
 env_voxel.Append(CPPDEFINES=[
 	# Tell engine-agnostic code we are using Godot Engine as a module
 	"ZN_GODOT"
 ])
 
-if RUN_TESTS:
-	voxel_files += [
-		"tests/*.cpp",
-		"tests/util/*.cpp",
-		"tests/voxel/*.cpp"
-	]
-
+if INCLUDE_TESTS:
 	if FAST_NOISE_2_SRC:
 		voxel_files += ["tests/fast_noise_2/*.cpp"]
 
-	env_voxel.Append(CPPDEFINES={"VOXEL_RUN_TESTS": 0})
+	env_voxel.Append(CPPDEFINES={"VOXEL_TESTS": 1})
 
 # ----------------------------------------------------------------------------------------------------------------------
 # SQLite
@@ -79,13 +73,15 @@ if FAST_NOISE_2_SRC:
 
 # ----------------------------------------------------------------------------------------------------------------------
 # Tracy library
-# Expects Tracy to be inside the `thirdparty` folder of Godot (not this module)
 
-# env.Append(CPPDEFINES="TRACY_ENABLE")
-# env_voxel.Append(CPPDEFINES="TRACY_ENABLE")
-# voxel_files += [
-# 	"#thirdparty/tracy/TracyClient.cpp"
-# ]
+if env["tracy"]:
+	# This is not a feature of Godot's build system so we have to define a few things ourselves
+	env.Append(CPPDEFINES="TRACY_ENABLE")
+	env_voxel.Append(CPPDEFINES="TRACY_ENABLE")
+	env_voxel.Append(CPPPATH=["#thirdparty/tracy/public"])
+	voxel_files += [
+		"#thirdparty/tracy/public/TracyClient.cpp"
+	]
 
 # ----------------------------------------------------------------------------------------------------------------------
 

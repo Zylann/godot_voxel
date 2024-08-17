@@ -8,7 +8,8 @@
 #include "../../util/io/log.h"
 #include "../../util/math/box3i.h"
 #include "../../util/profiling.h"
-#include "../../util/string_funcs.h"
+#include "../../util/string/format.h"
+#include "file_utils.h"
 
 #include <algorithm>
 
@@ -27,7 +28,7 @@ const char *META_FILE_NAME = "meta.vxrm";
 
 // Sorts a sequence without modifying it, returning a sorted list of pointers
 template <typename T, typename Comparer_T>
-void get_sorted_indices(Span<T> sequence, Comparer_T comparer, std::vector<unsigned int> &out_sorted_indices) {
+void get_sorted_indices(Span<T> sequence, Comparer_T comparer, StdVector<unsigned int> &out_sorted_indices) {
 	struct Compare {
 		Span<T> sequence;
 		Comparer_T comparer;
@@ -51,11 +52,11 @@ VoxelStreamRegionFiles::VoxelStreamRegionFiles() {
 	_meta.region_size_po2 = 4;
 	_meta.sector_size = 512; // next_power_of_2(_meta.block_size.volume() / 10) // based on compression ratios
 	_meta.lod_count = 1;
-	fill(_meta.channel_depths, VoxelBufferInternal::DEFAULT_CHANNEL_DEPTH);
-	_meta.channel_depths[VoxelBufferInternal::CHANNEL_TYPE] = VoxelBufferInternal::DEFAULT_TYPE_CHANNEL_DEPTH;
-	_meta.channel_depths[VoxelBufferInternal::CHANNEL_SDF] = VoxelBufferInternal::DEFAULT_SDF_CHANNEL_DEPTH;
-	_meta.channel_depths[VoxelBufferInternal::CHANNEL_INDICES] = VoxelBufferInternal::DEFAULT_INDICES_CHANNEL_DEPTH;
-	_meta.channel_depths[VoxelBufferInternal::CHANNEL_WEIGHTS] = VoxelBufferInternal::DEFAULT_WEIGHTS_CHANNEL_DEPTH;
+	fill(_meta.channel_depths, VoxelBuffer::DEFAULT_CHANNEL_DEPTH);
+	_meta.channel_depths[VoxelBuffer::CHANNEL_TYPE] = VoxelBuffer::DEFAULT_TYPE_CHANNEL_DEPTH;
+	_meta.channel_depths[VoxelBuffer::CHANNEL_SDF] = VoxelBuffer::DEFAULT_SDF_CHANNEL_DEPTH;
+	_meta.channel_depths[VoxelBuffer::CHANNEL_INDICES] = VoxelBuffer::DEFAULT_INDICES_CHANNEL_DEPTH;
+	_meta.channel_depths[VoxelBuffer::CHANNEL_WEIGHTS] = VoxelBuffer::DEFAULT_WEIGHTS_CHANNEL_DEPTH;
 }
 
 VoxelStreamRegionFiles::~VoxelStreamRegionFiles() {
@@ -76,7 +77,7 @@ void VoxelStreamRegionFiles::load_voxel_blocks(Span<VoxelStream::VoxelQueryData>
 	// In order to minimize opening/closing files, requests are grouped according to their region.
 
 	// Had to copy input to sort it, as some areas in the module break if they get responses in different order
-	std::vector<unsigned int> sorted_block_indices;
+	StdVector<unsigned int> sorted_block_indices;
 	BlockQueryComparator comparator;
 	comparator.self = this;
 	get_sorted_indices(p_blocks, comparator, sorted_block_indices);
@@ -84,7 +85,7 @@ void VoxelStreamRegionFiles::load_voxel_blocks(Span<VoxelStream::VoxelQueryData>
 	for (unsigned int i = 0; i < sorted_block_indices.size(); ++i) {
 		const unsigned int bi = sorted_block_indices[i];
 		VoxelStream::VoxelQueryData &q = p_blocks[bi];
-		const EmergeResult result = _load_block(q.voxel_buffer, q.origin_in_voxels, q.lod);
+		const EmergeResult result = _load_block(q.voxel_buffer, q.position_in_blocks, q.lod_index);
 		switch (result) {
 			case EMERGE_OK:
 				q.result = RESULT_BLOCK_FOUND;
@@ -106,7 +107,7 @@ void VoxelStreamRegionFiles::save_voxel_blocks(Span<VoxelStream::VoxelQueryData>
 	ZN_PROFILE_SCOPE();
 
 	// Had to copy input to sort it, as some areas in the module break if they get responses in different order
-	std::vector<unsigned int> sorted_block_indices;
+	StdVector<unsigned int> sorted_block_indices;
 	BlockQueryComparator comparator;
 	comparator.self = this;
 	get_sorted_indices(p_blocks, comparator, sorted_block_indices);
@@ -114,17 +115,17 @@ void VoxelStreamRegionFiles::save_voxel_blocks(Span<VoxelStream::VoxelQueryData>
 	for (unsigned int i = 0; i < sorted_block_indices.size(); ++i) {
 		const unsigned int bi = sorted_block_indices[i];
 		VoxelStream::VoxelQueryData &q = p_blocks[bi];
-		_save_block(q.voxel_buffer, q.origin_in_voxels, q.lod);
+		_save_block(q.voxel_buffer, q.position_in_blocks, q.lod_index);
 	}
 }
 
 int VoxelStreamRegionFiles::get_used_channels_mask() const {
 	// Assuming all, since that stream can store anything.
-	return VoxelBufferInternal::ALL_CHANNELS_MASK;
+	return VoxelBuffer::ALL_CHANNELS_MASK;
 }
 
 VoxelStreamRegionFiles::EmergeResult VoxelStreamRegionFiles::_load_block(
-		VoxelBufferInternal &out_buffer, Vector3i origin_in_voxels, int lod) {
+		VoxelBuffer &out_buffer, Vector3i block_pos, int lod) {
 	ZN_PROFILE_SCOPE();
 
 	MutexLock lock(_mutex);
@@ -134,8 +135,8 @@ VoxelStreamRegionFiles::EmergeResult VoxelStreamRegionFiles::_load_block(
 	}
 
 	if (!_meta_loaded) {
-		const FileResult load_res = load_meta();
-		if (load_res != FILE_OK) {
+		const zylann::godot::FileResult load_res = load_meta();
+		if (load_res != zylann::godot::FILE_OK) {
 			// No block was ever saved
 			return EMERGE_OK_FALLBACK;
 		}
@@ -154,7 +155,6 @@ VoxelStreamRegionFiles::EmergeResult VoxelStreamRegionFiles::_load_block(
 		out_buffer.set_channel_depth(channel_index, _meta.channel_depths[channel_index]);
 	}
 
-	const Vector3i block_pos = get_block_position_from_voxels(origin_in_voxels) >> lod;
 	const Vector3i region_pos = get_region_position_from_blocks(block_pos);
 
 	CachedRegion *cache = open_region(region_pos, lod, false);
@@ -177,8 +177,9 @@ VoxelStreamRegionFiles::EmergeResult VoxelStreamRegionFiles::_load_block(
 	}
 }
 
-void VoxelStreamRegionFiles::_save_block(VoxelBufferInternal &voxel_buffer, Vector3i origin_in_voxels, int lod) {
+void VoxelStreamRegionFiles::_save_block(VoxelBuffer &voxel_buffer, Vector3i block_pos, int lod) {
 	ZN_PROFILE_SCOPE();
+	using namespace zylann::godot;
 
 	MutexLock lock(_mutex);
 
@@ -191,7 +192,8 @@ void VoxelStreamRegionFiles::_save_block(VoxelBufferInternal &voxel_buffer, Vect
 		if (load_res != FILE_OK && load_res != FILE_CANT_OPEN) {
 			// The file is present but there is a problem with it
 			String meta_path = _directory_path.path_join(META_FILE_NAME);
-			ERR_PRINT(String("Could not read {0}: error {1}").format(varray(meta_path, zylann::to_string(load_res))));
+			ERR_PRINT(String("Could not read {0}: error {1}")
+							  .format(varray(meta_path, zylann::godot::to_string(load_res))));
 			return;
 		}
 	}
@@ -208,12 +210,11 @@ void VoxelStreamRegionFiles::_save_block(VoxelBufferInternal &voxel_buffer, Vect
 	// Verify format
 	const Vector3i block_size = Vector3iUtil::create(1 << _meta.block_size_po2);
 	ERR_FAIL_COND(voxel_buffer.get_size() != block_size);
-	for (unsigned int i = 0; i < VoxelBufferInternal::MAX_CHANNELS; ++i) {
+	for (unsigned int i = 0; i < VoxelBuffer::MAX_CHANNELS; ++i) {
 		ERR_FAIL_COND(voxel_buffer.get_channel_depth(i) != _meta.channel_depths[i]);
 	}
 
 	const Vector3i region_size = Vector3iUtil::create(1 << _meta.region_size_po2);
-	Vector3i block_pos = get_block_position_from_voxels(origin_in_voxels) >> lod;
 	Vector3i region_pos = get_region_position_from_blocks(block_pos);
 	Vector3i block_rpos = math::wrap(block_pos, region_size);
 
@@ -239,7 +240,9 @@ void VoxelStreamRegionFiles::set_directory(String dirpath) {
 	}
 }
 
-static bool u8_from_json_variant(const Variant &v, uint8_t &i) {
+namespace {
+
+bool u8_from_json_variant(const Variant &v, uint8_t &i) {
 	ERR_FAIL_COND_V(v.get_type() != Variant::INT && v.get_type() != Variant::FLOAT, false);
 	int n = v;
 	ERR_FAIL_COND_V(n < 0 || n > 255, false);
@@ -248,22 +251,26 @@ static bool u8_from_json_variant(const Variant &v, uint8_t &i) {
 	return true;
 }
 
-static bool u32_from_json_variant(const Variant &v, uint32_t &i) {
+bool u32_from_json_variant(const Variant &v, uint32_t &i) {
 	ERR_FAIL_COND_V(v.get_type() != Variant::INT && v.get_type() != Variant::FLOAT, false);
 	ERR_FAIL_COND_V(v.operator int64_t() < 0, false);
 	i = v;
 	return true;
 }
 
-static bool depth_from_json_variant(Variant &v, VoxelBufferInternal::Depth &d) {
+bool depth_from_json_variant(Variant &v, VoxelBuffer::Depth &d) {
 	uint8_t n;
 	ERR_FAIL_COND_V(!u8_from_json_variant(v, n), false);
-	ZN_ASSERT_RETURN_V(n < VoxelBufferInternal::DEPTH_COUNT, false);
-	d = (VoxelBufferInternal::Depth)n;
+	ZN_ASSERT_RETURN_V(n < VoxelBuffer::DEPTH_COUNT, false);
+	d = (VoxelBuffer::Depth)n;
 	return true;
 }
 
-FileResult VoxelStreamRegionFiles::save_meta() {
+} // namespace
+
+zylann::godot::FileResult VoxelStreamRegionFiles::save_meta() {
+	using namespace zylann::godot;
+
 	ERR_FAIL_COND_V(_directory_path == "", FILE_CANT_OPEN);
 
 	Dictionary d;
@@ -284,8 +291,7 @@ FileResult VoxelStreamRegionFiles::save_meta() {
 
 	// Make sure the directory exists
 	{
-		const CharString directory_path_utf8 = _directory_path.utf8();
-		Error err = check_directory_created_using_file_locker(directory_path_utf8.get_data());
+		const Error err = check_directory_created_with_file_locker(_directory_path);
 		if (err != OK) {
 			ERR_PRINT("Could not save meta");
 			return FILE_CANT_OPEN;
@@ -311,12 +317,14 @@ FileResult VoxelStreamRegionFiles::save_meta() {
 	return FILE_OK;
 }
 
-static void migrate_region_meta_data(Dictionary &data) {
+namespace {
+
+void migrate_region_meta_data(Dictionary &data) {
 	if (data["version"] == Variant(real_t(FORMAT_VERSION_LEGACY_1))) {
 		Array depths;
-		depths.resize(VoxelBufferInternal::MAX_CHANNELS);
+		depths.resize(VoxelBuffer::MAX_CHANNELS);
 		for (int i = 0; i < depths.size(); ++i) {
-			depths[i] = VoxelBufferInternal::DEFAULT_CHANNEL_DEPTH;
+			depths[i] = VoxelBuffer::DEFAULT_CHANNEL_DEPTH;
 		}
 		data["channel_depths"] = depths;
 		data["version"] = FORMAT_VERSION_LEGACY_2;
@@ -332,7 +340,11 @@ static void migrate_region_meta_data(Dictionary &data) {
 	// }
 }
 
-FileResult VoxelStreamRegionFiles::load_meta() {
+} // namespace
+
+zylann::godot::FileResult VoxelStreamRegionFiles::load_meta() {
+	using namespace zylann::godot;
+
 	ERR_FAIL_COND_V(_directory_path == "", FILE_CANT_OPEN);
 
 	// Ensure you cleanup previous world before loading another
@@ -378,7 +390,7 @@ FileResult VoxelStreamRegionFiles::load_meta() {
 	ERR_FAIL_COND_V(meta.version < 0, FILE_INVALID_DATA);
 
 	Array channel_depths_data = d["channel_depths"];
-	ERR_FAIL_COND_V(channel_depths_data.size() != VoxelBufferInternal::MAX_CHANNELS, FILE_INVALID_DATA);
+	ERR_FAIL_COND_V(channel_depths_data.size() != VoxelBuffer::MAX_CHANNELS, FILE_INVALID_DATA);
 	for (int i = 0; i < channel_depths_data.size(); ++i) {
 		ERR_FAIL_COND_V(!depth_from_json_variant(channel_depths_data[i], meta.channel_depths[i]), FILE_INVALID_DATA);
 	}
@@ -412,7 +424,7 @@ void VoxelStreamRegionFiles::close_all_regions() {
 	for (unsigned int i = 0; i < _region_cache.size(); ++i) {
 		CachedRegion *cache = _region_cache[i];
 		close_region(cache);
-		memdelete(cache);
+		ZN_DELETE(cache);
 	}
 	_region_cache.clear();
 }
@@ -458,7 +470,7 @@ VoxelStreamRegionFiles::CachedRegion *VoxelStreamRegionFiles::open_region(
 
 	String fpath = get_region_file_path(region_pos, lod);
 
-	cached_region = memnew(CachedRegion);
+	cached_region = ZN_NEW(CachedRegion);
 
 	// Configure format because we might have to create the file, and some old file versions don't embed format
 	{
@@ -483,7 +495,7 @@ VoxelStreamRegionFiles::CachedRegion *VoxelStreamRegionFiles::open_region(
 	//   we assume no other process will modify region files.
 
 	if (err != OK) {
-		memdelete(cached_region);
+		ZN_DELETE(cached_region);
 		if (create_if_not_found) {
 			// Could not create it apparently
 			ERR_PRINT(String("Could not open or create region file {0}, error: {1}").format(varray(fpath, err)));
@@ -502,7 +514,7 @@ VoxelStreamRegionFiles::CachedRegion *VoxelStreamRegionFiles::open_region(
 				|| format.region_size != Vector3iUtil::create(1 << _meta.region_size_po2) //
 				|| format.sector_size != _meta.sector_size) {
 			ERR_PRINT("Region file has unexpected format");
-			memdelete(cached_region);
+			ZN_DELETE(cached_region);
 			return nullptr;
 		}
 	}
@@ -544,20 +556,26 @@ void VoxelStreamRegionFiles::close_oldest_region() {
 	_region_cache.erase(_region_cache.begin() + oldest_index);
 
 	close_region(region);
-	memdelete(region);
+	ZN_DELETE(region);
 }
 
-static inline int convert_block_coordinate(int p_x, int old_size, int new_size) {
+namespace {
+
+inline int convert_block_coordinate(int p_x, int old_size, int new_size) {
 	return math::floordiv(p_x * old_size, new_size);
 }
 
-static Vector3i convert_block_coordinates(Vector3i pos, Vector3i old_size, Vector3i new_size) {
+Vector3i convert_block_coordinates(Vector3i pos, Vector3i old_size, Vector3i new_size) {
 	return Vector3i(convert_block_coordinate(pos.x, old_size.x, new_size.x),
 			convert_block_coordinate(pos.y, old_size.y, new_size.y),
 			convert_block_coordinate(pos.z, old_size.z, new_size.z));
 }
 
+} // namespace
+
 void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
+	using namespace zylann::godot;
+
 	// TODO Converting across different block sizes is untested.
 	// I wrote it because it would be too bad to loose large voxel worlds because of a setting change, so one day we may
 	// need it
@@ -604,19 +622,19 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 
 	struct PositionAndLod {
 		Vector3i position;
-		int lod;
+		uint8_t lod_index;
 	};
 
 	ERR_FAIL_COND(old_stream->load_meta() != FILE_OK);
 
-	std::vector<PositionAndLod> old_region_list;
+	StdVector<PositionAndLod> old_region_list;
 	Meta old_meta = old_stream->_meta;
 
 	// Get list of all regions from the old stream
 	{
-		for (int lod = 0; lod < old_meta.lod_count; ++lod) {
+		for (unsigned int lod_index = 0; lod_index < old_meta.lod_count; ++lod_index) {
 			const String lod_folder =
-					old_stream->_directory_path.path_join("regions").path_join("lod") + String::num_int64(lod);
+					old_stream->_directory_path.path_join("regions").path_join("lod") + String::num_int64(lod_index);
 			const String ext = String(".") + RegionFormat::FILE_EXTENSION;
 
 			Ref<DirAccess> da = open_directory(lod_folder);
@@ -643,7 +661,7 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 					p.position.x = parts[1].to_int();
 					p.position.y = parts[2].to_int();
 					p.position.z = parts[3].to_int();
-					p.lod = lod;
+					p.lod_index = lod_index;
 					old_region_list.push_back(p);
 				}
 			}
@@ -665,12 +683,12 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 	for (unsigned int i = 0; i < old_region_list.size(); ++i) {
 		PositionAndLod region_info = old_region_list[i];
 
-		const CachedRegion *old_region = old_stream->open_region(region_info.position, region_info.lod, false);
+		const CachedRegion *old_region = old_stream->open_region(region_info.position, region_info.lod_index, false);
 		if (old_region == nullptr) {
 			continue;
 		}
 
-		ZN_PRINT_VERBOSE(format("Converting region lod{}/{}", region_info.lod, region_info.position));
+		ZN_PRINT_VERBOSE(format("Converting region lod{}/{}", region_info.lod_index, region_info.position));
 
 		const unsigned int blocks_count = old_region->region.get_header_block_count();
 		for (unsigned int j = 0; j < blocks_count; ++j) {
@@ -678,10 +696,10 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 				continue;
 			}
 
-			VoxelBufferInternal old_block;
+			VoxelBuffer old_block(VoxelBuffer::ALLOCATOR_POOL);
 			old_block.create(old_block_size.x, old_block_size.y, old_block_size.z);
 
-			VoxelBufferInternal new_block;
+			VoxelBuffer new_block(VoxelBuffer::ALLOCATOR_POOL);
 			new_block.create(new_block_size.x, new_block_size.y, new_block_size.z);
 
 			// Load block from old stream
@@ -689,8 +707,8 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 			Vector3i block_pos = block_rpos + region_info.position * old_region_size;
 			VoxelStream::VoxelQueryData old_block_load_query{
 				old_block, //
-				block_pos * old_block_size << region_info.lod, //
-				region_info.lod, //
+				block_pos, //
+				region_info.lod_index, //
 				RESULT_ERROR //
 			};
 			old_stream->load_voxel_block(old_block_load_query);
@@ -699,8 +717,8 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 			if (old_block_size == new_block_size) {
 				VoxelStream::VoxelQueryData old_block_save_query{
 					old_block, //
-					block_pos * new_block_size << region_info.lod, //
-					region_info.lod,
+					block_pos, //
+					region_info.lod_index,
 					RESULT_ERROR //
 				};
 				save_voxel_block(old_block_save_query);
@@ -716,24 +734,24 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 					// Copy to a sub-area of one block
 					VoxelStream::VoxelQueryData new_block_load_query{ //
 						new_block, //
-						new_block_pos * new_block_size << region_info.lod, //
-						region_info.lod, //
+						new_block_pos, //
+						region_info.lod_index, //
 						RESULT_ERROR
 					};
 					load_voxel_block(new_block_load_query);
 
 					Vector3i dst_pos = rel * old_block.get_size();
 
-					for (unsigned int channel_index = 0; channel_index < VoxelBufferInternal::MAX_CHANNELS;
-							++channel_index) {
-						new_block.copy_from(old_block, Vector3i(), old_block.get_size(), dst_pos, channel_index);
+					for (unsigned int channel_index = 0; channel_index < VoxelBuffer::MAX_CHANNELS; ++channel_index) {
+						new_block.copy_channel_from(
+								old_block, Vector3i(), old_block.get_size(), dst_pos, channel_index);
 					}
 
 					new_block.compress_uniform_channels();
 					VoxelStream::VoxelQueryData new_block_save_query{ //
 						new_block, //
-						new_block_pos * new_block_size << region_info.lod, //
-						region_info.lod, //
+						new_block_pos, //
+						region_info.lod_index, //
 						RESULT_ERROR
 					};
 					save_voxel_block(new_block_save_query);
@@ -749,15 +767,15 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 								Vector3i src_min = rpos * new_block.get_size();
 								Vector3i src_max = src_min + new_block.get_size();
 
-								for (unsigned int channel_index = 0; channel_index < VoxelBufferInternal::MAX_CHANNELS;
+								for (unsigned int channel_index = 0; channel_index < VoxelBuffer::MAX_CHANNELS;
 										++channel_index) {
-									new_block.copy_from(old_block, src_min, src_max, Vector3i(), channel_index);
+									new_block.copy_channel_from(old_block, src_min, src_max, Vector3i(), channel_index);
 								}
 
 								VoxelStream::VoxelQueryData new_block_save_query{ //
 									new_block, //
-									(new_block_pos + rpos) * new_block_size << region_info.lod, //
-									region_info.lod, //
+									new_block_pos + rpos, //
+									region_info.lod_index, //
 									RESULT_ERROR
 								};
 								save_voxel_block(new_block_save_query);
@@ -882,7 +900,7 @@ void VoxelStreamRegionFiles::convert_files(Dictionary d) {
 		ERR_FAIL_COND_MSG(!check_meta(meta), "Invalid setting");
 
 		if (!_meta_loaded) {
-			if (load_meta() != FILE_OK) {
+			if (load_meta() != zylann::godot::FILE_OK) {
 				// New stream, nothing to convert
 				_meta = meta;
 

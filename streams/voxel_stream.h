@@ -1,16 +1,24 @@
 #ifndef VOXEL_STREAM_H
 #define VOXEL_STREAM_H
 
+#include "../constants/voxel_constants.h"
+#include "../util/containers/span.h"
+#include "../util/containers/std_vector.h"
 #include "../util/godot/classes/resource.h"
-#include "../util/memory.h"
+#include "../util/math/box3i.h"
+#include "../util/math/vector3.h"
+#include "../util/math/vector3i.h"
+#include "../util/memory/memory.h"
 #include "../util/thread/rw_lock.h"
-#include "instance_data.h"
+
+#include <cstdint>
 
 namespace zylann::voxel {
 
-class VoxelBufferInternal;
+class VoxelBuffer;
+struct InstanceBlockData;
 
-namespace gd {
+namespace godot {
 class VoxelBuffer;
 }
 
@@ -18,19 +26,20 @@ class VoxelBuffer;
 // This is intended for files, so it may run in a single background thread and gets requests in batches.
 // Must be implemented in a thread-safe way.
 //
-// Functions currently don't enforce querying blocks of the same size, however it is required for every stream to
-// support querying blocks the size of the declared block size, at positions matching their origins.
-// This might be restricted in the future, because there has been no compelling use case for that.
-//
 // If you are looking for a more specialized API to generate voxels with more threads, use VoxelGenerator.
 //
 class VoxelStream : public Resource {
 	GDCLASS(VoxelStream, Resource)
 public:
+	static const int32_t DEFAULT_MIN_SUPPORTED_BLOCK_COORDINATE =
+			-math::arithmetic_rshift(constants::MAX_VOLUME_EXTENT, constants::DEFAULT_BLOCK_SIZE_PO2);
+	static const int32_t DEFAULT_MAX_SUPPORTED_BLOCK_COORDINATE =
+			math::arithmetic_rshift(constants::MAX_VOLUME_EXTENT, constants::DEFAULT_BLOCK_SIZE_PO2);
+
 	VoxelStream();
 	~VoxelStream();
 
-	enum ResultCode {
+	enum ResultCode : uint8_t {
 		// Something went wrong, the request should be aborted
 		RESULT_ERROR,
 		// The block could not be found in the stream. The requester may fallback on the generator.
@@ -42,17 +51,17 @@ public:
 	};
 
 	struct VoxelQueryData {
-		VoxelBufferInternal &voxel_buffer;
-		Vector3i origin_in_voxels;
-		int lod;
+		VoxelBuffer &voxel_buffer;
+		Vector3i position_in_blocks;
+		uint8_t lod_index;
 		// This is currently not used in save queries. Maybe it should?
 		ResultCode result;
 	};
 
 	struct InstancesQueryData {
 		UniquePtr<InstanceBlockData> data;
-		Vector3i position;
-		uint8_t lod;
+		Vector3i position_in_blocks;
+		uint8_t lod_index;
 		ResultCode result;
 	};
 
@@ -79,13 +88,14 @@ public:
 	virtual void save_instance_blocks(Span<InstancesQueryData> p_blocks);
 
 	struct FullLoadingResult {
+		// TODO Perhaps this needs to be decoupled. Not all voxel blocks have instances and vice versa
 		struct Block {
-			std::shared_ptr<VoxelBufferInternal> voxels;
+			std::shared_ptr<VoxelBuffer> voxels;
 			UniquePtr<InstanceBlockData> instances_data;
 			Vector3i position;
 			unsigned int lod;
 		};
-		std::vector<Block> blocks;
+		StdVector<Block> blocks;
 	};
 
 	virtual bool supports_loading_all_blocks() const {
@@ -108,6 +118,8 @@ public:
 	// Gets at how many levels of details blocks can be queried.
 	virtual int get_lod_count() const;
 
+	virtual Box3i get_supported_block_range() const;
+
 	// Should generated blocks be saved immediately? If not, they will be saved only when modified.
 	// If this is enabled, generated blocks will immediately be considered edited and will be saved to the stream.
 	// Warning: this is incompatible with non-destructive workflows such as modifiers.
@@ -125,13 +137,10 @@ public:
 private:
 	static void _bind_methods();
 
-	ResultCode _b_load_voxel_block(Ref<gd::VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod);
-	void _b_save_voxel_block(Ref<gd::VoxelBuffer> buffer, Vector3i origin_in_voxels, int lod);
+	ResultCode _b_load_voxel_block(Ref<godot::VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod_index);
+	void _b_save_voxel_block(Ref<godot::VoxelBuffer> buffer, Vector3i origin_in_voxels, int lod_index);
 	int _b_get_used_channels_mask() const;
 	Vector3 _b_get_block_size() const;
-	// Deprecated
-	ResultCode _b_emerge_block(Ref<gd::VoxelBuffer> out_buffer, Vector3 origin_in_voxels, int lod);
-	void _b_immerge_block(Ref<gd::VoxelBuffer> buffer, Vector3 origin_in_voxels, int lod);
 
 	struct Parameters {
 		bool save_generator_output = false;

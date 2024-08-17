@@ -1,11 +1,10 @@
 #include "vox_data.h"
+#include "../../util/containers/std_unordered_set.h"
 #include "../../util/godot/classes/file_access.h"
 #include "../../util/godot/core/array.h"
 #include "../../util/io/log.h"
 #include "../../util/profiling.h"
-#include "../../util/string_funcs.h"
-
-#include <unordered_set>
+#include "../../util/string/format.h"
 
 namespace zylann::voxel::magica {
 
@@ -48,25 +47,25 @@ uint32_t g_default_palette[PALETTE_SIZE] = {
 };
 // clang-format on
 
-static Error parse_string(FileAccess &f, String &s) {
+Error parse_string(FileAccess &f, String &s) {
 	const int size = f.get_32();
 
 	// Sanity checks
 	ERR_FAIL_COND_V(size < 0, ERR_INVALID_DATA);
 	ERR_FAIL_COND_V(size > 4096, ERR_INVALID_DATA);
 
-	static thread_local std::vector<char> bytes;
+	static thread_local StdVector<char> bytes;
 	bytes.resize(size);
-	ERR_FAIL_COND_V(
-			get_buffer(f, Span<uint8_t>((uint8_t *)bytes.data(), bytes.size())) != bytes.size(), ERR_PARSE_ERROR);
+	ERR_FAIL_COND_V(godot::get_buffer(f, Span<uint8_t>((uint8_t *)bytes.data(), bytes.size())) != bytes.size(),
+			ERR_PARSE_ERROR);
 
 	s = "";
-	ERR_FAIL_COND_V(parse_utf8(s, to_span(bytes)) != OK, ERR_PARSE_ERROR);
+	ERR_FAIL_COND_V(godot::parse_utf8(s, to_span(bytes)) != OK, ERR_PARSE_ERROR);
 
 	return OK;
 }
 
-static Error parse_dictionary(FileAccess &f, std::unordered_map<String, String> &dict) {
+Error parse_dictionary(FileAccess &f, StdUnorderedMap<String, String> &dict) {
 	const int item_count = f.get_32();
 
 	// Sanity checks
@@ -122,7 +121,7 @@ void transpose(Vector3i sx, Vector3i sy, Vector3i sz, Vector3i &dx, Vector3i &dy
 	dz.z = sz.z;
 }
 
-static Basis parse_basis(uint8_t data) {
+Basis parse_basis(uint8_t data) {
 	// bits 0 and 1 are the index of the non-zero entry in the first row
 	const int xi = (data >> 0) & 0x03;
 	// bits 2 and 3 are the index of the non-zero entry in the second row
@@ -163,7 +162,7 @@ static Basis parse_basis(uint8_t data) {
 	return b;
 }
 
-Error parse_node_common_header(Node &node, FileAccess &f, const std::unordered_map<int, UniquePtr<Node>> &scene_graph) {
+Error parse_node_common_header(Node &node, FileAccess &f, const StdUnorderedMap<int, UniquePtr<Node>> &scene_graph) {
 	//
 	const int node_id = f.get_32();
 	ERR_FAIL_COND_V_MSG(scene_graph.find(node_id) != scene_graph.end(), ERR_INVALID_DATA,
@@ -203,14 +202,14 @@ Error Data::_load_from_file(String fpath) {
 	ZN_PRINT_VERBOSE(format("Loading {}", fpath));
 
 	Error open_err;
-	Ref<FileAccess> f_ref = open_file(fpath, FileAccess::READ, open_err);
+	Ref<FileAccess> f_ref = godot::open_file(fpath, FileAccess::READ, open_err);
 	if (f_ref == nullptr) {
 		return open_err;
 	}
 	FileAccess &f = **f_ref;
 
 	char magic[5] = { 0 };
-	ERR_FAIL_COND_V(get_buffer(f, Span<uint8_t>((uint8_t *)magic, 4)) != 4, ERR_PARSE_ERROR);
+	ERR_FAIL_COND_V(godot::get_buffer(f, Span<uint8_t>((uint8_t *)magic, 4)) != 4, ERR_PARSE_ERROR);
 	ERR_FAIL_COND_V(strcmp(magic, "VOX ") != 0, ERR_PARSE_ERROR);
 
 	const uint32_t version = f.get_32();
@@ -224,7 +223,7 @@ Error Data::_load_from_file(String fpath) {
 
 	while (f.get_position() < file_length) {
 		char chunk_id[5] = { 0 };
-		ERR_FAIL_COND_V(get_buffer(f, Span<uint8_t>((uint8_t *)chunk_id, 4)) != 4, ERR_PARSE_ERROR);
+		ERR_FAIL_COND_V(godot::get_buffer(f, Span<uint8_t>((uint8_t *)chunk_id, 4)) != 4, ERR_PARSE_ERROR);
 
 		const uint32_t chunk_size = f.get_32();
 		f.get_32(); // child_chunks_size
@@ -306,7 +305,7 @@ Error Data::_load_from_file(String fpath) {
 
 			// for (int frame_index = 0; frame_index < frame_count; ++frame_index) {
 
-			std::unordered_map<String, String> frame;
+			StdUnorderedMap<String, String> frame;
 			const Error frame_err = parse_dictionary(f, frame);
 			ERR_FAIL_COND_V(frame_err != OK, frame_err);
 
@@ -416,7 +415,7 @@ Error Data::_load_from_file(String fpath) {
 					String("Material ID {0} already exists").format(varray(material_id)));
 			material.id = material_id;
 
-			std::unordered_map<String, String> attributes;
+			StdUnorderedMap<String, String> attributes;
 			Error attributes_err = parse_dictionary(f, attributes);
 			ERR_FAIL_COND_V(attributes_err != OK, attributes_err);
 
@@ -481,7 +480,7 @@ Error Data::_load_from_file(String fpath) {
 	// There is no indication on the official spec to detect the root node of the scene graph.
 	// It might just be the first one we find in the file, but the specification does not explicitly enforce that.
 	// So we have to do it the long way, marking which nodes are referenced by others.
-	std::unordered_set<int> referenced_nodes;
+	StdUnorderedSet<int> referenced_nodes;
 
 	// Validate scene graph
 	for (auto it = _scene_graph.begin(); it != _scene_graph.end(); ++it) {

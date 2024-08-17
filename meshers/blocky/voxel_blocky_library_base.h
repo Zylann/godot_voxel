@@ -2,6 +2,7 @@
 #define VOXEL_BLOCKY_LIBRARY_BASE_H
 
 #include "../../util/containers/dynamic_bitset.h"
+#include "../../util/containers/std_vector.h"
 #include "../../util/godot/classes/resource.h"
 #include "../../util/thread/rw_lock.h"
 #include "voxel_blocky_model.h"
@@ -15,7 +16,10 @@ class VoxelBlockyLibraryBase : public Resource {
 	GDCLASS(VoxelBlockyLibraryBase, Resource)
 
 public:
-	// Limit based on maximum supported by VoxelMesherBlocky
+	// Limit based on maximum supported by VoxelMesherBlocky.
+	// Supporting more requires to double the size of voxels (32-bit), but it's a suspicious situation. Minecraft block
+	// states don't even reach a quarter of that limit. Needing more sounds like it's not the
+	// right approach.
 	static constexpr unsigned int MAX_MODELS = 65536;
 
 	// Materials must be kept to a minimum. 256 is already a lot, but that only affects performance. This limit is
@@ -31,14 +35,14 @@ public:
 		DynamicBitset side_pattern_culling;
 		unsigned int side_pattern_count = 0;
 		// Lots of data can get moved but it's only on load.
-		std::vector<VoxelBlockyModel::BakedData> models;
+		StdVector<VoxelBlockyModel::BakedData> models;
 
 		// struct VariantInfo {
 		// 	uint16_t type_index;
 		// 	FixedArray<uint8_t, 4> attributes;
 		// };
 
-		// std::vector<VariantInfo> variant_infos;
+		// StdVector<VariantInfo> variant_infos;
 
 		unsigned int indexed_materials_count = 0;
 
@@ -78,6 +82,7 @@ public:
 	}
 
 	Ref<Material> get_material_by_index(unsigned int index) const;
+	unsigned int get_material_index_count() const;
 
 #ifdef TOOLS_ENABLED
 	virtual void get_configuration_warnings(PackedStringArray &out_warnings) const;
@@ -101,7 +106,7 @@ protected:
 	BakedData _baked_data;
 	// One of the entries can be null to represent "The default material". If all non-empty models have materials, there
 	// won't be a null entry.
-	std::vector<Ref<Material>> _indexed_materials;
+	StdVector<Ref<Material>> _indexed_materials;
 };
 
 void generate_side_culling_matrix(VoxelBlockyLibraryBase::BakedData &baked_data);

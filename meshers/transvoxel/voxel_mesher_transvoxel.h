@@ -10,7 +10,7 @@ ZN_GODOT_FORWARD_DECLARE(class ShaderMaterial);
 
 namespace zylann::voxel {
 
-namespace gd {
+namespace godot {
 class VoxelBuffer;
 }
 
@@ -27,7 +27,7 @@ public:
 	~VoxelMesherTransvoxel();
 
 	void build(VoxelMesher::Output &output, const VoxelMesher::Input &input) override;
-	Ref<ArrayMesh> build_transition_mesh(Ref<gd::VoxelBuffer> voxels, int direction);
+	Ref<ArrayMesh> build_transition_mesh(Ref<godot::VoxelBuffer> voxels, int direction);
 
 	int get_used_channels_mask() const override;
 
@@ -50,6 +50,9 @@ public:
 
 	void set_transitions_enabled(bool enable);
 	bool get_transitions_enabled() const;
+
+	void set_edge_clamp_margin(float margin);
+	float get_edge_clamp_margin() const;
 
 	Ref<ShaderMaterial> get_default_lod_material() const override;
 
@@ -92,6 +95,12 @@ private:
 	// by querying the generator and edits. This can result in better quality meshes, but is also more expensive
 	// because voxel data shared between threads will have to be accessed randomly over denser data sets.
 	bool _deep_sampling_enabled = false;
+
+	// When a marching cube cell is computed, vertices may be placed anywhere on edges of the cell, including very close
+	// to corners. This can lead to very thin or small triangles, which can be a problem notably for collision. this
+	// margin is the minimum distance from corners, below which vertices will be clamped to it. Increasing this value
+	// reduces quality of the mesh.
+	float _edge_clamp_margin = 0.02f;
 
 	bool _transitions_enabled = true;
 };

@@ -20,7 +20,7 @@ void ComputeShader::clear() {
 		ZN_PROFILE_SCOPE();
 		ZN_ASSERT_RETURN(VoxelEngine::get_singleton().has_rendering_device());
 		RenderingDevice &rd = VoxelEngine::get_singleton().get_rendering_device();
-		free_rendering_device_rid(rd, _rid);
+		zylann::godot::free_rendering_device_rid(rd, _rid);
 		_rid = RID();
 	}
 }
@@ -65,24 +65,24 @@ void ComputeShader::load_from_glsl(String source_text, String name) {
 	RenderingDevice &rd = VoxelEngine::get_singleton().get_rendering_device();
 	// MutexLock mlock(VoxelEngine::get_singleton().get_rendering_device_mutex());
 
-	Ref<RDShaderSPIRV> shader_spirv = shader_compile_spirv_from_source(rd, **shader_source, false);
+	Ref<RDShaderSPIRV> shader_spirv = zylann::godot::shader_compile_spirv_from_source(rd, **shader_source, false);
 	ERR_FAIL_COND(shader_spirv.is_null());
 
 	const String error_message = shader_spirv->get_stage_compile_error(RenderingDevice::SHADER_STAGE_COMPUTE);
 	if (error_message != "") {
 		ERR_PRINT(String("Failed to compile compute shader '{0}'").format(varray(name)));
-		print_line(error_message);
+		::print_line(error_message);
 
 		if (is_verbose_output_enabled()) {
 			const String formatted_source_text = format_source_code_with_line_numbers(source_text);
-			print_line(formatted_source_text);
+			::print_line(formatted_source_text);
 		}
 
 		return;
 	}
 
 	// TODO What name should I give this shader? Seems it is used for caching
-	const RID shader_rid = shader_create_from_spirv(rd, **shader_spirv, name);
+	const RID shader_rid = zylann::godot::shader_create_from_spirv(rd, **shader_spirv, name);
 	ERR_FAIL_COND(!shader_rid.is_valid());
 
 	_rid = shader_rid;

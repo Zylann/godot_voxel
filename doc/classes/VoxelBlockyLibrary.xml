@@ -13,7 +13,7 @@
 	<methods>
 		<method name="add_model">
 			<return type="int" />
-			<param index="0" name="_unnamed_arg0" type="VoxelBlockyModel" />
+			<param index="0" name="model" type="VoxelBlockyModel" />
 			<description>
 				Adds a model to the library. Returns its index, which will be the value of voxels representing it.
 			</description>
@@ -26,13 +26,6 @@
 			</description>
 		</method>
 		<method name="get_model_index_from_resource_name" qualifiers="const">
-			<return type="int" />
-			<param index="0" name="name" type="String" />
-			<description>
-				Finds the index of the first model having the specified resource name. If not found, returns [code]null[/code].
-			</description>
-		</method>
-		<method name="get_voxel_index_from_name" qualifiers="const" is_deprecated="true">
 			<return type="int" />
 			<param index="0" name="name" type="String" />
 			<description>

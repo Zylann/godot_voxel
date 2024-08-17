@@ -11,17 +11,17 @@ This is an alternate implementation of [FastNoiseLite](https://docs.godotengine.
 ## Properties: 
 
 
-Type     | Name                                         | Default 
--------- | -------------------------------------------- | --------
-`float`  | [amplitude](#i_amplitude)                    | 30.0    
-`float`  | [fractal_gain](#i_fractal_gain)              | 0.5     
-`float`  | [fractal_lacunarity](#i_fractal_lacunarity)  | 2.0     
-`int`    | [fractal_octaves](#i_fractal_octaves)        | 3       
-`int`    | [fractal_type](#i_fractal_type)              | 0       
-`int`    | [noise_type](#i_noise_type)                  | 2       
-`float`  | [period](#i_period)                          | 64.0    
-`int`    | [rotation_type_3d](#i_rotation_type_3d)      | 0       
-`int`    | [seed](#i_seed)                              | 0       
+Type                                                                      | Name                                         | Default 
+------------------------------------------------------------------------- | -------------------------------------------- | --------
+[float](https://docs.godotengine.org/en/stable/classes/class_float.html)  | [amplitude](#i_amplitude)                    | 30.0    
+[float](https://docs.godotengine.org/en/stable/classes/class_float.html)  | [fractal_gain](#i_fractal_gain)              | 0.5     
+[float](https://docs.godotengine.org/en/stable/classes/class_float.html)  | [fractal_lacunarity](#i_fractal_lacunarity)  | 2.0     
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)      | [fractal_octaves](#i_fractal_octaves)        | 3       
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)      | [fractal_type](#i_fractal_type)              | 0       
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)      | [noise_type](#i_noise_type)                  | 2       
+[float](https://docs.godotengine.org/en/stable/classes/class_float.html)  | [period](#i_period)                          | 64.0    
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)      | [rotation_type_3d](#i_rotation_type_3d)      | 0       
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)      | [seed](#i_seed)                              | 0       
 <p></p>
 
 ## Methods: 
@@ -56,39 +56,50 @@ enum **RotationType3D**:
 
 ## Property Descriptions
 
-- [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_amplitude"></span> **amplitude** = 30.0
+### [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_amplitude"></span> **amplitude** = 30.0
 
+*(This property has no documentation)*
 
-- [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_fractal_gain"></span> **fractal_gain** = 0.5
+### [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_fractal_gain"></span> **fractal_gain** = 0.5
 
+*(This property has no documentation)*
 
-- [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_fractal_lacunarity"></span> **fractal_lacunarity** = 2.0
+### [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_fractal_lacunarity"></span> **fractal_lacunarity** = 2.0
 
+*(This property has no documentation)*
 
-- [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_fractal_octaves"></span> **fractal_octaves** = 3
+### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_fractal_octaves"></span> **fractal_octaves** = 3
 
+*(This property has no documentation)*
 
-- [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_fractal_type"></span> **fractal_type** = 0
+### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_fractal_type"></span> **fractal_type** = 0
 
+*(This property has no documentation)*
 
-- [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_noise_type"></span> **noise_type** = 2
+### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_noise_type"></span> **noise_type** = 2
 
+*(This property has no documentation)*
 
-- [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_period"></span> **period** = 64.0
+### [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_period"></span> **period** = 64.0
 
+*(This property has no documentation)*
 
-- [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_rotation_type_3d"></span> **rotation_type_3d** = 0
+### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_rotation_type_3d"></span> **rotation_type_3d** = 0
 
+*(This property has no documentation)*
 
-- [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_seed"></span> **seed** = 0
+### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_seed"></span> **seed** = 0
 
+*(This property has no documentation)*
 
 ## Method Descriptions
 
-- [Vector2](https://docs.godotengine.org/en/stable/classes/class_vector2.html)<span id="i_warp_2d"></span> **warp_2d**( [Vector2](https://docs.godotengine.org/en/stable/classes/class_vector2.html) position ) 
+### [Vector2](https://docs.godotengine.org/en/stable/classes/class_vector2.html)<span id="i_warp_2d"></span> **warp_2d**( [Vector2](https://docs.godotengine.org/en/stable/classes/class_vector2.html) position ) 
 
+*(This method has no documentation)*
 
-- [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html)<span id="i_warp_3d"></span> **warp_3d**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) position ) 
+### [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html)<span id="i_warp_3d"></span> **warp_3d**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) position ) 
 
+*(This method has no documentation)*
 
-_Generated on Dec 31, 2023_
+_Generated on Apr 06, 2024_

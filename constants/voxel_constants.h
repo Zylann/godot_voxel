@@ -26,8 +26,6 @@ static const int MAX_VOLUME_SIZE = 2 * MAX_VOLUME_EXTENT; // 1,073,741,822 voxel
 
 static const float INV_0x7f = 1.f / 0x7f;
 static const float INV_0x7fff = 1.f / 0x7fff;
-static const float INV_TAU = 1.f / math::TAU_32;
-static const float SQRT3 = 1.73205080757;
 
 // Below 32 bits, channels are normalized in -1..1, and can represent a limited number of values.
 // For storing SDF, we need a range of values that extends beyond that, in particular for better LOD.
@@ -35,8 +33,23 @@ static const float SQRT3 = 1.73205080757;
 // the corresponding precisions.
 static const float QUANTIZED_SDF_8_BITS_SCALE = 0.1f;
 static const float QUANTIZED_SDF_8_BITS_SCALE_INV = 1.f / 0.1f;
+// static const float QUANTIZED_SDF_8_BITS_MIN = -10.f;
+// static const float QUANTIZED_SDF_8_BITS_MAX = 10.f;
+// static const float QUANTIZED_SDF_8_BITS_DECODE_SCALE = QUANTIZED_SDF_8_BITS_SCALE / 127.f;
+// static const float QUANTIZED_SDF_8_BITS_ENCODE_SCALE = 127.f / QUANTIZED_SDF_8_BITS_SCALE;
+
 static const float QUANTIZED_SDF_16_BITS_SCALE = 0.002f;
 static const float QUANTIZED_SDF_16_BITS_SCALE_INV = 1.f / 0.002f;
+// static const float QUANTIZED_SDF_16_BITS_MIN = -500.f;
+// static const float QUANTIZED_SDF_16_BITS_MAX = 500.f;
+// static const float QUANTIZED_SDF_16_BITS_DECODE_SCALE = QUANTIZED_SDF_16_BITS_SCALE / 32767.f;
+// static const float QUANTIZED_SDF_16_BITS_ENCODE_SCALE = 32767.f / QUANTIZED_SDF_16_BITS_SCALE;
+
+// Sometimes shortcuts are taken to either fill a voxel with matter or air. It's not consistent SDF, but in those
+// contextes it might work ok. Declaring this allows to track where we do this in code, in case we find a better
+// solution later.
+static const float SDF_FAR_OUTSIDE = 100.f;
+static const float SDF_FAR_INSIDE = -100.f;
 
 static const unsigned int DEFAULT_BLOCK_SIZE_PO2 = 4;
 

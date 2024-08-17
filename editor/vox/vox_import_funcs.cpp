@@ -5,8 +5,8 @@ namespace zylann {
 
 namespace voxel::magica {
 
-Ref<Mesh> build_mesh(const VoxelBufferInternal &voxels, VoxelMesher &mesher,
-		std::vector<unsigned int> &surface_index_to_material, Ref<Image> &out_atlas, float p_scale, Vector3 p_offset) {
+Ref<Mesh> build_mesh(const VoxelBuffer &voxels, VoxelMesher &mesher, StdVector<unsigned int> &surface_index_to_material,
+		Ref<Image> &out_atlas, float p_scale, Vector3 p_offset) {
 	//
 	VoxelMesher::Output output;
 	VoxelMesher::Input input = { voxels, nullptr, nullptr, Vector3i(), 0, false };
@@ -28,16 +28,16 @@ Ref<Mesh> build_mesh(const VoxelBufferInternal &voxels, VoxelMesher &mesher,
 		}
 
 		CRASH_COND(arrays.size() != Mesh::ARRAY_MAX);
-		if (!is_surface_triangulated(arrays)) {
+		if (!zylann::godot::is_surface_triangulated(arrays)) {
 			continue;
 		}
 
 		if (p_scale != 1.f) {
-			scale_surface(arrays, p_scale);
+			zylann::godot::scale_surface(arrays, p_scale);
 		}
 
 		if (p_offset != Vector3()) {
-			offset_surface(arrays, p_offset);
+			zylann::godot::offset_surface(arrays, p_offset);
 		}
 
 		mesh->add_surface_from_arrays(output.primitive_type, arrays, Array(), Dictionary(), output.mesh_flags);

@@ -4,7 +4,7 @@
 		3D grid storing voxel data.
 	</brief_description>
 	<description>
-		This contains dense voxels data storage (every single cell holds data, there is no sparse optimization of space). Works like a normal 3D grid containing a voxel value in each cell. Organized in channels of configurable bit depth. Values can be interpreted either as unsigned integers or normalized floats. See [enum Depth] for more information.
+		This contains dense voxels data storage (every single cell holds data, there is no sparse optimization of space). Works like a normal 3D grid containing a voxel value in each cell. Organized in channels of configurable bit depth. Values can be interpreted either as unsigned integers, fixed-point or floats. See [enum Depth] for more information.
 		Arbitrary metadata can also be stored, either for the whole buffer, or per-voxel, at higher cost. This metadata can get saved and loaded along voxels, however you must make sure the data is serializable (i.e it should not contain nodes or arbitrary objects).
 	</description>
 	<tutorials>
@@ -81,9 +81,18 @@
 			</description>
 		</method>
 		<method name="debug_print_sdf_y_slices" qualifiers="const">
-			<return type="Array" />
-			<param index="0" name="scale" type="float" />
+			<return type="Image[]" />
+			<param index="0" name="scale" type="float" default="1.0" />
 			<description>
+				Renders the contents of the SDF channel into images where blue gradients are negative values (below surface) and yellow gradients are positive (above surface). Each image corresponds to an XZ slice of the buffer.
+				The [code]scale[/code] parameter can be used to change contrast of images by scaling the SDF.
+			</description>
+		</method>
+		<method name="decompress_channel">
+			<return type="void" />
+			<param index="0" name="channel" type="int" />
+			<description>
+				If the given channel is currently compressed, decompresses it so that all voxel values are individually stored in full. This will use more memory.
 			</description>
 		</method>
 		<method name="downscale_to" qualifiers="const">
@@ -115,12 +124,22 @@
 				Fills an area of a channel in this buffer with a specific raw value.
 			</description>
 		</method>
+		<method name="fill_area_f">
+			<return type="void" />
+			<param index="0" name="value" type="float" />
+			<param index="1" name="min" type="Vector3i" />
+			<param index="2" name="max" type="Vector3i" />
+			<param index="3" name="channel" type="int" />
+			<description>
+				Fills an area of a channel in this buffer with a specific SDF value.
+			</description>
+		</method>
 		<method name="fill_f">
 			<return type="void" />
 			<param index="0" name="value" type="float" />
 			<param index="1" name="channel" type="int" default="0" />
 			<description>
-				Fills one channel of this buffer with a specific float value.
+				Fills one channel of this buffer with a specific SDF value.
 			</description>
 		</method>
 		<method name="for_each_voxel_metadata" qualifiers="const">
@@ -139,6 +158,12 @@
 			<param index="2" name="max_pos" type="Vector3i" />
 			<description>
 				Executes a function on every voxel in this buffer which have associated metadata, within the specified area.
+				IMPORTANT: inserting new or removing metadata from inside this function is not allowed.
+			</description>
+		</method>
+		<method name="get_allocator" qualifiers="const">
+			<return type="int" enum="VoxelBuffer.Allocator" />
+			<description>
 			</description>
 		</method>
 		<method name="get_block_metadata" qualifiers="const">
@@ -207,9 +232,64 @@
 				Checks if every voxel within a channel has the same value.
 			</description>
 		</method>
-		<method name="optimize">
+		<method name="op_add_buffer_f">
 			<return type="void" />
+			<param index="0" name="other" type="VoxelBuffer" />
+			<param index="1" name="channel" type="int" enum="VoxelBuffer.ChannelId" />
 			<description>
+				Computes the sum of corresponding voxels between the current buffer and the other buffer, and stores the result in the current buffer. Voxels are interpreted as signed distances (usually the [constant VoxelBuffer.CHANNEL_SDF] channel).
+			</description>
+		</method>
+		<method name="op_max_buffer_f">
+			<return type="void" />
+			<param index="0" name="other" type="VoxelBuffer" />
+			<param index="1" name="channel" type="int" enum="VoxelBuffer.ChannelId" />
+			<description>
+				Computes the maximum of corresponding voxels between the current buffer and the other buffer, and stores the result in the current buffer. Voxels are interpreted as signed distances (usually the [constant VoxelBuffer.CHANNEL_SDF] channel).
+			</description>
+		</method>
+		<method name="op_min_buffer_f">
+			<return type="void" />
+			<param index="0" name="other" type="VoxelBuffer" />
+			<param index="1" name="channel" type="int" enum="VoxelBuffer.ChannelId" />
+			<description>
+				Computes the minimum of corresponding voxels between the current buffer and the other buffer, and stores the result in the current buffer. Voxels are interpreted as signed distances (usually the [constant VoxelBuffer.CHANNEL_SDF] channel).
+			</description>
+		</method>
+		<method name="op_mul_buffer_f">
+			<return type="void" />
+			<param index="0" name="other" type="VoxelBuffer" />
+			<param index="1" name="channel" type="int" enum="VoxelBuffer.ChannelId" />
+			<description>
+				Computes the multiplication of corresponding voxels between the current buffer and the other buffer, and stores the result in the current buffer. Voxels are interpreted as signed distances (usually the [constant VoxelBuffer.CHANNEL_SDF] channel).
+			</description>
+		</method>
+		<method name="op_mul_value_f">
+			<return type="void" />
+			<param index="0" name="other" type="float" />
+			<param index="1" name="channel" type="int" enum="VoxelBuffer.ChannelId" />
+			<description>
+				Multiplies every voxels in the buffer by the given value. Voxels are interpreted as signed distances (usually the [constant VoxelBuffer.CHANNEL_SDF] channel).
+			</description>
+		</method>
+		<method name="op_select_less_src_f_dst_i_values">
+			<return type="void" />
+			<param index="0" name="src" type="VoxelBuffer" />
+			<param index="1" name="src_channel" type="int" enum="VoxelBuffer.ChannelId" />
+			<param index="2" name="threshold" type="float" />
+			<param index="3" name="value_if_less" type="int" />
+			<param index="4" name="value_if_more" type="int" />
+			<param index="5" name="dst_channel" type="int" enum="VoxelBuffer.ChannelId" />
+			<description>
+				For every voxel in the source buffer, if the value is lower than a threshold, set the corresponding voxel in the current buffer to a specific integer value, or another value otherwise. Voxels in the source buffer are interpreted as signed distances (usually the [constant VoxelBuffer.CHANNEL_SDF] channel).
+			</description>
+		</method>
+		<method name="op_sub_buffer_f">
+			<return type="void" />
+			<param index="0" name="other" type="VoxelBuffer" />
+			<param index="1" name="channel" type="int" enum="VoxelBuffer.ChannelId" />
+			<description>
+				Computes the subtraction of corresponding voxels between the current buffer and the other buffer ([code]current - other[/code]), and stores the result in the current buffer. Voxels are interpreted as signed distances (usually the [constant VoxelBuffer.CHANNEL_SDF] channel).
 			</description>
 		</method>
 		<method name="remap_values">
@@ -304,10 +384,10 @@
 			Maximum number of channels a [VoxelBuffer] can have.
 		</constant>
 		<constant name="DEPTH_8_BIT" value="0" enum="Depth">
-			Voxels will be stored with 8 bits. Raw values will range from 0 to 255, and float values will be normalized between -1 and 1 (but will still take 255 possible values). Values outside the range will be clamped. If you use this for smooth voxels, you may take care of scaling SDF data with a small number like 0.1 to reduce precision artifacts.
+			Voxels will be stored with 8 bits. Raw values will range from 0 to 255. Float values can take 255 values distributed from -10.0 to 10.0. Values outside the range will be clamped.
 		</constant>
 		<constant name="DEPTH_16_BIT" value="1" enum="Depth">
-			Voxels will be stored with 16 bits. Raw values will range from 0 to 65,535, and float values will be normalized between -1 and 1 (but will still take 65535 possible values). Values outside the range will be clamped.
+			Voxels will be stored with 16 bits. Raw values will range from 0 to 65,535. Float values can take 65,535 values distributed from -500.0 to 500.0. Values outside the range will be clamped.
 		</constant>
 		<constant name="DEPTH_32_BIT" value="2" enum="Depth">
 			Voxels will be stored with 32 bits. Raw values will range from 0 to 4,294,967,295, and float values will use regular IEEE 754 representation ([code]float[/code]).
@@ -326,6 +406,12 @@
 		</constant>
 		<constant name="COMPRESSION_COUNT" value="2" enum="Compression">
 			How many compression modes there are.
+		</constant>
+		<constant name="ALLOCATOR_DEFAULT" value="0" enum="Allocator">
+		</constant>
+		<constant name="ALLOCATOR_POOL" value="1" enum="Allocator">
+		</constant>
+		<constant name="ALLOCATOR_COUNT" value="2" enum="Allocator">
 		</constant>
 		<constant name="MAX_SIZE" value="65535">
 		</constant>

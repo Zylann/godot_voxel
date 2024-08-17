@@ -2,7 +2,8 @@
 #include "../engine/voxel_engine.h"
 #include "../util/godot/classes/engine.h"
 #include "../util/godot/classes/node.h"
-#include "../util/string_funcs.h"
+#include "../util/math/conv.h"
+#include "../util/string/format.h"
 
 namespace zylann::voxel {
 
@@ -13,12 +14,23 @@ VoxelViewer::VoxelViewer() {
 void VoxelViewer::set_view_distance(unsigned int distance) {
 	_view_distance = distance;
 	if (is_active()) {
-		VoxelEngine::get_singleton().set_viewer_distance(_viewer_id, distance);
+		sync_view_distances();
 	}
 }
 
 unsigned int VoxelViewer::get_view_distance() const {
 	return _view_distance;
+}
+
+void VoxelViewer::set_view_distance_vertical_ratio(float p_ratio) {
+	_view_distance_vertical_ratio = math::max(p_ratio, 0.01f);
+	if (is_active()) {
+		sync_view_distances();
+	}
+}
+
+float VoxelViewer::get_view_distance_vertical_ratio() const {
+	return _view_distance_vertical_ratio;
 }
 
 void VoxelViewer::set_requires_visuals(bool enabled) {
@@ -95,8 +107,21 @@ bool VoxelViewer::is_enabled_in_editor() const {
 	return _enabled_in_editor;
 }
 
+void VoxelViewer::sync_view_distances() {
+	VoxelEngine::Viewer::Distances distances;
+	distances.horizontal = _view_distance;
+	distances.vertical = _view_distance;
+
+	if (!Math::is_equal_approx(_view_distance_vertical_ratio, 1.f)) {
+		distances.vertical =
+				math::max(1, static_cast<int>(static_cast<float>(_view_distance) * _view_distance_vertical_ratio));
+	}
+
+	VoxelEngine::get_singleton().set_viewer_distances(_viewer_id, distances);
+}
+
 void VoxelViewer::sync_all_parameters() {
-	VoxelEngine::get_singleton().set_viewer_distance(_viewer_id, _view_distance);
+	sync_view_distances();
 	VoxelEngine::get_singleton().set_viewer_requires_visuals(_viewer_id, _requires_visuals);
 	VoxelEngine::get_singleton().set_viewer_requires_collisions(_viewer_id, _requires_collisions);
 	VoxelEngine::get_singleton().set_viewer_requires_data_block_notifications(
@@ -146,6 +171,10 @@ void VoxelViewer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_view_distance", "distance"), &VoxelViewer::set_view_distance);
 	ClassDB::bind_method(D_METHOD("get_view_distance"), &VoxelViewer::get_view_distance);
 
+	ClassDB::bind_method(
+			D_METHOD("set_view_distance_vertical_ratio", "ratio"), &VoxelViewer::set_view_distance_vertical_ratio);
+	ClassDB::bind_method(D_METHOD("get_view_distance_vertical_ratio"), &VoxelViewer::get_view_distance_vertical_ratio);
+
 	ClassDB::bind_method(D_METHOD("set_requires_visuals", "enabled"), &VoxelViewer::set_requires_visuals);
 	ClassDB::bind_method(D_METHOD("is_requiring_visuals"), &VoxelViewer::is_requiring_visuals);
 
@@ -164,6 +193,8 @@ void VoxelViewer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("is_enabled_in_editor"), &VoxelViewer::is_enabled_in_editor);
 
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "view_distance"), "set_view_distance", "get_view_distance");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "view_distance_vertical_ratio"), "set_view_distance_vertical_ratio",
+			"get_view_distance_vertical_ratio");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "requires_visuals"), "set_requires_visuals", "is_requiring_visuals");
 	ADD_PROPERTY(
 			PropertyInfo(Variant::BOOL, "requires_collisions"), "set_requires_collisions", "is_requiring_collisions");

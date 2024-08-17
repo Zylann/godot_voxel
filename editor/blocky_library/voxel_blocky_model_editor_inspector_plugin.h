@@ -8,8 +8,8 @@ ZN_GODOT_FORWARD_DECLARE(class EditorUndoRedoManager);
 
 namespace zylann::voxel {
 
-class VoxelBlockyModelEditorInspectorPlugin : public ZN_EditorInspectorPlugin {
-	GDCLASS(VoxelBlockyModelEditorInspectorPlugin, ZN_EditorInspectorPlugin)
+class VoxelBlockyModelEditorInspectorPlugin : public zylann::godot::ZN_EditorInspectorPlugin {
+	GDCLASS(VoxelBlockyModelEditorInspectorPlugin, zylann::godot::ZN_EditorInspectorPlugin)
 public:
 	// TODO GDX: `EditorUndoRedoManager` isn't a singleton yet in GDExtension, so it has to be injected
 	void set_undo_redo(EditorUndoRedoManager *urm);

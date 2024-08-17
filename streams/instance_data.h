@@ -2,6 +2,7 @@
 #define VOXEL_INSTANCE_DATA_H
 
 #include "../util/containers/span.h"
+#include "../util/containers/std_vector.h"
 #include "../util/math/transform3f.h"
 
 namespace zylann::voxel {
@@ -43,11 +44,11 @@ struct InstanceBlockData {
 		uint16_t id;
 		float scale_min;
 		float scale_max;
-		std::vector<InstanceData> instances;
+		StdVector<InstanceData> instances;
 	};
 
 	float position_range;
-	std::vector<LayerData> layers;
+	StdVector<LayerData> layers;
 
 	void copy_to(InstanceBlockData &dst) const {
 		// It's all POD so it should work for now
@@ -55,7 +56,7 @@ struct InstanceBlockData {
 	}
 };
 
-bool serialize_instance_block_data(const InstanceBlockData &src, std::vector<uint8_t> &dst);
+bool serialize_instance_block_data(const InstanceBlockData &src, StdVector<uint8_t> &dst);
 bool deserialize_instance_block_data(InstanceBlockData &dst, Span<const uint8_t> src);
 
 } // namespace zylann::voxel

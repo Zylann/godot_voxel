@@ -2,10 +2,10 @@
 #define ZN_SHADER_MATERIAL_POOL_H
 
 #include "../containers/span.h"
+#include "../containers/std_vector.h"
 #include "classes/shader_material.h"
-#include <vector>
 
-namespace zylann {
+namespace zylann::godot {
 
 // Reasons to pool numerous copies of the same ShaderMaterial:
 // - In the editor, the Shader `changed` signal is connected even if they aren't editable, which makes the shader manage
@@ -28,12 +28,12 @@ public:
 
 private:
 	Ref<ShaderMaterial> _template_material;
-	std::vector<StringName> _shader_params_cache;
-	std::vector<Ref<ShaderMaterial>> _materials;
+	StdVector<StringName> _shader_params_cache;
+	StdVector<Ref<ShaderMaterial>> _materials;
 };
 
 void copy_shader_params(const ShaderMaterial &src, ShaderMaterial &dst, Span<const StringName> params);
 
-} // namespace zylann
+} // namespace zylann::godot
 
 #endif // ZN_SHADER_MATERIAL_POOL_H

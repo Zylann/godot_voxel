@@ -43,7 +43,7 @@ public:
 				for (pos.y = 0; pos.y < box.size.y; ++pos.y) {
 					int label = 0;
 
-					if (volume_predicate_func(box.pos + pos)) {
+					if (volume_predicate_func(box.position + pos)) {
 						if (pos.z > 0) {
 							back_label =
 									output[Vector3iUtil::get_zxy_index(Vector3i(pos.x, pos.y, pos.z - 1), box.size)];
@@ -76,7 +76,7 @@ public:
 						} else if (top_label == 0 && back_label == 0) {
 							label = left_label;
 
-						} else if (left_label == 0 ||
+						} else if (left_label == 0 ||//
 								(top_label != 0 && back_label != 0 &&
 										(left_label == top_label || left_label == back_label))) {
 							if (top_label == back_label) {
@@ -91,7 +91,7 @@ public:
 								add_equivalence(top_label, back_label);
 							}
 
-						} else if (top_label == 0 ||
+						} else if (top_label == 0 ||//
 								(left_label != 0 && back_label != 0 &&
 										(top_label == left_label || top_label == back_label))) {
 							if (left_label == back_label) {
@@ -106,7 +106,7 @@ public:
 								add_equivalence(left_label, back_label);
 							}
 
-						} else if (back_label == 0 ||
+						} else if (back_label == 0 ||//
 								(left_label != 0 && top_label != 0 &&
 										(back_label == left_label || back_label == top_label))) {
 							if (left_label == top_label) {

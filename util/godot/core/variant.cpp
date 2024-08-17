@@ -6,7 +6,7 @@
 #include <godot_cpp/variant/utility_functions.hpp>
 #endif
 
-namespace zylann {
+namespace zylann::godot {
 
 size_t get_variant_encoded_size(const Variant &src) {
 #if defined(ZN_GODOT)
@@ -17,7 +17,7 @@ size_t get_variant_encoded_size(const Variant &src) {
 #elif defined(ZN_GODOT_EXTENSION)
 	// TODO Optimization: this is a waste. Godot would have to expose support for getting the size up-front.
 	// but that likely won't happen soon given how niche that is
-	godot::PackedByteArray dst = godot::UtilityFunctions::var_to_bytes(src);
+	::godot::PackedByteArray dst = ::godot::UtilityFunctions::var_to_bytes(src);
 	return dst.size();
 #endif
 }
@@ -32,7 +32,7 @@ size_t encode_variant(const Variant &src, Span<uint8_t> dst) {
 #elif defined(ZN_GODOT_EXTENSION)
 	// TODO Optimization: this is a waste. Godot would have to expose support for writing directly to a raw buffer.
 	// but that likely won't happen soon given how niche that is
-	godot::PackedByteArray pba = godot::UtilityFunctions::var_to_bytes(src);
+	::godot::PackedByteArray pba = ::godot::UtilityFunctions::var_to_bytes(src);
 
 	const size_t written_length = pba.size();
 	ZN_ASSERT_RETURN_V(written_length <= dst.size(), 0);
@@ -57,16 +57,16 @@ bool decode_variant(Span<const uint8_t> src, Variant &dst, size_t &out_read_size
 #elif defined(ZN_GODOT_EXTENSION)
 	// TODO Optimization: this is a waste. Godot would have to expose support for reading directly from a raw buffer.
 	// but that likely won't happen soon given how niche that is
-	godot::PackedByteArray pba;
+	::godot::PackedByteArray pba;
 	pba.resize(src.size());
 	uint8_t *pba_data = pba.ptrw();
 	ZN_ASSERT_RETURN_V(pba_data != nullptr, false);
 	memcpy(pba_data, src.data(), src.size());
-	dst = godot::UtilityFunctions::bytes_to_var(pba);
+	dst = ::godot::UtilityFunctions::bytes_to_var(pba);
 	// TODO Can't tell how many bytes were actually read!
 	out_read_size = src.size();
 	return true;
 #endif
 }
 
-} // namespace zylann
+} // namespace zylann::godot

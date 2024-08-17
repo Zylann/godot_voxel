@@ -74,11 +74,17 @@ void VoxelColorPalette::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_data"), &VoxelColorPalette::_b_get_data);
 
 	// This is just to allow editing colors in the editor
-	ADD_PROPERTY(PropertyInfo(Variant::PACKED_COLOR_ARRAY, "colors", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR),
-			"set_colors", "get_colors");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::PACKED_COLOR_ARRAY, "colors", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR),
+			"set_colors",
+			"get_colors"
+	);
 
-	ADD_PROPERTY(PropertyInfo(Variant::PACKED_INT32_ARRAY, "data", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE),
-			"set_data", "get_data");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::PACKED_INT32_ARRAY, "data", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE),
+			"set_data",
+			"get_data"
+	);
 
 	BIND_CONSTANT(MAX_COLORS);
 }

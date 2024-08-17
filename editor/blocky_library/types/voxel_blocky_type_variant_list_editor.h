@@ -2,8 +2,8 @@
 #define VOXEL_BLOCKY_TYPE_VARIANT_LIST_EDITOR_H
 
 #include "../../../meshers/blocky/types/voxel_blocky_type.h"
+#include "../../../util/containers/std_vector.h"
 #include "../../../util/godot/classes/v_box_container.h"
-#include <vector>
 
 ZN_GODOT_FORWARD_DECLARE(class Label);
 ZN_GODOT_FORWARD_DECLARE(class EditorResourcePicker);
@@ -42,7 +42,7 @@ private:
 		VoxelBlockyType::VariantKey key;
 	};
 
-	std::vector<VariantEditor> _variant_editors;
+	StdVector<VariantEditor> _variant_editors;
 	GridContainer *_grid_container = nullptr;
 	EditorInterface *_editor_interface = nullptr;
 	EditorUndoRedoManager *_undo_redo = nullptr;

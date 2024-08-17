@@ -1,4 +1,5 @@
 #include "voxel_blocky_model_cube.h"
+#include "../../util/containers/container_funcs.h"
 #include "../../util/math/conv.h"
 
 namespace zylann::voxel {
@@ -44,7 +45,7 @@ bool VoxelBlockyModelCube::_set(const StringName &p_name, const Variant &p_value
 	const String property_name = p_name;
 
 	if (property_name.begins_with("tile_")) {
-		String s = property_name.substr(ZN_ARRAY_LENGTH("tile_") - 1, property_name.length());
+		String s = property_name.substr(string_literal_length("tile_"), property_name.length());
 		Cube::Side side = name_to_side(s);
 		if (side != Cube::SIDE_COUNT) {
 			Vector2i v = p_value;
@@ -60,7 +61,7 @@ bool VoxelBlockyModelCube::_get(const StringName &p_name, Variant &r_ret) const 
 	const String property_name = p_name;
 
 	if (property_name.begins_with("tile_")) {
-		String s = property_name.substr(ZN_ARRAY_LENGTH("tile_") - 1, property_name.length());
+		String s = property_name.substr(string_literal_length("tile_"), property_name.length());
 		Cube::Side side = name_to_side(s);
 		if (side != Cube::SIDE_COUNT) {
 			r_ret = get_tile(VoxelBlockyModel::Side(side));
@@ -112,15 +113,26 @@ float VoxelBlockyModelCube::get_height() const {
 	return _height;
 }
 
-static void bake_cube_geometry(const VoxelBlockyModelCube &config, VoxelBlockyModel::BakedData &baked_data,
-		Vector2i p_atlas_size, bool bake_tangents) {
+namespace {
+
+void bake_cube_geometry(
+		const VoxelBlockyModelCube &config,
+		VoxelBlockyModel::BakedData &baked_data,
+		Vector2i p_atlas_size,
+		VoxelBlockyModel::MaterialIndexer &material_indexer,
+		bool bake_tangents
+) {
 	const float height = config.get_height();
 
 	baked_data.model.surface_count = 1;
 	VoxelBlockyModel::BakedData::Surface &surface = baked_data.model.surfaces[0];
+	// The only way to specify matererials in this model is via "material overrides", since there is no base mesh.
+	// Even if none are specified, we should at least index the "empty" material.
+	surface.material_id = material_indexer.get_or_create_index(config.get_material_override(0));
 
 	for (unsigned int side = 0; side < Cube::SIDE_COUNT; ++side) {
-		std::vector<Vector3f> &positions = surface.side_positions[side];
+		VoxelBlockyModel::BakedData::SideSurface &side_surface = surface.sides[side];
+		StdVector<Vector3f> &positions = side_surface.positions;
 		positions.resize(4);
 		for (unsigned int i = 0; i < 4; ++i) {
 			int corner = Cube::g_side_corners[side][i];
@@ -131,7 +143,7 @@ static void bake_cube_geometry(const VoxelBlockyModelCube &config, VoxelBlockyMo
 			positions[i] = p;
 		}
 
-		std::vector<int> &indices = surface.side_indices[side];
+		StdVector<int> &indices = side_surface.indices;
 		indices.resize(6);
 		for (unsigned int i = 0; i < 6; ++i) {
 			indices[i] = Cube::g_side_quad_triangles[side][i];
@@ -163,8 +175,9 @@ static void bake_cube_geometry(const VoxelBlockyModelCube &config, VoxelBlockyMo
 	const Vector2f s = Vector2f(1.0f) / atlas_size;
 
 	for (unsigned int side = 0; side < Cube::SIDE_COUNT; ++side) {
-		surface.side_uvs[side].resize(4);
-		std::vector<Vector2f> &uvs = surface.side_uvs[side];
+		VoxelBlockyModel::BakedData::SideSurface &side_surface = surface.sides[side];
+		StdVector<Vector2f> &uvs = side_surface.uvs;
+		uvs.resize(4);
 
 		const Vector2f *uv_norm = Cube::g_side_normals[side].y != 0 ? uv_norm_top_bottom : uv_norm_side;
 
@@ -173,7 +186,7 @@ static void bake_cube_geometry(const VoxelBlockyModelCube &config, VoxelBlockyMo
 		}
 
 		if (bake_tangents) {
-			std::vector<float> &tangents = surface.side_tangents[side];
+			StdVector<float> &tangents = side_surface.tangents;
 			for (unsigned int i = 0; i < 4; ++i) {
 				for (unsigned int j = 0; j < 4; ++j) {
 					tangents.push_back(Cube::g_side_tangents[side][j]);
@@ -185,9 +198,11 @@ static void bake_cube_geometry(const VoxelBlockyModelCube &config, VoxelBlockyMo
 	baked_data.empty = false;
 }
 
+} // namespace
+
 void VoxelBlockyModelCube::bake(BakedData &baked_data, bool bake_tangents, MaterialIndexer &materials) const {
 	baked_data.clear();
-	bake_cube_geometry(*this, baked_data, _atlas_size_in_tiles, bake_tangents);
+	bake_cube_geometry(*this, baked_data, _atlas_size_in_tiles, materials, bake_tangents);
 	VoxelBlockyModel::bake(baked_data, bake_tangents, materials);
 }
 
@@ -200,7 +215,9 @@ Ref<Mesh> VoxelBlockyModelCube::get_preview_mesh() const {
 
 	VoxelBlockyModel::BakedData baked_data;
 	baked_data.color = get_color();
-	bake_cube_geometry(*this, baked_data, _atlas_size_in_tiles, bake_tangents);
+	StdVector<Ref<Material>> materials;
+	MaterialIndexer material_indexer{ materials };
+	bake_cube_geometry(*this, baked_data, _atlas_size_in_tiles, material_indexer, bake_tangents);
 
 	Ref<Mesh> mesh = make_mesh_from_baked_data(baked_data, bake_tangents);
 
@@ -265,9 +282,11 @@ void VoxelBlockyModelCube::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_atlas_size_in_tiles"), &VoxelBlockyModelCube::get_atlas_size_in_tiles);
 
 	ADD_PROPERTY(
-			PropertyInfo(Variant::FLOAT, "height", PROPERTY_HINT_RANGE, "0.001,1,0.001"), "set_height", "get_height");
-	ADD_PROPERTY(PropertyInfo(Variant::VECTOR2I, "atlas_size_in_tiles"), "set_atlas_size_in_tiles",
-			"get_atlas_size_in_tiles");
+			PropertyInfo(Variant::FLOAT, "height", PROPERTY_HINT_RANGE, "0.001,1,0.001"), "set_height", "get_height"
+	);
+	ADD_PROPERTY(
+			PropertyInfo(Variant::VECTOR2I, "atlas_size_in_tiles"), "set_atlas_size_in_tiles", "get_atlas_size_in_tiles"
+	);
 }
 
 } // namespace zylann::voxel

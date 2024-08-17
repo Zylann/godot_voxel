@@ -2,18 +2,17 @@
 #define VOX_DATA_H
 
 #include "../../util/containers/fixed_array.h"
+#include "../../util/containers/std_unordered_map.h"
+#include "../../util/containers/std_vector.h"
 #include "../../util/godot/core/string.h"
 #include "../../util/math/basis.h"
 #include "../../util/math/color8.h"
 #include "../../util/math/vector3i.h"
-#include "../../util/memory.h"
+#include "../../util/memory/memory.h"
 
 #if defined(ZN_GODOT_EXTENSION)
 #include <godot_cpp/classes/global_constants.hpp> // For `Error`
 #endif
-
-#include <unordered_map>
-#include <vector>
 
 namespace zylann::voxel::magica {
 
@@ -22,7 +21,7 @@ struct Model {
 	// TODO Optimization: implement lazy loading/streaming to reduce intermediary memory allocations?
 	// Loading a full 256^3 model needs 16 megabytes, but a lot of areas might actually be uniform,
 	// and we might not need the actual model immediately
-	std::vector<uint8_t> color_indexes;
+	StdVector<uint8_t> color_indexes;
 };
 
 struct Node {
@@ -35,7 +34,7 @@ struct Node {
 	int id;
 	// Depending on the type, a node pointer can be casted to different structs
 	const Type type;
-	std::unordered_map<String, String> attributes;
+	StdUnorderedMap<String, String> attributes;
 
 	Node(Type p_type) : type(p_type) {}
 
@@ -60,21 +59,21 @@ struct TransformNode : public Node {
 };
 
 struct GroupNode : public Node {
-	std::vector<int> child_node_ids;
+	StdVector<int> child_node_ids;
 
 	GroupNode() : Node(Node::TYPE_GROUP) {}
 };
 
 struct ShapeNode : public Node {
 	int model_id; // corresponds to index in the array of models
-	std::unordered_map<String, String> model_attributes;
+	StdUnorderedMap<String, String> model_attributes;
 
 	ShapeNode() : Node(Node::TYPE_SHAPE) {}
 };
 
 struct Layer {
 	int id;
-	std::unordered_map<String, String> attributes;
+	StdUnorderedMap<String, String> attributes;
 	String name;
 	bool hidden;
 };
@@ -123,11 +122,11 @@ public:
 private:
 	Error _load_from_file(String fpath);
 
-	std::vector<UniquePtr<Model>> _models;
-	std::vector<UniquePtr<Layer>> _layers;
-	std::unordered_map<int, UniquePtr<Node>> _scene_graph;
+	StdVector<UniquePtr<Model>> _models;
+	StdVector<UniquePtr<Layer>> _layers;
+	StdUnorderedMap<int, UniquePtr<Node>> _scene_graph;
 	// Material IDs are supposedly tied to palette indices
-	std::unordered_map<int, UniquePtr<Material>> _materials;
+	StdUnorderedMap<int, UniquePtr<Material>> _materials;
 	int _root_node_id = -1;
 	FixedArray<Color8, 256> _palette;
 };

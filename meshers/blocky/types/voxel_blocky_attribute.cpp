@@ -77,7 +77,7 @@ bool VoxelBlockyAttribute::is_equivalent(const VoxelBlockyAttribute &other) cons
 	return true;
 }
 
-bool find_non_empty_duplicate(const std::vector<StringName> &names) {
+bool find_non_empty_duplicate(const StdVector<StringName> &names) {
 	for (unsigned int i = 0; i < names.size(); ++i) {
 		const StringName &a = names[i];
 		if (a == StringName()) {

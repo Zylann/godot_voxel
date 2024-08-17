@@ -7,7 +7,7 @@ namespace zylann {
 class ZN_ThreadedTask;
 } // namespace zylann
 
-namespace zylann::voxel::gd {
+namespace zylann::voxel::godot {
 
 // Godot-facing singleton class.
 // the real class is internal and does not need anything from Object.
@@ -18,10 +18,18 @@ public:
 	static void create_singleton();
 	static void destroy_singleton();
 
-	static zylann::voxel::VoxelEngine::ThreadsConfig get_config_from_godot(
-			unsigned int &out_main_thread_time_budget_usec);
+	struct Config {
+		zylann::voxel::VoxelEngine::Config inner;
+		bool ownership_checks;
+	};
+
+	static Config get_config_from_godot();
 
 	VoxelEngine();
+
+	int get_version_major() const;
+	int get_version_minor() const;
+	int get_version_patch() const;
 
 	Dictionary get_stats() const;
 	void schedule_task(Ref<ZN_ThreadedTask> task);
@@ -43,6 +51,6 @@ private:
 #endif
 };
 
-} // namespace zylann::voxel::gd
+} // namespace zylann::voxel::godot
 
 #endif // VOXEL_ENGINE_GD_H

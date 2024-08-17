@@ -8,12 +8,13 @@ namespace zylann::voxel {
 
 // Limitations:
 // - Supports only one viewer
+// - Still assumes a viewer exists at world origin if there is actually no viewer
 // - Does not support viewer flags (separate collision/visual/voxel requirements)
 
 void process_octree_streaming(VoxelLodTerrainUpdateData::State &state, VoxelData &data, Vector3 viewer_pos,
-		std::vector<VoxelData::BlockToSave> &data_blocks_to_save,
-		std::vector<VoxelLodTerrainUpdateData::BlockToLoad> &data_blocks_to_load,
-		const VoxelLodTerrainUpdateData::Settings &settings, Ref<VoxelStream> stream, bool stream_enabled);
+		StdVector<VoxelData::BlockToSave> *data_blocks_to_save,
+		StdVector<VoxelLodTerrainUpdateData::BlockToLoad> &data_blocks_to_load,
+		const VoxelLodTerrainUpdateData::Settings &settings, bool stream_enabled);
 
 } // namespace zylann::voxel
 

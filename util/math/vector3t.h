@@ -132,6 +132,26 @@ struct Vector3T {
 		}
 		return x < p_v.x;
 	}
+
+	// Swizzling
+
+	// This one only exists for cosmetic reasons so we can write code that lines up. It should be simplified by the
+	// compiler.
+	inline Vector3T<T> xyz() const {
+		return Vector3T<T>(x, y, z);
+	}
+
+	inline Vector3T<T> zyx() const {
+		return Vector3T<T>(z, y, x);
+	}
+
+	inline Vector3T<T> zxy() const {
+		return Vector3T<T>(z, x, y);
+	}
+
+	inline Vector3T<T> yzx() const {
+		return Vector3T<T>(y, z, x);
+	}
 };
 
 template <typename T>
@@ -181,7 +201,8 @@ inline Vector3T<T> cross(const Vector3T<T> &a, const Vector3T<T> &b) {
 	const Vector3T<T> ret( //
 			(a.y * b.z) - (a.z * b.y), //
 			(a.z * b.x) - (a.x * b.z), //
-			(a.x * b.y) - (a.y * b.x));
+			(a.x * b.y) - (a.y * b.x)
+	);
 	return ret;
 }
 

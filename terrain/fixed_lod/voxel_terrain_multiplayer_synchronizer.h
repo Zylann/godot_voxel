@@ -2,9 +2,10 @@
 #define VOXEL_NETWORK_TERRAIN_SYNC_H
 
 #include "../../storage/voxel_data_block.h"
+#include "../../util/containers/std_unordered_map.h"
+#include "../../util/containers/std_vector.h"
 #include "../../util/godot/classes/node.h"
-#include <unordered_map>
-#include <vector>
+#include "../../util/math/box3i.h"
 
 #ifdef TOOLS_ENABLED
 #include "../../util/godot/core/version.h"
@@ -27,17 +28,9 @@ public:
 
 #ifdef TOOLS_ENABLED
 #if defined(ZN_GODOT)
-#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR <= 2
 	PackedStringArray get_configuration_warnings() const override;
-#else
-	Array get_configuration_warnings() const override;
-#endif
 #elif defined(ZN_GODOT_EXTENSION)
-#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR <= 2
 	PackedStringArray _get_configuration_warnings() const override;
-#else
-	Array _get_configuration_warnings() const override;
-#endif
 #endif
 	void get_configuration_warnings(PackedStringArray &warnings) const;
 #endif
@@ -59,7 +52,7 @@ private:
 		PackedByteArray data;
 	};
 
-	std::unordered_map<int, std::vector<DeferredBlockMessage>> _deferred_block_messages_per_peer;
+	StdUnorderedMap<int, StdVector<DeferredBlockMessage>> _deferred_block_messages_per_peer;
 };
 
 } // namespace zylann::voxel

@@ -2,7 +2,7 @@
 #define VOXEL_MESH_BLOCK_VLT_H
 
 #include "../../util/godot/classes/shader_material.h"
-#include "../../util/memory.h"
+#include "../../util/memory/memory.h"
 #include "../../util/tasks/time_spread_task_runner.h"
 #include "../voxel_mesh_block.h"
 
@@ -53,8 +53,17 @@ public:
 
 	void set_parent_visible(bool parent_visible);
 
-	void set_mesh(Ref<Mesh> mesh, GeometryInstance3D::GIMode gi_mode,
-			RenderingServer::ShadowCastingSetting shadow_casting, int render_layers_mask);
+	void set_mesh(
+			Ref<Mesh> mesh,
+			GeometryInstance3D::GIMode gi_mode,
+			RenderingServer::ShadowCastingSetting shadow_casting,
+			int render_layers_mask,
+			Ref<Mesh> shadow_occluder_mesh
+#ifdef TOOLS_ENABLED
+			,
+			RenderingServer::ShadowCastingSetting shadow_occluder_mode
+#endif
+	);
 	void drop_visuals();
 
 	void set_transition_mask(uint8_t m);
@@ -66,13 +75,21 @@ public:
 	void set_shadow_casting(RenderingServer::ShadowCastingSetting mode);
 	void set_render_layers_mask(int mask);
 
-	void set_transition_mesh(Ref<Mesh> mesh, unsigned int side, GeometryInstance3D::GIMode gi_mode,
-			RenderingServer::ShadowCastingSetting shadow_casting, int render_layers_mask);
+	void set_transition_mesh(
+			Ref<Mesh> mesh,
+			unsigned int side,
+			GeometryInstance3D::GIMode gi_mode,
+			RenderingServer::ShadowCastingSetting shadow_casting,
+			int render_layers_mask
+	);
 
 	void set_shader_material(Ref<ShaderMaterial> material);
 	inline Ref<ShaderMaterial> get_shader_material() const {
 		return _shader_material;
 	}
+
+	// To be used only if the material override on the terrain is not a ShaderMaterial
+	void set_material_override(Ref<Material> material);
 
 	// Transform
 
@@ -85,14 +102,21 @@ public:
 		const Transform3D world_transform = local_transform;
 		f(_mesh_instance, world_transform);
 		for (unsigned int i = 0; i < _transition_mesh_instances.size(); ++i) {
-			const DirectMeshInstance &mi = _transition_mesh_instances[i];
+			const zylann::godot::DirectMeshInstance &mi = _transition_mesh_instances[i];
 			if (mi.is_valid()) {
 				f(mi, world_transform);
 			}
 		}
 	}
 
+#ifdef TOOLS_ENABLED
+	inline void set_shadow_occluder_mode(RenderingServer::ShadowCastingSetting mode) {
+		_shadow_occluder.set_cast_shadows_setting(mode);
+	}
+#endif
+
 private:
+	void set_material_override_internal(Ref<Material> material);
 	void _set_visible(bool visible);
 
 	inline bool _is_transition_visible(unsigned int side) const {
@@ -101,9 +125,14 @@ private:
 
 	Ref<ShaderMaterial> _shader_material;
 
-	FixedArray<DirectMeshInstance, Cube::SIDE_COUNT> _transition_mesh_instances;
+	FixedArray<zylann::godot::DirectMeshInstance, Cube::SIDE_COUNT> _transition_mesh_instances;
 
 	uint8_t _transition_mask = 0;
+
+	// See VoxelMesherBlocky.
+	// This unfortunately has to be a whole separate mesh instance because Godot doesn't support setting
+	// `cast_shadow` mode per mesh surface. This might have an impact on performance.
+	zylann::godot::DirectMeshInstance _shadow_occluder;
 
 #ifdef VOXEL_DEBUG_LOD_MATERIALS
 	Ref<Material> _debug_material;
@@ -113,8 +142,12 @@ private:
 
 bool is_mesh_empty(Span<const VoxelMesher::Output::Surface> surfaces);
 
-Ref<ArrayMesh> build_mesh(Span<const VoxelMesher::Output::Surface> surfaces, Mesh::PrimitiveType primitive, int flags,
-		Ref<Material> material);
+Ref<ArrayMesh> build_mesh(
+		Span<const VoxelMesher::Output::Surface> surfaces,
+		Mesh::PrimitiveType primitive,
+		int flags,
+		Ref<Material> material
+);
 
 } // namespace zylann::voxel
 

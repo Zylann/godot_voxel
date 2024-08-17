@@ -1,7 +1,7 @@
 #include "resource_loader.h"
 #include "resource.h"
 
-namespace zylann {
+namespace zylann::godot {
 
 PackedStringArray get_recognized_extensions_for_type(const String &type_name) {
 #if defined(ZN_GODOT)
@@ -26,4 +26,4 @@ Ref<Resource> load_resource(const String &path) {
 #endif
 }
 
-} // namespace zylann
+} // namespace zylann::godot

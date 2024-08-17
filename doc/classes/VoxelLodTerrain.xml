@@ -4,7 +4,7 @@
 		Voxel volume using variable level of detail.
 	</brief_description>
 	<description>
-		Renders large terrain using variable level of details. This is preferably used with smooth meshing such as [VoxelMesherTransvoxel].
+		Renders large terrain using variable level of details. This is preferably used with smooth meshing such as [VoxelMesherTransvoxel]. Blocky meshers can be used, but currently don't have as much support for LOD.
 	</description>
 	<tutorials>
 	</tutorials>
@@ -95,13 +95,6 @@
 				When children info is not null, it contains 8 arrays structured the same way, and may be recursively traversed to obtain the state of every node of the octree.
 			</description>
 		</method>
-		<method name="debug_is_draw_enabled" qualifiers="const">
-			<return type="bool" />
-			<description>
-				Gets whether debug drawing is enabled.
-				This method always returns false in exported games.
-			</description>
-		</method>
 		<method name="debug_print_sdf_top_down">
 			<return type="Array" />
 			<param index="0" name="center" type="Vector3i" />
@@ -126,14 +119,6 @@
 					...
 				]
 				[/codeblock]
-			</description>
-		</method>
-		<method name="debug_set_draw_enabled">
-			<return type="void" />
-			<param index="0" name="enabled" type="bool" />
-			<description>
-				Enables or disables debug drawing.
-				This method does nothing in exported games.
 			</description>
 		</method>
 		<method name="debug_set_draw_flag">
@@ -196,7 +181,7 @@
 		<method name="get_voxel_tool">
 			<return type="VoxelTool" />
 			<description>
-				Gets an instance of [VoxelTool] bound to this volume. Allows to query and edit voxels.
+				Creates an instance of [VoxelTool] bound to this volume. Allows to query and edit voxels.
 			</description>
 		</method>
 		<method name="is_area_meshed" qualifiers="const">
@@ -210,10 +195,10 @@
 			</description>
 		</method>
 		<method name="save_modified_blocks">
-			<return type="void" />
+			<return type="VoxelSaveCompletionTracker" />
 			<description>
 				Requests saving of all modified voxels. Saving is asynchronous and will complete some time in the future. If the game quits, the engine will ensure saving tasks get completed before the application shuts down.
-				There is currently no reliable way to tell if saving has completed.
+				Use the returned tracker object to know when saving has completed. However, saves occurring after calling this method won't be tracked by this object.
 				Note that blocks getting unloaded as the viewer moves around can also trigger saving tasks, independently from this function.
 			</description>
 		</method>
@@ -269,6 +254,32 @@
 		<member name="collision_update_delay" type="int" setter="set_collision_update_delay" getter="get_collision_update_delay" default="0">
 			How long to wait before updating colliders after an edit, in milliseconds. Collider generation is expensive, so the intent is to smooth it out.
 		</member>
+		<member name="debug_draw_active_mesh_blocks" type="bool" setter="debug_set_draw_flag" getter="debug_get_draw_flag" default="false">
+		</member>
+		<member name="debug_draw_active_visual_and_collision_blocks" type="bool" setter="debug_set_draw_flag" getter="debug_get_draw_flag" default="false">
+		</member>
+		<member name="debug_draw_edit_boxes" type="bool" setter="debug_set_draw_flag" getter="debug_get_draw_flag" default="false">
+		</member>
+		<member name="debug_draw_edited_blocks" type="bool" setter="debug_set_draw_flag" getter="debug_get_draw_flag" default="false">
+		</member>
+		<member name="debug_draw_enabled" type="bool" setter="debug_set_draw_enabled" getter="debug_is_draw_enabled" default="false">
+		</member>
+		<member name="debug_draw_loaded_visual_and_collision_blocks" type="bool" setter="debug_set_draw_flag" getter="debug_get_draw_flag" default="false">
+		</member>
+		<member name="debug_draw_mesh_updates" type="bool" setter="debug_set_draw_flag" getter="debug_get_draw_flag" default="false">
+		</member>
+		<member name="debug_draw_modifier_bounds" type="bool" setter="debug_set_draw_flag" getter="debug_get_draw_flag" default="false">
+		</member>
+		<member name="debug_draw_octree_bounds" type="bool" setter="debug_set_draw_flag" getter="debug_get_draw_flag" default="false">
+		</member>
+		<member name="debug_draw_octree_nodes" type="bool" setter="debug_set_draw_flag" getter="debug_get_draw_flag" default="false">
+		</member>
+		<member name="debug_draw_shadow_occluders" type="bool" setter="debug_set_draw_shadow_occluders" getter="debug_get_draw_shadow_occluders" default="false">
+		</member>
+		<member name="debug_draw_viewer_clipboxes" type="bool" setter="debug_set_draw_flag" getter="debug_get_draw_flag" default="false">
+		</member>
+		<member name="debug_draw_volume_bounds" type="bool" setter="debug_set_draw_flag" getter="debug_get_draw_flag" default="false">
+		</member>
 		<member name="full_load_mode_enabled" type="bool" setter="set_full_load_mode_enabled" getter="is_full_load_mode_enabled" default="false">
 			If enabled, data streaming will be turned off, and all voxel data will be loaded from the [member stream] into memory.
 			This removes several constraints, such as being able to edit anywhere and allowing distant normalmaps to include edited regions. This comes at the expense of more memory usage. However, only edited regions use memory, so in practice it can be good enough.
@@ -281,6 +292,7 @@
 		</member>
 		<member name="lod_distance" type="float" setter="set_lod_distance" getter="get_lod_distance" default="48.0">
 			How far LOD 0 extends from the viewer. Each parent LOD will extend twice as far as their children LOD levels. When [member full_load_mode_enabled] is disabled, this also defines how far edits are allowed.
+			For further control of LODs beyond 0, see [member secondary_lod_distance].
 		</member>
 		<member name="lod_fade_duration" type="float" setter="set_lod_fade_duration" getter="get_lod_fade_duration" default="0.0">
 			When set greater than 0, enables LOD fading. When mesh blocks get split/merged as level of detail changes, they will fade to make the transition less noticeable (or at least more pleasant). This feature requires to use a specific shader, check the online documentation or examples for more information.
@@ -315,6 +327,15 @@
 		</member>
 		<member name="run_stream_in_editor" type="bool" setter="set_run_stream_in_editor" getter="is_stream_running_in_editor" default="true">
 			Sets wether the [member generator] and the [member stream] will run in the editor. This setting may turn on automatically if either contain a script, as multithreading can clash with script reloading in unexpected ways.
+		</member>
+		<member name="secondary_lod_distance" type="float" setter="set_secondary_lod_distance" getter="get_secondary_lod_distance" default="48.0">
+			Controls the size of each LOD above LOD 0, in voxels relative to those LODs (voxels of LOD N are twice as big than LOD N-1). Higher values allow to see further away before detail are decimated, but is more expensive.
+			Note that it will not necessarily be respected accurately, and will rather be used as a target minimum distance.
+			This is only used when [member streaming_system] is set to [constant STREAMING_SYSTEM_CLIPBOX]. In other cases, [member lod_distance] is used.
+			To control LOD 0, see [member lod_distance].
+		</member>
+		<member name="streaming_system" type="int" setter="set_streaming_system" getter="get_streaming_system" enum="VoxelLodTerrain.StreamingSystem" default="0">
+			Selects the underlying algorithm used to determine when to load and unload chunks around viewers as they move around.
 		</member>
 		<member name="threaded_update_enabled" type="bool" setter="set_threaded_update_enabled" getter="is_threaded_update_enabled" default="false">
 			When enabled, this node will run a large part of its update cycle in a separate thread. Otherwise, it will run on the main thread.
@@ -354,7 +375,24 @@
 		</constant>
 		<constant name="DEBUG_DRAW_MODIFIER_BOUNDS" value="6" enum="DebugDrawFlag">
 		</constant>
-		<constant name="DEBUG_DRAW_FLAGS_COUNT" value="7" enum="DebugDrawFlag">
+		<constant name="DEBUG_DRAW_ACTIVE_MESH_BLOCKS" value="7" enum="DebugDrawFlag">
+		</constant>
+		<constant name="DEBUG_DRAW_VIEWER_CLIPBOXES" value="8" enum="DebugDrawFlag">
+		</constant>
+		<constant name="DEBUG_DRAW_LOADED_VISUAL_AND_COLLISION_BLOCKS" value="9" enum="DebugDrawFlag">
+		</constant>
+		<constant name="DEBUG_DRAW_ACTIVE_VISUAL_AND_COLLISION_BLOCKS" value="10" enum="DebugDrawFlag">
+		</constant>
+		<constant name="DEBUG_DRAW_FLAGS_COUNT" value="11" enum="DebugDrawFlag">
+		</constant>
+		<constant name="STREAMING_SYSTEM_LEGACY_OCTREE" value="0" enum="StreamingSystem">
+			Loads chunks around the viewer in a spherical pattern.
+			Does not support multiple viewers. Does not support collision-only viewers.
+			This was the first system to be implemented, therefore it remains available as default for compatibility.
+		</constant>
+		<constant name="STREAMING_SYSTEM_CLIPBOX" value="1" enum="StreamingSystem">
+			Loads chunks around the viewer in concentric boxes. Supports multiple viewers and collision-only viewers. This is a better system for multiplayer streaming.
+			Due to simplifications, chunk locations at each LOD might be less optimal than [constant STREAMING_SYSTEM_LEGACY_OCTREE].
 		</constant>
 	</constants>
 </class>

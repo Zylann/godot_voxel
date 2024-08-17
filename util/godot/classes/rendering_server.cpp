@@ -1,15 +1,15 @@
 #include "rendering_server.h"
 
-namespace zylann {
+namespace zylann::godot {
 
-void get_shader_parameter_list(const RID &shader_rid, std::vector<GodotShaderParameterInfo> &out_parameters) {
+void get_shader_parameter_list(const RID &shader_rid, StdVector<ShaderParameterInfo> &out_parameters) {
 #if defined(ZN_GODOT)
 	List<PropertyInfo> params;
 	RenderingServer::get_singleton()->get_shader_parameter_list(shader_rid, &params);
 	// I'd like to use ConstIterator since I only read that list but that isn't possible :shrug:
 	for (List<PropertyInfo>::Iterator it = params.begin(); it != params.end(); ++it) {
 		const PropertyInfo property = *it;
-		GodotShaderParameterInfo pi;
+		ShaderParameterInfo pi;
 		pi.type = property.type;
 		pi.name = property.name;
 		out_parameters.push_back(pi);
@@ -21,7 +21,7 @@ void get_shader_parameter_list(const RID &shader_rid, std::vector<GodotShaderPar
 	const String name_key = "name";
 	for (int i = 0; i < properties.size(); ++i) {
 		Dictionary d = properties[i];
-		GodotShaderParameterInfo pi;
+		ShaderParameterInfo pi;
 		pi.type = Variant::Type(int(d[type_key]));
 		pi.name = d[name_key];
 		out_parameters.push_back(pi);
@@ -29,4 +29,4 @@ void get_shader_parameter_list(const RID &shader_rid, std::vector<GodotShaderPar
 #endif
 }
 
-} // namespace zylann
+} // namespace zylann::godot

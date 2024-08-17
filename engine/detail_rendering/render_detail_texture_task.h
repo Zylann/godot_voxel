@@ -3,7 +3,8 @@
 
 #include "../../generators/voxel_generator.h"
 #include "../../meshers/voxel_mesher.h"
-#include "../../util/memory.h"
+#include "../../util/containers/std_vector.h"
+#include "../../util/memory/memory.h"
 #include "../../util/tasks/threaded_task.h"
 #include "../ids.h"
 #include "../priority_dependency.h"
@@ -23,9 +24,9 @@ public:
 	UniquePtr<ICellIterator> cell_iterator;
 	// TODO Optimize: perhaps we could find a way to not copy mesh data? The only reason is because Godot wants a
 	// slightly different data structure potentially taking unnecessary doubles because it uses `Vector3`...
-	std::vector<Vector3f> mesh_vertices;
-	std::vector<Vector3f> mesh_normals;
-	std::vector<int> mesh_indices;
+	StdVector<Vector3f> mesh_vertices;
+	StdVector<Vector3f> mesh_normals;
+	StdVector<int> mesh_indices;
 	Ref<VoxelGenerator> generator;
 	std::shared_ptr<VoxelData> voxel_data;
 	Vector3i mesh_block_size;
@@ -63,7 +64,7 @@ class RenderDetailTexturePass2Task : public IThreadedTask {
 public:
 	PackedByteArray atlas_data;
 	DetailTextureData edited_tiles_texture_data;
-	std::vector<DetailTextureData::Tile> tile_data;
+	StdVector<DetailTextureData::Tile> tile_data;
 	std::shared_ptr<DetailTextureOutput> output_textures;
 	VolumeID volume_id;
 	Vector3i mesh_block_position;

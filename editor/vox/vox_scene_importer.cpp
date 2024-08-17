@@ -12,6 +12,8 @@
 #include "../../util/profiling.h"
 #include "vox_import_funcs.h"
 
+using namespace zylann::godot;
+
 namespace zylann::voxel::magica {
 
 String VoxelVoxSceneImporter::_zn_get_importer_name() const {
@@ -50,23 +52,25 @@ double VoxelVoxSceneImporter::_zn_get_priority() const {
 	return 1.0;
 }
 
-// int VoxelVoxImporter::get_import_order() const {
-// }
+int VoxelVoxSceneImporter::_zn_get_import_order() const {
+	return IMPORT_ORDER_SCENE;
+}
 
 void VoxelVoxSceneImporter::_zn_get_import_options(
-		std::vector<GodotImportOption> &p_out_options, const String &p_path, int p_preset_index) const {
-	p_out_options.push_back(GodotImportOption(PropertyInfo(Variant::BOOL, "store_colors_in_texture"), false));
-	p_out_options.push_back(GodotImportOption(PropertyInfo(Variant::FLOAT, "scale"), 1.f));
-	p_out_options.push_back(GodotImportOption(PropertyInfo(Variant::BOOL, "enable_baked_lighting"), true));
+		StdVector<ImportOptionWrapper> &p_out_options, const String &p_path, int p_preset_index) const {
+	p_out_options.push_back(ImportOptionWrapper(PropertyInfo(Variant::BOOL, "store_colors_in_texture"), false));
+	p_out_options.push_back(ImportOptionWrapper(PropertyInfo(Variant::FLOAT, "scale"), 1.f));
+	p_out_options.push_back(ImportOptionWrapper(PropertyInfo(Variant::BOOL, "enable_baked_lighting"), true));
 }
 
 bool VoxelVoxSceneImporter::_zn_get_option_visibility(
-		const String &p_path, const StringName &p_option_name, const GodotKeyValueWrapper p_options) const {
+		const String &p_path, const StringName &p_option_name, const KeyValueWrapper p_options) const {
 	return true;
 }
 
-static void add_mesh_instance(
-		Ref<Mesh> mesh, ::Node *parent, ::Node *owner, Vector3 offset, bool p_enable_baked_lighting) {
+namespace {
+
+void add_mesh_instance(Ref<Mesh> mesh, ::Node *parent, ::Node *owner, Vector3 offset, bool p_enable_baked_lighting) {
 	MeshInstance3D *mesh_instance = memnew(MeshInstance3D);
 	mesh_instance->set_mesh(mesh);
 	parent->add_child(mesh_instance);
@@ -83,8 +87,8 @@ struct VoxMesh {
 	Vector3 pivot;
 };
 
-static Error process_scene_node_recursively(const Data &data, int node_id, Node3D *parent_node, Node3D *&out_root_node,
-		int depth, const std::vector<VoxMesh> &meshes, float scale, bool p_enable_baked_lighting) {
+Error process_scene_node_recursively(const Data &data, int node_id, Node3D *parent_node, Node3D *&out_root_node,
+		int depth, const StdVector<VoxMesh> &meshes, float scale, bool p_enable_baked_lighting) {
 	//
 	ERR_FAIL_COND_V(depth > 10, ERR_INVALID_DATA);
 	const Node *vox_node = data.get_node(node_id);
@@ -150,7 +154,7 @@ static Error process_scene_node_recursively(const Data &data, int node_id, Node3
 	return OK;
 }
 
-/*static Error save_stex(const Ref<Image> &p_image, const String &p_to_path,
+/*Error save_stex(const Ref<Image> &p_image, const String &p_to_path,
 		bool p_mipmaps, int p_texture_flags, bool p_streamable,
 		bool p_detect_3d, bool p_detect_srgb) {
 	//
@@ -228,7 +232,7 @@ static Error process_scene_node_recursively(const Data &data, int node_id, Node3
 }*/
 
 // template <typename K, typename T>
-// static T try_get(const Map<K, T> &map, const K &key, T defval) {
+// T try_get(const Map<K, T> &map, const K &key, T defval) {
 // 	const Map<K, T>::Element *e = map.find(key);
 // 	if (e != nullptr) {
 // 		return e->value();
@@ -236,9 +240,11 @@ static Error process_scene_node_recursively(const Data &data, int node_id, Node3
 // 	return defval;
 // }
 
+} // namespace
+
 Error VoxelVoxSceneImporter::_zn_import(const String &p_source_file, const String &p_save_path,
-		const GodotKeyValueWrapper p_options, GodotStringListWrapper p_out_platform_variants,
-		GodotStringListWrapper p_out_gen_files) const {
+		const KeyValueWrapper p_options, StringListWrapper p_out_platform_variants,
+		StringListWrapper p_out_gen_files) const {
 	ZN_PROFILE_SCOPE();
 
 	const bool p_store_colors_in_textures = p_options.get("store_colors_in_texture");
@@ -249,7 +255,7 @@ Error VoxelVoxSceneImporter::_zn_import(const String &p_source_file, const Strin
 	const Error load_err = data.load_from_file(p_source_file);
 	ERR_FAIL_COND_V(load_err != OK, load_err);
 
-	std::vector<VoxMesh> meshes;
+	StdVector<VoxMesh> meshes;
 	meshes.resize(data.get_model_count());
 
 	// Get color palette
@@ -283,17 +289,17 @@ Error VoxelVoxSceneImporter::_zn_import(const String &p_source_file, const Strin
 	for (unsigned int model_index = 0; model_index < data.get_model_count(); ++model_index) {
 		const magica::Model &model = data.get_model(model_index);
 
-		VoxelBufferInternal voxels;
+		VoxelBuffer voxels(VoxelBuffer::ALLOCATOR_DEFAULT);
 		voxels.create(model.size + Vector3iUtil::create(VoxelMesherCubes::PADDING * 2));
-		voxels.decompress_channel(VoxelBufferInternal::CHANNEL_COLOR);
+		voxels.decompress_channel(VoxelBuffer::CHANNEL_COLOR);
 
 		Span<uint8_t> dst_color_indices;
-		ERR_FAIL_COND_V(!voxels.get_channel_raw(VoxelBufferInternal::CHANNEL_COLOR, dst_color_indices), ERR_BUG);
+		ERR_FAIL_COND_V(!voxels.get_channel_as_bytes(VoxelBuffer::CHANNEL_COLOR, dst_color_indices), ERR_BUG);
 		Span<const uint8_t> src_color_indices = to_span_const(model.color_indexes);
 		copy_3d_region_zxy(dst_color_indices, voxels.get_size(), Vector3iUtil::create(VoxelMesherCubes::PADDING),
 				src_color_indices, model.size, Vector3i(), model.size);
 
-		std::vector<unsigned int> surface_index_to_material;
+		StdVector<unsigned int> surface_index_to_material;
 		Ref<Image> atlas;
 		Ref<Mesh> mesh = magica::build_mesh(voxels, **mesher, surface_index_to_material, atlas, p_scale, Vector3());
 

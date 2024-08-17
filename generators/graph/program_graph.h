@@ -1,15 +1,15 @@
 #ifndef ZN_PROGRAM_GRAPH_H
 #define ZN_PROGRAM_GRAPH_H
 
+#include "../../util/containers/std_unordered_map.h"
+#include "../../util/containers/std_vector.h"
 #include "../../util/godot/core/variant.h"
 #include "../../util/hash_funcs.h"
 #include "../../util/math/vector2.h"
 #include "../../util/non_copyable.h"
+#include "../../util/string/std_string.h"
 
-#include <string>
 #include <string_view>
-#include <unordered_map>
-#include <vector>
 
 namespace zylann {
 
@@ -33,11 +33,11 @@ public:
 	};
 
 	struct Port {
-		std::vector<PortLocation> connections;
+		StdVector<PortLocation> connections;
 		// Dynamic ports are ports that are not inherited from `type_id`, they exist solely for this node.
 		// Because it can't be deduced from `type_id`, they must be given a name.
 		// Initially needed for expression nodes.
-		std::string dynamic_name;
+		StdString dynamic_name;
 		uint32_t autoconnect_hint = 0;
 
 		inline bool is_dynamic() const {
@@ -51,10 +51,10 @@ public:
 		StringName name; // User-defined
 		Vector2 gui_position;
 		Vector2 gui_size; // Used on resizable nodes
-		std::vector<Port> inputs;
-		std::vector<Port> outputs;
-		std::vector<Variant> params;
-		std::vector<Variant> default_inputs;
+		StdVector<Port> inputs;
+		StdVector<Port> outputs;
+		StdVector<Variant> params;
+		StdVector<Variant> default_inputs;
 		// When enabled, all disconnected inputs will automatically connect to a commonly used node when the graph is
 		// compiled. If not enabled, default input values will be used instead.
 		bool autoconnect_default_inputs = false;
@@ -87,10 +87,10 @@ public:
 	bool is_output_port_valid(PortLocation loc) const;
 
 	bool has_path(uint32_t p_src_node_id, uint32_t p_dst_node_id) const;
-	void find_dependencies(uint32_t node_id, std::vector<uint32_t> &out_order) const;
-	void find_dependencies(std::vector<uint32_t> nodes_to_process, std::vector<uint32_t> &out_order) const;
-	void find_immediate_dependencies(uint32_t node_id, std::vector<uint32_t> &deps) const;
-	void find_terminal_nodes(std::vector<uint32_t> &node_ids) const;
+	void find_dependencies(uint32_t node_id, StdVector<uint32_t> &out_order) const;
+	void find_dependencies(StdVector<uint32_t> nodes_to_process, StdVector<uint32_t> &out_order) const;
+	void find_immediate_dependencies(uint32_t node_id, StdVector<uint32_t> &deps) const;
+	void find_terminal_nodes(StdVector<uint32_t> &node_ids) const;
 
 	template <typename F>
 	inline void for_each_node_id(F f) const {
@@ -131,9 +131,9 @@ public:
 
 	void copy_from(const ProgramGraph &other, bool copy_subresources);
 
-	void get_connections(std::vector<ProgramGraph::Connection> &connections) const;
-	void get_node_ids(std::vector<uint32_t> &node_ids) const;
-	// void get_connections_from_and_to(std::vector<ProgramGraph::Connection> &connections, uint32_t node_id) const;
+	void get_connections(StdVector<ProgramGraph::Connection> &connections) const;
+	void get_node_ids(StdVector<uint32_t> &node_ids) const;
+	// void get_connections_from_and_to(StdVector<ProgramGraph::Connection> &connections, uint32_t node_id) const;
 
 	// Finds first node having the given name and returns its ID. Returns NULL_ID if not found.
 	uint32_t find_node_by_name(StringName name) const;
@@ -147,7 +147,7 @@ public:
 	void debug_print_dot_file(String p_file_path) const;
 
 private:
-	std::unordered_map<uint32_t, Node *> _nodes;
+	StdUnorderedMap<uint32_t, Node *> _nodes;
 	uint32_t _next_node_id = 1;
 };
 

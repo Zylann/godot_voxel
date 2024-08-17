@@ -10,7 +10,7 @@ using namespace godot;
 
 #include "../../containers/span.h"
 
-namespace zylann {
+namespace zylann::godot {
 
 // This obscure method is actually used to get the XYZW tinting colors for controls that expose coordinates.
 // In modules, this is `_get_property_colors`, but it is not exposed in GDExtension.
@@ -40,6 +40,6 @@ private:
 	static void _bind_methods() {}
 };
 
-} // namespace zylann
+} // namespace zylann::godot
 
 #endif // ZN_GODOT_EDITOR_PROPERTY_H

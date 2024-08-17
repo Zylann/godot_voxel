@@ -8,9 +8,7 @@
 
 namespace zylann::voxel {
 
-VoxelTool::VoxelTool() {
-	_sdf_scale = VoxelBufferInternal::get_sdf_quantization_scale(VoxelBufferInternal::DEFAULT_SDF_CHANNEL_DEPTH);
-}
+VoxelTool::VoxelTool() {}
 
 void VoxelTool::set_value(uint64_t val) {
 	_value = val;
@@ -28,12 +26,12 @@ uint64_t VoxelTool::get_eraser_value() const {
 	return _eraser_value;
 }
 
-void VoxelTool::set_channel(VoxelBufferInternal::ChannelId p_channel) {
-	ERR_FAIL_INDEX(p_channel, VoxelBufferInternal::MAX_CHANNELS);
+void VoxelTool::set_channel(VoxelBuffer::ChannelId p_channel) {
+	ERR_FAIL_INDEX(p_channel, VoxelBuffer::MAX_CHANNELS);
 	_channel = p_channel;
 }
 
-VoxelBufferInternal::ChannelId VoxelTool::get_channel() const {
+VoxelBuffer::ChannelId VoxelTool::get_channel() const {
 	return _channel;
 }
 
@@ -104,7 +102,7 @@ float VoxelTool::get_voxel_f(Vector3i pos) const {
 void VoxelTool::set_voxel(Vector3i pos, uint64_t v) {
 	Box3i box(pos, Vector3i(1, 1, 1));
 	if (!is_area_editable(box)) {
-		ZN_PRINT_VERBOSE("Area not editable");
+		ZN_PRINT_WARNING("Area not editable");
 		return;
 	}
 	_set_voxel(pos, v);
@@ -114,7 +112,7 @@ void VoxelTool::set_voxel(Vector3i pos, uint64_t v) {
 void VoxelTool::set_voxel_f(Vector3i pos, float v) {
 	Box3i box(pos, Vector3i(1, 1, 1));
 	if (!is_area_editable(box)) {
-		ZN_PRINT_VERBOSE("Area not editable");
+		ZN_PRINT_WARNING("Area not editable");
 		return;
 	}
 	_set_voxel_f(pos, v);
@@ -126,8 +124,9 @@ void VoxelTool::do_point(Vector3i pos) {
 	if (!is_area_editable(box)) {
 		return;
 	}
-	if (_channel == VoxelBufferInternal::CHANNEL_SDF) {
-		_set_voxel_f(pos, _mode == MODE_REMOVE ? 1.0 : -1.0);
+	if (_channel == VoxelBuffer::CHANNEL_SDF) {
+		// Not consistent SDF, but should work
+		_set_voxel_f(pos, _mode == MODE_REMOVE ? constants::SDF_FAR_OUTSIDE : constants::SDF_FAR_INSIDE);
 	} else {
 		_set_voxel(pos, _mode == MODE_REMOVE ? _eraser_value : _value);
 	}
@@ -152,54 +151,28 @@ void VoxelTool::_set_voxel_f(Vector3i pos, float v) {
 	ERR_PRINT("Not implemented");
 }
 
-// TODO May be worth using VoxelBuffer::read_write_action() in the future with a lambda,
-// so we avoid the burden of going through get/set, validation and rehash access to blocks.
-// Would work well by avoiding virtual as well using a specialized implementation.
-
-namespace {
-inline float sdf_blend(float src_value, float dst_value, VoxelTool::Mode mode) {
-	float res;
-	switch (mode) {
-		case VoxelTool::MODE_ADD:
-			res = zylann::math::sdf_union(src_value, dst_value);
-			break;
-
-		case VoxelTool::MODE_REMOVE:
-			// Relative complement (or difference)
-			res = zylann::math::sdf_subtract(dst_value, src_value);
-			break;
-
-		case VoxelTool::MODE_SET:
-			res = src_value;
-			break;
-
-		default:
-			res = 0;
-			break;
-	}
-	return res;
-}
-} // namespace
-
 // The following are default legacy implementations. They may be slower than specialized ones, so they can often be
 // defined in subclasses of VoxelTool. Ideally, a function may be exposed on the base class only if it has an optimal
 // definition in all specialized classes.
 
 void VoxelTool::do_sphere(Vector3 center, float radius) {
 	ZN_PROFILE_SCOPE();
+	// Default, suboptimal implementation
 
-	const Box3i box(math::floor_to_int(center) - Vector3iUtil::create(Math::floor(radius)),
-			Vector3iUtil::create(Math::ceil(radius) * 2));
+	const Box3i box(
+			math::floor_to_int(center) - Vector3iUtil::create(Math::floor(radius)),
+			Vector3iUtil::create(Math::ceil(radius) * 2)
+	);
 
-	if (!is_area_editable(box)) {
-		ZN_PRINT_VERBOSE("Area not editable");
+	if (_allow_out_of_bounds == false && !is_area_editable(box)) {
+		ZN_PRINT_WARNING("Area not editable");
 		return;
 	}
 
-	if (_channel == VoxelBufferInternal::CHANNEL_SDF) {
+	if (_channel == VoxelBuffer::CHANNEL_SDF) {
 		box.for_each_cell([this, center, radius](Vector3i pos) {
 			float d = _sdf_scale * zylann::math::sdf_sphere(pos, center, radius);
-			_set_voxel_f(pos, sdf_blend(d, get_voxel_f(pos), _mode));
+			_set_voxel_f(pos, ops::sdf_blend(d, get_voxel_f(pos), static_cast<ops::Mode>(_mode)));
 		});
 
 	} else {
@@ -217,23 +190,28 @@ void VoxelTool::do_sphere(Vector3 center, float radius) {
 }
 
 // Erases matter in every voxel where the provided buffer has matter.
-void VoxelTool::sdf_stamp_erase(Ref<gd::VoxelBuffer> stamp, Vector3i pos) {
-	ZN_PROFILE_SCOPE();
-	ERR_FAIL_COND_MSG(
-			get_channel() != VoxelBufferInternal::CHANNEL_SDF, "This function only works when channel is set to SDF");
+void VoxelTool::sdf_stamp_erase(Ref<godot::VoxelBuffer> stamp, Vector3i pos) {
+	ZN_ASSERT_RETURN(stamp.is_valid());
+	sdf_stamp_erase(stamp->get_buffer(), pos);
+}
 
-	const Box3i box(pos, stamp->get_buffer().get_size());
+void VoxelTool::sdf_stamp_erase(const VoxelBuffer &stamp, Vector3i pos) {
+	ZN_PROFILE_SCOPE();
+	ERR_FAIL_COND_MSG(get_channel() != VoxelBuffer::CHANNEL_SDF, "This function only works when channel is set to SDF");
+
+	const Box3i box(pos, stamp.get_size());
 	if (!is_area_editable(box)) {
-		ZN_PRINT_VERBOSE("Area not editable");
+		ZN_PRINT_WARNING("Area not editable");
 		return;
 	}
 
-	box.for_each_cell_zxy([this, stamp, pos](Vector3i pos_in_volume) {
+	box.for_each_cell_zxy([this, &stamp, pos](Vector3i pos_in_volume) {
 		const Vector3i pos_in_stamp = pos_in_volume - pos;
 		const float dst_sdf =
-				stamp->get_voxel_f(pos_in_stamp.x, pos_in_stamp.y, pos_in_stamp.z, VoxelBufferInternal::CHANNEL_SDF);
+				stamp.get_voxel_f(pos_in_stamp.x, pos_in_stamp.y, pos_in_stamp.z, VoxelBuffer::CHANNEL_SDF);
 		if (dst_sdf <= 0.f) {
-			_set_voxel_f(pos_in_volume, 1.f);
+			// Not consistent SDF, but should work ok
+			_set_voxel_f(pos_in_volume, constants::SDF_FAR_OUTSIDE);
 		}
 	});
 
@@ -242,20 +220,25 @@ void VoxelTool::sdf_stamp_erase(Ref<gd::VoxelBuffer> stamp, Vector3i pos) {
 
 void VoxelTool::do_box(Vector3i begin, Vector3i end) {
 	ZN_PROFILE_SCOPE();
-	Vector3iUtil::sort_min_max(begin, end);
-	Box3i box = Box3i::from_min_max(begin, end + Vector3i(1, 1, 1));
+	// Default, suboptimal implementation
 
-	if (!is_area_editable(box)) {
-		ZN_PRINT_VERBOSE("Area not editable");
+	Vector3iUtil::sort_min_max(begin, end);
+	const Box3i box = Box3i::from_min_max(begin, end + Vector3i(1, 1, 1));
+
+	if (_allow_out_of_bounds == false && !is_area_editable(box)) {
+		ZN_PRINT_WARNING("Area not editable");
 		return;
 	}
 
-	if (_channel == VoxelBufferInternal::CHANNEL_SDF) {
+	if (_channel == VoxelBuffer::CHANNEL_SDF) {
 		// TODO Better quality
-		box.for_each_cell([this](Vector3i pos) { _set_voxel_f(pos, sdf_blend(-1.0, get_voxel_f(pos), _mode)); });
+		// Not consistent SDF, but should work ok
+		box.for_each_cell([this](Vector3i pos) {
+			_set_voxel_f(pos, sdf_blend(constants::SDF_FAR_INSIDE, get_voxel_f(pos), static_cast<ops::Mode>(_mode)));
+		});
 
 	} else {
-		int value = _mode == MODE_REMOVE ? _eraser_value : _value;
+		const int value = _mode == MODE_REMOVE ? _eraser_value : _value;
 		box.for_each_cell([this, value](Vector3i pos) { _set_voxel(pos, value); });
 	}
 
@@ -264,13 +247,15 @@ void VoxelTool::do_box(Vector3i begin, Vector3i end) {
 
 void VoxelTool::do_path(Span<const Vector3> positions, Span<const float> radii) {
 	ERR_PRINT("Not implemented");
+	// Implemented in derived classes
 }
 
-void VoxelTool::copy(Vector3i pos, VoxelBufferInternal &dst, uint8_t channels_mask) const {
+void VoxelTool::copy(Vector3i pos, VoxelBuffer &dst, uint8_t channels_mask) const {
 	ERR_PRINT("Not implemented");
+	// Implemented in derived classes
 }
 
-void VoxelTool::copy(Vector3i pos, Ref<gd::VoxelBuffer> dst, uint8_t channel_mask) const {
+void VoxelTool::copy(Vector3i pos, Ref<godot::VoxelBuffer> dst, uint8_t channel_mask) const {
 	ERR_FAIL_COND(dst.is_null());
 #ifdef TOOLS_ENABLED
 	if (Vector3iUtil::is_empty_size(dst->get_size())) {
@@ -280,23 +265,42 @@ void VoxelTool::copy(Vector3i pos, Ref<gd::VoxelBuffer> dst, uint8_t channel_mas
 	copy(pos, dst->get_buffer(), channel_mask);
 }
 
-void VoxelTool::paste(Vector3i p_pos, const VoxelBufferInternal &src, uint8_t channels_mask) {
+void VoxelTool::paste(Vector3i p_pos, const VoxelBuffer &src, uint8_t channels_mask) {
 	ERR_PRINT("Not implemented");
+	// Implemented in derived classes
 }
 
-void VoxelTool::paste(Vector3i p_pos, Ref<gd::VoxelBuffer> p_voxels, uint8_t channels_mask) {
+void VoxelTool::paste(Vector3i p_pos, Ref<godot::VoxelBuffer> p_voxels, uint8_t channels_mask) {
 	ERR_FAIL_COND(p_voxels.is_null());
-	ERR_PRINT("Not implemented");
 	if (Vector3iUtil::is_empty_size(p_voxels->get_size())) {
 		ZN_PRINT_WARNING("The passed buffer has an empty size, nothing will be pasted.");
 	}
 	paste(p_pos, p_voxels->get_buffer(), channels_mask);
 }
 
-void VoxelTool::paste_masked(Vector3i p_pos, Ref<gd::VoxelBuffer> p_voxels, uint8_t channels_mask, uint8_t mask_channel,
-		uint64_t mask_value) {
+void VoxelTool::paste_masked(
+		Vector3i p_pos,
+		Ref<godot::VoxelBuffer> p_voxels,
+		uint8_t channels_mask,
+		uint8_t mask_channel,
+		uint64_t mask_value
+) {
 	ERR_FAIL_COND(p_voxels.is_null());
 	ERR_PRINT("Not implemented");
+	// Implemented in derived classes
+}
+
+void VoxelTool::paste_masked_writable_list(
+		Vector3i pos,
+		Ref<godot::VoxelBuffer> p_voxels,
+		uint8_t channels_mask,
+		uint8_t src_mask_channel,
+		uint64_t src_mask_value,
+		uint8_t dst_mask_channel,
+		PackedInt32Array dst_writable_list
+) {
+	ZN_PRINT_ERROR("Not implemented");
+	// Implemented in derived classes
 }
 
 void VoxelTool::smooth_sphere(Vector3 sphere_center, float sphere_radius, int blur_radius) {
@@ -306,23 +310,29 @@ void VoxelTool::smooth_sphere(Vector3 sphere_center, float sphere_radius, int bl
 
 	const Box3i voxel_box = Box3i::from_min_max(
 			math::floor_to_int(sphere_center - Vector3(sphere_radius, sphere_radius, sphere_radius)),
-			math::ceil_to_int(sphere_center + Vector3(sphere_radius, sphere_radius, sphere_radius)));
+			math::ceil_to_int(sphere_center + Vector3(sphere_radius, sphere_radius, sphere_radius))
+	);
 
 	const Box3i padded_voxel_box = voxel_box.padded(blur_radius);
 
-	VoxelBufferInternal buffer;
+	if (_allow_out_of_bounds == false && !is_area_editable(padded_voxel_box)) {
+		ZN_PRINT_VERBOSE("Area not editable");
+		return;
+	}
+
+	VoxelBuffer buffer(VoxelBuffer::ALLOCATOR_POOL);
 	buffer.create(padded_voxel_box.size);
 
-	if (_channel == VoxelBufferInternal::CHANNEL_SDF) {
+	if (_channel == VoxelBuffer::CHANNEL_SDF) {
 		// Note, this only applies to SDF. It won't blur voxel texture data.
 
-		copy(padded_voxel_box.pos, buffer, (1 << VoxelBufferInternal::CHANNEL_SDF));
+		copy(padded_voxel_box.position, buffer, (1 << VoxelBuffer::CHANNEL_SDF));
 
-		VoxelBufferInternal smooth_buffer;
-		const Vector3f relative_sphere_center = to_vec3f(sphere_center - to_vec3(voxel_box.pos));
+		VoxelBuffer smooth_buffer(VoxelBuffer::ALLOCATOR_POOL);
+		const Vector3f relative_sphere_center = to_vec3f(sphere_center - to_vec3(voxel_box.position));
 		ops::box_blur(buffer, smooth_buffer, blur_radius, relative_sphere_center, sphere_radius);
 
-		paste(voxel_box.pos, smooth_buffer, (1 << VoxelBufferInternal::CHANNEL_SDF));
+		paste(voxel_box.position, smooth_buffer, (1 << VoxelBuffer::CHANNEL_SDF));
 
 	} else {
 		ERR_PRINT("Not implemented");
@@ -334,26 +344,31 @@ void VoxelTool::grow_sphere(Vector3 sphere_center, float sphere_radius, float st
 	// see: https://github.com/Zylann/godot_voxel/pull/594
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT_RETURN(sphere_radius >= 0.01f);
-	ZN_ASSERT_RETURN(strength >= 0.0f && strength <= 1.0f);
 
 	const Box3i voxel_box = Box3i::from_min_max(
 			math::floor_to_int(sphere_center - Vector3(sphere_radius, sphere_radius, sphere_radius)),
-			math::ceil_to_int(sphere_center + Vector3(sphere_radius, sphere_radius, sphere_radius)));
+			math::ceil_to_int(sphere_center + Vector3(sphere_radius, sphere_radius, sphere_radius))
+	);
 
-	VoxelBufferInternal buffer;
+	if (_allow_out_of_bounds == false && !is_area_editable(voxel_box)) {
+		ZN_PRINT_WARNING("Area not editable");
+		return;
+	}
+
+	VoxelBuffer buffer(VoxelBuffer::ALLOCATOR_POOL);
 	buffer.create(voxel_box.size);
 
-	if (_channel == VoxelBufferInternal::CHANNEL_SDF) {
+	if (_channel == VoxelBuffer::CHANNEL_SDF) {
 		// Note, this only applies to SDF. It won't affect voxel texture data.
 
-		copy(voxel_box.pos, buffer, (1 << VoxelBufferInternal::CHANNEL_SDF));
+		copy(voxel_box.position, buffer, (1 << VoxelBuffer::CHANNEL_SDF));
 
-		const Vector3f relative_sphere_center = to_vec3f(sphere_center - to_vec3(voxel_box.pos));
+		const Vector3f relative_sphere_center = to_vec3f(sphere_center - to_vec3(voxel_box.position));
 		const float signed_strength = _mode == VoxelTool::MODE_REMOVE ? -strength : strength;
 
-		ops::grow_sphere(buffer, signed_strength, relative_sphere_center, sphere_radius);
+		ops::grow_sphere(buffer, _sdf_scale * signed_strength, relative_sphere_center, sphere_radius);
 
-		paste(voxel_box.pos, buffer, (1 << VoxelBufferInternal::CHANNEL_SDF));
+		paste(voxel_box.position, buffer, (1 << VoxelBuffer::CHANNEL_SDF));
 
 	} else {
 		ERR_PRINT("Not implemented");
@@ -377,6 +392,8 @@ Variant VoxelTool::get_voxel_metadata(Vector3i pos) const {
 	ERR_PRINT("Not implemented");
 	return Variant();
 }
+
+// Binding land
 
 uint64_t VoxelTool::_b_get_voxel(Vector3i pos) {
 	return get_voxel(pos);
@@ -414,16 +431,21 @@ void VoxelTool::_b_do_path(PackedVector3Array positions, PackedFloat32Array radi
 	do_path(to_span(positions), to_span(radii));
 }
 
-void VoxelTool::_b_copy(Vector3i pos, Ref<gd::VoxelBuffer> voxels, int channel_mask) {
+void VoxelTool::_b_copy(Vector3i pos, Ref<godot::VoxelBuffer> voxels, int channel_mask) {
 	copy(pos, voxels, channel_mask);
 }
 
-void VoxelTool::_b_paste(Vector3i pos, Ref<gd::VoxelBuffer> voxels, int channels_mask) {
+void VoxelTool::_b_paste(Vector3i pos, Ref<godot::VoxelBuffer> voxels, int channels_mask) {
 	paste(pos, voxels, channels_mask);
 }
 
 void VoxelTool::_b_paste_masked(
-		Vector3i pos, Ref<gd::VoxelBuffer> voxels, int channels_mask, int mask_channel, int64_t mask_value) {
+		Vector3i pos,
+		Ref<godot::VoxelBuffer> voxels,
+		int channels_mask,
+		int mask_channel,
+		int64_t mask_value
+) {
 	paste_masked(pos, voxels, channels_mask, mask_channel, mask_value);
 }
 
@@ -439,43 +461,45 @@ bool VoxelTool::_b_is_area_editable(AABB box) const {
 	return is_area_editable(Box3i(math::floor_to_int(box.position), math::floor_to_int(box.size)));
 }
 
-static int _b_color_to_u16(Color col) {
+namespace {
+int _b_color_to_u16(Color col) {
 	return Color8(col).to_u16();
 }
 
-static int _b_vec4i_to_u16_indices(Vector4i v) {
+int _b_vec4i_to_u16_indices(Vector4i v) {
 	return encode_indices_to_packed_u16(v.x, v.y, v.z, v.w);
 }
 
-static int _b_color_to_u16_weights(Color cf) {
+int _b_color_to_u16_weights(Color cf) {
 	const Color8 c(cf);
 	return encode_weights_to_packed_u16_lossy(c.r, c.g, c.b, c.a);
 }
 
-static Vector4i _b_u16_indices_to_vec4i(int e) {
+Vector4i _b_u16_indices_to_vec4i(int e) {
 	FixedArray<uint8_t, 4> indices = decode_indices_from_packed_u16(e);
 	return Vector4i(indices[0], indices[1], indices[2], indices[3]);
 }
 
-static Color _b_u16_weights_to_color(int e) {
+Color _b_u16_weights_to_color(int e) {
 	FixedArray<uint8_t, 4> indices = decode_weights_from_packed_u16(e);
 	return Color(indices[0] / 255.f, indices[1] / 255.f, indices[2] / 255.f, indices[3] / 255.f);
 }
 
-static Color _b_normalize_color(Color c) {
+Color _b_normalize_color(Color c) {
 	const float sum = c.r + c.g + c.b + c.a;
 	if (sum < 0.00001f) {
 		return Color();
 	}
 	return c / sum;
 }
+} // namespace
 
-void VoxelTool::_b_set_channel(gd::VoxelBuffer::ChannelId p_channel) {
-	set_channel(VoxelBufferInternal::ChannelId(p_channel));
+void VoxelTool::_b_set_channel(godot::VoxelBuffer::ChannelId p_channel) {
+	set_channel(VoxelBuffer::ChannelId(p_channel));
 }
 
-gd::VoxelBuffer::ChannelId VoxelTool::_b_get_channel() const {
-	return gd::VoxelBuffer::ChannelId(get_channel());
+godot::VoxelBuffer::ChannelId VoxelTool::_b_get_channel() const {
+	return godot::VoxelBuffer::ChannelId(get_channel());
 }
 
 void VoxelTool::_bind_methods() {
@@ -516,9 +540,11 @@ void VoxelTool::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("do_path", "points", "radii"), &VoxelTool::_b_do_path);
 
 	ClassDB::bind_method(
-			D_METHOD("smooth_sphere", "sphere_center", "sphere_radius", "blur_radius"), &VoxelTool::smooth_sphere);
+			D_METHOD("smooth_sphere", "sphere_center", "sphere_radius", "blur_radius"), &VoxelTool::smooth_sphere
+	);
 	ClassDB::bind_method(
-			D_METHOD("grow_sphere", "sphere_center", "sphere_radius", "strength"), &VoxelTool::grow_sphere);
+			D_METHOD("grow_sphere", "sphere_center", "sphere_radius", "strength"), &VoxelTool::grow_sphere
+	);
 
 	ClassDB::bind_method(D_METHOD("set_voxel_metadata", "pos", "meta"), &VoxelTool::_b_set_voxel_metadata);
 	ClassDB::bind_method(D_METHOD("get_voxel_metadata", "pos"), &VoxelTool::_b_get_voxel_metadata);
@@ -527,28 +553,53 @@ void VoxelTool::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("paste", "dst_pos", "src_buffer", "channels_mask"), &VoxelTool::_b_paste);
 	ClassDB::bind_method(
 			D_METHOD("paste_masked", "dst_pos", "src_buffer", "channels_mask", "mask_channel", "mask_value"),
-			&VoxelTool::_b_paste_masked);
+			&VoxelTool::_b_paste_masked
+	);
+	ClassDB::bind_method(
+			D_METHOD(
+					"paste_masked_writable_list",
+					"position",
+					"voxels",
+					"channels_mask",
+					"src_mask_channel",
+					"src_mask_value",
+					"dst_mask_channel",
+					"dst_writable_list"
+			),
+			&VoxelTool::paste_masked_writable_list
+	);
 
-	ClassDB::bind_method(D_METHOD("raycast", "origin", "direction", "max_distance", "collision_mask"),
-			&VoxelTool::_b_raycast, DEFVAL(10.0), DEFVAL(0xffffffff));
+	ClassDB::bind_method(
+			D_METHOD("raycast", "origin", "direction", "max_distance", "collision_mask"),
+			&VoxelTool::_b_raycast,
+			DEFVAL(10.0),
+			DEFVAL(0xffffffff)
+	);
 
 	ClassDB::bind_method(D_METHOD("is_area_editable", "box"), &VoxelTool::_b_is_area_editable);
 
 	// Encoding helpers
 	ClassDB::bind_static_method(VoxelTool::get_class_static(), D_METHOD("color_to_u16", "color"), &_b_color_to_u16);
 	ClassDB::bind_static_method(
-			VoxelTool::get_class_static(), D_METHOD("vec4i_to_u16_indices"), &_b_vec4i_to_u16_indices);
+			VoxelTool::get_class_static(), D_METHOD("vec4i_to_u16_indices"), &_b_vec4i_to_u16_indices
+	);
 	ClassDB::bind_static_method(
-			VoxelTool::get_class_static(), D_METHOD("color_to_u16_weights"), &_b_color_to_u16_weights);
+			VoxelTool::get_class_static(), D_METHOD("color_to_u16_weights"), &_b_color_to_u16_weights
+	);
 	ClassDB::bind_static_method(
-			VoxelTool::get_class_static(), D_METHOD("u16_indices_to_vec4i"), &_b_u16_indices_to_vec4i);
+			VoxelTool::get_class_static(), D_METHOD("u16_indices_to_vec4i"), &_b_u16_indices_to_vec4i
+	);
 	ClassDB::bind_static_method(
-			VoxelTool::get_class_static(), D_METHOD("u16_weights_to_color"), &_b_u16_weights_to_color);
+			VoxelTool::get_class_static(), D_METHOD("u16_weights_to_color"), &_b_u16_weights_to_color
+	);
 	ClassDB::bind_static_method(VoxelTool::get_class_static(), D_METHOD("normalize_color"), &_b_normalize_color);
 
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "value"), "set_value", "get_value");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "channel", PROPERTY_HINT_ENUM, gd::VoxelBuffer::CHANNEL_ID_HINT_STRING),
-			"set_channel", "get_channel");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::INT, "channel", PROPERTY_HINT_ENUM, godot::VoxelBuffer::CHANNEL_ID_HINT_STRING),
+			"set_channel",
+			"get_channel"
+	);
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "eraser_value"), "set_eraser_value", "get_eraser_value");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "mode", PROPERTY_HINT_ENUM, "Add,Remove,Set"), "set_mode", "get_mode");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "sdf_scale"), "set_sdf_scale", "get_sdf_scale");

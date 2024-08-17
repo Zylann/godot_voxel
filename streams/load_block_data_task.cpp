@@ -1,7 +1,7 @@
 #include "load_block_data_task.h"
 #include "../engine/voxel_engine.h"
 #include "../generators/generate_block_task.h"
-#include "../storage/voxel_buffer_internal.h"
+#include "../storage/voxel_buffer.h"
 #include "../util/dstack.h"
 #include "../util/io/log.h"
 #include "../util/profiling.h"
@@ -48,10 +48,8 @@ void LoadBlockDataTask::run(zylann::ThreadedTaskContext &ctx) {
 	Ref<VoxelStream> stream = _stream_dependency->stream;
 	CRASH_COND(stream.is_null());
 
-	const Vector3i origin_in_voxels = (_position << _lod_index) * _block_size;
-
 	ERR_FAIL_COND(_voxels != nullptr);
-	_voxels = make_shared_instance<VoxelBufferInternal>();
+	_voxels = make_shared_instance<VoxelBuffer>(VoxelBuffer::ALLOCATOR_POOL);
 	_voxels->create(_block_size, _block_size, _block_size);
 
 	// TODO We should consider batching this again, but it needs to be done carefully.
@@ -60,7 +58,7 @@ void LoadBlockDataTask::run(zylann::ThreadedTaskContext &ctx) {
 
 	// TODO Assign max_lod_hint when available
 
-	VoxelStream::VoxelQueryData voxel_query_data{ *_voxels, origin_in_voxels, _lod_index, VoxelStream::RESULT_ERROR };
+	VoxelStream::VoxelQueryData voxel_query_data{ *_voxels, _position, _lod_index, VoxelStream::RESULT_ERROR };
 	stream->load_voxel_block(voxel_query_data);
 
 	if (voxel_query_data.result == VoxelStream::RESULT_ERROR) {
@@ -102,8 +100,8 @@ void LoadBlockDataTask::run(zylann::ThreadedTaskContext &ctx) {
 		ERR_FAIL_COND(_instances != nullptr);
 
 		VoxelStream::InstancesQueryData instances_query;
-		instances_query.lod = _lod_index;
-		instances_query.position = _position;
+		instances_query.lod_index = _lod_index;
+		instances_query.position_in_blocks = _position;
 		stream->load_instance_blocks(Span<VoxelStream::InstancesQueryData>(&instances_query, 1));
 
 		if (instances_query.result == VoxelStream::RESULT_ERROR) {

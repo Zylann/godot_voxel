@@ -9,20 +9,20 @@
 using namespace godot;
 #endif
 
-#include <iosfwd>
-#include <string>
+#include "../../string/std_string.h"
+#include "../../string/std_stringstream.h"
 #include <string_view>
 
 #ifdef TOOLS_ENABLED
+#include "../../containers/std_vector.h"
 #include "variant.h"
-#include <vector>
 #endif
 
 #include "../macros.h"
 
 #include "../../containers/span.h"
 
-namespace zylann {
+namespace zylann::godot {
 
 inline String to_godot(const std::string_view sv) {
 	return String::utf8(sv.data(), sv.size());
@@ -32,8 +32,8 @@ inline String to_godot(const std::string_view sv) {
 // They are generic, but I have to wrap them, otherwise GCC throws warnings-as-errors for them being unused.
 #ifdef TOOLS_ENABLED
 
-PackedStringArray to_godot(const std::vector<std::string_view> &svv);
-PackedStringArray to_godot(const std::vector<std::string> &sv);
+PackedStringArray to_godot(const StdVector<std::string_view> &svv);
+PackedStringArray to_godot(const StdVector<StdString> &sv);
 
 template <typename T>
 String join_comma_separated(Span<const T> items) {
@@ -54,9 +54,9 @@ inline bool is_resource_file(const String &path) {
 	return path.begins_with("res://") && path.find("::") == -1;
 }
 
-inline std::string to_std_string(const String &godot_string) {
+inline StdString to_std_string(const String &godot_string) {
 	const CharString cs = godot_string.utf8();
-	std::string s = cs.get_data();
+	StdString s = cs.get_data();
 	return s;
 }
 
@@ -74,7 +74,7 @@ inline String ptr2s(const void *p) {
 	return String::num_uint64((uint64_t)p, 16);
 }
 
-} // namespace zylann
+} // namespace zylann::godot
 
 // `TTR` means "tools translate", which is for editor-only localized messages.
 // Godot does not define the TTR macro for translation of messages in release builds. However, there are some non-editor
@@ -91,12 +91,12 @@ ZN_GODOT_NAMESPACE_BEGIN
 // Needed for `zylann::format()`.
 // I gave up trying to nicely convert Godot's String here... it has non-explicit `const char*` constructor, that makes
 // other overloads ambiguous...
-// std::stringstream &operator<<(std::stringstream &ss, const String &s);
+// StdStringStream &operator<<(StdStringStream &ss, const String &s);
 struct GodotStringWrapper {
 	GodotStringWrapper(const String &p_s) : s(p_s) {}
 	const String &s;
 };
-std::stringstream &operator<<(std::stringstream &ss, GodotStringWrapper s);
+zylann::StdStringStream &operator<<(zylann::StdStringStream &ss, GodotStringWrapper s);
 
 ZN_GODOT_NAMESPACE_END
 

@@ -19,8 +19,8 @@ namespace zylann {
 // because Godot sets up additional stuff in `Thread` (like script debugging and platform-specific stuff to set
 // priority). To use Godot threads in GDExtension, you are FORCED to send an object method as callback. And to do that,
 // the object must be registered.
-class ZN_GodotThreadHelper : public godot::Object {
-	GDCLASS(ZN_GodotThreadHelper, godot::Object)
+class ZN_GodotThreadHelper : public ::godot::Object {
+	GDCLASS(ZN_GodotThreadHelper, ::godot::Object)
 public:
 	ZN_GodotThreadHelper() {}
 

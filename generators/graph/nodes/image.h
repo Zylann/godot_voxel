@@ -6,21 +6,21 @@
 
 namespace zylann::voxel::pg {
 
-inline float get_pixel_repeat(const Image &im, int x, int y) {
-	return im.get_pixel(math::wrap(x, im.get_width()), math::wrap(y, im.get_height())).r;
+inline float get_pixel_repeat(const Image &im, int x, int y, int w, int h) {
+	return im.get_pixel(math::wrap(x, w), math::wrap(y, h)).r;
 }
 
-inline float get_pixel_repeat_linear(const Image &im, float x, float y) {
+inline float get_pixel_repeat_linear(const Image &im, float x, float y, int im_w, int im_h) {
 	const int x0 = int(Math::floor(x));
 	const int y0 = int(Math::floor(y));
 
 	const float xf = x - x0;
 	const float yf = y - y0;
 
-	const float h00 = get_pixel_repeat(im, x0, y0);
-	const float h10 = get_pixel_repeat(im, x0 + 1, y0);
-	const float h01 = get_pixel_repeat(im, x0, y0 + 1);
-	const float h11 = get_pixel_repeat(im, x0 + 1, y0 + 1);
+	const float h00 = get_pixel_repeat(im, x0, y0, im_w, im_h);
+	const float h10 = get_pixel_repeat(im, x0 + 1, y0, im_w, im_h);
+	const float h01 = get_pixel_repeat(im, x0, y0 + 1, im_w, im_h);
+	const float h11 = get_pixel_repeat(im, x0 + 1, y0 + 1, im_w, im_h);
 
 	// Bilinear filter
 	const float h = Math::lerp(Math::lerp(h00, h10, xf), Math::lerp(h01, h11, xf), yf);
@@ -37,8 +37,18 @@ inline math::Interval skew3(math::Interval x) {
 }
 
 // This is mostly useful for generating planets from an existing heightmap
-inline float sdf_sphere_heightmap(float x, float y, float z, float r, float m, const Image &im, float min_h,
-		float max_h, float norm_x, float norm_y) {
+inline float sdf_sphere_heightmap(
+		float x,
+		float y,
+		float z,
+		float r,
+		float m,
+		const Image &im,
+		float min_h,
+		float max_h,
+		float norm_x,
+		float norm_y
+) {
 	const float d = Math::sqrt(x * x + y * y + z * z) + 0.0001f;
 	const float sd = d - r;
 	// Optimize when far enough from heightmap.
@@ -52,19 +62,27 @@ inline float sdf_sphere_heightmap(float x, float y, float z, float r, float m, c
 	const float nz = z / d;
 	// TODO Could use fast atan2, it doesn't have to be precise
 	// https://github.com/ducha-aiki/fast_atan2/blob/master/fast_atan.cpp
-	const float uvx = -Math::atan2(nz, nx) * zylann::voxel::constants::INV_TAU + 0.5f;
+	const float uvx = -Math::atan2(nz, nx) * zylann::math::INV_TAU_32 + 0.5f;
 	// This is an approximation of asin(ny)/(PI/2)
 	// TODO It may be desirable to use the real function though,
 	// in cases where we want to combine the same map in shaders
 	const float ys = skew3(ny);
 	const float uvy = -0.5f * ys + 0.5f;
 	// TODO Could use bicubic interpolation when the image is sampled at lower resolution than voxels
-	const float h = get_pixel_repeat_linear(im, uvx * norm_x, uvy * norm_y);
+	const float h = get_pixel_repeat_linear(im, uvx * norm_x, uvy * norm_y, im.get_width(), im.get_height());
 	return sd - m * h;
 }
 
-inline math::Interval sdf_sphere_heightmap(math::Interval x, math::Interval y, math::Interval z, float r, float m,
-		const ImageRangeGrid *im_range, float norm_x, float norm_y) {
+inline math::Interval sdf_sphere_heightmap(
+		math::Interval x,
+		math::Interval y,
+		math::Interval z,
+		float r,
+		float m,
+		const ImageRangeGrid *im_range,
+		float norm_x,
+		float norm_y
+) {
 	using namespace math;
 
 	const Interval d = get_length(x, y, z) + 0.0001f;
@@ -85,12 +103,12 @@ inline math::Interval sdf_sphere_heightmap(math::Interval x, math::Interval y, m
 
 	Interval h;
 	{
-		const Interval uvx = -atan_r0 * zylann::voxel::constants::INV_TAU + 0.5f;
-		h = im_range->get_range(uvx * norm_x, uvy * norm_y);
+		const Interval uvx = -atan_r0 * zylann::math::INV_TAU_32 + 0.5f;
+		h = im_range->get_range_repeat(uvx * norm_x, uvy * norm_y);
 	}
 	if (atan_r1.valid) {
-		const Interval uvx = -atan_r1.value * zylann::voxel::constants::INV_TAU + 0.5f;
-		h.add_interval(im_range->get_range(uvx * norm_x, uvy * norm_y));
+		const Interval uvx = -atan_r1.value * zylann::math::INV_TAU_32 + 0.5f;
+		h.add_interval(im_range->get_range_repeat(uvx * norm_x, uvy * norm_y));
 	}
 
 	return sd - m * h;
@@ -130,14 +148,14 @@ void register_image_nodes(Span<NodeType> types) {
 									   .format(varray(Image::get_class_static())));
 				return;
 			}
-			ImageRangeGrid *im_range = memnew(ImageRangeGrid);
+			ImageRangeGrid *im_range = ZN_NEW(ImageRangeGrid);
 			im_range->generate(**image);
 			Params p;
 			p.image = *image;
 			p.image_range_grid = im_range;
 			p.filter = static_cast<Filter>(static_cast<int>(ctx.get_param(1)));
 			ctx.set_params(p);
-			ctx.add_memdelete_cleanup(im_range);
+			ctx.add_delete_cleanup(im_range);
 		};
 		t.process_buffer_func = [](Runtime::ProcessBufferContext &ctx) {
 			ZN_PROFILE_SCOPE_NAMED("NODE_IMAGE_2D");
@@ -146,13 +164,17 @@ void register_image_nodes(Span<NodeType> types) {
 			Runtime::Buffer &out = ctx.get_output(0);
 			const Params p = ctx.get_params<Params>();
 			const Image &im = *p.image;
+			// Cache image size to reduce API calls in GDExtension
+			const int w = im.get_width();
+			const int h = im.get_height();
+			// TODO Optimized path for most used formats, `get_pixel` is kinda slow
 			if (p.filter == FILTER_NEAREST) {
 				for (uint32_t i = 0; i < out.size; ++i) {
-					out.data[i] = get_pixel_repeat(im, x.data[i], y.data[i]);
+					out.data[i] = get_pixel_repeat(im, x.data[i], y.data[i], w, h);
 				}
 			} else {
 				for (uint32_t i = 0; i < out.size; ++i) {
-					out.data[i] = get_pixel_repeat_linear(im, x.data[i], y.data[i]);
+					out.data[i] = get_pixel_repeat_linear(im, x.data[i], y.data[i], w, h);
 				}
 			}
 		};
@@ -161,9 +183,9 @@ void register_image_nodes(Span<NodeType> types) {
 			const Interval y = ctx.get_input(1);
 			const Params p = ctx.get_params<Params>();
 			if (p.filter == FILTER_NEAREST) {
-				ctx.set_output(0, p.image_range_grid->get_range(x, y));
+				ctx.set_output(0, p.image_range_grid->get_range_repeat(x, y));
 			} else {
-				ctx.set_output(0, p.image_range_grid->get_range({ x.min, x.max + 1 }, { y.min, y.max + 1 }));
+				ctx.set_output(0, p.image_range_grid->get_range_repeat({ x.min, x.max + 1 }, { y.min, y.max + 1 }));
 			}
 		};
 	}
@@ -201,7 +223,7 @@ void register_image_nodes(Span<NodeType> types) {
 									   .format(varray(Image::get_class_static())));
 				return;
 			}
-			ImageRangeGrid *im_range = memnew(ImageRangeGrid);
+			ImageRangeGrid *im_range = ZN_NEW(ImageRangeGrid);
 			im_range->generate(**image);
 			const float factor = ctx.get_param(2);
 			const Interval range = im_range->get_range() * factor;
@@ -215,7 +237,7 @@ void register_image_nodes(Span<NodeType> types) {
 			p.norm_x = image->get_width();
 			p.norm_y = image->get_height();
 			ctx.set_params(p);
-			ctx.add_memdelete_cleanup(im_range);
+			ctx.add_delete_cleanup(im_range);
 		};
 
 		t.process_buffer_func = [](Runtime::ProcessBufferContext &ctx) {
@@ -228,8 +250,18 @@ void register_image_nodes(Span<NodeType> types) {
 			const Params p = ctx.get_params<Params>();
 			const Image &im = *p.image;
 			for (uint32_t i = 0; i < out.size; ++i) {
-				out.data[i] = sdf_sphere_heightmap(x.data[i], y.data[i], z.data[i], p.radius, p.factor, im,
-						p.min_height, p.max_height, p.norm_x, p.norm_y);
+				out.data[i] = sdf_sphere_heightmap(
+						x.data[i],
+						y.data[i],
+						z.data[i],
+						p.radius,
+						p.factor,
+						im,
+						p.min_height,
+						p.max_height,
+						p.norm_x,
+						p.norm_y
+				);
 			}
 		};
 
@@ -239,7 +271,8 @@ void register_image_nodes(Span<NodeType> types) {
 			const Interval z = ctx.get_input(2);
 			const Params p = ctx.get_params<Params>();
 			ctx.set_output(
-					0, sdf_sphere_heightmap(x, y, z, p.radius, p.factor, p.image_range_grid, p.norm_x, p.norm_y));
+					0, sdf_sphere_heightmap(x, y, z, p.radius, p.factor, p.image_range_grid, p.norm_x, p.norm_y)
+			);
 		};
 	}
 }

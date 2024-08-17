@@ -1,21 +1,30 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="VoxelModifier" inherits="Node3D" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
+		Base class for voxel modifiers.
 	</brief_description>
 	<description>
+		Modifiers are meant to be as an extension to terrain's generator that non-destructively affect limited volume. Stacks with other modifiers. Runtime edits from [VoxelTool] override modifier values.
+		Note 1: Only works with [VoxelLodTerrain].
+		Note 2: Only works with smooth terrain (SDF).
 	</description>
 	<tutorials>
 	</tutorials>
 	<members>
 		<member name="operation" type="int" setter="set_operation" getter="get_operation" enum="VoxelModifier.Operation" default="0">
+			An operation that the modifier performs on the terrain or on the other modifiers.
 		</member>
 		<member name="smoothness" type="float" setter="set_smoothness" getter="get_smoothness" default="0.0">
+			Increasing this value makes the shape "merge" with its surroundings across a more or less large distance. 
+			Note, it assumes the base generator produces consistent gradients. This is not always the case. Notably, it is a common optimization for generators to avoid calculating gradients beyond a certain distance from surfaces. If smoothness is too large, or if the generator's cutoff distance is too low, it can lead to gaps in the resulting mesh, usually at chunk boundaries.
 		</member>
 	</members>
 	<constants>
 		<constant name="OPERATION_ADD" value="0" enum="Operation">
+			Performs SDF union.
 		</constant>
 		<constant name="OPERATION_REMOVE" value="1" enum="Operation">
+			Performs SDF subtraction.
 		</constant>
 	</constants>
 </class>

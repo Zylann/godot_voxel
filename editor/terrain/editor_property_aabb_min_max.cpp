@@ -3,7 +3,6 @@
 #include "../../util/godot/classes/grid_container.h"
 #include "../../util/godot/classes/label.h"
 #include "../../util/godot/classes/node.h"
-#include "../../util/godot/core/callable.h"
 
 namespace zylann {
 
@@ -27,7 +26,7 @@ ZN_EditorPropertyAABBMinMax::ZN_EditorPropertyAABBMinMax() {
 		EditorSpinSlider *sb = memnew(EditorSpinSlider);
 		sb->set_flat(true);
 		sb->set_h_size_flags(SIZE_EXPAND_FILL);
-		sb->connect("value_changed", ZN_GODOT_CALLABLE_MP(this, ZN_EditorPropertyAABBMinMax, _on_value_changed));
+		sb->connect("value_changed", callable_mp(this, &ZN_EditorPropertyAABBMinMax::_on_value_changed));
 		_spinboxes[i] = sb;
 
 		add_focusable(sb);
@@ -107,10 +106,6 @@ void ZN_EditorPropertyAABBMinMax::setup(
 	}
 }
 
-void ZN_EditorPropertyAABBMinMax::_bind_methods() {
-#ifdef ZN_GODOT_EXTENSION
-	ClassDB::bind_method(D_METHOD("_on_value_changed"), &ZN_EditorPropertyAABBMinMax::_on_value_changed);
-#endif
-}
+void ZN_EditorPropertyAABBMinMax::_bind_methods() {}
 
 } // namespace zylann

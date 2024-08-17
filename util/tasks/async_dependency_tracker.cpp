@@ -1,5 +1,5 @@
 #include "async_dependency_tracker.h"
-#include "../memory.h"
+#include "../memory/memory.h"
 #include "threaded_task_runner.h"
 
 namespace zylann {

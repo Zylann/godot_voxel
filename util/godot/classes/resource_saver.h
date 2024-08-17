@@ -8,7 +8,7 @@
 using namespace godot;
 #endif
 
-namespace zylann {
+namespace zylann::godot {
 
 inline Error save_resource(const Ref<Resource> &resource, const String &path = "",
 		ResourceSaver::SaverFlags flags = ResourceSaver::FLAG_NONE) {
@@ -19,6 +19,6 @@ inline Error save_resource(const Ref<Resource> &resource, const String &path = "
 #endif
 }
 
-} // namespace zylann
+} // namespace zylann::godot
 
 #endif // ZN_GODOT_RESOURCE_SAVER_H

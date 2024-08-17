@@ -1,8 +1,6 @@
 #include "fast_noise_lite.h"
 #include "../../godot/core/array.h"
-#include "../../godot/core/callable.h"
 #include "../../math/funcs.h"
-#include "../../string_funcs.h"
 
 namespace zylann {
 
@@ -73,13 +71,13 @@ void ZN_FastNoiseLite::set_warp_noise(Ref<ZN_FastNoiseLiteGradient> warp_noise) 
 	}
 
 	if (_warp_noise.is_valid()) {
-		_warp_noise->disconnect("changed", ZN_GODOT_CALLABLE_MP(this, ZN_FastNoiseLite, _on_warp_noise_changed));
+		_warp_noise->disconnect("changed", callable_mp(this, &ZN_FastNoiseLite::_on_warp_noise_changed));
 	}
 
 	_warp_noise = warp_noise;
 
 	if (_warp_noise.is_valid()) {
-		_warp_noise->connect("changed", ZN_GODOT_CALLABLE_MP(this, ZN_FastNoiseLite, _on_warp_noise_changed));
+		_warp_noise->connect("changed", callable_mp(this, &ZN_FastNoiseLite::_on_warp_noise_changed));
 	}
 
 	emit_changed();
@@ -254,19 +252,24 @@ void ZN_FastNoiseLite::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_fractal_gain"), &ZN_FastNoiseLite::get_fractal_gain);
 
 	ClassDB::bind_method(
-			D_METHOD("set_fractal_ping_pong_strength", "strength"), &ZN_FastNoiseLite::set_fractal_ping_pong_strength);
+			D_METHOD("set_fractal_ping_pong_strength", "strength"), &ZN_FastNoiseLite::set_fractal_ping_pong_strength
+	);
 	ClassDB::bind_method(D_METHOD("get_fractal_ping_pong_strength"), &ZN_FastNoiseLite::get_fractal_ping_pong_strength);
 
 	ClassDB::bind_method(
-			D_METHOD("set_fractal_weighted_strength", "strength"), &ZN_FastNoiseLite::set_fractal_weighted_strength);
+			D_METHOD("set_fractal_weighted_strength", "strength"), &ZN_FastNoiseLite::set_fractal_weighted_strength
+	);
 	ClassDB::bind_method(D_METHOD("get_fractal_weighted_strength"), &ZN_FastNoiseLite::get_fractal_weighted_strength);
 
-	ClassDB::bind_method(D_METHOD("set_cellular_distance_function", "cell_distance_func"),
-			&ZN_FastNoiseLite::set_cellular_distance_function);
+	ClassDB::bind_method(
+			D_METHOD("set_cellular_distance_function", "cell_distance_func"),
+			&ZN_FastNoiseLite::set_cellular_distance_function
+	);
 	ClassDB::bind_method(D_METHOD("get_cellular_distance_function"), &ZN_FastNoiseLite::get_cellular_distance_function);
 
 	ClassDB::bind_method(
-			D_METHOD("set_cellular_return_type", "return_type"), &ZN_FastNoiseLite::set_cellular_return_type);
+			D_METHOD("set_cellular_return_type", "return_type"), &ZN_FastNoiseLite::set_cellular_return_type
+	);
 	ClassDB::bind_method(D_METHOD("get_cellular_return_type"), &ZN_FastNoiseLite::get_cellular_return_type);
 
 	ClassDB::bind_method(D_METHOD("set_cellular_jitter", "return_type"), &ZN_FastNoiseLite::set_cellular_jitter);
@@ -281,61 +284,110 @@ void ZN_FastNoiseLite::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_noise_2dv", "position"), &ZN_FastNoiseLite::_b_get_noise_2dv);
 	ClassDB::bind_method(D_METHOD("get_noise_3dv", "position"), &ZN_FastNoiseLite::_b_get_noise_3dv);
 
-#ifdef ZN_GODOT_EXTENSION
-	ClassDB::bind_method(D_METHOD("_on_warp_noise_changed"), &ZN_FastNoiseLite::_on_warp_noise_changed);
-#endif
-
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "noise_type", PROPERTY_HINT_ENUM,
-						 "OpenSimplex2,OpenSimplex2S,Cellular,Perlin,ValueCubic,Value"),
-			"set_noise_type", "get_noise_type");
+	ADD_PROPERTY(
+			PropertyInfo(
+					Variant::INT,
+					"noise_type",
+					PROPERTY_HINT_ENUM,
+					"OpenSimplex2,OpenSimplex2S,Cellular,Perlin,ValueCubic,Value"
+			),
+			"set_noise_type",
+			"get_noise_type"
+	);
 
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "seed"), "set_seed", "get_seed");
 
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "period", PROPERTY_HINT_RANGE, "0.0001,10000.0,0.1,exp"), "set_period",
-			"get_period");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::FLOAT, "period", PROPERTY_HINT_RANGE, "0.0001,10000.0,0.1,exp"),
+			"set_period",
+			"get_period"
+	);
 
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "warp_noise", PROPERTY_HINT_RESOURCE_TYPE,
-						 ZN_FastNoiseLiteGradient::get_class_static()),
-			"set_warp_noise", "get_warp_noise");
+	ADD_PROPERTY(
+			PropertyInfo(
+					Variant::OBJECT,
+					"warp_noise",
+					PROPERTY_HINT_RESOURCE_TYPE,
+					ZN_FastNoiseLiteGradient::get_class_static()
+			),
+			"set_warp_noise",
+			"get_warp_noise"
+	);
 
 	ADD_GROUP("Fractal", "");
 
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "fractal_type", PROPERTY_HINT_ENUM, "None,FBm,Ridged,PingPong"),
-			"set_fractal_type", "get_fractal_type");
-
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "fractal_octaves", PROPERTY_HINT_RANGE,
-						 String("1,{0},1").format(varray(MAX_OCTAVES))),
-			"set_fractal_octaves", "get_fractal_octaves");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::INT, "fractal_type", PROPERTY_HINT_ENUM, "None,FBm,Ridged,PingPong"),
+			"set_fractal_type",
+			"get_fractal_type"
+	);
 
 	ADD_PROPERTY(
-			PropertyInfo(Variant::FLOAT, "fractal_lacunarity"), "set_fractal_lacunarity", "get_fractal_lacunarity");
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "fractal_gain", PROPERTY_HINT_RANGE, "0.0,1.0,0.01"), "set_fractal_gain",
-			"get_fractal_gain");
+			PropertyInfo(
+					Variant::INT, "fractal_octaves", PROPERTY_HINT_RANGE, String("1,{0},1").format(varray(MAX_OCTAVES))
+			),
+			"set_fractal_octaves",
+			"get_fractal_octaves"
+	);
 
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "fractal_ping_pong_strength"), "set_fractal_ping_pong_strength",
-			"get_fractal_ping_pong_strength");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::FLOAT, "fractal_lacunarity"), "set_fractal_lacunarity", "get_fractal_lacunarity"
+	);
+	ADD_PROPERTY(
+			PropertyInfo(Variant::FLOAT, "fractal_gain", PROPERTY_HINT_RANGE, "0.0,1.0,0.01"),
+			"set_fractal_gain",
+			"get_fractal_gain"
+	);
 
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "fractal_weighted_strength"), "set_fractal_weighted_strength",
-			"get_fractal_weighted_strength");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::FLOAT, "fractal_ping_pong_strength"),
+			"set_fractal_ping_pong_strength",
+			"get_fractal_ping_pong_strength"
+	);
+
+	ADD_PROPERTY(
+			PropertyInfo(Variant::FLOAT, "fractal_weighted_strength"),
+			"set_fractal_weighted_strength",
+			"get_fractal_weighted_strength"
+	);
 
 	ADD_GROUP("Cellular", "");
 
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "cellular_distance_function", PROPERTY_HINT_ENUM,
-						 "DistanceEuclidean,DistanceEuclideanSq,Manhattan,Hybrid"),
-			"set_cellular_distance_function", "get_cellular_distance_function");
+	ADD_PROPERTY(
+			PropertyInfo(
+					Variant::INT,
+					"cellular_distance_function",
+					PROPERTY_HINT_ENUM,
+					"DistanceEuclidean,DistanceEuclideanSq,Manhattan,Hybrid"
+			),
+			"set_cellular_distance_function",
+			"get_cellular_distance_function"
+	);
 
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "cellular_return_type", PROPERTY_HINT_ENUM,
-						 "CellValue,Distance,Distance2,Distance2Add,Distance2Sub,Distance2Mul,Distance2Div"),
-			"set_cellular_return_type", "get_cellular_return_type");
+	ADD_PROPERTY(
+			PropertyInfo(
+					Variant::INT,
+					"cellular_return_type",
+					PROPERTY_HINT_ENUM,
+					"CellValue,Distance,Distance2,Distance2Add,Distance2Sub,Distance2Mul,Distance2Div"
+			),
+			"set_cellular_return_type",
+			"get_cellular_return_type"
+	);
 
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "cellular_jitter", PROPERTY_HINT_RANGE, "0.0,1.0,0.01"),
-			"set_cellular_jitter", "get_cellular_jitter");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::FLOAT, "cellular_jitter", PROPERTY_HINT_RANGE, "0.0,1.0,0.01"),
+			"set_cellular_jitter",
+			"get_cellular_jitter"
+	);
 
 	ADD_GROUP("Advanced", "");
 
 	ADD_PROPERTY(
 			PropertyInfo(Variant::INT, "rotation_type_3d", PROPERTY_HINT_ENUM, "None,ImproveXYPlanes,ImproveXZPlanes"),
-			"set_rotation_type_3d", "get_rotation_type_3d");
+			"set_rotation_type_3d",
+			"get_rotation_type_3d"
+	);
 
 	BIND_ENUM_CONSTANT(TYPE_OPEN_SIMPLEX_2);
 	BIND_ENUM_CONSTANT(TYPE_OPEN_SIMPLEX_2S);

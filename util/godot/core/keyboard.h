@@ -7,6 +7,8 @@
 #if defined(ZN_GODOT)
 #include <core/os/keyboard.h>
 
+// Expose as in GodotCpp
+
 namespace godot {
 static const KeyModifierMask KEY_CODE_MASK = KeyModifierMask::CODE_MASK;
 static const KeyModifierMask KEY_MODIFIER_MASK = KeyModifierMask::MODIFIER_MASK;

@@ -15,6 +15,8 @@
 #include "../../util/godot/classes/rd_uniform.h"
 #include "../../util/godot/classes/rendering_device.h"
 
+using namespace zylann::godot;
+
 namespace zylann::voxel {
 
 void RenderDetailTextureGPUTask::prepare(GPUTaskContext &ctx) {
@@ -37,9 +39,11 @@ void RenderDetailTextureGPUTask::prepare(GPUTaskContext &ctx) {
 	texture_format->set_width(texture_width);
 	texture_format->set_height(texture_height);
 	texture_format->set_format(RenderingDevice::DATA_FORMAT_R8G8B8A8_UINT);
-	texture_format->set_usage_bits(RenderingDevice::TEXTURE_USAGE_STORAGE_BIT |
+	texture_format->set_usage_bits(
+			RenderingDevice::TEXTURE_USAGE_STORAGE_BIT |
 			// TODO Not sure if `TEXTURE_USAGE_CAN_UPDATE_BIT` is necessary, we only generate the texture
-			RenderingDevice::TEXTURE_USAGE_CAN_UPDATE_BIT | RenderingDevice::TEXTURE_USAGE_CAN_COPY_FROM_BIT);
+			RenderingDevice::TEXTURE_USAGE_CAN_UPDATE_BIT | RenderingDevice::TEXTURE_USAGE_CAN_COPY_FROM_BIT
+	);
 	texture_format->set_texture_type(RenderingDevice::TEXTURE_TYPE_2D);
 
 	// TODO Which optimizations can I do?
@@ -147,8 +151,10 @@ void RenderDetailTextureGPUTask::prepare(GPUTaskContext &ctx) {
 	};
 
 	PackedByteArray gather_hits_params_pba;
-	copy_bytes_to(gather_hits_params_pba,
-			GatherHitsParams{ params.block_origin_world, params.pixel_world_step, params.tile_size_pixels });
+	copy_bytes_to(
+			gather_hits_params_pba,
+			GatherHitsParams{ params.block_origin_world, params.pixel_world_step, params.tile_size_pixels }
+	);
 
 	// TODO Might be better to use a Uniform Buffer for this. They might be faster for small amounts of data, but need
 	// to care more about alignment
@@ -220,9 +226,11 @@ void RenderDetailTextureGPUTask::prepare(GPUTaskContext &ctx) {
 	};
 
 	PackedByteArray normalmap_params_pba;
-	copy_bytes_to(normalmap_params_pba,
+	copy_bytes_to(
+			normalmap_params_pba,
 			NormalmapParams{
-					params.tile_size_pixels, params.tiles_x, params.max_deviation_cosine, params.max_deviation_sine });
+					params.tile_size_pixels, params.tiles_x, params.max_deviation_cosine, params.max_deviation_sine }
+	);
 
 	_normalmap_params_sb = storage_buffer_pool.allocate(normalmap_params_pba);
 
@@ -309,10 +317,12 @@ void RenderDetailTextureGPUTask::prepare(GPUTaskContext &ctx) {
 		const int local_group_size_x = 4;
 		const int local_group_size_y = 4;
 		const int local_group_size_z = 4;
-		rd.compute_list_dispatch(compute_list_id, //
+		rd.compute_list_dispatch(
+				compute_list_id, //
 				math::ceildiv(params.tile_size_pixels, local_group_size_x),
 				math::ceildiv(params.tile_size_pixels, local_group_size_y),
-				math::ceildiv(static_cast<int32_t>(tile_data.size()), local_group_size_z));
+				math::ceildiv(static_cast<int32_t>(tile_data.size()), local_group_size_z)
+		);
 	}
 
 	// Ensure dependencies are ready before running dilation on the result (I though this was automatically handled?
@@ -345,10 +355,12 @@ void RenderDetailTextureGPUTask::prepare(GPUTaskContext &ctx) {
 		const int local_group_size_x = 4;
 		const int local_group_size_y = 4;
 		const int local_group_size_z = 4;
-		rd.compute_list_dispatch(compute_list_id, //
+		rd.compute_list_dispatch(
+				compute_list_id,
 				math::ceildiv(params.tile_size_pixels, local_group_size_x),
 				math::ceildiv(params.tile_size_pixels, local_group_size_y),
-				math::ceildiv(static_cast<int32_t>(tile_data.size()), local_group_size_z));
+				math::ceildiv(static_cast<int32_t>(tile_data.size()), local_group_size_z)
+		);
 	}
 
 	rd.compute_list_add_barrier(compute_list_id);
@@ -392,10 +404,12 @@ void RenderDetailTextureGPUTask::prepare(GPUTaskContext &ctx) {
 		const int local_group_size_x = 4;
 		const int local_group_size_y = 4;
 		const int local_group_size_z = 4;
-		rd.compute_list_dispatch(compute_list_id, //
+		rd.compute_list_dispatch(
+				compute_list_id,
 				math::ceildiv(params.tile_size_pixels, local_group_size_x),
 				math::ceildiv(params.tile_size_pixels, local_group_size_y),
-				math::ceildiv(static_cast<int32_t>(tile_data.size()), local_group_size_z));
+				math::ceildiv(static_cast<int32_t>(tile_data.size()), local_group_size_z)
+		);
 
 		rd.compute_list_add_barrier(compute_list_id);
 	}
@@ -427,10 +441,12 @@ void RenderDetailTextureGPUTask::prepare(GPUTaskContext &ctx) {
 		const int local_group_size_x = 4;
 		const int local_group_size_y = 4;
 		const int local_group_size_z = 4;
-		rd.compute_list_dispatch(compute_list_id, //
+		rd.compute_list_dispatch(
+				compute_list_id,
 				math::ceildiv(params.tile_size_pixels, local_group_size_x),
 				math::ceildiv(params.tile_size_pixels, local_group_size_y),
-				math::ceildiv(static_cast<int32_t>(tile_data.size()), local_group_size_z));
+				math::ceildiv(static_cast<int32_t>(tile_data.size()), local_group_size_z)
+		);
 	}
 
 	rd.compute_list_add_barrier(compute_list_id);
@@ -455,12 +471,15 @@ void RenderDetailTextureGPUTask::prepare(GPUTaskContext &ctx) {
 		const unsigned int local_group_size_x = 8;
 		const unsigned int local_group_size_y = 8;
 		const unsigned int local_group_size_z = 1;
-		rd.compute_list_dispatch(compute_list_id,
+		rd.compute_list_dispatch(
+				compute_list_id,
 				// Had to cast explicitely because even though both arguments are unsigned, MSVC is too dumb to
 				// realize it can just use the unsigned version of this function. Also, if both are uint16_t, it
 				// somehow decides to use the SIGNED version.
 				math::ceildiv(static_cast<unsigned int>(texture_width), local_group_size_x),
-				math::ceildiv(static_cast<unsigned int>(texture_height), local_group_size_y), local_group_size_z);
+				math::ceildiv(static_cast<unsigned int>(texture_height), local_group_size_y),
+				local_group_size_z
+		);
 	}
 
 	rd.compute_list_add_barrier(compute_list_id);
@@ -487,9 +506,12 @@ void RenderDetailTextureGPUTask::prepare(GPUTaskContext &ctx) {
 		const unsigned int local_group_size_x = 8;
 		const unsigned int local_group_size_y = 8;
 		const unsigned int local_group_size_z = 1;
-		rd.compute_list_dispatch(compute_list_id,
+		rd.compute_list_dispatch(
+				compute_list_id,
 				math::ceildiv(static_cast<unsigned int>(texture_width), local_group_size_x),
-				math::ceildiv(static_cast<unsigned int>(texture_height), local_group_size_y), local_group_size_z);
+				math::ceildiv(static_cast<unsigned int>(texture_height), local_group_size_y),
+				local_group_size_z
+		);
 	}
 
 	// Final result should be in image0.
@@ -498,7 +520,9 @@ void RenderDetailTextureGPUTask::prepare(GPUTaskContext &ctx) {
 }
 
 PackedByteArray RenderDetailTextureGPUTask::collect_texture_and_cleanup(
-		RenderingDevice &rd, GPUStorageBufferPool &storage_buffer_pool) {
+		RenderingDevice &rd,
+		GPUStorageBufferPool &storage_buffer_pool
+) {
 	ZN_PROFILE_SCOPE();
 
 	// TODO This is incredibly slow and should not happen in the first place.
@@ -551,7 +575,7 @@ void RenderDetailTextureGPUTask::collect(GPUTaskContext &ctx) {
 	PackedByteArray texture_data = collect_texture_and_cleanup(ctx.rendering_device, ctx.storage_buffer_pool);
 
 	{
-		std::vector<DetailTextureData::Tile> tile_data2;
+		StdVector<DetailTextureData::Tile> tile_data2;
 		tile_data2.reserve(tile_data.size());
 		for (const TileData &td : tile_data) {
 			tile_data2.push_back(DetailTextureData::Tile{ td.cell_x, td.cell_y, td.cell_z, uint8_t(td.data & 0x3) });

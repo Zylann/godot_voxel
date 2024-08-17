@@ -1,6 +1,6 @@
 #include "spatial_lock_3d.h"
 #include "../io/log.h"
-#include "../string_funcs.h"
+#include "../string/format.h"
 
 namespace zylann {
 

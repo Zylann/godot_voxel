@@ -150,6 +150,27 @@ inline void fill(FixedArray<T, N> &dst, const T v) {
 	}
 }
 
+template <typename T, unsigned int N>
+inline bool find(const FixedArray<T, N> &a, const T &v, unsigned int &out_index) {
+	for (unsigned int i = 0; i < a.size(); ++i) {
+		if (a[i] == v) {
+			out_index = i;
+			return true;
+		}
+	}
+	return false;
+}
+
+template <typename T, unsigned int N>
+inline bool contains(const FixedArray<T, N> &a, const T &value_to_search) {
+	for (const T &v : a) {
+		if (v == value_to_search) {
+			return true;
+		}
+	}
+	return false;
+}
+
 } // namespace zylann
 
 #endif // ZN_FIXED_ARRAY_H

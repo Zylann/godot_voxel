@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VoxelStreamMemory" inherits="VoxelStream" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Keeps data into memory rather than writing it on disk.
+	</brief_description>
+	<description>
+		This stream is mainly intented for testing purposes. It shouldn't be used as a proper saving system.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="artificial_save_latency_usec" type="int" setter="set_artificial_save_latency_usec" getter="get_artificial_save_latency_usec" default="0">
+			Fakes long saving by making the calling thread sleep for some amount of time.
+		</member>
+	</members>
+</class>

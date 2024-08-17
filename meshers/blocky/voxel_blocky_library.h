@@ -1,6 +1,7 @@
 #ifndef VOXEL_BLOCKY_LIBRARY_H
 #define VOXEL_BLOCKY_LIBRARY_H
 
+#include "../../util/containers/std_vector.h"
 #include "voxel_blocky_library_base.h"
 
 namespace zylann::voxel {
@@ -53,15 +54,13 @@ private:
 	TypedArray<VoxelBlockyModel> _b_get_models() const;
 	void _b_set_models(TypedArray<VoxelBlockyModel> models);
 
-	int _b_deprecated_get_voxel_index_from_name(String p_name) const;
-
 	bool _set(const StringName &p_name, const Variant &p_value);
 
 	static void _bind_methods();
 
 private:
 	// Indices matter, they correspond to voxel data
-	std::vector<Ref<VoxelBlockyModel>> _voxel_models;
+	StdVector<Ref<VoxelBlockyModel>> _voxel_models;
 };
 
 } // namespace zylann::voxel

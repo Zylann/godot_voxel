@@ -1,6 +1,6 @@
 #include "node.h"
 
-namespace zylann {
+namespace zylann::godot {
 
 template <typename F>
 void for_each_node_depth_first(Node *parent, F f) {
@@ -24,7 +24,7 @@ void set_nodes_owner_except_root(Node *root, Node *owner) {
 	}
 }
 
-void get_node_groups(const Node &node, std::vector<StringName> &out_groups) {
+void get_node_groups(const Node &node, StdVector<StringName> &out_groups) {
 #if defined(ZN_GODOT)
 	List<Node::GroupInfo> gi;
 	node.get_groups(&gi);
@@ -40,4 +40,4 @@ void get_node_groups(const Node &node, std::vector<StringName> &out_groups) {
 #endif
 }
 
-} // namespace zylann
+} // namespace zylann::godot

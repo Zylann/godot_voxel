@@ -9,8 +9,8 @@ ZN_GODOT_FORWARD_DECLARE(class EditorUndoRedoManager);
 
 namespace zylann::voxel {
 
-class VoxelBlockyTypeEditorInspectorPlugin : public ZN_EditorInspectorPlugin {
-	GDCLASS(VoxelBlockyTypeEditorInspectorPlugin, ZN_EditorInspectorPlugin)
+class VoxelBlockyTypeEditorInspectorPlugin : public zylann::godot::ZN_EditorInspectorPlugin {
+	GDCLASS(VoxelBlockyTypeEditorInspectorPlugin, zylann::godot::ZN_EditorInspectorPlugin)
 public:
 	void set_editor_interface(EditorInterface *ed);
 	void set_undo_redo(EditorUndoRedoManager *urm);

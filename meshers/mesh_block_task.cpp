@@ -8,12 +8,14 @@
 #include "../util/io/log.h"
 #include "../util/math/conv.h"
 #include "../util/profiling.h"
-//#include "../util/string_funcs.h" // Debug
+// #include "../util/string/format.h" // Debug
 #include "../engine/voxel_engine.h"
 #include "../generators/generate_block_gpu_task.h"
 #include "../meshers/transvoxel/transvoxel_cell_iterator.h"
 
 namespace zylann::voxel {
+
+namespace {
 
 struct CubicAreaInfo {
 	int edge_size; // In data blocks
@@ -52,27 +54,35 @@ CubicAreaInfo get_cubic_area_info_from_size(unsigned int size) {
 // Takes a list of blocks and interprets it as a cube of blocks centered around the area we want to create a mesh from.
 // Voxels from central blocks are copied, and part of side blocks are also copied so we get a temporary buffer
 // which includes enough neighbors for the mesher to avoid doing bound checks.
-static void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBufferInternal>> blocks, VoxelBufferInternal &dst,
-		int min_padding, int max_padding, int channels_mask, Ref<VoxelGenerator> generator, const VoxelData &voxel_data,
-		uint8_t lod_index, Vector3i mesh_block_pos, std::vector<Box3i> *out_boxes_to_generate,
-		Vector3i *out_origin_in_voxels) {
+void copy_block_and_neighbors(
+		Span<std::shared_ptr<VoxelBuffer>> blocks,
+		VoxelBuffer &dst,
+		int min_padding,
+		int max_padding,
+		int channels_mask,
+		Ref<VoxelGenerator> generator,
+		const VoxelData &voxel_data,
+		uint8_t lod_index,
+		Vector3i mesh_block_pos,
+		StdVector<Box3i> *out_boxes_to_generate,
+		Vector3i *out_origin_in_voxels
+) {
 	ZN_DSTACK();
 	ZN_PROFILE_SCOPE();
 
 	// Extract wanted channels in a list
-	unsigned int channels_count = 0;
-	FixedArray<uint8_t, VoxelBufferInternal::MAX_CHANNELS> channels =
-			VoxelBufferInternal::mask_to_channels_list(channels_mask, channels_count);
+	const SmallVector<uint8_t, VoxelBuffer::MAX_CHANNELS> channels = VoxelBuffer::mask_to_channels_list(channels_mask);
 
 	// Determine size of the cube of blocks
 	const CubicAreaInfo area_info = get_cubic_area_info_from_size(blocks.size());
 	ERR_FAIL_COND(!area_info.is_valid());
 
-	std::shared_ptr<VoxelBufferInternal> &central_buffer = blocks[area_info.anchor_buffer_index];
+	std::shared_ptr<VoxelBuffer> &central_buffer = blocks[area_info.anchor_buffer_index];
 	ERR_FAIL_COND_MSG(central_buffer == nullptr && generator.is_null(), "Central buffer must be valid");
 	if (central_buffer != nullptr) {
 		ERR_FAIL_COND_MSG(
-				Vector3iUtil::all_members_equal(central_buffer->get_size()) == false, "Central buffer must be cubic");
+				Vector3iUtil::all_members_equal(central_buffer->get_size()) == false, "Central buffer must be cubic"
+		);
 	}
 	const int data_block_size = voxel_data.get_block_size();
 	const int mesh_block_size = data_block_size * area_info.mesh_block_size_factor;
@@ -86,7 +96,7 @@ static void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBufferInternal>> 
 	// }
 	// This is a hack
 	for (unsigned int i = 0; i < blocks.size(); ++i) {
-		const std::shared_ptr<VoxelBufferInternal> &buffer = blocks[i];
+		const std::shared_ptr<VoxelBuffer> &buffer = blocks[i];
 		if (buffer != nullptr) {
 			// Initialize channel depths from the first non-null block found
 			dst.copy_format(*buffer);
@@ -101,9 +111,9 @@ static void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBufferInternal>> 
 	// This is the case of VoxelTerrain, which is now doing unnecessary box subtraction calculations...
 
 	// These boxes are in buffer coordinates (not world voxel coordinates)
-	std::vector<Box3i> boxes_to_generate;
+	StdVector<Box3i> boxes_to_generate;
 	const Box3i mesh_data_box = Box3i::from_min_max(min_pos, max_pos);
-	if (contains(blocks.to_const(), std::shared_ptr<VoxelBufferInternal>())) {
+	if (contains(blocks.to_const(), std::shared_ptr<VoxelBuffer>())) {
 		boxes_to_generate.push_back(mesh_data_box);
 	}
 
@@ -112,9 +122,12 @@ static void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBufferInternal>> 
 		// We are just sampling or generating data in a given area.
 
 		const Vector3i data_block_pos0 = mesh_block_pos * area_info.mesh_block_size_factor;
-		SpatialLock3D::Read srlock(voxel_data.get_spatial_lock(lod_index),
-				BoxBounds3i(data_block_pos0 - Vector3i(1, 1, 1),
-						data_block_pos0 + Vector3iUtil::create(area_info.edge_size)));
+		SpatialLock3D::Read srlock(
+				voxel_data.get_spatial_lock(lod_index),
+				BoxBounds3i(
+						data_block_pos0 - Vector3i(1, 1, 1), data_block_pos0 + Vector3iUtil::create(area_info.edge_size)
+				)
+		);
 
 		// Using ZXY as convention to reconstruct positions with thread locking consistency
 		unsigned int block_index = 0;
@@ -122,7 +135,7 @@ static void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBufferInternal>> 
 			for (int x = -1; x < area_info.edge_size - 1; ++x) {
 				for (int y = -1; y < area_info.edge_size - 1; ++y) {
 					const Vector3i offset = data_block_size * Vector3i(x, y, z);
-					const std::shared_ptr<VoxelBufferInternal> &src = blocks[block_index];
+					const std::shared_ptr<VoxelBuffer> &src = blocks[block_index];
 					++block_index;
 
 					if (src == nullptr) {
@@ -132,8 +145,8 @@ static void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBufferInternal>> 
 					const Vector3i src_min = min_pos - offset;
 					const Vector3i src_max = max_pos - offset;
 
-					for (unsigned int ci = 0; ci < channels_count; ++ci) {
-						dst.copy_from(*src, src_min, src_max, Vector3i(), channels[ci]);
+					for (const uint8_t channel_index : channels) {
+						dst.copy_channel_from(*src, src_min, src_max, Vector3i(), channel_index);
 					}
 
 					if (boxes_to_generate.size() > 0) {
@@ -167,8 +180,9 @@ static void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBufferInternal>> 
 			mesh_block_pos * (area_info.mesh_block_size_factor * data_block_size << lod_index) -
 			Vector3iUtil::create(min_padding << lod_index);
 
+	// Undo padding to go back to proper buffer coordinates
 	for (Box3i &box : boxes_to_generate) {
-		box.pos += Vector3iUtil::create(min_padding);
+		box.position += Vector3iUtil::create(min_padding);
 	}
 
 	if (out_origin_in_voxels != nullptr) {
@@ -182,7 +196,7 @@ static void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBufferInternal>> 
 	} else {
 		// Complete data with generated voxels on the CPU
 		ZN_PROFILE_SCOPE_NAMED("Generate");
-		VoxelBufferInternal generated_voxels;
+		VoxelBuffer generated_voxels(VoxelBuffer::ALLOCATOR_POOL);
 
 		const VoxelModifierStack &modifiers = voxel_data.get_modifiers();
 
@@ -191,25 +205,37 @@ static void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBufferInternal>> 
 			// print_line(String("size={0}").format(varray(box.size.to_vec3())));
 			generated_voxels.create(box.size);
 			// generated_voxels.set_voxel_f(2.0f, box.size.x / 2, box.size.y / 2, box.size.z / 2,
-			// VoxelBufferInternal::CHANNEL_SDF);
-			VoxelGenerator::VoxelQueryData q{ generated_voxels, (box.pos << lod_index) + origin_in_voxels, lod_index };
+			// VoxelBuffer::CHANNEL_SDF);
+			VoxelGenerator::VoxelQueryData q{
+				generated_voxels, //
+				(box.position << lod_index) + origin_in_voxels, //
+				lod_index //
+			};
 
 			if (generator.is_valid()) {
 				generator->generate_block(q);
 			}
 			modifiers.apply(q.voxel_buffer, AABB(q.origin_in_voxels, q.voxel_buffer.get_size() << lod_index));
 
-			for (unsigned int ci = 0; ci < channels_count; ++ci) {
-				dst.copy_from(generated_voxels, Vector3i(), generated_voxels.get_size(), box.pos, channels[ci]);
+			for (const uint8_t channel_index : channels) {
+				dst.copy_channel_from(
+						generated_voxels, Vector3i(), generated_voxels.get_size(), box.position, channel_index
+				);
 			}
 		}
 	}
 }
 
-Ref<ArrayMesh> build_mesh(Span<const VoxelMesher::Output::Surface> surfaces, Mesh::PrimitiveType primitive, int flags,
+} // namespace
+
+Ref<ArrayMesh> build_mesh(
+		Span<const VoxelMesher::Output::Surface> surfaces,
+		Mesh::PrimitiveType primitive,
+		int flags,
 		// This vector indexes surfaces to the material they use (if a surface uses a material but is empty, it
 		// won't be added to the mesh)
-		std::vector<uint16_t> &mesh_material_indices) {
+		StdVector<uint16_t> &mesh_material_indices
+) {
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT(mesh_material_indices.size() == 0);
 
@@ -224,7 +250,7 @@ Ref<ArrayMesh> build_mesh(Span<const VoxelMesher::Output::Surface> surfaces, Mes
 		}
 
 		CRASH_COND(arrays.size() != Mesh::ARRAY_MAX);
-		if (!is_surface_triangulated(arrays)) {
+		if (!zylann::godot::is_surface_triangulated(arrays)) {
 			continue;
 		}
 
@@ -253,10 +279,20 @@ Ref<ArrayMesh> build_mesh(Span<const VoxelMesher::Output::Surface> surfaces, Mes
 		}
 	}*/
 
-	if (mesh.is_valid() && is_mesh_empty(**mesh)) {
+	if (mesh.is_valid() && zylann::godot::is_mesh_empty(**mesh)) {
 		mesh = Ref<Mesh>();
 	}
 
+	return mesh;
+}
+
+Ref<ArrayMesh> build_mesh(Array surface) {
+	if (surface.is_empty()) {
+		return Ref<ArrayMesh>();
+	}
+	Ref<ArrayMesh> mesh;
+	mesh.instantiate();
+	mesh->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, surface);
 	return mesh;
 }
 
@@ -266,7 +302,7 @@ namespace {
 std::atomic_int g_debug_mesh_tasks_count = { 0 };
 } // namespace
 
-MeshBlockTask::MeshBlockTask() {
+MeshBlockTask::MeshBlockTask() : _voxels(VoxelBuffer::ALLOCATOR_POOL) {
 	++g_debug_mesh_tasks_count;
 }
 
@@ -283,8 +319,10 @@ void MeshBlockTask::run(zylann::ThreadedTaskContext &ctx) {
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT(meshing_dependency != nullptr);
 #ifdef DEBUG_ENABLED
-	ZN_ASSERT_RETURN_MSG(meshing_dependency->mesher.is_valid(),
-			"Meshing task started without a mesher. Maybe missing on the terrain node?");
+	ZN_ASSERT_RETURN_MSG(
+			meshing_dependency->mesher.is_valid(),
+			"Meshing task started without a mesher. Maybe missing on the terrain node?"
+	);
 #endif
 
 	if (block_generation_use_gpu) {
@@ -312,12 +350,22 @@ void MeshBlockTask::gather_voxels_gpu(zylann::ThreadedTaskContext &ctx) {
 	const unsigned int min_padding = mesher->get_minimum_padding();
 	const unsigned int max_padding = mesher->get_maximum_padding();
 
-	std::vector<Box3i> boxes_to_generate;
+	StdVector<Box3i> boxes_to_generate;
 	Vector3i origin_in_voxels;
 
-	copy_block_and_neighbors(to_span(blocks, blocks_count), _voxels, min_padding, max_padding,
-			mesher->get_used_channels_mask(), meshing_dependency->generator, *data, lod_index, mesh_block_position,
-			&boxes_to_generate, &origin_in_voxels);
+	copy_block_and_neighbors(
+			to_span(blocks, blocks_count),
+			_voxels,
+			min_padding,
+			max_padding,
+			mesher->get_used_channels_mask(),
+			meshing_dependency->generator,
+			*data,
+			lod_index,
+			mesh_block_position,
+			&boxes_to_generate,
+			&origin_in_voxels
+	);
 
 	if (boxes_to_generate.size() == 0) {
 		_stage = 2;
@@ -336,7 +384,7 @@ void MeshBlockTask::gather_voxels_gpu(zylann::ThreadedTaskContext &ctx) {
 	std::shared_ptr<ComputeShader> generator_shader = generator->get_block_rendering_shader();
 	ERR_FAIL_COND(generator_shader == nullptr);
 
-	GenerateBlockGPUTask *gpu_task = memnew(GenerateBlockGPUTask);
+	GenerateBlockGPUTask *gpu_task = ZN_NEW(GenerateBlockGPUTask);
 	gpu_task->boxes_to_generate = std::move(boxes_to_generate);
 	gpu_task->generator_shader = generator_shader;
 	gpu_task->generator_shader_params = generator->get_block_rendering_shader_parameters();
@@ -346,12 +394,12 @@ void MeshBlockTask::gather_voxels_gpu(zylann::ThreadedTaskContext &ctx) {
 	gpu_task->consumer_task = this;
 
 	const AABB aabb_voxels(to_vec3(origin_in_voxels), to_vec3(_voxels.get_size() << lod_index));
-	std::vector<VoxelModifier::ShaderData> modifiers_shader_data;
+	StdVector<VoxelModifier::ShaderData> modifiers_shader_data;
 	const VoxelModifierStack &modifiers = data->get_modifiers();
 	modifiers.apply_for_gpu_rendering(modifiers_shader_data, aabb_voxels, VoxelModifier::ShaderData::TYPE_BLOCK);
 	for (const VoxelModifier::ShaderData &d : modifiers_shader_data) {
-		gpu_task->modifiers.push_back(
-				GenerateBlockGPUTask::ModifierData{ d.shader_rids[VoxelModifier::ShaderData::TYPE_BLOCK], d.params });
+		gpu_task->modifiers.push_back(GenerateBlockGPUTask::ModifierData{
+				d.shader_rids[VoxelModifier::ShaderData::TYPE_BLOCK], d.params });
 	}
 
 	ctx.status = ThreadedTaskContext::STATUS_TAKEN_OUT;
@@ -360,7 +408,7 @@ void MeshBlockTask::gather_voxels_gpu(zylann::ThreadedTaskContext &ctx) {
 	VoxelEngine::get_singleton().push_gpu_task(gpu_task);
 }
 
-void MeshBlockTask::set_gpu_results(std::vector<GenerateBlockGPUTaskResult> &&results) {
+void MeshBlockTask::set_gpu_results(StdVector<GenerateBlockGPUTaskResult> &&results) {
 	_gpu_generation_results = std::move(results);
 	_stage = 1;
 }
@@ -373,9 +421,19 @@ void MeshBlockTask::gather_voxels_cpu() {
 	const unsigned int min_padding = mesher->get_minimum_padding();
 	const unsigned int max_padding = mesher->get_maximum_padding();
 
-	copy_block_and_neighbors(to_span(blocks, blocks_count), _voxels, min_padding, max_padding,
-			mesher->get_used_channels_mask(), meshing_dependency->generator, *data, lod_index, mesh_block_position,
-			nullptr, nullptr);
+	copy_block_and_neighbors(
+			to_span(blocks, blocks_count),
+			_voxels,
+			min_padding,
+			max_padding,
+			mesher->get_used_channels_mask(),
+			meshing_dependency->generator,
+			*data,
+			lod_index,
+			mesh_block_position,
+			nullptr,
+			nullptr
+	);
 
 	// Could cache generator data from here if it was safe to write into the map
 	/*if (data != nullptr && cache_generated_blocks) {
@@ -399,7 +457,7 @@ void MeshBlockTask::gather_voxels_cpu() {
 					// 		continue;
 					// 	}
 					// }
-					std::shared_ptr<VoxelBufferInternal> &cache_buffer = make_shared_instance<VoxelBufferInternal>();
+					std::shared_ptr<VoxelBuffer> &cache_buffer = make_shared_instance<VoxelBuffer>();
 					cache_buffer->copy_format(voxels);
 					const Vector3i min_src_pos =
 							(bpos - min_bpos) * data_block_size + Vector3iUtil::create(min_padding);
@@ -440,12 +498,12 @@ void MeshBlockTask::build_mesh() {
 	Ref<VoxelMesherTransvoxel> transvoxel_mesher;
 
 	if (require_visual //
-			&& try_get_as(mesher, transvoxel_mesher) //
-			&& detail_texture_settings.enabled //
-			&& !mesh_is_empty //
-			&& lod_index >= detail_texture_settings.begin_lod_index //
-			&& require_detail_texture //
-	) { //
+		&& zylann::godot::try_get_as(mesher, transvoxel_mesher) //
+		&& detail_texture_settings.enabled //
+		&& !mesh_is_empty //
+		&& lod_index >= detail_texture_settings.begin_lod_index //
+		&& require_detail_texture //
+	) {
 		ZN_PROFILE_SCOPE_NAMED("Schedule detail render");
 
 		const transvoxel::MeshArrays &mesh_arrays = VoxelMesherTransvoxel::get_mesh_cache_from_current_thread();
@@ -462,9 +520,10 @@ void MeshBlockTask::build_mesh() {
 
 		RenderDetailTextureTask *nm_task = ZN_NEW(RenderDetailTextureTask);
 		nm_task->cell_iterator = std::move(cell_iterator);
-		nm_task->mesh_vertices = mesh_arrays.vertices;
-		nm_task->mesh_normals = mesh_arrays.normals;
-		nm_task->mesh_indices = mesh_arrays.indices;
+		// Copy mesh data
+		append_array(nm_task->mesh_vertices, mesh_arrays.vertices);
+		append_array(nm_task->mesh_normals, mesh_arrays.normals);
+		append_array(nm_task->mesh_indices, mesh_arrays.indices);
 		if (detail_texture_generator_override.is_valid()) {
 			nm_task->generator = lod_index >= detail_texture_generator_override_begin_lod_index
 					? detail_texture_generator_override
@@ -488,8 +547,18 @@ void MeshBlockTask::build_mesh() {
 
 	if (require_visual && VoxelEngine::get_singleton().is_threaded_graphics_resource_building_enabled()) {
 		// This can only run if the engine supports building meshes from multiple threads
-		_mesh = zylann::voxel::build_mesh(to_span(_surfaces_output.surfaces), _surfaces_output.primitive_type,
-				_surfaces_output.mesh_flags, _mesh_material_indices);
+
+		_mesh = zylann::voxel::build_mesh(
+				to_span(_surfaces_output.surfaces),
+				_surfaces_output.primitive_type,
+				_surfaces_output.mesh_flags,
+				_mesh_material_indices
+		);
+
+		if (_surfaces_output.shadow_occluder.size() > 0) {
+			_shadow_occluder_mesh = zylann::voxel::build_mesh(_surfaces_output.shadow_occluder);
+		}
+
 		_has_mesh_resource = true;
 
 	} else {
@@ -534,6 +603,7 @@ void MeshBlockTask::apply_result() {
 			o.lod = lod_index;
 			o.surfaces = std::move(_surfaces_output);
 			o.mesh = _mesh;
+			o.shadow_occluder_mesh = _shadow_occluder_mesh;
 			o.mesh_material_indices = std::move(_mesh_material_indices);
 			o.has_mesh_resource = _has_mesh_resource;
 			o.visual_was_required = require_visual;

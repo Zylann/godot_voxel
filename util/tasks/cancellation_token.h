@@ -2,7 +2,7 @@
 #define ZN_CANCELLATION_TOKEN_H
 
 #include "../errors.h"
-#include "../memory.h"
+#include "../memory/memory.h"
 #include <atomic>
 
 namespace zylann {

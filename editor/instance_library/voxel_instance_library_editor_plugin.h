@@ -13,8 +13,8 @@ ZN_GODOT_FORWARD_DECLARE(class EditorFileDialog)
 
 namespace zylann::voxel {
 
-class VoxelInstanceLibraryEditorPlugin : public ZN_EditorPlugin {
-	GDCLASS(VoxelInstanceLibraryEditorPlugin, ZN_EditorPlugin)
+class VoxelInstanceLibraryEditorPlugin : public zylann::godot::ZN_EditorPlugin {
+	GDCLASS(VoxelInstanceLibraryEditorPlugin, zylann::godot::ZN_EditorPlugin)
 public:
 #ifdef ZN_GODOT
 	virtual String get_name() const override {

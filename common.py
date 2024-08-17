@@ -3,7 +3,7 @@ import glob
 # Gets sources and configurations that are common to compiling as a module and an extension.
 # For module-specific configuration, see `SCsub`.
 # For extension-specific configuration, see `SConstruct`.
-def get_sources(env, is_editor_build):
+def get_sources(env, is_editor_build, include_tests):
     env.Append(CPPPATH=["."])
 
     env.Append(CPPDEFINES=[
@@ -38,6 +38,7 @@ def get_sources(env, is_editor_build):
         "streams/vox/*.cpp",
 
         "storage/*.cpp",
+        "storage/metadata/*.cpp",
 
         "generators/*.cpp",
         "generators/graph/*.cpp",
@@ -66,9 +67,11 @@ def get_sources(env, is_editor_build):
         "util/*.cpp",
         "util/containers/*.cpp",
         "util/math/*.cpp",
+        "util/memory/*.cpp",
         "util/noise/fast_noise_lite/*.cpp",
         "util/noise/gd_noise_range.cpp",
         "util/noise/spot_noise_gd.cpp",
+        "util/string/*.cpp",
         "util/thread/thread.cpp",
         "util/thread/spatial_lock_2d.cpp",
         "util/thread/spatial_lock_3d.cpp",
@@ -97,6 +100,7 @@ def get_sources(env, is_editor_build):
         "util/godot/direct_mesh_instance.cpp",
         "util/godot/direct_multimesh_instance.cpp",
         "util/godot/direct_static_body.cpp",
+        "util/godot/file_utils.cpp",
         "util/godot/shader_material_pool.cpp",
 
         "util/io/*.cpp",
@@ -123,6 +127,9 @@ def get_sources(env, is_editor_build):
             "editor/blocky_library/types/*.cpp",
             "editor/multipass/*.cpp",
 
+            "util/godot/debug_renderer.cpp",
+            "util/godot/check_ref_ownership.cpp",
+
             "util/godot/classes/editor_plugin.cpp",
             "util/godot/classes/editor_import_plugin.cpp",
             "util/godot/classes/editor_inspector_plugin.cpp",
@@ -130,6 +137,13 @@ def get_sources(env, is_editor_build):
             "util/godot/classes/editor_settings.cpp",
             "util/godot/classes/graph_edit.cpp", # Not editor-only, but only used in editor for now
             "util/godot/classes/graph_node.cpp" # Not editor-only, but only used in editor for now
+        ]
+
+    if include_tests:
+        sources += [
+            "tests/*.cpp",
+            "tests/util/*.cpp",
+            "tests/voxel/*.cpp"
         ]
 
     def process_glob_paths(p_sources):

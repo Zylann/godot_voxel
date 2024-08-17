@@ -1,12 +1,13 @@
 #include "voxel_generator_multipass_cb.h"
-#include "../../engine/voxel_engine.h"
+#include "../../engine/buffered_task_scheduler.h"
+#include "../../util/containers/container_funcs.h"
 #include "../../util/dstack.h"
+#include "../../util/godot/check_ref_ownership.h"
+#include "../../util/godot/classes/time.h"
 #include "../../util/godot/core/array.h"
 #include "../../util/profiling.h"
-#include "../../util/string_funcs.h"
+#include "../../util/string/format.h"
 #include "generate_block_multipass_cb_task.h"
-
-#include "../../util/godot/classes/time.h"
 
 namespace zylann::voxel {
 
@@ -56,27 +57,27 @@ void VoxelGeneratorMultipassCB::generate_block_fallback_script(VoxelQueryData &i
 	}
 
 	// Create a temporary wrapper so Godot can pass it to scripts
-	Ref<gd::VoxelBuffer> buffer_wrapper;
+	Ref<godot::VoxelBuffer> buffer_wrapper(
+			memnew(godot::VoxelBuffer(static_cast<godot::VoxelBuffer::Allocator>(input.voxel_buffer.get_allocator())))
+	);
 	buffer_wrapper.instantiate();
 	buffer_wrapper->get_buffer().copy_format(input.voxel_buffer);
 	buffer_wrapper->get_buffer().create(input.voxel_buffer.get_size());
 
-#if defined(ZN_GODOT)
-	GDVIRTUAL_CALL(_generate_block_fallback, buffer_wrapper, input.origin_in_voxels);
-#else
-	// ERR_PRINT_ONCE("VoxelGeneratorScript::_generate_block is not supported yet in GDExtension!");
-#endif
+	{
+		ZN_GODOT_CHECK_REF_COUNT_DOES_NOT_CHANGE(buffer_wrapper);
+		GDVIRTUAL_CALL(_generate_block_fallback, buffer_wrapper, input.origin_in_voxels);
+	}
+
+	// The wrapper is discarded
+	buffer_wrapper->get_buffer().move_to(input.voxel_buffer);
 }
 
 int VoxelGeneratorMultipassCB::get_used_channels_mask() const {
 	int mask = 0;
-#if defined(ZN_GODOT)
 	if (!GDVIRTUAL_CALL(_get_used_channels_mask, mask)) {
 		// WARN_PRINT_ONCE("VoxelGeneratorScript::_get_used_channels_mask is unimplemented!");
 	}
-#else
-	// ERR_PRINT_ONCE("VoxelGeneratorScript::_get_used_channels_mask is not supported yet in GDExtension!");
-#endif
 	return mask;
 }
 
@@ -90,7 +91,8 @@ void VoxelGeneratorMultipassCB::set_pass_count(int pass_count) {
 	}
 
 	ZN_ASSERT_RETURN_MSG(
-			pass_count > 0 && pass_count <= MAX_PASSES, format("Pass count is limited from {} to {}", 1, MAX_PASSES));
+			pass_count > 0 && pass_count <= MAX_PASSES, format("Pass count is limited from {} to {}", 1, MAX_PASSES)
+	);
 
 	reset_internal([pass_count](Internal &internal) { //
 		internal.passes.resize(pass_count, Pass{ 1 });
@@ -142,8 +144,10 @@ void VoxelGeneratorMultipassCB::set_pass_extent_blocks(int pass_index, int new_e
 		return;
 
 	} else {
-		ZN_ASSERT_RETURN_MSG(new_extent >= 1 && new_extent <= MAX_PASS_EXTENT,
-				format("Pass extents are limited between {} and {}.", 1, MAX_PASS_EXTENT));
+		ZN_ASSERT_RETURN_MSG(
+				new_extent >= 1 && new_extent <= MAX_PASS_EXTENT,
+				format("Pass extents are limited between {} and {}.", 1, MAX_PASS_EXTENT)
+		);
 	}
 
 	reset_internal([pass_index, new_extent](Internal &internal) { //
@@ -179,11 +183,11 @@ inline Vector2i to_vec2i_xz(Vector3i p) {
 }
 
 Box2i to_box2i_in_height_range(Box3i box3, int min_y, int height) {
-	if (box3.pos.y + box3.size.y <= min_y || box3.pos.y >= min_y + height) {
+	if (box3.position.y + box3.size.y <= min_y || box3.position.y >= min_y + height) {
 		// Empty box because it doesn't intersect the height range
-		return Box2i(to_vec2i_xz(box3.pos), Vector2i());
+		return Box2i(to_vec2i_xz(box3.position), Vector2i());
 	}
-	return Box2i(to_vec2i_xz(box3.pos), to_vec2i_xz(box3.size));
+	return Box2i(to_vec2i_xz(box3.position), to_vec2i_xz(box3.size));
 }
 
 } // namespace
@@ -193,14 +197,16 @@ void VoxelGeneratorMultipassCB::generate_pass(PassInput input) {
 
 	// Note: must not access _internal from here, only use `input`
 
-	Variant v = get_script();
 	if (get_script() != Variant()) {
 		// TODO Cache it?
 		Ref<VoxelToolMultipassGenerator> vt;
 		vt.instantiate();
 		vt->set_pass_input(input);
-		call("_generate_pass", vt, input.pass_index);
-		// GDVIRTUAL_CALL(_generate_pass, vt, input.pass_index);
+
+		{
+			ZN_GODOT_CHECK_REF_COUNT_DOES_NOT_CHANGE(vt);
+			GDVIRTUAL_CALL(_generate_pass, vt, input.pass_index);
+		}
 
 		{
 			ZN_PROFILE_SCOPE_NAMED("Compress uniform blocks");
@@ -257,7 +263,8 @@ void VoxelGeneratorMultipassCB::process_viewer_diff_internal(Box3i p_requested_b
 	const Box2i requested_box_2d =
 			to_box2i_in_height_range(p_requested_box, internal->column_base_y_blocks, internal->column_height_blocks);
 	const Box2i prev_requested_box_2d = to_box2i_in_height_range(
-			p_prev_requested_box, internal->column_base_y_blocks, internal->column_height_blocks);
+			p_prev_requested_box, internal->column_base_y_blocks, internal->column_height_blocks
+	);
 
 	// println(format("R {} {} {} {} {}", requested_box_2d.pos.x, requested_box_2d.pos.y, requested_box_2d.size.x,
 	// 		requested_box_2d.size.y, Time::get_singleton()->get_ticks_usec()));
@@ -367,7 +374,7 @@ void VoxelGeneratorMultipassCB::clear_cache() {
 	*/
 }
 
-bool VoxelGeneratorMultipassCB::debug_try_get_column_states(std::vector<DebugColumnState> &out_states) {
+bool VoxelGeneratorMultipassCB::debug_try_get_column_states(StdVector<DebugColumnState> &out_states) {
 	ZN_PROFILE_SCOPE();
 
 	out_states.clear();
@@ -406,13 +413,14 @@ bool VoxelGeneratorMultipassCB::debug_try_get_column_states(std::vector<DebugCol
 void VoxelGeneratorMultipassCB::get_configuration_warnings(PackedStringArray &out_warnings) const {
 	if (get_script() == Variant()) {
 		out_warnings.append(
-				String("{0} needs a script implementing `_generate_pass`.").format(varray(get_class_static())));
+				String("{0} needs a script implementing `_generate_pass`.").format(varray(get_class_static()))
+		);
 	}
 }
 
 #endif
 
-TypedArray<gd::VoxelBuffer> VoxelGeneratorMultipassCB::debug_generate_test_column(Vector2i column_position_blocks) {
+TypedArray<godot::VoxelBuffer> VoxelGeneratorMultipassCB::debug_generate_test_column(Vector2i column_position_blocks) {
 	// struct L {
 	// 	static void debug_print_blocks_with_stone(const Column &column, unsigned int column_index) {
 	// 		for (unsigned int block_index = 0; block_index < column.blocks.size(); ++block_index) {
@@ -436,7 +444,7 @@ TypedArray<gd::VoxelBuffer> VoxelGeneratorMultipassCB::debug_generate_test_colum
 	// 		}
 	// 	}
 
-	// 	static void debug_print_blocks_with_stone(const std::vector<Column> &columns) {
+	// 	static void debug_print_blocks_with_stone(const StdVector<Column> &columns) {
 	// 		for (unsigned int column_index = 0; column_index < columns.size(); ++column_index) {
 	// 			const Column &column = columns[column_index];
 	// 			debug_print_blocks_with_stone(column, column_index);
@@ -458,7 +466,7 @@ TypedArray<gd::VoxelBuffer> VoxelGeneratorMultipassCB::debug_generate_test_colum
 	const int subpass_count = get_subpass_count_from_pass_count(internal->passes.size());
 	Box2i local_box(Vector2i(), grid_size);
 
-	std::vector<Column> columns;
+	StdVector<Column> columns;
 	columns.resize(Vector2iUtil::get_area(grid_size));
 
 	for (Column &column : columns) {
@@ -474,47 +482,52 @@ TypedArray<gd::VoxelBuffer> VoxelGeneratorMultipassCB::debug_generate_test_colum
 		const Pass &pass = internal->passes[pass_index];
 		const int extent = pass.dependency_extents;
 
-		local_box.for_each_cell_yx([extent, &columns, grid_size, grid_origin, internal, pass_index, prev_pass_index,
-										   &generator](Vector2i local_bpos) {
-			if (pass_index == 0 || pass_index != prev_pass_index) {
-				const Box2i nbox = Box2i(local_bpos, Vector2i(1, 1)).padded(extent);
+		local_box.for_each_cell_yx(
+				[extent, &columns, grid_size, grid_origin, internal, pass_index, prev_pass_index, &generator](
+						Vector2i local_bpos
+				) {
+					if (pass_index == 0 || pass_index != prev_pass_index) {
+						const Box2i nbox = Box2i(local_bpos, Vector2i(1, 1)).padded(extent);
 
-				std::vector<Block *> ngrid;
-				ngrid.reserve(Vector2iUtil::get_area(nbox.size));
+						StdVector<Block *> ngrid;
+						ngrid.reserve(Vector2iUtil::get_area(nbox.size));
 
-				// Compose grid of blocks indexed as ZXY (index+1 goes up along Y).
-				// ZXY indexing is convenient here, since columns are indexed with YX (aka ZX, because Y in 2D is Z
-				// in 3D)
-				nbox.for_each_cell_yx([&ngrid, &columns, grid_size](Vector2i cpos) {
-					const int src_loc = Vector2iUtil::get_yx_index(cpos, grid_size);
-					Column &column = columns[src_loc];
-					for (Block &block : column.blocks) {
-						ngrid.push_back(&block);
+						// Compose grid of blocks indexed as ZXY (index+1 goes up along Y).
+						// ZXY indexing is convenient here, since columns are indexed with YX (aka ZX, because Y in 2D
+						// is Z in 3D)
+						nbox.for_each_cell_yx([&ngrid, &columns, grid_size](Vector2i cpos) {
+							const int src_loc = Vector2iUtil::get_yx_index(cpos, grid_size);
+							Column &column = columns[src_loc];
+							for (Block &block : column.blocks) {
+								ngrid.push_back(&block);
+							}
+						});
+
+						const Vector2i grid_origin_2d = grid_origin + nbox.position;
+						const Vector2i main_origin_2d =
+								grid_origin_2d + Vector2iUtil::create(extent); // grid_origin + local_bpos
+
+						PassInput pass_input;
+						pass_input.grid = to_span(ngrid);
+						pass_input.grid_origin =
+								Vector3i(grid_origin_2d.x, internal->column_base_y_blocks, grid_origin_2d.y);
+						pass_input.grid_size = Vector3i(nbox.size.x, internal->column_height_blocks, nbox.size.y);
+						pass_input.pass_index = pass_index;
+						pass_input.main_block_position =
+								Vector3i(main_origin_2d.x, pass_input.grid_origin.y, main_origin_2d.y);
+						pass_input.block_size = 1 << constants::DEFAULT_BLOCK_SIZE_PO2;
+						generator.generate_pass(pass_input);
+
+						// if (pass_index == 1) {
+						// 	L::debug_print_blocks_with_stone(columns);
+						// }
 					}
-				});
 
-				const Vector2i grid_origin_2d = grid_origin + nbox.pos;
-				const Vector2i main_origin_2d =
-						grid_origin_2d + Vector2iUtil::create(extent); // grid_origin + local_bpos
-
-				PassInput pass_input;
-				pass_input.grid = to_span(ngrid);
-				pass_input.grid_origin = Vector3i(grid_origin_2d.x, internal->column_base_y_blocks, grid_origin_2d.y);
-				pass_input.grid_size = Vector3i(nbox.size.x, internal->column_height_blocks, nbox.size.y);
-				pass_input.pass_index = pass_index;
-				pass_input.main_block_position = Vector3i(main_origin_2d.x, pass_input.grid_origin.y, main_origin_2d.y);
-				pass_input.block_size = 1 << constants::DEFAULT_BLOCK_SIZE_PO2;
-				generator.generate_pass(pass_input);
-
-				// if (pass_index == 1) {
-				// 	L::debug_print_blocks_with_stone(columns);
-				// }
-			}
-
-			// Skipping control fields on Column since we are doing this single-threaded in isolation. However if
-			// one day we migrate this to work directly on the cache, we will have to update them (that also means
-			// it will have race conditions)
-		});
+					// Skipping control fields on Column since we are doing this single-threaded in isolation. However
+					// if one day we migrate this to work directly on the cache, we will have to update them (that also
+					// means it will have race conditions)
+				}
+		);
 
 		const int next_pass_index = get_pass_index_from_subpass(subpass_index + 1);
 		const Pass &next_pass = internal->passes[next_pass_index];
@@ -527,11 +540,11 @@ TypedArray<gd::VoxelBuffer> VoxelGeneratorMultipassCB::debug_generate_test_colum
 	// L::debug_print_blocks_with_stone(final_column, final_column_loc);
 
 	// Wrap up result for script API
-	TypedArray<gd::VoxelBuffer> column_ta;
+	TypedArray<godot::VoxelBuffer> column_ta;
 	column_ta.resize(final_column.blocks.size());
 	for (unsigned int i = 0; i < final_column.blocks.size(); ++i) {
 		Block &block = final_column.blocks[i];
-		Ref<gd::VoxelBuffer> buffer;
+		Ref<godot::VoxelBuffer> buffer;
 		buffer.instantiate();
 		block.voxels.move_to(buffer->get_buffer());
 		column_ta[i] = buffer;
@@ -546,7 +559,7 @@ bool VoxelGeneratorMultipassCB::_set(const StringName &p_name, const Variant &p_
 	const String property_name = p_name;
 
 	if (property_name.begins_with("pass_")) {
-		const int index_pos = ZN_ARRAY_LENGTH("pass_") - 1; // -1 to exclude the '\0'
+		const int index_pos = string_literal_length("pass_");
 		const int index_end_pos = property_name.find("_", index_pos);
 		const int index = property_name.substr(index_pos, index_end_pos - index_pos).to_int();
 
@@ -564,7 +577,7 @@ bool VoxelGeneratorMultipassCB::_get(const StringName &p_name, Variant &r_ret) c
 	const String property_name = p_name;
 
 	if (property_name.begins_with("pass_")) {
-		const int index_pos = ZN_ARRAY_LENGTH("pass_") - 1; // -1 to exclude the '\0'
+		const int index_pos = string_literal_length("pass_");
 		const int index_end_pos = property_name.find("_", index_pos);
 		const int index = property_name.substr(index_pos, index_end_pos - index_pos).to_int();
 
@@ -587,7 +600,8 @@ void VoxelGeneratorMultipassCB::_get_property_list(List<PropertyInfo> *p_list) c
 
 		if (pass_index == 0) {
 			p_list->push_back(PropertyInfo(
-					Variant::INT, pname, PROPERTY_HINT_NONE, "", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_READ_ONLY));
+					Variant::INT, pname, PROPERTY_HINT_NONE, "", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_READ_ONLY
+			));
 		} else {
 			p_list->push_back(PropertyInfo(Variant::INT, pname, PROPERTY_HINT_RANGE, pass_extent_range_hint_string));
 		}
@@ -599,20 +613,27 @@ void VoxelGeneratorMultipassCB::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_pass_count", "count"), &VoxelGeneratorMultipassCB::set_pass_count);
 
 	ClassDB::bind_method(
-			D_METHOD("get_pass_extent_blocks", "pass_index"), &VoxelGeneratorMultipassCB::get_pass_extent_blocks);
-	ClassDB::bind_method(D_METHOD("set_pass_extent_blocks", "pass_index", "extent"),
-			&VoxelGeneratorMultipassCB::set_pass_extent_blocks);
+			D_METHOD("get_pass_extent_blocks", "pass_index"), &VoxelGeneratorMultipassCB::get_pass_extent_blocks
+	);
+	ClassDB::bind_method(
+			D_METHOD("set_pass_extent_blocks", "pass_index", "extent"),
+			&VoxelGeneratorMultipassCB::set_pass_extent_blocks
+	);
 
 	ClassDB::bind_method(D_METHOD("get_column_base_y_blocks"), &VoxelGeneratorMultipassCB::get_column_base_y_blocks);
 	ClassDB::bind_method(
-			D_METHOD("set_column_base_y_blocks", "y"), &VoxelGeneratorMultipassCB::set_column_base_y_blocks);
+			D_METHOD("set_column_base_y_blocks", "y"), &VoxelGeneratorMultipassCB::set_column_base_y_blocks
+	);
 
 	ClassDB::bind_method(D_METHOD("get_column_height_blocks"), &VoxelGeneratorMultipassCB::get_column_height_blocks);
 	ClassDB::bind_method(
-			D_METHOD("set_column_height_blocks", "y"), &VoxelGeneratorMultipassCB::set_column_height_blocks);
+			D_METHOD("set_column_height_blocks", "y"), &VoxelGeneratorMultipassCB::set_column_height_blocks
+	);
 
-	ClassDB::bind_method(D_METHOD("debug_generate_test_column", "column_position_blocks"),
-			&VoxelGeneratorMultipassCB::debug_generate_test_column);
+	ClassDB::bind_method(
+			D_METHOD("debug_generate_test_column", "column_position_blocks"),
+			&VoxelGeneratorMultipassCB::debug_generate_test_column
+	);
 
 #if defined(ZN_GODOT)
 	// TODO Test if GDVIRTUAL can print errors properly when GDScript fails inside a different thread.
@@ -622,14 +643,20 @@ void VoxelGeneratorMultipassCB::_bind_methods() {
 #endif
 
 	ADD_PROPERTY(
-			PropertyInfo(Variant::INT, "column_base_y_blocks"), "set_column_base_y_blocks", "get_column_base_y_blocks");
+			PropertyInfo(Variant::INT, "column_base_y_blocks"), "set_column_base_y_blocks", "get_column_base_y_blocks"
+	);
 
 	ADD_PROPERTY(
-			PropertyInfo(Variant::INT, "column_height_blocks"), "set_column_height_blocks", "get_column_height_blocks");
+			PropertyInfo(Variant::INT, "column_height_blocks"), "set_column_height_blocks", "get_column_height_blocks"
+	);
 
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "pass_count", PROPERTY_HINT_RANGE,
-						 String("{0},{1}").format(varray(1, MAX_PASSES))),
-			"set_pass_count", "get_pass_count");
+	ADD_PROPERTY(
+			PropertyInfo(
+					Variant::INT, "pass_count", PROPERTY_HINT_RANGE, String("{0},{1}").format(varray(1, MAX_PASSES))
+			),
+			"set_pass_count",
+			"get_pass_count"
+	);
 
 	BIND_CONSTANT(MAX_PASSES);
 	BIND_CONSTANT(MAX_PASS_EXTENT);

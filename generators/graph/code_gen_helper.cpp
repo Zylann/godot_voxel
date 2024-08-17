@@ -1,15 +1,14 @@
 #include "code_gen_helper.h"
 #include "../../util/containers/fixed_array.h"
 #include "../../util/errors.h"
-#include "../../util/string_funcs.h"
+#include "../../util/string/format.h"
 
 #include <cstring>
 #include <sstream>
 
 namespace zylann {
 
-CodeGenHelper::CodeGenHelper(std::stringstream &main_ss, std::stringstream &lib_ss) :
-		_main_ss(main_ss), _lib_ss(lib_ss) {}
+CodeGenHelper::CodeGenHelper(StdStringStream &main_ss, StdStringStream &lib_ss) : _main_ss(main_ss), _lib_ss(lib_ss) {}
 
 void CodeGenHelper::indent() {
 	++_indent_level;
@@ -90,7 +89,7 @@ void CodeGenHelper::require_lib_code(const char *lib_name, const char **code) {
 }
 
 void CodeGenHelper::generate_var_name(FwdMutableStdString out_var_name) {
-	const std::string s = format("v{}", _next_var_name_id);
+	const StdString s = format("v{}", _next_var_name_id);
 	++_next_var_name_id;
 	out_var_name.s = s;
 }

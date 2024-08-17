@@ -30,6 +30,20 @@ public:
 	void set_occlusion_enabled(bool enable);
 	bool get_occlusion_enabled() const;
 
+	enum Side {
+		SIDE_NEGATIVE_X = 0,
+		SIDE_POSITIVE_X,
+		SIDE_NEGATIVE_Y,
+		SIDE_POSITIVE_Y,
+		SIDE_NEGATIVE_Z,
+		SIDE_POSITIVE_Z,
+		SIDE_COUNT
+	};
+
+	void set_shadow_occluder_side(Side side, bool enabled);
+	bool get_shadow_occluder_side(Side side) const;
+	uint8_t get_shadow_occluder_mask() const;
+
 	void build(VoxelMesher::Output &output, const VoxelMesher::Input &input) override;
 
 	// TODO GDX: Resource::duplicate() cannot be overriden (while it can in modules).
@@ -47,16 +61,17 @@ public:
 	}
 
 	Ref<Material> get_material_by_index(unsigned int index) const override;
+	unsigned int get_material_index_count() const override;
 
 	// Using std::vector because they make this mesher twice as fast than Godot Vectors.
 	// See why: https://github.com/godotengine/godot/issues/24731
 	struct Arrays {
-		std::vector<Vector3f> positions;
-		std::vector<Vector3f> normals;
-		std::vector<Vector2f> uvs;
-		std::vector<Color> colors;
-		std::vector<int> indices;
-		std::vector<float> tangents;
+		StdVector<Vector3f> positions;
+		StdVector<Vector3f> normals;
+		StdVector<Vector2f> uvs;
+		StdVector<Color> colors;
+		StdVector<int> indices;
+		StdVector<float> tangents;
 
 		void clear() {
 			positions.clear();
@@ -83,11 +98,12 @@ private:
 	struct Parameters {
 		float baked_occlusion_darkness = 0.8;
 		bool bake_occlusion = true;
+		uint8_t shadow_occluders_mask = 0;
 		Ref<VoxelBlockyLibraryBase> library;
 	};
 
 	struct Cache {
-		std::vector<Arrays> arrays_per_material;
+		StdVector<Arrays> arrays_per_material;
 	};
 
 	// Parameters
@@ -99,5 +115,7 @@ private:
 };
 
 } // namespace zylann::voxel
+
+VARIANT_ENUM_CAST(zylann::voxel::VoxelMesherBlocky::Side)
 
 #endif // VOXEL_MESHER_BLOCKY_H

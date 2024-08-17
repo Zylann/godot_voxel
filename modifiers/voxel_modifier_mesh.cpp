@@ -17,7 +17,7 @@ void VoxelModifierMesh::set_mesh_sdf(Ref<VoxelMeshSDF> mesh_sdf) {
 
 void VoxelModifierMesh::set_isolevel(float isolevel) {
 	RWLockWrite wlock(_rwlock);
-	if (isolevel == isolevel) {
+	if (_isolevel == isolevel) {
 		return;
 	}
 	_isolevel = isolevel;
@@ -34,11 +34,11 @@ void VoxelModifierMesh::apply(VoxelModifierContext ctx) const {
 	if (_mesh_sdf.is_null()) {
 		return;
 	}
-	Ref<gd::VoxelBuffer> voxel_buffer_gd = _mesh_sdf->get_voxel_buffer();
+	Ref<godot::VoxelBuffer> voxel_buffer_gd = _mesh_sdf->get_voxel_buffer();
 	if (voxel_buffer_gd.is_null()) {
 		return;
 	}
-	const VoxelBufferInternal &buffer = voxel_buffer_gd->get_buffer();
+	const VoxelBuffer &buffer = voxel_buffer_gd->get_buffer();
 
 	// TODO VoxelMeshSDF isn't preventing scripts from writing into this buffer from a different thread.
 	// I can't think of a reason to manually modify the buffer of a VoxelMeshSDF at the moment.
@@ -52,7 +52,7 @@ void VoxelModifierMesh::apply(VoxelModifierContext ctx) const {
 	const Transform3D buffer_to_world = model_to_world * buffer_to_model;
 
 	Span<const float> buffer_sdf;
-	ZN_ASSERT_RETURN(buffer.get_channel_data(VoxelBufferInternal::CHANNEL_SDF, buffer_sdf));
+	ZN_ASSERT_RETURN(buffer.get_channel_data_read_only(VoxelBuffer::CHANNEL_SDF, buffer_sdf));
 	const float smoothness = get_smoothness();
 
 	ops::SdfBufferShape shape;
@@ -116,7 +116,7 @@ void VoxelModifierMesh::get_shader_data(ShaderData &out_shader_data) {
 		mesh_params.model_to_buffer_translation = min_pos;
 		mesh_params.isolevel = _isolevel;
 		PackedByteArray pba;
-		copy_bytes_to(pba, mesh_params);
+		zylann::godot::copy_bytes_to(pba, mesh_params);
 
 		if (_shader_data->params.size() < 3) {
 			std::shared_ptr<ComputeShaderResource> params_res = make_shared_instance<ComputeShaderResource>();

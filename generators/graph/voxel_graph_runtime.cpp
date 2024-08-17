@@ -4,13 +4,14 @@
 #include "../../util/io/log.h"
 #include "../../util/macros.h"
 #include "../../util/profiling.h"
-#include "../../util/string_funcs.h"
+#include "../../util/string/format.h"
 #ifdef TOOLS_ENABLED
 #include "../../util/profiling_clock.h"
 #endif
 #include "node_type_db.h"
 #include "voxel_generator_graph.h"
 
+#include <sstream>
 #include <unordered_set>
 
 //#ifdef DEBUG_ENABLED
@@ -31,7 +32,9 @@ void Runtime::clear() {
 	_program.clear();
 }
 
-static Span<const uint16_t> get_outputs_from_op_address(Span<const uint16_t> operations, uint16_t op_address) {
+namespace {
+
+Span<const uint16_t> get_outputs_from_op_address(Span<const uint16_t> operations, uint16_t op_address) {
 	const uint16_t opid = operations[op_address];
 	const NodeType &node_type = NodeTypeDB::get_singleton().get_type(opid);
 
@@ -41,6 +44,8 @@ static Span<const uint16_t> get_outputs_from_op_address(Span<const uint16_t> ope
 	// The +1 is for `opid`
 	return operations.sub(op_address + 1 + inputs_count, outputs_count);
 }
+
+} // namespace
 
 bool Runtime::is_operation_constant(const State &state, uint16_t op_address) const {
 	Span<const uint16_t> outputs = get_outputs_from_op_address(to_span_const(_program.operations), op_address);
@@ -93,7 +98,7 @@ void Runtime::generate_optimized_execution_map(
 	// }
 
 	// This function will run a lot of times so better re-use the same vector
-	static thread_local std::vector<uint16_t> to_process;
+	static thread_local StdVector<uint16_t> to_process;
 	to_process.clear();
 
 	for (unsigned int i = 0; i < required_outputs.size(); ++i) {
@@ -104,7 +109,7 @@ void Runtime::generate_optimized_execution_map(
 
 	enum ProcessResult { NOT_PROCESSED, SKIPPABLE, REQUIRED };
 
-	static thread_local std::vector<ProcessResult> results;
+	static thread_local StdVector<ProcessResult> results;
 	results.clear();
 	results.resize(graph.nodes.size(), NOT_PROCESSED);
 
@@ -143,7 +148,7 @@ void Runtime::generate_optimized_execution_map(
 	}
 
 	if (debug) {
-		std::vector<uint32_t> &debug_nodes = execution_map.debug_nodes;
+		StdVector<uint32_t> &debug_nodes = execution_map.debug_nodes;
 		ZN_ASSERT(debug_nodes.size() == 0);
 
 		for (unsigned int node_index = 0; node_index < graph.nodes.size(); ++node_index) {
@@ -170,7 +175,7 @@ void Runtime::generate_optimized_execution_map(
 	Span<const uint16_t> operations(program.operations.data(), 0, program.operations.size());
 	bool inner_group_start_not_assigned = true;
 
-	static thread_local std::vector<ExecutionMap::ConstantFill> tls_constant_fills;
+	static thread_local StdVector<ExecutionMap::ConstantFill> tls_constant_fills;
 	tls_constant_fills.clear();
 
 	// Now we have to fill buffers with the local constants we may have found.
@@ -273,7 +278,7 @@ void Runtime::prepare_state(State &state, unsigned int buffer_size, bool with_pr
 			BufferData &bd = state.buffer_datas[i];
 			ZN_ASSERT(bd.data == nullptr);
 			// These are new items, we always allocate.
-			bd.data = reinterpret_cast<float *>(memalloc(buffer_size * sizeof(float)));
+			bd.data = reinterpret_cast<float *>(ZN_ALLOC(buffer_size * sizeof(float)));
 			bd.capacity = buffer_size;
 		}
 	}
@@ -285,7 +290,7 @@ void Runtime::prepare_state(State &state, unsigned int buffer_size, bool with_pr
 			ZN_ASSERT(bd.data != nullptr);
 			if (bd.capacity < buffer_size) {
 				// These are existing items, we always realloc.
-				bd.data = reinterpret_cast<float *>(memrealloc(bd.data, buffer_size * sizeof(float)));
+				bd.data = reinterpret_cast<float *>(ZN_REALLOC(bd.data, buffer_size * sizeof(float)));
 				bd.capacity = buffer_size;
 			}
 		}
@@ -379,7 +384,9 @@ void Runtime::prepare_state(State &state, unsigned int buffer_size, bool with_pr
 	}
 }
 
-static inline Span<const uint8_t> read_params(Span<const uint16_t> operations, unsigned int &pc) {
+namespace {
+
+inline Span<const uint8_t> read_params(Span<const uint16_t> operations, unsigned int &pc) {
 	const uint16_t params_size_in_words = operations[pc];
 	++pc;
 	Span<const uint8_t> params;
@@ -392,6 +399,8 @@ static inline Span<const uint8_t> read_params(Span<const uint16_t> operations, u
 	}
 	return params;
 }
+
+} // namespace
 
 void Runtime::generate_set(
 		State &state, Span<Span<float>> p_inputs, bool skip_outer_group, const ExecutionMap *p_execution_map) const {
@@ -572,7 +581,7 @@ void Runtime::analyze_range(State &state, Span<math::Interval> p_inputs) const {
 void Runtime::debug_print_operations() {
 	const Span<const uint16_t> operations(_program.operations.data(), 0, _program.operations.size());
 
-	std::stringstream ss;
+	StdStringStream ss;
 	unsigned int op_index = 0;
 	uint32_t pc = 0;
 	while (pc < operations.size()) {
@@ -587,7 +596,7 @@ void Runtime::debug_print_operations() {
 		const Span<const uint16_t> outputs = operations.sub(pc, outputs_count);
 		pc += outputs_count;
 
-		/*Span<const uint8_t> params = */ read_params(operations, pc);
+		Span<const uint8_t> params = read_params(operations, pc);
 
 		ss << "[";
 		ss << op_index;
@@ -607,12 +616,15 @@ void Runtime::debug_print_operations() {
 			}
 			ss << int(outputs[i]);
 		}
-		ss << ")\n";
+		ss << ") ";
+		ss << "params(";
+		ss << params.size();
+		ss << "b)\n";
 
 		++op_index;
 	}
 
-	println(ss.str());
+	print_line(ss.str());
 }
 
 #endif

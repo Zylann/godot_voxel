@@ -13,7 +13,7 @@ using namespace godot;
 
 ZN_GODOT_FORWARD_DECLARE(class RDShaderSource)
 
-namespace zylann {
+namespace zylann::godot {
 
 void free_rendering_device_rid(RenderingDevice &rd, RID rid);
 
@@ -29,6 +29,6 @@ RID sampler_create(RenderingDevice &rd, const RDSamplerState &sampler_state);
 Error update_storage_buffer(
 		RenderingDevice &rd, RID rid, unsigned int offset, unsigned int size, const PackedByteArray &pba);
 
-} // namespace zylann
+} // namespace zylann::godot
 
 #endif // ZN_GODOT_RENDERING_DEVICE_H

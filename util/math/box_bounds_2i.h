@@ -1,6 +1,7 @@
 #ifndef ZN_BOX_BOUNDS_2I_H
 #define ZN_BOX_BOUNDS_2I_H
 
+#include "../string/std_stringstream.h"
 #include "box2i.h"
 
 namespace zylann {
@@ -15,7 +16,7 @@ struct BoxBounds2i {
 
 	BoxBounds2i(Vector2i p_min, Vector2i p_max) : min_pos(p_min), max_pos(p_max) {}
 
-	BoxBounds2i(Box2i box) : min_pos(box.pos), max_pos(box.pos + box.size) {}
+	BoxBounds2i(Box2i box) : min_pos(box.position), max_pos(box.position + box.size) {}
 
 	static BoxBounds2i from_position_size(Vector2i pos, Vector2i size) {
 		return BoxBounds2i(pos, pos + size);
@@ -30,9 +31,10 @@ struct BoxBounds2i {
 	}
 
 	static BoxBounds2i from_everywhere() {
-		return BoxBounds2i( //
+		return BoxBounds2i(
 				Vector2iUtil::create(std::numeric_limits<int>::min()),
-				Vector2iUtil::create(std::numeric_limits<int>::max()));
+				Vector2iUtil::create(std::numeric_limits<int>::max())
+		);
 	}
 
 	inline bool intersects(const BoxBounds2i &other) const {
@@ -40,7 +42,8 @@ struct BoxBounds2i {
 				max_pos.x < other.min_pos.x || //
 				max_pos.y < other.min_pos.y || //
 				min_pos.x > other.max_pos.x || //
-				min_pos.y > other.max_pos.y);
+				min_pos.y > other.max_pos.y
+		);
 	}
 
 	inline bool operator==(const BoxBounds2i &other) const {
@@ -56,7 +59,7 @@ struct BoxBounds2i {
 	}
 };
 
-std::stringstream &operator<<(std::stringstream &ss, const BoxBounds2i &box);
+StdStringStream &operator<<(StdStringStream &ss, const BoxBounds2i &box);
 
 } // namespace zylann
 

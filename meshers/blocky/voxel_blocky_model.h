@@ -3,14 +3,13 @@
 
 #include "../../constants/cube_tables.h"
 #include "../../util/containers/fixed_array.h"
+#include "../../util/containers/std_vector.h"
 #include "../../util/godot/classes/material.h"
 #include "../../util/godot/classes/mesh.h"
 #include "../../util/macros.h"
 #include "../../util/math/ortho_basis.h"
 #include "../../util/math/vector2f.h"
 #include "../../util/math/vector3f.h"
-
-#include <vector>
 
 namespace zylann::voxel {
 
@@ -31,20 +30,32 @@ public:
 	// while the configuration that produced the data can be changed by the user at any time.
 	// Also, it is lighter than Godot resources.
 	struct BakedData {
+		struct SideSurface {
+			StdVector<Vector3f> positions;
+			StdVector<Vector2f> uvs;
+			StdVector<int> indices;
+			StdVector<float> tangents;
+			// Normals aren't stored because they are assumed to be the same for the whole side
+
+			void clear() {
+				positions.clear();
+				uvs.clear();
+				indices.clear();
+				tangents.clear();
+			}
+		};
+
 		struct Surface {
 			// Inside part of the model.
-			std::vector<Vector3f> positions;
-			std::vector<Vector3f> normals;
-			std::vector<Vector2f> uvs;
-			std::vector<int> indices;
-			std::vector<float> tangents;
+			StdVector<Vector3f> positions;
+			StdVector<Vector3f> normals;
+			StdVector<Vector2f> uvs;
+			StdVector<int> indices;
+			StdVector<float> tangents;
 			// Model sides:
 			// They are separated because this way we can occlude them easily.
 			// Due to these defining cube side triangles, normals are known already.
-			FixedArray<std::vector<Vector3f>, Cube::SIDE_COUNT> side_positions;
-			FixedArray<std::vector<Vector2f>, Cube::SIDE_COUNT> side_uvs;
-			FixedArray<std::vector<int>, Cube::SIDE_COUNT> side_indices;
-			FixedArray<std::vector<float>, Cube::SIDE_COUNT> side_tangents;
+			FixedArray<SideSurface, Cube::SIDE_COUNT> sides;
 
 			uint32_t material_id = 0;
 			bool collision_enabled = true;
@@ -56,11 +67,8 @@ public:
 				indices.clear();
 				tangents.clear();
 
-				for (int side = 0; side < Cube::SIDE_COUNT; ++side) {
-					side_positions[side].clear();
-					side_uvs[side].clear();
-					side_indices[side].clear();
-					side_tangents[side].clear();
+				for (SideSurface &side : sides) {
+					side.clear();
 				}
 			}
 		};
@@ -72,12 +80,20 @@ public:
 			// If more is needed or profiling tells better, we could change it to a vector?
 			FixedArray<Surface, MAX_SURFACES> surfaces;
 			unsigned int surface_count = 0;
-			// Cached information to check this case early
+			// Cached information to check this case early.
+			// Bits are indexed with the Cube::Side enum.
 			uint8_t empty_sides_mask = 0;
+			uint8_t full_sides_mask = 0;
 
 			// Tells what is the "shape" of each side in order to cull them quickly when in contact with neighbors.
 			// Side patterns are still determined based on a combination of all surfaces.
 			FixedArray<uint32_t, Cube::SIDE_COUNT> side_pattern_indices;
+			// Side culling is all or nothing.
+			// If we want to support partial culling with baked models (needed if you do fluids with "staircase"
+			// models), we would need another lookup table that given two side patterns, outputs alternate geometry data
+			// that is pre-cut. This would require a lot more data and precomputations though, and the cases in
+			// which this is needed could make use of different approaches such as procedural generation of the
+			// geometry.
 
 			void clear() {
 				for (unsigned int i = 0; i < surfaces.size(); ++i) {
@@ -96,7 +112,7 @@ public:
 		bool is_transparent;
 
 		uint32_t box_collision_mask;
-		std::vector<AABB> box_collision_aabbs;
+		StdVector<AABB> box_collision_aabbs;
 
 		inline void clear() {
 			model.clear();
@@ -125,15 +141,10 @@ public:
 
 	void set_material_override(int index, Ref<Material> material);
 	Ref<Material> get_material_override(int index) const;
+	bool has_material_override() const;
 
 	void set_mesh_collision_enabled(int surface_index, bool enabled);
 	bool is_mesh_collision_enabled(int surface_index) const;
-
-	// TODO Might become obsoleted by transparency index
-	void set_transparent(bool t = true);
-	_FORCE_INLINE_ bool is_transparent() const {
-		return _transparency_index != 0;
-	}
 
 	void set_transparency_index(int i);
 	int get_transparency_index() const {
@@ -163,7 +174,7 @@ public:
 	virtual bool is_empty() const;
 
 	struct MaterialIndexer {
-		std::vector<Ref<Material>> &materials;
+		StdVector<Ref<Material>> &materials;
 
 		unsigned int get_or_create_index(const Ref<Material> &p_material);
 	};
@@ -230,7 +241,7 @@ protected:
 	unsigned int _surface_count = 0;
 
 	// Used for AABB physics only, not classic physics
-	std::vector<AABB> _collision_aabbs;
+	StdVector<AABB> _collision_aabbs;
 	uint32_t _collision_mask = 1;
 
 private:

@@ -1,8 +1,9 @@
 #include "voxel_memory_pool.h"
 #include "../util/macros.h"
-#include "../util/memory.h"
+#include "../util/memory/memory.h"
 #include "../util/profiling.h"
-#include "../util/string_funcs.h"
+#include "../util/string/format.h"
+#include "../util/string/std_string.h"
 
 namespace zylann::voxel {
 
@@ -18,9 +19,11 @@ void VoxelMemoryPool::create_singleton() {
 void VoxelMemoryPool::destroy_singleton() {
 	const unsigned int used_blocks = VoxelMemoryPool::get_singleton().debug_get_used_blocks();
 	if (used_blocks > 0) {
-		ZN_PRINT_ERROR(format("VoxelMemoryPool: "
-							  "{} memory blocks are still used when unregistering the module. Recycling leak?",
-				used_blocks));
+		ZN_PRINT_ERROR(
+				format("VoxelMemoryPool: "
+					   "{} memory blocks are still used when unregistering the module. Recycling leak?",
+					   used_blocks)
+		);
 #ifdef DEBUG_ENABLED
 		VoxelMemoryPool::get_singleton().debug_print_used_blocks(10);
 #endif
@@ -35,8 +38,12 @@ void VoxelMemoryPool::destroy_singleton() {
 #ifdef DEBUG_ENABLED
 void VoxelMemoryPool::debug_print_used_blocks(unsigned int max_count) {
 	struct L {
-		static void debug_print_used_blocks(const VoxelMemoryPool::DebugUsedBlocks &debug_used_blocks,
-				unsigned int &count, unsigned int max_count, size_t mem_size) {
+		static void debug_print_used_blocks(
+				const VoxelMemoryPool::DebugUsedBlocks &debug_used_blocks,
+				unsigned int &count,
+				unsigned int max_count,
+				size_t mem_size
+		) {
 			if (count > max_count) {
 				count += debug_used_blocks.blocks.size();
 				return;
@@ -46,15 +53,15 @@ void VoxelMemoryPool::debug_print_used_blocks(unsigned int max_count) {
 				if (count > max_count) {
 					break;
 				}
-				std::string s;
+				StdString s;
 				const dstack::Info &info = it->second;
 				info.to_string(s);
 				if (mem_size == 0) {
-					println(format("--- Alloc {}:", count));
+					print_line(format("--- Alloc {}:", count));
 				} else {
-					println(format("--- Alloc {}, size {}:", count, mem_size));
+					print_line(format("--- Alloc {}, size {}:", count, mem_size));
 				}
-				println(s);
+				print_line(s);
 				++count;
 			}
 			count = initial_count + debug_used_blocks.blocks.size();
@@ -68,7 +75,7 @@ void VoxelMemoryPool::debug_print_used_blocks(unsigned int max_count) {
 	}
 	L::debug_print_used_blocks(_debug_nonpooled_used_blocks, count, max_count, 0);
 	if (count > 0 && count > max_count) {
-		println(format("[...] and {} more allocs.", max_count - count));
+		print_line(format("[...] and {} more allocs.", max_count - count));
 	}
 }
 #endif
@@ -204,11 +211,11 @@ void VoxelMemoryPool::clear() {
 }
 
 void VoxelMemoryPool::debug_print() {
-	println("-------- VoxelMemoryPool ----------");
+	print_line("-------- VoxelMemoryPool ----------");
 	for (unsigned int pot = 0; pot < _pot_pools.size(); ++pot) {
 		Pool &pool = _pot_pools[pot];
 		MutexLock lock(pool.mutex);
-		println(format("Pool {}: {} blocks (capacity {})", pot, pool.blocks.size(), pool.blocks.capacity()));
+		print_line(format("Pool {}: {} blocks (capacity {})", pot, pool.blocks.size(), pool.blocks.capacity()));
 	}
 }
 

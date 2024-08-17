@@ -4,11 +4,12 @@
 #include "../engine/voxel_engine.h"
 #include "../meshers/mesh_block_task.h"
 #include "../modifiers/voxel_modifier.h"
+#include "../storage/materials_4i4w.h"
 #include "../util/dstack.h"
 #include "../util/godot/core/packed_arrays.h"
 #include "../util/math/conv.h"
 #include "../util/profiling.h"
-#include "../util/string_funcs.h"
+#include "../util/string/format.h"
 
 #include "../util/godot/classes/rendering_device.h"
 
@@ -84,7 +85,7 @@ void GenerateBlockGPUTask::prepare(GPUTaskContext &ctx) {
 		};
 
 		Params params;
-		params.origin_in_voxels = to_vec3f((box.pos << lod_index) + origin_in_voxels);
+		params.origin_in_voxels = to_vec3f((box.position << lod_index) + origin_in_voxels);
 		params.voxel_size = 1 << lod_index;
 		params.block_size = buffer_resolution;
 		params.output_buffer_start = (ctx.shared_output_buffer_begin / sizeof(float)) + out_offset_elements;
@@ -92,7 +93,7 @@ void GenerateBlockGPUTask::prepare(GPUTaskContext &ctx) {
 		out_offset_elements += buffer_volume * generator_shader_outputs->outputs.size();
 
 		PackedByteArray params_pba;
-		copy_bytes_to(params_pba, params);
+		zylann::godot::copy_bytes_to(params_pba, params);
 
 		bd.params_sb = storage_buffer_pool.allocate(params_pba);
 		ERR_FAIL_COND(bd.params_sb.is_null());
@@ -147,7 +148,8 @@ void GenerateBlockGPUTask::prepare(GPUTaskContext &ctx) {
 		// Note, this internally locks RenderingDeviceVulkan's class mutex. Which means it could perhaps be used outside
 		// of the compute list (which already locks the class mutex until it ends). Thankfully, it uses a recursive
 		// Mutex (instead of BinaryMutex)
-		const RID generator_uniform_set = uniform_set_create(rd, generator_uniforms, generator_shader_rid, 0);
+		const RID generator_uniform_set =
+				zylann::godot::uniform_set_create(rd, generator_uniforms, generator_shader_rid, 0);
 
 		{
 			ZN_PROFILE_SCOPE_NAMED("compute_list_bind_compute_pipeline");
@@ -201,7 +203,8 @@ void GenerateBlockGPUTask::prepare(GPUTaskContext &ctx) {
 					add_uniform_params(modifier_data.params->params, modifier_uniforms);
 				}
 
-				const RID modifier_uniform_set = uniform_set_create(rd, modifier_uniforms, modifier_data.shader_rid, 0);
+				const RID modifier_uniform_set =
+						zylann::godot::uniform_set_create(rd, modifier_uniforms, modifier_data.shader_rid, 0);
 
 				const RID pipeline_rid = _modifier_pipelines[modifier_index];
 				rd.compute_list_bind_compute_pipeline(compute_list_id, pipeline_rid);
@@ -217,50 +220,55 @@ void GenerateBlockGPUTask::prepare(GPUTaskContext &ctx) {
 	rd.compute_list_end();
 }
 
-static std::vector<uint8_t> &get_temporary_conversion_memory_tls() {
-	static thread_local std::vector<uint8_t> mem;
+namespace {
+
+StdVector<uint8_t> &get_temporary_conversion_memory_tls() {
+	static thread_local StdVector<uint8_t> mem;
 	return mem;
 }
 
 template <typename T>
 inline Span<T> get_temporary_conversion_memory_tls(unsigned int count) {
-	std::vector<uint8_t> &mem = get_temporary_conversion_memory_tls();
+	StdVector<uint8_t> &mem = get_temporary_conversion_memory_tls();
 	mem.resize(count * sizeof(T));
 	return to_span(mem).reinterpret_cast_to<T>();
 }
 
-static void convert_gpu_output_sdf(VoxelBufferInternal &dst, Span<const float> src_data_f, const Box3i &box) {
+void convert_gpu_output_sdf(VoxelBuffer &dst, Span<const float> src_data_f, const Box3i &box) {
 	ZN_PROFILE_SCOPE();
 
-	const VoxelBufferInternal::Depth depth = dst.get_channel_depth(VoxelBufferInternal::CHANNEL_SDF);
-	const float sd_scale = VoxelBufferInternal::get_sdf_quantization_scale(depth);
+	const VoxelBuffer::Depth depth = dst.get_channel_depth(VoxelBuffer::CHANNEL_SDF);
+	const float sd_scale = VoxelBuffer::get_sdf_quantization_scale(depth);
 
 	switch (depth) {
-		case VoxelBufferInternal::DEPTH_8_BIT: {
+		case VoxelBuffer::DEPTH_8_BIT: {
 			Span<int8_t> sd_data = get_temporary_conversion_memory_tls<int8_t>(src_data_f.size());
 			for (unsigned int i = 0; i < src_data_f.size(); ++i) {
 				sd_data[i] = snorm_to_s8(sd_scale * src_data_f[i]);
 			}
-			dst.copy_from(
-					sd_data.to_const(), box.size, Vector3i(), box.size, box.pos, VoxelBufferInternal::CHANNEL_SDF);
+			dst.copy_channel_from(
+					sd_data.to_const(), box.size, Vector3i(), box.size, box.position, VoxelBuffer::CHANNEL_SDF
+			);
 		} break;
 
-		case VoxelBufferInternal::DEPTH_16_BIT: {
+		case VoxelBuffer::DEPTH_16_BIT: {
 			Span<int16_t> sd_data = get_temporary_conversion_memory_tls<int16_t>(src_data_f.size());
 			for (unsigned int i = 0; i < src_data_f.size(); ++i) {
 				sd_data[i] = snorm_to_s16(sd_scale * src_data_f[i]);
 			}
 
-			dst.copy_from(
-					sd_data.to_const(), box.size, Vector3i(), box.size, box.pos, VoxelBufferInternal::CHANNEL_SDF);
+			dst.copy_channel_from(
+					sd_data.to_const(), box.size, Vector3i(), box.size, box.position, VoxelBuffer::CHANNEL_SDF
+			);
 		} break;
 
-		case VoxelBufferInternal::DEPTH_32_BIT: {
-			dst.copy_from(
-					src_data_f.to_const(), box.size, Vector3i(), box.size, box.pos, VoxelBufferInternal::CHANNEL_SDF);
+		case VoxelBuffer::DEPTH_32_BIT: {
+			dst.copy_channel_from(
+					src_data_f.to_const(), box.size, Vector3i(), box.size, box.position, VoxelBuffer::CHANNEL_SDF
+			);
 		} break;
 
-		case VoxelBufferInternal::DEPTH_64_BIT: {
+		case VoxelBuffer::DEPTH_64_BIT: {
 			ZN_PRINT_ERROR("64-bit SDF is not supported");
 		} break;
 
@@ -270,11 +278,10 @@ static void convert_gpu_output_sdf(VoxelBufferInternal &dst, Span<const float> s
 	}
 }
 
-static void convert_gpu_output_single_texture(
-		VoxelBufferInternal &dst, Span<const float> src_data_f, const Box3i &box) {
+void convert_gpu_output_single_texture(VoxelBuffer &dst, Span<const float> src_data_f, const Box3i &box) {
 	ZN_PROFILE_SCOPE();
 	const uint16_t encoded_weights = encode_weights_to_packed_u16_lossy(255, 0, 0, 0);
-	dst.fill_area(encoded_weights, box.pos, box.pos + box.size, VoxelBufferInternal::CHANNEL_WEIGHTS);
+	dst.fill_area(encoded_weights, box.position, box.position + box.size, VoxelBuffer::CHANNEL_WEIGHTS);
 
 	// Little hack: the destination type is smaller than float, so we can convert in place.
 	Span<uint16_t> src_data_u16 = get_temporary_conversion_memory_tls<uint16_t>(src_data_f.size());
@@ -288,12 +295,13 @@ static void convert_gpu_output_single_texture(
 		src_data_u16[value_index] = encoded_indices;
 	}
 
-	dst.copy_from(
-			src_data_u16.to_const(), box.size, Vector3i(), box.size, box.pos, VoxelBufferInternal::CHANNEL_INDICES);
+	dst.copy_channel_from(
+			src_data_u16.to_const(), box.size, Vector3i(), box.size, box.position, VoxelBuffer::CHANNEL_INDICES
+	);
 }
 
 template <typename T>
-Span<const T> cast_floats(Span<const float> src_data_f, std::vector<uint8_t> &memory) {
+Span<const T> cast_floats(Span<const float> src_data_f, StdVector<uint8_t> &memory) {
 	memory.resize(src_data_f.size() * sizeof(T));
 	Span<T> dst = to_span(memory).reinterpret_cast_to<T>();
 	unsigned int dst_i = 0;
@@ -304,32 +312,60 @@ Span<const T> cast_floats(Span<const float> src_data_f, std::vector<uint8_t> &me
 	return dst;
 }
 
-static void convert_gpu_output_uint(VoxelBufferInternal &dst, Span<const float> src_data_f, const Box3i &box,
-		VoxelBufferInternal::ChannelId channel_index) {
+void convert_gpu_output_uint(
+		VoxelBuffer &dst,
+		Span<const float> src_data_f,
+		const Box3i &box,
+		VoxelBuffer::ChannelId channel_index
+) {
 	ZN_PROFILE_SCOPE();
 
-	const VoxelBufferInternal::Depth depth = dst.get_channel_depth(VoxelBufferInternal::CHANNEL_SDF);
-	std::vector<uint8_t> &tls_temp = get_temporary_conversion_memory_tls();
+	const VoxelBuffer::Depth depth = dst.get_channel_depth(VoxelBuffer::CHANNEL_SDF);
+	StdVector<uint8_t> &tls_temp = get_temporary_conversion_memory_tls();
 
 	switch (depth) {
-		case VoxelBufferInternal::DEPTH_8_BIT: {
-			dst.copy_from(
-					cast_floats<uint8_t>(src_data_f, tls_temp), box.size, Vector3i(), box.size, box.pos, channel_index);
+		case VoxelBuffer::DEPTH_8_BIT: {
+			dst.copy_channel_from(
+					cast_floats<uint8_t>(src_data_f, tls_temp),
+					box.size,
+					Vector3i(),
+					box.size,
+					box.position,
+					channel_index
+			);
 		} break;
 
-		case VoxelBufferInternal::DEPTH_16_BIT: {
-			dst.copy_from(cast_floats<uint16_t>(src_data_f, tls_temp), box.size, Vector3i(), box.size, box.pos,
-					channel_index);
+		case VoxelBuffer::DEPTH_16_BIT: {
+			dst.copy_channel_from(
+					cast_floats<uint16_t>(src_data_f, tls_temp),
+					box.size,
+					Vector3i(),
+					box.size,
+					box.position,
+					channel_index
+			);
 		} break;
 
-		case VoxelBufferInternal::DEPTH_32_BIT: {
-			dst.copy_from(cast_floats<uint32_t>(src_data_f, tls_temp), box.size, Vector3i(), box.size, box.pos,
-					channel_index);
+		case VoxelBuffer::DEPTH_32_BIT: {
+			dst.copy_channel_from(
+					cast_floats<uint32_t>(src_data_f, tls_temp),
+					box.size,
+					Vector3i(),
+					box.size,
+					box.position,
+					channel_index
+			);
 		} break;
 
-		case VoxelBufferInternal::DEPTH_64_BIT: {
-			dst.copy_from(cast_floats<uint64_t>(src_data_f, tls_temp), box.size, Vector3i(), box.size, box.pos,
-					channel_index);
+		case VoxelBuffer::DEPTH_64_BIT: {
+			dst.copy_channel_from(
+					cast_floats<uint64_t>(src_data_f, tls_temp),
+					box.size,
+					Vector3i(),
+					box.size,
+					box.position,
+					channel_index
+			);
 		} break;
 
 		default:
@@ -338,7 +374,9 @@ static void convert_gpu_output_uint(VoxelBufferInternal &dst, Span<const float> 
 	}
 }
 
-void GenerateBlockGPUTaskResult::convert_to_voxel_buffer(VoxelBufferInternal &dst) {
+} // namespace
+
+void GenerateBlockGPUTaskResult::convert_to_voxel_buffer(VoxelBuffer &dst) {
 	// Shaders can only output float arrays for now. Also looks like GLSL does not have 8-bit or 16-bit data types?
 	// TODO Should we convert in the compute shader to reduce bandwidth and CPU work?
 	Span<const float> src_data_f = _bytes.reinterpret_cast_to<const float>();
@@ -353,7 +391,7 @@ void GenerateBlockGPUTaskResult::convert_to_voxel_buffer(VoxelBufferInternal &ds
 			break;
 
 		case VoxelGenerator::ShaderOutput::TYPE_TYPE:
-			convert_gpu_output_uint(dst, src_data_f, _box, VoxelBufferInternal::CHANNEL_TYPE);
+			convert_gpu_output_uint(dst, src_data_f, _box, VoxelBuffer::CHANNEL_TYPE);
 			break;
 
 		default:
@@ -363,7 +401,9 @@ void GenerateBlockGPUTaskResult::convert_to_voxel_buffer(VoxelBufferInternal &ds
 }
 
 void GenerateBlockGPUTaskResult::convert_to_voxel_buffer(
-		Span<GenerateBlockGPUTaskResult> boxes_data, VoxelBufferInternal &dst) {
+		Span<GenerateBlockGPUTaskResult> boxes_data,
+		VoxelBuffer &dst
+) {
 	ZN_PROFILE_SCOPE();
 
 	for (GenerateBlockGPUTaskResult &box_data : boxes_data) {
@@ -380,7 +420,7 @@ void GenerateBlockGPUTask::collect(GPUTaskContext &ctx) {
 	RenderingDevice &rd = ctx.rendering_device;
 	GPUStorageBufferPool &storage_buffer_pool = ctx.storage_buffer_pool;
 
-	std::vector<GenerateBlockGPUTaskResult> results;
+	StdVector<GenerateBlockGPUTaskResult> results;
 	results.reserve(_boxes_data.size());
 
 	// Get span for that specific task
@@ -399,11 +439,14 @@ void GenerateBlockGPUTask::collect(GPUTaskContext &ctx) {
 		for (unsigned int output_index = 0; output_index < generator_shader_outputs->outputs.size(); ++output_index) {
 			const VoxelGenerator::ShaderOutput &output_info = generator_shader_outputs->outputs[output_index];
 
-			GenerateBlockGPUTaskResult result(box, output_info.type,
+			GenerateBlockGPUTaskResult result(
+					box,
+					output_info.type,
 					// Get span for that specific output
 					outputs_bytes.sub(box_offset + size_per_output * output_index, size_per_output),
 					// Pass reference to the backing buffer to keep it valid until all consumers are done with it
-					ctx.downloaded_shared_output_data);
+					ctx.downloaded_shared_output_data
+			);
 
 			results.push_back(result);
 		}
@@ -413,10 +456,10 @@ void GenerateBlockGPUTask::collect(GPUTaskContext &ctx) {
 		storage_buffer_pool.recycle(bd.params_sb);
 	}
 
-	free_rendering_device_rid(rd, _generator_pipeline_rid);
+	zylann::godot::free_rendering_device_rid(rd, _generator_pipeline_rid);
 
 	for (RID rid : _modifier_pipelines) {
-		free_rendering_device_rid(rd, rid);
+		zylann::godot::free_rendering_device_rid(rd, rid);
 	}
 
 	// We leave conversion to the CPU task, because we have only one thread for GPU work and it only exists for waiting

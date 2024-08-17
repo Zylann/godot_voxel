@@ -4,7 +4,6 @@
 #include "../../util/godot/classes/array_mesh.h"
 #include "../../util/godot/classes/engine.h"
 #include "../../util/godot/core/array.h"
-#include "../../util/godot/core/callable.h"
 #include "../../util/godot/core/random_pcg.h"
 #include "../../util/math/conv.h"
 #include "../../util/math/triangle.h"
@@ -13,16 +12,29 @@
 namespace zylann::voxel {
 
 namespace {
-const float MAX_DENSITY = 1.f;
-const char *DENSITY_HINT_STRING = "0.0, 1.0, 0.01";
+
+// This cap is for sanity, to prevent potential crashing.
+const float MAX_DENSITY = 10.f;
+// We expose a slider going below max density as it should not often be needed, but we allow greater if really necessary
+const char *DENSITY_HINT_STRING = "0.0, 1.0, 0.01, or_greater";
+
 } // namespace
 
-void VoxelInstanceGenerator::generate_transforms(std::vector<Transform3f> &out_transforms, Vector3i grid_position,
-		int lod_index, int layer_id, Array surface_arrays, UpMode up_mode, uint8_t octant_mask, float block_size) {
+void VoxelInstanceGenerator::generate_transforms(
+		StdVector<Transform3f> &out_transforms,
+		Vector3i grid_position,
+		// TODO `lod_index` has become unused, remove?
+		int lod_index,
+		int layer_id,
+		Array surface_arrays,
+		UpMode up_mode,
+		uint8_t octant_mask,
+		float block_size
+) {
 	ZN_PROFILE_SCOPE();
 
 	if (surface_arrays.size() < ArrayMesh::ARRAY_VERTEX && surface_arrays.size() < ArrayMesh::ARRAY_NORMAL &&
-			surface_arrays.size() < ArrayMesh::ARRAY_INDEX) {
+		surface_arrays.size() < ArrayMesh::ARRAY_INDEX) {
 		return;
 	}
 
@@ -57,16 +69,16 @@ void VoxelInstanceGenerator::generate_transforms(std::vector<Transform3f> &out_t
 
 	// TODO This part might be moved to the meshing thread if it turns out to be too heavy
 
-	static thread_local std::vector<Vector3f> g_vertex_cache;
-	static thread_local std::vector<Vector3f> g_normal_cache;
-	static thread_local std::vector<float> g_noise_cache;
-	// static thread_local std::vector<float> g_noise_graph_output_cache;
-	static thread_local std::vector<float> g_noise_graph_x_cache;
-	static thread_local std::vector<float> g_noise_graph_y_cache;
-	static thread_local std::vector<float> g_noise_graph_z_cache;
+	static thread_local StdVector<Vector3f> g_vertex_cache;
+	static thread_local StdVector<Vector3f> g_normal_cache;
+	static thread_local StdVector<float> g_noise_cache;
+	// static thread_local StdVector<float> g_noise_graph_output_cache;
+	static thread_local StdVector<float> g_noise_graph_x_cache;
+	static thread_local StdVector<float> g_noise_graph_y_cache;
+	static thread_local StdVector<float> g_noise_graph_z_cache;
 
-	std::vector<Vector3f> &vertex_cache = g_vertex_cache;
-	std::vector<Vector3f> &normal_cache = g_normal_cache;
+	StdVector<Vector3f> &vertex_cache = g_vertex_cache;
+	StdVector<Vector3f> &normal_cache = g_normal_cache;
 
 	vertex_cache.clear();
 	normal_cache.clear();
@@ -85,8 +97,10 @@ void VoxelInstanceGenerator::generate_transforms(std::vector<Transform3f> &out_t
 				// so it's possible a different emit mode will produce different amounts of instances.
 				// I had to use `uint64` and clamp it because floats can't contain `0xffffffff` accurately. Instead
 				// it results in `0x100000000`, one unit above.
+				const float density = math::clamp(_density, 0.f, 1.f);
+				static constexpr float max_density = 1.f;
 				const uint32_t density_u32 =
-						math::min(uint64_t(double(0xffffffff) * _density / MAX_DENSITY), uint64_t(0xffffffff));
+						math::min(uint64_t(double(0xffffffff) * density / max_density), uint64_t(0xffffffff));
 				const int size = vertices.size();
 				const float margin = block_size - block_size * 0.01f;
 				for (int i = 0; i < size; ++i) {
@@ -155,8 +169,8 @@ void VoxelInstanceGenerator::generate_transforms(std::vector<Transform3f> &out_t
 
 				const int triangle_count = indices.size() / 3;
 
-				// static thread_local std::vector<float> g_area_cache;
-				// std::vector<float> &area_cache = g_area_cache;
+				// static thread_local StdVector<float> g_area_cache;
+				// StdVector<float> &area_cache = g_area_cache;
 				// area_cache.resize(triangle_count);
 
 				// Does not assume triangles have the same size, so instead a "unit size" is used,
@@ -247,7 +261,7 @@ void VoxelInstanceGenerator::generate_transforms(std::vector<Transform3f> &out_t
 	if (noise_graph.is_valid()) {
 		ZN_PROFILE_SCOPE_NAMED("Noise graph filter");
 
-		std::vector<float> &out_buffer = g_noise_cache;
+		StdVector<float> &out_buffer = g_noise_cache;
 		out_buffer.resize(vertex_cache.size());
 
 		// Check noise graph validity
@@ -281,8 +295,8 @@ void VoxelInstanceGenerator::generate_transforms(std::vector<Transform3f> &out_t
 		if (compiled_graph != nullptr) {
 			// Execute graph
 
-			std::vector<float> &x_buffer = g_noise_graph_x_cache;
-			std::vector<float> &z_buffer = g_noise_graph_z_cache;
+			StdVector<float> &x_buffer = g_noise_graph_x_cache;
+			StdVector<float> &z_buffer = g_noise_graph_z_cache;
 			x_buffer.resize(vertex_cache.size());
 			z_buffer.resize(vertex_cache.size());
 
@@ -305,7 +319,7 @@ void VoxelInstanceGenerator::generate_transforms(std::vector<Transform3f> &out_t
 				} break;
 
 				case DIMENSION_3D: {
-					std::vector<float> &y_buffer = g_noise_graph_y_cache;
+					StdVector<float> &y_buffer = g_noise_graph_y_cache;
 					y_buffer.resize(vertex_cache.size());
 
 					for (size_t i = 0; i < vertex_cache.size(); ++i) {
@@ -335,7 +349,7 @@ void VoxelInstanceGenerator::generate_transforms(std::vector<Transform3f> &out_t
 		}
 	}
 
-	std::vector<float> &noise_cache = g_noise_cache;
+	StdVector<float> &noise_cache = g_noise_cache;
 
 	// Legacy noise (noise graph is more versatile, but this remains for compatibility)
 	if (noise.is_valid()) {
@@ -383,8 +397,6 @@ void VoxelInstanceGenerator::generate_transforms(std::vector<Transform3f> &out_t
 
 	// Filter out by noise
 	if (use_noise) {
-		// Position of the block relative to the instancer node.
-		// Use full-precision here because we deal with potentially large coordinates
 		ZN_PROFILE_SCOPE_NAMED("Noise filter");
 
 		for (size_t i = 0; i < vertex_cache.size(); ++i) {
@@ -572,7 +584,7 @@ void VoxelInstanceGenerator::generate_transforms(std::vector<Transform3f> &out_t
 }
 
 void VoxelInstanceGenerator::set_density(float density) {
-	density = math::max(density, 0.f);
+	density = math::clamp(density, 0.f, MAX_DENSITY);
 	if (density == _density) {
 		return;
 	}
@@ -742,13 +754,17 @@ void VoxelInstanceGenerator::set_noise(Ref<Noise> noise) {
 			return;
 		}
 		if (_noise.is_valid()) {
-			_noise->disconnect(VoxelStringNames::get_singleton().changed,
-					ZN_GODOT_CALLABLE_MP(this, VoxelInstanceGenerator, _on_noise_changed));
+			_noise->disconnect(
+					VoxelStringNames::get_singleton().changed,
+					callable_mp(this, &VoxelInstanceGenerator::_on_noise_changed)
+			);
 		}
 		_noise = noise;
 		if (_noise.is_valid()) {
-			_noise->connect(VoxelStringNames::get_singleton().changed,
-					ZN_GODOT_CALLABLE_MP(this, VoxelInstanceGenerator, _on_noise_changed));
+			_noise->connect(
+					VoxelStringNames::get_singleton().changed,
+					callable_mp(this, &VoxelInstanceGenerator::_on_noise_changed)
+			);
 		}
 	}
 	// Emit signal outside of the locked region to avoid eventual deadlocks if handlers want to access the property
@@ -768,10 +784,14 @@ void VoxelInstanceGenerator::set_noise_graph(Ref<pg::VoxelGraphFunction> func) {
 			return;
 		}
 		if (_noise_graph.is_valid()) {
-			_noise_graph->disconnect(VoxelStringNames::get_singleton().changed,
-					ZN_GODOT_CALLABLE_MP(this, VoxelInstanceGenerator, _on_noise_graph_changed));
-			_noise_graph->disconnect(VoxelStringNames::get_singleton().compiled,
-					ZN_GODOT_CALLABLE_MP(this, VoxelInstanceGenerator, _on_noise_graph_changed));
+			_noise_graph->disconnect(
+					VoxelStringNames::get_singleton().changed,
+					callable_mp(this, &VoxelInstanceGenerator::_on_noise_graph_changed)
+			);
+			_noise_graph->disconnect(
+					VoxelStringNames::get_singleton().compiled,
+					callable_mp(this, &VoxelInstanceGenerator::_on_noise_graph_changed)
+			);
 		}
 
 		_noise_graph = func;
@@ -780,10 +800,14 @@ void VoxelInstanceGenerator::set_noise_graph(Ref<pg::VoxelGraphFunction> func) {
 			// Compile on assignment because there isn't really a good place to do it...
 			func->compile(Engine::get_singleton()->is_editor_hint());
 
-			_noise_graph->connect(VoxelStringNames::get_singleton().changed,
-					ZN_GODOT_CALLABLE_MP(this, VoxelInstanceGenerator, _on_noise_graph_changed));
-			_noise_graph->connect(VoxelStringNames::get_singleton().compiled,
-					ZN_GODOT_CALLABLE_MP(this, VoxelInstanceGenerator, _on_noise_graph_changed));
+			_noise_graph->connect(
+					VoxelStringNames::get_singleton().changed,
+					callable_mp(this, &VoxelInstanceGenerator::_on_noise_graph_changed)
+			);
+			_noise_graph->connect(
+					VoxelStringNames::get_singleton().compiled,
+					callable_mp(this, &VoxelInstanceGenerator::_on_noise_graph_changed)
+			);
 		}
 	}
 	// Emit signal outside of the locked region to avoid eventual deadlocks if handlers want to access the property
@@ -836,7 +860,7 @@ void VoxelInstanceGenerator::get_configuration_warnings(PackedStringArray &warni
 
 	if (noise_graph.is_valid()) {
 		// Graph compiles?
-		get_resource_configuration_warnings(**noise_graph, warnings, []() { return "noise_graph: "; });
+		godot::get_resource_configuration_warnings(**noise_graph, warnings, []() { return "noise_graph: "; });
 
 		// Check I/Os
 		const int expected_input_count = (_noise_dimension == DIMENSION_2D ? 2 : 3);
@@ -870,14 +894,16 @@ void VoxelInstanceGenerator::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_max_scale"), &VoxelInstanceGenerator::get_max_scale);
 
 	ClassDB::bind_method(
-			D_METHOD("set_scale_distribution", "distribution"), &VoxelInstanceGenerator::set_scale_distribution);
+			D_METHOD("set_scale_distribution", "distribution"), &VoxelInstanceGenerator::set_scale_distribution
+	);
 	ClassDB::bind_method(D_METHOD("get_scale_distribution"), &VoxelInstanceGenerator::get_scale_distribution);
 
 	ClassDB::bind_method(D_METHOD("set_vertical_alignment", "amount"), &VoxelInstanceGenerator::set_vertical_alignment);
 	ClassDB::bind_method(D_METHOD("get_vertical_alignment"), &VoxelInstanceGenerator::get_vertical_alignment);
 
 	ClassDB::bind_method(
-			D_METHOD("set_offset_along_normal", "offset"), &VoxelInstanceGenerator::set_offset_along_normal);
+			D_METHOD("set_offset_along_normal", "offset"), &VoxelInstanceGenerator::set_offset_along_normal
+	);
 	ClassDB::bind_method(D_METHOD("get_offset_along_normal"), &VoxelInstanceGenerator::get_offset_along_normal);
 
 	ClassDB::bind_method(D_METHOD("set_min_slope_degrees", "degrees"), &VoxelInstanceGenerator::set_min_slope_degrees);
@@ -893,7 +919,8 @@ void VoxelInstanceGenerator::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_max_height"), &VoxelInstanceGenerator::get_max_height);
 
 	ClassDB::bind_method(
-			D_METHOD("set_random_vertical_flip", "enabled"), &VoxelInstanceGenerator::set_random_vertical_flip);
+			D_METHOD("set_random_vertical_flip", "enabled"), &VoxelInstanceGenerator::set_random_vertical_flip
+	);
 	ClassDB::bind_method(D_METHOD("get_random_vertical_flip"), &VoxelInstanceGenerator::get_random_vertical_flip);
 
 	ClassDB::bind_method(D_METHOD("set_random_rotation", "enabled"), &VoxelInstanceGenerator::set_random_rotation);
@@ -911,57 +938,94 @@ void VoxelInstanceGenerator::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_noise_on_scale", "amount"), &VoxelInstanceGenerator::set_noise_on_scale);
 	ClassDB::bind_method(D_METHOD("get_noise_on_scale"), &VoxelInstanceGenerator::get_noise_on_scale);
 
-#ifdef ZN_GODOT_EXTENSION
-	ClassDB::bind_method(D_METHOD("_on_noise_changed"), &VoxelInstanceGenerator::_on_noise_changed);
-	ClassDB::bind_method(D_METHOD("_on_noise_graph_changed"), &VoxelInstanceGenerator::_on_noise_graph_changed);
-#endif
-
 	ADD_GROUP("Emission", "");
 
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "density", PROPERTY_HINT_RANGE, DENSITY_HINT_STRING), "set_density",
-			"get_density");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "emit_mode", PROPERTY_HINT_ENUM, "Vertices,FacesFast,Faces"),
-			"set_emit_mode", "get_emit_mode");
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "min_slope_degrees", PROPERTY_HINT_RANGE, "0.0, 180.0, 0.1"),
-			"set_min_slope_degrees", "get_min_slope_degrees");
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "max_slope_degrees", PROPERTY_HINT_RANGE, "0.0, 180.0, 0.1"),
-			"set_max_slope_degrees", "get_max_slope_degrees");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::FLOAT, "density", PROPERTY_HINT_RANGE, DENSITY_HINT_STRING),
+			"set_density",
+			"get_density"
+	);
+	ADD_PROPERTY(
+			PropertyInfo(Variant::INT, "emit_mode", PROPERTY_HINT_ENUM, "Vertices,FacesFast,Faces"),
+			"set_emit_mode",
+			"get_emit_mode"
+	);
+	ADD_PROPERTY(
+			PropertyInfo(Variant::FLOAT, "min_slope_degrees", PROPERTY_HINT_RANGE, "0.0, 180.0, 0.1"),
+			"set_min_slope_degrees",
+			"get_min_slope_degrees"
+	);
+	ADD_PROPERTY(
+			PropertyInfo(Variant::FLOAT, "max_slope_degrees", PROPERTY_HINT_RANGE, "0.0, 180.0, 0.1"),
+			"set_max_slope_degrees",
+			"get_max_slope_degrees"
+	);
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "min_height"), "set_min_height", "get_min_height");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "max_height"), "set_max_height", "get_max_height");
 
 	ADD_GROUP("Scale", "");
 
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "min_scale", PROPERTY_HINT_RANGE, "0.0, 10.0, 0.01"), "set_min_scale",
-			"get_min_scale");
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "max_scale", PROPERTY_HINT_RANGE, "0.0, 10.0, 0.01"), "set_max_scale",
-			"get_max_scale");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "scale_distribution", PROPERTY_HINT_ENUM, "Linear,Quadratic,Cubic,Quintic"),
-			"set_scale_distribution", "get_scale_distribution");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::FLOAT, "min_scale", PROPERTY_HINT_RANGE, "0.0, 10.0, 0.01"),
+			"set_min_scale",
+			"get_min_scale"
+	);
+	ADD_PROPERTY(
+			PropertyInfo(Variant::FLOAT, "max_scale", PROPERTY_HINT_RANGE, "0.0, 10.0, 0.01"),
+			"set_max_scale",
+			"get_max_scale"
+	);
+	ADD_PROPERTY(
+			PropertyInfo(Variant::INT, "scale_distribution", PROPERTY_HINT_ENUM, "Linear,Quadratic,Cubic,Quintic"),
+			"set_scale_distribution",
+			"get_scale_distribution"
+	);
 
 	ADD_GROUP("Rotation", "");
 
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "vertical_alignment", PROPERTY_HINT_RANGE, "0.0, 1.0, 0.01"),
-			"set_vertical_alignment", "get_vertical_alignment");
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "random_vertical_flip"), "set_random_vertical_flip",
-			"get_random_vertical_flip");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::FLOAT, "vertical_alignment", PROPERTY_HINT_RANGE, "0.0, 1.0, 0.01"),
+			"set_vertical_alignment",
+			"get_vertical_alignment"
+	);
+	ADD_PROPERTY(
+			PropertyInfo(Variant::BOOL, "random_vertical_flip"), "set_random_vertical_flip", "get_random_vertical_flip"
+	);
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "random_rotation"), "set_random_rotation", "get_random_rotation");
 
 	ADD_GROUP("Offset", "");
 
 	ADD_PROPERTY(
-			PropertyInfo(Variant::FLOAT, "offset_along_normal"), "set_offset_along_normal", "get_offset_along_normal");
+			PropertyInfo(Variant::FLOAT, "offset_along_normal"), "set_offset_along_normal", "get_offset_along_normal"
+	);
 
 	ADD_GROUP("Noise", "");
 
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "noise", PROPERTY_HINT_RESOURCE_TYPE, Noise::get_class_static()),
-			"set_noise", "get_noise");
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "noise_graph", PROPERTY_HINT_RESOURCE_TYPE,
-						 pg::VoxelGraphFunction::get_class_static()),
-			"set_noise_graph", "get_noise_graph");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "noise_dimension", PROPERTY_HINT_ENUM, "2D,3D"), "set_noise_dimension",
-			"get_noise_dimension");
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "noise_on_scale", PROPERTY_HINT_RANGE, "0.0, 1.0, 0.01"),
-			"set_noise_on_scale", "get_noise_on_scale");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::OBJECT, "noise", PROPERTY_HINT_RESOURCE_TYPE, Noise::get_class_static()),
+			"set_noise",
+			"get_noise"
+	);
+	ADD_PROPERTY(
+			PropertyInfo(
+					Variant::OBJECT,
+					"noise_graph",
+					PROPERTY_HINT_RESOURCE_TYPE,
+					pg::VoxelGraphFunction::get_class_static()
+			),
+			"set_noise_graph",
+			"get_noise_graph"
+	);
+	ADD_PROPERTY(
+			PropertyInfo(Variant::INT, "noise_dimension", PROPERTY_HINT_ENUM, "2D,3D"),
+			"set_noise_dimension",
+			"get_noise_dimension"
+	);
+	ADD_PROPERTY(
+			PropertyInfo(Variant::FLOAT, "noise_on_scale", PROPERTY_HINT_RANGE, "0.0, 1.0, 0.01"),
+			"set_noise_on_scale",
+			"get_noise_on_scale"
+	);
 
 	BIND_ENUM_CONSTANT(EMIT_FROM_VERTICES);
 	BIND_ENUM_CONSTANT(EMIT_FROM_FACES_FAST);

@@ -27,7 +27,7 @@ void ComputeShaderResource::clear() {
 	ZN_DSTACK();
 	if (_rid.is_valid()) {
 		RenderingDevice &rd = VoxelEngine::get_singleton().get_rendering_device();
-		free_rendering_device_rid(rd, _rid);
+		zylann::godot::free_rendering_device_rid(rd, _rid);
 		_rid = RID();
 	}
 }
@@ -108,9 +108,10 @@ void ComputeShaderResource::create_texture_2d(const Image &image) {
 	texture_format->set_width(image.get_width());
 	texture_format->set_height(image.get_height());
 	texture_format->set_format(data_format);
-	texture_format->set_usage_bits(RenderingDevice::TEXTURE_USAGE_STORAGE_BIT |
-			RenderingDevice::TEXTURE_USAGE_CAN_UPDATE_BIT | RenderingDevice::TEXTURE_USAGE_CAN_COPY_FROM_BIT |
-			RenderingDevice::TEXTURE_USAGE_SAMPLING_BIT);
+	texture_format->set_usage_bits(
+			RenderingDevice::TEXTURE_USAGE_STORAGE_BIT | RenderingDevice::TEXTURE_USAGE_CAN_UPDATE_BIT |
+			RenderingDevice::TEXTURE_USAGE_CAN_COPY_FROM_BIT | RenderingDevice::TEXTURE_USAGE_SAMPLING_BIT
+	);
 	texture_format->set_texture_type(RenderingDevice::TEXTURE_TYPE_2D);
 	// TODO Do I need multisample if I want filtering?
 
@@ -120,7 +121,7 @@ void ComputeShaderResource::create_texture_2d(const Image &image) {
 	TypedArray<PackedByteArray> data_array;
 	data_array.append(image.get_data());
 
-	_rid = texture_create(rd, **texture_format, **texture_view, data_array);
+	_rid = zylann::godot::texture_create(rd, **texture_format, **texture_view, data_array);
 	// RID::is_null() is not available in GDExtension
 	ERR_FAIL_COND_MSG(!_rid.is_valid(), "Failed to create texture");
 }
@@ -182,9 +183,10 @@ void ComputeShaderResource::create_texture_3d_zxy(Span<const float> fdata_zxy, V
 	texture_format->set_height(size.y);
 	texture_format->set_depth(size.z);
 	texture_format->set_format(RenderingDevice::DATA_FORMAT_R32_SFLOAT);
-	texture_format->set_usage_bits(RenderingDevice::TEXTURE_USAGE_STORAGE_BIT |
-			RenderingDevice::TEXTURE_USAGE_CAN_UPDATE_BIT | RenderingDevice::TEXTURE_USAGE_CAN_COPY_FROM_BIT |
-			RenderingDevice::TEXTURE_USAGE_SAMPLING_BIT);
+	texture_format->set_usage_bits(
+			RenderingDevice::TEXTURE_USAGE_STORAGE_BIT | RenderingDevice::TEXTURE_USAGE_CAN_UPDATE_BIT |
+			RenderingDevice::TEXTURE_USAGE_CAN_COPY_FROM_BIT | RenderingDevice::TEXTURE_USAGE_SAMPLING_BIT
+	);
 	texture_format->set_texture_type(RenderingDevice::TEXTURE_TYPE_3D);
 
 	Ref<RDTextureView> texture_view;
@@ -199,7 +201,7 @@ void ComputeShaderResource::create_texture_3d_zxy(Span<const float> fdata_zxy, V
 		data_array.append(pba);
 	}
 
-	_rid = texture_create(rd, **texture_format, **texture_view, data_array);
+	_rid = zylann::godot::texture_create(rd, **texture_format, **texture_view, data_array);
 	ERR_FAIL_COND_MSG(!_rid.is_valid(), "Failed to create texture");
 
 	_type = TYPE_TEXTURE_3D;
@@ -217,7 +219,7 @@ void ComputeShaderResource::update_storage_buffer(const PackedByteArray &data) {
 	ERR_FAIL_COND(!_rid.is_valid());
 	ERR_FAIL_COND(_type != TYPE_STORAGE_BUFFER);
 	RenderingDevice &rd = VoxelEngine::get_singleton().get_rendering_device();
-	const Error err = zylann::update_storage_buffer(rd, _rid, 0, data.size(), data);
+	const Error err = zylann::godot::update_storage_buffer(rd, _rid, 0, data.size(), data);
 	ERR_FAIL_COND_MSG(err != OK, String("Failed to update storage buffer (error {0})").format(varray(err)));
 }
 

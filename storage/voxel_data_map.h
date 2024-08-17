@@ -1,11 +1,14 @@
 #ifndef VOXEL_DATA_MAP_H
 #define VOXEL_DATA_MAP_H
 
+#include "../constants/voxel_constants.h"
 #include "../util/containers/fixed_array.h"
+#include "../util/containers/span.h"
+#include "../util/containers/std_unordered_map.h"
+#include "../util/math/box3i.h"
 #include "../util/profiling.h"
+#include "voxel_buffer.h" // Used in template methods
 #include "voxel_data_block.h"
-
-#include <unordered_map>
 
 namespace zylann::voxel {
 
@@ -66,22 +69,39 @@ public:
 	int get_voxel(Vector3i pos, unsigned int c = 0) const;
 	void set_voxel(int value, Vector3i pos, unsigned int c = 0);
 
-	float get_voxel_f(Vector3i pos, unsigned int c = VoxelBufferInternal::CHANNEL_SDF) const;
-	void set_voxel_f(real_t value, Vector3i pos, unsigned int c = VoxelBufferInternal::CHANNEL_SDF);
+	float get_voxel_f(Vector3i pos, unsigned int c) const;
+	void set_voxel_f(real_t value, Vector3i pos, unsigned int c);
 
-	inline void copy(Vector3i min_pos, VoxelBufferInternal &dst_buffer, unsigned int channels_mask) const {
+	inline void copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsigned int channels_mask) const {
 		copy(min_pos, dst_buffer, channels_mask, nullptr, nullptr);
 	}
 
 	// Gets a copy of all voxels in the area starting at min_pos having the same size as dst_buffer.
-	void copy(Vector3i min_pos, VoxelBufferInternal &dst_buffer, unsigned int channels_mask, void *,
-			void (*gen_func)(void *, VoxelBufferInternal &, Vector3i)) const;
+	void copy(
+			Vector3i min_pos,
+			VoxelBuffer &dst_buffer,
+			unsigned int channels_mask,
+			void *,
+			void (*gen_func)(void *, VoxelBuffer &, Vector3i)
+	) const;
 
-	void paste(Vector3i min_pos, const VoxelBufferInternal &src_buffer, unsigned int channels_mask, bool use_mask,
-			uint8_t mask_channel, uint64_t mask_value, bool create_new_blocks);
+	void paste(Vector3i min_pos, const VoxelBuffer &src_buffer, unsigned int channels_mask, bool create_new_blocks);
+
+	void paste_masked( //
+			Vector3i min_pos, //
+			const VoxelBuffer &src_buffer, //
+			unsigned int channels_mask, //
+			bool use_src_mask, //
+			uint8_t src_mask_channel, //
+			uint64_t src_mask_value, //
+			bool use_dst_mask, //
+			uint8_t dst_mask_channel, //
+			Span<const int32_t> dst_writable_values, //
+			bool create_new_blocks //
+	);
 
 	// Moves the given buffer into a block of the map. The buffer is referenced, no copy is made.
-	VoxelDataBlock *set_block_buffer(Vector3i bpos, std::shared_ptr<VoxelBufferInternal> &buffer, bool overwrite);
+	VoxelDataBlock *set_block_buffer(Vector3i bpos, std::shared_ptr<VoxelBuffer> &buffer, bool overwrite);
 	VoxelDataBlock *set_empty_block(Vector3i bpos, bool overwrite);
 	void set_block(Vector3i bpos, const VoxelDataBlock &block);
 
@@ -136,7 +156,7 @@ public:
 
 	template <typename F>
 	inline void write_box(const Box3i &voxel_box, unsigned int channel, F action) {
-		write_box(voxel_box, channel, action, [](const VoxelBufferInternal &, const Vector3i &) {});
+		write_box(voxel_box, channel, action, [](const VoxelBuffer &, const Vector3i &) {});
 	}
 
 	// D F(Vector3i pos, D value)
@@ -152,7 +172,7 @@ public:
 				gen_func(block->get_voxels(), block_pos << get_block_size_pow2());
 			}
 			const Vector3i block_origin = block_to_voxel(block_pos);
-			Box3i local_box(voxel_box.pos - block_origin, voxel_box.size);
+			Box3i local_box(voxel_box.position - block_origin, voxel_box.size);
 			local_box.clip(Box3i(Vector3i(), block_size));
 			block->get_voxels().write_box(local_box, channel, action, block_origin);
 		});
@@ -160,7 +180,7 @@ public:
 
 	template <typename F>
 	inline void write_box_2(const Box3i &voxel_box, unsigned int channel0, unsigned int channel1, F action) {
-		write_box_2(voxel_box, channel0, channel1, action, [](const VoxelBufferInternal &, const Vector3i &) {});
+		write_box_2(voxel_box, channel0, channel1, action, [](const VoxelBuffer &, const Vector3i &) {});
 	}
 
 	// void F(Vector3i pos, D0 &value, D1 &value)
@@ -176,11 +196,13 @@ public:
 						gen_func(block->get_voxels(), block_pos << get_block_size_pow2());
 					}
 					const Vector3i block_origin = block_to_voxel(block_pos);
-					Box3i local_box(voxel_box.pos - block_origin, voxel_box.size);
+					Box3i local_box(voxel_box.position - block_origin, voxel_box.size);
 					local_box.clip(Box3i(Vector3i(), block_size));
 					block->get_voxels().write_box_2_template<F, uint16_t, uint16_t>(
-							local_box, channel0, channel1, action, block_origin);
-				});
+							local_box, channel0, channel1, action, block_origin
+					);
+				}
+		);
 	}
 
 private:
@@ -196,7 +218,7 @@ private:
 	// defaults, but it sometimes has very long stalls on removal, which std::unordered_map doesn't seem to have
 	// (not as badly). Also overall performance is slightly better.
 	// Note: pointers to elements remain valid when inserting or removing others (only iterators may be invalidated)
-	std::unordered_map<Vector3i, VoxelDataBlock> _blocks_map;
+	StdUnorderedMap<Vector3i, VoxelDataBlock> _blocks_map;
 
 	// This was a possible optimization in a single-threaded scenario, but it's not in multithread.
 	// We want to be able to do shared read-accesses but this is a mutable variable.

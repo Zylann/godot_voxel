@@ -3,20 +3,19 @@
 
 #include "../../util/containers/fixed_array.h"
 #include "../../util/containers/span.h"
+#include "../../util/containers/std_vector.h"
 #include "../../util/godot/classes/ref_counted.h"
 #include "../../util/macros.h"
 #include "../../util/math/vector3f.h"
 
-//#define VOXEL_VIRTUAL_TEXTURE_USE_TEXTURE_ARRAY
-// Texture arrays are handy but the maximum amount of layers is often too low (2048 on an nVidia 1060), which happens
-// too frequently with block size 32. So instead we have to keep using 2D atlases with padding.
+// #define VOXEL_VIRTUAL_TEXTURE_USE_TEXTURE_ARRAY
+//  Texture arrays are handy but the maximum amount of layers is often too low (2048 on an nVidia 1060), which happens
+//  too frequently with block size 32. So instead we have to keep using 2D atlases with padding.
 #ifdef VOXEL_VIRTUAL_TEXTURE_USE_TEXTURE_ARRAY
 #include "../../util/godot/classes/texture_array.h"
 #endif
 #include "../../util/godot/classes/image.h"
 #include "../../util/godot/classes/texture_2d.h"
-
-#include <vector>
 
 namespace zylann::voxel {
 
@@ -54,21 +53,23 @@ struct DetailRenderingSettings {
 };
 
 unsigned int get_detail_texture_tile_resolution_for_lod(
-		const DetailRenderingSettings &settings, unsigned int lod_index);
+		const DetailRenderingSettings &settings,
+		unsigned int lod_index
+);
 
 struct DetailTextureData {
 	// Encoded normals
-	std::vector<uint8_t> normals;
+	StdVector<uint8_t> normals;
 	struct Tile {
 		uint8_t x;
 		uint8_t y;
 		uint8_t z;
 		uint8_t axis;
 	};
-	std::vector<Tile> tiles;
+	StdVector<Tile> tiles;
 	// Optionally used in case of partial tiles data, when only getting edited tiles.
 	// If this is empty, it means indices are sequential so there is no need to store them here.
-	std::vector<uint32_t> tile_indices;
+	StdVector<uint32_t> tile_indices;
 
 	inline void clear() {
 		normals.clear();
@@ -98,11 +99,22 @@ public:
 // If the angle between the triangle and the computed normal is larger than `max_deviation_radians`,
 // the normal's direction will be clamped.
 // If `out_edited_tiles` is provided, only tiles containing edited voxels will be processed.
-void compute_detail_texture_data(ICellIterator &cell_iterator, Span<const Vector3f> mesh_vertices,
-		Span<const Vector3f> mesh_normals, Span<const int> mesh_indices, DetailTextureData &texture_data,
-		unsigned int tile_resolution, VoxelGenerator &generator, const VoxelData *voxel_data, Vector3i origin_in_voxels,
-		Vector3i size_in_voxels, unsigned int lod_index, bool octahedral_encoding, float max_deviation_radians,
-		bool edited_tiles_only);
+void compute_detail_texture_data(
+		ICellIterator &cell_iterator,
+		Span<const Vector3f> mesh_vertices,
+		Span<const Vector3f> mesh_normals,
+		Span<const int> mesh_indices,
+		DetailTextureData &texture_data,
+		unsigned int tile_resolution,
+		VoxelGenerator &generator,
+		const VoxelData *voxel_data,
+		Vector3i origin_in_voxels,
+		Vector3i size_in_voxels,
+		unsigned int lod_index,
+		bool octahedral_encoding,
+		float max_deviation_radians,
+		bool edited_tiles_only
+);
 
 struct DetailImages {
 #ifdef VOXEL_VIRTUAL_TEXTURE_USE_TEXTURE_ARRAY
@@ -122,10 +134,14 @@ struct DetailTextures {
 	Ref<Texture2D> lookup;
 };
 
-Ref<Image> store_lookup_to_image(const std::vector<DetailTextureData::Tile> &tiles, Vector3i block_size);
+Ref<Image> store_lookup_to_image(const StdVector<DetailTextureData::Tile> &tiles, Vector3i block_size);
 
 DetailImages store_normalmap_data_to_images(
-		const DetailTextureData &data, unsigned int tile_resolution, Vector3i block_size, bool octahedral_encoding);
+		const DetailTextureData &data,
+		unsigned int tile_resolution,
+		Vector3i block_size,
+		bool octahedral_encoding
+);
 
 // Converts normalmap data into textures. They can be used in a shader to apply normals and obtain extra visual details.
 // This may not be allowed to run in a different thread than the main thread if the renderer is not using Vulkan.
@@ -146,13 +162,21 @@ inline unsigned int get_square_grid_size_from_item_count(unsigned int item_count
 }
 
 // Copies data from a fully packed array into a sub-region of a 2D array (where each rows may be spaced apart).
-inline void copy_2d_region_from_packed_to_atlased(Span<uint8_t> dst, Vector2i dst_size, Span<const uint8_t> src,
-		Vector2i src_size, Vector2i dst_pos, unsigned int item_size_in_bytes) {
+inline void copy_2d_region_from_packed_to_atlased(
+		Span<uint8_t> dst,
+		Vector2i dst_size,
+		Span<const uint8_t> src,
+		Vector2i src_size,
+		Vector2i dst_pos,
+		unsigned int item_size_in_bytes
+) {
 #ifdef DEBUG_ENABLED
 	ZN_ASSERT(src_size.x >= 0 && src_size.y >= 0);
 	ZN_ASSERT(dst_size.x >= 0 && dst_size.y >= 0);
-	ZN_ASSERT(dst_pos.x >= 0 && dst_pos.y >= 0 && dst_pos.x + src_size.x <= dst_size.x &&
-			dst_pos.y + src_size.y <= dst_size.y);
+	ZN_ASSERT(
+			dst_pos.x >= 0 && dst_pos.y >= 0 && dst_pos.x + src_size.x <= dst_size.x &&
+			dst_pos.y + src_size.y <= dst_size.y
+	);
 	ZN_ASSERT(src.size() == src_size.x * src_size.y * item_size_in_bytes);
 	ZN_ASSERT(dst.size() == dst_size.x * dst_size.y * item_size_in_bytes);
 	ZN_ASSERT(!src.overlaps(dst));

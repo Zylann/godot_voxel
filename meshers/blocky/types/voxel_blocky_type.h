@@ -1,10 +1,10 @@
 #ifndef VOXEL_BLOCKY_TYPE_H
 #define VOXEL_BLOCKY_TYPE_H
 
+#include "../../../util/containers/std_vector.h"
 #include "../../../util/godot/classes/resource.h"
 #include "../voxel_blocky_model.h"
 #include "voxel_blocky_attribute.h"
-#include <vector>
 
 namespace zylann::voxel {
 
@@ -33,7 +33,7 @@ public:
 	Ref<VoxelBlockyAttribute> get_attribute_by_name(const StringName &attrib_name) const;
 	Ref<VoxelBlockyAttribute> get_rotation_attribute() const;
 
-	void get_checked_attributes(std::vector<Ref<VoxelBlockyAttribute>> &out_attribs) const;
+	void get_checked_attributes(StdVector<Ref<VoxelBlockyAttribute>> &out_attribs) const;
 
 	// Identifies one model variant of a type, as the attributes and values it has.
 	struct VariantKey {
@@ -62,8 +62,9 @@ public:
 	void set_variant(const VariantKey &key, Ref<VoxelBlockyModel> model);
 	Ref<VoxelBlockyModel> get_variant(const VariantKey &key) const;
 
-	void bake(std::vector<VoxelBlockyModel::BakedData> &out_models, std::vector<VariantKey> &out_keys,
-			VoxelBlockyModel::MaterialIndexer &material_indexer, const VariantKey *specific_key) const;
+	void bake(StdVector<VoxelBlockyModel::BakedData> &out_models, StdVector<VariantKey> &out_keys,
+			VoxelBlockyModel::MaterialIndexer &material_indexer, const VariantKey *specific_key,
+			bool bake_tangents) const;
 
 #ifdef TOOLS_ENABLED
 	void get_configuration_warnings(PackedStringArray &out_warnings) const;
@@ -71,16 +72,16 @@ public:
 
 	Ref<Mesh> get_preview_mesh(const VariantKey &key) const;
 
-	void generate_keys(std::vector<VariantKey> &out_keys, bool include_rotations) const;
+	void generate_keys(StdVector<VariantKey> &out_keys, bool include_rotations) const;
 
 private:
 	// Filters null entries, removes duplicates and sorts attributes before they can be used in processing
-	static void gather_and_sort_attributes(const std::vector<Ref<VoxelBlockyAttribute>> &attributes_with_maybe_nulls,
-			std::vector<Ref<VoxelBlockyAttribute>> &out_attributes);
+	static void gather_and_sort_attributes(const StdVector<Ref<VoxelBlockyAttribute>> &attributes_with_maybe_nulls,
+			StdVector<Ref<VoxelBlockyAttribute>> &out_attributes);
 
 	// Generates all combinations from pre-sorted attributes.
-	static void generate_keys(const std::vector<Ref<VoxelBlockyAttribute>> &attributes,
-			std::vector<VariantKey> &out_keys, bool include_rotations);
+	static void generate_keys(const StdVector<Ref<VoxelBlockyAttribute>> &attributes, StdVector<VariantKey> &out_keys,
+			bool include_rotations);
 
 	void _on_attribute_changed();
 	void _on_base_model_changed();
@@ -108,7 +109,7 @@ private:
 	// List of unchecked attributes, as specified in the editor. Can have nulls, duplicates, and is not sorted.
 	// They are stored this way to allow editing in the Godot editor...
 	// TODO Rename `_unchecked_attributes`?
-	std::vector<Ref<VoxelBlockyAttribute>> _attributes;
+	StdVector<Ref<VoxelBlockyAttribute>> _attributes;
 
 	// TODO Automatic rotation isn't always possible.
 	// For example, if a 3-axis block is asymetric and needs to always point down in its Y axis configuration, there is
@@ -127,7 +128,7 @@ private:
 	// Can also contain variants that have no relation to any attribute, but these are not saved. They remain in memory
 	// to allow the user to go back and forth between configurations in the editor as they make changes.
 	// Saved variants are determined from the combination of current valid attributes.
-	std::vector<VariantData> _variants;
+	StdVector<VariantData> _variants;
 
 	// TODO Conditional models
 };

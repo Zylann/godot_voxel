@@ -1,11 +1,11 @@
 #ifndef VOXEL_STREAM_CACHE_H
 #define VOXEL_STREAM_CACHE_H
 
-#include "../storage/voxel_buffer_internal.h"
-#include "../util/memory.h"
+#include "../storage/voxel_buffer.h"
+#include "../util/containers/std_unordered_map.h"
+#include "../util/memory/memory.h"
 #include "../util/thread/rw_lock.h"
 #include "instance_data.h"
-#include <unordered_map>
 
 namespace zylann::voxel {
 
@@ -23,15 +23,17 @@ public:
 		bool has_voxels = false;
 		bool voxels_deleted = false;
 
-		VoxelBufferInternal voxels;
+		VoxelBuffer voxels;
 		UniquePtr<InstanceBlockData> instances;
+
+		Block() : voxels(VoxelBuffer::ALLOCATOR_POOL) {}
 	};
 
 	// Copies cached block into provided buffer
-	bool load_voxel_block(Vector3i position, uint8_t lod_index, VoxelBufferInternal &out_voxels);
+	bool load_voxel_block(Vector3i position, uint8_t lod_index, VoxelBuffer &out_voxels);
 
 	// Stores provided block into the cache. The cache will take ownership of the provided data.
-	void save_voxel_block(Vector3i position, uint8_t lod_index, VoxelBufferInternal &voxels);
+	void save_voxel_block(Vector3i position, uint8_t lod_index, VoxelBuffer &voxels);
 
 	// Copies cached data into the provided pointer. A new instance will be made if found.
 	bool load_instance_block(Vector3i position, uint8_t lod_index, UniquePtr<InstanceBlockData> &out_instances);
@@ -58,7 +60,7 @@ public:
 private:
 	struct Lod {
 		// Not using pointers for values, since unordered_map does not invalidate pointers to values
-		std::unordered_map<Vector3i, Block> blocks;
+		StdUnorderedMap<Vector3i, Block> blocks;
 		RWLock rw_lock;
 	};
 

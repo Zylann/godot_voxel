@@ -9,7 +9,7 @@
 
 #include <memory>
 
-namespace zylann {
+namespace zylann::godot {
 
 /*// Creates a shared_ptr which will always use Godot's allocation functions
 template <typename T>
@@ -20,7 +20,7 @@ inline std::shared_ptr<T> gd_make_shared() {
 
 // For use with smart pointers such as std::unique_ptr
 template <typename T>
-struct GodotObjectDeleter {
+struct ObjectDeleter {
 	inline void operator()(T *obj) {
 		memdelete(obj);
 	}
@@ -28,14 +28,14 @@ struct GodotObjectDeleter {
 
 // Specialization of `std::unique_ptr which always uses Godot's `memdelete()` as deleter.
 template <typename T>
-using GodotObjectUniquePtr = std::unique_ptr<T, GodotObjectDeleter<T>>;
+using ObjectUniquePtr = std::unique_ptr<T, ObjectDeleter<T>>;
 
 // Creates a `GodotObjectUniquePtr<T>` with an object constructed with `memnew()` inside.
 template <typename T>
-GodotObjectUniquePtr<T> gd_make_unique() {
-	return GodotObjectUniquePtr<T>(memnew(T));
+ObjectUniquePtr<T> make_unique() {
+	return ObjectUniquePtr<T>(memnew(T));
 }
 
-} // namespace zylann
+} // namespace zylann::godot
 
 #endif // ZN_GODOT_MEMORY_H

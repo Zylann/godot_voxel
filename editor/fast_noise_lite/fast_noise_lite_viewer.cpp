@@ -3,7 +3,6 @@
 #include "../../util/godot/classes/image_texture.h"
 #include "../../util/godot/classes/node.h"
 #include "../../util/godot/classes/texture_rect.h"
-#include "../../util/godot/core/callable.h"
 #include "../../util/godot/editor_scale.h"
 
 namespace zylann {
@@ -23,14 +22,14 @@ void ZN_FastNoiseLiteViewer::set_noise(Ref<ZN_FastNoiseLite> noise) {
 	}
 
 	if (_noise.is_valid()) {
-		_noise->disconnect("changed", ZN_GODOT_CALLABLE_MP(this, ZN_FastNoiseLiteViewer, _on_noise_changed));
+		_noise->disconnect("changed", callable_mp(this, &ZN_FastNoiseLiteViewer::_on_noise_changed));
 	}
 
 	_noise = noise;
 
 	if (_noise.is_valid()) {
 		set_noise_gradient(Ref<ZN_FastNoiseLiteGradient>());
-		_noise->connect("changed", ZN_GODOT_CALLABLE_MP(this, ZN_FastNoiseLiteViewer, _on_noise_changed));
+		_noise->connect("changed", callable_mp(this, &ZN_FastNoiseLiteViewer::_on_noise_changed));
 		set_process(true);
 		update_preview();
 
@@ -46,14 +45,14 @@ void ZN_FastNoiseLiteViewer::set_noise_gradient(Ref<ZN_FastNoiseLiteGradient> no
 	}
 
 	if (_noise_gradient.is_valid()) {
-		_noise_gradient->disconnect("changed", ZN_GODOT_CALLABLE_MP(this, ZN_FastNoiseLiteViewer, _on_noise_changed));
+		_noise_gradient->disconnect("changed", callable_mp(this, &ZN_FastNoiseLiteViewer::_on_noise_changed));
 	}
 
 	_noise_gradient = noise_gradient;
 
 	if (_noise_gradient.is_valid()) {
 		set_noise(Ref<ZN_FastNoiseLite>());
-		_noise_gradient->connect("changed", ZN_GODOT_CALLABLE_MP(this, ZN_FastNoiseLiteViewer, _on_noise_changed));
+		_noise_gradient->connect("changed", callable_mp(this, &ZN_FastNoiseLiteViewer::_on_noise_changed));
 		set_process(true);
 		update_preview();
 
@@ -84,7 +83,7 @@ void ZN_FastNoiseLiteViewer::_notification(int p_what) {
 void ZN_FastNoiseLiteViewer::update_preview() {
 	const Vector2i preview_size(PREVIEW_WIDTH, PREVIEW_HEIGHT);
 
-	Ref<Image> im = create_empty_image(preview_size.x, preview_size.y, false, Image::FORMAT_RGB8);
+	Ref<Image> im = godot::create_empty_image(preview_size.x, preview_size.y, false, Image::FORMAT_RGB8);
 
 	if (_noise.is_valid()) {
 		for (int y = 0; y < preview_size.y; ++y) {
@@ -119,10 +118,6 @@ void ZN_FastNoiseLiteViewer::update_preview() {
 	_texture_rect->set_texture(tex);
 }
 
-void ZN_FastNoiseLiteViewer::_bind_methods() {
-#ifdef ZN_GODOT_EXTENSION
-	ClassDB::bind_method(D_METHOD("_on_noise_changed"), &ZN_FastNoiseLiteViewer::_on_noise_changed);
-#endif
-}
+void ZN_FastNoiseLiteViewer::_bind_methods() {}
 
 } // namespace zylann

@@ -1,9 +1,8 @@
 #ifndef VOXEL_GRAPH_EDITOR_NODE_H
 #define VOXEL_GRAPH_EDITOR_NODE_H
 
-#include <vector>
-
 #include "../../generators/graph/voxel_graph_runtime.h"
+#include "../../util/containers/std_vector.h"
 #include "../../util/godot/classes/graph_node.h"
 
 ZN_GODOT_FORWARD_DECLARE(class ColorRect)
@@ -58,7 +57,7 @@ private:
 
 	uint32_t _node_id = 0;
 	VoxelGraphEditorNodePreview *_preview = nullptr;
-	std::vector<Control *> _output_labels;
+	StdVector<Control *> _output_labels;
 	Label *_comment_label = nullptr;
 
 	struct InputHint {
@@ -66,8 +65,8 @@ private:
 		Variant last_value;
 	};
 
-	std::vector<InputHint> _input_hints;
-	std::vector<Node *> _rows;
+	StdVector<InputHint> _input_hints;
+	StdVector<Node *> _rows;
 
 	float _profiling_ratio = 0.f;
 	bool _profiling_ratio_enabled = false;

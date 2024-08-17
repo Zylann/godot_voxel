@@ -3,7 +3,7 @@
 #include "../../util/errors.h"
 #include "../../util/godot/classes/rendering_device.h"
 #include "../../util/math/funcs.h"
-#include "../../util/memory.h"
+#include "../../util/memory/memory.h"
 #include "../../util/profiling.h"
 
 namespace zylann::voxel {
@@ -30,7 +30,8 @@ void GPUTaskRunner::start(RenderingDevice *rd, GPUStorageBufferPool *pool) {
 				GPUTaskRunner *runner = static_cast<GPUTaskRunner *>(p_userdata);
 				runner->thread_func();
 			},
-			this);
+			this
+	);
 }
 
 void GPUTaskRunner::stop() {
@@ -59,7 +60,7 @@ void GPUTaskRunner::thread_func() {
 	ZN_PROFILE_SET_THREAD_NAME("Voxel GPU tasks");
 	ZN_DSTACK();
 
-	std::vector<IGPUTask *> tasks;
+	StdVector<IGPUTask *> tasks;
 
 	// We use a common output buffer for tasks that need to download results back to the CPU,
 	// because a single call to `buffer_get_data` is cheaper than multiple ones, due to Godot's API being synchronous.
@@ -69,7 +70,7 @@ void GPUTaskRunner::thread_func() {
 		unsigned int position;
 		unsigned int size;
 	};
-	std::vector<SBRange> shared_output_storage_buffer_segments;
+	StdVector<SBRange> shared_output_storage_buffer_segments;
 
 	// Godot does not support async compute, so in order to get results from a compute shader, the only way is to sync
 	// with the device, waiting for everything to complete. So instead of running one shader at a time, we run a few of
@@ -113,7 +114,7 @@ void GPUTaskRunner::thread_func() {
 			if (required_shared_output_buffer_size > shared_output_storage_buffer_capacity) {
 				ZN_PROFILE_SCOPE_NAMED("Resize shared output buffer");
 				if (shared_output_storage_buffer_rid.is_valid()) {
-					free_rendering_device_rid(ctx.rendering_device, shared_output_storage_buffer_rid);
+					godot::free_rendering_device_rid(ctx.rendering_device, shared_output_storage_buffer_rid);
 				}
 				// TODO Resize to some multiplier above?
 				shared_output_storage_buffer_rid =
@@ -152,7 +153,8 @@ void GPUTaskRunner::thread_func() {
 				// Unfortunately we can't re-use memory for that buffer, Godot will always want to allocate it using
 				// malloc. That buffer can be a few megabytes long...
 				ctx.downloaded_shared_output_data = ctx.rendering_device.buffer_get_data(
-						shared_output_storage_buffer_rid, 0, required_shared_output_buffer_size);
+						shared_output_storage_buffer_rid, 0, required_shared_output_buffer_size
+				);
 			}
 
 			// Collect results and complete tasks
@@ -176,7 +178,7 @@ void GPUTaskRunner::thread_func() {
 	}
 
 	if (shared_output_storage_buffer_rid.is_valid()) {
-		free_rendering_device_rid(*_rendering_device, shared_output_storage_buffer_rid);
+		godot::free_rendering_device_rid(*_rendering_device, shared_output_storage_buffer_rid);
 	}
 
 	ZN_ASSERT(tasks.size() == 0);

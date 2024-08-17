@@ -28,16 +28,16 @@ int VoxelGenerator::get_used_channels_mask() const {
 VoxelSingleValue VoxelGenerator::generate_single(Vector3i pos, unsigned int channel) {
 	VoxelSingleValue v;
 	v.i = 0;
-	ZN_ASSERT_RETURN_V(channel < VoxelBufferInternal::MAX_CHANNELS, v);
+	ZN_ASSERT_RETURN_V(channel < VoxelBuffer::MAX_CHANNELS, v);
 	// Default slow implementation
 	// TODO Optimize: a small part of the slowness is caused by the allocator.
 	// It is not a good use of `VoxelMemoryPool` for such a small size called so often.
-	// Instead it would be faster if it was a thread-local using the default allocator.
-	VoxelBufferInternal buffer;
+	// Instead it would be faster if it was using a temp allocator, or maybe stack-allocated.
+	VoxelBuffer buffer(VoxelBuffer::ALLOCATOR_POOL);
 	buffer.create(1, 1, 1);
 	VoxelQueryData q{ buffer, pos, 0 };
 	generate_block(q);
-	if (channel == VoxelBufferInternal::CHANNEL_SDF) {
+	if (channel == VoxelBuffer::CHANNEL_SDF) {
 		v.f = buffer.get_voxel_f(0, 0, 0, channel);
 	} else {
 		v.i = buffer.get_voxel(0, 0, 0, channel);
@@ -45,13 +45,19 @@ VoxelSingleValue VoxelGenerator::generate_single(Vector3i pos, unsigned int chan
 	return v;
 }
 
-void VoxelGenerator::generate_series(Span<const float> positions_x, Span<const float> positions_y,
-		Span<const float> positions_z, unsigned int channel, Span<float> out_values, Vector3f min_pos,
-		Vector3f max_pos) {
+void VoxelGenerator::generate_series(
+		Span<const float> positions_x,
+		Span<const float> positions_y,
+		Span<const float> positions_z,
+		unsigned int channel,
+		Span<float> out_values,
+		Vector3f min_pos,
+		Vector3f max_pos
+) {
 	ZN_PRINT_ERROR("Not implemented");
 }
 
-void VoxelGenerator::_b_generate_block(Ref<gd::VoxelBuffer> out_buffer, Vector3 origin_in_voxels, int lod) {
+void VoxelGenerator::_b_generate_block(Ref<godot::VoxelBuffer> out_buffer, Vector3 origin_in_voxels, int lod) {
 	ERR_FAIL_COND(lod < 0);
 	ERR_FAIL_COND(lod >= int(constants::MAX_LOD));
 	ERR_FAIL_COND(out_buffer.is_null());
@@ -99,8 +105,14 @@ std::shared_ptr<VoxelGenerator::ShaderOutputs> VoxelGenerator::get_block_renderi
 	}
 }
 
-static void append_generator_parameter_uniforms(String &source_text, ComputeShaderParameters &out_params,
-		VoxelGenerator::ShaderSourceData &shader_data, unsigned int bindings_start) {
+namespace {
+
+void append_generator_parameter_uniforms(
+		String &source_text,
+		ComputeShaderParameters &out_params,
+		VoxelGenerator::ShaderSourceData &shader_data,
+		unsigned int bindings_start
+) {
 	for (unsigned int i = 0; i < shader_data.parameters.size(); ++i) {
 		VoxelGenerator::ShaderParameter &p = shader_data.parameters[i];
 		const unsigned int binding = bindings_start + i;
@@ -114,16 +126,26 @@ static void append_generator_parameter_uniforms(String &source_text, ComputeShad
 	source_text += "\n";
 }
 
+} // namespace
+
 std::shared_ptr<ComputeShader> compile_detail_rendering_compute_shader(
-		VoxelGenerator &generator, ComputeShaderParameters &out_params) {
+		VoxelGenerator &generator,
+		ComputeShaderParameters &out_params
+) {
 	ZN_PROFILE_SCOPE();
-	ERR_FAIL_COND_V_MSG(!generator.supports_shaders(), ComputeShader::create_invalid(),
+	ERR_FAIL_COND_V_MSG(
+			!generator.supports_shaders(),
+			ComputeShader::create_invalid(),
 			String("Can't use the provided {0} with compute shaders, it does not support GLSL.")
-					.format(varray(VoxelGenerator::get_class_static())));
+					.format(varray(VoxelGenerator::get_class_static()))
+	);
 
 	VoxelGenerator::ShaderSourceData shader_data;
-	ERR_FAIL_COND_V_MSG(!generator.get_shader_source(shader_data), ComputeShader::create_invalid(),
-			"Failed to get shader source code.");
+	ERR_FAIL_COND_V_MSG(
+			!generator.get_shader_source(shader_data),
+			ComputeShader::create_invalid(),
+			"Failed to get shader source code."
+	);
 
 	String source_text;
 	// We are only sure here what binding it's going to be, we can't do it earlier
@@ -149,8 +171,11 @@ std::shared_ptr<ComputeShader> compile_detail_rendering_compute_shader(
 				}
 				source_text += String("\tfloat v{0};\n").format(varray(output_index));
 			}
-			ERR_FAIL_COND_V_MSG(sdf_output_index == -1, ComputeShader::create_invalid(),
-					"Can't generate detail generator shader, SDF output not found");
+			ERR_FAIL_COND_V_MSG(
+					sdf_output_index == -1,
+					ComputeShader::create_invalid(),
+					"Can't generate detail generator shader, SDF output not found"
+			);
 			// Call the generator shader function
 			source_text += "\tgenerate(pos";
 			for (unsigned int output_index = 0; output_index < shader_data.outputs.size(); ++output_index) {
@@ -172,15 +197,24 @@ std::shared_ptr<ComputeShader> compile_detail_rendering_compute_shader(
 }
 
 std::shared_ptr<ComputeShader> compile_block_rendering_compute_shader(
-		VoxelGenerator &generator, ComputeShaderParameters &out_params, VoxelGenerator::ShaderOutputs &outputs) {
+		VoxelGenerator &generator,
+		ComputeShaderParameters &out_params,
+		VoxelGenerator::ShaderOutputs &outputs
+) {
 	ZN_PROFILE_SCOPE();
-	ERR_FAIL_COND_V_MSG(!generator.supports_shaders(), ComputeShader::create_invalid(),
+	ERR_FAIL_COND_V_MSG(
+			!generator.supports_shaders(),
+			ComputeShader::create_invalid(),
 			String("Can't use the provided {0} with compute shaders, it does not support GLSL.")
-					.format(varray(VoxelGenerator::get_class_static())));
+					.format(varray(VoxelGenerator::get_class_static()))
+	);
 
 	VoxelGenerator::ShaderSourceData shader_data;
-	ERR_FAIL_COND_V_MSG(!generator.get_shader_source(shader_data), ComputeShader::create_invalid(),
-			"Failed to get shader source code.");
+	ERR_FAIL_COND_V_MSG(
+			!generator.get_shader_source(shader_data),
+			ComputeShader::create_invalid(),
+			"Failed to get shader source code."
+	);
 
 	String source_text;
 	const unsigned int generator_uniform_binding_start = 2;
@@ -276,7 +310,8 @@ void VoxelGenerator::clear_cache() {
 
 void VoxelGenerator::_bind_methods() {
 	ClassDB::bind_method(
-			D_METHOD("generate_block", "out_buffer", "origin_in_voxels", "lod"), &VoxelGenerator::_b_generate_block);
+			D_METHOD("generate_block", "out_buffer", "origin_in_voxels", "lod"), &VoxelGenerator::_b_generate_block
+	);
 }
 
 } // namespace zylann::voxel

@@ -15,7 +15,7 @@ using namespace godot;
 #endif
 
 #include "../godot/macros.h"
-#include <iosfwd>
+#include "../string/std_stringstream.h"
 
 namespace zylann {
 namespace Vector3iUtil {
@@ -103,7 +103,8 @@ inline Vector3i wrap(const Vector3i v, const Vector3i d) {
 
 inline Vector3i clamp(const Vector3i a, const Vector3i minv, const Vector3i maxv) {
 	return Vector3i(
-			math::clamp(a.x, minv.x, maxv.x), math::clamp(a.y, minv.y, maxv.y), math::clamp(a.z, minv.z, maxv.z));
+			math::clamp(a.x, minv.x, maxv.x), math::clamp(a.y, minv.y, maxv.y), math::clamp(a.z, minv.z, maxv.z)
+	);
 }
 
 inline Vector3i abs(const Vector3i v) {
@@ -158,7 +159,7 @@ inline int chebyshev_distance(const Vector3i &a, const Vector3i &b) {
 
 } // namespace math
 
-std::stringstream &operator<<(std::stringstream &ss, const Vector3i &v);
+StdStringStream &operator<<(StdStringStream &ss, const Vector3i &v);
 
 } // namespace zylann
 
@@ -185,6 +186,10 @@ inline Vector3i operator>>(const Vector3i &a, int b) {
 
 inline Vector3i operator&(const Vector3i &a, uint32_t b) {
 	return Vector3i(a.x & b, a.y & b, a.z & b);
+}
+
+inline Vector3i operator%(const Vector3i &a, int b) {
+	return Vector3i(a.x % b, a.y % b, a.z % b);
 }
 
 ZN_GODOT_NAMESPACE_END

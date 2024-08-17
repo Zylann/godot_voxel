@@ -8,7 +8,7 @@
 using namespace godot;
 #endif
 
-namespace zylann {
+namespace zylann::godot {
 
 inline void set_button_icon(Button &button, Ref<Texture2D> icon) {
 #if defined(ZN_GODOT)
@@ -18,6 +18,6 @@ inline void set_button_icon(Button &button, Ref<Texture2D> icon) {
 #endif
 }
 
-} // namespace zylann
+} // namespace zylann::godot
 
 #endif // ZN_GODOT_BUTTON_H

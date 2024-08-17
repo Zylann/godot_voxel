@@ -4,20 +4,20 @@
 #include "../constants/cube_tables.h"
 #include "../util/containers/fixed_array.h"
 #include "../util/containers/span.h"
+#include "../util/containers/std_vector.h"
 #include "../util/godot/classes/image.h"
 #include "../util/godot/classes/mesh.h"
 #include "../util/macros.h"
-#include <vector>
 
 ZN_GODOT_FORWARD_DECLARE(class ShaderMaterial)
 
 namespace zylann::voxel {
 
-namespace gd {
+namespace godot {
 class VoxelBuffer;
 }
 
-class VoxelBufferInternal;
+class VoxelBuffer;
 class VoxelGenerator;
 class VoxelData;
 
@@ -27,7 +27,7 @@ class VoxelMesher : public Resource {
 public:
 	struct Input {
 		// Voxels to be used as the primary source of data.
-		const VoxelBufferInternal &voxels;
+		const VoxelBuffer &voxels;
 		// When using LOD, some meshers can use the generator and edited voxels to affine results.
 		// If not provided, the mesher will only use `voxels`.
 		VoxelGenerator *generator = nullptr;
@@ -53,15 +53,15 @@ public:
 			Array arrays;
 			uint16_t material_index = 0;
 		};
-		std::vector<Surface> surfaces;
-		FixedArray<std::vector<Surface>, Cube::SIDE_COUNT> transition_surfaces;
+		StdVector<Surface> surfaces;
+		FixedArray<StdVector<Surface>, Cube::SIDE_COUNT> transition_surfaces;
 		Mesh::PrimitiveType primitive_type = Mesh::PRIMITIVE_TRIANGLES;
 		// Flags for creating the Godot mesh resource
 		uint32_t mesh_flags = 0;
 
 		struct CollisionSurface {
-			std::vector<Vector3f> positions;
-			std::vector<int> indices;
+			StdVector<Vector3f> positions;
+			StdVector<int> indices;
 			// If >= 0, the collision surface may actually be picked from a sub-section of arrays of the first surface
 			// in the render mesh (It may start from index 0).
 			// Used when transition meshes are combined with the main mesh.
@@ -70,18 +70,20 @@ public:
 		};
 		CollisionSurface collision_surface;
 
+		Array shadow_occluder;
+
 		// May be used to store extra information needed in shader to render the mesh properly
 		// (currently used only by the cubes mesher when baking colors)
 		Ref<Image> atlas_image;
 	};
 
-	static bool is_mesh_empty(const std::vector<Output::Surface> &surfaces);
+	static bool is_mesh_empty(const StdVector<Output::Surface> &surfaces);
 
 	// This can be called from multiple threads at once. Make sure member vars are protected or thread-local.
 	virtual void build(Output &output, const Input &voxels);
 
 	// Builds a mesh from the given voxels. This function is simplified to be used by the script API.
-	Ref<Mesh> build_mesh(Ref<gd::VoxelBuffer> voxels, TypedArray<Material> materials, Dictionary additional_data);
+	Ref<Mesh> build_mesh(const VoxelBuffer &voxels, TypedArray<Material> materials, Dictionary additional_data);
 
 	// Gets how many neighbor voxels need to be accessed around the meshed area, toward negative axes.
 	// If this is not respected, the mesher might produce seams at the edges, or an error
@@ -106,6 +108,8 @@ public:
 	// index does not have a material assigned. If not provided here, a default material may be used.
 	// An error can be produced if the index is out of bounds.
 	virtual Ref<Material> get_material_by_index(unsigned int i) const;
+	// Get the highest+1 material index
+	virtual unsigned int get_material_index_count() const;
 
 #ifdef TOOLS_ENABLED
 	// If the mesher has problems, messages may be returned by this method so they can be shown to the user.
@@ -126,6 +130,7 @@ public:
 	virtual Ref<ShaderMaterial> get_default_lod_material() const;
 
 protected:
+	Ref<Mesh> _b_build_mesh(Ref<godot::VoxelBuffer> voxels, TypedArray<Material> materials, Dictionary additional_data);
 	static void _bind_methods();
 
 	void set_padding(int minimum, int maximum);

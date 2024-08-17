@@ -1,6 +1,7 @@
 #ifndef VOXEL_GRAPH_COMPILER_H
 #define VOXEL_GRAPH_COMPILER_H
 
+#include "../../util/containers/std_vector.h"
 #include "voxel_graph_function.h"
 #include "voxel_graph_runtime.h"
 #include <type_traits>
@@ -20,22 +21,22 @@ struct ExpandedNodeRemap {
 
 struct GraphRemappingInfo {
 	// Used for debug output previews in the editor
-	std::vector<PortRemap> user_to_expanded_ports;
+	StdVector<PortRemap> user_to_expanded_ports;
 	// Used for error reporting
-	std::vector<ExpandedNodeRemap> expanded_to_user_node_ids;
+	StdVector<ExpandedNodeRemap> expanded_to_user_node_ids;
 };
 
 // Pre-processes the graph and applies some optimizations before doing the main compilation pass.
 // This can involve some nodes getting removed or replaced with new ones.
 CompilationResult expand_graph(const ProgramGraph &graph, ProgramGraph &expanded_graph,
-		Span<const VoxelGraphFunction::Port> input_defs, std::vector<uint32_t> *input_node_ids,
-		const NodeTypeDB &type_db, GraphRemappingInfo *remap_info);
+		Span<const VoxelGraphFunction::Port> input_defs, StdVector<uint32_t> *input_node_ids, const NodeTypeDB &type_db,
+		GraphRemappingInfo *remap_info);
 
 // Functions usable by node implementations during the compilation stage
 class CompileContext {
 public:
-	CompileContext(/*const ProgramGraph::Node &node,*/ std::vector<uint16_t> &program,
-			std::vector<Runtime::HeapResource> &heap_resources, std::vector<Variant> &params) :
+	CompileContext(/*const ProgramGraph::Node &node,*/ StdVector<uint16_t> &program,
+			StdVector<Runtime::HeapResource> &heap_resources, StdVector<Variant> &params) :
 			/*_node(node),*/ _program(program), _heap_resources(heap_resources), _params(params) {}
 
 	Variant get_param(size_t i) const {
@@ -81,13 +82,13 @@ public:
 
 	// In case the compilation step produces a resource to be deleted
 	template <typename T>
-	void add_memdelete_cleanup(T *ptr) {
+	void add_delete_cleanup(T *ptr) {
+		static_assert(!std::is_base_of<Object, T>::value);
 		Runtime::HeapResource hr;
 		hr.ptr = ptr;
 		hr.deleter = [](void *p) {
-			// TODO We have no guarantee it was allocated with memnew :|
 			T *tp = reinterpret_cast<T *>(p);
-			memdelete(tp);
+			ZN_DELETE(tp);
 		};
 		_heap_resources.push_back(hr);
 	}
@@ -111,9 +112,9 @@ public:
 
 private:
 	// const ProgramGraph::Node &_node;
-	std::vector<uint16_t> &_program;
-	std::vector<Runtime::HeapResource> &_heap_resources;
-	std::vector<Variant> &_params;
+	StdVector<uint16_t> &_program;
+	StdVector<Runtime::HeapResource> &_heap_resources;
+	StdVector<Variant> &_params;
 	String _error_message;
 	size_t _params_size_in_words = 0;
 	bool _has_error = false;

@@ -1,11 +1,10 @@
 #include "gpu_storage_buffer_pool.h"
 #include "../../util/dstack.h"
-#include "../../util/godot/core/array.h" // for `varray` in GDExtension builds
-#include "../../util/godot/core/print_string.h"
-#include "../../util/godot/core/string.h" // for `+=` operator missing from String in GDExtension builds
+#include "../../util/io/log.h"
 #include "../../util/math/funcs.h"
 #include "../../util/profiling.h"
-#include "../../util/string_funcs.h"
+#include "../../util/string/format.h"
+#include "../../util/string/std_stringstream.h"
 
 #include <algorithm>
 #include <limits>
@@ -39,10 +38,11 @@ void GPUStorageBufferPool::clear() {
 	for (Pool &pool : _pools) {
 		if (pool.used_buffers > 0) {
 			ZN_PRINT_ERROR(
-					format("{} storage buffers are still in use when clearing pool {}", pool.used_buffers, pool_index));
+					format("{} storage buffers are still in use when clearing pool {}", pool.used_buffers, pool_index)
+			);
 		}
 		for (GPUStorageBuffer &b : pool.buffers) {
-			free_rendering_device_rid(rd, b.rid);
+			godot::free_rendering_device_rid(rd, b.rid);
 		}
 		pool.buffers.clear();
 		++pool_index;
@@ -105,7 +105,7 @@ GPUStorageBuffer GPUStorageBufferPool::allocate(uint32_t p_size, const PackedByt
 		b.rid = rd.storage_buffer_create(capacity);
 		ZN_ASSERT_RETURN_V(b.rid.is_valid(), GPUStorageBuffer());
 		if (pba != nullptr) {
-			update_storage_buffer(rd, b.rid, 0, pba->size(), *pba);
+			godot::update_storage_buffer(rd, b.rid, 0, pba->size(), *pba);
 		}
 		b.size = capacity;
 
@@ -114,7 +114,7 @@ GPUStorageBuffer GPUStorageBufferPool::allocate(uint32_t p_size, const PackedByt
 		ZN_ASSERT(b.is_valid());
 		pool.buffers.pop_back();
 		if (pba != nullptr) {
-			update_storage_buffer(rd, b.rid, 0, p_size, *pba);
+			godot::update_storage_buffer(rd, b.rid, 0, p_size, *pba);
 		}
 	}
 
@@ -146,19 +146,19 @@ void GPUStorageBufferPool::recycle(GPUStorageBuffer b) {
 }
 
 void GPUStorageBufferPool::debug_print() const {
-	String s = "---- GPUStorageBufferPool ----\n";
+	StdStringStream ss;
+	ss << "---- GPUStorageBufferPool ----\n";
 	for (unsigned int i = 0; i < _pools.size(); ++i) {
 		const Pool &pool = _pools[i];
 		if (pool.buffers.capacity() == 0) {
 			continue;
 		}
 		const unsigned int block_size = _pool_sizes[i];
-		s += String("Pool[{0}] block size: {1}, pooled buffers: {2}, capacity: {3}\n")
-					 .format(varray(i, block_size, ZN_SIZE_T_TO_VARIANT(pool.buffers.size()),
-							 ZN_SIZE_T_TO_VARIANT(pool.buffers.capacity())));
+		ss << "Pool[" << i << "] block size: " << block_size << ", pooled buffers: " << pool.buffers.size()
+		   << ", capacity: " << pool.buffers.capacity() << "\n";
 	}
-	s += "----";
-	print_line(s);
+	ss << "----";
+	print_line(ss.str());
 }
 
 } // namespace zylann::voxel

@@ -1,8 +1,8 @@
 #include "graph_edit.h"
 
-namespace zylann {
+namespace zylann::godot {
 
-void get_graph_edit_connections(const GraphEdit &self, std::vector<GodotGraphEditConnection> &out_connections) {
+void get_graph_edit_connections(const GraphEdit &self, StdVector<GraphEditConnection> &out_connections) {
 #if defined(ZN_GODOT)
 
 #if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR <= 2
@@ -10,7 +10,7 @@ void get_graph_edit_connections(const GraphEdit &self, std::vector<GodotGraphEdi
 	self.get_connection_list(&connections_list);
 
 	for (const GraphEdit::Connection &src_con : connections_list) {
-		GodotGraphEditConnection dst_con;
+		GraphEditConnection dst_con;
 
 #if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR <= 1
 		dst_con.from = src_con.from;
@@ -29,7 +29,7 @@ void get_graph_edit_connections(const GraphEdit &self, std::vector<GodotGraphEdi
 	const List<Ref<GraphEdit::Connection>> &connections_list = self.get_connection_list();
 
 	for (const Ref<GraphEdit::Connection> &src_con : connections_list) {
-		GodotGraphEditConnection dst_con;
+		GraphEditConnection dst_con;
 
 		dst_con.from = src_con->from_node;
 		dst_con.to = src_con->to_node;
@@ -56,7 +56,7 @@ void get_graph_edit_connections(const GraphEdit &self, std::vector<GodotGraphEdi
 
 	for (int i = 0; i < count; ++i) {
 		Dictionary d = list[i];
-		GodotGraphEditConnection con;
+		GraphEditConnection con;
 		con.from = d[from_key];
 		con.from_port = d[from_port_key];
 		con.to = d[to_key];
@@ -90,4 +90,4 @@ int get_graph_edit_snapping_distance(const GraphEdit &self) {
 #endif
 }
 
-} // namespace zylann
+} // namespace zylann::godot

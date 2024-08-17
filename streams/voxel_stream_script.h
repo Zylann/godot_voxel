@@ -1,10 +1,12 @@
 #ifndef VOXEL_STREAM_SCRIPT_H
 #define VOXEL_STREAM_SCRIPT_H
 
+#include "../util/godot/core/gdvirtual.h"
 #include "voxel_stream.h"
-#if defined(ZN_GODOT)
-#include <core/object/script_language.h> // needed for GDVIRTUAL macro
-#include <core/object/gdvirtual.gen.inc> // Also needed for GDVIRTUAL macro...
+
+#ifdef ZN_GODOT_EXTENSION
+// GodotCpp wants the full definition of the class in GDVIRTUAL
+#include "../storage/voxel_buffer_gd.h"
 #endif
 
 namespace zylann::voxel {
@@ -21,14 +23,10 @@ public:
 	int get_used_channels_mask() const override;
 
 protected:
-// TODO GDX: Defining custom virtual functions is not supported...
-#if defined(ZN_GODOT)
 	// TODO Why is it unable to convert `Result` into `Variant` even though a cast is defined in voxel_stream.h???
-	//GDVIRTUAL3R(VoxelStream::Result, _emerge_block, Ref<VoxelBuffer>, Vector3i, int)
-	GDVIRTUAL3R(int, _load_voxel_block, Ref<gd::VoxelBuffer>, Vector3i, int)
-	GDVIRTUAL3(_save_voxel_block, Ref<gd::VoxelBuffer>, Vector3i, int)
+	GDVIRTUAL3R(int, _load_voxel_block, Ref<godot::VoxelBuffer>, Vector3i, int)
+	GDVIRTUAL3(_save_voxel_block, Ref<godot::VoxelBuffer>, Vector3i, int)
 	GDVIRTUAL0RC(int, _get_used_channels_mask) // I think `C` means `const`?
-#endif
 
 	static void _bind_methods();
 };

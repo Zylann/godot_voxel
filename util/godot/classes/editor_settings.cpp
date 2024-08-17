@@ -1,7 +1,7 @@
 #include "editor_settings.h"
 #include "input_event_key.h"
 
-namespace zylann {
+namespace zylann::godot {
 
 Ref<Shortcut> get_or_create_editor_shortcut(const String &p_path, const String &p_name, Key p_keycode) {
 #if defined(ZN_GODOT)
@@ -29,7 +29,7 @@ Ref<Shortcut> get_or_create_editor_shortcut(const String &p_path, const String &
 #endif
 
 	Ref<InputEventKey> ie;
-	if (keycode != godot::KEY_NONE) {
+	if (keycode != ::godot::KEY_NONE) {
 		ie = create_input_event_from_key(keycode, false);
 		events.push_back(ie);
 	}
@@ -43,4 +43,4 @@ Ref<Shortcut> get_or_create_editor_shortcut(const String &p_path, const String &
 #endif
 }
 
-} // namespace zylann
+} // namespace zylann::godot

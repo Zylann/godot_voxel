@@ -13,7 +13,7 @@
 #include "../util/macros.h"
 #include "../util/math/conv.h"
 #include "../util/profiling.h"
-#include "../util/string_funcs.h"
+#include "../util/string/format.h"
 
 namespace zylann::voxel {
 
@@ -24,9 +24,9 @@ VoxelEngine &VoxelEngine::get_singleton() {
 	return *g_voxel_engine;
 }
 
-void VoxelEngine::create_singleton(ThreadsConfig threads_config) {
+void VoxelEngine::create_singleton(Config config) {
 	ZN_ASSERT_MSG(g_voxel_engine == nullptr, "Creating singleton twice");
-	g_voxel_engine = ZN_NEW(VoxelEngine(threads_config));
+	g_voxel_engine = ZN_NEW(VoxelEngine(config));
 	// Do separately because it involves accessing `g_voxel_engine`
 	g_voxel_engine->load_shaders();
 }
@@ -37,23 +37,21 @@ void VoxelEngine::destroy_singleton() {
 	g_voxel_engine = nullptr;
 }
 
-VoxelEngine::VoxelEngine(ThreadsConfig threads_config) {
+VoxelEngine::VoxelEngine(Config config) {
 	const int hw_threads_hint = Thread::get_hardware_concurrency();
 	ZN_PRINT_VERBOSE(format("Voxel: HW threads hint: {}", hw_threads_hint));
 
-	ZN_ASSERT(threads_config.thread_count_margin_below_max >= 0);
-	ZN_ASSERT(threads_config.thread_count_minimum >= 1);
-	ZN_ASSERT(threads_config.thread_count_ratio_over_max >= 0.f);
+	ZN_ASSERT(config.thread_count_margin_below_max >= 0);
+	ZN_ASSERT(config.thread_count_minimum >= 1);
+	ZN_ASSERT(config.thread_count_ratio_over_max >= 0.f);
 
 	// Compute thread count for general pool.
 	// Note that the I/O thread counts as one used thread and will always be present.
 
-	const int maximum_thread_count = math::max(
-			hw_threads_hint - threads_config.thread_count_margin_below_max, threads_config.thread_count_minimum);
-	const int thread_count_by_ratio =
-			int(Math::round(float(threads_config.thread_count_ratio_over_max) * hw_threads_hint));
-	const int thread_count =
-			math::clamp(thread_count_by_ratio, threads_config.thread_count_minimum, maximum_thread_count);
+	const int maximum_thread_count =
+			math::max(hw_threads_hint - config.thread_count_margin_below_max, config.thread_count_minimum);
+	const int thread_count_by_ratio = int(Math::round(float(config.thread_count_ratio_over_max) * hw_threads_hint));
+	const int thread_count = math::clamp(thread_count_by_ratio, config.thread_count_minimum, maximum_thread_count);
 	ZN_PRINT_VERBOSE(format("Voxel: automatic thread count set to {}", thread_count));
 
 	if (thread_count > hw_threads_hint) {
@@ -89,7 +87,7 @@ VoxelEngine::VoxelEngine(ThreadsConfig threads_config) {
 		// Otherwise I don't feel like there is a point in using one IMO.
 		sampler_state->set_mag_filter(RenderingDevice::SAMPLER_FILTER_LINEAR);
 		sampler_state->set_min_filter(RenderingDevice::SAMPLER_FILTER_LINEAR);
-		_filtering_sampler_rid = sampler_create(*_rendering_device, **sampler_state);
+		_filtering_sampler_rid = zylann::godot::sampler_create(*_rendering_device, **sampler_state);
 
 		_gpu_storage_buffer_pool.set_rendering_device(_rendering_device);
 
@@ -98,6 +96,8 @@ VoxelEngine::VoxelEngine(ThreadsConfig threads_config) {
 	} else {
 		ZN_PRINT_VERBOSE("Could not create local RenderingDevice, GPU functionality won't be supported.");
 	}
+
+	set_main_thread_time_budget_usec(config.main_thread_budget_usec);
 }
 
 void VoxelEngine::load_shaders() {
@@ -110,21 +110,29 @@ void VoxelEngine::load_shaders() {
 		_detail_gather_hits_shader.load_from_glsl(g_detail_gather_hits_shader, "zylann.voxel.detail_gather_hits");
 		_detail_normalmap_shader.load_from_glsl(g_detail_normalmap_shader, "zylann.voxel.detail_normalmap_shader");
 
-		_detail_modifier_sphere_shader.load_from_glsl(String(g_detail_modifier_shader_template_0) +
-						String(g_modifier_sphere_shader_snippet) + String(g_detail_modifier_shader_template_1),
-				"zylann.voxel.detail_modifier_sphere_shader");
+		_detail_modifier_sphere_shader.load_from_glsl(
+				String(g_detail_modifier_shader_template_0) + String(g_modifier_sphere_shader_snippet) +
+						String(g_detail_modifier_shader_template_1),
+				"zylann.voxel.detail_modifier_sphere_shader"
+		);
 
-		_detail_modifier_mesh_shader.load_from_glsl(String(g_detail_modifier_shader_template_0) +
-						String(g_modifier_mesh_shader_snippet) + String(g_detail_modifier_shader_template_1),
-				"zylann.voxel.detail_modifier_mesh_shader");
+		_detail_modifier_mesh_shader.load_from_glsl(
+				String(g_detail_modifier_shader_template_0) + String(g_modifier_mesh_shader_snippet) +
+						String(g_detail_modifier_shader_template_1),
+				"zylann.voxel.detail_modifier_mesh_shader"
+		);
 
-		_block_modifier_sphere_shader.load_from_glsl(String(g_block_modifier_shader_template_0) +
-						String(g_modifier_sphere_shader_snippet) + String(g_block_modifier_shader_template_1),
-				"zylann.voxel.block_modifier_sphere_shader");
+		_block_modifier_sphere_shader.load_from_glsl(
+				String(g_block_modifier_shader_template_0) + String(g_modifier_sphere_shader_snippet) +
+						String(g_block_modifier_shader_template_1),
+				"zylann.voxel.block_modifier_sphere_shader"
+		);
 
-		_block_modifier_mesh_shader.load_from_glsl(String(g_block_modifier_shader_template_0) +
-						String(g_modifier_mesh_shader_snippet) + String(g_block_modifier_shader_template_1),
-				"zylann.voxel.block_modifier_mesh_shader");
+		_block_modifier_mesh_shader.load_from_glsl(
+				String(g_block_modifier_shader_template_0) + String(g_modifier_mesh_shader_snippet) +
+						String(g_block_modifier_shader_template_1),
+				"zylann.voxel.block_modifier_mesh_shader"
+		);
 	}
 }
 
@@ -148,7 +156,7 @@ VoxelEngine::~VoxelEngine() {
 		_block_modifier_sphere_shader.clear();
 		_block_modifier_mesh_shader.clear();
 
-		free_rendering_device_rid(*_rendering_device, _filtering_sampler_rid);
+		zylann::godot::free_rendering_device_rid(*_rendering_device, _filtering_sampler_rid);
 		_filtering_sampler_rid = RID();
 
 		if (is_verbose_output_enabled()) {
@@ -171,7 +179,7 @@ void VoxelEngine::wait_and_clear_all_tasks(bool warn) {
 			ZN_PRINT_WARNING("General tasks remain on module cleanup, "
 							 "this could become a problem if they reference scripts");
 		}
-		memdelete(task);
+		ZN_DELETE(task);
 	});
 }
 
@@ -215,14 +223,14 @@ void VoxelEngine::set_viewer_position(ViewerID viewer_id, Vector3 position) {
 	viewer.world_position = position;
 }
 
-void VoxelEngine::set_viewer_distance(ViewerID viewer_id, unsigned int distance) {
+void VoxelEngine::set_viewer_distances(ViewerID viewer_id, Viewer::Distances distances) {
 	Viewer &viewer = _world.viewers.get(viewer_id);
-	viewer.view_distance = distance;
+	viewer.view_distances = distances;
 }
 
-unsigned int VoxelEngine::get_viewer_distance(ViewerID viewer_id) const {
+VoxelEngine::Viewer::Distances VoxelEngine::get_viewer_distances(ViewerID viewer_id) const {
 	const Viewer &viewer = _world.viewers.get(viewer_id);
-	return viewer.view_distance;
+	return viewer.view_distances;
 }
 
 void VoxelEngine::set_viewer_requires_visuals(ViewerID viewer_id, bool enabled) {
@@ -270,7 +278,9 @@ bool VoxelEngine::viewer_exists(ViewerID viewer_id) const {
 }
 
 void VoxelEngine::push_main_thread_time_spread_task(
-		zylann::ITimeSpreadTask *task, TimeSpreadTaskRunner::Priority priority) {
+		zylann::ITimeSpreadTask *task,
+		TimeSpreadTaskRunner::Priority priority
+) {
 	_time_spread_task_runner.push(task, priority);
 }
 
@@ -321,11 +331,16 @@ void VoxelEngine::process() {
 	ZN_PROFILE_PLOT("TimeSpread tasks", int64_t(_time_spread_task_runner.get_pending_count()));
 	ZN_PROFILE_PLOT("Progressive tasks", int64_t(_progressive_task_runner.get_pending_count()));
 	ZN_PROFILE_PLOT("Threaded tasks", int64_t(_general_thread_pool.get_debug_remaining_tasks()));
+	ZN_PROFILE_PLOT("Objects", int64_t(ObjectDB::get_object_count()));
+	ZN_PROFILE_PLOT(
+			"ZN Std Allocator",
+			int64_t(StdDefaultAllocatorCounters::g_allocated - StdDefaultAllocatorCounters::g_deallocated)
+	);
 
 	// Receive generation and meshing results
 	_general_thread_pool.dequeue_completed_tasks([](zylann::IThreadedTask *task) {
 		task->apply_result();
-		memdelete(task);
+		ZN_DELETE(task);
 	});
 
 	// Run this after dequeueing threaded tasks, because they can add some to this runner,
@@ -364,9 +379,7 @@ void VoxelEngine::sync_viewers_task_priority_data() {
 	unsigned int max_distance = 0;
 	_world.viewers.for_each_value([&i, &max_distance, &dep](Viewer &viewer) {
 		dep.viewers[i] = to_vec3f(viewer.world_position);
-		if (viewer.view_distance > max_distance) {
-			max_distance = viewer.view_distance;
-		}
+		max_distance = math::max(max_distance, viewer.view_distances.max());
 		++i;
 	});
 
@@ -378,7 +391,9 @@ void VoxelEngine::sync_viewers_task_priority_data() {
 	dep.highest_view_distance = max_distance * 2;
 }
 
-static unsigned int debug_get_active_thread_count(const zylann::ThreadedTaskRunner &pool) {
+namespace {
+
+unsigned int debug_get_active_thread_count(const zylann::ThreadedTaskRunner &pool) {
 	unsigned int active_count = 0;
 	for (unsigned int i = 0; i < pool.get_thread_count(); ++i) {
 		zylann::ThreadedTaskRunner::State s = pool.get_thread_debug_state(i);
@@ -389,7 +404,7 @@ static unsigned int debug_get_active_thread_count(const zylann::ThreadedTaskRunn
 	return active_count;
 }
 
-static VoxelEngine::Stats::ThreadPoolStats debug_get_pool_stats(const zylann::ThreadedTaskRunner &pool) {
+VoxelEngine::Stats::ThreadPoolStats debug_get_pool_stats(const zylann::ThreadedTaskRunner &pool) {
 	VoxelEngine::Stats::ThreadPoolStats d;
 	d.tasks = pool.get_debug_remaining_tasks();
 	d.active_threads = debug_get_active_thread_count(pool);
@@ -403,6 +418,8 @@ static VoxelEngine::Stats::ThreadPoolStats debug_get_pool_stats(const zylann::Th
 	return d;
 }
 
+} // namespace
+
 VoxelEngine::Stats VoxelEngine::get_stats() const {
 	Stats s;
 	s.general = debug_get_pool_stats(_general_thread_pool);
@@ -411,30 +428,6 @@ VoxelEngine::Stats VoxelEngine::get_stats() const {
 	s.streaming_tasks = LoadBlockDataTask::debug_get_running_count() + SaveBlockDataTask::debug_get_running_count();
 	s.main_thread_tasks = _time_spread_task_runner.get_pending_count() + _progressive_task_runner.get_pending_count();
 	return s;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-BufferedTaskScheduler::BufferedTaskScheduler() : _thread_id(Thread::get_caller_id()) {}
-
-BufferedTaskScheduler &BufferedTaskScheduler::get_for_current_thread() {
-	static thread_local BufferedTaskScheduler tls_task_scheduler;
-	if (tls_task_scheduler.has_tasks()) {
-		ZN_PRINT_WARNING("Getting BufferedTaskScheduler for a new batch but it already has tasks!");
-	}
-	return tls_task_scheduler;
-}
-
-void BufferedTaskScheduler::flush() {
-	ZN_ASSERT(_thread_id == Thread::get_caller_id());
-	if (_main_tasks.size() > 0) {
-		VoxelEngine::get_singleton().push_async_tasks(to_span(_main_tasks));
-	}
-	if (_io_tasks.size() > 0) {
-		VoxelEngine::get_singleton().push_async_io_tasks(to_span(_io_tasks));
-	}
-	_main_tasks.clear();
-	_io_tasks.clear();
 }
 
 } // namespace zylann::voxel

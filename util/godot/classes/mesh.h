@@ -10,7 +10,7 @@
 using namespace godot;
 #endif
 
-namespace zylann {
+namespace zylann::godot {
 
 // Mesh utilities
 
@@ -22,6 +22,6 @@ void offset_vec3_array(PackedVector3Array &array, Vector3 offset);
 void scale_surface(Array &surface, float scale);
 void offset_surface(Array &surface, Vector3 offset);
 
-} // namespace zylann
+} // namespace zylann::godot
 
 #endif // ZN_GODOT_MESH_H

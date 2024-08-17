@@ -39,13 +39,13 @@ void register_curve_node(Span<NodeType> types) {
 			// Make sure it is baked. We don't want multithreading to bail out because of a write operation
 			// happening in `interpolate_baked`...
 			curve->bake();
-			CurveRangeData *curve_range_data = memnew(CurveRangeData);
+			CurveRangeData *curve_range_data = ZN_NEW(CurveRangeData);
 			get_curve_monotonic_sections(**curve, curve_range_data->sections);
 			Params p;
 			p.curve_range_data = curve_range_data;
 			p.curve = *curve;
 			ctx.set_params(p);
-			ctx.add_memdelete_cleanup(curve_range_data);
+			ctx.add_delete_cleanup(curve_range_data);
 		};
 		t.process_buffer_func = [](Runtime::ProcessBufferContext &ctx) {
 			ZN_PROFILE_SCOPE_NAMED("NODE_CURVE");
@@ -75,7 +75,7 @@ void register_curve_node(Span<NodeType> types) {
 			}
 			ComputeShaderResource res;
 			res.create_texture_2d(**curve);
-			const std::string uniform_texture = ctx.add_uniform(std::move(res));
+			const StdString uniform_texture = ctx.add_uniform(std::move(res));
 			// We are offsetting X to match the interpolation Godot's Curve does, because the default linear
 			// interpolation sampler is offset by half a pixel
 			ctx.add_format("{} = texture({}, vec2({} + 0.5 / float(textureSize({}, 0).x), 0.0)).r;\n",

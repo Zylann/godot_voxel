@@ -3,7 +3,7 @@
 
 #include "voxel_modifier_gd.h"
 
-namespace zylann::voxel::gd {
+namespace zylann::voxel::godot {
 
 class VoxelModifierSphere : public VoxelModifier {
 	GDCLASS(VoxelModifierSphere, VoxelModifier);
@@ -21,6 +21,6 @@ private:
 	float _radius = 10.f;
 };
 
-} // namespace zylann::voxel::gd
+} // namespace zylann::voxel::godot
 
 #endif // VOXEL_MODIFIER_SPHERE_GD_H

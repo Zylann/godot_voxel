@@ -1,5 +1,6 @@
 #include "voxel_blocky_type_library_ids_dialog.h"
 #include "../../../util/containers/container_funcs.h"
+#include "../../../util/containers/std_vector.h"
 #include "../../../util/godot/classes/button.h"
 #include "../../../util/godot/classes/item_list.h"
 #include "../../../util/godot/classes/v_box_container.h"
@@ -36,7 +37,7 @@ void VoxelBlockyTypeLibraryIDSDialog::set_library(Ref<VoxelBlockyTypeLibrary> li
 	ZN_ASSERT_RETURN(library.is_valid());
 
 	PackedStringArray id_map;
-	std::vector<uint16_t> used_ids;
+	StdVector<uint16_t> used_ids;
 
 	// We could update the ID Map every time this dialog opens, but that's technically a modification, and it means it
 	// is more likely for IDs to become unused while the user is in the process of editing things. So instead we use a

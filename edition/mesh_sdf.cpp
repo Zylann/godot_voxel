@@ -4,16 +4,16 @@
 #include "../util/math/triangle.h"
 #include "../util/math/vector3d.h"
 #include "../util/profiling.h"
-#include "../util/string_funcs.h" // Debug
+#include "../util/string/format.h" // Debug
 #include "../util/voxel_raycast.h"
 
 // Debug
-//#define ZN_MESH_SDF_DEBUG_SLICES
+// #define ZN_MESH_SDF_DEBUG_SLICES
 #ifdef ZN_MESH_SDF_DEBUG_SLICES
 #include "../util/math/color.h"
 #include <core/io/image.h>
 #endif
-//#define ZN_MESH_SDF_DEBUG_BATCH
+// #define ZN_MESH_SDF_DEBUG_BATCH
 #ifdef ZN_MESH_SDF_DEBUG_BATCH
 #include "../ddd.h"
 #endif
@@ -31,12 +31,18 @@ namespace zylann::voxel::mesh_sdf {
 
 // First tries with floats, as it is the most common case when data is float.
 // In case of occasional parallel results, retry with doubles, as it often clears it up.
-math::TriangleIntersectionResult ray_intersects_triangle2(const Vector3f &p_from, const Vector3f &p_dir,
-		const Vector3f &p_v0, const Vector3f &p_v1, const Vector3f &p_v2) {
+math::TriangleIntersectionResult ray_intersects_triangle2(
+		const Vector3f &p_from,
+		const Vector3f &p_dir,
+		const Vector3f &p_v0,
+		const Vector3f &p_v1,
+		const Vector3f &p_v2
+) {
 	math::TriangleIntersectionResult r = math::ray_intersects_triangle(p_from, p_dir, p_v0, p_v1, p_v2);
 	if (r.case_id == math::TriangleIntersectionResult::PARALLEL) {
 		r = math::ray_intersects_triangle(
-				to_vec3d(p_from), to_vec3d(p_dir), to_vec3d(p_v0), to_vec3d(p_v1), to_vec3d(p_v2));
+				to_vec3d(p_from), to_vec3d(p_dir), to_vec3d(p_v0), to_vec3d(p_v1), to_vec3d(p_v2)
+		);
 	}
 	return r;
 }
@@ -91,7 +97,7 @@ const Triangle *raycast(const ChunkGrid &chunk_grid, Vector3f ray_position, Vect
 
 	// Compute a max distance for DDA
 	// const float max_distance_chunks = int(chunk_grid.size.length());
-	const float max_distance_chunks = (max_distance / chunk_grid.chunk_size) + 2.f * constants::SQRT3;
+	const float max_distance_chunks = (max_distance / chunk_grid.chunk_size) + 2.f * math::SQRT3_32;
 
 	const Triangle *hit_triangle = nullptr;
 
@@ -110,7 +116,9 @@ const Triangle *raycast(const ChunkGrid &chunk_grid, Vector3f ray_position, Vect
 #ifdef ZN_MESH_SDF_DEBUG_BATCH
 			DDD::draw_wirebox_min_max( //
 					to_vec3f(cpos) * chunk_grid.chunk_size + chunk_grid.min_pos,
-					to_vec3f(cpos + Vector3i(1, 1, 1)) * chunk_grid.chunk_size + chunk_grid.min_pos, Color(0, 1, 1));
+					to_vec3f(cpos + Vector3i(1, 1, 1)) * chunk_grid.chunk_size + chunk_grid.min_pos,
+					Color(0, 1, 1)
+			);
 #endif
 			const unsigned int loc = Vector3iUtil::get_zxy_index(rs.hit_prev_position, chunk_grid.size);
 			ZN_ASSERT(loc < chunk_grid.chunks.size());
@@ -156,8 +164,16 @@ const Triangle *raycast(const ChunkGrid &chunk_grid, Vector3f ray_position, Vect
 	Vector3i hit_prev_chunk_pos;
 	float distance_along_ray;
 	float distance_along_ray_prev;
-	if (!voxel_raycast(cposf, ray_dir, raycast_chunk, max_distance_chunks, hit_chunk_pos, hit_prev_chunk_pos,
-				distance_along_ray, distance_along_ray_prev)) {
+	if (!voxel_raycast(
+				cposf,
+				ray_dir,
+				raycast_chunk,
+				max_distance_chunks,
+				hit_chunk_pos,
+				hit_prev_chunk_pos,
+				distance_along_ray,
+				distance_along_ray_prev
+		)) {
 		// In case the distance to travel is smaller than a chunk, the voxel_raycast won't "enter" any chunk and return
 		// false. Note, `hit_position` isn't used.
 		raycast_chunk({ math::floor_to_int(cposf), 0.f, Vector3i(), max_distance });
@@ -168,7 +184,11 @@ const Triangle *raycast(const ChunkGrid &chunk_grid, Vector3f ray_position, Vect
 }
 
 bool find_sdf_sign_with_raycast(
-		const ChunkGrid &chunk_grid, Vector3f ray_position, const Triangle &ref_triangle, int &out_sign) {
+		const ChunkGrid &chunk_grid,
+		Vector3f ray_position,
+		const Triangle &ref_triangle,
+		int &out_sign
+) {
 	// ZN_PROFILE_SCOPE();
 
 	const Vector3f ref_center = (ref_triangle.v1 + ref_triangle.v2 + ref_triangle.v3) / 3.f;
@@ -191,7 +211,8 @@ bool find_sdf_sign_with_raycast(
 		if (s_tri_not_found_error == false) {
 			s_tri_not_found_error = true;
 			ZN_PRINT_VERBOSE(
-					format("Could not find triangle by raycast, dp: {}", math::dot(get_normal(ref_triangle), ray_dir)));
+					format("Could not find triangle by raycast, dp: {}", math::dot(get_normal(ref_triangle), ray_dir))
+			);
 		}
 #endif
 		return false;
@@ -243,8 +264,14 @@ enum Flag { //
 	FLAG_FROZEN
 };
 
-void fix_sdf_sign_from_boundary(Span<float> sdf_grid, Span<uint8_t> flag_grid, Vector3i res, Vector3f min_pos,
-		Vector3f max_pos, std::vector<Vector3i> &seeds) {
+void fix_sdf_sign_from_boundary(
+		Span<float> sdf_grid,
+		Span<uint8_t> flag_grid,
+		Vector3i res,
+		Vector3f min_pos,
+		Vector3f max_pos,
+		StdVector<Vector3i> &seeds
+) {
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT(sdf_grid.size() == flag_grid.size());
 
@@ -310,12 +337,12 @@ void fix_sdf_sign_from_boundary(Span<float> sdf_grid, Span<uint8_t> flag_grid, V
 }
 
 void fix_sdf_sign_from_boundary(Span<float> sdf_grid, Vector3i res, Vector3f min_pos, Vector3f max_pos) {
-	std::vector<uint8_t> flag_grid;
+	StdVector<uint8_t> flag_grid;
 	flag_grid.resize(sdf_grid.size(), FLAG_NOT_VISITED);
 	// We'll start from the lower corner
 	flag_grid[0] = FLAG_VISITED;
 
-	std::vector<Vector3i> seeds;
+	StdVector<Vector3i> seeds;
 	seeds.push_back(Vector3i());
 
 	fix_sdf_sign_from_boundary(sdf_grid, to_span(flag_grid), res, min_pos, max_pos, seeds);
@@ -344,7 +371,7 @@ void compute_near_chunks(ChunkGrid &chunk_grid) {
 	}
 
 	// Gather chunks containing triangles
-	std::vector<const Chunk *> nonempty_chunks;
+	StdVector<const Chunk *> nonempty_chunks;
 	for (auto it = chunk_grid.chunks.begin(); it != chunk_grid.chunks.end(); ++it) {
 		const Chunk &chunk = *it;
 		if (chunk.triangles.size() > 0) {
@@ -393,8 +420,20 @@ void compute_near_chunks(ChunkGrid &chunk_grid) {
 				// This is to account for the fact the closest chunk might contain a triangle further away than
 				// a closer triangle found in a farther chunk.
 
+				// TODO This creates artifacts when the mesh has few/big triangles and subdivision is high.
+				// A diagonal triangle D could have an AABB so large that it intersects many chunks while not
+				// relatively being close to them. Yet, 2 chunks away (>sqrt(3)) there could be a chunk intersected by
+				// an axis-aligned triangle A that would be closer than D. Yet it won't be detected.
+				//
+				// To fix this we could:
+				// - Increase the margin we use to add more triangles? That might work but reduce efficiency.
+				// - Instead of using AABBs to figure if a triangle is in a chunk, we could attempt a box/triangle
+				//   intersection, or 3D rasterization. Then we could keep using the sqrt(3) margin since we know if
+				//   a triangle is in a chunk, and if we pick any point on the sides of hat chunk, the distance from
+				//   that point to the triangle is always closer than the diagonal of that chunk.
+
 				const int margin_distance_squared =
-						math::squared(sqrtf(closest_chunk_distance_squared) + constants::SQRT3);
+						math::squared(sqrtf(closest_chunk_distance_squared) + math::SQRT3_32);
 
 				for (auto it = nonempty_chunks.begin(); it != nonempty_chunks.end(); ++it) {
 					const Chunk &nchunk = **it;
@@ -413,7 +452,12 @@ void compute_near_chunks(ChunkGrid &chunk_grid) {
 }
 
 void partition_triangles(
-		int subdiv, Span<const Triangle> triangles, Vector3f min_pos, Vector3f max_pos, ChunkGrid &chunk_grid) {
+		int subdiv,
+		Span<const Triangle> triangles,
+		Vector3f min_pos,
+		Vector3f max_pos,
+		ChunkGrid &chunk_grid
+) {
 	ZN_PROFILE_SCOPE();
 
 	// TODO This rarely causes SDF errors, but not sure yet what it is yet
@@ -475,7 +519,7 @@ void partition_triangles(
 #ifdef DEBUG_ENABLED
 	{
 		// Make sure all triangles are picked up
-		std::vector<const Triangle *> checked_triangles;
+		StdVector<const Triangle *> checked_triangles;
 		for (const Chunk &chunk : chunk_grid.chunks) {
 			for (const Triangle *t : chunk.triangles) {
 				bool found = false;
@@ -547,10 +591,13 @@ float get_distance_to_triangle_squared_precalc(const Triangle &t, const Vector3f
 
 	if (det < 2.f) {
 		// Outside of the prism: get distance to closest edge
-		return min(min( //
-						   length_squared(t.v21 * clamp(dot(t.v21, p1) * t.inv_v21_length_squared, 0.f, 1.f) - p1),
-						   length_squared(t.v32 * clamp(dot(t.v32, p2) * t.inv_v32_length_squared, 0.f, 1.f) - p2)),
-				length_squared(t.v13 * clamp(dot(t.v13, p3) * t.inv_v13_length_squared, 0.f, 1.f) - p3));
+		return min(
+				min( //
+						length_squared(t.v21 * clamp(dot(t.v21, p1) * t.inv_v21_length_squared, 0.f, 1.f) - p1),
+						length_squared(t.v32 * clamp(dot(t.v32, p2) * t.inv_v32_length_squared, 0.f, 1.f) - p2)
+				),
+				length_squared(t.v13 * clamp(dot(t.v13, p3) * t.inv_v13_length_squared, 0.f, 1.f) - p3)
+		);
 	} else {
 		// Inside the prism: get distance to plane
 		return squared(dot(t.nor, p1)) * t.inv_nor_length_squared;
@@ -737,8 +784,13 @@ struct EvaluatorCG {
 	}
 };
 
-void generate_mesh_sdf_approx_interp(Span<float> sdf_grid, const Vector3i res, Span<const Triangle> triangles,
-		const Vector3f min_pos, const Vector3f max_pos) {
+void generate_mesh_sdf_approx_interp(
+		Span<float> sdf_grid,
+		const Vector3i res,
+		Span<const Triangle> triangles,
+		const Vector3f min_pos,
+		const Vector3f max_pos
+) {
 	ZN_PROFILE_SCOPE();
 
 	static const float FAR_SD = 9999999.f;
@@ -754,7 +806,7 @@ void generate_mesh_sdf_approx_interp(Span<float> sdf_grid, const Vector3i res, S
 	const float node_size = node_size_cells * math::length(cell_size);
 	const float node_subdiv_threshold = 0.6f * node_size;
 
-	std::vector<float> node_grid;
+	StdVector<float> node_grid;
 	node_grid.resize(Vector3iUtil::get_volume(node_grid_size));
 
 	// Fill SDF grid with far distances as "infinity", we'll use that to check if we computed it already
@@ -836,19 +888,20 @@ void generate_mesh_sdf_approx_interp(Span<float> sdf_grid, const Vector3i res, S
 					});
 				} else {
 					// We are far enough from the surface, approximate by interpolating corners
-					const Vector3i cell_box_end = cell_box.pos + cell_box.size;
+					const Vector3i cell_box_end = cell_box.position + cell_box.size;
 					Vector3i grid_pos;
-					for (grid_pos.z = cell_box.pos.z; grid_pos.z < cell_box_end.z; ++grid_pos.z) {
-						for (grid_pos.x = cell_box.pos.x; grid_pos.x < cell_box_end.x; ++grid_pos.x) {
-							for (grid_pos.y = cell_box.pos.y; grid_pos.y < cell_box_end.y; ++grid_pos.y) {
+					for (grid_pos.z = cell_box.position.z; grid_pos.z < cell_box_end.z; ++grid_pos.z) {
+						for (grid_pos.x = cell_box.position.x; grid_pos.x < cell_box_end.x; ++grid_pos.x) {
+							for (grid_pos.y = cell_box.position.y; grid_pos.y < cell_box_end.y; ++grid_pos.y) {
 								const size_t i = Vector3iUtil::get_zxy_index(grid_pos, res);
 								if (sdf_grid[i] != FAR_SD) {
 									// Already computed
 									continue;
 								}
-								const Vector3f ipf = to_vec3f(grid_pos - cell_box.pos) / float(node_size_cells);
+								const Vector3f ipf = to_vec3f(grid_pos - cell_box.position) / float(node_size_cells);
 								const float sd = math::interpolate_trilinear(
-										sd000, sd100, sd101, sd001, sd010, sd110, sd111, sd011, ipf);
+										sd000, sd100, sd101, sd001, sd010, sd110, sd111, sd011, ipf
+								);
 								ZN_ASSERT(i < sdf_grid.size());
 								sdf_grid[i] = sd;
 							}
@@ -860,8 +913,14 @@ void generate_mesh_sdf_approx_interp(Span<float> sdf_grid, const Vector3i res, S
 	}
 }
 
-void generate_mesh_sdf_naive(Span<float> sdf_grid, const Vector3i res, const Box3i sub_box,
-		Span<const Triangle> triangles, const Vector3f min_pos, const Vector3f max_pos) {
+void generate_mesh_sdf_naive(
+		Span<float> sdf_grid,
+		const Vector3i res,
+		const Box3i sub_box,
+		Span<const Triangle> triangles,
+		const Vector3f min_pos,
+		const Vector3f max_pos
+) {
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT(Box3i(Vector3i(), res).contains(sub_box));
 	ZN_ASSERT(int64_t(sdf_grid.size()) == Vector3iUtil::get_volume(res));
@@ -872,11 +931,11 @@ void generate_mesh_sdf_naive(Span<float> sdf_grid, const Vector3i res, const Box
 
 	Vector3i grid_pos;
 
-	const Vector3i sub_box_end = sub_box.pos + sub_box.size;
+	const Vector3i sub_box_end = sub_box.position + sub_box.size;
 
-	for (grid_pos.z = sub_box.pos.z; grid_pos.z < sub_box_end.z; ++grid_pos.z) {
-		for (grid_pos.x = sub_box.pos.x; grid_pos.x < sub_box_end.x; ++grid_pos.x) {
-			grid_pos.y = sub_box.pos.y;
+	for (grid_pos.z = sub_box.position.z; grid_pos.z < sub_box_end.z; ++grid_pos.z) {
+		for (grid_pos.x = sub_box.position.x; grid_pos.x < sub_box_end.x; ++grid_pos.x) {
+			grid_pos.y = sub_box.position.y;
 			size_t grid_index = Vector3iUtil::get_zxy_index(grid_pos, res);
 
 			for (; grid_pos.y < sub_box_end.y; ++grid_pos.y) {
@@ -894,8 +953,14 @@ void generate_mesh_sdf_naive(Span<float> sdf_grid, const Vector3i res, const Box
 	// println(format("Spent {} usec", usec));
 }
 
-void generate_mesh_sdf_partitioned(Span<float> sdf_grid, const Vector3i res, const Box3i sub_box,
-		const Vector3f min_pos, const Vector3f max_pos, const ChunkGrid &chunk_grid) {
+void generate_mesh_sdf_partitioned(
+		Span<float> sdf_grid,
+		const Vector3i res,
+		const Box3i sub_box,
+		const Vector3f min_pos,
+		const Vector3f max_pos,
+		const ChunkGrid &chunk_grid
+) {
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT(Box3i(Vector3i(), res).contains(sub_box));
 	ZN_ASSERT(int64_t(sdf_grid.size()) == Vector3iUtil::get_volume(res));
@@ -904,12 +969,12 @@ void generate_mesh_sdf_partitioned(Span<float> sdf_grid, const Vector3i res, con
 	const Vector3f cell_size = mesh_size / Vector3f(res.x, res.y, res.z);
 	const EvaluatorCG eval{ chunk_grid, GridToSpaceConverter(res, min_pos, mesh_size, cell_size * 0.5f) };
 
-	const Vector3i sub_box_end = sub_box.pos + sub_box.size;
+	const Vector3i sub_box_end = sub_box.position + sub_box.size;
 
 	Vector3i grid_pos;
-	for (grid_pos.z = sub_box.pos.z; grid_pos.z < sub_box_end.z; ++grid_pos.z) {
-		for (grid_pos.x = sub_box.pos.x; grid_pos.x < sub_box_end.x; ++grid_pos.x) {
-			grid_pos.y = sub_box.pos.y;
+	for (grid_pos.z = sub_box.position.z; grid_pos.z < sub_box_end.z; ++grid_pos.z) {
+		for (grid_pos.x = sub_box.position.x; grid_pos.x < sub_box_end.x; ++grid_pos.x) {
+			grid_pos.y = sub_box.position.y;
 			size_t grid_index = Vector3iUtil::get_zxy_index(grid_pos, res);
 
 			for (; grid_pos.y < sub_box_end.y; ++grid_pos.y) {
@@ -924,8 +989,14 @@ void generate_mesh_sdf_partitioned(Span<float> sdf_grid, const Vector3i res, con
 	}
 }
 
-void generate_mesh_sdf_partitioned(Span<float> sdf_grid, const Vector3i res, Span<const Triangle> triangles,
-		const Vector3f min_pos, const Vector3f max_pos, int subdiv) {
+void generate_mesh_sdf_partitioned(
+		Span<float> sdf_grid,
+		const Vector3i res,
+		Span<const Triangle> triangles,
+		const Vector3f min_pos,
+		const Vector3f max_pos,
+		int subdiv
+) {
 	// TODO Make this thread-local?
 	ChunkGrid chunk_grid;
 	partition_triangles(subdiv, triangles, min_pos, max_pos, chunk_grid);
@@ -934,7 +1005,12 @@ void generate_mesh_sdf_partitioned(Span<float> sdf_grid, const Vector3i res, Spa
 }
 
 CheckResult check_sdf(
-		Span<const float> sdf_grid, Vector3i res, Span<const Triangle> triangles, Vector3f min_pos, Vector3f max_pos) {
+		Span<const float> sdf_grid,
+		Vector3i res,
+		Span<const Triangle> triangles,
+		Vector3f min_pos,
+		Vector3f max_pos
+) {
 	CheckResult result;
 	result.ok = false;
 
@@ -970,7 +1046,7 @@ CheckResult check_sdf(
 					const Vector3i npos = pos + dirs[dir];
 
 					if (npos.x < 0 || npos.y < 0 || npos.z < 0 || npos.x >= res.x || npos.y >= res.y ||
-							npos.z >= res.z) {
+						npos.z >= res.z) {
 						continue;
 					}
 
@@ -983,8 +1059,15 @@ CheckResult check_sdf(
 					const float variation = Math::abs(v - nv);
 
 					if (variation > max_variation) {
-						ZN_PRINT_VERBOSE(format("Found variation of {} > {}, {} and {}, at cell {} and {}", variation,
-								max_variation, v, nv, pos, npos));
+						ZN_PRINT_VERBOSE(
+								format("Found variation of {} > {}, {} and {}, at cell {} and {}",
+									   variation,
+									   max_variation,
+									   v,
+									   nv,
+									   pos,
+									   npos)
+						);
 
 						const Vector3f posf0 = eval.grid_to_space(pos);
 						const Vector3f posf1 = eval.grid_to_space(npos);
@@ -1010,13 +1093,23 @@ CheckResult check_sdf(
 	return result;
 }
 
-void generate_mesh_sdf_naive(Span<float> sdf_grid, const Vector3i res, Span<const Triangle> triangles,
-		const Vector3f min_pos, const Vector3f max_pos) {
+void generate_mesh_sdf_naive(
+		Span<float> sdf_grid,
+		const Vector3i res,
+		Span<const Triangle> triangles,
+		const Vector3f min_pos,
+		const Vector3f max_pos
+) {
 	generate_mesh_sdf_naive(sdf_grid, res, Box3i(Vector3i(), res), triangles, min_pos, max_pos);
 }
 
-bool prepare_triangles(Span<const Vector3> vertices, Span<const int> indices, std::vector<Triangle> &triangles,
-		Vector3f &out_min_pos, Vector3f &out_max_pos) {
+bool prepare_triangles(
+		Span<const Vector3> vertices,
+		Span<const int> indices,
+		StdVector<Triangle> &triangles,
+		Vector3f &out_min_pos,
+		Vector3f &out_max_pos
+) {
 	ZN_PROFILE_SCOPE();
 
 	// The mesh can't be closed if it has less than 4 vertices
@@ -1074,18 +1167,25 @@ void GenMeshSDFSubBoxTask::run(ThreadedTaskContext &ctx) {
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT(shared_data != nullptr);
 
-	VoxelBufferInternal &buffer = shared_data->buffer;
-	const VoxelBufferInternal::ChannelId channel = VoxelBufferInternal::CHANNEL_SDF;
-	// ZN_ASSERT(!buffer.get_channel_compression(channel) == VoxelBufferInternal::COMPRESSION_NONE);
+	VoxelBuffer &buffer = shared_data->buffer;
+	const VoxelBuffer::ChannelId channel = VoxelBuffer::CHANNEL_SDF;
+	// ZN_ASSERT(!buffer.get_channel_compression(channel) == VoxelBuffer::COMPRESSION_NONE);
 	Span<float> sdf_grid;
 	ZN_ASSERT(buffer.get_channel_data(channel, sdf_grid));
 
 	if (shared_data->use_chunk_grid) {
 		generate_mesh_sdf_partitioned(
-				sdf_grid, buffer.get_size(), box, shared_data->min_pos, shared_data->max_pos, shared_data->chunk_grid);
+				sdf_grid, buffer.get_size(), box, shared_data->min_pos, shared_data->max_pos, shared_data->chunk_grid
+		);
 	} else {
-		generate_mesh_sdf_naive(sdf_grid, buffer.get_size(), box, to_span(shared_data->triangles), shared_data->min_pos,
-				shared_data->max_pos);
+		generate_mesh_sdf_naive(
+				sdf_grid,
+				buffer.get_size(),
+				box,
+				to_span(shared_data->triangles),
+				shared_data->min_pos,
+				shared_data->max_pos
+		);
 	}
 
 	if (shared_data->pending_jobs.fetch_sub(1, std::memory_order_acq_rel) == 1) {
@@ -1100,7 +1200,11 @@ void GenMeshSDFSubBoxTask::run(ThreadedTaskContext &ctx) {
 static const float FAR_SD = 9999999.f;
 
 int find_sdf_sign_with_raycast_multi_attempt(
-		const ChunkGrid &chunk_grid, Span<const Triangle> triangles, Vector3f pos, unsigned int &ref_triangle_index) {
+		const ChunkGrid &chunk_grid,
+		Span<const Triangle> triangles,
+		Vector3f pos,
+		unsigned int &ref_triangle_index
+) {
 	// TODO Optimization: It could be faster to target a triangle close to the cell?
 	int sign_sum = 0;
 	// Do multiple raycasts to reduce ambiguity.
@@ -1125,9 +1229,16 @@ int find_sdf_sign_with_raycast_multi_attempt(
 	return sign_sum;
 }
 
-void generate_mesh_sdf_hull(Span<float> sdf_grid, const Vector3i res, Span<const Triangle> triangles,
-		const Vector3f min_pos, const Vector3f max_pos, const ChunkGrid &chunk_grid, Span<uint8_t> flag_grid,
-		uint8_t near_surface_flag_value) {
+void generate_mesh_sdf_hull(
+		Span<float> sdf_grid,
+		const Vector3i res,
+		Span<const Triangle> triangles,
+		const Vector3f min_pos,
+		const Vector3f max_pos,
+		const ChunkGrid &chunk_grid,
+		Span<uint8_t> flag_grid,
+		uint8_t near_surface_flag_value
+) {
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT(sdf_grid.size() == flag_grid.size());
 
@@ -1212,7 +1323,8 @@ void generate_mesh_sdf_hull(Span<float> sdf_grid, const Vector3i res, Span<const
 #endif
 
 							const int sign_sum = find_sdf_sign_with_raycast_multi_attempt(
-									chunk_grid, triangles, grid_to_space(grid_pos), ref_triangle_index);
+									chunk_grid, triangles, grid_to_space(grid_pos), ref_triangle_index
+							);
 
 #ifdef ZN_MESH_SDF_DEBUG_BATCH
 							DDD::save_batch_to_json("ddd_ofs.json");
@@ -1237,7 +1349,12 @@ struct Seed {
 #ifdef ZN_MESH_SDF_DEBUG_SLICES
 
 void debug_print_sdf_image_slice(
-		Span<const float> sdf_grid, Vector3i res, const int y, int iteration, std::vector<Seed> *seeds) {
+		Span<const float> sdf_grid,
+		Vector3i res,
+		const int y,
+		int iteration,
+		StdVector<Seed> *seeds
+) {
 	Ref<Image> im;
 	im.instantiate();
 	im->create(res.x, res.z, false, Image::FORMAT_RGB8);
@@ -1282,11 +1399,18 @@ void debug_print_sdf_image_slice(
 
 #endif
 
-void generate_mesh_sdf_approx_floodfill(Span<float> sdf_grid, const Vector3i res, Span<const Triangle> triangles,
-		const ChunkGrid &chunk_grid, const Vector3f min_pos, const Vector3f max_pos, bool boundary_sign_fix) {
+void generate_mesh_sdf_approx_floodfill(
+		Span<float> sdf_grid,
+		const Vector3i res,
+		Span<const Triangle> triangles,
+		const ChunkGrid &chunk_grid,
+		const Vector3f min_pos,
+		const Vector3f max_pos,
+		bool boundary_sign_fix
+) {
 	ZN_PROFILE_SCOPE();
 
-	std::vector<uint8_t> flag_grid;
+	StdVector<uint8_t> flag_grid;
 	flag_grid.resize(Vector3iUtil::get_volume(res));
 	memset(flag_grid.data(), FLAG_NOT_VISITED, sizeof(uint8_t) * flag_grid.size());
 
@@ -1298,7 +1422,7 @@ void generate_mesh_sdf_approx_floodfill(Span<float> sdf_grid, const Vector3i res
 	}
 #endif
 
-	std::vector<Seed> seeds0;
+	StdVector<Seed> seeds0;
 
 	{
 		ZN_PROFILE_SCOPE_NAMED("Place seeds");
@@ -1325,7 +1449,7 @@ void generate_mesh_sdf_approx_floodfill(Span<float> sdf_grid, const Vector3i res
 					for (unsigned int dir = 0; dir < dirs6.size(); ++dir) {
 						const Vector3i npos = pos + dirs6[dir];
 						if (npos.x < 0 || npos.y < 0 || npos.z < 0 || npos.x >= res.x || npos.y >= res.y ||
-								npos.z >= res.z) {
+							npos.z >= res.z) {
 							continue;
 						}
 
@@ -1355,10 +1479,10 @@ void generate_mesh_sdf_approx_floodfill(Span<float> sdf_grid, const Vector3i res
 	dds[0b011] = Math::sqrt(math::squared(cell_size.y) + math::squared(cell_size.z));
 	dds[0b111] = math::length(cell_size);
 
-	std::vector<Seed> seeds1;
+	StdVector<Seed> seeds1;
 
-	std::vector<Seed> *current_seeds = &seeds0;
-	std::vector<Seed> *next_seeds = &seeds1;
+	StdVector<Seed> *current_seeds = &seeds0;
+	StdVector<Seed> *next_seeds = &seeds1;
 
 	const Vector3i res_minus_one = res - Vector3i(1, 1, 1);
 
@@ -1465,7 +1589,7 @@ void generate_mesh_sdf_approx_floodfill(Span<float> sdf_grid, const Vector3i res
 
 		current_seeds->clear();
 
-		std::vector<Seed> *temp = current_seeds;
+		StdVector<Seed> *temp = current_seeds;
 		current_seeds = next_seeds;
 		next_seeds = temp;
 	}

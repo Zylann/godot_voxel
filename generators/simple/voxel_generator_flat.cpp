@@ -6,8 +6,8 @@ VoxelGeneratorFlat::VoxelGeneratorFlat() {}
 
 VoxelGeneratorFlat::~VoxelGeneratorFlat() {}
 
-void VoxelGeneratorFlat::set_channel(VoxelBufferInternal::ChannelId p_channel) {
-	ERR_FAIL_INDEX(p_channel, VoxelBufferInternal::MAX_CHANNELS);
+void VoxelGeneratorFlat::set_channel(VoxelBuffer::ChannelId p_channel) {
+	ERR_FAIL_INDEX(p_channel, VoxelBuffer::MAX_CHANNELS);
 	bool changed = false;
 	{
 		RWLockWrite wlock(_parameters_lock);
@@ -21,7 +21,7 @@ void VoxelGeneratorFlat::set_channel(VoxelBufferInternal::ChannelId p_channel) {
 	}
 }
 
-VoxelBufferInternal::ChannelId VoxelGeneratorFlat::get_channel() const {
+VoxelBuffer::ChannelId VoxelGeneratorFlat::get_channel() const {
 	RWLockRead rlock(_parameters_lock);
 	return _parameters.channel;
 }
@@ -60,11 +60,11 @@ VoxelGenerator::Result VoxelGeneratorFlat::generate_block(VoxelGenerator::VoxelQ
 		params = _parameters;
 	}
 
-	VoxelBufferInternal &out_buffer = input.voxel_buffer;
+	VoxelBuffer &out_buffer = input.voxel_buffer;
 	const Vector3i origin = input.origin_in_voxels;
 	const int channel = params.channel;
 	const Vector3i bs = out_buffer.get_size();
-	const bool use_sdf = channel == VoxelBufferInternal::CHANNEL_SDF;
+	const bool use_sdf = channel == VoxelBuffer::CHANNEL_SDF;
 	const float margin = 1 << input.lod;
 	const int lod = input.lod;
 
@@ -76,7 +76,8 @@ VoxelGenerator::Result VoxelGeneratorFlat::generate_block(VoxelGenerator::VoxelQ
 	if (origin.y + (bs.y << lod) < params.height - margin) {
 		// The top of the block is below the lowest ground can go
 		if (use_sdf) {
-			out_buffer.clear_channel_f(params.channel, -1);
+			// Not consistent SDF but should work ok
+			out_buffer.clear_channel_f(params.channel, -100.0);
 		} else {
 			out_buffer.clear_channel(params.channel, params.voxel_type);
 		}
@@ -93,7 +94,7 @@ VoxelGenerator::Result VoxelGeneratorFlat::generate_block(VoxelGenerator::VoxelQ
 			for (int x = 0; x < bs.x; ++x, gx += stride) {
 				int gy = origin.y;
 				for (int y = 0; y < bs.y; ++y, gy += stride) {
-					float sdf = params.iso_scale * (gy - params.height);
+					const float sdf = params.iso_scale * (gy - params.height);
 					out_buffer.set_voxel_f(sdf, x, y, z, channel);
 				}
 
@@ -103,32 +104,23 @@ VoxelGenerator::Result VoxelGeneratorFlat::generate_block(VoxelGenerator::VoxelQ
 	} else {
 		// Blocky
 
-		int gz = origin.z;
-		for (int z = 0; z < bs.z; ++z, gz += stride) {
-			int gx = origin.x;
-			for (int x = 0; x < bs.x; ++x, gx += stride) {
-				float h = params.height - origin.y;
-				int ih = int(h);
-				if (ih > 0) {
-					if (ih > bs.y) {
-						ih = bs.y;
-					}
-					out_buffer.fill_area(params.voxel_type, Vector3i(x, 0, z), Vector3i(x + 1, ih, z + 1), channel);
-				}
-
-			} // for x
-		} // for z
+		const float rh_world = params.height - origin.y;
+		const int irh_world = static_cast<int>(rh_world);
+		if (irh_world > 0) {
+			const int irh_voxels = math::min(math::arithmetic_rshift(irh_world, input.lod), bs.y);
+			out_buffer.fill_area(params.voxel_type, Vector3i(0, 0, 0), Vector3i(bs.x, irh_voxels, bs.z), channel);
+		}
 	} // use_sdf
 
 	return result;
 }
 
-void VoxelGeneratorFlat::_b_set_channel(gd::VoxelBuffer::ChannelId p_channel) {
-	set_channel(VoxelBufferInternal::ChannelId(p_channel));
+void VoxelGeneratorFlat::_b_set_channel(godot::VoxelBuffer::ChannelId p_channel) {
+	set_channel(VoxelBuffer::ChannelId(p_channel));
 }
 
-gd::VoxelBuffer::ChannelId VoxelGeneratorFlat::_b_get_channel() const {
-	return gd::VoxelBuffer::ChannelId(get_channel());
+godot::VoxelBuffer::ChannelId VoxelGeneratorFlat::_b_get_channel() const {
+	return godot::VoxelBuffer::ChannelId(get_channel());
 }
 
 void VoxelGeneratorFlat::_bind_methods() {
@@ -141,11 +133,17 @@ void VoxelGeneratorFlat::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_height", "h"), &VoxelGeneratorFlat::set_height);
 	ClassDB::bind_method(D_METHOD("get_height"), &VoxelGeneratorFlat::get_height);
 
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "channel", PROPERTY_HINT_ENUM, gd::VoxelBuffer::CHANNEL_ID_HINT_STRING),
-			"set_channel", "get_channel");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::INT, "channel", PROPERTY_HINT_ENUM, godot::VoxelBuffer::CHANNEL_ID_HINT_STRING),
+			"set_channel",
+			"get_channel"
+	);
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "height"), "set_height", "get_height");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "voxel_type", PROPERTY_HINT_RANGE, "0,65536,1"), "set_voxel_type",
-			"get_voxel_type");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::INT, "voxel_type", PROPERTY_HINT_RANGE, "0,65536,1"),
+			"set_voxel_type",
+			"get_voxel_type"
+	);
 }
 
 } // namespace zylann::voxel

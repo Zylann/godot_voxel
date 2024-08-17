@@ -28,6 +28,19 @@
 				Converts data block coordinates into voxel coordinates. Voxel coordinates of a block correspond to its lowest corner.
 			</description>
 		</method>
+		<method name="debug_get_draw_flag" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="flag_index" type="int" enum="VoxelTerrain.DebugDrawFlag" />
+			<description>
+			</description>
+		</method>
+		<method name="debug_set_draw_flag">
+			<return type="void" />
+			<param index="0" name="flag_index" type="int" enum="VoxelTerrain.DebugDrawFlag" />
+			<param index="1" name="enabled" type="bool" />
+			<description>
+			</description>
+		</method>
 		<method name="get_data_block_size" qualifiers="const">
 			<return type="int" />
 			<description>
@@ -99,6 +112,8 @@
 				Note 1: all modified blocks are automatically saved before the terrain is destroyed.
 				Note 2: this will only have an effect if the stream setup on this terrain supports saving.
 				Note 3: saving is asynchronous and won't block the game. the save may complete only a short time after you call this method.
+				Use the returned tracker object to know when saving has completed. However, saves occurring after calling this method won't be tracked by this object.
+				Note that blocks getting unloaded as the viewer moves around can also trigger saving tasks, independently from this function.
 			</description>
 		</method>
 		<method name="try_set_block_data">
@@ -131,6 +146,12 @@
 		<member name="collision_margin" type="float" setter="set_collision_margin" getter="get_collision_margin" default="0.04">
 		</member>
 		<member name="collision_mask" type="int" setter="set_collision_mask" getter="get_collision_mask" default="1">
+		</member>
+		<member name="debug_draw_enabled" type="bool" setter="debug_set_draw_enabled" getter="debug_is_draw_enabled" default="false">
+		</member>
+		<member name="debug_draw_shadow_occluders" type="bool" setter="debug_set_draw_shadow_occluders" getter="debug_get_draw_shadow_occluders" default="false">
+		</member>
+		<member name="debug_draw_volume_bounds" type="bool" setter="debug_set_draw_flag" getter="debug_get_draw_flag" default="false">
 		</member>
 		<member name="generate_collisions" type="bool" setter="set_generate_collisions" getter="get_generate_collisions" default="true">
 			Enables the generation of collision shapes using the classic physics engine. Use this feature if you need realistic or non-trivial collisions or physics.
@@ -179,4 +200,10 @@
 			</description>
 		</signal>
 	</signals>
+	<constants>
+		<constant name="DEBUG_DRAW_VOLUME_BOUNDS" value="0" enum="DebugDrawFlag">
+		</constant>
+		<constant name="DEBUG_DRAW_FLAGS_COUNT" value="1" enum="DebugDrawFlag">
+		</constant>
+	</constants>
 </class>

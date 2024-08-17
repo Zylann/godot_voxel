@@ -2,6 +2,8 @@
 #define VOXEL_GRAPH_RUNTIME_H
 
 #include "../../util/containers/span.h"
+#include "../../util/containers/std_unordered_map.h"
+#include "../../util/containers/std_vector.h"
 #include "../../util/godot/classes/ref_counted.h"
 #include "../../util/math/interval.h"
 #include "../../util/math/vector3f.h"
@@ -82,13 +84,13 @@ public:
 			uint16_t constant_fill_count = 0;
 		};
 
-		std::vector<OperationInfo> operations;
+		StdVector<OperationInfo> operations;
 
 		// Stores node IDs referring to the user-facing graph.
 		// Each index corresponds to operation indices.
 		// The same node can appear twice, because sometimes a user-facing node compiles as multiple nodes.
 		// It can also include some nodes not explicitely present in the user graph (like auto-inputs).
-		std::vector<uint32_t> debug_nodes;
+		StdVector<uint32_t> debug_nodes;
 
 		// Every operation before this index in the `operations` list will only depend on inputs tagged as "outer
 		// group". This is the index from which operations won't only depend on the outer group.
@@ -103,7 +105,7 @@ public:
 		// This list must be read using an advancing cursor, that moves up by the amount specified in `OperationInfo`.
 		// Note, it is preferable to use this for dynamic optimizations. Compile-time constants should use pinned
 		// buffers, or better, single values.
-		std::vector<ConstantFill> constant_fills;
+		StdVector<ConstantFill> constant_fills;
 
 		void clear() {
 			operations.clear();
@@ -163,11 +165,11 @@ public:
 	private:
 		friend class Runtime; // TODO Why is friend needed? This class is nested inside
 
-		std::vector<math::Interval> ranges;
-		std::vector<Buffer> buffers;
-		std::vector<BufferData> buffer_datas;
+		StdVector<math::Interval> ranges;
+		StdVector<Buffer> buffers;
+		StdVector<BufferData> buffer_datas;
 		// [execution_map_index] => microseconds
-		std::vector<uint32_t> debug_profiler_times;
+		StdVector<uint32_t> debug_profiler_times;
 
 		unsigned int buffer_size = 0;
 		unsigned int buffer_capacity = 0;
@@ -394,9 +396,9 @@ private:
 		};
 
 		// Indexes to the `nodes` array
-		std::vector<uint16_t> dependencies;
+		StdVector<uint16_t> dependencies;
 		// Nodes in the same order they would be in the default execution map (but indexes may not match)
-		std::vector<Node> nodes;
+		StdVector<Node> nodes;
 
 		inline void clear() {
 			dependencies.clear();
@@ -421,7 +423,7 @@ private:
 		//
 		// They should be laid out in the same order they will be run in, although it's not absolutely required.
 		// It's better to have it ordered because memory access will be more predictable.
-		std::vector<uint16_t> operations;
+		StdVector<uint16_t> operations;
 
 		// Describes dependencies between operations. It is generated at compile time.
 		// It is used to perform dynamic optimization in case some operations can be predicted as constant.
@@ -434,21 +436,21 @@ private:
 
 		// Heap-allocated parameters data, when too large to fit in `operations`.
 		// We keep a reference to them so they can be freed when the program is cleared.
-		std::vector<HeapResource> heap_resources;
+		StdVector<HeapResource> heap_resources;
 
 		// Heap-allocated parameters data, when too large to fit in `operations`.
 		// We keep a reference to them so they won't be freed until the program is cleared.
-		std::vector<Ref<RefCounted>> ref_resources;
+		StdVector<Ref<RefCounted>> ref_resources;
 
 		// Describes the list of buffers to prepare in `State` before the program can be run
-		std::vector<BufferSpec> buffer_specs;
+		StdVector<BufferSpec> buffer_specs;
 
 		// Address in `operations` from which operations will start to not only depend on inputs tagged as "outer
 		// group". It is used to optimize away calculations that would otherwise be the same in planar terrain use
 		// cases.
 		uint32_t inner_group_start_op_index;
 
-		std::vector<InputInfo> inputs;
+		StdVector<InputInfo> inputs;
 
 		FixedArray<OutputInfo, MAX_OUTPUTS> outputs;
 		unsigned int outputs_count = 0;
@@ -461,14 +463,14 @@ private:
 
 		// Associates a port from the expanded graph to its corresponding address within the compiled program.
 		// This is used for debugging intermediate values.
-		std::unordered_map<ProgramGraph::PortLocation, uint16_t> output_port_addresses;
+		StdUnorderedMap<ProgramGraph::PortLocation, uint16_t> output_port_addresses;
 
 		// If you have a port location from the original user graph, before querying `output_port_addresses`, remap
 		// it first, in case it got expanded to different nodes during compilation.
-		std::unordered_map<ProgramGraph::PortLocation, ProgramGraph::PortLocation> user_port_to_expanded_port;
+		StdUnorderedMap<ProgramGraph::PortLocation, ProgramGraph::PortLocation> user_port_to_expanded_port;
 
 		// Associates expanded graph ID to user graph node IDs.
-		std::unordered_map<uint32_t, uint32_t> expanded_node_id_to_user_node_id;
+		StdUnorderedMap<uint32_t, uint32_t> expanded_node_id_to_user_node_id;
 
 		// Result of the last compilation attempt. The program should not be run if it failed.
 		CompilationResult compilation_result;

@@ -29,15 +29,19 @@ namespace zylann::voxel::Cube {
 // Edges are ordered according to the Voxel::Edge enum (only g_edge_inormals!).
 //
 
+// clang-format off
+
 // Ordered as per the cube corners diagram
-const Vector3f g_corner_position[CORNER_COUNT] = { Vector3f(1, 0, 0), //
+const Vector3f g_corner_position[CORNER_COUNT] = {
+	Vector3f(1, 0, 0), //
 	Vector3f(0, 0, 0), //
 	Vector3f(0, 0, 1), //
 	Vector3f(1, 0, 1), //
 	Vector3f(1, 1, 0), //
 	Vector3f(0, 1, 0), //
 	Vector3f(0, 1, 1), //
-	Vector3f(1, 1, 1) };
+	Vector3f(1, 1, 1)
+};
 
 const int g_side_quad_triangles[SIDE_COUNT][6] = {
 	{ 0, 2, 1, 0, 3, 2 }, // LEFT (+x)
@@ -75,9 +79,9 @@ const float g_side_tangents[SIDE_COUNT][4] = { //
 	{ 1.f, 0.f, 0.f, 1.f }
 };
 
-// Corners have same winding, relative to the face's normal
+// Corners have same winding, relative to the face's normal.
+// X and Z sides have their top corners coming last.
 const unsigned int g_side_corners[SIDE_COUNT][4] = {
-	//
 	{ 3, 0, 4, 7 }, //
 	{ 1, 2, 6, 5 }, //
 	{ 1, 0, 3, 2 }, //
@@ -208,6 +212,8 @@ const Vector3i g_ordered_moore_area_3d[MOORE_AREA_3D_COUNT] = { //
 	Vector3i(0, 1, 1), //
 	Vector3i(1, 1, 1)
 };
+
+// clang-format on
 
 Cube::Side dir_to_side(Vector3i d) {
 	for (unsigned int side = 0; side < Cube::SIDE_COUNT; ++side) {

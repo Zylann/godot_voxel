@@ -1,7 +1,7 @@
 #include "editor_import_plugin.h"
 #include "../../errors.h"
 
-namespace zylann {
+namespace zylann::godot {
 
 #if defined(ZN_GODOT)
 
@@ -41,12 +41,16 @@ float ZN_EditorImportPlugin::get_priority() const {
 	return _zn_get_priority();
 }
 
+int ZN_EditorImportPlugin::get_import_order() const {
+	return _zn_get_import_order();
+}
+
 void ZN_EditorImportPlugin::get_import_options(
 		const String &p_path, List<ImportOption> *r_options, int p_preset) const {
 	ZN_ASSERT(r_options != nullptr);
-	std::vector<GodotImportOption> options;
+	StdVector<ImportOptionWrapper> options;
 	_zn_get_import_options(options, p_path, p_preset);
-	for (const GodotImportOption &option : options) {
+	for (const ImportOptionWrapper &option : options) {
 		ImportOption opt(option.option, option.default_value);
 		r_options->push_back(opt);
 	}
@@ -54,7 +58,7 @@ void ZN_EditorImportPlugin::get_import_options(
 
 bool ZN_EditorImportPlugin::get_option_visibility(
 		const String &p_path, const String &p_option, const HashMap<StringName, Variant> &p_options) const {
-	return _zn_get_option_visibility(p_path, p_option, GodotKeyValueWrapper{ p_options });
+	return _zn_get_option_visibility(p_path, p_option, KeyValueWrapper{ p_options });
 }
 
 Error ZN_EditorImportPlugin::import(const String &p_source_file, const String &p_save_path,
@@ -62,8 +66,8 @@ Error ZN_EditorImportPlugin::import(const String &p_source_file, const String &p
 		Variant *r_metadata) {
 	ZN_ASSERT(r_platform_variants != nullptr);
 	ZN_ASSERT(r_gen_files != nullptr);
-	return _zn_import(p_source_file, p_save_path, GodotKeyValueWrapper{ p_options },
-			GodotStringListWrapper{ *r_platform_variants }, GodotStringListWrapper{ *r_gen_files });
+	return _zn_import(p_source_file, p_save_path, KeyValueWrapper{ p_options },
+			StringListWrapper{ *r_platform_variants }, StringListWrapper{ *r_gen_files });
 }
 
 #elif defined(ZN_GODOT_EXTENSION)
@@ -100,8 +104,12 @@ double ZN_EditorImportPlugin::_get_priority() const {
 	return _zn_get_priority();
 }
 
+int32_t ZN_EditorImportPlugin::_get_import_order() const {
+	return _zn_get_import_order();
+}
+
 TypedArray<Dictionary> ZN_EditorImportPlugin::_get_import_options(const String &path, int32_t preset_index) const {
-	std::vector<GodotImportOption> options;
+	StdVector<ImportOptionWrapper> options;
 	_zn_get_import_options(options, path, preset_index);
 
 	TypedArray<Dictionary> output;
@@ -112,7 +120,7 @@ TypedArray<Dictionary> ZN_EditorImportPlugin::_get_import_options(const String &
 	const String hint_string_key = "hint_string";
 	const String usage_key = "usage";
 
-	for (const GodotImportOption option : options) {
+	for (const ImportOptionWrapper option : options) {
 		Dictionary d;
 		d[name_key] = String(option.option.name);
 		d[default_value_key] = option.default_value;
@@ -126,7 +134,7 @@ TypedArray<Dictionary> ZN_EditorImportPlugin::_get_import_options(const String &
 
 bool ZN_EditorImportPlugin::_get_option_visibility(
 		const String &path, const StringName &option_name, const Dictionary &options) const {
-	return _zn_get_option_visibility(path, option_name, GodotKeyValueWrapper{ options });
+	return _zn_get_option_visibility(path, option_name, KeyValueWrapper{ options });
 }
 
 Error ZN_EditorImportPlugin::_import(const String &source_file, const String &save_path, const Dictionary &options,
@@ -134,8 +142,8 @@ Error ZN_EditorImportPlugin::_import(const String &source_file, const String &sa
 	// TODO GDX: `EditorImportPlugin::_import` is passing constant arrays for parameters that should be writable
 	TypedArray<String> &platform_variants_writable = const_cast<TypedArray<String> &>(platform_variants);
 	TypedArray<String> &gen_files_writable = const_cast<TypedArray<String> &>(gen_files);
-	return _zn_import(source_file, save_path, GodotKeyValueWrapper{ options },
-			GodotStringListWrapper{ platform_variants_writable }, GodotStringListWrapper{ gen_files_writable });
+	return _zn_import(source_file, save_path, KeyValueWrapper{ options },
+			StringListWrapper{ platform_variants_writable }, StringListWrapper{ gen_files_writable });
 }
 
 #endif
@@ -178,22 +186,26 @@ double ZN_EditorImportPlugin::_zn_get_priority() const {
 	return 1.0;
 }
 
+int ZN_EditorImportPlugin::_zn_get_import_order() const {
+	return IMPORT_ORDER_DEFAULT;
+}
+
 void ZN_EditorImportPlugin::_zn_get_import_options(
-		std::vector<GodotImportOption> &p_out_options, const String &p_path, int p_preset_index) const {
+		StdVector<ImportOptionWrapper> &p_out_options, const String &p_path, int p_preset_index) const {
 	ZN_PRINT_ERROR("Method is not implemented");
 }
 
 bool ZN_EditorImportPlugin::_zn_get_option_visibility(
-		const String &p_path, const StringName &p_option_name, const GodotKeyValueWrapper p_options) const {
+		const String &p_path, const StringName &p_option_name, const KeyValueWrapper p_options) const {
 	ZN_PRINT_ERROR("Method is not implemented");
 	return false;
 }
 
 Error ZN_EditorImportPlugin::_zn_import(const String &p_source_file, const String &p_save_path,
-		const GodotKeyValueWrapper p_options, GodotStringListWrapper p_out_platform_variants,
-		GodotStringListWrapper p_out_gen_files) const {
+		const KeyValueWrapper p_options, StringListWrapper p_out_platform_variants,
+		StringListWrapper p_out_gen_files) const {
 	ZN_PRINT_ERROR("Method is not implemented");
 	return ERR_METHOD_NOT_FOUND;
 }
 
-} // namespace zylann
+} // namespace zylann::godot

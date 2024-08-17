@@ -1,6 +1,6 @@
 #include "voxel_generator_heightmap.h"
-#include "../../util/containers/span.h"
 #include "../../util/containers/fixed_array.h"
+#include "../../util/containers/span.h"
 
 namespace zylann::voxel {
 
@@ -8,8 +8,8 @@ VoxelGeneratorHeightmap::VoxelGeneratorHeightmap() {}
 
 VoxelGeneratorHeightmap::~VoxelGeneratorHeightmap() {}
 
-void VoxelGeneratorHeightmap::set_channel(VoxelBufferInternal::ChannelId p_channel) {
-	ERR_FAIL_INDEX(p_channel, VoxelBufferInternal::MAX_CHANNELS);
+void VoxelGeneratorHeightmap::set_channel(VoxelBuffer::ChannelId p_channel) {
+	ERR_FAIL_INDEX(p_channel, VoxelBuffer::MAX_CHANNELS);
 	bool changed = false;
 	{
 		RWLockWrite wlock(_parameters_lock);
@@ -23,7 +23,7 @@ void VoxelGeneratorHeightmap::set_channel(VoxelBufferInternal::ChannelId p_chann
 	}
 }
 
-VoxelBufferInternal::ChannelId VoxelGeneratorHeightmap::get_channel() const {
+VoxelBuffer::ChannelId VoxelGeneratorHeightmap::get_channel() const {
 	RWLockRead rlock(_parameters_lock);
 	return _parameters.channel;
 }
@@ -63,12 +63,12 @@ float VoxelGeneratorHeightmap::get_iso_scale() const {
 	return _parameters.iso_scale;
 }
 
-void VoxelGeneratorHeightmap::_b_set_channel(gd::VoxelBuffer::ChannelId p_channel) {
-	set_channel(VoxelBufferInternal::ChannelId(p_channel));
+void VoxelGeneratorHeightmap::_b_set_channel(godot::VoxelBuffer::ChannelId p_channel) {
+	set_channel(VoxelBuffer::ChannelId(p_channel));
 }
 
-gd::VoxelBuffer::ChannelId VoxelGeneratorHeightmap::_b_get_channel() const {
-	return gd::VoxelBuffer::ChannelId(get_channel());
+godot::VoxelBuffer::ChannelId VoxelGeneratorHeightmap::_b_get_channel() const {
+	return godot::VoxelBuffer::ChannelId(get_channel());
 }
 
 void VoxelGeneratorHeightmap::_bind_methods() {
@@ -84,8 +84,11 @@ void VoxelGeneratorHeightmap::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_iso_scale", "scale"), &VoxelGeneratorHeightmap::set_iso_scale);
 	ClassDB::bind_method(D_METHOD("get_iso_scale"), &VoxelGeneratorHeightmap::get_iso_scale);
 
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "channel", PROPERTY_HINT_ENUM, gd::VoxelBuffer::CHANNEL_ID_HINT_STRING),
-			"set_channel", "get_channel");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::INT, "channel", PROPERTY_HINT_ENUM, godot::VoxelBuffer::CHANNEL_ID_HINT_STRING),
+			"set_channel",
+			"get_channel"
+	);
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "height_start"), "set_height_start", "get_height_start");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "height_range"), "set_height_range", "get_height_range");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "iso_scale"), "set_iso_scale", "get_iso_scale");

@@ -8,8 +8,8 @@ namespace zylann::voxel {
 
 class VoxelGraphEditorPlugin;
 
-class VoxelGraphFunctionInspectorPlugin : public ZN_EditorInspectorPlugin {
-	GDCLASS(VoxelGraphFunctionInspectorPlugin, ZN_EditorInspectorPlugin)
+class VoxelGraphFunctionInspectorPlugin : public zylann::godot::ZN_EditorInspectorPlugin {
+	GDCLASS(VoxelGraphFunctionInspectorPlugin, zylann::godot::ZN_EditorInspectorPlugin)
 public:
 	bool _zn_can_handle(const Object *obj) const override;
 	bool _zn_parse_property(Object *p_object, const Variant::Type p_type, const String &p_path,

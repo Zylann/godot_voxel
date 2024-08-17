@@ -1,8 +1,10 @@
 #include "voxel_graph_node_inspector_wrapper.h"
 #include "../../constants/voxel_string_names.h"
 #include "../../generators/graph/node_type_db.h"
+#include "../../util/containers/std_vector.h"
 #include "../../util/godot/core/array.h"
 #include "../../util/io/log.h"
+#include "../../util/string/std_string.h"
 #include "voxel_graph_editor.h"
 
 #include <algorithm>
@@ -10,6 +12,7 @@
 namespace zylann::voxel {
 
 using namespace pg;
+using namespace zylann::godot;
 
 namespace {
 const char *AUTOCONNECT_PROPERTY_NAME = "autoconnect_default_inputs";
@@ -73,7 +76,7 @@ void VoxelGraphNodeInspectorWrapper::_get_property_list(List<PropertyInfo> *p_li
 				}
 
 			} else if (param.enum_items.size() > 0) {
-				std::string hint_string;
+				StdString hint_string;
 				for (unsigned int item_index = 0; item_index < param.enum_items.size(); ++item_index) {
 					if (item_index > 0) {
 						hint_string += ",";
@@ -124,20 +127,22 @@ void VoxelGraphNodeInspectorWrapper::_get_property_list(List<PropertyInfo> *p_li
 	}
 }
 
+namespace {
+
 // Automatically updates the list of inputs from variable names used in the expression.
 // Contrary to VisualScript (for which this has to be done manually to the user), submitting the text field containing
 // the expression's code also changes dynamic inputs of the node and reconnects existing connections, all as one
 // UndoRedo action.
-static void update_expression_inputs(VoxelGraphFunction &graph, uint32_t node_id, String code,
-		EditorUndoRedoManager &ur, VoxelGraphEditor &graph_editor) {
+void update_expression_inputs(VoxelGraphFunction &graph, uint32_t node_id, String code, EditorUndoRedoManager &ur,
+		VoxelGraphEditor &graph_editor) {
 	//
 	const CharString code_utf8 = code.utf8();
-	std::vector<std::string_view> new_input_names;
+	StdVector<std::string_view> new_input_names;
 	if (!VoxelGraphFunction::get_expression_variables(code_utf8.get_data(), new_input_names)) {
 		// Error, the action will not include node input changes
 		return;
 	}
-	std::vector<std::string> old_input_names;
+	StdVector<StdString> old_input_names;
 	graph.get_expression_node_inputs(node_id, old_input_names);
 
 	struct Connection {
@@ -145,7 +150,7 @@ static void update_expression_inputs(VoxelGraphFunction &graph, uint32_t node_id
 		uint32_t dst_port_index;
 	};
 	// Find what we'll disconnect
-	std::vector<Connection> to_disconnect;
+	StdVector<Connection> to_disconnect;
 	for (uint32_t port_index = 0; port_index < old_input_names.size(); ++port_index) {
 		ProgramGraph::PortLocation src;
 		if (graph.try_get_connection_to({ node_id, port_index }, src)) {
@@ -153,7 +158,7 @@ static void update_expression_inputs(VoxelGraphFunction &graph, uint32_t node_id
 		}
 	}
 	// Find what we'll reconnect
-	std::vector<Connection> to_reconnect;
+	StdVector<Connection> to_reconnect;
 	for (uint32_t port_index = 0; port_index < old_input_names.size(); ++port_index) {
 		const std::string_view old_name = old_input_names[port_index];
 		auto new_input_name_it = std::find(new_input_names.begin(), new_input_names.end(), old_name);
@@ -198,6 +203,8 @@ static void update_expression_inputs(VoxelGraphFunction &graph, uint32_t node_id
 	ur.add_do_method(&graph_editor, "update_node_layout", node_id);
 	ur.add_undo_method(&graph_editor, "update_node_layout", node_id);
 }
+
+} // namespace
 
 bool VoxelGraphNodeInspectorWrapper::_set(const StringName &p_name, const Variant &p_value) {
 	Ref<VoxelGraphFunction> graph = get_graph();

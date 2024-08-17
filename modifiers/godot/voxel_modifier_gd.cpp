@@ -8,7 +8,7 @@
 #include "../../util/godot/core/packed_arrays.h"
 #endif
 
-namespace zylann::voxel::gd {
+namespace zylann::voxel::godot {
 
 VoxelModifier::VoxelModifier() {
 	set_notify_local_transform(true);
@@ -145,34 +145,17 @@ void VoxelModifier::_notification(int p_what) {
 #ifdef TOOLS_ENABLED
 
 #if defined(ZN_GODOT)
-#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR <= 2
 PackedStringArray VoxelModifier::get_configuration_warnings() const {
 	PackedStringArray warnings;
 	get_configuration_warnings(warnings);
 	return warnings;
 }
-#else
-Array VoxelModifier::get_configuration_warnings() const {
-	PackedStringArray warnings;
-	get_configuration_warnings(warnings);
-	// TODO Eventually make use of new features introduced in Godot 4.3
-	return to_array(warnings);
-}
-#endif
 #elif defined(ZN_GODOT_EXTENSION)
-#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR <= 2
 PackedStringArray VoxelModifier::_get_configuration_warnings() const {
 	PackedStringArray warnings;
 	get_configuration_warnings(warnings);
 	return warnings;
 }
-#else
-Array VoxelModifier::_get_configuration_warnings() const {
-	PackedStringArray warnings;
-	get_configuration_warnings(warnings);
-	return to_array(warnings);
-}
-#endif
 #endif
 
 void VoxelModifier::get_configuration_warnings(PackedStringArray &warnings) const {
@@ -200,4 +183,4 @@ void VoxelModifier::_bind_methods() {
 	BIND_ENUM_CONSTANT(OPERATION_REMOVE);
 }
 
-} // namespace zylann::voxel::gd
+} // namespace zylann::voxel::godot

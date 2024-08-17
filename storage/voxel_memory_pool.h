@@ -2,14 +2,16 @@
 #define VOXEL_MEMORY_POOL_H
 
 #include "../util/containers/fixed_array.h"
+#ifdef DEBUG_ENABLED
+#include "../util/containers/std_unordered_map.h"
+#endif
+#include "../util/containers/std_vector.h"
 #include "../util/dstack.h"
 #include "../util/math/funcs.h"
 #include "../util/thread/mutex.h"
 
 #include <atomic>
 #include <limits>
-#include <unordered_map>
-#include <vector>
 
 namespace zylann::voxel {
 
@@ -23,7 +25,7 @@ private:
 #ifdef DEBUG_ENABLED
 	struct DebugUsedBlocks {
 		Mutex mutex;
-		std::unordered_map<void *, dstack::Info> blocks;
+		StdUnorderedMap<void *, dstack::Info> blocks;
 
 		void add(void *mem) {
 			MutexLock lock(mutex);
@@ -46,7 +48,7 @@ private:
 	struct Pool {
 		Mutex mutex;
 		// Would a linked list be better?
-		std::vector<uint8_t *> blocks;
+		StdVector<uint8_t *> blocks;
 #ifdef DEBUG_ENABLED
 		DebugUsedBlocks debug_used_blocks;
 #endif
@@ -103,8 +105,8 @@ private:
 #endif
 
 	std::atomic_uint32_t _used_blocks = { 0 };
-	size_t _used_memory = 0;
-	size_t _total_memory = 0;
+	std::atomic_uint64_t _used_memory = { 0 };
+	std::atomic_uint64_t _total_memory = { 0 };
 };
 
 } // namespace zylann::voxel

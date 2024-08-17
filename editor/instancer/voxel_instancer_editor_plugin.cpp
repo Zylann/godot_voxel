@@ -4,7 +4,6 @@
 #include "../../util/godot/classes/node.h"
 #include "../../util/godot/classes/object.h"
 #include "../../util/godot/classes/popup_menu.h"
-#include "../../util/godot/core/callable.h"
 #include "../../util/godot/core/string.h"
 #include "../../util/godot/editor_scale.h"
 #include "../about_window.h"
@@ -40,7 +39,7 @@ void VoxelInstancerEditorPlugin::init() {
 		}
 	}
 	menu_button->get_popup()->connect(
-			"id_pressed", ZN_GODOT_CALLABLE_MP(this, VoxelInstancerEditorPlugin, _on_menu_item_selected));
+			"id_pressed", callable_mp(this, &VoxelInstancerEditorPlugin::_on_menu_item_selected));
 	menu_button->hide();
 	add_control_to_container(CONTAINER_SPATIAL_EDITOR_MENU, menu_button);
 	_menu_button = menu_button;
@@ -153,10 +152,6 @@ VoxelInstancer *VoxelInstancerEditorPlugin::get_instancer() {
 	return instancer;
 }
 
-void VoxelInstancerEditorPlugin::_bind_methods() {
-#ifdef ZN_GODOT_EXTENSION
-	ClassDB::bind_method(D_METHOD("_on_menu_item_selected", "id"), &VoxelInstancerEditorPlugin::_on_menu_item_selected);
-#endif
-}
+void VoxelInstancerEditorPlugin::_bind_methods() {}
 
 } // namespace zylann::voxel

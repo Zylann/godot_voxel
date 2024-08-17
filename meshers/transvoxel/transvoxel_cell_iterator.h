@@ -2,6 +2,7 @@
 #define VOXEL_TRANSVOXEL_CELL_ITERATOR_H
 
 #include "../../engine/detail_rendering/detail_rendering.h"
+#include "../../util/containers/std_vector.h"
 #include "transvoxel.h"
 
 namespace zylann::voxel {
@@ -48,7 +49,7 @@ public:
 	}
 
 private:
-	std::vector<transvoxel::CellInfo> _cell_infos;
+	StdVector<transvoxel::CellInfo> _cell_infos;
 	unsigned int _current_index;
 	unsigned int _triangle_begin_index;
 };

@@ -1,8 +1,8 @@
 #ifndef ZN_INTERVAL_H
 #define ZN_INTERVAL_H
 
+#include "../string/std_stringstream.h"
 #include "funcs.h"
-#include <iosfwd>
 #include <limits>
 
 namespace zylann {
@@ -206,7 +206,7 @@ inline Interval sqrt(const Interval &i) {
 
 inline Interval abs(const Interval &i) {
 	return Interval{ i.contains(0) ? 0 : min(Math::abs(i.min), Math::abs(i.max)),
-		max(Math::abs(i.min), Math::abs(i.max)) };
+					 max(Math::abs(i.min), Math::abs(i.max)) };
 }
 
 inline Interval clamp(const Interval &i, const Interval &p_min, const Interval &p_max) {
@@ -492,7 +492,7 @@ inline Interval pow(Interval x, Interval p) {
 
 } // namespace math
 
-std::stringstream &operator<<(std::stringstream &ss, const math::Interval &v);
+StdStringStream &operator<<(StdStringStream &ss, const math::Interval &v);
 
 } // namespace zylann
 

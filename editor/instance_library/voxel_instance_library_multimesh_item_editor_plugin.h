@@ -9,8 +9,8 @@ ZN_GODOT_FORWARD_DECLARE(class EditorFileDialog)
 
 namespace zylann::voxel {
 
-class VoxelInstanceLibraryMultiMeshItemEditorPlugin : public ZN_EditorPlugin {
-	GDCLASS(VoxelInstanceLibraryMultiMeshItemEditorPlugin, ZN_EditorPlugin)
+class VoxelInstanceLibraryMultiMeshItemEditorPlugin : public zylann::godot::ZN_EditorPlugin {
+	GDCLASS(VoxelInstanceLibraryMultiMeshItemEditorPlugin, zylann::godot::ZN_EditorPlugin)
 public:
 	VoxelInstanceLibraryMultiMeshItemEditorPlugin();
 

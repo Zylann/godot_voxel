@@ -1,8 +1,8 @@
 #ifndef ZYLANN_PROGRESSIVE_TASK_RUNNER_H
 #define ZYLANN_PROGRESSIVE_TASK_RUNNER_H
 
+#include "../containers/std_queue.h"
 #include <cstdint>
-#include <queue>
 
 namespace zylann {
 
@@ -39,7 +39,7 @@ private:
 	static const unsigned int MIN_COUNT = 4;
 	static const unsigned int COMPLETION_TIME_MSEC = 500;
 
-	std::queue<IProgressiveTask *> _tasks;
+	StdQueue<IProgressiveTask *> _tasks;
 	unsigned int _dequeue_count = MIN_COUNT;
 	int64_t _last_process_time_msec = 0;
 };

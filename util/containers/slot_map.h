@@ -2,9 +2,9 @@
 #define ZN_SLOT_MAP_H
 
 #include "../errors.h"
+#include "std_vector.h"
 #include <cstdint>
 #include <limits>
-#include <vector>
 
 namespace zylann {
 
@@ -93,9 +93,9 @@ public:
 			const TIndex i = _slots.size();
 			// Start versions at 1, so we can represent 0 as invalid
 			const uint32_t v = 1;
-			_slots.push_back(Slot{ value, {v} });
+			_slots.push_back(Slot{ value, { v } });
 			++_count;
-			return Key{ i, {v} };
+			return Key{ i, { v } };
 		}
 	}
 
@@ -219,11 +219,11 @@ public:
 	}
 
 private:
-	std::vector<Slot> _slots;
+	StdVector<Slot> _slots;
 	// TODO The free list could be implemented more efficiently without a vector, but would create some complexity.
 	// If each value in slots is a union of a TIndex and a T, invalid slots could interpret the value as a TIndex to the
 	// next free slot. However putting T in a union isn't possible when T has a non-trivial constructor/destructor.
-	std::vector<TIndex> _free_list;
+	StdVector<TIndex> _free_list;
 	uint32_t _count = 0;
 };
 

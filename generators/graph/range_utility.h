@@ -1,10 +1,10 @@
 #ifndef RANGE_UTILITY_H
 #define RANGE_UTILITY_H
 
+#include "../../util/containers/std_vector.h"
 #include "../../util/godot/macros.h"
 #include "../../util/math/interval.h"
 #include "../../util/math/rect2i.h"
-#include <vector>
 
 ZN_GODOT_FORWARD_DECLARE(class Curve)
 ZN_GODOT_FORWARD_DECLARE(class Image)
@@ -23,7 +23,7 @@ struct CurveMonotonicSection {
 };
 
 struct CurveRangeData {
-	std::vector<CurveMonotonicSection> sections;
+	StdVector<CurveMonotonicSection> sections;
 };
 
 static const float CURVE_RANGE_MARGIN = CMP_EPSILON;
@@ -34,9 +34,9 @@ static const float CURVE_RANGE_MARGIN = CMP_EPSILON;
 // - Be stationary or increase
 // Which means, within one section, given a range of input values defined by a min and max,
 // we can quickly calculate an accurate range of output values by sampling the curve only at the two points.
-void get_curve_monotonic_sections(Curve &curve, std::vector<CurveMonotonicSection> &sections);
+void get_curve_monotonic_sections(Curve &curve, StdVector<CurveMonotonicSection> &sections);
 // Gets the range of Y values for a range of X values on a curve, using precalculated monotonic segments
-math::Interval get_curve_range(Curve &curve, const std::vector<CurveMonotonicSection> &sections, math::Interval x);
+math::Interval get_curve_range(Curve &curve, const StdVector<CurveMonotonicSection> &sections, math::Interval x);
 
 // Legacy
 math::Interval get_curve_range(Curve &curve, bool &is_monotonic_increasing);

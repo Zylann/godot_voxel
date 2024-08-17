@@ -8,11 +8,11 @@
 using namespace godot;
 #endif
 
-namespace zylann {
+namespace zylann::godot {
 
 PackedStringArray get_recognized_extensions_for_type(const String &type_name);
 Ref<Resource> load_resource(const String &path);
 
-} // namespace zylann
+} // namespace zylann::godot
 
 #endif // ZN_GODOT_RESOURCE_LOADER_H

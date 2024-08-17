@@ -10,10 +10,10 @@ using namespace godot;
 
 #include "shortcut.h"
 
-namespace zylann {
+namespace zylann::godot {
 
 Ref<Shortcut> get_or_create_editor_shortcut(const String &p_path, const String &p_name, Key p_keycode);
 
-} // namespace zylann
+} // namespace zylann::godot
 
 #endif // ZN_GODOT_EDITOR_SETTINGS_H

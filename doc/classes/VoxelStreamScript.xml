@@ -16,7 +16,7 @@
 		<method name="_load_voxel_block" qualifiers="virtual">
 			<return type="int" />
 			<param index="0" name="out_buffer" type="VoxelBuffer" />
-			<param index="1" name="origin_in_voxels" type="Vector3i" />
+			<param index="1" name="position_in_blocks" type="Vector3i" />
 			<param index="2" name="lod" type="int" />
 			<description>
 			</description>
@@ -24,7 +24,7 @@
 		<method name="_save_voxel_block" qualifiers="virtual">
 			<return type="void" />
 			<param index="0" name="buffer" type="VoxelBuffer" />
-			<param index="1" name="origin_in_voxels" type="Vector3i" />
+			<param index="1" name="position_in_blocks" type="Vector3i" />
 			<param index="2" name="lod" type="int" />
 			<description>
 			</description>

@@ -7,7 +7,8 @@
 #include "../engine/meshing_dependency.h"
 #include "../engine/priority_dependency.h"
 #include "../generators/generate_block_gpu_task.h"
-#include "../storage/voxel_buffer_internal.h"
+#include "../storage/voxel_buffer.h"
+#include "../util/containers/std_vector.h"
 #include "../util/godot/classes/array_mesh.h"
 #include "../util/tasks/cancellation_token.h"
 #include "../util/tasks/threaded_task.h"
@@ -31,14 +32,14 @@ public:
 	bool is_cancelled() override;
 	void apply_result() override;
 
-	void set_gpu_results(std::vector<GenerateBlockGPUTaskResult> &&results) override;
+	void set_gpu_results(StdVector<GenerateBlockGPUTaskResult> &&results) override;
 
 	static int debug_get_running_count();
 
 	// 3x3x3 or 4x4x4 grid of voxel blocks.
-	FixedArray<std::shared_ptr<VoxelBufferInternal>, constants::MAX_BLOCK_COUNT_PER_REQUEST> blocks;
+	FixedArray<std::shared_ptr<VoxelBuffer>, constants::MAX_BLOCK_COUNT_PER_REQUEST> blocks;
 	// TODO Need to provide format
-	// FixedArray<uint8_t, VoxelBufferInternal::MAX_CHANNELS> channel_depths;
+	// FixedArray<uint8_t, VoxelBuffer::MAX_CHANNELS> channel_depths;
 	Vector3i mesh_block_position; // In mesh blocks of the specified lod
 	VolumeID volume_id;
 	uint8_t lod_index = 0;
@@ -72,16 +73,27 @@ private:
 	bool _too_far = false;
 	bool _has_mesh_resource = false;
 	uint8_t _stage = 0;
-	VoxelBufferInternal _voxels;
+	VoxelBuffer _voxels;
 	VoxelMesher::Output _surfaces_output;
 	Ref<Mesh> _mesh;
-	std::vector<uint16_t> _mesh_material_indices; // Indexed by mesh surface
+	Ref<Mesh> _shadow_occluder_mesh;
+	StdVector<uint16_t> _mesh_material_indices; // Indexed by mesh surface
 	std::shared_ptr<DetailTextureOutput> _detail_textures;
-	std::vector<GenerateBlockGPUTaskResult> _gpu_generation_results;
+	StdVector<GenerateBlockGPUTaskResult> _gpu_generation_results;
 };
 
-Ref<ArrayMesh> build_mesh(Span<const VoxelMesher::Output::Surface> surfaces, Mesh::PrimitiveType primitive, int flags,
-		std::vector<uint16_t> &mesh_material_indices);
+// Builds a mesh resource from multiple surfaces data, and returns a mapping of where materials specified in the input
+// will be in the returned mesh. Empty surfaces won't be added to the mesh. If the mesh is totally empty, null will be
+// returned.
+Ref<ArrayMesh> build_mesh( //
+		Span<const VoxelMesher::Output::Surface> surfaces, //
+		Mesh::PrimitiveType primitive, //
+		int flags, //
+		StdVector<uint16_t> &mesh_material_indices //
+);
+
+// Builds a triangles mesh resource from a single surface. If the surface is empty, returns null.
+Ref<ArrayMesh> build_mesh(Array surface);
 
 } // namespace zylann::voxel
 

@@ -9,8 +9,8 @@
 namespace zylann {
 
 // Alternative to the default AABB editor which presents it as a minimum and maximum point
-class ZN_EditorPropertyAABBMinMax : public ZN_EditorProperty {
-	GDCLASS(ZN_EditorPropertyAABBMinMax, ZN_EditorProperty);
+class ZN_EditorPropertyAABBMinMax : public zylann::godot::ZN_EditorProperty {
+	GDCLASS(ZN_EditorPropertyAABBMinMax, zylann::godot::ZN_EditorProperty);
 
 public:
 	ZN_EditorPropertyAABBMinMax();

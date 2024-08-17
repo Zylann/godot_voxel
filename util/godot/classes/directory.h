@@ -8,7 +8,7 @@
 using namespace godot;
 #endif
 
-namespace zylann {
+namespace zylann::godot {
 
 inline Ref<DirAccess> open_directory(const String &directory_path) {
 #if defined(ZN_GODOT)
@@ -33,6 +33,6 @@ inline bool directory_exists(DirAccess &dir, const String &directory_path) {
 #endif
 }
 
-} // namespace zylann
+} // namespace zylann::godot
 
 #endif // ZN_GODOT_DIRECTORY_H

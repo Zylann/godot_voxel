@@ -3,8 +3,7 @@
 
 #if defined(TRACY_ENABLE)
 
-#include <thirdparty/tracy/Tracy.hpp>
-#include <thirdparty/tracy/common/TracySystem.hpp>
+#include <tracy/Tracy.hpp>
 
 #define ZN_PROFILER_ENABLED
 

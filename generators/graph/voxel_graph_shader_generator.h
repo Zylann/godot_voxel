@@ -3,8 +3,10 @@
 
 #include "../../engine/gpu/compute_shader_resource.h"
 #include "../../util/containers/span.h"
+#include "../../util/containers/std_vector.h"
 #include "../../util/errors.h"
 #include "../../util/godot/core/variant.h"
+#include "../../util/string/std_string.h"
 #include "code_gen_helper.h"
 #include "voxel_graph_function.h"
 #include "voxel_graph_runtime.h"
@@ -12,7 +14,7 @@
 namespace zylann::voxel::pg {
 
 struct ShaderParameter {
-	std::string name;
+	StdString name;
 	ComputeShaderResource resource;
 };
 
@@ -23,14 +25,14 @@ struct ShaderOutput {
 
 // Generates GLSL code from the given graph.
 CompilationResult generate_shader(const ProgramGraph &p_graph, Span<const VoxelGraphFunction::Port> input_defs,
-		FwdMutableStdString source_code, std::vector<ShaderParameter> &uniforms, std::vector<ShaderOutput> &outputs,
+		FwdMutableStdString source_code, StdVector<ShaderParameter> &uniforms, StdVector<ShaderOutput> &outputs,
 		Span<const VoxelGraphFunction::NodeTypeID> restricted_outputs);
 
 // Sent as argument to functions implementing generator nodes, in order to generate shader code.
 class ShaderGenContext {
 public:
-	ShaderGenContext(const std::vector<Variant> &params, Span<const char *> input_names,
-			Span<const char *> output_names, CodeGenHelper &code_gen, std::vector<ShaderParameter> &uniforms) :
+	ShaderGenContext(const StdVector<Variant> &params, Span<const char *> input_names, Span<const char *> output_names,
+			CodeGenHelper &code_gen, StdVector<ShaderParameter> &uniforms) :
 			_params(params),
 			_input_names(input_names),
 			_output_names(output_names),
@@ -72,16 +74,16 @@ public:
 	// If the code is too long for a string constant, it can be provided as a list of strings
 	void require_lib_code(const char *lib_name, const char **code);
 
-	std::string add_uniform(ComputeShaderResource &&res);
+	StdString add_uniform(ComputeShaderResource &&res);
 
 private:
-	const std::vector<Variant> &_params;
+	const StdVector<Variant> &_params;
 	Span<const char *> _input_names;
 	Span<const char *> _output_names;
 	CodeGenHelper &_code_gen;
 	String _error_message;
 	bool _has_error = false;
-	std::vector<ShaderParameter> &_uniforms;
+	StdVector<ShaderParameter> &_uniforms;
 };
 
 typedef void (*ShaderGenFunc)(ShaderGenContext &);

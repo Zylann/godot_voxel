@@ -14,10 +14,10 @@ const char *VoxelInstanceLibraryMultiMeshItem::SCENE_SETTINGS_GROUP_NAME = "Scen
 
 namespace {
 
-Array serialize_collision_shape_infos(const std::vector<VoxelInstanceLibraryMultiMeshItem::CollisionShapeInfo> &infos) {
+Array serialize_collision_shape_infos(const StdVector<CollisionShapeInfo> &infos) {
 	Array a;
 	for (unsigned int i = 0; i < infos.size(); ++i) {
-		const VoxelInstanceLibraryMultiMeshItem::CollisionShapeInfo &info = infos[i];
+		const CollisionShapeInfo &info = infos[i];
 		ERR_FAIL_COND_V(info.shape.is_null(), Array());
 		// TODO Shape might or might not be shared, could have odd side-effects,
 		// but not sure how to properly fix these edge cases without convoluted code
@@ -27,12 +27,11 @@ Array serialize_collision_shape_infos(const std::vector<VoxelInstanceLibraryMult
 	return a;
 }
 
-bool deserialize_collision_shape_infos(
-		Array a, std::vector<VoxelInstanceLibraryMultiMeshItem::CollisionShapeInfo> &out_infos) {
+bool deserialize_collision_shape_infos(Array a, StdVector<CollisionShapeInfo> &out_infos) {
 	ERR_FAIL_COND_V(a.size() % 2 != 0, false);
 
 	for (int i = 0; i < a.size(); i += 2) {
-		VoxelInstanceLibraryMultiMeshItem::CollisionShapeInfo info;
+		CollisionShapeInfo info;
 		info.shape = a[i];
 		info.transform = a[i + 1];
 
@@ -44,7 +43,7 @@ bool deserialize_collision_shape_infos(
 	return false;
 }
 
-TypedArray<StringName> serialize_group_names(const std::vector<StringName> &names) {
+TypedArray<StringName> serialize_group_names(const StdVector<StringName> &names) {
 	TypedArray<StringName> a;
 	a.resize(names.size());
 	int i = 0;
@@ -55,7 +54,7 @@ TypedArray<StringName> serialize_group_names(const std::vector<StringName> &name
 	return a;
 }
 
-void deserialize_group_names(const Array &src, std::vector<StringName> &dst) {
+void deserialize_group_names(const Array &src, StdVector<StringName> &dst) {
 	dst.reserve(src.size());
 	for (int i = 0; i < src.size(); ++i) {
 		StringName name = src[i];
@@ -109,7 +108,7 @@ void VoxelInstanceLibraryMultiMeshItem::set_mesh(Ref<Mesh> mesh, int mesh_lod_in
 	}
 	settings.mesh_lod_count = count;
 
-	notify_listeners(CHANGE_VISUAL);
+	notify_listeners(IInstanceLibraryItemListener::CHANGE_VISUAL);
 }
 
 int VoxelInstanceLibraryMultiMeshItem::get_mesh_lod_count() const {
@@ -146,7 +145,7 @@ void VoxelInstanceLibraryMultiMeshItem::set_render_layer(int render_layer) {
 		return;
 	}
 	settings.render_layer = render_layer;
-	notify_listeners(CHANGE_VISUAL);
+	notify_listeners(IInstanceLibraryItemListener::CHANGE_VISUAL);
 }
 
 int VoxelInstanceLibraryMultiMeshItem::get_render_layer() const {
@@ -160,7 +159,7 @@ void VoxelInstanceLibraryMultiMeshItem::set_material_override(Ref<Material> mate
 		return;
 	}
 	settings.material_override = material;
-	notify_listeners(CHANGE_VISUAL);
+	notify_listeners(IInstanceLibraryItemListener::CHANGE_VISUAL);
 }
 
 Ref<Material> VoxelInstanceLibraryMultiMeshItem::get_material_override() const {
@@ -174,7 +173,7 @@ void VoxelInstanceLibraryMultiMeshItem::set_cast_shadows_setting(RenderingServer
 		return;
 	}
 	settings.shadow_casting_setting = mode;
-	notify_listeners(CHANGE_VISUAL);
+	notify_listeners(IInstanceLibraryItemListener::CHANGE_VISUAL);
 }
 
 void VoxelInstanceLibraryMultiMeshItem::set_gi_mode(GeometryInstance3D::GIMode mode) {
@@ -183,7 +182,7 @@ void VoxelInstanceLibraryMultiMeshItem::set_gi_mode(GeometryInstance3D::GIMode m
 		return;
 	}
 	settings.gi_mode = mode;
-	notify_listeners(CHANGE_VISUAL);
+	notify_listeners(IInstanceLibraryItemListener::CHANGE_VISUAL);
 }
 
 GeometryInstance3D::GIMode VoxelInstanceLibraryMultiMeshItem::get_gi_mode() const {
@@ -231,33 +230,94 @@ void VoxelInstanceLibraryMultiMeshItem::_get_property_list(List<PropertyInfo> *p
 		// This is only so we have a preview of conversion results.
 
 		p_list->push_back(PropertyInfo(
-				Variant::NIL, SCENE_SETTINGS_GROUP_NAME, PROPERTY_HINT_NONE, "scene_", PROPERTY_USAGE_GROUP));
+				Variant::NIL, SCENE_SETTINGS_GROUP_NAME, PROPERTY_HINT_NONE, "scene_", PROPERTY_USAGE_GROUP
+		));
 
-		p_list->push_back(PropertyInfo(Variant::OBJECT, "scene_mesh", PROPERTY_HINT_RESOURCE_TYPE,
-				Mesh::get_class_static(), PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_READ_ONLY));
-		p_list->push_back(PropertyInfo(Variant::OBJECT, "scene_mesh_lod1", PROPERTY_HINT_RESOURCE_TYPE,
-				Mesh::get_class_static(), PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_READ_ONLY));
-		p_list->push_back(PropertyInfo(Variant::OBJECT, "scene_mesh_lod2", PROPERTY_HINT_RESOURCE_TYPE,
-				Mesh::get_class_static(), PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_READ_ONLY));
-		p_list->push_back(PropertyInfo(Variant::OBJECT, "scene_mesh_lod3", PROPERTY_HINT_RESOURCE_TYPE,
-				Mesh::get_class_static(), PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_READ_ONLY));
+		p_list->push_back(PropertyInfo(
+				Variant::OBJECT,
+				"scene_mesh",
+				PROPERTY_HINT_RESOURCE_TYPE,
+				Mesh::get_class_static(),
+				PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_READ_ONLY
+		));
+		p_list->push_back(PropertyInfo(
+				Variant::OBJECT,
+				"scene_mesh_lod1",
+				PROPERTY_HINT_RESOURCE_TYPE,
+				Mesh::get_class_static(),
+				PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_READ_ONLY
+		));
+		p_list->push_back(PropertyInfo(
+				Variant::OBJECT,
+				"scene_mesh_lod2",
+				PROPERTY_HINT_RESOURCE_TYPE,
+				Mesh::get_class_static(),
+				PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_READ_ONLY
+		));
+		p_list->push_back(PropertyInfo(
+				Variant::OBJECT,
+				"scene_mesh_lod3",
+				PROPERTY_HINT_RESOURCE_TYPE,
+				Mesh::get_class_static(),
+				PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_READ_ONLY
+		));
 
-		p_list->push_back(PropertyInfo(Variant::OBJECT, "scene_material_override", PROPERTY_HINT_RESOURCE_TYPE,
-				Material::get_class_static(), PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_READ_ONLY));
-		p_list->push_back(PropertyInfo(Variant::INT, "scene_render_layer", PROPERTY_HINT_LAYERS_3D_RENDER, "",
-				PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_READ_ONLY));
-		p_list->push_back(PropertyInfo(Variant::INT, "scene_cast_shadow", PROPERTY_HINT_ENUM,
-				CAST_SHADOW_ENUM_HINT_STRING, PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_READ_ONLY));
-		p_list->push_back(PropertyInfo(Variant::INT, "scene_gi_mode", PROPERTY_HINT_ENUM, GI_MODE_ENUM_HINT_STRING,
-				PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_READ_ONLY));
-		p_list->push_back(PropertyInfo(Variant::INT, "scene_collision_layer", PROPERTY_HINT_LAYERS_3D_PHYSICS, "",
-				PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_READ_ONLY));
-		p_list->push_back(PropertyInfo(Variant::INT, "scene_collision_mask", PROPERTY_HINT_LAYERS_3D_PHYSICS, "",
-				PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_READ_ONLY));
-		p_list->push_back(PropertyInfo(Variant::ARRAY, "scene_collision_shapes", PROPERTY_HINT_NONE, "",
-				PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_READ_ONLY));
-		p_list->push_back(PropertyInfo(Variant::ARRAY, "scene_group_names", PROPERTY_HINT_NONE, "",
-				PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_READ_ONLY));
+		p_list->push_back(PropertyInfo(
+				Variant::OBJECT,
+				"scene_material_override",
+				PROPERTY_HINT_RESOURCE_TYPE,
+				Material::get_class_static(),
+				PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_READ_ONLY
+		));
+		p_list->push_back(PropertyInfo(
+				Variant::INT,
+				"scene_render_layer",
+				PROPERTY_HINT_LAYERS_3D_RENDER,
+				"",
+				PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_READ_ONLY
+		));
+		p_list->push_back(PropertyInfo(
+				Variant::INT,
+				"scene_cast_shadow",
+				PROPERTY_HINT_ENUM,
+				godot::CAST_SHADOW_ENUM_HINT_STRING,
+				PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_READ_ONLY
+		));
+		p_list->push_back(PropertyInfo(
+				Variant::INT,
+				"scene_gi_mode",
+				PROPERTY_HINT_ENUM,
+				godot::GI_MODE_ENUM_HINT_STRING,
+				PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_READ_ONLY
+		));
+		p_list->push_back(PropertyInfo(
+				Variant::INT,
+				"scene_collision_layer",
+				PROPERTY_HINT_LAYERS_3D_PHYSICS,
+				"",
+				PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_READ_ONLY
+		));
+		p_list->push_back(PropertyInfo(
+				Variant::INT,
+				"scene_collision_mask",
+				PROPERTY_HINT_LAYERS_3D_PHYSICS,
+				"",
+				PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_READ_ONLY
+		));
+		p_list->push_back(PropertyInfo(
+				Variant::ARRAY,
+				"scene_collision_shapes",
+				PROPERTY_HINT_NONE,
+				"",
+				PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_READ_ONLY
+		));
+		p_list->push_back(PropertyInfo(
+				Variant::ARRAY,
+				"scene_group_names",
+				PROPERTY_HINT_NONE,
+				"",
+				PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_READ_ONLY
+		));
 	}
 }
 
@@ -322,7 +382,9 @@ bool VoxelInstanceLibraryMultiMeshItem::_get(const StringName &p_name, Variant &
 // 	return false;
 // }
 
-static RenderingServer::ShadowCastingSetting node_to_visual_server_enum(GeometryInstance3D::ShadowCastingSetting v) {
+namespace {
+
+RenderingServer::ShadowCastingSetting node_to_visual_server_enum(GeometryInstance3D::ShadowCastingSetting v) {
 	switch (v) {
 		case GeometryInstance3D::SHADOW_CASTING_SETTING_OFF:
 			return RenderingServer::SHADOW_CASTING_SETTING_OFF;
@@ -342,7 +404,7 @@ static RenderingServer::ShadowCastingSetting node_to_visual_server_enum(Geometry
 	}
 }
 
-static bool setup_from_template(Node *root, VoxelInstanceLibraryMultiMeshItem::Settings &settings) {
+bool setup_from_template(Node *root, VoxelInstanceLibraryMultiMeshItem::Settings &settings) {
 	struct L {
 		static unsigned int get_lod_index_from_name(const String &name) {
 			if (name.ends_with("LOD0")) {
@@ -387,7 +449,7 @@ static bool setup_from_template(Node *root, VoxelInstanceLibraryMultiMeshItem::S
 			CollisionShape3D *cs = Object::cast_to<CollisionShape3D>(physics_body->get_child(i));
 
 			if (cs != nullptr) {
-				VoxelInstanceLibraryMultiMeshItem::CollisionShapeInfo info;
+				CollisionShapeInfo info;
 				info.shape = cs->get_shape();
 				info.transform = cs->get_transform();
 
@@ -396,10 +458,12 @@ static bool setup_from_template(Node *root, VoxelInstanceLibraryMultiMeshItem::S
 		}
 	}
 
-	get_node_groups(*root, settings.group_names);
+	godot::get_node_groups(*root, settings.group_names);
 
 	return true;
 }
+
+} // namespace
 
 #if defined(ZN_GODOT)
 void VoxelInstanceLibraryMultiMeshItem::setup_from_template(Node *root) {
@@ -408,7 +472,7 @@ void VoxelInstanceLibraryMultiMeshItem::setup_from_template(Object *root_o) {
 	Node *root = Object::cast_to<Node>(root_o);
 #endif
 	ERR_FAIL_COND(!zylann::voxel::setup_from_template(root, _manual_settings));
-	notify_listeners(CHANGE_VISUAL);
+	notify_listeners(IInstanceLibraryItemListener::CHANGE_VISUAL);
 }
 
 void VoxelInstanceLibraryMultiMeshItem::set_scene(Ref<PackedScene> scene) {
@@ -422,7 +486,7 @@ void VoxelInstanceLibraryMultiMeshItem::set_scene(Ref<PackedScene> scene) {
 		ERR_FAIL_COND(!zylann::voxel::setup_from_template(root, _scene_settings));
 		memdelete(root);
 	}
-	notify_listeners(CHANGE_VISUAL);
+	notify_listeners(IInstanceLibraryItemListener::CHANGE_VISUAL);
 #ifdef TOOLS_ENABLED
 	notify_property_list_changed();
 #endif
@@ -468,7 +532,7 @@ Array VoxelInstanceLibraryMultiMeshItem::serialize_multimesh_item_properties() c
 
 void VoxelInstanceLibraryMultiMeshItem::deserialize_multimesh_item_properties(Array a) {
 	Settings &settings = _manual_settings;
-	ERR_FAIL_COND(a.size() != int(settings.mesh_lods.size()) + 6);
+	ERR_FAIL_COND(a.size() != static_cast<int>(settings.mesh_lods.size()) + 9);
 	int ai = 0;
 	for (unsigned int i = 0; i < settings.mesh_lods.size(); ++i) {
 		settings.mesh_lods[i] = a[ai++];
@@ -483,7 +547,7 @@ void VoxelInstanceLibraryMultiMeshItem::deserialize_multimesh_item_properties(Ar
 	settings.collision_shapes.clear();
 	deserialize_collision_shape_infos(a[ai++], settings.collision_shapes);
 	deserialize_group_names(a[ai++], settings.group_names);
-	notify_listeners(CHANGE_VISUAL);
+	notify_listeners(IInstanceLibraryItemListener::CHANGE_VISUAL);
 }
 
 void VoxelInstanceLibraryMultiMeshItem::_b_set_collision_shapes(Array shape_infos) {
@@ -499,7 +563,7 @@ Array VoxelInstanceLibraryMultiMeshItem::_b_get_collision_shapes() const {
 
 PackedFloat32Array VoxelInstanceLibraryMultiMeshItem::_b_get_mesh_lod_distance_ratios() const {
 	PackedFloat32Array ratios;
-	copy_to(ratios, to_span(_mesh_lod_max_distance_ratios));
+	godot::copy_to(ratios, to_span(_mesh_lod_max_distance_ratios));
 	return ratios;
 }
 
@@ -510,126 +574,144 @@ void VoxelInstanceLibraryMultiMeshItem::_b_set_mesh_lod_distance_ratios(PackedFl
 	if (!is_in_range(to_span(ratios), MIN_DISTANCE_RATIO, MAX_DISTANCE_RATIO)) {
 		ZN_PRINT_ERROR("LOD distance ratios are not in usual range");
 	}
-	copy_to(to_span(_mesh_lod_max_distance_ratios), ratios);
+	godot::copy_to(to_span(_mesh_lod_max_distance_ratios), ratios);
 }
 
 void VoxelInstanceLibraryMultiMeshItem::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("set_mesh", "mesh", "mesh_lod_index"), &VoxelInstanceLibraryMultiMeshItem::set_mesh);
-	ClassDB::bind_method(D_METHOD("get_mesh", "mesh_lod_index"), &VoxelInstanceLibraryMultiMeshItem::get_mesh);
+	using Self = VoxelInstanceLibraryMultiMeshItem;
 
-	ClassDB::bind_method(D_METHOD("_set_mesh_lod0", "mesh"), &VoxelInstanceLibraryMultiMeshItem::_b_set_mesh_lod0);
-	ClassDB::bind_method(D_METHOD("_set_mesh_lod1", "mesh"), &VoxelInstanceLibraryMultiMeshItem::_b_set_mesh_lod1);
-	ClassDB::bind_method(D_METHOD("_set_mesh_lod2", "mesh"), &VoxelInstanceLibraryMultiMeshItem::_b_set_mesh_lod2);
-	ClassDB::bind_method(D_METHOD("_set_mesh_lod3", "mesh"), &VoxelInstanceLibraryMultiMeshItem::_b_set_mesh_lod3);
+	ClassDB::bind_method(D_METHOD("set_mesh", "mesh", "mesh_lod_index"), &Self::set_mesh);
+	ClassDB::bind_method(D_METHOD("get_mesh", "mesh_lod_index"), &Self::get_mesh);
 
-	ClassDB::bind_method(D_METHOD("_get_mesh_lod0"), &VoxelInstanceLibraryMultiMeshItem::_b_get_mesh_lod0);
-	ClassDB::bind_method(D_METHOD("_get_mesh_lod1"), &VoxelInstanceLibraryMultiMeshItem::_b_get_mesh_lod1);
-	ClassDB::bind_method(D_METHOD("_get_mesh_lod2"), &VoxelInstanceLibraryMultiMeshItem::_b_get_mesh_lod2);
-	ClassDB::bind_method(D_METHOD("_get_mesh_lod3"), &VoxelInstanceLibraryMultiMeshItem::_b_get_mesh_lod3);
+	ClassDB::bind_method(D_METHOD("_set_mesh_lod0", "mesh"), &Self::_b_set_mesh_lod0);
+	ClassDB::bind_method(D_METHOD("_set_mesh_lod1", "mesh"), &Self::_b_set_mesh_lod1);
+	ClassDB::bind_method(D_METHOD("_set_mesh_lod2", "mesh"), &Self::_b_set_mesh_lod2);
+	ClassDB::bind_method(D_METHOD("_set_mesh_lod3", "mesh"), &Self::_b_set_mesh_lod3);
 
-	ClassDB::bind_method(D_METHOD("_get_mesh_lod_distance_ratios"),
-			&VoxelInstanceLibraryMultiMeshItem::_b_get_mesh_lod_distance_ratios);
-	ClassDB::bind_method(D_METHOD("_set_mesh_lod_distance_ratios"),
-			&VoxelInstanceLibraryMultiMeshItem::_b_set_mesh_lod_distance_ratios);
+	ClassDB::bind_method(D_METHOD("_get_mesh_lod0"), &Self::_b_get_mesh_lod0);
+	ClassDB::bind_method(D_METHOD("_get_mesh_lod1"), &Self::_b_get_mesh_lod1);
+	ClassDB::bind_method(D_METHOD("_get_mesh_lod2"), &Self::_b_get_mesh_lod2);
+	ClassDB::bind_method(D_METHOD("_get_mesh_lod3"), &Self::_b_get_mesh_lod3);
 
-	ClassDB::bind_method(D_METHOD("_get_mesh_lod0_distance_ratio"),
-			&VoxelInstanceLibraryMultiMeshItem::_b_get_mesh_lod0_distance_ratio);
-	ClassDB::bind_method(D_METHOD("_get_mesh_lod1_distance_ratio"),
-			&VoxelInstanceLibraryMultiMeshItem::_b_get_mesh_lod1_distance_ratio);
-	ClassDB::bind_method(D_METHOD("_get_mesh_lod2_distance_ratio"),
-			&VoxelInstanceLibraryMultiMeshItem::_b_get_mesh_lod2_distance_ratio);
-	ClassDB::bind_method(D_METHOD("_get_mesh_lod3_distance_ratio"),
-			&VoxelInstanceLibraryMultiMeshItem::_b_get_mesh_lod3_distance_ratio);
+	ClassDB::bind_method(D_METHOD("_get_mesh_lod_distance_ratios"), &Self::_b_get_mesh_lod_distance_ratios);
+	ClassDB::bind_method(D_METHOD("_set_mesh_lod_distance_ratios"), &Self::_b_set_mesh_lod_distance_ratios);
 
-	ClassDB::bind_method(D_METHOD("_set_mesh_lod0_distance_ratio", "ratio"),
-			&VoxelInstanceLibraryMultiMeshItem::_b_set_mesh_lod0_distance_ratio);
-	ClassDB::bind_method(D_METHOD("_set_mesh_lod1_distance_ratio", "ratio"),
-			&VoxelInstanceLibraryMultiMeshItem::_b_set_mesh_lod1_distance_ratio);
-	ClassDB::bind_method(D_METHOD("_set_mesh_lod2_distance_ratio", "ratio"),
-			&VoxelInstanceLibraryMultiMeshItem::_b_set_mesh_lod2_distance_ratio);
-	ClassDB::bind_method(D_METHOD("_set_mesh_lod3_distance_ratio", "ratio"),
-			&VoxelInstanceLibraryMultiMeshItem::_b_set_mesh_lod3_distance_ratio);
+	ClassDB::bind_method(D_METHOD("_get_mesh_lod0_distance_ratio"), &Self::_b_get_mesh_lod0_distance_ratio);
+	ClassDB::bind_method(D_METHOD("_get_mesh_lod1_distance_ratio"), &Self::_b_get_mesh_lod1_distance_ratio);
+	ClassDB::bind_method(D_METHOD("_get_mesh_lod2_distance_ratio"), &Self::_b_get_mesh_lod2_distance_ratio);
+	ClassDB::bind_method(D_METHOD("_get_mesh_lod3_distance_ratio"), &Self::_b_get_mesh_lod3_distance_ratio);
 
-	ClassDB::bind_method(D_METHOD("set_hide_beyond_max_lod", "enabled"),
-			&VoxelInstanceLibraryMultiMeshItem::set_hide_beyond_max_lod);
-	ClassDB::bind_method(
-			D_METHOD("get_hide_beyond_max_lod"), &VoxelInstanceLibraryMultiMeshItem::get_hide_beyond_max_lod);
+	ClassDB::bind_method(D_METHOD("_set_mesh_lod0_distance_ratio", "ratio"), &Self::_b_set_mesh_lod0_distance_ratio);
+	ClassDB::bind_method(D_METHOD("_set_mesh_lod1_distance_ratio", "ratio"), &Self::_b_set_mesh_lod1_distance_ratio);
+	ClassDB::bind_method(D_METHOD("_set_mesh_lod2_distance_ratio", "ratio"), &Self::_b_set_mesh_lod2_distance_ratio);
+	ClassDB::bind_method(D_METHOD("_set_mesh_lod3_distance_ratio", "ratio"), &Self::_b_set_mesh_lod3_distance_ratio);
 
-	ClassDB::bind_method(
-			D_METHOD("set_render_layer", "render_layer"), &VoxelInstanceLibraryMultiMeshItem::set_render_layer);
-	ClassDB::bind_method(D_METHOD("get_render_layer"), &VoxelInstanceLibraryMultiMeshItem::get_render_layer);
+	ClassDB::bind_method(D_METHOD("set_hide_beyond_max_lod", "enabled"), &Self::set_hide_beyond_max_lod);
+	ClassDB::bind_method(D_METHOD("get_hide_beyond_max_lod"), &Self::get_hide_beyond_max_lod);
 
-	ClassDB::bind_method(
-			D_METHOD("set_material_override", "material"), &VoxelInstanceLibraryMultiMeshItem::set_material_override);
-	ClassDB::bind_method(D_METHOD("get_material_override"), &VoxelInstanceLibraryMultiMeshItem::get_material_override);
+	ClassDB::bind_method(D_METHOD("set_render_layer", "render_layer"), &Self::set_render_layer);
+	ClassDB::bind_method(D_METHOD("get_render_layer"), &Self::get_render_layer);
 
-	ClassDB::bind_method(
-			D_METHOD("set_cast_shadows_setting", "mode"), &VoxelInstanceLibraryMultiMeshItem::set_cast_shadows_setting);
-	ClassDB::bind_method(
-			D_METHOD("get_cast_shadows_setting"), &VoxelInstanceLibraryMultiMeshItem::get_cast_shadows_setting);
+	ClassDB::bind_method(D_METHOD("set_material_override", "material"), &Self::set_material_override);
+	ClassDB::bind_method(D_METHOD("get_material_override"), &Self::get_material_override);
 
-	ClassDB::bind_method(D_METHOD("set_gi_mode", "mode"), &VoxelInstanceLibraryMultiMeshItem::set_gi_mode);
-	ClassDB::bind_method(D_METHOD("get_gi_mode"), &VoxelInstanceLibraryMultiMeshItem::get_gi_mode);
+	ClassDB::bind_method(D_METHOD("set_cast_shadows_setting", "mode"), &Self::set_cast_shadows_setting);
+	ClassDB::bind_method(D_METHOD("get_cast_shadows_setting"), &Self::get_cast_shadows_setting);
 
-	ClassDB::bind_method(D_METHOD("set_collision_layer", "collision_layer"),
-			&VoxelInstanceLibraryMultiMeshItem::set_collision_layer);
-	ClassDB::bind_method(D_METHOD("get_collision_layer"), &VoxelInstanceLibraryMultiMeshItem::get_collision_layer);
+	ClassDB::bind_method(D_METHOD("set_gi_mode", "mode"), &Self::set_gi_mode);
+	ClassDB::bind_method(D_METHOD("get_gi_mode"), &Self::get_gi_mode);
 
-	ClassDB::bind_method(
-			D_METHOD("set_collision_mask", "collision_mask"), &VoxelInstanceLibraryMultiMeshItem::set_collision_mask);
-	ClassDB::bind_method(D_METHOD("get_collision_mask"), &VoxelInstanceLibraryMultiMeshItem::get_collision_mask);
+	ClassDB::bind_method(D_METHOD("set_collision_layer", "collision_layer"), &Self::set_collision_layer);
+	ClassDB::bind_method(D_METHOD("get_collision_layer"), &Self::get_collision_layer);
 
-	ClassDB::bind_method(D_METHOD("set_collision_shapes", "shape_infos"),
-			&VoxelInstanceLibraryMultiMeshItem::_b_set_collision_shapes);
-	ClassDB::bind_method(D_METHOD("get_collision_shapes"), &VoxelInstanceLibraryMultiMeshItem::_b_get_collision_shapes);
+	ClassDB::bind_method(D_METHOD("set_collision_mask", "collision_mask"), &Self::set_collision_mask);
+	ClassDB::bind_method(D_METHOD("get_collision_mask"), &Self::get_collision_mask);
 
-	ClassDB::bind_method(D_METHOD("set_collider_group_names", "names"),
-			&VoxelInstanceLibraryMultiMeshItem::set_collider_group_names);
-	ClassDB::bind_method(
-			D_METHOD("get_collider_group_names"), &VoxelInstanceLibraryMultiMeshItem::get_collider_group_names);
+	ClassDB::bind_method(D_METHOD("set_collision_shapes", "shape_infos"), &Self::_b_set_collision_shapes);
+	ClassDB::bind_method(D_METHOD("get_collision_shapes"), &Self::_b_get_collision_shapes);
 
-	ClassDB::bind_method(
-			D_METHOD("setup_from_template", "node"), &VoxelInstanceLibraryMultiMeshItem::setup_from_template);
+	ClassDB::bind_method(D_METHOD("set_collider_group_names", "names"), &Self::set_collider_group_names);
+	ClassDB::bind_method(D_METHOD("get_collider_group_names"), &Self::get_collider_group_names);
 
-	ClassDB::bind_method(D_METHOD("get_scene"), &VoxelInstanceLibraryMultiMeshItem::get_scene);
-	ClassDB::bind_method(D_METHOD("set_scene", "scene"), &VoxelInstanceLibraryMultiMeshItem::set_scene);
+	ClassDB::bind_method(D_METHOD("setup_from_template", "node"), &Self::setup_from_template);
+
+	ClassDB::bind_method(D_METHOD("get_scene"), &Self::get_scene);
+	ClassDB::bind_method(D_METHOD("set_scene", "scene"), &Self::set_scene);
 
 	// Used in editor only
-	ClassDB::bind_method(D_METHOD("_deserialize_multimesh_item_properties", "props"),
-			&VoxelInstanceLibraryMultiMeshItem::deserialize_multimesh_item_properties);
+	ClassDB::bind_method(
+			D_METHOD("_deserialize_multimesh_item_properties", "props"), &Self::deserialize_multimesh_item_properties
+	);
 
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "scene", PROPERTY_HINT_RESOURCE_TYPE, PackedScene::get_class_static()),
-			"set_scene", "get_scene");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::OBJECT, "scene", PROPERTY_HINT_RESOURCE_TYPE, PackedScene::get_class_static()),
+			"set_scene",
+			"get_scene"
+	);
 
 	ADD_GROUP(MANUAL_SETTINGS_GROUP_NAME, "");
 
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "mesh", PROPERTY_HINT_RESOURCE_TYPE, Mesh::get_class_static()),
-			"_set_mesh_lod0", "_get_mesh_lod0");
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "mesh_lod1", PROPERTY_HINT_RESOURCE_TYPE, Mesh::get_class_static()),
-			"_set_mesh_lod1", "_get_mesh_lod1");
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "mesh_lod2", PROPERTY_HINT_RESOURCE_TYPE, Mesh::get_class_static()),
-			"_set_mesh_lod2", "_get_mesh_lod2");
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "mesh_lod3", PROPERTY_HINT_RESOURCE_TYPE, Mesh::get_class_static()),
-			"_set_mesh_lod3", "_get_mesh_lod3");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::OBJECT, "mesh", PROPERTY_HINT_RESOURCE_TYPE, Mesh::get_class_static()),
+			"_set_mesh_lod0",
+			"_get_mesh_lod0"
+	);
+	ADD_PROPERTY(
+			PropertyInfo(Variant::OBJECT, "mesh_lod1", PROPERTY_HINT_RESOURCE_TYPE, Mesh::get_class_static()),
+			"_set_mesh_lod1",
+			"_get_mesh_lod1"
+	);
+	ADD_PROPERTY(
+			PropertyInfo(Variant::OBJECT, "mesh_lod2", PROPERTY_HINT_RESOURCE_TYPE, Mesh::get_class_static()),
+			"_set_mesh_lod2",
+			"_get_mesh_lod2"
+	);
+	ADD_PROPERTY(
+			PropertyInfo(Variant::OBJECT, "mesh_lod3", PROPERTY_HINT_RESOURCE_TYPE, Mesh::get_class_static()),
+			"_set_mesh_lod3",
+			"_get_mesh_lod3"
+	);
 
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "render_layer", PROPERTY_HINT_LAYERS_3D_RENDER), "set_render_layer",
-			"get_render_layer");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::INT, "render_layer", PROPERTY_HINT_LAYERS_3D_RENDER),
+			"set_render_layer",
+			"get_render_layer"
+	);
 
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "material_override", PROPERTY_HINT_RESOURCE_TYPE,
-						 // TODO Disallow CanvasItemMaterial?
-						 Material::get_class_static()),
-			"set_material_override", "get_material_override");
+	ADD_PROPERTY(
+			PropertyInfo(
+					Variant::OBJECT,
+					"material_override",
+					PROPERTY_HINT_RESOURCE_TYPE,
+					// TODO Disallow CanvasItemMaterial?
+					Material::get_class_static()
+			),
+			"set_material_override",
+			"get_material_override"
+	);
 
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "cast_shadow", PROPERTY_HINT_ENUM, CAST_SHADOW_ENUM_HINT_STRING),
-			"set_cast_shadows_setting", "get_cast_shadows_setting");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::INT, "cast_shadow", PROPERTY_HINT_ENUM, godot::CAST_SHADOW_ENUM_HINT_STRING),
+			"set_cast_shadows_setting",
+			"get_cast_shadows_setting"
+	);
 
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "gi_mode", PROPERTY_HINT_ENUM, GI_MODE_ENUM_HINT_STRING), "set_gi_mode",
-			"get_gi_mode");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::INT, "gi_mode", PROPERTY_HINT_ENUM, godot::GI_MODE_ENUM_HINT_STRING),
+			"set_gi_mode",
+			"get_gi_mode"
+	);
 
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "collision_layer", PROPERTY_HINT_LAYERS_3D_PHYSICS), "set_collision_layer",
-			"get_collision_layer");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "collision_mask", PROPERTY_HINT_LAYERS_3D_PHYSICS), "set_collision_mask",
-			"get_collision_mask");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::INT, "collision_layer", PROPERTY_HINT_LAYERS_3D_PHYSICS),
+			"set_collision_layer",
+			"get_collision_layer"
+	);
+	ADD_PROPERTY(
+			PropertyInfo(Variant::INT, "collision_mask", PROPERTY_HINT_LAYERS_3D_PHYSICS),
+			"set_collision_mask",
+			"get_collision_mask"
+	);
 
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "collision_shapes"), "set_collision_shapes", "get_collision_shapes");
 
@@ -638,24 +720,41 @@ void VoxelInstanceLibraryMultiMeshItem::_bind_methods() {
 	// Only for editor and scripting
 	ADD_PROPERTY(
 			PropertyInfo(Variant::FLOAT, "mesh_lod0_distance_ratio", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR),
-			"_set_mesh_lod0_distance_ratio", "_get_mesh_lod0_distance_ratio");
+			"_set_mesh_lod0_distance_ratio",
+			"_get_mesh_lod0_distance_ratio"
+	);
 	ADD_PROPERTY(
 			PropertyInfo(Variant::FLOAT, "mesh_lod1_distance_ratio", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR),
-			"_set_mesh_lod1_distance_ratio", "_get_mesh_lod1_distance_ratio");
+			"_set_mesh_lod1_distance_ratio",
+			"_get_mesh_lod1_distance_ratio"
+	);
 	ADD_PROPERTY(
 			PropertyInfo(Variant::FLOAT, "mesh_lod2_distance_ratio", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR),
-			"_set_mesh_lod2_distance_ratio", "_get_mesh_lod2_distance_ratio");
+			"_set_mesh_lod2_distance_ratio",
+			"_get_mesh_lod2_distance_ratio"
+	);
 	ADD_PROPERTY(
 			PropertyInfo(Variant::FLOAT, "mesh_lod3_distance_ratio", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR),
-			"_set_mesh_lod3_distance_ratio", "_get_mesh_lod3_distance_ratio");
+			"_set_mesh_lod3_distance_ratio",
+			"_get_mesh_lod3_distance_ratio"
+	);
 
 	// Only for resource serialization
-	ADD_PROPERTY(PropertyInfo(Variant::PACKED_FLOAT32_ARRAY, "_mesh_lod_distance_ratios", PROPERTY_HINT_NONE, "",
-						 PROPERTY_USAGE_STORAGE),
-			"_set_mesh_lod_distance_ratios", "_get_mesh_lod_distance_ratios");
+	ADD_PROPERTY(
+			PropertyInfo(
+					Variant::PACKED_FLOAT32_ARRAY,
+					"_mesh_lod_distance_ratios",
+					PROPERTY_HINT_NONE,
+					"",
+					PROPERTY_USAGE_STORAGE
+			),
+			"_set_mesh_lod_distance_ratios",
+			"_get_mesh_lod_distance_ratios"
+	);
 
 	ADD_PROPERTY(
-			PropertyInfo(Variant::BOOL, "hide_beyond_max_lod"), "set_hide_beyond_max_lod", "get_hide_beyond_max_lod");
+			PropertyInfo(Variant::BOOL, "hide_beyond_max_lod"), "set_hide_beyond_max_lod", "get_hide_beyond_max_lod"
+	);
 
 	BIND_CONSTANT(MAX_MESH_LODS);
 }

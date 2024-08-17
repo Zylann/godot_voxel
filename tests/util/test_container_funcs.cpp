@@ -1,12 +1,13 @@
 #include "test_container_funcs.h"
 #include "../../util/containers/container_funcs.h"
+#include "../../util/containers/std_vector.h"
 #include "../testing.h"
 
 namespace zylann::tests {
 
 void test_unordered_remove_if() {
 	struct L {
-		static unsigned int count(const std::vector<int> &vec, int v) {
+		static unsigned int count(const StdVector<int> &vec, int v) {
 			unsigned int n = 0;
 			for (size_t i = 0; i < vec.size(); ++i) {
 				if (vec[i] == v) {
@@ -18,7 +19,7 @@ void test_unordered_remove_if() {
 	};
 	// Remove one at beginning
 	{
-		std::vector<int> vec;
+		StdVector<int> vec;
 		vec.push_back(0);
 		vec.push_back(1);
 		vec.push_back(2);
@@ -32,7 +33,7 @@ void test_unordered_remove_if() {
 	}
 	// Remove one in middle
 	{
-		std::vector<int> vec;
+		StdVector<int> vec;
 		vec.push_back(0);
 		vec.push_back(1);
 		vec.push_back(2);
@@ -46,7 +47,7 @@ void test_unordered_remove_if() {
 	}
 	// Remove one at end
 	{
-		std::vector<int> vec;
+		StdVector<int> vec;
 		vec.push_back(0);
 		vec.push_back(1);
 		vec.push_back(2);
@@ -60,7 +61,7 @@ void test_unordered_remove_if() {
 	}
 	// Remove multiple
 	{
-		std::vector<int> vec;
+		StdVector<int> vec;
 		vec.push_back(0);
 		vec.push_back(1);
 		vec.push_back(2);
@@ -74,7 +75,7 @@ void test_unordered_remove_if() {
 	}
 	// Remove last
 	{
-		std::vector<int> vec;
+		StdVector<int> vec;
 		vec.push_back(0);
 
 		unordered_remove_if(vec, [](int v) { return v == 0; });

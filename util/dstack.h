@@ -1,8 +1,8 @@
 #ifndef ZN_DSTACK_H
 #define ZN_DSTACK_H
 
-#include "fwd_std_string.h"
-#include <vector>
+#include "containers/std_vector.h"
+#include "string/fwd_std_string.h"
 
 #ifdef DEBUG_ENABLED
 #define ZN_DSTACK_ENABLED
@@ -43,7 +43,7 @@ public:
 	void to_string(FwdMutableStdString s) const;
 
 private:
-	std::vector<Frame> _frames;
+	StdVector<Frame> _frames;
 };
 
 } // namespace dstack

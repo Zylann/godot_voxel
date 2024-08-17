@@ -2,8 +2,8 @@
 #define VOXEL_GENERATOR_HEIGHTMAP_H
 
 #include "../../constants/voxel_constants.h"
+#include "../../storage/voxel_buffer.h"
 #include "../../storage/voxel_buffer_gd.h"
-#include "../../storage/voxel_buffer_internal.h"
 #include "../../util/containers/span.h"
 #include "../../util/math/funcs.h"
 #include "../../util/math/vector3f.h"
@@ -20,8 +20,8 @@ public:
 	VoxelGeneratorHeightmap();
 	~VoxelGeneratorHeightmap();
 
-	void set_channel(VoxelBufferInternal::ChannelId p_channel);
-	VoxelBufferInternal::ChannelId get_channel() const;
+	void set_channel(VoxelBuffer::ChannelId p_channel);
+	VoxelBuffer::ChannelId get_channel() const;
 
 	int get_used_channels_mask() const override;
 
@@ -35,12 +35,12 @@ public:
 	float get_iso_scale() const;
 
 protected:
-	void _b_set_channel(gd::VoxelBuffer::ChannelId p_channel);
-	gd::VoxelBuffer::ChannelId _b_get_channel() const;
+	void _b_set_channel(godot::VoxelBuffer::ChannelId p_channel);
+	godot::VoxelBuffer::ChannelId _b_get_channel() const;
 
 	// float height_func(x, y)
 	template <typename Height_F>
-	Result generate(VoxelBufferInternal &out_buffer, Height_F height_func, Vector3i origin, int lod) {
+	Result generate(VoxelBuffer &out_buffer, Height_F height_func, Vector3i origin, int lod) {
 		Parameters params;
 		{
 			RWLockRead rlock(_parameters_lock);
@@ -49,7 +49,7 @@ protected:
 
 		const int channel = params.channel;
 		const Vector3i bs = out_buffer.get_size();
-		const bool use_sdf = channel == VoxelBufferInternal::CHANNEL_SDF;
+		const bool use_sdf = channel == VoxelBuffer::CHANNEL_SDF;
 
 		if (origin.y > get_height_start() + get_height_range()) {
 			// The bottom of the block is above the highest ground can go (default is air)
@@ -77,7 +77,7 @@ protected:
 					float h = params.range.xform(height_func(gx, gz));
 					int gy = origin.y;
 					for (int y = 0; y < bs.y; ++y, gy += stride) {
-						float sdf = params.iso_scale * (gy - h);
+						const float sdf = params.iso_scale * (gy - h);
 						out_buffer.set_voxel_f(sdf, x, y, z, channel);
 					}
 
@@ -102,7 +102,8 @@ protected:
 							ih = bs.y;
 						}
 						out_buffer.fill_area(
-								params.matter_type, Vector3i(x, 0, z), Vector3i(x + 1, ih, z + 1), channel);
+								params.matter_type, Vector3i(x, 0, z), Vector3i(x + 1, ih, z + 1), channel
+						);
 					}
 
 				} // for x
@@ -114,9 +115,16 @@ protected:
 
 	// float height_func(x, y)
 	template <typename Height_F>
-	void generate_series_template(Height_F height_func, Span<const float> positions_x, Span<const float> positions_y,
-			Span<const float> positions_z, unsigned int channel, Span<float> out_values, Vector3f min_pos,
-			Vector3f max_pos) {
+	void generate_series_template(
+			Height_F height_func,
+			Span<const float> positions_x,
+			Span<const float> positions_y,
+			Span<const float> positions_z,
+			unsigned int channel,
+			Span<float> out_values,
+			Vector3f min_pos,
+			Vector3f max_pos
+	) {
 		Parameters params;
 		{
 			RWLockRead rlock(_parameters_lock);
@@ -124,7 +132,7 @@ protected:
 		}
 
 		// const int channel = params.channel;
-		const bool use_sdf = channel == VoxelBufferInternal::CHANNEL_SDF;
+		const bool use_sdf = channel == VoxelBuffer::CHANNEL_SDF;
 
 		if (use_sdf) {
 			for (unsigned int i = 0; i < out_values.size(); ++i) {
@@ -155,12 +163,10 @@ private:
 	};
 
 	struct Parameters {
-		VoxelBufferInternal::ChannelId channel = VoxelBufferInternal::CHANNEL_SDF;
+		VoxelBuffer::ChannelId channel = VoxelBuffer::CHANNEL_SDF;
 		int matter_type = 1;
 		Range range;
-		// TODO Get rid of that scale, apply it differently. It exists because of the compression format in 16-bit and
-		// 8-bit channels of VoxelBuffer
-		float iso_scale = constants::QUANTIZED_SDF_16_BITS_SCALE;
+		float iso_scale = 1.f;
 	};
 
 	RWLock _parameters_lock;

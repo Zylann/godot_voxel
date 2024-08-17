@@ -1,5 +1,6 @@
 #include "test_curve_range.h"
 #include "../../generators/graph/range_utility.h"
+#include "../../util/containers/std_vector.h"
 #include "../../util/godot/classes/curve.h"
 #include "../testing.h"
 
@@ -18,7 +19,7 @@ void test_get_curve_monotonic_sections() {
 		curve.instantiate();
 		curve->add_point(Vector2(0, 0));
 		curve->add_point(Vector2(1, 1));
-		std::vector<CurveMonotonicSection> sections;
+		StdVector<CurveMonotonicSection> sections;
 		get_curve_monotonic_sections(**curve, sections);
 		ZN_TEST_ASSERT(sections.size() == 1);
 		ZN_TEST_ASSERT(sections[0].x_min == 0.f);
@@ -49,7 +50,7 @@ void test_get_curve_monotonic_sections() {
 		curve.instantiate();
 		curve->add_point(Vector2(0, 0));
 		curve->add_point(Vector2(1, 0));
-		std::vector<CurveMonotonicSection> sections;
+		StdVector<CurveMonotonicSection> sections;
 		get_curve_monotonic_sections(**curve, sections);
 		ZN_TEST_ASSERT(sections.size() == 1);
 		ZN_TEST_ASSERT(sections[0].x_min == 0.f);
@@ -64,7 +65,7 @@ void test_get_curve_monotonic_sections() {
 		curve->add_point(Vector2(0, 0));
 		curve->add_point(Vector2(0.5, 1));
 		curve->add_point(Vector2(1, 1));
-		std::vector<CurveMonotonicSection> sections;
+		StdVector<CurveMonotonicSection> sections;
 		get_curve_monotonic_sections(**curve, sections);
 		ZN_TEST_ASSERT(sections.size() == 1);
 	}
@@ -75,7 +76,7 @@ void test_get_curve_monotonic_sections() {
 		curve->add_point(Vector2(0, 0));
 		curve->add_point(Vector2(0.5, 0));
 		curve->add_point(Vector2(1, 1));
-		std::vector<CurveMonotonicSection> sections;
+		StdVector<CurveMonotonicSection> sections;
 		get_curve_monotonic_sections(**curve, sections);
 		ZN_TEST_ASSERT(sections.size() == 1);
 	}
@@ -87,7 +88,7 @@ void test_get_curve_monotonic_sections() {
 		curve->add_point(Vector2(0.3, 0));
 		curve->add_point(Vector2(0.6, 1));
 		curve->add_point(Vector2(1, 1));
-		std::vector<CurveMonotonicSection> sections;
+		StdVector<CurveMonotonicSection> sections;
 		get_curve_monotonic_sections(**curve, sections);
 		ZN_TEST_ASSERT(sections.size() == 1);
 	}
@@ -99,7 +100,7 @@ void test_get_curve_monotonic_sections() {
 		curve->add_point(Vector2(0.3, 1));
 		curve->add_point(Vector2(0.6, 0));
 		curve->add_point(Vector2(1, 1));
-		std::vector<CurveMonotonicSection> sections;
+		StdVector<CurveMonotonicSection> sections;
 		get_curve_monotonic_sections(**curve, sections);
 		ZN_TEST_ASSERT(sections.size() == 3);
 		ZN_TEST_ASSERT(sections[0].x_min == 0.f);
@@ -112,7 +113,7 @@ void test_get_curve_monotonic_sections() {
 		curve->add_point(Vector2(0, 0));
 		curve->add_point(Vector2(0.5, 1));
 		curve->add_point(Vector2(1, 0));
-		std::vector<CurveMonotonicSection> sections;
+		StdVector<CurveMonotonicSection> sections;
 		get_curve_monotonic_sections(**curve, sections);
 		ZN_TEST_ASSERT(sections.size() == 2);
 	}
@@ -122,7 +123,7 @@ void test_get_curve_monotonic_sections() {
 		curve.instantiate();
 		curve->add_point(Vector2(0, 0), 0.f, 1.f);
 		curve->add_point(Vector2(1, 0));
-		std::vector<CurveMonotonicSection> sections;
+		StdVector<CurveMonotonicSection> sections;
 		get_curve_monotonic_sections(**curve, sections);
 		ZN_TEST_ASSERT(sections.size() == 2);
 		ZN_TEST_ASSERT(sections[0].x_min == 0.f);

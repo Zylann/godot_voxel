@@ -1,8 +1,11 @@
 #ifndef VOXEL_GRAPH_NODE_TYPE_DB_H
 #define VOXEL_GRAPH_NODE_TYPE_DB_H
 
-#include "../../util/expression_parser.h"
+#include "../../util/containers/std_unordered_map.h"
+#include "../../util/containers/std_vector.h"
 #include "../../util/godot/core/string.h" // For String hash
+#include "../../util/string/expression_parser.h"
+#include "../../util/string/std_string.h"
 #include "voxel_graph_compiler.h"
 #include "voxel_graph_function.h"
 #include "voxel_graph_shader_generator.h"
@@ -64,7 +67,7 @@ struct NodeType {
 		bool hidden = false;
 		Variant min_value;
 		Variant max_value;
-		std::vector<std::string> enum_items;
+		StdVector<StdString> enum_items;
 
 		Param(String p_name, Variant::Type p_type, Variant p_default_value = Variant()) :
 				name(p_name), default_value(p_default_value), type(p_type) {}
@@ -79,11 +82,11 @@ struct NodeType {
 	// Pseudo nodes are replaced during compilation with one or multiple real nodes, they have no logic on their own
 	bool is_pseudo_node = false;
 	Category category;
-	std::vector<Port> inputs;
-	std::vector<Port> outputs;
-	std::vector<Param> params;
-	std::unordered_map<String, uint32_t> param_name_to_index;
-	std::unordered_map<String, uint32_t> input_name_to_index;
+	StdVector<Port> inputs;
+	StdVector<Port> outputs;
+	StdVector<Param> params;
+	StdUnorderedMap<String, uint32_t> param_name_to_index;
+	StdUnorderedMap<String, uint32_t> input_name_to_index;
 	CompileFunc compile_func = nullptr;
 	Runtime::ProcessBufferFunc process_buffer_func = nullptr;
 	Runtime::RangeAnalysisFunc range_analysis_func = nullptr;
@@ -131,8 +134,8 @@ public:
 
 private:
 	FixedArray<NodeType, VoxelGraphFunction::NODE_TYPE_COUNT> _types;
-	std::unordered_map<String, VoxelGraphFunction::NodeTypeID> _type_name_to_id;
-	std::vector<ExpressionParser::Function> _expression_functions;
+	StdUnorderedMap<String, VoxelGraphFunction::NodeTypeID> _type_name_to_id;
+	StdVector<ExpressionParser::Function> _expression_functions;
 };
 
 VoxelGraphFunction::Port make_port_from_io_node(const ProgramGraph::Node &node, const NodeType &type);

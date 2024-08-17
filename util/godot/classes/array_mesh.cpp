@@ -1,10 +1,10 @@
 #include "array_mesh.h"
+#include "../../containers/std_map.h"
+#include "../../containers/std_unordered_map.h"
+#include "../../containers/std_vector.h"
 #include "../core/packed_arrays.h"
 
-#include <map>
-#include <unordered_map>
-
-namespace zylann {
+namespace zylann::godot {
 
 #ifdef TOOLS_ENABLED
 
@@ -28,9 +28,9 @@ Array generate_debug_seams_wireframe_surface(const ArrayMesh &src_mesh, int surf
 	};
 
 	// Using a map so we can have a comparator with floating error
-	std::map<Vector3, Dupe> vertex_to_dupe;
-	std::unordered_map<int, int> src_index_to_dst_index;
-	std::vector<Vector3> dst_positions;
+	StdMap<Vector3, Dupe> vertex_to_dupe;
+	StdUnorderedMap<int, int> src_index_to_dst_index;
+	StdVector<Vector3> dst_positions;
 	{
 		// const Vector3 *src_positions_read = src_positions.ptr();
 		// const Vector3 *src_normals_read = src_normals.ptr();
@@ -51,7 +51,7 @@ Array generate_debug_seams_wireframe_surface(const ArrayMesh &src_mesh, int surf
 		}
 	}
 
-	std::vector<int32_t> dst_indices;
+	StdVector<int32_t> dst_indices;
 	{
 		// PoolIntArray::Read r = src_indices.read();
 		for (int i = 0; i < src_indices.size(); i += 3) {
@@ -87,8 +87,8 @@ Array generate_debug_seams_wireframe_surface(const ArrayMesh &src_mesh, int surf
 
 	PackedVector3Array dst_positions_pv;
 	PackedInt32Array dst_indices_pv;
-	copy_to(dst_positions_pv, dst_positions);
-	copy_to(dst_indices_pv, dst_indices);
+	copy_to(dst_positions_pv, to_span(dst_positions));
+	copy_to(dst_indices_pv, to_span(dst_indices));
 	Array dst_surface;
 	dst_surface.resize(Mesh::ARRAY_MAX);
 	dst_surface[Mesh::ARRAY_VERTEX] = dst_positions_pv;
@@ -109,4 +109,4 @@ Array generate_debug_seams_wireframe_surface(const ArrayMesh &src_mesh, int surf
 
 #endif // TOOLS_ENABLED
 
-} // namespace zylann
+} // namespace zylann::godot

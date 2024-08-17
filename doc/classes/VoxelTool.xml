@@ -5,7 +5,8 @@
 	</brief_description>
 	<description>
 		Abstract interface to access and edit voxels. It allows accessing individual voxels, or doing bulk operations such as carving large chunks or copy/paste boxes.
-		It's not a class to instantiate alone, you may get it from the voxel objects you want to work with.
+		It's not a class to instantiate alone, you may get it from the voxel objects you want to work with, because it has multiple derived implementations.
+		By default, if an operation overlaps a non-editable area (if not loaded yet for example), the operation will be cancelled. This behavior may vary in derived classes.
 	</description>
 	<tutorials>
 	</tutorials>
@@ -81,6 +82,20 @@
 			<description>
 			</description>
 		</method>
+		<method name="grow_sphere">
+			<return type="void" />
+			<param index="0" name="sphere_center" type="Vector3" />
+			<param index="1" name="sphere_radius" type="float" />
+			<param index="2" name="strength" type="float" />
+			<description>
+				Adds/removes (depending on [code]mode[/code]) a value to/from all voxels within a sphere. Added/removed value will be equal to [code]strength[/code] at the center of the sphere, and decreases linearly to zero at the surface of the sphere. Voxels outside the sphere will not be affected.
+				[code]sphere_center[/code] is position in the terrain that will be smoothed out.
+				[code]sphere_radius[/code] radius of a sphere from the [code]center[/code] where voxel values will be affected. Should be greater than zero.
+				[code]strength[/code] value that controls maximal value that will be added/removed to/from voxels. Suggested range is [0, 10].
+				Note 1: This is currently implemented only for terrain that uses SDF data (smooth voxels).
+				Note 2: This is meant to be analogous to Surface tool from Unreal Engine Voxel Plugin.
+			</description>
+		</method>
 		<method name="is_area_editable" qualifiers="const">
 			<return type="bool" />
 			<param index="0" name="box" type="AABB" />
@@ -115,8 +130,27 @@
 				Paste voxels in a box from the given buffer at a specific location. Voxels having a specific value in a mask channel will not be pasted.
 				[code]dst_pos[/code] is the lowest corner of the box, and its size is determined by the size of [code]src_buffer[/code].
 				[code]channels_mask[/code] is a bitmask where each bit tells which channels will be modified. Example: [code]1 &lt;&lt; VoxelBuffer.CHANNEL_SDF[/code] only write SDF data. Use [code]0xff[/code] if you want them all.
-				[code]src_mask_channel[/code] channel that will be used to lookup mask values.
-				[code]src_mask_value[/code] if voxels have this value in the channel specified for masking, then they won't be pasted.
+				[code]src_mask_channel[/code] channel from the source buffer that will be used to lookup mask values.
+				[code]src_mask_value[/code] if voxels of the source buffer have this value in the channel specified for masking, then they won't be pasted.
+			</description>
+		</method>
+		<method name="paste_masked_writable_list">
+			<return type="void" />
+			<param index="0" name="position" type="Vector3i" />
+			<param index="1" name="voxels" type="VoxelBuffer" />
+			<param index="2" name="channels_mask" type="int" />
+			<param index="3" name="src_mask_channel" type="int" />
+			<param index="4" name="src_mask_value" type="int" />
+			<param index="5" name="dst_mask_channel" type="int" />
+			<param index="6" name="dst_writable_list" type="PackedInt32Array" />
+			<description>
+				Paste voxels in a box from the given buffer at a specific location. Voxels having a specific value in a mask channel of the source buffer will not be pasted, and existing voxels at the destination will only be modified if they have specific values.
+				[code]dst_pos[/code] is the lowest corner of the box, and its size is determined by the size of [code]src_buffer[/code].
+				[code]channels_mask[/code] is a bitmask where each bit tells which channels will be modified. Example: [code]1 &lt;&lt; VoxelBuffer.CHANNEL_SDF[/code] only write SDF data. Use [code]0xff[/code] if you want them all.
+				[code]src_mask_channel[/code] channel from the source buffer that will be used to lookup mask values.
+				[code]src_mask_value[/code] if voxels of the source buffer have this value in the channel specified for masking, then they won't be pasted.
+				[code]dst_mask_channel[/code] channel from the destination that will be used to select writable voxels.
+				[code]dst_writable_list[/code] List of values the destination voxels must have in order to be written to. Values in that list must be between 0 and 65535. A very large amount of values can also affect performance.
 			</description>
 		</method>
 		<method name="raycast">
@@ -145,7 +179,7 @@
 			<param index="0" name="pos" type="Vector3i" />
 			<param index="1" name="v" type="float" />
 			<description>
-				Sets the normalized decimal value of a specific voxel. This should preferably be used when modifying voxels on the SDF channel.
+				Sets the signed distance field (SDF) value a specific voxel. This should preferably be used on the SDF channel.
 			</description>
 		</method>
 		<method name="set_voxel_metadata">
@@ -167,20 +201,6 @@
 				[code]blur_radius[/code] half the box blur length that will be sampled to calculate average voxel values. Higher values results in more aggressive smoothing. Should be at least 1.
 				Note 1: This is currently implemented only for terrain that uses SDF data (smooth voxels).
 				Note 2: Beware of using high [code]sphere_radius[/code] and high [code]blur_radius[/code] as the performance can drop quickly if this is called 60 times a second.
-			</description>
-		</method>
-		<method name="grow_sphere">
-			<return type="void" />
-			<param index="0" name="sphere_center" type="Vector3" />
-			<param index="1" name="sphere_radius" type="float" />
-			<param index="2" name="strength" type="float" />
-			<description>
-				Adds/removes (depending on [code]mode[/code]) a value to/from all voxels within a sphere. Added/removed value will be equal to [code]strength[/code] at the center of the sphere, and decreases linearly to zero at the surface of the sphere. Voxels outside the sphere will not be affected.
-				[code]sphere_center[/code] is position in the terrain that will be smoothed out.
-				[code]sphere_radius[/code] radius of a sphere from the [code]center[/code] where voxel values will be affected. Should be greater than zero.
-				[code]strength[/code] value that controls maximal value that will be added/removed to/from voxels. Should be in range [0, 1]. Suggested to keep value same as [code]sdf_scale[/code].
-				Note 1: This is currently implemented only for terrain that uses SDF data (smooth voxels).
-				Note 2: This is meant to be analogous to Surface tool from Unreal Engine Voxel Plugin.
 			</description>
 		</method>
 		<method name="u16_indices_to_vec4i" qualifiers="static">

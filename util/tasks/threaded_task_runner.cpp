@@ -2,19 +2,9 @@
 #include "../dstack.h"
 #include "../godot/classes/time.h"
 #include "../profiling.h"
-#include "../string_funcs.h"
+#include "../string/format.h"
 
 namespace zylann {
-
-// template <typename T>
-// static bool contains(const std::vector<T> vec, T v) {
-// 	for (size_t i = 0; i < vec.size(); ++i) {
-// 		if (vec[i] == v) {
-// 			return true;
-// 		}
-// 	}
-// 	return false;
-// }
 
 ThreadedTaskRunner::ThreadedTaskRunner() {}
 
@@ -69,7 +59,7 @@ void ThreadedTaskRunner::destroy_all_threads() {
 #ifdef ZN_THREADED_TASK_RUNNER_CHECK_DUPLICATE_TASKS
 
 void ThreadedTaskRunner::debug_add_owned_task(IThreadedTask *task) {
-	std::string s;
+	StdString s;
 	dstack::Info info;
 	info.to_string(s);
 	println(format("Own {} t {}", uint64_t(task), Thread::get_caller_id()));
@@ -179,9 +169,9 @@ void ThreadedTaskRunner::thread_func_static(void *p_data) {
 void ThreadedTaskRunner::thread_func(ThreadData &data) {
 	data.debug_state = STATE_RUNNING;
 
-	std::vector<TaskItem> tasks;
-	std::vector<TaskItem> postponed_tasks;
-	std::vector<IThreadedTask *> cancelled_tasks;
+	StdVector<TaskItem> tasks;
+	StdVector<TaskItem> postponed_tasks;
+	StdVector<IThreadedTask *> cancelled_tasks;
 
 	while (!data.stop) {
 		bool is_running_serial_task = false;
@@ -338,10 +328,9 @@ void ThreadedTaskRunner::thread_func(ThreadData &data) {
 			// Run each task
 			for (size_t i = 0; i < tasks.size(); ++i) {
 				TaskItem &item = tasks[i];
+
 				if (!item.task->is_cancelled()) {
-					ThreadedTaskContext ctx{ uint8_t(data.index),
-						// By default, if the task does not set this status, it will be considered complete after run
-						ThreadedTaskContext::STATUS_COMPLETE, item.cached_priority };
+					ThreadedTaskContext ctx(data.index, item.cached_priority);
 					data.debug_running_task_name = item.task->get_debug_name();
 					item.task->run(ctx);
 #ifdef ZN_THREADED_TASK_RUNNER_CHECK_DUPLICATE_TASKS
@@ -351,6 +340,17 @@ void ThreadedTaskRunner::thread_func(ThreadData &data) {
 #endif
 					item.status = ctx.status;
 					data.debug_running_task_name = nullptr;
+
+					/*
+					if (ctx.next_immediate_task != nullptr) {
+						TaskItem next;
+						next.task = ctx.next_immediate_task;
+#ifdef ZN_THREADED_TASK_RUNNER_CHECK_DUPLICATE_TASKS
+						debug_add_owned_task(next.task);
+#endif
+						tasks.push_back(next);
+					}
+					*/
 				}
 			}
 
@@ -478,8 +478,8 @@ unsigned int ThreadedTaskRunner::get_debug_remaining_tasks() const {
 	return _debug_received_tasks - _debug_completed_tasks - _debug_taken_out_tasks;
 }
 
-std::vector<IThreadedTask *> &ThreadedTaskRunner::get_completed_tasks_temp_tls() {
-	static thread_local std::vector<IThreadedTask *> tls_temp;
+StdVector<IThreadedTask *> &ThreadedTaskRunner::get_completed_tasks_temp_tls() {
+	static thread_local StdVector<IThreadedTask *> tls_temp;
 	return tls_temp;
 }
 

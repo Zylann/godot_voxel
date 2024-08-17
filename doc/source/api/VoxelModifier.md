@@ -4,15 +4,13 @@ Inherits: [Node3D](https://docs.godotengine.org/en/stable/classes/class_node3d.h
 
 Inherited by: [VoxelModifierMesh](VoxelModifierMesh.md), [VoxelModifierSphere](VoxelModifierSphere.md)
 
-
-
 ## Properties: 
 
 
-Type     | Name                         | Default 
--------- | ---------------------------- | --------
-`int`    | [operation](#i_operation)    | 0       
-`float`  | [smoothness](#i_smoothness)  | 0.0     
+Type                                                                      | Name                         | Default 
+------------------------------------------------------------------------- | ---------------------------- | --------
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)      | [operation](#i_operation)    | 0       
+[float](https://docs.godotengine.org/en/stable/classes/class_float.html)  | [smoothness](#i_smoothness)  | 0.0     
 <p></p>
 
 ## Enumerations: 
@@ -25,10 +23,12 @@ enum **Operation**:
 
 ## Property Descriptions
 
-- [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_operation"></span> **operation** = 0
+### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_operation"></span> **operation** = 0
 
+*(This property has no documentation)*
 
-- [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_smoothness"></span> **smoothness** = 0.0
+### [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_smoothness"></span> **smoothness** = 0.0
 
+*(This property has no documentation)*
 
-_Generated on Dec 31, 2023_
+_Generated on Apr 06, 2024_
