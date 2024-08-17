@@ -48,7 +48,15 @@ jobs:
             production: no
             executable_name: godot.linuxbsd.editor.x86_64
             godot_base_branch: "4.2"
-            warnings: extra
+            # TODO Had to downgrade to less warnings, even though it worked with `extra` in the past.
+            # Something in Godot 4.2, or in the version of GCC in the buildroot, has changed causing this to happen:
+            # drivers/gles3/storage/texture_storage.cpp:1513:31: error: 'void* memset(void*, int, size_t)' 
+            #     specified bound between 18446744065119617024 and 18446744073709551612 exceeds maximum object size 
+            #     [-Werror=stringop-overflow=]
+            #     memset(v_offsets, 0, sizeof(int) * base_size);
+            #     ~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            # Looking at the code, I could not find what's wrong.
+            warnings: all
 
           - name: master Editor
             precision: single
