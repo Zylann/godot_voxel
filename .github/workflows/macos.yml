@@ -24,15 +24,15 @@ jobs:
         arch: [x86_64, arm64]
         target: [editor, template_release]
         include:
-          - name: 4.2 Editor
+          - name: 4.3 Editor
             target: editor
             executable_name: godot.macos.editor
-            godot_base_branch: "4.2.2-stable"
+            godot_base_branch: "4.3-stable"
 
-          - name: 4.2 Template
+          - name: 4.3 Template
             target: template_release
             executable_name: godot.macos.template_release
-            godot_base_branch: "4.2.2-stable"
+            godot_base_branch: "4.3-stable"
 
     steps:
       # Clone Godot
@@ -125,7 +125,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: godotengine/godot
-          ref: 4.2
+          ref: "4.3-stable"
      
       - uses: actions/download-artifact@v4
         with:
