@@ -7,8 +7,14 @@ At the moment, this module doesn't have a distinct release schedule, so this cha
 
 Semver is not yet in place, so each version can have breaking changes, although it shouldn't happen often across minor versions.
 
-1.3.dev - ongoing development - `master`
------------------------------------------
+1.4 - ongoing development - `master`
+--------------------------------------
+
+Primarily developped with Godot 4.3.
+
+
+1.3 - 17/08/2024 - branch `1.3` - tag `v1.3.0`
+----------------------------------------------
 
 Primarily developped with Godot 4.3.
 
