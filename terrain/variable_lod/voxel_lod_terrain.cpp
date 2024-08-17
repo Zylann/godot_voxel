@@ -1902,6 +1902,8 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 #endif
 
 	if (ob.visual_was_required && visual_expected) {
+		bool assign_material_after_mesh = false;
+
 		// We consider a block having a "rendering" mesh as having loaded visuals.
 		if (!block->has_mesh()) {
 			// Setup visuals
@@ -1940,7 +1942,7 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 				block->set_shader_material(sm);
 
 			} else if (_material.is_valid()) {
-				block->set_material_override(_material);
+				assign_material_after_mesh = true;
 			}
 
 			block->set_transition_mask(transition_mask);
@@ -1963,6 +1965,13 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 				shadow_occluder_mode
 #endif
 		);
+
+		if (assign_material_after_mesh) {
+			// Do this after assigning the mesh when not using a ShaderMaterial.
+			// This is because we don't create a per-chunk material in this case, and so chunks don't hold it, so
+			// calling that before creating the mesh instance would not work.
+			block->set_material_override(_material);
+		}
 	}
 
 	// TODO Remove this eventually, we no longer use separate transition mesh instances
