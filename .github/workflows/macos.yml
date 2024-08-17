@@ -145,7 +145,7 @@ jobs:
           
       - name: Create macos template
         run: |
-          cp -r misc/dist/godot.macos.template.app .
+          cp -r misc/dist/macos_template.app ./godot.macos.template.app
           mkdir -p godot.macos.template.app/Contents/MacOS
           cp bin/godot.macos.template_release.universal godot.macos.template.app/Contents/MacOS/godot_macos_release.universal
           chmod +x godot.macos.template.app/Contents/MacOS/godot_macos*
