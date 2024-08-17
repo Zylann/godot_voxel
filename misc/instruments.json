@@ -60,7 +60,11 @@
             "RenderingDeviceDriverVulkan::framebuffer_create(",
             "RenderingDeviceDriverVulkan::shader_compile_binary_from_spirv(",
             "RenderingDeviceDriverVulkan::shader_create_from_bytecode(",
-            "RenderingDeviceDriverVulkan::render_pipeline_create("
+            {
+                "//": "RenderingDeviceDriverVulkan::render_pipeline_create(",
+                "match_text": "const VkPipelineVertexInputStateCreateInfo *vertex_input_state_create_info = nullptr;",
+                "mode": "prepend"
+            }
         ],
         "editor/editor_file_system.cpp": [
             "void EditorFileSystem::_scan_filesystem(",
