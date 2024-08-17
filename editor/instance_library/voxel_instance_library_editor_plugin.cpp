@@ -24,7 +24,8 @@ void VoxelInstanceLibraryEditorPlugin::init() {
 
 	_confirmation_dialog = memnew(ConfirmationDialog);
 	_confirmation_dialog->connect(
-			"confirmed", callable_mp(this, &VoxelInstanceLibraryEditorPlugin::_on_remove_item_confirmed));
+			"confirmed", callable_mp(this, &VoxelInstanceLibraryEditorPlugin::_on_remove_item_confirmed)
+	);
 	base_control->add_child(_confirmation_dialog);
 
 	_info_dialog = memnew(AcceptDialog);
@@ -38,7 +39,8 @@ void VoxelInstanceLibraryEditorPlugin::init() {
 	_open_scene_dialog->set_file_mode(EditorFileDialog::FILE_MODE_OPEN_FILE);
 	base_control->add_child(_open_scene_dialog);
 	_open_scene_dialog->connect(
-			"file_selected", callable_mp(this, &VoxelInstanceLibraryEditorPlugin::_on_open_scene_dialog_file_selected));
+			"file_selected", callable_mp(this, &VoxelInstanceLibraryEditorPlugin::_on_open_scene_dialog_file_selected)
+	);
 }
 
 bool VoxelInstanceLibraryEditorPlugin::_zn_handles(const Object *p_object) const {
@@ -146,7 +148,8 @@ int VoxelInstanceLibraryEditorPlugin::try_get_selected_item_id() {
 		_info_dialog->set_text(
 				ZN_TTR(String("Could not determine selected item from property path: `{0}`.\n"
 							  "You must select the `item_X` property label of the item you want to remove."))
-						.format(varray(path)));
+						.format(varray(path))
+		);
 		_info_dialog->popup_centered();
 		return -1;
 	}
