@@ -36,7 +36,8 @@ void VoxelInstanceLibraryInspectorPlugin::add_buttons() {
 	button_add->get_popup()->add_item("MultiMesh item (fast)", BUTTON_ADD_MULTIMESH_ITEM);
 	button_add->get_popup()->add_item("Scene item (slow)", BUTTON_ADD_SCENE_ITEM);
 	button_add->get_popup()->connect(
-			"id_pressed", callable_mp(button_listener, &VoxelInstanceLibraryEditorPlugin::_on_add_item_button_pressed));
+			"id_pressed", callable_mp(button_listener, &VoxelInstanceLibraryEditorPlugin::_on_add_item_button_pressed)
+	);
 	hb->add_child(button_add);
 
 	Button *button_remove = memnew(Button);

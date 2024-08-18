@@ -61,34 +61,34 @@ float get_sdf_interpolated(const Volume_F &f, Vector3 pos) {
 }
 
 // Standalone helper function to copy voxels from any 3D chunked container
-void copy_from_chunked_storage( //
-		VoxelBuffer &dst_buffer, //
-		Vector3i min_pos, //
-		unsigned int block_size_po2, //
-		uint32_t channels_mask, //
-		const VoxelBuffer *(*get_block_func)(void *, Vector3i), //
-		void *get_block_func_ctx //
+void copy_from_chunked_storage(
+		VoxelBuffer &dst_buffer,
+		Vector3i min_pos,
+		unsigned int block_size_po2,
+		uint32_t channels_mask,
+		const VoxelBuffer *(*get_block_func)(void *, Vector3i),
+		void *get_block_func_ctx
 );
 
 // Standalone helper function to paste voxels to any 3D chunked container
-void paste_to_chunked_storage( //
-		const VoxelBuffer &src_buffer, //
-		Vector3i min_pos, //
-		unsigned int block_size_po2, //
-		unsigned int channels_mask, //
-		bool use_mask, //
-		uint8_t mask_channel, //
-		uint64_t mask_value, //
-		VoxelBuffer *(*get_block_func)(void *, Vector3i), //
-		void *get_block_func_ctx //
+void paste_to_chunked_storage(
+		const VoxelBuffer &src_buffer,
+		Vector3i min_pos,
+		unsigned int block_size_po2,
+		unsigned int channels_mask,
+		bool use_mask,
+		uint8_t mask_channel,
+		uint64_t mask_value,
+		VoxelBuffer *(*get_block_func)(void *, Vector3i),
+		void *get_block_func_ctx
 );
 
 template <typename FGetBlock, typename FPaste>
-void paste_to_chunked_storage_tp( //
-		const VoxelBuffer &src_buffer, //
-		Vector3i min_pos, //
-		unsigned int block_size_po2, //
-		unsigned int channels_mask, //
+void paste_to_chunked_storage_tp(
+		const VoxelBuffer &src_buffer,
+		Vector3i min_pos,
+		unsigned int block_size_po2,
+		unsigned int channels_mask,
 		FGetBlock get_block_func, // (position) -> VoxelBuffer*
 		FPaste paste_func // (channels, src_buffer, dst_buffer, dst_base_pos) -> void
 ) {
@@ -144,16 +144,16 @@ struct SrcMasked_DstWritableValue {
 	const uint64_t dst_mask_value;
 
 	void operator()(Span<const uint8_t> channels, const VoxelBuffer &src, VoxelBuffer &dst, Vector3i dst_base_pos) {
-		paste_src_masked_dst_writable_value( //
-				channels, //
-				src, //
-				src_mask_channel, //
-				src_mask_value, //
-				dst, //
-				dst_base_pos, //
-				dst_mask_channel, //
-				dst_mask_value, //
-				true //
+		paste_src_masked_dst_writable_value(
+				channels,
+				src,
+				src_mask_channel,
+				src_mask_value,
+				dst,
+				dst_base_pos,
+				dst_mask_channel,
+				dst_mask_value,
+				true
 		);
 	}
 };
@@ -165,16 +165,8 @@ struct SrcMasked_DstWritableBitArray {
 	const DynamicBitset &bitarray;
 
 	void operator()(Span<const uint8_t> channels, const VoxelBuffer &src, VoxelBuffer &dst, Vector3i dst_base_pos) {
-		paste_src_masked_dst_writable_bitarray( //
-				channels, //
-				src, //
-				src_mask_channel, //
-				src_mask_value, //
-				dst, //
-				dst_base_pos, //
-				dst_mask_channel, //
-				bitarray, //
-				true //
+		paste_src_masked_dst_writable_bitarray(
+				channels, src, src_mask_channel, src_mask_value, dst, dst_base_pos, dst_mask_channel, bitarray, true
 		);
 	}
 };
@@ -184,16 +176,16 @@ struct SrcMasked_DstWritableBitArray {
 bool indices_to_bitarray_u16(Span<const int32_t> indices, DynamicBitset &bitarray);
 
 template <typename FGetBlock>
-void paste_to_chunked_storage_masked_writable_list( //
-		const VoxelBuffer &src, //
-		Vector3i min_pos, //
-		uint8_t block_size_po2, //
-		uint8_t channels_mask, //
+void paste_to_chunked_storage_masked_writable_list(
+		const VoxelBuffer &src,
+		Vector3i min_pos,
+		uint8_t block_size_po2,
+		uint8_t channels_mask,
 		FGetBlock get_block_func, // (position) -> VoxelBuffer*
-		uint8_t src_mask_channel, //
-		uint64_t src_mask_value, //
-		uint8_t dst_mask_channel, //
-		Span<const int32_t> dst_writable_values //
+		uint8_t src_mask_channel,
+		uint64_t src_mask_value,
+		uint8_t dst_mask_channel,
+		Span<const int32_t> dst_writable_values
 ) {
 	using namespace paste_functors;
 
@@ -203,9 +195,9 @@ void paste_to_chunked_storage_masked_writable_list( //
 				src,
 				min_pos,
 				block_size_po2,
-				channels_mask, //
-				get_block_func, //
-				SrcMasked_DstWritableValue{ src_mask_channel, dst_mask_channel, src_mask_value, dst_mask_value } //
+				channels_mask,
+				get_block_func,
+				SrcMasked_DstWritableValue{ src_mask_channel, dst_mask_channel, src_mask_value, dst_mask_value }
 		);
 
 	} else {
@@ -216,9 +208,9 @@ void paste_to_chunked_storage_masked_writable_list( //
 				src,
 				min_pos,
 				block_size_po2,
-				channels_mask, //
-				get_block_func, //
-				SrcMasked_DstWritableBitArray{ src_mask_channel, dst_mask_channel, src_mask_value, bitarray } //
+				channels_mask,
+				get_block_func,
+				SrcMasked_DstWritableBitArray{ src_mask_channel, dst_mask_channel, src_mask_value, bitarray }
 		);
 	}
 }
@@ -350,7 +342,7 @@ struct SdfHemisphere {
 
 	inline real_t operator()(Vector3 pos) const {
 		return sdf_scale *
-				math::sdf_smooth_subtract( //
+				math::sdf_smooth_subtract(
 						math::sdf_sphere(pos, center, radius), //
 						math::sdf_plane(pos, flat_direction, plane_d),
 						smoothness
@@ -582,13 +574,12 @@ struct DoSphere {
 template <typename TBlockAccess, typename FBlockAction>
 void process_chunked_storage(
 		Box3i voxel_box,
-		// VoxelBuffer *get_block(Vector3i bpos)
-		// unsigned int get_block_size_po2()
+		// { VoxelBuffer *get_block(Vector3i bpos)
+		//   unsigned int get_block_size_po2() }
 		TBlockAccess block_access,
 		// void(VoxelBuffer &vb, Box3i local_box, Vector3i origin)
 		FBlockAction op_func
 ) {
-	//
 	const Vector3i max_pos = voxel_box.position + voxel_box.size;
 
 	const unsigned int block_size_po2 = block_access.get_block_size_po2();
@@ -622,7 +613,6 @@ inline void write_box_in_chunked_storage_1_channel(
 		Box3i box,
 		VoxelBuffer::ChannelId channel_id
 ) {
-	//
 	process_chunked_storage(
 			box,
 			block_access,
