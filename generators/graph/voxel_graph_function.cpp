@@ -557,7 +557,7 @@ void VoxelGraphFunction::get_expression_node_inputs(uint32_t node_id, StdVector<
 }
 
 inline bool has_duplicate(const PackedStringArray &sa) {
-	return find_duplicate(Span<const String>(sa.ptr(), sa.size())) != size_t(sa.size());
+	return zylann::has_duplicate(Span<const String>(sa.ptr(), sa.size()));
 }
 
 void VoxelGraphFunction::set_expression_node_inputs(uint32_t node_id, PackedStringArray input_names) {
