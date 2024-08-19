@@ -94,10 +94,19 @@ public:
 	int get_import_order() const override;
 	void get_import_options(const String &p_path, List<ImportOption> *r_options, int p_preset = 0) const override;
 	bool get_option_visibility(
-			const String &p_path, const String &p_option, const HashMap<StringName, Variant> &p_options) const override;
+			const String &p_path,
+			const String &p_option,
+			const HashMap<StringName, Variant> &p_options
+	) const override;
 
-	Error import(const String &p_source_file, const String &p_save_path, const HashMap<StringName, Variant> &p_options,
-			List<String> *r_platform_variants, List<String> *r_gen_files, Variant *r_metadata = nullptr) override;
+	Error import(
+			const String &p_source_file,
+			const String &p_save_path,
+			const HashMap<StringName, Variant> &p_options,
+			List<String> *r_platform_variants,
+			List<String> *r_gen_files,
+			Variant *r_metadata = nullptr
+	) override;
 
 #elif defined(ZN_GODOT_EXTENSION)
 	String _get_importer_name() const override;
@@ -110,11 +119,16 @@ public:
 	double _get_priority() const override;
 	int32_t _get_import_order() const override;
 	TypedArray<Dictionary> _get_import_options(const String &path, int32_t preset_index) const override;
-	bool _get_option_visibility(
-			const String &path, const StringName &option_name, const Dictionary &options) const override;
+	bool _get_option_visibility(const String &path, const StringName &option_name, const Dictionary &options)
+			const override;
 
-	Error _import(const String &source_file, const String &save_path, const Dictionary &options,
-			const TypedArray<String> &platform_variants, const TypedArray<String> &gen_files) const override;
+	Error _import(
+			const String &source_file,
+			const String &save_path,
+			const Dictionary &options,
+			const TypedArray<String> &platform_variants,
+			const TypedArray<String> &gen_files
+	) const override;
 
 #endif
 
@@ -132,13 +146,24 @@ protected:
 	virtual int _zn_get_import_order() const;
 
 	virtual void _zn_get_import_options(
-			StdVector<ImportOptionWrapper> &p_out_options, const String &p_path, int p_preset_index) const;
+			StdVector<ImportOptionWrapper> &p_out_options,
+			const String &p_path,
+			int p_preset_index
+	) const;
 
 	virtual bool _zn_get_option_visibility(
-			const String &p_path, const StringName &p_option_name, const KeyValueWrapper p_options) const;
+			const String &p_path,
+			const StringName &p_option_name,
+			const KeyValueWrapper p_options
+	) const;
 
-	virtual Error _zn_import(const String &p_source_file, const String &p_save_path, const KeyValueWrapper p_options,
-			StringListWrapper p_out_platform_variants, StringListWrapper p_out_gen_files) const;
+	virtual Error _zn_import(
+			const String &p_source_file,
+			const String &p_save_path,
+			const KeyValueWrapper p_options,
+			StringListWrapper p_out_platform_variants,
+			StringListWrapper p_out_gen_files
+	) const;
 
 private:
 	static void _bind_methods() {}

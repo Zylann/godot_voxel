@@ -45,8 +45,8 @@ int ZN_EditorImportPlugin::get_import_order() const {
 	return _zn_get_import_order();
 }
 
-void ZN_EditorImportPlugin::get_import_options(
-		const String &p_path, List<ImportOption> *r_options, int p_preset) const {
+void ZN_EditorImportPlugin::get_import_options(const String &p_path, List<ImportOption> *r_options, int p_preset)
+		const {
 	ZN_ASSERT(r_options != nullptr);
 	StdVector<ImportOptionWrapper> options;
 	_zn_get_import_options(options, p_path, p_preset);
@@ -57,17 +57,30 @@ void ZN_EditorImportPlugin::get_import_options(
 }
 
 bool ZN_EditorImportPlugin::get_option_visibility(
-		const String &p_path, const String &p_option, const HashMap<StringName, Variant> &p_options) const {
+		const String &p_path,
+		const String &p_option,
+		const HashMap<StringName, Variant> &p_options
+) const {
 	return _zn_get_option_visibility(p_path, p_option, KeyValueWrapper{ p_options });
 }
 
-Error ZN_EditorImportPlugin::import(const String &p_source_file, const String &p_save_path,
-		const HashMap<StringName, Variant> &p_options, List<String> *r_platform_variants, List<String> *r_gen_files,
-		Variant *r_metadata) {
+Error ZN_EditorImportPlugin::import(
+		const String &p_source_file,
+		const String &p_save_path,
+		const HashMap<StringName, Variant> &p_options,
+		List<String> *r_platform_variants,
+		List<String> *r_gen_files,
+		Variant *r_metadata
+) {
 	ZN_ASSERT(r_platform_variants != nullptr);
 	ZN_ASSERT(r_gen_files != nullptr);
-	return _zn_import(p_source_file, p_save_path, KeyValueWrapper{ p_options },
-			StringListWrapper{ *r_platform_variants }, StringListWrapper{ *r_gen_files });
+	return _zn_import(
+			p_source_file,
+			p_save_path,
+			KeyValueWrapper{ p_options },
+			StringListWrapper{ *r_platform_variants },
+			StringListWrapper{ *r_gen_files }
+	);
 }
 
 #elif defined(ZN_GODOT_EXTENSION)
@@ -133,17 +146,30 @@ TypedArray<Dictionary> ZN_EditorImportPlugin::_get_import_options(const String &
 }
 
 bool ZN_EditorImportPlugin::_get_option_visibility(
-		const String &path, const StringName &option_name, const Dictionary &options) const {
+		const String &path,
+		const StringName &option_name,
+		const Dictionary &options
+) const {
 	return _zn_get_option_visibility(path, option_name, KeyValueWrapper{ options });
 }
 
-Error ZN_EditorImportPlugin::_import(const String &source_file, const String &save_path, const Dictionary &options,
-		const TypedArray<String> &platform_variants, const TypedArray<String> &gen_files) const {
+Error ZN_EditorImportPlugin::_import(
+		const String &source_file,
+		const String &save_path,
+		const Dictionary &options,
+		const TypedArray<String> &platform_variants,
+		const TypedArray<String> &gen_files
+) const {
 	// TODO GDX: `EditorImportPlugin::_import` is passing constant arrays for parameters that should be writable
 	TypedArray<String> &platform_variants_writable = const_cast<TypedArray<String> &>(platform_variants);
 	TypedArray<String> &gen_files_writable = const_cast<TypedArray<String> &>(gen_files);
-	return _zn_import(source_file, save_path, KeyValueWrapper{ options },
-			StringListWrapper{ platform_variants_writable }, StringListWrapper{ gen_files_writable });
+	return _zn_import(
+			source_file,
+			save_path,
+			KeyValueWrapper{ options },
+			StringListWrapper{ platform_variants_writable },
+			StringListWrapper{ gen_files_writable }
+	);
 }
 
 #endif
@@ -191,19 +217,29 @@ int ZN_EditorImportPlugin::_zn_get_import_order() const {
 }
 
 void ZN_EditorImportPlugin::_zn_get_import_options(
-		StdVector<ImportOptionWrapper> &p_out_options, const String &p_path, int p_preset_index) const {
+		StdVector<ImportOptionWrapper> &p_out_options,
+		const String &p_path,
+		int p_preset_index
+) const {
 	ZN_PRINT_ERROR("Method is not implemented");
 }
 
 bool ZN_EditorImportPlugin::_zn_get_option_visibility(
-		const String &p_path, const StringName &p_option_name, const KeyValueWrapper p_options) const {
+		const String &p_path,
+		const StringName &p_option_name,
+		const KeyValueWrapper p_options
+) const {
 	ZN_PRINT_ERROR("Method is not implemented");
 	return false;
 }
 
-Error ZN_EditorImportPlugin::_zn_import(const String &p_source_file, const String &p_save_path,
-		const KeyValueWrapper p_options, StringListWrapper p_out_platform_variants,
-		StringListWrapper p_out_gen_files) const {
+Error ZN_EditorImportPlugin::_zn_import(
+		const String &p_source_file,
+		const String &p_save_path,
+		const KeyValueWrapper p_options,
+		StringListWrapper p_out_platform_variants,
+		StringListWrapper p_out_gen_files
+) const {
 	ZN_PRINT_ERROR("Method is not implemented");
 	return ERR_METHOD_NOT_FOUND;
 }
