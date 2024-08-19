@@ -388,7 +388,7 @@
 		</constant>
 		<constant name="STREAMING_SYSTEM_LEGACY_OCTREE" value="0" enum="StreamingSystem">
 			Loads chunks around the viewer in a spherical pattern.
-			Does not support multiple viewers. Does not support collision-only viewers.
+			Does not support multiple viewers. Does not support collision-only viewers. Does not support "no viewers" (will assume origin instead). Does not support per-viewer view distance, only [member view_distance] is used.
 			This was the first system to be implemented, therefore it remains available as default for compatibility.
 		</constant>
 		<constant name="STREAMING_SYSTEM_CLIPBOX" value="1" enum="StreamingSystem">
