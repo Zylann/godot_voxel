@@ -343,8 +343,10 @@ void VoxelInstanceLibrary::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_item", "id"), &VoxelInstanceLibrary::_b_get_item);
 	ClassDB::bind_method(D_METHOD("get_all_item_ids"), &VoxelInstanceLibrary::_b_get_all_item_ids);
 
+#ifdef TOOLS_ENABLED
 	ClassDB::bind_method(D_METHOD("_set_selected_item", "item"), &VoxelInstanceLibrary::_b_set_selected_item);
 	ClassDB::bind_method(D_METHOD("_get_selected_item"), &VoxelInstanceLibrary::_b_get_selected_item);
+#endif
 
 	ClassDB::bind_method(D_METHOD("_get_data"), &VoxelInstanceLibrary::_b_get_data);
 	ClassDB::bind_method(D_METHOD("_set_data", "data"), &VoxelInstanceLibrary::_b_set_data);
