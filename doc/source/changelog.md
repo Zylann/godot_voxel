@@ -12,6 +12,12 @@ Semver is not yet in place, so each version can have breaking changes, although 
 
 Primarily developped with Godot 4.3.
 
+- Fixes
+    - `VoxelInstanceLibrary`: Editor: reworked the way items are exposed as a Blender-style list. Now removing an item while the library is open as a sub-inspector is no longer problematic
+
+- Breaking changes
+    - `VoxelInstanceLibrary`: Items should no longer be accessed using generated properties (`item1`, `item2` etc). Use `get_item` instead.
+
 
 1.3 - 17/08/2024 - branch `1.3` - tag `v1.3.0`
 ----------------------------------------------

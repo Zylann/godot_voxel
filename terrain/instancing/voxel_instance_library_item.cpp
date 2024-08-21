@@ -6,8 +6,13 @@
 
 namespace zylann::voxel {
 
+// TODO Deprecate in favor of resource name?
 void VoxelInstanceLibraryItem::set_item_name(String p_name) {
 	_name = p_name;
+
+	// Also set resource name, so Godot will use it in array inspector
+	set_name(p_name);
+	emit_changed();
 }
 
 String VoxelInstanceLibraryItem::get_item_name() const {

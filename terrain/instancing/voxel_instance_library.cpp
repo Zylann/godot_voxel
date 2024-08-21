@@ -47,7 +47,7 @@ void VoxelInstanceLibrary::add_item(int p_id, Ref<VoxelInstanceLibraryItem> item
 	}
 
 	notify_listeners(id, IInstanceLibraryItemListener::CHANGE_ADDED);
-	notify_property_list_changed();
+	// notify_property_list_changed();
 }
 
 void VoxelInstanceLibrary::remove_item(int p_id) {
@@ -72,7 +72,7 @@ void VoxelInstanceLibrary::remove_item(int p_id) {
 	}
 
 	notify_listeners(id, IInstanceLibraryItemListener::CHANGE_REMOVED);
-	notify_property_list_changed();
+	// notify_property_list_changed();
 }
 
 void VoxelInstanceLibrary::clear() {
@@ -82,7 +82,7 @@ void VoxelInstanceLibrary::clear() {
 
 	_items.clear();
 
-	notify_property_list_changed();
+	// notify_property_list_changed();
 }
 
 int VoxelInstanceLibrary::find_item_by_name(String p_name) const {
@@ -211,6 +211,29 @@ void VoxelInstanceLibrary::get_configuration_warnings(PackedStringArray &warning
 	}
 }
 
+void VoxelInstanceLibrary::set_selected_item_id(int id) {
+	_selected_item_id = id;
+}
+
+int VoxelInstanceLibrary::get_selected_item_id() const {
+	return _selected_item_id;
+}
+
+void VoxelInstanceLibrary::_b_set_selected_item(Ref<VoxelInstanceLibraryItem> item) {
+	auto it = _items.find(_selected_item_id);
+	if (it != _items.end()) {
+		set_item(it->first, item);
+	}
+}
+
+Ref<VoxelInstanceLibraryItem> VoxelInstanceLibrary::_b_get_selected_item() const {
+	auto it = _items.find(_selected_item_id);
+	if (it != _items.end()) {
+		return it->second;
+	}
+	return Ref<VoxelInstanceLibraryItem>();
+}
+
 #endif
 
 void VoxelInstanceLibrary::set_item(int id, Ref<VoxelInstanceLibraryItem> item) {
@@ -233,10 +256,13 @@ void VoxelInstanceLibrary::set_item(int id, Ref<VoxelInstanceLibraryItem> item) 
 
 			item->add_listener(this, id);
 			notify_listeners(id, IInstanceLibraryItemListener::CHANGE_ADDED);
+
+			// TODO Update packed item?
 		}
 	}
 }
 
+// Legacy support
 bool VoxelInstanceLibrary::_set(const StringName &p_name, const Variant &p_value) {
 	const String property_name = p_name;
 	if (property_name.begins_with("item_")) {
@@ -263,15 +289,15 @@ bool VoxelInstanceLibrary::_get(const StringName &p_name, Variant &r_ret) const 
 }
 
 void VoxelInstanceLibrary::_get_property_list(List<PropertyInfo> *p_list) const {
-	for (auto it = _items.begin(); it != _items.end(); ++it) {
-		const String property_name = "item_" + itos(it->first);
-		p_list->push_back(PropertyInfo(
-				Variant::OBJECT,
-				property_name,
-				PROPERTY_HINT_RESOURCE_TYPE,
-				VoxelInstanceLibraryItem::get_class_static()
-		));
-	}
+	// for (auto it = _items.begin(); it != _items.end(); ++it) {
+	// 	const String property_name = "item_" + itos(it->first);
+	// 	p_list->push_back(PropertyInfo(
+	// 			Variant::OBJECT,
+	// 			property_name,
+	// 			PROPERTY_HINT_RESOURCE_TYPE,
+	// 			VoxelInstanceLibraryItem::get_class_static()
+	// 	));
+	// }
 }
 
 PackedInt32Array VoxelInstanceLibrary::_b_get_all_item_ids() const {
@@ -287,6 +313,28 @@ PackedInt32Array VoxelInstanceLibrary::_b_get_all_item_ids() const {
 	return ids;
 }
 
+Array VoxelInstanceLibrary::_b_get_data() const {
+	Array data;
+	data.append(0); // Version number
+	for (auto it = _items.begin(); it != _items.end(); ++it) {
+		data.append(it->first);
+		data.append(it->second);
+	}
+	return data;
+}
+
+void VoxelInstanceLibrary::_b_set_data(Array data) {
+	ZN_ASSERT_RETURN(data.size() >= 1);
+	const int src_version = data[0];
+	ZN_ASSERT_RETURN(src_version == 0);
+	ZN_ASSERT_RETURN((data.size() - 1) % 2 == 0);
+	for (int i = 1; i < data.size(); i += 2) {
+		const int item_id = data[i];
+		const Ref<VoxelInstanceLibraryItem> item = data[i + 1];
+		set_item(item_id, item);
+	}
+}
+
 void VoxelInstanceLibrary::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("add_item", "id", "item"), &VoxelInstanceLibrary::add_item);
 	ClassDB::bind_method(D_METHOD("remove_item", "id"), &VoxelInstanceLibrary::remove_item);
@@ -294,6 +342,32 @@ void VoxelInstanceLibrary::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("find_item_by_name", "name"), &VoxelInstanceLibrary::find_item_by_name);
 	ClassDB::bind_method(D_METHOD("get_item", "id"), &VoxelInstanceLibrary::_b_get_item);
 	ClassDB::bind_method(D_METHOD("get_all_item_ids"), &VoxelInstanceLibrary::_b_get_all_item_ids);
+
+	ClassDB::bind_method(D_METHOD("_set_selected_item", "item"), &VoxelInstanceLibrary::_b_set_selected_item);
+	ClassDB::bind_method(D_METHOD("_get_selected_item"), &VoxelInstanceLibrary::_b_get_selected_item);
+
+	ClassDB::bind_method(D_METHOD("_get_data"), &VoxelInstanceLibrary::_b_get_data);
+	ClassDB::bind_method(D_METHOD("_set_data", "data"), &VoxelInstanceLibrary::_b_set_data);
+
+#ifdef TOOLS_ENABLED
+	ADD_PROPERTY(
+			PropertyInfo(
+					Variant::OBJECT,
+					"_selected_item",
+					PROPERTY_HINT_RESOURCE_TYPE,
+					VoxelInstanceLibraryItem::get_class_static(),
+					PROPERTY_USAGE_EDITOR
+			),
+			"_set_selected_item",
+			"_get_selected_item"
+	);
+#endif
+
+	ADD_PROPERTY(
+			PropertyInfo(Variant::ARRAY, "_data", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE),
+			"_set_data",
+			"_get_data"
+	);
 
 	BIND_CONSTANT(MAX_ID);
 }
