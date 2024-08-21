@@ -194,7 +194,7 @@ void VoxelInstanceLibraryListEditor::on_button_pressed(int button_id) {
 
 void VoxelInstanceLibraryListEditor::on_open_scene_dialog_file_selected(String fpath) {
 	switch (_last_used_button) {
-		case VoxelInstanceLibraryInspectorPlugin::BUTTON_ADD_SCENE_ITEM:
+		case BUTTON_ADD_SCENE_ITEM:
 			add_scene_item(fpath);
 			break;
 
