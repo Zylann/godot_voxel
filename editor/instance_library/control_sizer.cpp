@@ -49,7 +49,9 @@ void ZN_ControlSizer::_gui_input(const Ref<InputEvent> &p_event) {
 			const Vector2 rel = mm->get_relative();
 			// Assuming vertical for now
 			// TODO Clamp min_size to `target.get_minimum_size()`?
-			target_control->set_custom_minimum_size(Vector2(ms.x, math::clamp(ms.y + rel.y, _min_size, _max_size)));
+			target_control->set_custom_minimum_size(
+					Vector2(ms.x, math::clamp<real_t>(ms.y + rel.y, _min_size, _max_size))
+			);
 		}
 	}
 }
