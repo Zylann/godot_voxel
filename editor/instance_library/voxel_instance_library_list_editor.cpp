@@ -10,6 +10,7 @@
 #include "../../util/godot/classes/editor_undo_redo_manager.h"
 #include "../../util/godot/classes/item_list.h"
 #include "../../util/godot/classes/menu_button.h"
+#include "../../util/godot/classes/popup_menu.h"
 #include "../../util/godot/classes/resource_loader.h"
 #include "../../util/godot/classes/v_box_container.h"
 #include "../../util/godot/core/array.h"
