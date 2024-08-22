@@ -49,7 +49,7 @@ String VoxelVoxMeshImporter::_zn_get_resource_type() const {
 	return "ArrayMesh";
 }
 
-double VoxelVoxMeshImporter::_zn_get_priority() const {
+float VoxelVoxMeshImporter::_zn_get_priority() const {
 	// Higher import priority means the importer is preferred over another.
 	return 0.0;
 }

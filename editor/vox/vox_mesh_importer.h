@@ -17,7 +17,7 @@ protected:
 	int _zn_get_preset_count() const override;
 	String _zn_get_save_extension() const override;
 	String _zn_get_resource_type() const override;
-	double _zn_get_priority() const override;
+	float _zn_get_priority() const override;
 
 	void _zn_get_import_options(StdVector<zylann::godot::ImportOptionWrapper> &out_options, const String &path,
 			int preset_index) const override;

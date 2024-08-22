@@ -46,7 +46,7 @@ String VoxelVoxSceneImporter::_zn_get_resource_type() const {
 	return "PackedScene";
 }
 
-double VoxelVoxSceneImporter::_zn_get_priority() const {
+float VoxelVoxSceneImporter::_zn_get_priority() const {
 	// Higher import priority means the importer is preferred over another.
 	// By default, use this importer (the other Vox importer has lower priority).
 	return 1.0;

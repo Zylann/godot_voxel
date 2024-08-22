@@ -113,7 +113,7 @@ String ZN_EditorImportPlugin::_get_resource_type() const {
 	return _zn_get_resource_type();
 }
 
-double ZN_EditorImportPlugin::_get_priority() const {
+float ZN_EditorImportPlugin::_get_priority() const {
 	return _zn_get_priority();
 }
 
@@ -208,7 +208,7 @@ String ZN_EditorImportPlugin::_zn_get_resource_type() const {
 	return "";
 }
 
-double ZN_EditorImportPlugin::_zn_get_priority() const {
+float ZN_EditorImportPlugin::_zn_get_priority() const {
 	return 1.0;
 }
 

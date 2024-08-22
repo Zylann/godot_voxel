@@ -116,7 +116,7 @@ public:
 	int32_t _get_preset_count() const override;
 	String _get_save_extension() const override;
 	String _get_resource_type() const override;
-	double _get_priority() const override;
+	float _get_priority() const override;
 	int32_t _get_import_order() const override;
 	TypedArray<Dictionary> _get_import_options(const String &path, int32_t preset_index) const override;
 	bool _get_option_visibility(const String &path, const StringName &option_name, const Dictionary &options)
@@ -142,7 +142,7 @@ protected:
 	virtual int _zn_get_preset_count() const;
 	virtual String _zn_get_save_extension() const;
 	virtual String _zn_get_resource_type() const;
-	virtual double _zn_get_priority() const;
+	virtual float _zn_get_priority() const;
 	virtual int _zn_get_import_order() const;
 
 	virtual void _zn_get_import_options(
