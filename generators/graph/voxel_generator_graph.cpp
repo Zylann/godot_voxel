@@ -142,25 +142,52 @@ void VoxelGeneratorGraph::gather_indices_and_weights(
 	// TODO Optimization: exclude up-front outputs that are known to be zero?
 	// So we choose the cases below based on non-zero outputs instead of total output count
 
+	// It is unfortunately not practical to handle all combinations of single-value/array-of-values for every
+	// layer, so for now we try to workaround that
+	struct WeightBufferArray {
+		FixedArray<Span<const float>, 16> array;
+
+		inline float get_weight(unsigned int output_index, size_t value_index) const {
+			Span<const float> s = array[output_index];
+#ifdef DEV_ENABLED
+			// That span can either have size 1 (means all values would be the same) or have regular buffer
+			// size. We use min() to quickly access that without branching, but that could hide actual OOB bugs, so
+			// make sure they are detected
+			ZN_ASSERT(s.size() > 0 && (value_index < s.size() || s.size() == 1));
+#endif
+			const float weight = s[math::min(value_index, s.size() - 1)];
+			return weight;
+		}
+	};
+
 	// TODO Could maybe put this part outside?
-	FixedArray<Span<const float>, 16> buffers;
+	WeightBufferArray buffers;
 	const unsigned int buffers_count = weight_outputs.size();
 	for (unsigned int oi = 0; oi < buffers_count; ++oi) {
 		const WeightOutput &info = weight_outputs[oi];
-		const pg::Runtime::Buffer &buffer = state.get_buffer(info.output_buffer_index);
-		buffers[oi] = Span<const float>(buffer.data, buffer.size);
+		const math::Interval &range = state.get_range_const_ref(info.output_buffer_index);
+
+		if (range.is_single_value()) {
+			// The weight is locally constant (or compile-time constant).
+			// We can't use the usual buffer because if we use optimized execution mapping, they won't be filled by any
+			// operation
+			buffers.array[oi] = Span<const float>(&range.min, 1);
+		} else {
+			const pg::Runtime::Buffer &buffer = state.get_buffer(info.output_buffer_index);
+			buffers.array[oi] = Span<const float>(buffer.data, buffer.size);
+		}
 	}
 
 	if (buffers_count <= 4) {
 		// Pick all results and fill with spare indices to keep semantic
-		unsigned int value_index = 0;
+		size_t value_index = 0;
 		for (int rz = rmin.z; rz < rmax.z; ++rz) {
 			for (int rx = rmin.x; rx < rmax.x; ++rx) {
 				FixedArray<uint8_t, 4> weights;
 				FixedArray<uint8_t, 4> indices = spare_indices;
 				fill(weights, uint8_t(0));
 				for (unsigned int oi = 0; oi < buffers_count; ++oi) {
-					const float weight = buffers[oi][value_index];
+					const float weight = buffers.get_weight(oi, value_index);
 					// TODO Optimization: weight output nodes could already multiply by 255 and clamp afterward
 					// so we would not need to do it here
 					weights[oi] = math::clamp(weight * 255.f, 0.f, 255.f);
@@ -180,13 +207,13 @@ void VoxelGeneratorGraph::gather_indices_and_weights(
 
 	} else if (buffers_count == 4) {
 		// Pick all results
-		unsigned int value_index = 0;
+		size_t value_index = 0;
 		for (int rz = rmin.z; rz < rmax.z; ++rz) {
 			for (int rx = rmin.x; rx < rmax.x; ++rx) {
 				FixedArray<uint8_t, 4> weights;
 				FixedArray<uint8_t, 4> indices;
 				for (unsigned int oi = 0; oi < buffers_count; ++oi) {
-					const float weight = buffers[oi][value_index];
+					const float weight = buffers.get_weight(oi, value_index);
 					weights[oi] = math::clamp(weight * 255.f, 0.f, 255.f);
 					indices[oi] = weight_outputs[oi].layer_index;
 				}
@@ -204,7 +231,7 @@ void VoxelGeneratorGraph::gather_indices_and_weights(
 	} else {
 		// More weights than we can have per voxel. Will need to pick most represented weights
 		const float pivot = 1.f / 5.f;
-		unsigned int value_index = 0;
+		size_t value_index = 0;
 		FixedArray<uint8_t, 16> skipped_outputs;
 		for (int rz = rmin.z; rz < rmax.z; ++rz) {
 			for (int rx = rmin.x; rx < rmax.x; ++rx) {
@@ -219,7 +246,8 @@ void VoxelGeneratorGraph::gather_indices_and_weights(
 				unsigned int recorded_weights = 0;
 				// Pick up weights above pivot (this is not as correct as a sort but faster)
 				for (unsigned int oi = 0; oi < buffers_count && recorded_weights < indices.size(); ++oi) {
-					const float weight = buffers[oi][value_index];
+					const float weight = buffers.get_weight(oi, value_index);
+
 					if (weight > pivot) {
 						weights[recorded_weights] = math::clamp(weight * 255.f, 0.f, 255.f);
 						indices[recorded_weights] = weight_outputs[oi].layer_index;
@@ -648,6 +676,8 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelGenerator::Voxel
 				if (runtime_ptr->weight_outputs_count > 0 && !sdf_is_air) {
 					// We can skip this when SDF is air because there won't be any matter to give a texture to
 					// TODO Range analysis on that?
+					// Not easy to do that from here, they would have to ALL be locally constant in order to use a
+					// short-circuit...
 					for (unsigned int i = 0; i < runtime_ptr->weight_outputs_count; ++i) {
 						required_outputs.push_back(runtime_ptr->weight_output_indices[i]);
 					}

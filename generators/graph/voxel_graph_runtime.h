@@ -135,6 +135,16 @@ public:
 			return ranges[address];
 		}
 
+		inline const math::Interval &get_range_const_ref(uint16_t address) const {
+			// TODO Just for convenience because STL bound checks aren't working in Godot 3
+			ZN_ASSERT(address < buffers.size());
+			return ranges[address];
+		}
+
+		inline uint32_t get_buffer_size() const {
+			return buffer_size;
+		}
+
 		void clear() {
 			buffer_size = 0;
 			// buffer_capacity = 0;

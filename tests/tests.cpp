@@ -127,6 +127,7 @@ void run_voxel_tests() {
 	VOXEL_TEST(test_voxel_stream_sqlite_key_blob80_encoding);
 	VOXEL_TEST(test_voxel_stream_sqlite_basic);
 	VOXEL_TEST(test_voxel_stream_sqlite_coordinate_format);
+	VOXEL_TEST(test_voxel_graph_4_default_weights);
 
 	print_line("------------ Voxel tests end -------------");
 }
