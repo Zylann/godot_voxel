@@ -85,6 +85,8 @@ public:
 	// Builds a mesh from the given voxels. This function is simplified to be used by the script API.
 	Ref<Mesh> build_mesh(const VoxelBuffer &voxels, TypedArray<Material> materials, Dictionary additional_data);
 
+	// TODO Rename "positive" and "negative" padding
+
 	// Gets how many neighbor voxels need to be accessed around the meshed area, toward negative axes.
 	// If this is not respected, the mesher might produce seams at the edges, or an error
 	unsigned int get_minimum_padding() const;

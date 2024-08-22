@@ -104,17 +104,30 @@ void copy_block_and_neighbors(
 		}
 	}
 
-	const Vector3i min_pos = -Vector3iUtil::create(min_padding);
-	const Vector3i max_pos = Vector3iUtil::create(mesh_block_size + max_padding);
+	const Box3i bounds_in_voxels_lod0 = voxel_data.get_bounds();
+	const Box3i bounds_in_voxels(bounds_in_voxels_lod0.position >> lod_index, bounds_in_voxels_lod0.size >> lod_index);
 
 	// TODO In terrains that only work with caches, we should never consider generating voxels from here.
 	// This is the case of VoxelTerrain, which is now doing unnecessary box subtraction calculations...
 
-	// These boxes are in buffer coordinates (not world voxel coordinates)
+	const Vector3i min_pos = -Vector3iUtil::create(min_padding);
+	const Vector3i max_pos = Vector3iUtil::create(mesh_block_size + max_padding);
+
+	const Vector3i origin_in_voxels_without_padding =
+			mesh_block_pos * (area_info.mesh_block_size_factor * data_block_size);
+	const Vector3i origin_in_voxels = origin_in_voxels_without_padding - Vector3iUtil::create(min_padding);
+	const Vector3i origin_in_voxels_lod0 = origin_in_voxels << lod_index;
+
+	// These boxes are initially relative to the minimum corner of the minimum chunk.
+	// TODO Candidate for temp allocator (or SmallVector?)
 	StdVector<Box3i> boxes_to_generate;
 	const Box3i mesh_data_box = Box3i::from_min_max(min_pos, max_pos);
 	if (contains(blocks.to_const(), std::shared_ptr<VoxelBuffer>())) {
-		boxes_to_generate.push_back(mesh_data_box);
+		const Box3i bounds_local(bounds_in_voxels.position - origin_in_voxels_without_padding, bounds_in_voxels.size);
+		const Box3i box = mesh_data_box.clipped(bounds_local); // Prevent generation outside fixed bounds
+		if (!box.is_empty()) {
+			boxes_to_generate.push_back(box);
+		}
 	}
 
 	{
@@ -159,7 +172,7 @@ void copy_block_and_neighbors(
 								Box3i(offset, Vector3iUtil::create(data_block_size)).clipped(mesh_data_box);
 
 						for (unsigned int box_index = 0; box_index < input_count; ++box_index) {
-							Box3i box = boxes_to_generate[box_index];
+							const Box3i box = boxes_to_generate[box_index];
 							// Remainder boxes are added to the end of the list
 							box.difference_to_vec(block_box, boxes_to_generate);
 #ifdef DEBUG_ENABLED
@@ -176,17 +189,13 @@ void copy_block_and_neighbors(
 		}
 	}
 
-	const Vector3i origin_in_voxels =
-			mesh_block_pos * (area_info.mesh_block_size_factor * data_block_size << lod_index) -
-			Vector3iUtil::create(min_padding << lod_index);
-
 	// Undo padding to go back to proper buffer coordinates
 	for (Box3i &box : boxes_to_generate) {
 		box.position += Vector3iUtil::create(min_padding);
 	}
 
 	if (out_origin_in_voxels != nullptr) {
-		*out_origin_in_voxels = origin_in_voxels;
+		*out_origin_in_voxels = origin_in_voxels_lod0;
 	}
 
 	if (out_boxes_to_generate != nullptr) {
@@ -206,11 +215,9 @@ void copy_block_and_neighbors(
 			generated_voxels.create(box.size);
 			// generated_voxels.set_voxel_f(2.0f, box.size.x / 2, box.size.y / 2, box.size.z / 2,
 			// VoxelBuffer::CHANNEL_SDF);
-			VoxelGenerator::VoxelQueryData q{
-				generated_voxels, //
-				(box.position << lod_index) + origin_in_voxels, //
-				lod_index //
-			};
+			VoxelGenerator::VoxelQueryData q{ generated_voxels,
+											  (box.position << lod_index) + origin_in_voxels_lod0,
+											  lod_index };
 
 			if (generator.is_valid()) {
 				generator->generate_block(q);
@@ -324,6 +331,16 @@ void MeshBlockTask::run(zylann::ThreadedTaskContext &ctx) {
 			"Meshing task started without a mesher. Maybe missing on the terrain node?"
 	);
 #endif
+
+	// TODO When using Transvoxel and fixed-bounds terrain, "boundary cliffs" don't appear on negative sides.
+	// This is due to implementation details: Transvoxel only meshes the inner and positive parts of each 2^3 cell.
+	// If having cliffs is expected, we could force the terrain to request meshes 1 chunk beyond boundary, but that's a
+	// bit wasteful. Instead, we could dynamically alter negative padding to exceptionally include those boundary
+	// voxels. Unfortunately, this might have side-effects when position-sensitive features such as detail rendering are
+	// used.
+	// This also rises another concern: if height gets limited vertically but not horizontally, typical terrain will
+	// end up with a huge surface at the bottom facing down, since the default for chunks outside bounds is air.
+	// We would have to somehow expose a way to set what these areas default to as well...
 
 	if (block_generation_use_gpu) {
 		if (_stage == 0) {

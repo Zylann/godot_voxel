@@ -308,9 +308,10 @@ void VoxelData::copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsigned int cha
 		struct GenContext {
 			VoxelGenerator &generator;
 			const VoxelModifierStack &modifiers;
+			Box3i voxel_bounds;
 		};
 
-		GenContext gctx{ **generator, modifiers };
+		GenContext gctx{ **generator, modifiers, _bounds_in_voxels };
 
 		// Note, when streaming is enabled and this intersects non-loaded areas, they will fallback on the generator.
 		// That's technically not correct as we don't really know what these areas should contain, they could have been
@@ -327,6 +328,12 @@ void VoxelData::copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsigned int cha
 				[](void *callback_data, VoxelBuffer &voxels, Vector3i pos) {
 					// Suffixed with `2` because GCC warns it shadows a previous local...
 					GenContext *gctx2 = reinterpret_cast<GenContext *>(callback_data);
+					if (!gctx2->voxel_bounds.contains(pos)) {
+						// Out of bounds, produce empty voxels?
+						// Note: due to how `copy` works, we expect `pos` to be within a specific chunk and not copying
+						// across multiple chunks, so we don't have to check for every intersecting chunk
+						return;
+					}
 					VoxelGenerator::VoxelQueryData q{ voxels, pos, 0 };
 					gctx2->generator.generate_block(q);
 					gctx2->modifiers.apply(voxels, AABB(pos, voxels.get_size()));
