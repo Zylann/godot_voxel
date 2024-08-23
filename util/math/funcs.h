@@ -12,6 +12,7 @@ using namespace godot;
 
 #include "constants.h"
 #include <cmath>
+#include <type_traits>
 
 namespace zylann::math {
 
@@ -429,6 +430,59 @@ inline constexpr int32_t sign_extend_to_32bit(int32_t i) {
 		int32_t v : NBits;
 	};
 	return S{ i }.v;
+}
+
+template <typename T>
+inline T abs(T a) {
+	return Math::abs(a);
+}
+
+template <typename T>
+inline T lerp(T a, T b, T t) {
+	static_assert(std::is_floating_point<T>::value);
+	return Math::lerp(a, b, t);
+}
+
+template <typename T>
+inline T sqrt(T x) {
+	static_assert(std::is_floating_point<T>::value);
+	return Math::sqrt(x);
+}
+
+template <typename T>
+inline T sin(T x) {
+	static_assert(std::is_floating_point<T>::value);
+	return Math::sin(x);
+}
+
+template <typename T>
+inline T cos(T x) {
+	static_assert(std::is_floating_point<T>::value);
+	return Math::cos(x);
+}
+
+template <typename T>
+inline T atan(T x) {
+	static_assert(std::is_floating_point<T>::value);
+	return Math::atan(x);
+}
+
+template <typename T>
+inline T atan2(T y, T x) {
+	static_assert(std::is_floating_point<T>::value);
+	return Math::atan2(y, x);
+}
+
+template <typename T>
+inline T floor(T x) {
+	static_assert(std::is_floating_point<T>::value);
+	return Math::floor(x);
+}
+
+template <typename T>
+inline T pow(T x, T y) {
+	static_assert(std::is_floating_point<T>::value);
+	return Math::pow(x, y);
 }
 
 } // namespace zylann::math

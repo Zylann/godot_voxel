@@ -28,8 +28,8 @@ inline Interval sdf_box(
 	const Interval dx = abs(x) - sx;
 	const Interval dy = abs(y) - sy;
 	const Interval dz = abs(z) - sz;
-	return min_interval(max_interval(dx, max_interval(dy, dz)), 0) +
-			get_length(max_interval(dx, 0), max_interval(dy, 0), max_interval(dz, 0));
+	return min_interval(max_interval(dx, max_interval(dy, dz)), real_t(0)) +
+			get_length(max_interval(dx, real_t(0)), max_interval(dy, real_t(0)), max_interval(dz, real_t(0)));
 }
 
 inline real_t sdf_sphere(Vector3 pos, Vector3 center, real_t radius) {

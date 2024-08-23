@@ -3,9 +3,12 @@
 #include <sstream>
 
 namespace zylann {
-namespace math {
 
-void Interval::_check_range_once() {
+namespace math {
+namespace interval_impl {
+
+template <typename T>
+inline void check_range_once_t(T min, T max) {
 	static bool once = false;
 	if (min > max && once == false) {
 		once = true;
@@ -13,6 +16,15 @@ void Interval::_check_range_once() {
 	}
 }
 
+void check_range_once(float min, float max) {
+	check_range_once_t(min, max);
+}
+
+void check_range_once(double min, double max) {
+	check_range_once_t(min, max);
+}
+
+} // namespace interval_impl
 } // namespace math
 
 StdStringStream &operator<<(StdStringStream &ss, const math::Interval &v) {
