@@ -160,6 +160,11 @@ void VoxelGeneratorGraph::gather_indices_and_weights(
 		}
 	};
 
+	// TODO This should not be necessary!
+	// We could use a pointer to the `min` member of intervals inside State, however Interval uses `real_t`, which
+	// breaks our code in 64-bit float builds of Godot. We should refactor Interval so everything can line up.
+	FixedArray<float, 16> constants;
+
 	// TODO Could maybe put this part outside?
 	WeightBufferArray buffers;
 	const unsigned int buffers_count = weight_outputs.size();
@@ -170,8 +175,10 @@ void VoxelGeneratorGraph::gather_indices_and_weights(
 		if (range.is_single_value()) {
 			// The weight is locally constant (or compile-time constant).
 			// We can't use the usual buffer because if we use optimized execution mapping, they won't be filled by any
-			// operation
-			buffers.array[oi] = Span<const float>(&range.min, 1);
+			// operation and would contain garbage
+			constants[oi] = range.min;
+			buffers.array[oi] = Span<const float>(&constants[oi], 1);
+			// buffers.array[oi] = Span<const float>(&range.min, 1);
 		} else {
 			const pg::Runtime::Buffer &buffer = state.get_buffer(info.output_buffer_index);
 			buffers.array[oi] = Span<const float>(buffer.data, buffer.size);
