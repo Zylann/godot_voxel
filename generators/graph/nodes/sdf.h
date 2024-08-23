@@ -72,14 +72,23 @@ void register_sdf_nodes(Span<NodeType> types) {
 			ctx.set_output(0, math::sdf_box(x, y, z, sx, sy, sz));
 		};
 		t.shader_gen_func = [](ShaderGenContext &ctx) {
-			ctx.require_lib_code("sdf_box",
+			ctx.require_lib_code(
+					"sdf_box",
 					"float vg_sdf_box(vec3 p, vec3 b) {\n"
 					"	vec3 q = abs(p) - b;\n"
 					"	return length(max(q, 0.0)) + min(max(q.x, max(q.y, q.z)), 0.0);\n"
-					"}\n");
-			ctx.add_format("{} = vg_sdf_box(vec3({}, {}, {}), vec3({}, {}, {}));\n", ctx.get_output_name(0),
-					ctx.get_input_name(0), ctx.get_input_name(1), ctx.get_input_name(2), float(ctx.get_param(0)),
-					float(ctx.get_param(1)), float(ctx.get_param(2)));
+					"}\n"
+			);
+			ctx.add_format(
+					"{} = vg_sdf_box(vec3({}, {}, {}), vec3({}, {}, {}));\n",
+					ctx.get_output_name(0),
+					ctx.get_input_name(0),
+					ctx.get_input_name(1),
+					ctx.get_input_name(2),
+					float(ctx.get_param(0)),
+					float(ctx.get_param(1)),
+					float(ctx.get_param(2))
+			);
 		};
 	}
 	{
@@ -118,8 +127,14 @@ void register_sdf_nodes(Span<NodeType> types) {
 			ctx.set_output(0, get_length(x, y, z) - r);
 		};
 		t.shader_gen_func = [](ShaderGenContext &ctx) {
-			ctx.add_format("{} = length(vec3({}, {}, {})) - {};\n", ctx.get_output_name(0), ctx.get_input_name(0),
-					ctx.get_input_name(1), ctx.get_input_name(2), float(ctx.get_param(0)));
+			ctx.add_format(
+					"{} = length(vec3({}, {}, {})) - {};\n",
+					ctx.get_output_name(0),
+					ctx.get_input_name(0),
+					ctx.get_input_name(1),
+					ctx.get_input_name(2),
+					float(ctx.get_param(0))
+			);
 		};
 	}
 	{
@@ -162,14 +177,22 @@ void register_sdf_nodes(Span<NodeType> types) {
 			ctx.set_output(0, math::sdf_torus(x, y, z, r1, r2));
 		};
 		t.shader_gen_func = [](ShaderGenContext &ctx) {
-			ctx.require_lib_code("sdf_torus",
+			ctx.require_lib_code(
+					"sdf_torus",
 					"float vg_sdf_torus(vec3 p, vec2 t) {\n"
 					"	vec2 q = vec2(length(p.xz) - t.x, p.y);\n"
 					"	return length(q) - t.y;\n"
-					"}\n");
-			ctx.add_format("{} = vg_sdf_torus(vec3({}, {}, {}), vec2({}, {}));\n", ctx.get_output_name(0),
-					ctx.get_input_name(0), ctx.get_input_name(1), ctx.get_input_name(2), float(ctx.get_param(0)),
-					float(ctx.get_param(1)));
+					"}\n"
+			);
+			ctx.add_format(
+					"{} = vg_sdf_torus(vec3({}, {}, {}), vec2({}, {}));\n",
+					ctx.get_output_name(0),
+					ctx.get_input_name(0),
+					ctx.get_input_name(1),
+					ctx.get_input_name(2),
+					float(ctx.get_param(0)),
+					float(ctx.get_param(1))
+			);
 		};
 	}
 	{
@@ -257,13 +280,20 @@ void register_sdf_nodes(Span<NodeType> types) {
 			}
 		};
 		t.shader_gen_func = [](ShaderGenContext &ctx) {
-			ctx.require_lib_code("sdf_smooth_union",
+			ctx.require_lib_code(
+					"sdf_smooth_union",
 					"float vg_sdf_smooth_union(float a, float b, float s) {\n"
 					"	float h = clamp(0.5 + 0.5 * (b - a) / s, 0.0, 1.0);\n"
 					"	return mix(b, a, h) - s * h * (1.0 - h);\n"
-					"}\n");
-			ctx.add_format("{} = vg_sdf_smooth_union({}, {}, {});\n", ctx.get_output_name(0), ctx.get_input_name(0),
-					ctx.get_input_name(1), float(ctx.get_param(0)));
+					"}\n"
+			);
+			ctx.add_format(
+					"{} = vg_sdf_smooth_union({}, {}, {});\n",
+					ctx.get_output_name(0),
+					ctx.get_input_name(0),
+					ctx.get_input_name(1),
+					float(ctx.get_param(0))
+			);
 		};
 	}
 	{
@@ -351,13 +381,20 @@ void register_sdf_nodes(Span<NodeType> types) {
 			}
 		};
 		t.shader_gen_func = [](ShaderGenContext &ctx) {
-			ctx.require_lib_code("sdf_smooth_subtract",
+			ctx.require_lib_code(
+					"sdf_smooth_subtract",
 					"float vg_sdf_smooth_subtract(float b, float a, float s) {\n"
 					"	float h = clamp(0.5 - 0.5 * (b + a) / s, 0.0, 1.0);\n"
 					"	return mix(b, -a, h) + s * h * (1.0 - h);\n"
-					"}\n");
-			ctx.add_format("{} = vg_sdf_smooth_subtract({}, {}, {});\n", ctx.get_output_name(0), ctx.get_input_name(0),
-					ctx.get_input_name(1), float(ctx.get_param(0)));
+					"}\n"
+			);
+			ctx.add_format(
+					"{} = vg_sdf_smooth_subtract({}, {}, {});\n",
+					ctx.get_output_name(0),
+					ctx.get_input_name(0),
+					ctx.get_input_name(1),
+					float(ctx.get_param(0))
+			);
 		};
 	}
 	{

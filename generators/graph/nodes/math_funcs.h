@@ -135,12 +135,15 @@ void register_math_func_nodes(Span<NodeType> types) {
 			return math::snappedf(args[0], args[1]);
 		};
 		t.shader_gen_func = [](ShaderGenContext &ctx) {
-			ctx.require_lib_code("stepify",
+			ctx.require_lib_code(
+					"stepify",
 					"float vg_stepify(float value, float step) {\n"
 					"	return floor(p_value / step + 0.5f) * step;\n"
-					"}\n");
+					"}\n"
+			);
 			ctx.add_format(
-					"{} = vg_stepify({}, {});\n", ctx.get_output_name(0), ctx.get_input_name(0), ctx.get_input_name(1));
+					"{} = vg_stepify({}, {});\n", ctx.get_output_name(0), ctx.get_input_name(0), ctx.get_input_name(1)
+			);
 		};
 	}
 	{
@@ -163,12 +166,15 @@ void register_math_func_nodes(Span<NodeType> types) {
 			return wrapf(args[0], args[1]);
 		};
 		t.shader_gen_func = [](ShaderGenContext &ctx) {
-			ctx.require_lib_code("wrap",
+			ctx.require_lib_code(
+					"wrap",
 					"float vg_wrap(float x, float d) {\n"
 					"	return x - (d * floor(x / d));\n"
-					"}\n");
+					"}\n"
+			);
 			ctx.add_format(
-					"{} = vg_wrap({}, {});\n", ctx.get_output_name(0), ctx.get_input_name(0), ctx.get_input_name(1));
+					"{} = vg_wrap({}, {});\n", ctx.get_output_name(0), ctx.get_input_name(0), ctx.get_input_name(1)
+			);
 		};
 	}
 	{
@@ -245,8 +251,13 @@ void register_math_func_nodes(Span<NodeType> types) {
 			return clamp(args[0], args[1], args[2]);
 		};
 		t.shader_gen_func = [](ShaderGenContext &ctx) {
-			ctx.add_format("{} = clamp({}, {}, {});\n", ctx.get_output_name(0), ctx.get_input_name(0),
-					ctx.get_input_name(1), ctx.get_input_name(2));
+			ctx.add_format(
+					"{} = clamp({}, {}, {});\n",
+					ctx.get_output_name(0),
+					ctx.get_input_name(0),
+					ctx.get_input_name(1),
+					ctx.get_input_name(2)
+			);
 		};
 	}
 	{
@@ -283,8 +294,13 @@ void register_math_func_nodes(Span<NodeType> types) {
 			ctx.set_output(0, clamp(a, cmin, cmax));
 		};
 		t.shader_gen_func = [](ShaderGenContext &ctx) {
-			ctx.add_format("{} = clamp({}, {}, {});\n", ctx.get_output_name(0), ctx.get_input_name(0),
-					float(ctx.get_param(0)), float(ctx.get_param(1)));
+			ctx.add_format(
+					"{} = clamp({}, {}, {});\n",
+					ctx.get_output_name(0),
+					ctx.get_input_name(0),
+					float(ctx.get_param(0)),
+					float(ctx.get_param(1))
+			);
 		};
 	}
 	{
@@ -371,8 +387,13 @@ void register_math_func_nodes(Span<NodeType> types) {
 			return Math::lerp(args[0], args[1], args[2]);
 		};
 		t.shader_gen_func = [](ShaderGenContext &ctx) {
-			ctx.add_format("{} = mix({}, {}, {});\n", ctx.get_output_name(0), ctx.get_input_name(0),
-					ctx.get_input_name(1), ctx.get_input_name(2));
+			ctx.add_format(
+					"{} = mix({}, {}, {});\n",
+					ctx.get_output_name(0),
+					ctx.get_input_name(0),
+					ctx.get_input_name(1),
+					ctx.get_input_name(2)
+			);
 		};
 	}
 	{
@@ -419,7 +440,8 @@ void register_math_func_nodes(Span<NodeType> types) {
 		};
 		t.shader_gen_func = [](ShaderGenContext &ctx) {
 			const Params p = Params::from_intervals(
-					float(ctx.get_param(0)), float(ctx.get_param(1)), float(ctx.get_param(2)), float(ctx.get_param(3)));
+					float(ctx.get_param(0)), float(ctx.get_param(1)), float(ctx.get_param(2)), float(ctx.get_param(3))
+			);
 			ctx.add_format("{} = {} * {} + {};\n", ctx.get_output_name(0), p.a, ctx.get_input_name(0), p.b);
 		};
 	}
@@ -455,8 +477,13 @@ void register_math_func_nodes(Span<NodeType> types) {
 			ctx.set_output(0, smoothstep(p.edge0, p.edge1, a));
 		};
 		t.shader_gen_func = [](ShaderGenContext &ctx) {
-			ctx.add_format("{} = smoothstep({}, {}, {});\n", ctx.get_output_name(0), float(ctx.get_param(0)),
-					float(ctx.get_param(1)), ctx.get_input_name(0));
+			ctx.add_format(
+					"{} = smoothstep({}, {}, {});\n",
+					ctx.get_output_name(0),
+					float(ctx.get_param(0)),
+					float(ctx.get_param(1)),
+					ctx.get_input_name(0)
+			);
 		};
 	}
 	{

@@ -43,8 +43,11 @@ void get_positions_buffer(Vector3i buffer_size, Vector3 origin, Vector3 size, St
 	}
 }
 
-Span<const Vector3> get_positions_temporary(
-		Span<const float> x_buffer, Span<const float> y_buffer, Span<const float> z_buffer) {
+Span<const Vector3f> get_positions_temporary(
+		Span<const float> x_buffer,
+		Span<const float> y_buffer,
+		Span<const float> z_buffer
+) {
 	ZN_ASSERT(x_buffer.size() == z_buffer.size() && y_buffer.size() == z_buffer.size());
 
 	get_tls_positions().resize(x_buffer.size());
@@ -220,8 +223,15 @@ void VoxelModifierStack::apply(VoxelBuffer &voxels, AABB aabb) const {
 
 			const int64_t volume = Vector3iUtil::get_volume(modifier_box.size);
 			area_sdf.resize(volume);
-			copy_3d_region_zxy(to_span(area_sdf), modifier_box.size, Vector3i(), to_span_const(tls_block_sdf),
-					voxels.get_size(), local_origin_in_voxels, local_origin_in_voxels + modifier_box.size);
+			copy_3d_region_zxy(
+					to_span(area_sdf),
+					modifier_box.size,
+					Vector3i(),
+					to_span_const(tls_block_sdf),
+					voxels.get_size(),
+					local_origin_in_voxels,
+					local_origin_in_voxels + modifier_box.size
+			);
 
 			get_positions_buffer(
 					modifier_box.size, v_to_w * modifier_box.position, v_to_w * modifier_box.size, area_positions);
@@ -232,8 +242,15 @@ void VoxelModifierStack::apply(VoxelBuffer &voxels, AABB aabb) const {
 
 			// Write modifications back to the full-block decompressed buffer
 			// TODO Maybe use an unchecked version for a bit more speed?
-			copy_3d_region_zxy(to_span(tls_block_sdf), voxels.get_size(), local_origin_in_voxels,
-					Span<const float>(ctx.sdf), modifier_box.size, Vector3i(), modifier_box.size);
+			copy_3d_region_zxy(
+					to_span(tls_block_sdf),
+					voxels.get_size(),
+					local_origin_in_voxels,
+					Span<const float>(ctx.sdf),
+					modifier_box.size,
+					Vector3i(),
+					modifier_box.size
+			);
 		}
 	}
 
