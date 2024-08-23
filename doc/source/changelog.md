@@ -14,6 +14,7 @@ Primarily developped with Godot 4.3.
 
 - Fixes
     - `VoxelInstanceLibrary`: Editor: reworked the way items are exposed as a Blender-style list. Now removing an item while the library is open as a sub-inspector is no longer problematic
+    - `VoxelGeneratorGraph`: fix wrong values when using `OutputWeight` with optimized execution map enabled, when weights are determined to be locally constant
 
 - Breaking changes
     - `VoxelInstanceLibrary`: Items should no longer be accessed using generated properties (`item1`, `item2` etc). Use `get_item` instead.
