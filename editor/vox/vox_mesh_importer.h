@@ -19,15 +19,25 @@ protected:
 	String _zn_get_resource_type() const override;
 	float _zn_get_priority() const override;
 
-	void _zn_get_import_options(StdVector<zylann::godot::ImportOptionWrapper> &out_options, const String &path,
-			int preset_index) const override;
+	void _zn_get_import_options(
+			StdVector<zylann::godot::ImportOptionWrapper> &out_options,
+			const String &path,
+			int preset_index
+	) const override;
 
-	bool _zn_get_option_visibility(const String &path, const StringName &option_name,
-			const zylann::godot::KeyValueWrapper options) const override;
+	bool _zn_get_option_visibility(
+			const String &path,
+			const StringName &option_name,
+			const zylann::godot::KeyValueWrapper options
+	) const override;
 
-	Error _zn_import(const String &p_source_file, const String &p_save_path,
-			const zylann::godot::KeyValueWrapper p_options, zylann::godot::StringListWrapper out_platform_variants,
-			zylann::godot::StringListWrapper out_gen_files) const override;
+	Error _zn_import(
+			const String &p_source_file,
+			const String &p_save_path,
+			const zylann::godot::KeyValueWrapper p_options,
+			zylann::godot::StringListWrapper out_platform_variants,
+			zylann::godot::StringListWrapper out_gen_files
+	) const override;
 
 	enum PivotMode { //
 		PIVOT_LOWER_CORNER,
