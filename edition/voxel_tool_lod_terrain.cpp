@@ -225,18 +225,27 @@ void VoxelToolLodTerrain::do_sphere(Vector3 center, float radius) {
 	op.channel = get_channel();
 	op.strength = get_sdf_strength();
 
-	if (!is_area_editable(op.box)) {
+	const Box3i world_box = op.box;
+
+	if (!is_area_editable(world_box)) {
 		ZN_PRINT_WARNING("Area not editable");
 		return;
 	}
 
 	VoxelData &data = _terrain->get_storage();
 
-	data.pre_generate_box(op.box);
-	data.get_blocks_grid(op.blocks, op.box, 0);
+	data.pre_generate_box(world_box);
+	data.get_blocks_grid(op.blocks, world_box, 0);
+
+	// We can use floats by doing the operation in local space
+	const Vector3i origin_in_voxels = op.blocks.get_origin_block_position_in_voxels();
+	op.shape.center = to_vec3f(center - to_vec3(origin_in_voxels));
+	op.box.position -= origin_in_voxels;
+	op.blocks.use_relative_coordinates();
+
 	op();
 
-	_post_edit(op.box);
+	_post_edit(world_box);
 }
 
 void VoxelToolLodTerrain::do_hemisphere(Vector3 center, float radius, Vector3 flat_direction, float smoothness) {
