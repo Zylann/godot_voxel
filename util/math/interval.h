@@ -32,12 +32,12 @@ struct IntervalT {
 		ZN_ASSERT(p_min <= p_max);
 #elif DEBUG_ENABLED
 		// Don't crash but keep signaling
-		check_range_once(p_min, p_max);
+		interval_impl::check_range_once(p_min, p_max);
 #endif
 	}
 
 	inline static IntervalT from_single_value(T p_val) {
-		return Interval(p_val, p_val);
+		return IntervalT(p_val, p_val);
 	}
 
 	inline static IntervalT from_unordered_values(T a, T b) {
@@ -73,7 +73,7 @@ struct IntervalT {
 	}
 
 	inline IntervalT padded(T e) const {
-		return Interval(min - e, max + e);
+		return IntervalT(min - e, max + e);
 	}
 
 	inline void add_interval(IntervalT other) {
