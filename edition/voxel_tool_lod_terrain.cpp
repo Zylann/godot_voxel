@@ -179,8 +179,8 @@ void VoxelToolLodTerrain::do_box(Vector3i begin, Vector3i end) {
 	ERR_FAIL_COND(_terrain == nullptr);
 
 	ops::DoShapeChunked<ops::SdfAxisAlignedBox, ops::VoxelDataGridAccess> op;
-	op.shape.center = to_vec3(begin + end) * 0.5;
-	op.shape.half_size = to_vec3(end - begin) * 0.5;
+	op.shape.center = to_vec3f(begin + end) * 0.5f;
+	op.shape.half_size = to_vec3f(end - begin) * 0.5f;
 	op.shape.sdf_scale = get_sdf_scale();
 	op.box = op.shape.get_box().clipped(_terrain->get_voxel_bounds());
 	op.mode = static_cast<ops::Mode>(get_mode());
@@ -215,7 +215,7 @@ void VoxelToolLodTerrain::do_sphere(Vector3 center, float radius) {
 	ERR_FAIL_COND(_terrain == nullptr);
 
 	ops::DoSphere op;
-	op.shape.center = center;
+	op.shape.center = to_vec3f(center);
 	op.shape.radius = radius;
 	op.shape.sdf_scale = get_sdf_scale();
 	op.box = op.shape.get_box().clipped(_terrain->get_voxel_bounds());
@@ -244,9 +244,9 @@ void VoxelToolLodTerrain::do_hemisphere(Vector3 center, float radius, Vector3 fl
 	ERR_FAIL_COND(_terrain == nullptr);
 
 	ops::DoShapeChunked<ops::SdfHemisphere, ops::VoxelDataGridAccess> op;
-	op.shape.center = center;
+	op.shape.center = to_vec3f(center);
 	op.shape.radius = radius;
-	op.shape.flat_direction = flat_direction;
+	op.shape.flat_direction = to_vec3f(flat_direction);
 	op.shape.plane_d = flat_direction.dot(center);
 	op.shape.smoothness = smoothness;
 	op.shape.sdf_scale = get_sdf_scale();
@@ -314,7 +314,7 @@ void VoxelToolLodTerrain::do_sphere_async(Vector3 center, float radius) {
 	ERR_FAIL_COND(_terrain == nullptr);
 
 	ops::DoSphere op;
-	op.shape.center = center;
+	op.shape.center = to_vec3f(center);
 	op.shape.radius = radius;
 	op.shape.sdf_scale = get_sdf_scale();
 	op.box = op.shape.get_box().clipped(_terrain->get_voxel_bounds());

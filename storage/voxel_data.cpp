@@ -167,7 +167,7 @@ VoxelSingleValue VoxelData::get_voxel(Vector3i pos, unsigned int channel_index, 
 				VoxelSingleValue value = generator->generate_single(pos, channel_index);
 				if (channel_index == VoxelBuffer::CHANNEL_SDF) {
 					float sdf = value.f;
-					_modifiers.apply(sdf, to_vec3(pos));
+					_modifiers.apply(sdf, to_vec3f(pos));
 					value.f = sdf;
 				}
 				return value;
@@ -209,7 +209,7 @@ VoxelSingleValue VoxelData::get_voxel(Vector3i pos, unsigned int channel_index, 
 						VoxelSingleValue value = generator->generate_single(pos, channel_index);
 						if (channel_index == VoxelBuffer::CHANNEL_SDF) {
 							float sdf = value.f;
-							_modifiers.apply(sdf, to_vec3(pos));
+							_modifiers.apply(sdf, to_vec3f(pos));
 							value.f = sdf;
 						}
 						return value;

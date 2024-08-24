@@ -317,14 +317,14 @@ bool indices_to_bitarray_u16(Span<const int32_t> indices, DynamicBitset &bitarra
 
 namespace zylann::voxel::ops {
 
-Box3i get_round_cone_int_bounds(Vector3 p0, Vector3 p1, float r0, float r1) {
-	const Vector3 minp( //
+Box3i get_round_cone_int_bounds(Vector3f p0, Vector3f p1, float r0, float r1) {
+	const Vector3f minp( //
 			math::min(p0.x - r0, p1.x - r1), //
 			math::min(p0.y - r0, p1.y - r1), //
 			math::min(p0.z - r0, p1.z - r1)
 	);
 
-	const Vector3 maxp( //
+	const Vector3f maxp( //
 			math::max(p0.x + r0, p1.x + r1), //
 			math::max(p0.y + r0, p1.y + r1), //
 			math::max(p0.z + r0, p1.z + r1)

@@ -3,13 +3,14 @@
 
 #include "../engine/gpu/compute_shader_parameters.h"
 #include "../util/math/transform_3d.h"
+#include "../util/math/vector3f.h"
 #include "../util/thread/rw_lock.h"
 
 namespace zylann::voxel {
 
 struct VoxelModifierContext {
-	Span<float> sdf;
-	Span<const Vector3> positions;
+	Span<float> sdf; // Signed distance values to modify
+	Span<const Vector3f> positions; // Positions associated to each signed distance
 };
 
 class VoxelModifier {

@@ -35,7 +35,7 @@ public:
 	bool has_modifier(uint32_t id) const;
 	VoxelModifier *get_modifier(uint32_t id) const;
 	void apply(VoxelBuffer &voxels, AABB aabb) const;
-	void apply(float &sdf, Vector3 position) const;
+	void apply(float &sdf, Vector3f position) const;
 
 	void apply(
 			Span<const float> x_buffer,

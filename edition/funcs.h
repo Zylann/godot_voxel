@@ -7,6 +7,7 @@
 #include "../util/containers/dynamic_bitset.h"
 #include "../util/containers/fixed_array.h"
 #include "../util/godot/macros.h"
+#include "../util/math/box3f.h"
 #include "../util/math/conv.h"
 #include "../util/math/sdf.h"
 #include "../util/math/transform_3d.h"
@@ -259,30 +260,30 @@ struct SdfOperation16bit {
 	Shape shape;
 	inline int16_t operator()(Vector3i pos, int16_t sdf) const {
 		return snorm_to_s16(
-				op(s16_to_snorm(sdf) * constants::QUANTIZED_SDF_16_BITS_SCALE_INV, shape(Vector3(pos))) *
+				op(s16_to_snorm(sdf) * constants::QUANTIZED_SDF_16_BITS_SCALE_INV, shape(to_vec3f(pos))) *
 				constants::QUANTIZED_SDF_16_BITS_SCALE
 		);
 	}
 };
 
 struct SdfUnion {
-	real_t strength;
-	inline real_t operator()(real_t a, real_t b) const {
-		return Math::lerp(a, math::sdf_union(a, b), strength);
+	float strength;
+	inline float operator()(float a, float b) const {
+		return math::lerp(a, math::sdf_union(a, b), strength);
 	}
 };
 
 struct SdfSubtract {
-	real_t strength;
-	inline real_t operator()(real_t a, real_t b) const {
-		return Math::lerp(a, math::sdf_subtract(a, b), strength);
+	float strength;
+	inline float operator()(float a, float b) const {
+		return math::lerp(a, math::sdf_subtract(a, b), strength);
 	}
 };
 
 struct SdfSet {
-	real_t strength;
-	inline real_t operator()(real_t a, real_t b) const {
-		return Math::lerp(a, b, strength);
+	float strength;
+	inline float operator()(float a, float b) const {
+		return math::lerp(a, b, strength);
 	}
 };
 
@@ -291,14 +292,14 @@ struct BlockySetOperation {
 	Shape_T shape;
 	Value_T value;
 	inline Value_T operator()(Vector3i pos, Value_T src) const {
-		return shape.is_inside(Vector3(pos)) ? value : src;
+		return shape.is_inside(to_vec3f(pos)) ? value : src;
 	}
 };
 
-inline Box3i get_sdf_sphere_box(Vector3 center, real_t radius) {
+inline Box3i get_sdf_sphere_box(Vector3f center, float radius) {
 	return Box3i::from_min_max( //
-				   math::floor_to_int(center - Vector3(radius, radius, radius)),
-				   math::ceil_to_int(center + Vector3(radius, radius, radius))
+				   math::floor_to_int(center - Vector3f(radius, radius, radius)),
+				   math::ceil_to_int(center + Vector3f(radius, radius, radius))
 	)
 			// That padding is for SDF to have some margin
 			// TODO Don't add padding from here, it must be done at higher level, where we know the type of operation
@@ -308,18 +309,18 @@ inline Box3i get_sdf_sphere_box(Vector3 center, real_t radius) {
 // Shapes
 
 struct SdfSphere {
-	Vector3 center;
-	real_t radius;
-	real_t sdf_scale;
+	Vector3f center;
+	float radius;
+	float sdf_scale;
 
 	// TODO Rename get_signed_distance?
-	inline real_t operator()(Vector3 pos) const {
+	inline float operator()(Vector3f pos) const {
 		return sdf_scale * math::sdf_sphere(pos, center, radius);
 	}
 
-	inline bool is_inside(Vector3 pos) const {
+	inline bool is_inside(Vector3f pos) const {
 		// Faster than the true SDF, we avoid a square root
-		return center.distance_squared_to(pos) < radius * radius;
+		return math::distance_squared(center, pos) < radius * radius;
 	}
 
 	// TODO Seems unused?
@@ -333,14 +334,14 @@ struct SdfSphere {
 };
 
 struct SdfHemisphere {
-	Vector3 center;
-	Vector3 flat_direction;
-	real_t plane_d;
-	real_t radius;
-	real_t sdf_scale;
-	real_t smoothness;
+	Vector3f center;
+	Vector3f flat_direction;
+	float plane_d;
+	float radius;
+	float sdf_scale;
+	float smoothness;
 
-	inline real_t operator()(Vector3 pos) const {
+	inline float operator()(Vector3f pos) const {
 		return sdf_scale *
 				math::sdf_smooth_subtract(
 						math::sdf_sphere(pos, center, radius), //
@@ -349,7 +350,7 @@ struct SdfHemisphere {
 				);
 	}
 
-	inline bool is_inside(Vector3 pos) const {
+	inline bool is_inside(Vector3f pos) const {
 		return (*this)(pos) < 0;
 	}
 
@@ -365,13 +366,14 @@ struct SdfHemisphere {
 struct SdfBufferShape {
 	Span<const float> buffer;
 	Vector3i buffer_size;
+	// TODO Use Transform3f and perform the operation in local space, better than using doubles considering SIMD
 	Transform3D world_to_buffer;
 	float isolevel;
 	float sdf_scale;
 
-	inline real_t operator()(const Vector3 &wpos) const {
+	inline real_t operator()(const Vector3f &wpos) const {
 		// Transform terrain-space position to buffer-space
-		const Vector3f lpos = to_vec3f(world_to_buffer.xform(wpos));
+		const Vector3f lpos = to_vec3f(world_to_buffer.xform(to_vec3(wpos)));
 		if (lpos.x < 0 || lpos.y < 0 || lpos.z < 0 || lpos.x >= buffer_size.x || lpos.y >= buffer_size.y ||
 			lpos.z >= buffer_size.z) {
 			// Outside the buffer
@@ -388,16 +390,16 @@ struct SdfBufferShape {
 };
 
 struct SdfAxisAlignedBox {
-	Vector3 center;
-	Vector3 half_size;
-	real_t sdf_scale;
+	Vector3f center;
+	Vector3f half_size;
+	float sdf_scale;
 
-	inline real_t operator()(Vector3 pos) const {
+	inline float operator()(Vector3f pos) const {
 		return sdf_scale * math::sdf_box(pos - center, half_size);
 	}
 
-	inline bool is_inside(Vector3 pos) const {
-		return AABB(center - half_size, 2 * half_size).has_point(pos);
+	inline bool is_inside(Vector3f pos) const {
+		return Box3f::from_center_half_size(center, half_size).contains(pos);
 	}
 
 	inline Box3i get_box() {
@@ -412,17 +414,17 @@ struct SdfAxisAlignedBox {
 	}
 };
 
-Box3i get_round_cone_int_bounds(Vector3 p0, Vector3 p1, float r0, float r1);
+Box3i get_round_cone_int_bounds(Vector3f p0, Vector3f p1, float r0, float r1);
 
 struct SdfRoundCone {
-	math::SdfRoundConePrecalc cone;
-	real_t sdf_scale;
+	math::SdfRoundConePrecalc<float> cone;
+	float sdf_scale;
 
-	inline real_t operator()(Vector3 pos) const {
+	inline float operator()(Vector3f pos) const {
 		return sdf_scale * cone(pos);
 	}
 
-	inline bool is_inside(Vector3 pos) const {
+	inline bool is_inside(Vector3f pos) const {
 		return cone(pos) < 0.f;
 	}
 
@@ -439,12 +441,12 @@ struct TextureParams {
 
 // Optimized for spheres
 struct TextureBlendSphereOp {
-	Vector3 center;
+	Vector3f center;
 	float radius;
 	float radius_squared;
 	TextureParams tp;
 
-	TextureBlendSphereOp(Vector3 p_center, float p_radius, TextureParams p_tp) {
+	TextureBlendSphereOp(Vector3f p_center, float p_radius, TextureParams p_tp) {
 		center = p_center;
 		radius = p_radius;
 		radius_squared = p_radius * p_radius;
@@ -452,10 +454,10 @@ struct TextureBlendSphereOp {
 	}
 
 	inline void operator()(Vector3i pos, uint16_t &indices, uint16_t &weights) const {
-		const float distance_squared = Vector3(pos).distance_squared_to(center);
+		const float distance_squared = math::distance_squared(to_vec3f(pos), center);
 		// Avoiding square root on the hot path
 		if (distance_squared < radius_squared) {
-			const float distance_from_radius = radius - Math::sqrt(distance_squared);
+			const float distance_from_radius = radius - math::sqrt(distance_squared);
 			const float target_weight =
 					tp.opacity * math::clamp(tp.sharpness * (distance_from_radius / radius), 0.f, 1.f);
 			blend_texture_packed_u16(tp.index, target_weight, indices, weights);
@@ -469,7 +471,7 @@ struct TextureBlendOp {
 	TextureParams texture_params;
 
 	inline void operator()(Vector3i pos, uint16_t &indices, uint16_t &weights) const {
-		const float sd = shape(pos);
+		const float sd = shape(to_vec3f(pos));
 		if (sd <= 0) {
 			// TODO We don't know the full size of the shape so sharpness may be adjusted
 			const float target_weight = texture_params.opacity * math::clamp(-sd * texture_params.sharpness, 0.f, 1.f);

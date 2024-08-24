@@ -232,8 +232,8 @@ void VoxelToolTerrain::do_box(Vector3i begin, Vector3i end) {
 	}
 
 	ops::DoShapeChunked<ops::SdfAxisAlignedBox, ops::VoxelDataGridAccess> op;
-	op.shape.center = to_vec3(begin + end) * 0.5;
-	op.shape.half_size = to_vec3(end - begin) * 0.5;
+	op.shape.center = to_vec3f(begin + end) * 0.5f;
+	op.shape.half_size = to_vec3f(end - begin) * 0.5f;
 	op.shape.sdf_scale = get_sdf_scale();
 	op.box = op.shape.get_box().clipped(_terrain->get_bounds());
 	op.mode = ops::Mode(get_mode());
@@ -266,7 +266,7 @@ void VoxelToolTerrain::do_sphere(Vector3 center, float radius) {
 	ERR_FAIL_COND(_terrain == nullptr);
 
 	ops::DoSphere op;
-	op.shape.center = center;
+	op.shape.center = to_vec3f(center);
 	op.shape.radius = radius;
 	op.shape.sdf_scale = get_sdf_scale();
 	op.box = op.shape.get_box().clipped(_terrain->get_bounds());
@@ -294,9 +294,9 @@ void VoxelToolTerrain::do_hemisphere(Vector3 center, float radius, Vector3 flat_
 	ERR_FAIL_COND(_terrain == nullptr);
 
 	ops::DoShapeChunked<ops::SdfHemisphere, ops::VoxelDataGridAccess> op;
-	op.shape.center = center;
+	op.shape.center = to_vec3f(center);
 	op.shape.radius = radius;
-	op.shape.flat_direction = flat_direction;
+	op.shape.flat_direction = to_vec3f(flat_direction);
 	op.shape.plane_d = flat_direction.dot(center);
 	op.shape.smoothness = smoothness;
 	op.shape.sdf_scale = get_sdf_scale();
@@ -485,8 +485,8 @@ void VoxelToolTerrain::do_path(Span<const Vector3> positions, Span<const float> 
 		for (unsigned int point_index = 1; point_index < positions.size(); ++point_index) {
 			// TODO Could run this in local space so we dont need doubles
 			// TODO Apply terrain scale
-			const Vector3 p0 = positions[point_index - 1];
-			const Vector3 p1 = positions[point_index];
+			const Vector3f p0 = to_vec3f(positions[point_index - 1]);
+			const Vector3f p1 = to_vec3f(positions[point_index]);
 
 			const float r0 = radii[point_index - 1];
 			const float r1 = radii[point_index];

@@ -183,7 +183,7 @@ inline T length_squared(const Vector3T<T> v) {
 
 template <typename T>
 inline T length(const Vector3T<T> &v) {
-	return Math::sqrt(length_squared(v));
+	return math::sqrt(length_squared(v));
 }
 
 template <typename T>
@@ -193,7 +193,7 @@ inline T distance_squared(const Vector3T<T> &a, const Vector3T<T> &b) {
 
 template <typename T>
 inline T distance(const Vector3T<T> &a, const Vector3T<T> &b) {
-	return Math::sqrt(distance_squared(a, b));
+	return math::sqrt(distance_squared(a, b));
 }
 
 template <typename T>

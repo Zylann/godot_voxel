@@ -767,7 +767,7 @@ void test_voxel_graph_generate_block_with_input_sdf() {
 				for (int x = 0; x < buffer.get_size().x; ++x) {
 					for (int y = 0; y < buffer.get_size().y; ++y) {
 						// Sphere at origin
-						const float sd = math::sdf_sphere(Vector3(x, y, z), Vector3(), SPHERE_RADIUS);
+						const float sd = math::sdf_sphere(Vector3f(x, y, z), Vector3f(), SPHERE_RADIUS);
 						buffer.set_voxel_f(sd, Vector3i(x, y, z), channel);
 					}
 				}

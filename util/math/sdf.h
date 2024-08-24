@@ -2,8 +2,8 @@
 #define ZN_MATH_SDF_H
 
 #include "interval.h"
-#include "vector2.h"
-#include "vector3.h"
+#include "vector2t.h"
+#include "vector3t.h"
 
 namespace zylann::math {
 
@@ -12,87 +12,168 @@ namespace zylann::math {
 
 // TODO Use `float`, or templatize SDF values. Doubles may prevent some SIMD optimizations.
 
-inline real_t sdf_box(const Vector3 pos, const Vector3 extents) {
-	const Vector3 d = pos.abs() - extents;
-	return minf(maxf(d.x, maxf(d.y, d.z)), 0) + Vector3(maxf(d.x, 0), maxf(d.y, 0), maxf(d.z, 0)).length();
+template <typename T>
+inline T sdf_box(const Vector3T<T> pos, const Vector3T<T> extents) {
+	static_assert(std::is_floating_point<T>::value);
+	const Vector3T<T> d = abs(pos) - extents;
+	return min(max(d.x, max(d.y, d.z)), T(0)) + length(Vector3T<T>(max(d.x, T(0)), max(d.y, T(0)), max(d.z, T(0))));
 }
 
-inline Interval sdf_box(
-		const Interval &x,
-		const Interval &y,
-		const Interval &z,
-		const Interval &sx,
-		const Interval &sy,
-		const Interval &sz
+template <typename T>
+inline IntervalT<T> sdf_box(
+		const IntervalT<T> &x,
+		const IntervalT<T> &y,
+		const IntervalT<T> &z,
+		const IntervalT<T> &sx,
+		const IntervalT<T> &sy,
+		const IntervalT<T> &sz
 ) {
-	const Interval dx = abs(x) - sx;
-	const Interval dy = abs(y) - sy;
-	const Interval dz = abs(z) - sz;
-	return min_interval(max_interval(dx, max_interval(dy, dz)), real_t(0)) +
-			get_length(max_interval(dx, real_t(0)), max_interval(dy, real_t(0)), max_interval(dz, real_t(0)));
+	const IntervalT<T> dx = abs(x) - sx;
+	const IntervalT<T> dy = abs(y) - sy;
+	const IntervalT<T> dz = abs(z) - sz;
+	return min_interval(max_interval(dx, max_interval(dy, dz)), T(0)) +
+			get_length(max_interval(dx, T(0)), max_interval(dy, T(0)), max_interval(dz, T(0)));
 }
 
-inline real_t sdf_sphere(Vector3 pos, Vector3 center, real_t radius) {
-	return pos.distance_to(center) - radius;
+template <typename T>
+inline T sdf_sphere(const Vector3T<T> pos, const Vector3T<T> center, const T radius) {
+	return distance(pos, center) - radius;
 }
 
-inline real_t sdf_torus(real_t x, real_t y, real_t z, real_t r0, real_t r1) {
-	const Vector2 q = Vector2(Vector2(x, z).length() - r0, y);
-	return q.length() - r1;
+template <typename T>
+inline T sdf_torus(const T x, const T y, const T z, const T r0, const T r1) {
+	const Vector2T<T> q = Vector2T<T>(length(Vector2T<T>(x, z)) - r0, y);
+	return length(q) - r1;
 }
 
-inline Interval sdf_torus(
-		const Interval &x,
-		const Interval &y,
-		const Interval &z,
-		const Interval r0,
-		const Interval r1
+template <typename T>
+inline IntervalT<T> sdf_torus(
+		const IntervalT<T> &x,
+		const IntervalT<T> &y,
+		const IntervalT<T> &z,
+		const IntervalT<T> r0,
+		const IntervalT<T> r1
 ) {
-	const Interval qx = get_length(x, z) - r0;
+	const IntervalT<T> qx = get_length(x, z) - r0;
 	return get_length(qx, y) - r1;
 }
 
 // Note: calculate `plane_d` as `dot(plane_normal, point_in_plane)`
-inline real_t sdf_plane(Vector3 pos, Vector3 plane_normal, real_t plane_d) {
+template <typename T>
+inline T sdf_plane(const Vector3T<T> pos, const Vector3T<T> plane_normal, const T plane_d) {
 	// On Inigo's website it's a `+h`, but it seems to be backward because then if a plane has normal (0,1,0) and height
 	// 1, a point at (0,1,0) will give a dot of 1, + height will be 2, which is wrong because the expected SDF here
 	// would be 0.
-	return pos.dot(plane_normal) - plane_d;
+	return dot(pos, plane_normal) - plane_d;
 }
 
-inline real_t sdf_union(real_t a, real_t b) {
+template <typename T>
+inline T sdf_union(const T a, const T b) {
 	return min(a, b);
 }
 
 // Subtracts SDF b from SDF a
-inline real_t sdf_subtract(real_t a, real_t b) {
+template <typename T>
+inline T sdf_subtract(const T a, const T b) {
 	return max(a, -b);
 }
 
-inline real_t sdf_smooth_union(real_t a, real_t b, real_t s) {
-	const real_t h = clampf(0.5 + 0.5 * (b - a) / s, 0.0, 1.0);
-	return Math::lerp(b, a, h) - s * h * (1.0 - h);
+template <typename T>
+inline T sdf_smooth_union(const T a, const T b, const T s) {
+	const T h = clamp(T(0.5) + T(0.5) * (b - a) / s, T(0), T(1));
+	return lerp(b, a, h) - s * h * (T(1) - h);
 }
 
 // Inverted a and b because it subtracts SDF a from SDF b
-inline real_t sdf_smooth_subtract(real_t b, real_t a, real_t s) {
-	const real_t h = clampf(0.5 - 0.5 * (b + a) / s, 0.0, 1.0);
-	return Math::lerp(b, -a, h) + s * h * (1.0 - h);
+template <typename T>
+inline T sdf_smooth_subtract(T b, T a, T s) {
+	const T h = clamp(T(0.5) - T(0.5) * (b + a) / s, T(0), T(1));
+	return lerp(b, -a, h) + s * h * (T(1) - h);
 }
 
-inline Interval sdf_union(Interval a, Interval b) {
+template <typename T>
+inline IntervalT<T> sdf_union(const IntervalT<T> a, const IntervalT<T> b) {
 	return min_interval(a, b);
 }
 
 // Does a - b
-inline Interval sdf_subtract(Interval a, Interval b) {
+template <typename T>
+inline IntervalT<T> sdf_subtract(const IntervalT<T> a, const IntervalT<T> b) {
 	return max_interval(a, -b);
 }
 
-Interval sdf_smooth_union(Interval p_b, Interval p_a, real_t p_s);
+template <typename T, typename F>
+inline IntervalT<T> sdf_smooth_op(const IntervalT<T> b, const IntervalT<T> a, T s, F smooth_op_func) {
+	// Smooth union and subtract are a generalization of `min(a, b)` and `max(-a, b)`, with a smooth junction.
+	// That junction runs in a diagonal crossing zero (with equation `y = -x`).
+	// Areas on the two sides of the junction are monotonic, i.e their derivatives should never cross zero,
+	// because they are linear functions modified by a "smoothing" polynomial for which the tip is on diagonal.
+	// So to find the output range, we can evaluate and sort the 4 corners,
+	// and diagonal intersections if it crosses the area.
+
+	//     |  \              |
+	//  ---1---x-------------3--- b.max
+	//     |    \            |
+	//     |     \           |              (b)
+	//     |      \          |               y
+	//     |       \         |               |
+	//  ---0--------x--------2--- b.min      o---x (a)
+	//     |         \       |
+	//    a.min             a.max
+
+	const T v0 = smooth_op_func(b.min, a.min, s);
+	const T v1 = smooth_op_func(b.max, a.min, s);
+	const T v2 = smooth_op_func(b.min, a.max, s);
+	const T v3 = smooth_op_func(b.max, a.max, s);
+
+	const Vector2T<T> diag_b_min(-b.min, b.min);
+	const Vector2T<T> diag_b_max(-b.max, b.max);
+	const Vector2T<T> diag_a_min(a.min, -a.min);
+	const Vector2T<T> diag_a_max(a.max, -a.max);
+
+	const bool crossing_top = (diag_b_max.x > a.min && diag_b_max.x < a.max);
+	const bool crossing_left = (diag_a_min.y > b.min && diag_a_min.y < b.max);
+
+	if (crossing_left || crossing_top) {
+		const bool crossing_right = (diag_a_max.y > b.min && diag_a_max.y < b.max);
+
+		T v4;
+		if (crossing_left) {
+			v4 = smooth_op_func(diag_a_min.y, diag_a_min.x, s);
+		} else {
+			v4 = smooth_op_func(diag_b_max.y, diag_b_max.x, s);
+		}
+
+		T v5;
+		if (crossing_right) {
+			v5 = smooth_op_func(diag_a_max.y, diag_a_max.x, s);
+		} else {
+			v5 = smooth_op_func(diag_b_min.y, diag_b_min.x, s);
+		}
+
+		return IntervalT<T>(min(v0, v1, v2, v3, v4, v5), max(v0, v1, v2, v3, v4, v5));
+	}
+
+	// The diagonal does not cross the area
+	return IntervalT<T>(min(v0, v1, v2, v3), max(v0, v1, v2, v3));
+}
+
+template <typename T>
+IntervalT<T> sdf_smooth_union(const IntervalT<T> p_b, const IntervalT<T> p_a, const T p_s) {
+	// TODO Not tested
+	// Had to use a lambda because otherwise it's ambiguous
+	return sdf_smooth_op(p_b, p_a, p_s, [](const T b, const T a, const T s) { //
+		return zylann::math::sdf_smooth_union(b, a, s);
+	});
+}
 
 // Does b - a
-Interval sdf_smooth_subtract(Interval p_b, Interval p_a, real_t p_s);
+template <typename T>
+IntervalT<T> sdf_smooth_subtract(const IntervalT<T> p_b, const IntervalT<T> p_a, const T p_s) {
+	return sdf_smooth_op(p_b, p_a, p_s, [](const T b, const T a, const T s) { //
+		return zylann::math::sdf_smooth_subtract(b, a, s);
+	});
+}
 
 enum SdfAffectingArguments { //
 	SDF_ONLY_A,
@@ -102,76 +183,126 @@ enum SdfAffectingArguments { //
 
 // Tests which argument can affect the result.
 // for a - b
-SdfAffectingArguments sdf_subtract_side(Interval a, Interval b);
-// for a - b
-SdfAffectingArguments sdf_polynomial_smooth_subtract_side(Interval a, Interval b, real_t s);
-
-SdfAffectingArguments sdf_union_side(Interval a, Interval b);
-SdfAffectingArguments sdf_polynomial_smooth_union_side(Interval a, Interval b, real_t s);
-
-inline real_t sdf_round_cone(Vector3 p, Vector3 a, Vector3 b, real_t r1, real_t r2) {
-	// sampling independent computations (only depend on shape)
-	const Vector3 ba = b - a;
-	const real_t l2 = dot(ba, ba);
-	const real_t rr = r1 - r2;
-	const real_t a2 = l2 - rr * rr;
-	const real_t il2 = 1.0 / l2;
-
-	// sampling dependant computations
-	const Vector3 pa = p - a;
-	const real_t y = dot(pa, ba);
-	const real_t z = y - l2;
-	const real_t x2 = length_squared(pa * l2 - ba * y);
-	const real_t y2 = y * y * l2;
-	const real_t z2 = z * z * l2;
-
-	// single square root!
-	const real_t k = sign(rr) * rr * rr * x2;
-	if (sign(z) * a2 * z2 > k) {
-		return Math::sqrt(x2 + z2) * il2 - r2;
+template <typename T>
+SdfAffectingArguments sdf_subtract_side(const IntervalT<T> a, const IntervalT<T> b) {
+	if (b.min > -a.min) {
+		return SDF_ONLY_A;
 	}
-	if (sign(y) * a2 * y2 < k) {
-		return Math::sqrt(x2 + y2) * il2 - r1;
+	if (b.max < -a.max) {
+		return SDF_ONLY_B;
 	}
-	return (Math::sqrt(x2 * a2 * il2) + y * rr) * il2 - r1;
+	return SDF_BOTH;
 }
 
-struct SdfRoundConePrecalc {
-	Vector3 a;
-	Vector3 b;
-	real_t r1;
-	real_t r2;
+// for a - b
+template <typename T>
+SdfAffectingArguments sdf_polynomial_smooth_subtract_side(const IntervalT<T> a, const IntervalT<T> b, const T s) {
+	//     |  \  \  \        |
+	//  ---1---x--x--x-------3--- b.max
+	//     |    \  \  \      |
+	//     |     \  \  \     |              (b)
+	//     |      \  \  \    |               y
+	//     |       \  \  \   |               |
+	//  ---0--------x--x--x--2--- b.min      o---x (a)
+	//     |         \s \ s\ |
+	//    a.min             a.max
 
-	Vector3 ba;
-	real_t l2;
-	real_t rr;
-	real_t a2;
-	real_t il2;
+	if (b.min > -a.min + s) {
+		return SDF_ONLY_A;
+	}
+	if (b.max < -a.max - s) {
+		return SDF_ONLY_B;
+	}
+	return SDF_BOTH;
+}
+
+template <typename T>
+SdfAffectingArguments sdf_union_side(const IntervalT<T> a, const IntervalT<T> b) {
+	if (a.max < b.min) {
+		return SDF_ONLY_A;
+	}
+	if (b.max < a.min) {
+		return SDF_ONLY_B;
+	}
+	return SDF_BOTH;
+}
+
+template <typename T>
+SdfAffectingArguments sdf_polynomial_smooth_union_side(const IntervalT<T> a, const IntervalT<T> b, const T s) {
+	if (a.max + s < b.min) {
+		return SDF_ONLY_A;
+	}
+	if (b.max + s < a.min) {
+		return SDF_ONLY_B;
+	}
+	return SDF_BOTH;
+}
+
+template <typename T>
+inline T sdf_round_cone(const Vector3T<T> p, const Vector3T<T> a, const Vector3T<T> b, const T r1, const T r2) {
+	// sampling independent computations (only depend on shape)
+	const Vector3T<T> ba = b - a;
+	const T l2 = dot(ba, ba);
+	const T rr = r1 - r2;
+	const T a2 = l2 - rr * rr;
+	const T il2 = 1.0 / l2;
+
+	// sampling dependant computations
+	const Vector3T<T> pa = p - a;
+	const T y = dot(pa, ba);
+	const T z = y - l2;
+	const T x2 = length_squared(pa * l2 - ba * y);
+	const T y2 = y * y * l2;
+	const T z2 = z * z * l2;
+
+	// single square root!
+	const T k = sign(rr) * rr * rr * x2;
+	if (sign(z) * a2 * z2 > k) {
+		return sqrt(x2 + z2) * il2 - r2;
+	}
+	if (sign(y) * a2 * y2 < k) {
+		return sqrt(x2 + y2) * il2 - r1;
+	}
+	return (sqrt(x2 * a2 * il2) + y * rr) * il2 - r1;
+}
+
+template <typename T>
+struct SdfRoundConePrecalc {
+	Vector3T<T> a;
+	Vector3T<T> b;
+	T r1;
+	T r2;
+
+	Vector3T<T> ba;
+	T l2;
+	T rr;
+	T a2;
+	T il2;
 
 	void update() {
 		ba = b - a;
 		l2 = dot(ba, ba);
 		rr = r1 - r2;
 		a2 = l2 - rr * rr;
-		il2 = 1.0 / l2;
+		il2 = T(1) / l2;
 	}
 
-	real_t operator()(Vector3 p) const {
-		const Vector3 pa = p - a;
-		const real_t y = dot(pa, ba);
-		const real_t z = y - l2;
-		const real_t x2 = length_squared(pa * l2 - ba * y);
-		const real_t y2 = y * y * l2;
-		const real_t z2 = z * z * l2;
+	T operator()(Vector3T<T> p) const {
+		const Vector3T<T> pa = p - a;
+		const T y = dot(pa, ba);
+		const T z = y - l2;
+		const T x2 = length_squared(pa * l2 - ba * y);
+		const T y2 = y * y * l2;
+		const T z2 = z * z * l2;
 
-		const real_t k = sign(rr) * rr * rr * x2;
+		const T k = sign(rr) * rr * rr * x2;
 		if (sign(z) * a2 * z2 > k) {
-			return Math::sqrt(x2 + z2) * il2 - r2;
+			return sqrt(x2 + z2) * il2 - r2;
 		}
 		if (sign(y) * a2 * y2 < k) {
-			return Math::sqrt(x2 + y2) * il2 - r1;
+			return sqrt(x2 + y2) * il2 - r1;
 		}
-		return (Math::sqrt(x2 * a2 * il2) + y * rr) * il2 - r1;
+		return (sqrt(x2 * a2 * il2) + y * rr) * il2 - r1;
 	}
 };
 

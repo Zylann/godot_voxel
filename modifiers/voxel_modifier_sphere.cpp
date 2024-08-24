@@ -1,6 +1,7 @@
 #include "voxel_modifier_sphere.h"
 #include "../engine/voxel_engine.h"
 #include "../util/godot/core/packed_arrays.h"
+#include "../util/math/conv.h"
 #include "../util/math/sdf.h"
 #include "../util/memory/memory.h"
 #include "../util/profiling.h"
@@ -31,7 +32,7 @@ void VoxelModifierSphere::apply(VoxelModifierContext ctx) const {
 	ZN_PROFILE_SCOPE();
 	RWLockRead rlock(_rwlock);
 	const float smoothness = get_smoothness();
-	const Vector3 center = get_transform().origin;
+	const Vector3f center = to_vec3f(get_transform().origin);
 	const float sdf_scale = 1.0f;
 
 	// TODO Support transform scale

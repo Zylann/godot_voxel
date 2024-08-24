@@ -56,9 +56,9 @@ void register_sdf_nodes(Span<NodeType> types) {
 			const Runtime::Buffer &z = ctx.get_input(2);
 			const Params p = ctx.get_params<Params>();
 			Runtime::Buffer &out = ctx.get_output(0);
-			const Vector3 size(p.size_x, p.size_y, p.size_z);
+			const Vector3f size(p.size_x, p.size_y, p.size_z);
 			for (uint32_t i = 0; i < out.size; ++i) {
-				out.data[i] = math::sdf_box(Vector3(x.data[i], y.data[i], z.data[i]), size);
+				out.data[i] = math::sdf_box(Vector3f(x.data[i], y.data[i], z.data[i]), size);
 			}
 		};
 		t.range_analysis_func = [](Runtime::RangeAnalysisContext &ctx) {

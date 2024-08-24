@@ -320,7 +320,7 @@ void test_discord_soakil_copypaste() {
 
 	{
 		ops::DoSphere op;
-		op.shape.center = Vector3();
+		op.shape.center = Vector3f();
 		op.shape.radius = 5.f;
 		op.shape.sdf_scale = 1.f;
 		op.box = op.shape.get_box();
