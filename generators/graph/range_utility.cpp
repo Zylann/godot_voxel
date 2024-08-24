@@ -1,7 +1,6 @@
 #include "range_utility.h"
 #include "../../util/godot/classes/curve.h"
 #include "../../util/godot/classes/image.h"
-#include "../../util/math/rect2i.h"
 #include "../../util/math/vector2i.h"
 #include "../../util/string/format.h"
 
