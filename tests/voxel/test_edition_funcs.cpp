@@ -345,4 +345,18 @@ void test_discord_soakil_copypaste() {
 	L::check_original(voxel_data);
 }
 
+void test_sdf_hemisphere() {
+	ops::SdfHemisphere shape;
+	shape.center = Vector3f();
+	shape.flat_direction = Vector3f(0, 1, 0);
+	shape.plane_d = 0.f;
+	shape.radius = 1.0;
+	shape.sdf_scale = 1.0;
+	shape.smoothness = 0.1;
+
+	ZN_TEST_ASSERT(shape(Vector3f(0, 0.5, 0)) > 0);
+	ZN_TEST_ASSERT(shape(Vector3f(0, -0.5, 0)) < 0);
+	ZN_TEST_ASSERT(shape(Vector3f(2, 0, 0)) > 0);
+}
+
 } // namespace zylann::voxel::tests

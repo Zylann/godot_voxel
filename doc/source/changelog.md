@@ -18,6 +18,7 @@ Primarily developped with Godot 4.3.
 
 - Breaking changes
     - `VoxelInstanceLibrary`: Items should no longer be accessed using generated properties (`item1`, `item2` etc). Use `get_item` instead.
+    - `VoxelTool`: The `flat_direction` of `do_hemisphere` now points away from the flat side of the hemisphere (like its normal), instead of pointing towards it
 
 
 1.3 - 17/08/2024 - branch `1.3` - tag `v1.3.0`
