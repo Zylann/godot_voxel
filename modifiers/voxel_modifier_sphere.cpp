@@ -8,7 +8,7 @@
 
 namespace zylann::voxel {
 
-void VoxelModifierSphere::set_radius(real_t radius) {
+void VoxelModifierSphere::set_radius(float radius) {
 	RWLockWrite wlock(_rwlock);
 	if (radius == _radius) {
 		return;
@@ -18,7 +18,7 @@ void VoxelModifierSphere::set_radius(real_t radius) {
 	update_aabb();
 }
 
-real_t VoxelModifierSphere::get_radius() const {
+float VoxelModifierSphere::get_radius() const {
 	return _radius;
 }
 
