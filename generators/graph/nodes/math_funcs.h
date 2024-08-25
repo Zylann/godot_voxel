@@ -474,7 +474,7 @@ void register_math_func_nodes(Span<NodeType> types) {
 		t.range_analysis_func = [](RangeAnalysisContext &ctx) {
 			const Interval a = ctx.get_input(0);
 			const Params p = ctx.get_params<Params>();
-			ctx.set_output(0, smoothstep(p.edge0, p.edge1, a));
+			ctx.set_output(0, smoothstep<real_t>(p.edge0, p.edge1, a));
 		};
 		t.shader_gen_func = [](ShaderGenContext &ctx) {
 			ctx.add_format(

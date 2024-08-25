@@ -244,8 +244,11 @@ void register_sdf_nodes(Span<NodeType> types) {
 			const Params params = ctx.get_params<Params>();
 
 			if (params.smoothness > 0.0001f) {
+				// TODO Ideally we should be consistent in which kind of floats we use.
+				// Right now we should use `float` everywhere, eventually allowing to choose even if Godot is compiled
+				// with doubles, as not everything actually needs to be double
 				const math::SdfAffectingArguments args =
-						math::sdf_polynomial_smooth_union_side(a, b, params.smoothness);
+						math::sdf_polynomial_smooth_union_side<real_t>(a, b, params.smoothness);
 				switch (args) {
 					case math::SDF_ONLY_A:
 						ctx.ignore_input(1);
@@ -259,7 +262,7 @@ void register_sdf_nodes(Span<NodeType> types) {
 						CRASH_NOW();
 						break;
 				}
-				ctx.set_output(0, math::sdf_smooth_union(a, b, params.smoothness));
+				ctx.set_output(0, math::sdf_smooth_union<real_t>(a, b, params.smoothness));
 
 			} else {
 				const math::SdfAffectingArguments args = math::sdf_union_side(a, b);
@@ -346,7 +349,7 @@ void register_sdf_nodes(Span<NodeType> types) {
 
 			if (params.smoothness > 0.0001f) {
 				const math::SdfAffectingArguments args =
-						math::sdf_polynomial_smooth_subtract_side(a, b, params.smoothness);
+						math::sdf_polynomial_smooth_subtract_side<real_t>(a, b, params.smoothness);
 				switch (args) {
 					case math::SDF_ONLY_A:
 						ctx.ignore_input(1);
@@ -360,7 +363,7 @@ void register_sdf_nodes(Span<NodeType> types) {
 						CRASH_NOW();
 						break;
 				}
-				ctx.set_output(0, math::sdf_smooth_subtract(a, b, params.smoothness));
+				ctx.set_output(0, math::sdf_smooth_subtract<real_t>(a, b, params.smoothness));
 
 			} else {
 				const math::SdfAffectingArguments args = math::sdf_subtract_side(a, b);
