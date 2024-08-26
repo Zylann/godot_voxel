@@ -20,41 +20,52 @@ namespace zylann::math {
 
 template <typename T>
 inline constexpr T min(const T a, const T b) {
+	// Godot's vector types have an operator<, which means if the wrong headers are included, this function could be
+	// used instead of the dedicated component-wise one, without causing errors. So we have to guard against that silent
+	// ambiguity issue.
+	static_assert(std::is_scalar<T>::value);
 	return a < b ? a : b;
 }
 
 template <typename T>
 inline constexpr T max(const T a, const T b) {
+	static_assert(std::is_scalar<T>::value);
 	return a > b ? a : b;
 }
 
 template <typename T>
 inline T min(const T a, const T b, const T c, const T d) {
+	static_assert(std::is_scalar<T>::value);
 	return min(min(a, b), min(c, d));
 }
 
 template <typename T>
 inline T max(const T a, const T b, const T c, const T d) {
+	static_assert(std::is_scalar<T>::value);
 	return max(max(a, b), max(c, d));
 }
 
 template <typename T>
 inline T min(const T a, const T b, const T c, const T d, const T e, const T f) {
+	static_assert(std::is_scalar<T>::value);
 	return min(min(min(a, b), min(c, d)), min(e, f));
 }
 
 template <typename T>
 inline T max(const T a, const T b, const T c, const T d, const T e, const T f) {
+	static_assert(std::is_scalar<T>::value);
 	return max(max(max(a, b), max(c, d)), max(e, f));
 }
 
 template <typename T>
 inline T min(const T a, const T b, const T c, const T d, const T e, const T f, const T g, const T h) {
+	static_assert(std::is_scalar<T>::value);
 	return min(min(a, b, c, d), min(e, f, g, h));
 }
 
 template <typename T>
 inline T max(const T a, const T b, const T c, const T d, const T e, const T f, const T g, const T h) {
+	static_assert(std::is_scalar<T>::value);
 	return max(max(a, b, c, d), max(e, f, g, h));
 }
 
@@ -80,6 +91,7 @@ inline double maxf(double a, double b) {
 
 template <typename T>
 inline constexpr T clamp(const T x, const T min_value, const T max_value) {
+	static_assert(std::is_scalar<T>::value);
 	// TODO Enforce T as being numeric
 	return min(max(x, min_value), max_value);
 }
