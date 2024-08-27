@@ -52,10 +52,10 @@ Emitted when asynchronous baking is complete.
 
 enum **BakeMode**: 
 
-- <span id="i_BAKE_MODE_ACCURATE_NAIVE"></span>**BAKE_MODE_ACCURATE_NAIVE** = **0** --- Checks every triangle from every cell to find the closest distances. It's accurate, but much slower than other techniques. The mesh must be closed, otherwise the SDF will contain errors. Signs are calculated by doing several raycasts from the center of each cell: if the ray hits a backface, the cell is assumed to be inside. Otherwise, it is assumed to be outside.
+- <span id="i_BAKE_MODE_ACCURATE_NAIVE"></span>**BAKE_MODE_ACCURATE_NAIVE** = **0** --- Checks every triangle from every cell to find the closest distances. It tries to be accurate, but is much slower than other techniques. The mesh must be closed, otherwise the SDF will contain errors. Signs are calculated by getting the closest triangle and checking which side of the triangle the center of the cell is.
 - <span id="i_BAKE_MODE_ACCURATE_PARTITIONED"></span>**BAKE_MODE_ACCURATE_PARTITIONED** = **1** --- Similar to the naive method, but subdivides space into partitions in order to more easily skip triangles that don't need to be checked. Faster than the naive method, but still relatively slow.
 - <span id="i_BAKE_MODE_APPROX_INTERP"></span>**BAKE_MODE_APPROX_INTERP** = **2** --- Experimental method subdividing space in 4x4x4 cells, and skipping SDF calculations by interpolating 8 corners instead if no triangles are present in those cells. Faster than the naive method, but not particularly interesting. Might be removed.
-- <span id="i_BAKE_MODE_APPROX_FLOODFILL"></span>**BAKE_MODE_APPROX_FLOODFILL** = **3** --- Approximates the SDF by calculating a thin "hull" of accurate values near triangles, then propagates those values with a 26-way floodfill. While technically not accurate, it is currently the fastest method and results are often good enough.
+- <span id="i_BAKE_MODE_APPROX_FLOODFILL"></span>**BAKE_MODE_APPROX_FLOODFILL** = **3** --- Approximates the SDF by calculating a thin "hull" of accurate values near triangles, then propagates those values with a 26-way floodfill. Signs are calculated only on the initial hull by doing several raycasts from the center of each cell: if the ray hits a backface, the cell is assumed to be inside. Otherwise, it is assumed to be outside. Signs are propagated as part of the floodfill. While technically not accurate, it is currently the fastest method and results are often good enough.
 - <span id="i_BAKE_MODE_COUNT"></span>**BAKE_MODE_COUNT** = **4** --- How many baking modes there are.
 
 
@@ -95,7 +95,9 @@ Setting this property back to null will not erase the baked result, so you don't
 
 ### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_partition_subdiv"></span> **partition_subdiv** = 32
 
-Controls how many subdivisions to use across the baking area when using the BAKE_MODE_ACCURATE_PARTITIONED mode.
+Controls how many subdivisions to use across the baking area when using the [VoxelMeshSDF.BAKE_MODE_ACCURATE_PARTITIONED](VoxelMeshSDF.md#i_BAKE_MODE_ACCURATE_PARTITIONED) and [VoxelMeshSDF.BAKE_MODE_APPROX_FLOODFILL](VoxelMeshSDF.md#i_BAKE_MODE_APPROX_FLOODFILL) modes.
+
+When using [VoxelMeshSDF.BAKE_MODE_ACCURATE_PARTITIONED](VoxelMeshSDF.md#i_BAKE_MODE_ACCURATE_PARTITIONED), that value may be proportionally adjusted based on the amount of triangles the mesh has, due to an imperfection of the algorithm. If the mesh has few triangles, lower values will perform better. If it has a lot of small triangles, higher values will perform better. However, if triangles are large or few and the value is big, this will also potentially create artifacts.
 
 ## Method Descriptions
 
@@ -133,7 +135,7 @@ This method is a leftover from when this resource was initially implemented, as 
 
 ### [AABB](https://docs.godotengine.org/en/stable/classes/class_aabb.html)<span id="i_get_aabb"></span> **get_aabb**( ) 
 
-Get the reference bounding box of the baked shape. This may be a bit larger than the original mesh's AABB because of the [VoxelMeshSDF.margin](VoxelMeshSDF.md#i_margin) property.
+Get the reference bounding box of the baked shape. This may be a bit larger than the original mesh's AABB because of the [VoxelMeshSDF.margin_ratio](VoxelMeshSDF.md#i_margin_ratio) property.
 
 ### [VoxelBuffer](VoxelBuffer.md)<span id="i_get_voxel_buffer"></span> **get_voxel_buffer**( ) 
 
@@ -149,4 +151,4 @@ Gets whether the resource contains baked SDF data.
 
 Gets whether a asynchronous baking operation is pending.
 
-_Generated on Apr 06, 2024_
+_Generated on Aug 27, 2024_

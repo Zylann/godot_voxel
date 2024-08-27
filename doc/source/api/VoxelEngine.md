@@ -29,7 +29,8 @@ The returned dictionary has the following structure:
 		"general": {
 			"tasks": int,
 			"active_threads": int,
-			"thread_count": int
+			"thread_count": int,
+			"task_names": PackedStringArray
 		}
 	},
 	"tasks": {
@@ -61,4 +62,4 @@ Gets the minor version number of the voxel engine. For example, in `1.2.0`, `2` 
 
 Gets the patch version number of the voxel engine. For example, in `1.2.0`, `0` is the patch version.
 
-_Generated on Apr 06, 2024_
+_Generated on Aug 27, 2024_

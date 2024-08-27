@@ -5,9 +5,9 @@ Inherits: [RefCounted](https://docs.godotengine.org/en/stable/classes/class_refc
 ## Methods: 
 
 
-Return                                                                | Signature                                                                                                                                                                                                                                                                                              
---------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)  | [load_from_file](#i_load_from_file) ( [String](https://docs.godotengine.org/en/stable/classes/class_string.html) fpath, [VoxelBuffer](VoxelBuffer.md) voxels, [VoxelColorPalette](VoxelColorPalette.md) palette, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) dst_channel=2 )  
+Return                                                                | Signature                                                                                                                                                                                                                                                                                                    
+--------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)  | [load_from_file](#i_load_from_file) ( [String](https://docs.godotengine.org/en/stable/classes/class_string.html) fpath, [VoxelBuffer](VoxelBuffer.md) voxels, [VoxelColorPalette](VoxelColorPalette.md) palette, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) dst_channel=2 ) static 
 <p></p>
 
 ## Method Descriptions
@@ -16,4 +16,4 @@ Return                                                                | Signatur
 
 *(This method has no documentation)*
 
-_Generated on Apr 06, 2024_
+_Generated on Aug 27, 2024_
