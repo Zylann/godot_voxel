@@ -200,48 +200,6 @@ void simplify(
 	);
 }
 
-struct DeepSampler : transvoxel::IDeepSDFSampler {
-	VoxelGenerator &generator;
-	const VoxelData &data;
-	const VoxelBuffer::ChannelId sdf_channel;
-	const Vector3i origin;
-
-	DeepSampler(
-			VoxelGenerator &p_generator,
-			const VoxelData &p_data,
-			VoxelBuffer::ChannelId p_sdf_channel,
-			Vector3i p_origin
-	) :
-			generator(p_generator), data(p_data), sdf_channel(p_sdf_channel), origin(p_origin) {}
-
-	float get_single(Vector3i position_in_voxels, uint32_t lod_index) const override {
-		position_in_voxels += origin;
-		return data.get_voxel_f(position_in_voxels, sdf_channel);
-		/*const Vector3i lod_pos = position_in_voxels >> lod_index;
-		const VoxelDataLodMap::Lod &lod = data.lods[lod_index];
-		unsigned int bsm = 0;
-		std::shared_ptr<VoxelBuffer> voxels;
-		{
-			RWLockRead rlock(lod.map_lock);
-			const Vector3i lod_bpos = lod_pos >> lod.map.get_block_size_pow2();
-			const VoxelDataBlock *block = lod.map.get_block(lod_bpos);
-			// TODO Thread-safety: this checking presence of voxels is not safe.
-			// It can change while meshing takes place if a modifier is moved in the same area,
-			// because it invalidates cached data.
-			if (block != nullptr && block->has_voxels()) {
-				voxels = block->get_voxels_shared();
-				bsm = lod.map.get_block_size_mask();
-			}
-		}
-		if (voxels != nullptr) {
-			RWLockRead rlock(voxels->get_lock());
-			return voxels->get_voxel_f(lod_pos & bsm, sdf_channel);
-		} else {
-			return generator.generate_single(position_in_voxels, sdf_channel).f;
-		}*/
-	}
-};
-
 } // namespace
 
 void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher::Input &input) {
@@ -275,38 +233,17 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 		cell_infos = &transvoxel::get_tls_cell_infos();
 	}
 
-	if (_deep_sampling_enabled && input.generator != nullptr && input.data != nullptr && input.lod_index > 0) {
-		const DeepSampler ds(*input.generator, *input.data, sdf_channel, input.origin_in_voxels);
-		// TODO Optimization: "area scope" feature on generators to optimize certain uses of `generate_single`.
-		// The idea is to call `begin_area(box)` and `end_area()`, so the generator can optimize random calls to
-		// `generate_single` in between, knowing they will all be done within the specified area.
-
-		default_texture_indices_data = transvoxel::build_regular_mesh(
-				voxels,
-				sdf_channel,
-				input.lod_index,
-				static_cast<transvoxel::TexturingMode>(_texture_mode),
-				tls_cache,
-				mesh_arrays,
-				&ds,
-				cell_infos,
-				_edge_clamp_margin,
-				_textures_ignore_air_voxels
-		);
-	} else {
-		default_texture_indices_data = transvoxel::build_regular_mesh(
-				voxels,
-				sdf_channel,
-				input.lod_index,
-				static_cast<transvoxel::TexturingMode>(_texture_mode),
-				tls_cache,
-				mesh_arrays,
-				nullptr,
-				cell_infos,
-				_edge_clamp_margin,
-				_textures_ignore_air_voxels
-		);
-	}
+	default_texture_indices_data = transvoxel::build_regular_mesh(
+			voxels,
+			sdf_channel,
+			input.lod_index,
+			static_cast<transvoxel::TexturingMode>(_texture_mode),
+			tls_cache,
+			mesh_arrays,
+			cell_infos,
+			_edge_clamp_margin,
+			_textures_ignore_air_voxels
+	);
 
 	if (mesh_arrays.vertices.size() == 0) {
 		// The mesh can be empty
@@ -461,14 +398,6 @@ float VoxelMesherTransvoxel::get_mesh_optimization_target_ratio() const {
 	return _mesh_optimization_params.target_ratio;
 }
 
-void VoxelMesherTransvoxel::set_deep_sampling_enabled(bool enable) {
-	_deep_sampling_enabled = enable;
-}
-
-bool VoxelMesherTransvoxel::is_deep_sampling_enabled() const {
-	return _deep_sampling_enabled;
-}
-
 void VoxelMesherTransvoxel::set_transitions_enabled(bool enable) {
 	_transitions_enabled = enable;
 }
@@ -515,9 +444,6 @@ void VoxelMesherTransvoxel::_bind_methods() {
 	);
 	ClassDB::bind_method(D_METHOD("get_mesh_optimization_target_ratio"), &Self::get_mesh_optimization_target_ratio);
 
-	ClassDB::bind_method(D_METHOD("set_deep_sampling_enabled", "enabled"), &Self::set_deep_sampling_enabled);
-	ClassDB::bind_method(D_METHOD("is_deep_sampling_enabled"), &Self::is_deep_sampling_enabled);
-
 	ClassDB::bind_method(D_METHOD("set_transitions_enabled", "enabled"), &Self::set_transitions_enabled);
 	ClassDB::bind_method(D_METHOD("get_transitions_enabled"), &Self::get_transitions_enabled);
 
@@ -558,11 +484,6 @@ void VoxelMesherTransvoxel::_bind_methods() {
 
 	ADD_GROUP("Advanced", "");
 
-	ADD_PROPERTY(
-			PropertyInfo(Variant::BOOL, "deep_sampling_enabled"),
-			"set_deep_sampling_enabled",
-			"is_deep_sampling_enabled"
-	);
 	ADD_PROPERTY(
 			PropertyInfo(Variant::BOOL, "transitions_enabled"), "set_transitions_enabled", "get_transitions_enabled"
 	);

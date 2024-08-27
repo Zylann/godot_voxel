@@ -153,12 +153,6 @@ struct DefaultTextureIndicesData {
 	bool use;
 };
 
-class IDeepSDFSampler {
-public:
-	virtual ~IDeepSDFSampler() {}
-	virtual float get_single(const Vector3i position_in_voxels, uint32_t lod_index) const = 0;
-};
-
 struct CellInfo {
 	Vector3i position;
 	uint32_t triangle_count;
@@ -171,7 +165,6 @@ DefaultTextureIndicesData build_regular_mesh(
 		const TexturingMode texturing_mode,
 		Cache &cache,
 		MeshArrays &output,
-		const IDeepSDFSampler *deep_sdf_sampler,
 		StdVector<CellInfo> *cell_infos,
 		const float edge_clamp_margin,
 		const bool textures_ignore_air_voxels

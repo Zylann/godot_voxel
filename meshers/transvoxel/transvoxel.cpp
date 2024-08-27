@@ -329,34 +329,6 @@ inline float get_isolevel<float>() {
 	return 0.f;
 }
 
-Vector3f binary_search_interpolate(
-		const IDeepSDFSampler &sampler,
-		float s0,
-		float s1,
-		Vector3i p0,
-		Vector3i p1,
-		uint32_t initial_lod_index,
-		uint32_t min_lod_index
-) {
-	for (uint32_t lod_index = initial_lod_index; lod_index > min_lod_index; --lod_index) {
-		const Vector3i pm = (p0 + p1) >> 1;
-		// TODO Optimization: this is quite slow for a small difference in the result.
-		// Could be improved somewhat, but for now I don't think it's worth it
-		const float sm = -sampler.get_single(pm, lod_index - 1);
-		if (sign_f(s0) != sign_f(sm)) {
-			p1 = pm;
-			s1 = sm;
-		} else {
-			p0 = pm;
-			s0 = sm;
-		}
-	}
-	const float t = s1 / (s1 - s0);
-	const float t0 = t;
-	const float t1 = 1.f - t;
-	return to_vec3f(p0) * t0 + to_vec3f(p1) * t1;
-}
-
 // This function is template so we avoid branches and checks when sampling voxels
 template <typename Sdf_T, typename WeightSampler_T>
 void build_regular_mesh(
@@ -368,7 +340,6 @@ void build_regular_mesh(
 		TexturingMode texturing_mode,
 		Cache &cache,
 		MeshArrays &output,
-		const IDeepSDFSampler *deep_sdf_sampler,
 		StdVector<CellInfo> *cell_info,
 		const float edge_clamp_margin,
 		const bool textures_skip_air_voxels
@@ -606,14 +577,7 @@ void build_regular_mesh(
 							// const int ti1 = 0x100 - t;
 							// const Vector3i primary = p0 * ti0 + p1 * ti1;
 
-							Vector3f primaryf;
-							if (deep_sdf_sampler != nullptr) {
-								primaryf = binary_search_interpolate(
-										*deep_sdf_sampler, sample0, sample1, p0, p1, lod_index, 0
-								);
-							} else {
-								primaryf = to_vec3f(p0) * t0 + to_vec3f(p1) * t1;
-							}
+							const Vector3f primaryf = to_vec3f(p0) * t0 + to_vec3f(p1) * t1;
 							// TODO Binary search gives better positional results, but does not improve normals.
 							// I'm not sure how to overcome this because if we sample low-detail normals, we get a
 							// "blocky" result due to SDF clipping. If we sample high-detail gradients, we get details,
@@ -1501,7 +1465,6 @@ DefaultTextureIndicesData build_regular_mesh(
 		const TexturingMode texturing_mode,
 		Cache &cache,
 		MeshArrays &output,
-		const IDeepSDFSampler *deep_sdf_sampler,
 		StdVector<CellInfo> *cell_infos,
 		const float edge_clamp_margin,
 		const bool textures_ignore_air_voxels
@@ -1559,7 +1522,6 @@ DefaultTextureIndicesData build_regular_mesh(
 					texturing_mode,
 					cache,
 					output,
-					deep_sdf_sampler,
 					cell_infos,
 					edge_clamp_margin,
 					textures_ignore_air_voxels
@@ -1577,7 +1539,6 @@ DefaultTextureIndicesData build_regular_mesh(
 					texturing_mode,
 					cache,
 					output,
-					deep_sdf_sampler,
 					cell_infos,
 					edge_clamp_margin,
 					textures_ignore_air_voxels
@@ -1598,7 +1559,6 @@ DefaultTextureIndicesData build_regular_mesh(
 					texturing_mode,
 					cache,
 					output,
-					deep_sdf_sampler,
 					cell_infos,
 					edge_clamp_margin,
 					textures_ignore_air_voxels
