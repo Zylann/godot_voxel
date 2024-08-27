@@ -36,6 +36,9 @@ public:
 	void set_texturing_mode(TexturingMode mode);
 	TexturingMode get_texturing_mode() const;
 
+	void set_textures_ignore_air_voxels(const bool enable);
+	bool get_textures_ignore_air_voxels() const;
+
 	void set_mesh_optimization_enabled(bool enabled);
 	bool is_mesh_optimization_enabled() const;
 
@@ -103,6 +106,8 @@ private:
 	float _edge_clamp_margin = 0.02f;
 
 	bool _transitions_enabled = true;
+
+	bool _textures_ignore_air_voxels = false;
 };
 
 } // namespace zylann::voxel

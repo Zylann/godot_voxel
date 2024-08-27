@@ -290,7 +290,8 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 				mesh_arrays,
 				&ds,
 				cell_infos,
-				_edge_clamp_margin
+				_edge_clamp_margin,
+				_textures_ignore_air_voxels
 		);
 	} else {
 		default_texture_indices_data = transvoxel::build_regular_mesh(
@@ -302,7 +303,8 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 				mesh_arrays,
 				nullptr,
 				cell_infos,
-				_edge_clamp_margin
+				_edge_clamp_margin,
+				_textures_ignore_air_voxels
 		);
 	}
 
@@ -350,7 +352,8 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 					tls_cache,
 					*combined_mesh_arrays,
 					default_texture_indices_data,
-					_edge_clamp_margin
+					_edge_clamp_margin,
+					_textures_ignore_air_voxels
 			);
 		}
 	}
@@ -398,7 +401,8 @@ Ref<ArrayMesh> VoxelMesherTransvoxel::build_transition_mesh(Ref<godot::VoxelBuff
 			s_cache,
 			s_mesh_arrays,
 			default_texture_indices_data,
-			_edge_clamp_margin
+			_edge_clamp_margin,
+			_textures_ignore_air_voxels
 	);
 
 	Ref<ArrayMesh> mesh;
@@ -423,6 +427,14 @@ void VoxelMesherTransvoxel::set_texturing_mode(TexturingMode mode) {
 
 VoxelMesherTransvoxel::TexturingMode VoxelMesherTransvoxel::get_texturing_mode() const {
 	return _texture_mode;
+}
+
+void VoxelMesherTransvoxel::set_textures_ignore_air_voxels(const bool enable) {
+	_textures_ignore_air_voxels = enable;
+}
+
+bool VoxelMesherTransvoxel::get_textures_ignore_air_voxels() const {
+	return _textures_ignore_air_voxels;
 }
 
 void VoxelMesherTransvoxel::set_mesh_optimization_enabled(bool enabled) {
@@ -485,6 +497,9 @@ void VoxelMesherTransvoxel::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_texturing_mode", "mode"), &Self::set_texturing_mode);
 	ClassDB::bind_method(D_METHOD("get_texturing_mode"), &Self::get_texturing_mode);
 
+	ClassDB::bind_method(D_METHOD("set_textures_ignore_air_voxels", "enabled"), &Self::set_textures_ignore_air_voxels);
+	ClassDB::bind_method(D_METHOD("get_textures_ignore_air_voxels"), &Self::get_textures_ignore_air_voxels);
+
 	ClassDB::bind_method(D_METHOD("set_mesh_optimization_enabled", "enabled"), &Self::set_mesh_optimization_enabled);
 	ClassDB::bind_method(D_METHOD("is_mesh_optimization_enabled"), &Self::is_mesh_optimization_enabled);
 
@@ -509,10 +524,18 @@ void VoxelMesherTransvoxel::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_edge_clamp_margin"), &Self::get_edge_clamp_margin);
 	ClassDB::bind_method(D_METHOD("set_edge_clamp_margin", "margin"), &Self::set_edge_clamp_margin);
 
+	ADD_GROUP("Materials", "");
+
 	ADD_PROPERTY(
 			PropertyInfo(Variant::INT, "texturing_mode", PROPERTY_HINT_ENUM, "None,4-blend over 16 textures (4 bits)"),
 			"set_texturing_mode",
 			"get_texturing_mode"
+	);
+
+	ADD_PROPERTY(
+			PropertyInfo(Variant::BOOL, "textures_ignore_air_voxels"),
+			"set_textures_ignore_air_voxels",
+			"get_textures_ignore_air_voxels"
 	);
 
 	ADD_GROUP("Mesh optimization", "mesh_optimization_");
