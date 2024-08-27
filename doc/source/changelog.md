@@ -14,6 +14,7 @@ Primarily developped with Godot 4.3.
 
 - Fixes
     - `VoxelInstanceLibrary`: Editor: reworked the way items are exposed as a Blender-style list. Now removing an item while the library is open as a sub-inspector is no longer problematic
+    - `VoxelTerrain`: edits and copies across fixed bounds no longer behave as if terrain generates beyond (was causing "walls" to appear).
     - `VoxelGeneratorGraph`: fix wrong values when using `OutputWeight` with optimized execution map enabled, when weights are determined to be locally constant
     - `VoxelMesherTransvoxel`: revert texturing logic that attempted to prevent air voxels from contributing, but was lowering quality. It is now optional as an experimental property.
 
