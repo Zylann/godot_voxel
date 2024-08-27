@@ -6,17 +6,21 @@
 #include "../../util/containers/std_vector.h"
 #include "../../util/godot/classes/resource.h"
 #include "../../util/godot/core/string.h"
-#include "../../util/godot/core/string_name.h"
+#include "../../util/hash_funcs.h"
 #include "../../util/thread/mutex.h"
+#include "instance_emitter_listener.h"
 #include "instance_library_item_listener.h"
 
 namespace zylann::voxel {
 
 class VoxelInstanceLibraryItem;
 class VoxelInstanceGenerator;
+class VoxelInstanceEmitter;
+class IInstanceLibraryListener;
 
-// Contains a list of items that can be used by VoxelInstancer, associated with a unique ID
-class VoxelInstanceLibrary : public Resource, public IInstanceLibraryItemListener {
+// Contains a list of emitters that can be used by VoxelInstancer.
+// Every item referenced by those emitters is associated with a unique ID.
+class VoxelInstanceLibrary : public Resource, public IInstanceEmitterListener, public IInstanceLibraryItemListener {
 	GDCLASS(VoxelInstanceLibrary, Resource)
 
 public:
@@ -24,98 +28,82 @@ public:
 
 	~VoxelInstanceLibrary();
 
-	int get_next_available_id();
-	void add_item(int p_id, Ref<VoxelInstanceLibraryItem> item);
-	void remove_item(int p_id);
-	void clear();
-	int find_item_by_name(String p_name) const;
-	int get_item_count() const;
-
 	// Internal
 
-	const VoxelInstanceLibraryItem *get_item_const(int id) const;
-	VoxelInstanceLibraryItem *get_item(int id);
+	Ref<VoxelInstanceLibraryItem> get_item_by_layer_id(const int id) const;
 
-	// f(int item_id, VoxelInstanceLibraryItem &item)
 	template <typename F>
-	void for_each_item(F f) {
-		for (auto it = _items.begin(); it != _items.end(); ++it) {
-			ZN_ASSERT(it->second.is_valid());
-			f(it->first, **it->second);
+	void for_each_layer(F f) const {
+		for (auto it = _layer_id_to_item.begin(); it != _layer_id_to_item.end(); ++it) {
+			const int id = it->first;
+			VoxelInstanceLibraryItem *item = it->second.ptr();
+			ZN_ASSERT_CONTINUE(item != nullptr);
+			f(id, item);
 		}
 	}
 
-	template <typename F>
-	void for_each_item(F f) const {
-		for (auto it = _items.begin(); it != _items.end(); ++it) {
-			ZN_ASSERT(it->second.is_valid());
-			f(it->first, **it->second);
-		}
-	}
+	void add_listener(IInstanceLibraryListener *listener);
+	void remove_listener(IInstanceLibraryListener *listener);
 
-	void add_listener(IInstanceLibraryItemListener *listener);
-	void remove_listener(IInstanceLibraryItemListener *listener);
+	Span<const Ref<VoxelInstanceEmitter>> get_emitters() const;
 
-#ifdef TOOLS_ENABLED
-	void get_configuration_warnings(PackedStringArray &warnings) const;
-
-	void set_selected_item_id(int id);
-	int get_selected_item_id() const;
-#endif
-
-	struct PackedItem {
-		Ref<VoxelInstanceGenerator> generator;
-		unsigned int id;
-	};
-
-	void get_packed_items_at_lod(StdVector<PackedItem> &out_items, unsigned int lod_index) const;
-
-protected:
-	void set_item(int id, Ref<VoxelInstanceLibraryItem> item);
-	void update_packed_items();
-
-	Ref<VoxelInstanceLibraryItem> _b_get_item(int id) const;
-	PackedInt32Array _b_get_all_item_ids() const;
-
-	bool _set(const StringName &p_name, const Variant &p_value);
-	bool _get(const StringName &p_name, Variant &r_ret) const;
-	void _get_property_list(List<PropertyInfo> *p_list) const;
-
-	Array _b_get_data() const;
-	void _b_set_data(Array data);
-
-#ifdef TOOLS_ENABLED
-	Ref<VoxelInstanceLibraryItem> _b_get_selected_item() const;
-	void _b_set_selected_item(Ref<VoxelInstanceLibraryItem> item);
-#endif
+	unsigned int get_registered_item_count() const;
 
 private:
-	void on_library_item_changed(int id, IInstanceLibraryItemListener::ChangeType change) override;
-	void notify_listeners(int item_id, IInstanceLibraryItemListener::ChangeType change);
+	void register_item(Ref<VoxelInstanceLibraryItem> item, const VoxelInstanceEmitter *emitter);
+	void unregister_item(Ref<VoxelInstanceLibraryItem> item, const VoxelInstanceEmitter *emitter);
+
+	void on_emitter_item_added(VoxelInstanceEmitter *emitter, Ref<VoxelInstanceLibraryItem> item) override;
+	void on_emitter_item_removed(VoxelInstanceEmitter *emitter, Ref<VoxelInstanceLibraryItem> item) override;
+
+	void on_emitter_lod_index_changed(
+			VoxelInstanceEmitter *emitter,
+			const uint8_t previous_lod_index,
+			const uint8_t new_lod_index
+	) override;
+
+	void on_emitter_generator_changed(VoxelInstanceEmitter *emitter) override;
+
+	void on_library_item_changed(VoxelInstanceLibraryItem *item, ItemChangeType change) override;
+
+	TypedArray<VoxelInstanceEmitter> _b_get_emitters() const;
+	void _b_set_emitters(TypedArray<VoxelInstanceEmitter> emitter);
 
 	static void _bind_methods();
 
-	// ID => Item
-	// Using a map keeps items ordered, so the last item has highest ID
-	StdMap<int, Ref<VoxelInstanceLibraryItem>> _items;
+	// Can have nulls.
+	// Cannot have duplicates.
+	StdVector<Ref<VoxelInstanceEmitter>> _emitters;
 
-	StdVector<IInstanceLibraryItemListener *> _listeners;
+	// The instancer stores instances into "layers" for each LOD. Each layer contains instances of only one item. To
+	// identify which layer corresponds to which item, and which emitters have to run, we register them with IDs.
+	// Note 1: the same item used in different LODs will have different IDs.
+	// Note 2: the same item can be shared by two emitters in the same LOD. As an optimization, we could use the same
+	// layer for both emitters, But for simplicity, we create a different one. So each layer corresponds to one item,
+	// and one emitter.
 
-	struct PackedItems {
-		struct Lod {
-			StdVector<PackedItem> items;
-		};
-		FixedArray<Lod, constants::MAX_LOD> lods;
-		mutable Mutex mutex;
-		std::atomic_bool needs_update = false;
+	StdMap<int, Ref<VoxelInstanceLibraryItem>> _layer_id_to_item;
+
+	struct LayerKey {
+		const VoxelInstanceLibraryItem *item;
+		const VoxelInstanceEmitter *emitter;
+
+		inline bool operator==(const LayerKey &other) const {
+			return item == other.item && emitter == other.emitter;
+		}
 	};
 
-	// Packed representation of items for use in procedural generation tasks
-	PackedItems _packed_items;
+	struct LayerKeyHasher {
+		size_t operator()(const LayerKey &key) const {
+			const uint64_t h1 = std::hash<const VoxelInstanceLibraryItem *>{}(key.item);
+			const uint64_t h2 = std::hash<const VoxelInstanceEmitter *>{}(key.emitter);
+			return hash_djb2_one_64(h1, h2);
+		}
+	};
 
-#ifdef TOOLS_ENABLED
-	int _selected_item_id = -1;
-#endif
+	StdUnorderedMap<LayerKey, int, LayerKeyHasher> _item_to_layer_id;
+
+	StdVector<IInstanceLibraryListener *> _listeners;
 };
 
 } // namespace zylann::voxel

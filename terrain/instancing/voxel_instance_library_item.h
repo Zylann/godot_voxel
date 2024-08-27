@@ -14,26 +14,26 @@ public:
 	void set_item_name(String p_name);
 	String get_item_name() const;
 
-	void set_lod_index(int lod);
-	int get_lod_index() const;
+	// void set_lod_index(int lod);
+	// int get_lod_index() const;
 
-	void set_generator(Ref<VoxelInstanceGenerator> generator);
-	Ref<VoxelInstanceGenerator> get_generator() const;
+	// void set_generator(Ref<VoxelInstanceGenerator> generator);
+	// Ref<VoxelInstanceGenerator> get_generator() const;
 
 	void set_persistent(bool persistent);
 	bool is_persistent() const;
 
 	// Internal
 
-	void add_listener(IInstanceLibraryItemListener *listener, int id);
-	void remove_listener(IInstanceLibraryItemListener *listener, int id);
+	void add_listener(IInstanceLibraryItemListener *listener);
+	void remove_listener(const IInstanceLibraryItemListener *listener);
 
 #ifdef TOOLS_ENABLED
 	virtual void get_configuration_warnings(PackedStringArray &warnings) const;
 #endif
 
 protected:
-	void notify_listeners(IInstanceLibraryItemListener::ChangeType change);
+	void notify_listeners(IInstanceLibraryItemListener::ItemChangeType change);
 
 private:
 	void _on_generator_changed();
@@ -51,20 +51,10 @@ private:
 
 	// Which LOD of the octree this model will spawn into.
 	// Higher means larger distances, but lower precision and density
-	int _lod_index = 0;
+	// int _lod_index = 0;
 
-	Ref<VoxelInstanceGenerator> _generator;
-
-	struct ListenerSlot {
-		IInstanceLibraryItemListener *listener;
-		int id;
-
-		inline bool operator==(const ListenerSlot &other) const {
-			return listener == other.listener && id == other.id;
-		}
-	};
-
-	StdVector<ListenerSlot> _listeners;
+	// Ref<VoxelInstanceGenerator> _generator;
+	StdVector<IInstanceLibraryItemListener *> _listeners;
 };
 
 } // namespace zylann::voxel

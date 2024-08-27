@@ -112,8 +112,32 @@ DuplicateSearchResult find_duplicate(Span<const T> items) {
 }
 
 template <typename T>
+DuplicateSearchResult find_duplicate_ex(Span<const T> items, const T ignored_value) {
+	for (unsigned int i = 0; i < items.size(); ++i) {
+		const T &a = items[i];
+		if (a == ignored_value) {
+			continue;
+		}
+		for (unsigned int j = i + 1; j < items.size(); ++j) {
+			if (a == ignored_value) {
+				continue;
+			}
+			if (items[j] == a) {
+				return { i, j };
+			}
+		}
+	}
+	return { 0, 0 };
+}
+
+template <typename T>
 bool has_duplicate(Span<const T> items) {
 	return find_duplicate(items).is_valid();
+}
+
+template <typename T>
+bool has_duplicate_ex(Span<const T> items, const T ignored_value) {
+	return find_duplicate(items, ignored_value).is_valid();
 }
 
 // Tests if POD items in an array are all the same.

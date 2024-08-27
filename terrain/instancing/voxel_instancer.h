@@ -11,7 +11,7 @@
 #include "../../util/godot/direct_multimesh_instance.h"
 #include "../../util/math/box3i.h"
 #include "../../util/memory/memory.h"
-#include "instance_library_item_listener.h"
+#include "instance_library_listener.h"
 #include "up_mode.h"
 
 #ifdef TOOLS_ENABLED
@@ -49,7 +49,7 @@ struct InstanceLibraryMultiMeshItemSettings;
 
 // Add-on to voxel nodes, allowing to spawn elements on the surface.
 // These elements are rendered with hardware instancing, can have collisions, and also be persistent.
-class VoxelInstancer : public Node3D, public IInstanceLibraryItemListener {
+class VoxelInstancer : public Node3D, public IInstanceLibraryListener {
 	GDCLASS(VoxelInstancer, Node3D)
 public:
 	static const int MAX_LOD = 8;

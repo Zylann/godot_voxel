@@ -1,5 +1,6 @@
 #include "voxel_instance_library_item.h"
 #include "../../constants/voxel_string_names.h"
+#include "../../util/containers/container_funcs.h"
 #include "voxel_instancer.h"
 
 #include <algorithm>
@@ -19,42 +20,42 @@ String VoxelInstanceLibraryItem::get_item_name() const {
 	return _name;
 }
 
-void VoxelInstanceLibraryItem::set_lod_index(int lod) {
-	ERR_FAIL_COND(lod < 0 || lod >= VoxelInstancer::MAX_LOD);
-	if (_lod_index == lod) {
-		return;
-	}
-	_lod_index = lod;
-	notify_listeners(IInstanceLibraryItemListener::CHANGE_LOD_INDEX);
-}
+// void VoxelInstanceLibraryItem::set_lod_index(int lod) {
+// 	ERR_FAIL_COND(lod < 0 || lod >= VoxelInstancer::MAX_LOD);
+// 	if (_lod_index == lod) {
+// 		return;
+// 	}
+// 	_lod_index = lod;
+// 	notify_listeners(IInstanceLibraryItemListener::ITEM_CHANGE_LOD_INDEX);
+// }
 
-int VoxelInstanceLibraryItem::get_lod_index() const {
-	return _lod_index;
-}
+// int VoxelInstanceLibraryItem::get_lod_index() const {
+// 	return _lod_index;
+// }
 
-void VoxelInstanceLibraryItem::set_generator(Ref<VoxelInstanceGenerator> generator) {
-	if (_generator == generator) {
-		return;
-	}
-	if (_generator.is_valid()) {
-		_generator->disconnect(
-				VoxelStringNames::get_singleton().changed,
-				callable_mp(this, &VoxelInstanceLibraryItem::_on_generator_changed)
-		);
-	}
-	_generator = generator;
-	if (_generator.is_valid()) {
-		_generator->connect(
-				VoxelStringNames::get_singleton().changed,
-				callable_mp(this, &VoxelInstanceLibraryItem::_on_generator_changed)
-		);
-	}
-	notify_listeners(IInstanceLibraryItemListener::CHANGE_GENERATOR);
-}
+// void VoxelInstanceLibraryItem::set_generator(Ref<VoxelInstanceGenerator> generator) {
+// 	if (_generator == generator) {
+// 		return;
+// 	}
+// 	if (_generator.is_valid()) {
+// 		_generator->disconnect(
+// 				VoxelStringNames::get_singleton().changed,
+// 				callable_mp(this, &VoxelInstanceLibraryItem::_on_generator_changed)
+// 		);
+// 	}
+// 	_generator = generator;
+// 	if (_generator.is_valid()) {
+// 		_generator->connect(
+// 				VoxelStringNames::get_singleton().changed,
+// 				callable_mp(this, &VoxelInstanceLibraryItem::_on_generator_changed)
+// 		);
+// 	}
+// 	notify_listeners(IInstanceLibraryItemListener::CHANGE_GENERATOR);
+// }
 
-Ref<VoxelInstanceGenerator> VoxelInstanceLibraryItem::get_generator() const {
-	return _generator;
-}
+// Ref<VoxelInstanceGenerator> VoxelInstanceLibraryItem::get_generator() const {
+// 	return _generator;
+// }
 
 void VoxelInstanceLibraryItem::set_persistent(bool persistent) {
 	_persistent = persistent;
@@ -64,71 +65,66 @@ bool VoxelInstanceLibraryItem::is_persistent() const {
 	return _persistent;
 }
 
-void VoxelInstanceLibraryItem::add_listener(IInstanceLibraryItemListener *listener, int id) {
-	ListenerSlot slot;
-	slot.listener = listener;
-	slot.id = id;
-	ERR_FAIL_COND(std::find(_listeners.begin(), _listeners.end(), slot) != _listeners.end());
-	_listeners.push_back(slot);
+void VoxelInstanceLibraryItem::add_listener(IInstanceLibraryItemListener *listener) {
+	ZN_ASSERT_RETURN(listener != nullptr);
+	ZN_ASSERT_RETURN(!contains(_listeners, listener));
+	_listeners.push_back(listener);
 }
 
-void VoxelInstanceLibraryItem::remove_listener(IInstanceLibraryItemListener *listener, int id) {
-	ListenerSlot slot;
-	slot.listener = listener;
-	slot.id = id;
-	auto it = std::find(_listeners.begin(), _listeners.end(), slot);
-	ERR_FAIL_COND(it == _listeners.end());
+void VoxelInstanceLibraryItem::remove_listener(const IInstanceLibraryItemListener *listener) {
+	size_t i;
+	auto it = std::find(_listeners.begin(), _listeners.end(), listener);
+	ZN_ASSERT_RETURN(it != _listeners.end());
 	_listeners.erase(it);
 }
 
 #ifdef TOOLS_ENABLED
 
 void VoxelInstanceLibraryItem::get_configuration_warnings(PackedStringArray &warnings) const {
-	if (_generator.is_null()) {
-		warnings.append(
-				String("A {0} has no generator assigned, it is needed for instances to spawn.").format(get_class())
-		);
-	} else {
-		godot::get_resource_configuration_warnings(**_generator, warnings, []() { return "generator: "; });
-	}
+	// if (_generator.is_null()) {
+	// 	warnings.append(
+	// 			String("A {0} has no generator assigned, it is needed for instances to spawn.").format(get_class())
+	// 	);
+	// } else {
+	// 	godot::get_resource_configuration_warnings(**_generator, warnings, []() { return "generator: "; });
+	// }
 }
 
 #endif
 
-void VoxelInstanceLibraryItem::notify_listeners(IInstanceLibraryItemListener::ChangeType change) {
-	for (unsigned int i = 0; i < _listeners.size(); ++i) {
-		ListenerSlot &slot = _listeners[i];
-		slot.listener->on_library_item_changed(slot.id, change);
+void VoxelInstanceLibraryItem::notify_listeners(IInstanceLibraryItemListener::ItemChangeType change) {
+	for (IInstanceLibraryItemListener *listener : _listeners) {
+		listener->on_library_item_changed(this, change);
 	}
 }
 
-void VoxelInstanceLibraryItem::_on_generator_changed() {
-	notify_listeners(IInstanceLibraryItemListener::CHANGE_GENERATOR);
-}
+// void VoxelInstanceLibraryItem::_on_generator_changed() {
+// 	notify_listeners(IInstanceLibraryItemListener::CHANGE_GENERATOR);
+// }
 
 void VoxelInstanceLibraryItem::_bind_methods() {
 	// Can't be just "set_name" because Resource already defines that, despite being for a `resource_name` property
 	ClassDB::bind_method(D_METHOD("set_item_name", "name"), &VoxelInstanceLibraryItem::set_item_name);
 	ClassDB::bind_method(D_METHOD("get_item_name"), &VoxelInstanceLibraryItem::get_item_name);
 
-	ClassDB::bind_method(D_METHOD("set_lod_index", "lod"), &VoxelInstanceLibraryItem::set_lod_index);
-	ClassDB::bind_method(D_METHOD("get_lod_index"), &VoxelInstanceLibraryItem::get_lod_index);
+	// ClassDB::bind_method(D_METHOD("set_lod_index", "lod"), &VoxelInstanceLibraryItem::set_lod_index);
+	// ClassDB::bind_method(D_METHOD("get_lod_index"), &VoxelInstanceLibraryItem::get_lod_index);
 
-	ClassDB::bind_method(D_METHOD("set_generator", "generator"), &VoxelInstanceLibraryItem::set_generator);
-	ClassDB::bind_method(D_METHOD("get_generator"), &VoxelInstanceLibraryItem::get_generator);
+	// ClassDB::bind_method(D_METHOD("set_generator", "generator"), &VoxelInstanceLibraryItem::set_generator);
+	// ClassDB::bind_method(D_METHOD("get_generator"), &VoxelInstanceLibraryItem::get_generator);
 
 	ClassDB::bind_method(D_METHOD("set_persistent", "persistent"), &VoxelInstanceLibraryItem::set_persistent);
 	ClassDB::bind_method(D_METHOD("is_persistent"), &VoxelInstanceLibraryItem::is_persistent);
 
 	ADD_PROPERTY(PropertyInfo(Variant::STRING, "name"), "set_item_name", "get_item_name");
-	ADD_PROPERTY(
-			PropertyInfo(Variant::INT, "lod_index", PROPERTY_HINT_RANGE, "0,8,1"), "set_lod_index", "get_lod_index"
-	);
-	ADD_PROPERTY(
-			PropertyInfo(Variant::OBJECT, "generator", PROPERTY_HINT_RESOURCE_TYPE, "VoxelInstanceGenerator"),
-			"set_generator",
-			"get_generator"
-	);
+	// ADD_PROPERTY(
+	// 		PropertyInfo(Variant::INT, "lod_index", PROPERTY_HINT_RANGE, "0,8,1"), "set_lod_index", "get_lod_index"
+	// );
+	// ADD_PROPERTY(
+	// 		PropertyInfo(Variant::OBJECT, "generator", PROPERTY_HINT_RESOURCE_TYPE, "VoxelInstanceGenerator"),
+	// 		"set_generator",
+	// 		"get_generator"
+	// );
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "persistent"), "set_persistent", "is_persistent");
 }
 

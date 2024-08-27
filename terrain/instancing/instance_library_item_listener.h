@@ -5,17 +5,17 @@ namespace zylann::voxel {
 
 class IInstanceLibraryItemListener {
 public:
-	enum ChangeType { //
-		CHANGE_LOD_INDEX,
-		CHANGE_GENERATOR,
-		CHANGE_VISUAL,
-		CHANGE_ADDED,
-		CHANGE_REMOVED,
-		CHANGE_SCENE
+	enum ItemChangeType { //
+		// CHANGE_LOD_INDEX,
+		// CHANGE_GENERATOR,
+		ITEM_CHANGE_VISUAL,
+		// CHANGE_ADDED,
+		// CHANGE_REMOVED,
+		ITEM_CHANGE_SCENE
 	};
 
 	virtual ~IInstanceLibraryItemListener() {}
-	virtual void on_library_item_changed(int id, ChangeType change) = 0;
+	virtual void on_library_item_changed(VoxelInstanceLibraryItem *item, ItemChangeType change) = 0;
 };
 
 } // namespace zylann::voxel
