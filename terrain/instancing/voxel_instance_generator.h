@@ -174,6 +174,15 @@ private:
 	mutable ShortLock _ptr_settings_lock;
 };
 
+void dispatch_item_transforms_default(
+		const StdVector<Transform3f> &src,
+		StdVector<StdVector<Transform3f>> &dst_groups,
+		const uint8_t item_count
+);
+
+// Considering a cubic chunk subdivided in 8 cubic octants, remove items located in octants that have bit 0.
+void filter_octants(StdVector<Transform3f> &transforms, const uint8_t octant_mask, const float chunk_size);
+
 } // namespace zylann::voxel
 
 VARIANT_ENUM_CAST(zylann::voxel::VoxelInstanceGenerator::EmitMode);

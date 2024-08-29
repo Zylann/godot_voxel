@@ -49,7 +49,11 @@ void VoxelInstancerStatView::process() {
 
 	for (auto it = _count_per_layer.begin(); it != _count_per_layer.end(); ++it) {
 		TreeItem *tree_item = _tree->create_item(root);
-		const VoxelInstanceLibraryItem *lib_item = library->get_item_const(it->first);
+		// TODO With the emitters design change, this is no exactly the true count of this item...
+		// Two emitters can share the same item, but they are considered in different layers!
+		// Either we should optimize them back to be the same layer (but that entails a few issues with knowing which
+		// emitter to refresh when changes are made in the editor) or should make it more clear that layers != items
+		const VoxelInstanceLibraryItem *lib_item = library->get_item_by_layer_id(it->first);
 		ERR_CONTINUE(lib_item == nullptr);
 
 		String name = lib_item->get_item_name();

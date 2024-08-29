@@ -1,3 +1,5 @@
+#ifdef VOXEL_INSTANCE_LIBRARY_CUSTOM_LIST
+
 #ifndef VOXEL_INSTANCE_LIBRARY_EDITOR_PLUGIN_H
 #define VOXEL_INSTANCE_LIBRARY_EDITOR_PLUGIN_H
 
@@ -43,3 +45,5 @@ private:
 } // namespace zylann::voxel
 
 #endif // VOXEL_INSTANCE_LIBRARY_EDITOR_PLUGIN_H
+
+#endif

@@ -15,11 +15,50 @@
 
 namespace zylann::voxel {
 
-VoxelInstanceLibrary::~VoxelInstanceLibrary() {}
+VoxelInstanceLibrary::~VoxelInstanceLibrary() {
+	for_each_layer([this](const int unused_id, VoxelInstanceLibraryItem *item) { //
+		item->remove_listener(this);
+	});
+	for_each_emitter([this](VoxelInstanceEmitter &emitter) { //
+		emitter.remove_listener(this);
+	});
+}
 
-Ref<VoxelInstanceLibraryItem> VoxelInstanceLibrary::get_item_by_layer_id(const int id) const {
+#ifdef TOOLS_ENABLED
+
+void VoxelInstanceLibrary::get_configuration_warnings(PackedStringArray &warnings) const {
+	if (_emitters.size() == 0) {
+		warnings.append("No emitters registered");
+	}
+	for (unsigned int emitter_index = 0; emitter_index < _emitters.size(); ++emitter_index) {
+		const Ref<VoxelInstanceEmitter> &emitter = _emitters[emitter_index];
+		if (emitter.is_valid()) {
+			godot::get_resource_configuration_warnings(**emitter, warnings, [emitter_index, &emitter]() {
+				return String("Emitter {0} (\"{1}\"): ").format(varray(emitter_index, emitter->get_name()));
+			});
+		} else {
+			warnings.append(String("Emitter {0} is null").format(varray(emitter_index)));
+		}
+	}
+}
+
+#endif
+
+const VoxelInstanceLibraryItem *VoxelInstanceLibrary::get_item_by_layer_id(const int id) const {
 	auto it = _layer_id_to_item.find(id);
-	ZN_ASSERT_RETURN_V(it != _layer_id_to_item.end(), Ref<VoxelInstanceLibraryItem>());
+	ZN_ASSERT_RETURN_V(it != _layer_id_to_item.end(), nullptr);
+	return it->second.ptr();
+}
+
+int VoxelInstanceLibrary::get_layer_id_from_emitter_and_item(
+		const VoxelInstanceLibraryItem *item,
+		const VoxelInstanceEmitter *emitter
+) const {
+	const LayerKey key{ item, emitter };
+	auto it = _item_to_layer_id.find(key);
+	if (it == _item_to_layer_id.end()) {
+		return -1;
+	}
 	return it->second;
 }
 
@@ -30,7 +69,6 @@ void VoxelInstanceLibrary::add_listener(IInstanceLibraryListener *listener) {
 }
 
 void VoxelInstanceLibrary::remove_listener(IInstanceLibraryListener *listener) {
-	size_t i;
 	auto it = std::find(_listeners.begin(), _listeners.end(), listener);
 	ZN_ASSERT_RETURN(it != _listeners.end());
 	_listeners.erase(it);
@@ -58,8 +96,10 @@ void VoxelInstanceLibrary::register_item(Ref<VoxelInstanceLibraryItem> item, con
 	_layer_id_to_item.insert({ id, item });
 
 	for (IInstanceLibraryListener *listener : _listeners) {
-		listener->on_library_item_registered(id);
+		listener->on_library_item_registered(id, emitter->get_lod_index());
 	}
+
+	_packed_data_need_update = true;
 }
 
 // bool any_emitter_has_item(
@@ -103,6 +143,8 @@ void VoxelInstanceLibrary::unregister_item(Ref<VoxelInstanceLibraryItem> item, c
 	for (IInstanceLibraryListener *listener : _listeners) {
 		listener->on_library_item_unregistered(id);
 	}
+
+	_packed_data_need_update = true;
 }
 
 void VoxelInstanceLibrary::on_emitter_item_added(VoxelInstanceEmitter *emitter, Ref<VoxelInstanceLibraryItem> item) {
@@ -128,6 +170,8 @@ void VoxelInstanceLibrary::on_emitter_lod_index_changed(
 		unregister_item(item, emitter);
 		register_item(item, emitter);
 	}
+
+	_packed_data_need_update = true;
 }
 
 void VoxelInstanceLibrary::on_emitter_generator_changed(VoxelInstanceEmitter *emitter) {
@@ -135,6 +179,10 @@ void VoxelInstanceLibrary::on_emitter_generator_changed(VoxelInstanceEmitter *em
 	for (IInstanceLibraryListener *listener : _listeners) {
 		listener->on_library_emitter_changed(*emitter);
 	}
+}
+
+void VoxelInstanceLibrary::on_emitter_array_assigned() {
+	_packed_data_need_update = true;
 }
 
 void VoxelInstanceLibrary::on_library_item_changed(VoxelInstanceLibraryItem *item, ItemChangeType change) {
@@ -160,6 +208,57 @@ void VoxelInstanceLibrary::on_library_item_changed(VoxelInstanceLibraryItem *ite
 			}
 		}
 	}
+}
+
+const VoxelInstanceLibrary::PackedData &VoxelInstanceLibrary::get_packed_data() const {
+	return _packed_data;
+}
+
+bool VoxelInstanceLibrary::is_packed_data_needing_update() const {
+	return _packed_data_need_update;
+}
+
+void VoxelInstanceLibrary::update_packed_data() {
+	ZN_PROFILE_SCOPE();
+
+	MutexLock mlock(_packed_data.mutex);
+
+	for (PackedData::Lod &lod : _packed_data.lods) {
+		lod.clear();
+	}
+
+	for (const Ref<VoxelInstanceEmitter> &emitter : _emitters) {
+		if (emitter.is_null()) {
+			continue;
+		}
+
+		if (emitter->get_generator().is_null()) {
+			continue;
+		}
+
+		Span<const Ref<VoxelInstanceLibraryItem>> items = emitter->get_items();
+		if (items.size() == 0) {
+			continue;
+		}
+
+		const uint8_t lod_index = emitter->get_lod_index();
+		PackedData::Lod &lod = _packed_data.lods[lod_index];
+
+		lod.emitters.push_back(emitter);
+
+		lod.item_counts.push_back(items.size());
+
+		for (const Ref<VoxelInstanceLibraryItem> &item : items) {
+			if (item.is_null()) {
+				lod.layer_ids.push_back(-1);
+			} else {
+				const int layer_id = get_layer_id_from_emitter_and_item(item.ptr(), emitter.ptr());
+				lod.layer_ids.push_back(layer_id);
+			}
+		}
+	}
+
+	_packed_data_need_update = false;
 }
 
 TypedArray<VoxelInstanceEmitter> VoxelInstanceLibrary::_b_get_emitters() const {
@@ -196,6 +295,8 @@ void VoxelInstanceLibrary::_b_set_emitters(TypedArray<VoxelInstanceEmitter> arra
 			listener->on_library_emitter_changed(**emitter);
 		}
 	}
+
+	update_packed_data();
 }
 
 void VoxelInstanceLibrary::_bind_methods() {

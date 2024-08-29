@@ -72,7 +72,6 @@ void VoxelInstanceLibraryItem::add_listener(IInstanceLibraryItemListener *listen
 }
 
 void VoxelInstanceLibraryItem::remove_listener(const IInstanceLibraryItemListener *listener) {
-	size_t i;
 	auto it = std::find(_listeners.begin(), _listeners.end(), listener);
 	ZN_ASSERT_RETURN(it != _listeners.end());
 	_listeners.erase(it);

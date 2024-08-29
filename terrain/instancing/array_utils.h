@@ -3,7 +3,9 @@
 
 #include "../../util/containers/container_funcs.h"
 #include "../../util/containers/std_vector.h"
+#include "../../util/godot/core/string.h"
 #include "../../util/godot/core/typed_array.h"
+#include "../../util/string/format.h"
 
 namespace zylann::voxel {
 
@@ -30,7 +32,7 @@ void diff_set_array(
 		}
 		ZN_PRINT_ERROR(
 				format("Duplicate {} is not allowed (at indices {} and {})",
-					   TResource::get_class_static(),
+					   String(TResource::get_class_static()),
 					   res.first,
 					   res.second)
 		);

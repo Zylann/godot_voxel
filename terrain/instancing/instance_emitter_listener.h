@@ -22,7 +22,9 @@ public:
 			const uint8_t new_lod_index
 	) = 0;
 
-	virtual void on_emitter_generator_changed(VoxelInstanceEmitter *emitter);
+	virtual void on_emitter_generator_changed(VoxelInstanceEmitter *emitter) = 0;
+
+	virtual void on_emitter_array_assigned() = 0;
 };
 
 } // namespace zylann::voxel

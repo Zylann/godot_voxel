@@ -210,6 +210,12 @@ void VoxelInstancer::_notification(int p_what) {
 }
 
 void VoxelInstancer::process() {
+	if (_library.is_valid()) {
+		if (_library->is_packed_data_needing_update()) {
+			_library->update_packed_data();
+		}
+	}
+
 	process_task_results();
 	if (_parent != nullptr) {
 		if (_library.is_valid() && _mesh_lod_distances[0] > 0.f) {
@@ -225,13 +231,9 @@ void VoxelInstancer::process() {
 
 void VoxelInstancer::process_task_results() {
 	ZN_PROFILE_SCOPE();
-	static thread_local StdVector<InstanceLoadingTaskOutput> tls_results;
-	StdVector<InstanceLoadingTaskOutput> &results = tls_results;
-#ifdef DEBUG_ENABLED
-	if (results.size()) {
-		ZN_PRINT_ERROR("Results were not cleaned up?");
-	}
-#endif
+
+	// TODO Candidate for temp allocator (or cached vector?)
+	StdVector<InstanceLoadingTaskOutput> results;
 	{
 		MutexLock mlock(_loading_results->mutex);
 		// Copy results to temporary buffer
@@ -262,20 +264,20 @@ void VoxelInstancer::process_task_results() {
 		if (layer_it == _layers.end()) {
 			// Layer was removed since?
 			ZN_PRINT_VERBOSE(
-					format("Processing async instance generator results, but the layer isn't present ({}).",
+					format("Processing async instance loading results, but the layer isn't present ({}).",
 						   static_cast<int>(output.layer_id))
 			);
 			continue;
 		}
 		Layer &layer = layer_it->second;
 
-		const VoxelInstanceLibraryItem *item = _library->get_item(output.layer_id);
+		const VoxelInstanceLibraryItem *item = _library->get_item_by_layer_id(output.layer_id);
 		ZN_ASSERT_CONTINUE_MSG(item != nullptr, "Item removed from library while it was loading?");
 
 		auto block_it = layer.blocks.find(output.render_block_position);
 		if (block_it == layer.blocks.end()) {
 			// The block was removed while the generation process was running?
-			ZN_PRINT_VERBOSE("Processing async instance generator results, but the block was removed.");
+			ZN_PRINT_VERBOSE("Processing async instance loading results, but the block was removed.");
 			continue;
 		}
 
@@ -301,16 +303,16 @@ void VoxelInstancer::process_task_results() {
 		const Transform3D block_local_transform = Transform3D(Basis(), output.render_block_position * mesh_block_size);
 		const Transform3D block_global_transform = parent_transform * block_local_transform;
 
-		update_block_from_transforms( //
-				block_it->second, //
-				to_span_const(output.transforms), //
-				output.render_block_position, //
-				layer, //
-				*item, //
-				output.layer_id, //
-				world, //
-				block_global_transform, //
-				block_local_transform.origin //
+		update_block_from_transforms(
+				block_it->second,
+				to_span_const(output.transforms),
+				output.render_block_position,
+				layer,
+				*item,
+				output.layer_id,
+				world,
+				block_global_transform,
+				block_local_transform.origin
 		);
 	}
 
@@ -510,7 +512,7 @@ void VoxelInstancer::process_mesh_lods() {
 				continue;
 			}
 
-			const VoxelInstanceLibraryItem *item_base = _library->get_item_const(block.layer_id);
+			const VoxelInstanceLibraryItem *item_base = _library->get_item_by_layer_id(block.layer_id);
 			ERR_CONTINUE(item_base == nullptr);
 			// TODO Optimization: would be nice to not need this cast by iterating only the same item types
 			const VoxelInstanceLibraryMultiMeshItem *item =
@@ -531,7 +533,7 @@ void VoxelInstancer::process_mesh_lods() {
 				continue;
 			}
 
-			const int lod_index = item->get_lod_index();
+			const uint32_t lod_index = block.lod_index;
 
 			Span<const float> distance_ratios = item->get_mesh_lod_distance_ratios();
 			const float max_distance = _mesh_lod_distances[lod_index];
@@ -605,7 +607,7 @@ void VoxelInstancer::update_visibility() {
 		if (block.multimesh_instance.is_valid()) {
 			bool visible_with_lod = true;
 			{
-				const VoxelInstanceLibraryItem *item_base = _library->get_item_const(block.layer_id);
+				const VoxelInstanceLibraryItem *item_base = _library->get_item_by_layer_id(block.layer_id);
 				ERR_CONTINUE(item_base == nullptr);
 				// TODO Optimization: would be nice to not need this cast by iterating only the same item types
 				const VoxelInstanceLibraryMultiMeshItem *item =
@@ -639,13 +641,28 @@ void VoxelInstancer::set_up_mode(UpMode mode) {
 		return;
 	}
 	_up_mode = mode;
-	for (auto it = _layers.begin(); it != _layers.end(); ++it) {
-		regenerate_layer(it->first, false);
+	if (_library.is_valid()) {
+		_library->for_each_emitter([this](const VoxelInstanceEmitter &emitter) { //
+			regenerate_emitter(emitter, false);
+		});
 	}
 }
 
 VoxelInstancer::UpMode VoxelInstancer::get_up_mode() const {
 	return _up_mode;
+}
+
+template <typename F>
+void for_each_layer_in_emitter(const VoxelInstanceLibrary &library, const VoxelInstanceEmitter &emitter, F f) {
+	for (const Ref<VoxelInstanceLibraryItem> &item : emitter.get_items()) {
+		if (item.is_null()) {
+			continue;
+		}
+		const int layer_id = library.get_layer_id_from_emitter_and_item(item.ptr(), &emitter);
+		if (layer_id != -1) {
+			f(layer_id);
+		}
+	}
 }
 
 void VoxelInstancer::set_library(Ref<VoxelInstanceLibrary> library) {
@@ -662,12 +679,23 @@ void VoxelInstancer::set_library(Ref<VoxelInstanceLibrary> library) {
 	clear_layers();
 
 	if (_library.is_valid()) {
-		_library->for_each_item([this](int id, const VoxelInstanceLibraryItem &item) {
-			add_layer(id, item.get_lod_index());
-			if (_parent != nullptr && is_inside_tree()) {
-				regenerate_layer(id, true);
+		_library->for_each_emitter([this](const VoxelInstanceEmitter &emitter) {
+			for (const Ref<VoxelInstanceLibraryItem> &item : emitter.get_items()) {
+				if (item.is_null()) {
+					continue;
+				}
+				const int layer_id = _library->get_layer_id_from_emitter_and_item(item.ptr(), &emitter);
+				if (_layers.find(layer_id) == _layers.end()) {
+					add_layer(layer_id, emitter.get_lod_index());
+				}
 			}
 		});
+
+		// TODO REgen
+
+		// if (_parent != nullptr && is_inside_tree()) {
+		// 	regenerate_layer(id, true);
+		// }
 
 		_library->add_listener(this);
 	}
@@ -679,19 +707,17 @@ Ref<VoxelInstanceLibrary> VoxelInstancer::get_library() const {
 	return _library;
 }
 
-void VoxelInstancer::regenerate_layer(uint16_t layer_id, bool regenerate_blocks) {
+void VoxelInstancer::regenerate_emitter(const VoxelInstanceEmitter &emitter, bool regenerate_blocks) {
 	ZN_PROFILE_SCOPE();
-	ERR_FAIL_COND(_parent == nullptr);
+	ZN_ASSERT_RETURN(_parent != nullptr);
+	ZN_ASSERT_RETURN(_library.is_valid());
 
 	Ref<World3D> world_ref = get_world_3d();
 	ERR_FAIL_COND(world_ref.is_null());
 	World3D &world = **world_ref;
 
-	Layer &layer = get_layer(layer_id);
-
-	Ref<VoxelInstanceLibraryItem> item = _library->get_item(layer_id);
-	ERR_FAIL_COND(item.is_null());
-	if (item->get_generator().is_null()) {
+	Ref<VoxelInstanceGenerator> generator = emitter.get_generator();
+	if (generator.is_null()) {
 		return;
 	}
 
@@ -700,30 +726,48 @@ void VoxelInstancer::regenerate_layer(uint16_t layer_id, bool regenerate_blocks)
 	const VoxelLodTerrain *parent_vlt = Object::cast_to<VoxelLodTerrain>(_parent);
 	const VoxelTerrain *parent_vt = Object::cast_to<VoxelTerrain>(_parent);
 
+	const uint32_t lod_index = emitter.get_lod_index();
+
+	// TODO Candidate for temp allocator
+	StdVector<int> layer_ids;
+	for_each_layer_in_emitter(**_library, emitter, [this, &layer_ids](const int layer_id) {
+		layer_ids.push_back(layer_id);
+	});
+	if (layer_ids.size() == 0) {
+		return;
+	}
+
 	if (regenerate_blocks) {
 		// Create blocks
+		// TODO Candidate for temp allocator
 		StdVector<Vector3i> positions;
 
 		if (parent_vlt != nullptr) {
-			parent_vlt->get_meshed_block_positions_at_lod(layer.lod_index, positions);
+			parent_vlt->get_meshed_block_positions_at_lod(lod_index, positions);
 
 		} else if (parent_vt != nullptr) {
 			// Only LOD 0 is supported
-			if (layer.lod_index == 0) {
+			if (lod_index == 0) {
 				parent_vt->get_meshed_block_positions(positions);
 			}
 		}
 
-		for (unsigned int i = 0; i < positions.size(); ++i) {
-			const Vector3i pos = positions[i];
+		for (const int layer_id : layer_ids) {
+			auto layer_it = _layers.find(layer_id);
+			ZN_ASSERT_RETURN(layer_it != _layers.end());
+			Layer &layer = layer_it->second;
 
-			auto it = layer.blocks.find(pos);
-			if (it != layer.blocks.end()) {
-				continue;
+			for (unsigned int i = 0; i < positions.size(); ++i) {
+				const Vector3i pos = positions[i];
+
+				auto it = layer.blocks.find(pos);
+				if (it != layer.blocks.end()) {
+					continue;
+				}
+
+				create_block(layer, layer_id, pos, false);
 			}
-
-			create_block(layer, layer_id, pos, false);
-		}
+		};
 	}
 
 	const int render_to_data_factor = 1 << (_parent_mesh_block_size_po2 - _parent_mesh_block_size_po2);
@@ -739,8 +783,8 @@ void VoxelInstancer::regenerate_layer(uint16_t layer_id, bool regenerate_blocks)
 		static inline void extract_octant_transforms(
 				const Block &render_block,
 				StdVector<Transform3f> &dst,
-				uint8_t octant_mask,
-				int render_block_size
+				const uint8_t octant_mask,
+				const int render_block_size
 		) {
 			if (!render_block.multimesh_instance.is_valid()) {
 				return;
@@ -758,96 +802,166 @@ void VoxelInstancer::regenerate_layer(uint16_t layer_id, bool regenerate_blocks)
 				}
 			}
 		}
+
+		static unsigned int count_persistent_items(const Span<const Ref<VoxelInstanceLibraryItem>> items) {
+			unsigned int count = 0;
+			for (const Ref<VoxelInstanceLibraryItem> &item : items) {
+				if (item.is_null()) {
+					continue;
+				}
+				if (item->is_persistent()) {
+					++count;
+				}
+			}
+			return count;
+		}
+
+		static uint8_t get_edited_octants_mask(
+				const Lod &lod,
+				const Vector3i block_position,
+				const int render_to_data_factor
+		) {
+			uint8_t mask = 0;
+			if (render_to_data_factor == 1) {
+				if (has_edited_block(lod, block_position)) {
+					// Was edited, no regen on this
+					mask = 0xff;
+				}
+			} else if (render_to_data_factor == 2) {
+				// The rendering block corresponds to 8 smaller data blocks
+				const Vector3i data_pos0 = block_position * render_to_data_factor;
+				mask |= has_edited_block(lod, Vector3i(data_pos0.x, data_pos0.y, data_pos0.z));
+				mask |= (has_edited_block(lod, Vector3i(data_pos0.x + 1, data_pos0.y, data_pos0.z)) << 1);
+				mask |= (has_edited_block(lod, Vector3i(data_pos0.x, data_pos0.y + 1, data_pos0.z)) << 2);
+				mask |= (has_edited_block(lod, Vector3i(data_pos0.x + 1, data_pos0.y + 1, data_pos0.z)) << 3);
+				mask |= (has_edited_block(lod, Vector3i(data_pos0.x, data_pos0.y, data_pos0.z + 1)) << 4);
+				mask |= (has_edited_block(lod, Vector3i(data_pos0.x + 1, data_pos0.y, data_pos0.z + 1)) << 5);
+				mask |= (has_edited_block(lod, Vector3i(data_pos0.x, data_pos0.y + 1, data_pos0.z + 1)) << 6);
+				mask |= (has_edited_block(lod, Vector3i(data_pos0.x + 1, data_pos0.y + 1, data_pos0.z + 1)) << 7);
+			}
+			return mask;
+		}
 	};
 
-	// Update existing blocks
-	for (size_t block_index = 0; block_index < _blocks.size(); ++block_index) {
-		Block &block = *_blocks[block_index];
-		if (block.layer_id != layer_id) {
-			continue;
-		}
-		const int lod_index = block.lod_index;
+	const Span<const Ref<VoxelInstanceLibraryItem>> items = emitter.get_items();
+	const unsigned int persistent_item_count = L::count_persistent_items(items);
+
+	const int layer0_id = layer_ids[0];
+	auto layer0_it = _layers.find(layer0_id);
+	ZN_ASSERT_RETURN(layer0_it != _layers.end());
+	Layer &layer0 = layer0_it->second;
+	for (auto pos_it = layer0.blocks.begin(); pos_it != layer0.blocks.end(); ++pos_it) {
+		const Vector3i block_position = pos_it->first;
+
 		const Lod &lod = _lods[lod_index];
 
+		// TODO What if some items are persistent and others not?
+
 		// Each bit means "should this octant be generated". If 0, it means it was edited and should not change
-		uint8_t octant_mask = 0xff;
-		if (render_to_data_factor == 1) {
-			if (L::has_edited_block(lod, block.grid_position)) {
-				// Was edited, no regen on this
-				continue;
-			}
-		} else if (render_to_data_factor == 2) {
-			// The rendering block corresponds to 8 smaller data blocks
-			uint8_t edited_mask = 0;
-			const Vector3i data_pos0 = block.grid_position * render_to_data_factor;
-			edited_mask |= L::has_edited_block(lod, Vector3i(data_pos0.x, data_pos0.y, data_pos0.z));
-			edited_mask |= (L::has_edited_block(lod, Vector3i(data_pos0.x + 1, data_pos0.y, data_pos0.z)) << 1);
-			edited_mask |= (L::has_edited_block(lod, Vector3i(data_pos0.x, data_pos0.y + 1, data_pos0.z)) << 2);
-			edited_mask |= (L::has_edited_block(lod, Vector3i(data_pos0.x + 1, data_pos0.y + 1, data_pos0.z)) << 3);
-			edited_mask |= (L::has_edited_block(lod, Vector3i(data_pos0.x, data_pos0.y, data_pos0.z + 1)) << 4);
-			edited_mask |= (L::has_edited_block(lod, Vector3i(data_pos0.x + 1, data_pos0.y, data_pos0.z + 1)) << 5);
-			edited_mask |= (L::has_edited_block(lod, Vector3i(data_pos0.x, data_pos0.y + 1, data_pos0.z + 1)) << 6);
-			edited_mask |= (L::has_edited_block(lod, Vector3i(data_pos0.x + 1, data_pos0.y + 1, data_pos0.z + 1)) << 7);
-			octant_mask = ~edited_mask;
-			if (octant_mask == 0) {
-				// All data blocks were edited, no regen on the whole render block
-				continue;
-			}
+		const uint8_t edited_octants_mask = L::get_edited_octants_mask(lod, block_position, render_to_data_factor);
+
+		if (edited_octants_mask == 0xff && persistent_item_count == items.size()) {
+			// All edited, so if all items are persistent, we may skip the whole block
+			continue;
 		}
+		// If not... we have to generate it all and filter out edited parts
 
 		StdVector<Transform3f> &transform_cache = get_tls_transform_cache();
 		transform_cache.clear();
 
 		Array surface_arrays;
 		if (parent_vlt != nullptr) {
-			surface_arrays = parent_vlt->get_mesh_block_surface(block.grid_position, lod_index);
+			surface_arrays = parent_vlt->get_mesh_block_surface(block_position, lod_index);
 		} else if (parent_vt != nullptr) {
-			surface_arrays = parent_vt->get_mesh_block_surface(block.grid_position);
+			surface_arrays = parent_vt->get_mesh_block_surface(block_position);
 		}
 
 		const int mesh_block_size = 1 << _parent_mesh_block_size_po2;
 		const int lod_block_size = mesh_block_size << lod_index;
 
-		item->get_generator()->generate_transforms(
+		generator->generate_transforms(
 				transform_cache,
-				block.grid_position,
-				block.lod_index,
-				layer_id,
+				block_position,
+				lod_index,
+				0, // TODO Need to change that parameter to be "seed_modifier"
 				surface_arrays,
 				_up_mode,
-				octant_mask,
+				0xff,
 				lod_block_size
 		);
 
-		if (render_to_data_factor == 2 && octant_mask != 0xff) {
-			// Complete transforms with edited ones
-			L::extract_octant_transforms(block, transform_cache, ~octant_mask, mesh_block_size);
-			// TODO What if these blocks had loaded data which wasn't yet uploaded for render?
-			// We may setup a local transform list as well since it's expensive to get it from VisualServer
+		StdVector<StdVector<Transform3f>> groups;
+		dispatch_item_transforms_default(transform_cache, groups, items.size());
+
+		unsigned int li = 0;
+
+		// Update existing blocks
+		for (unsigned int item_index = 0; item_index < items.size(); ++item_index) {
+			const Ref<VoxelInstanceLibraryItem> &item = items[item_index];
+			if (item.is_null()) {
+				// There can be nulls in the array of items...
+				// Transforms will be discarded if any were to be dispatched here
+				continue;
+			}
+
+			if (item->is_persistent()) {
+				if (edited_octants_mask == 0xff) {
+					// Full block is edited, don't regen persistent items
+					continue;
+				}
+			}
+
+			// Assuming `layer_ids` contains IDs in the same order as items in the emitter, excluding nulls
+			const int layer_id = layer_ids[li];
+			++li;
+
+			auto layer_it = _layers.find(layer_id);
+			ZN_ASSERT_CONTINUE(layer_it != _layers.end());
+			Layer &layer = layer_it->second;
+
+			auto block_it = layer.blocks.find(block_position);
+			ZN_ASSERT_CONTINUE(block_it != layer.blocks.end());
+			const uint32_t block_index = block_it->second;
+
+			StdVector<Transform3f> &transforms = groups[item_index];
+
+			if (item->is_persistent() && render_to_data_factor == 2) {
+				const uint8_t octants_to_generate_mask = (~edited_octants_mask) & 0xff;
+
+				// Remove generated instances in edited octants
+				filter_octants(transforms, octants_to_generate_mask, mesh_block_size);
+
+				Block &block = *_blocks[block_index];
+
+				// Complete transforms with edited ones
+				L::extract_octant_transforms(block, transform_cache, edited_octants_mask, mesh_block_size);
+				// TODO What if these blocks had loaded data which wasn't yet uploaded for render?
+				// We may setup a local transform list as well since it's expensive to get it from VisualServer
+			}
+
+			const Transform3D block_local_transform(Basis(), Vector3(block_position * lod_block_size));
+			const Transform3D block_transform = parent_transform * block_local_transform;
+
+			update_block_from_transforms(
+					block_index,
+					to_span_const(transforms),
+					block_position,
+					layer,
+					**item,
+					layer_id,
+					world,
+					block_transform,
+					block_local_transform.origin
+			);
 		}
-
-		const Transform3D block_local_transform(Basis(), Vector3(block.grid_position * lod_block_size));
-		const Transform3D block_transform = parent_transform * block_local_transform;
-
-		update_block_from_transforms(
-				block_index,
-				to_span_const(transform_cache),
-				block.grid_position,
-				layer,
-				**item,
-				layer_id,
-				world,
-				block_transform,
-				block_local_transform.origin
-		);
 	}
 }
 
-void VoxelInstancer::update_layer_meshes(int layer_id) {
-	Ref<VoxelInstanceLibraryItem> item_base = _library->get_item(layer_id);
-	ERR_FAIL_COND(item_base.is_null());
+void VoxelInstancer::update_layer_meshes(const int layer_id) {
+	const VoxelInstanceLibraryItem *item_base = _library->get_item_by_layer_id(layer_id);
+	ERR_FAIL_COND(item_base == nullptr);
 	// This method is expected to run on a multimesh layer
-	VoxelInstanceLibraryMultiMeshItem *item = Object::cast_to<VoxelInstanceLibraryMultiMeshItem>(*item_base);
+	const VoxelInstanceLibraryMultiMeshItem *item = Object::cast_to<VoxelInstanceLibraryMultiMeshItem>(item_base);
 	ERR_FAIL_COND(item == nullptr);
 
 	const bool hide_beyond_max_lod = item->get_hide_beyond_max_lod();
@@ -872,11 +986,11 @@ void VoxelInstancer::update_layer_meshes(int layer_id) {
 	}
 }
 
-void VoxelInstancer::update_layer_scenes(int layer_id) {
-	Ref<VoxelInstanceLibraryItem> item_base = _library->get_item(layer_id);
-	ERR_FAIL_COND(item_base.is_null());
+void VoxelInstancer::update_layer_scenes(const int layer_id) {
+	const VoxelInstanceLibraryItem *item_base = _library->get_item_by_layer_id(layer_id);
+	ERR_FAIL_COND(item_base == nullptr);
 	// This method is expected to run on a scene layer
-	VoxelInstanceLibrarySceneItem *item = Object::cast_to<VoxelInstanceLibrarySceneItem>(*item_base);
+	const VoxelInstanceLibrarySceneItem *item = Object::cast_to<VoxelInstanceLibrarySceneItem>(item_base);
 	ERR_FAIL_COND(item == nullptr);
 	const int data_block_size_po2 = _parent_data_block_size_po2;
 
@@ -898,65 +1012,37 @@ void VoxelInstancer::update_layer_scenes(int layer_id) {
 	}
 }
 
-void VoxelInstancer::on_library_item_changed(int item_id, IInstanceLibraryItemListener::ChangeType change) {
-	ERR_FAIL_COND(_library.is_null());
+void VoxelInstancer::on_library_item_registered(const int layer_id, const uint8_t lod_index) {
+	if (_layers.find(layer_id) == _layers.end()) {
+		add_layer(layer_id, lod_index);
+	} else {
+		ZN_PRINT_ERROR("Layer already exists");
+	}
+	update_configuration_warnings();
+}
 
-	// TODO It's unclear yet if some code paths do the right thing in case instances got edited
+void VoxelInstancer::on_library_item_unregistered(const int layer_id) {
+	remove_layer(layer_id);
+	update_configuration_warnings();
+}
 
-	// This callback will fire after the library was loaded, so most of the time in the editor when the user changes
-	// things. If it happens in-game, it might cause performance issues. If so, it's better to configure the library
-	// before assigning it to the instancer.
-
+void VoxelInstancer::on_library_item_changed(const int layer_id, const ItemChange change) {
 	switch (change) {
-		case IInstanceLibraryItemListener::CHANGE_ADDED: {
-			Ref<VoxelInstanceLibraryItem> item = _library->get_item(item_id);
-			ERR_FAIL_COND(item.is_null());
-			add_layer(item_id, item->get_lod_index());
-			regenerate_layer(item_id, true);
-			update_configuration_warnings();
-		} break;
-
-		case IInstanceLibraryItemListener::CHANGE_REMOVED:
-			remove_layer(item_id);
-			update_configuration_warnings();
+		case ITEM_CHANGE_VISUAL:
+			update_layer_meshes(layer_id);
 			break;
-
-		case IInstanceLibraryItemListener::CHANGE_GENERATOR:
-			regenerate_layer(item_id, false);
+		case ITEM_CHANGE_SCENE:
+			update_layer_scenes(layer_id);
 			break;
-
-		case IInstanceLibraryItemListener::CHANGE_VISUAL:
-			update_layer_meshes(item_id);
-			break;
-
-		case IInstanceLibraryItemListener::CHANGE_SCENE:
-			update_layer_scenes(item_id);
-			break;
-
-		case IInstanceLibraryItemListener::CHANGE_LOD_INDEX: {
-			Ref<VoxelInstanceLibraryItem> item = _library->get_item(item_id);
-			ERR_FAIL_COND(item.is_null());
-
-			clear_blocks_in_layer(item_id);
-
-			Layer &layer = get_layer(item_id);
-
-			Lod &prev_lod = _lods[layer.lod_index];
-			unordered_remove_value(prev_lod.layers, item_id);
-
-			layer.lod_index = item->get_lod_index();
-
-			Lod &new_lod = _lods[layer.lod_index];
-			new_lod.layers.push_back(item_id);
-
-			regenerate_layer(item_id, true);
-		} break;
-
 		default:
-			ERR_PRINT("Unknown change");
+			ZN_PRINT_ERROR("Unknown change");
 			break;
 	}
+	update_configuration_warnings();
+}
 
+void VoxelInstancer::on_library_emitter_changed(const VoxelInstanceEmitter &emitter) {
+	regenerate_emitter(emitter, false);
 	update_configuration_warnings();
 }
 
@@ -1204,16 +1290,16 @@ unsigned int VoxelInstancer::create_block(
 	return block_index;
 }
 
-void VoxelInstancer::update_block_from_transforms( //
-		int block_index, //
-		Span<const Transform3f> transforms, //
-		Vector3i grid_position, //
-		Layer &layer, //
-		const VoxelInstanceLibraryItem &item_base, //
-		uint16_t layer_id, //
-		World3D &world, //
-		const Transform3D &block_global_transform, //
-		Vector3 block_local_position //
+void VoxelInstancer::update_block_from_transforms(
+		int block_index,
+		const Span<const Transform3f> transforms,
+		const Vector3i grid_position,
+		Layer &layer,
+		const VoxelInstanceLibraryItem &item_base,
+		const uint16_t layer_id,
+		World3D &world,
+		const Transform3D &block_global_transform,
+		const Vector3 block_local_position
 ) {
 	ZN_PROFILE_SCOPE();
 
@@ -1431,17 +1517,17 @@ void VoxelInstancer::create_render_blocks(Vector3i render_grid_position, int lod
 		create_block(layer, layer_id, render_grid_position, true);
 	}
 
-	LoadInstanceChunkTask *task = ZN_NEW(LoadInstanceChunkTask( //
-			_loading_results, //
-			stream, //
-			lod.quick_reload_cache, //
-			_library, //
-			surface_arrays, //
-			render_grid_position, //
-			lod_index, //
-			render_block_size, //
-			data_block_size, //
-			_up_mode //
+	LoadInstanceChunkTask *task = ZN_NEW(LoadInstanceChunkTask(
+			_loading_results,
+			stream,
+			lod.quick_reload_cache,
+			_library,
+			surface_arrays,
+			render_grid_position,
+			lod_index,
+			render_block_size,
+			data_block_size,
+			_up_mode
 	));
 
 	VoxelEngine::get_singleton().push_async_io_task(task);
@@ -1480,7 +1566,7 @@ SaveBlockDataTask *VoxelInstancer::save_block(
 	for (auto it = lod.layers.begin(); it != lod.layers.end(); ++it) {
 		const int layer_id = *it;
 
-		const VoxelInstanceLibraryItem *item = _library->get_item_const(layer_id);
+		const VoxelInstanceLibraryItem *item = _library->get_item_by_layer_id(layer_id);
 		CRASH_COND(item == nullptr);
 		if (!item->is_persistent()) {
 			continue;
@@ -1507,14 +1593,14 @@ SaveBlockDataTask *VoxelInstancer::save_block(
 		layer_data.instances.clear();
 		layer_data.id = layer_id;
 
-		if (item->get_generator().is_valid()) {
-			layer_data.scale_min = item->get_generator()->get_min_scale();
-			layer_data.scale_max = item->get_generator()->get_max_scale();
-		} else {
-			// TODO Calculate scale range automatically in the serializer
-			layer_data.scale_min = 0.1f;
-			layer_data.scale_max = 10.f;
-		}
+		// if (item->get_generator().is_valid()) {
+		// 	layer_data.scale_min = item->get_generator()->get_min_scale();
+		// 	layer_data.scale_max = item->get_generator()->get_max_scale();
+		// } else {
+		// TODO Calculate scale range automatically in the serializer
+		layer_data.scale_min = 0.1f;
+		layer_data.scale_max = 10.f;
+		// }
 
 		if (render_block.multimesh_instance.is_valid()) {
 			// Multimeshes

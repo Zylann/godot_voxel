@@ -2,8 +2,10 @@
 #define ZYLANN_VECTOR3F_H
 
 #include "../errors.h"
+#include "../hash_funcs.h"
 #include "../string/std_stringstream.h"
 #include "vector3t.h"
+#include <cstdint>
 
 namespace zylann {
 
@@ -59,6 +61,13 @@ inline bool is_normalized(const Vector3f &v) {
 }
 
 } // namespace math
+
+inline uint32_t get_hash_32(const Vector3f v) {
+	uint32_t h = hash_murmur3_one_float(v.x);
+	h = hash_murmur3_one_float(v.y, h);
+	h = hash_murmur3_one_float(v.z, h);
+	return hash_fmix32(h);
+}
 
 StdStringStream &operator<<(StdStringStream &ss, const Vector3f &v);
 

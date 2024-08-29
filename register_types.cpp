@@ -464,7 +464,9 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 
 		EditorPlugins::add_by_type<VoxelGraphEditorPlugin>();
 		EditorPlugins::add_by_type<VoxelTerrainEditorPlugin>();
+#ifdef VOXEL_INSTANCE_LIBRARY_CUSTOM_LIST
 		EditorPlugins::add_by_type<VoxelInstanceLibraryEditorPlugin>();
+#endif
 		EditorPlugins::add_by_type<VoxelInstanceLibraryMultiMeshItemEditorPlugin>();
 		EditorPlugins::add_by_type<ZN_FastNoiseLiteEditorPlugin>();
 		EditorPlugins::add_by_type<ZN_SpotNoiseEditorPlugin>();

@@ -1,3 +1,5 @@
+#ifdef VOXEL_INSTANCE_LIBRARY_CUSTOM_LIST
+
 #include "voxel_instance_library_editor_plugin.h"
 #include "../../terrain/instancing/voxel_instance_library_multimesh_item.h"
 #include "../../terrain/instancing/voxel_instance_library_scene_item.h"
@@ -58,3 +60,5 @@ void VoxelInstanceLibraryEditorPlugin::_notification(int p_what) {
 void VoxelInstanceLibraryEditorPlugin::_bind_methods() {}
 
 } // namespace zylann::voxel
+
+#endif

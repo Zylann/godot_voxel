@@ -1,3 +1,5 @@
+#ifdef VOXEL_INSTANCE_LIBRARY_CUSTOM_LIST
+
 #include "voxel_instance_library_list_editor.h"
 #include "../../constants/voxel_string_names.h"
 #include "../../terrain/instancing/voxel_instance_library_multimesh_item.h"
@@ -324,3 +326,5 @@ void VoxelInstanceLibraryListEditor::_bind_methods() {
 }
 
 } // namespace zylann::voxel
+
+#endif // VOXEL_INSTANCE_LIBRARY_CUSTOM_LIST

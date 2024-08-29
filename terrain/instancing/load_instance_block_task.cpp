@@ -9,33 +9,32 @@
 #include "../../util/profiling.h"
 #include "generate_instances_block_task.h"
 #include "instancer_quick_reloading_cache.h"
+#include "voxel_instance_emitter.h"
 
 namespace zylann::voxel {
 
-LoadInstanceChunkTask::LoadInstanceChunkTask( //
-		std::shared_ptr<InstancerTaskOutputQueue> output_queue, //
-		Ref<VoxelStream> stream, //
+LoadInstanceChunkTask::LoadInstanceChunkTask(
+		std::shared_ptr<InstancerTaskOutputQueue> output_queue,
+		Ref<VoxelStream> stream,
 		std::shared_ptr<InstancerQuickReloadingCache> quick_reload_cache,
-		Ref<VoxelInstanceLibrary> library, //
-		Array mesh_arrays, //
-		Vector3i grid_position, //
-		uint8_t lod_index, //
-		uint8_t instance_block_size, //
-		uint8_t data_block_size, //
-		UpMode up_mode //
+		Ref<VoxelInstanceLibrary> library,
+		Array mesh_arrays,
+		const Vector3i grid_position,
+		const uint8_t lod_index,
+		const uint8_t instance_block_size,
+		const uint8_t data_block_size,
+		const UpMode up_mode
 ) :
-		//
-		_output_queue(output_queue), //
-		_stream(stream), //
-		_quick_reload_cache(quick_reload_cache), //
-		_library(library), //
-		_mesh_arrays(mesh_arrays), //
-		_render_grid_position(grid_position), //
-		_lod_index(lod_index), //
-		_instance_block_size(instance_block_size), //
-		_data_block_size(data_block_size), //
-		_up_mode(up_mode) //
-{
+		_output_queue(output_queue),
+		_stream(stream),
+		_quick_reload_cache(quick_reload_cache),
+		_library(library),
+		_mesh_arrays(mesh_arrays),
+		_render_grid_position(grid_position),
+		_lod_index(lod_index),
+		_instance_block_size(instance_block_size),
+		_data_block_size(data_block_size),
+		_up_mode(up_mode) {
 #ifdef DEBUG_ENABLED
 	ZN_ASSERT(_output_queue != nullptr);
 	ZN_ASSERT(_instance_block_size > 0);
@@ -55,13 +54,35 @@ void LoadInstanceChunkTask::run(ThreadedTaskContext &ctx) {
 		StdVector<Transform3f> transforms;
 	};
 
+	struct L {
+		static const Layer *find_layer(Span<const Layer> layers, const int id) {
+			for (const Layer &layer : layers) {
+				if (layer.id == id) {
+					return &layer;
+				}
+			}
+			return nullptr;
+		}
+
+		static Layer *find_layer(Span<Layer> layers, const int id) {
+			for (Layer &layer : layers) {
+				if (layer.id == id) {
+					return &layer;
+				}
+			}
+			return nullptr;
+		}
+	};
+
+	// TODO Candidate for temp allocator
 	StdVector<Layer> layers;
+
+	const unsigned int data_factor = _instance_block_size / _data_block_size;
 
 	// Try loading saved blocks
 	if (_stream.is_valid()) {
 		ZN_PROFILE_SCOPE();
 
-		const unsigned int data_factor = _instance_block_size / _data_block_size;
 		const Box3i data_box(_render_grid_position * data_factor, Vector3iUtil::create(data_factor));
 
 		ZN_ASSERT(data_factor <= 2);
@@ -192,62 +213,119 @@ void LoadInstanceChunkTask::run(ThreadedTaskContext &ctx) {
 		}
 	}
 
+	// unsigned int fully_edited_layers_count = 0;
+	// for (const Layer &layer : layers) {
+	// 	if (layer.edited_mask == 0xff) {
+	// 		fully_edited_layers_count += 1;
+	// 	}
+	// }
+
 	// Generate the rest
 	if (_mesh_arrays.size() != 0 && _library.is_valid()) {
 		ZN_PROFILE_SCOPE();
 
-		// TODO Cache memory
-		StdVector<VoxelInstanceLibrary::PackedItem> items;
-		_library->get_packed_items_at_lod(items, _lod_index);
+		const VoxelInstanceLibrary::PackedData &lib = _library->get_packed_data();
+		MutexLock mlock(lib.mutex);
 
-		if (items.size() > 0) {
-			BufferedTaskScheduler &task_scheduler = BufferedTaskScheduler::get_for_current_thread();
+		const VoxelInstanceLibrary::PackedData::Lod &lod = lib.lods[_lod_index];
 
-			for (const VoxelInstanceLibrary::PackedItem &item : items) {
-				if (item.generator.is_valid()) {
-					size_t layer_index;
-					// Not using a hashmap here, this array is usually small
-					const int layer_id = item.id;
-					if (!find(to_span_const(layers), layer_index, [layer_id](const Layer &layer) {
-							return layer.id == layer_id;
-						})) {
-						layer_index = layers.size();
-						layers.push_back(Layer());
+		// TODO Do each emitter in parallel
+		// TODO Move this to a non-serial task (or get rid of serial tasks)
+
+		// We are potentially going to add more layers (non-persistent ones?) so cache the initial count. At this point
+		// we know `layers` only contains edited ones
+		const unsigned int edited_layers_count = layers.size();
+
+		unsigned int item_start_index = 0;
+		for (unsigned int emitter_index = 0; emitter_index < lod.emitters.size(); ++emitter_index) {
+			const Ref<VoxelInstanceEmitter> &emitter = lod.emitters[emitter_index];
+			ZN_ASSERT_CONTINUE(emitter.is_valid());
+
+			const unsigned int item_count = lod.item_counts[emitter_index];
+			Span<const int> layer_ids = to_span_const(lod.layer_ids).sub(item_start_index, item_count);
+			item_start_index += item_count;
+
+			{
+				bool all_edited = true;
+				Span<const Layer> edited_layers(layers.data(), edited_layers_count);
+				for (const int layer_id : layer_ids) {
+					const Layer *layer = L::find_layer(edited_layers, layer_id);
+					if (layer->edited_mask != 0xff) {
+						all_edited = false;
+						break;
 					}
-
-					Layer &layer = layers[layer_index];
-					if (layer.edited_mask == 0xff) {
-						// Nothing to generate
-						continue;
-					}
-
-					PackedVector3Array vertices = _mesh_arrays[ArrayMesh::ARRAY_VERTEX];
-
-					if (vertices.size() != 0) {
-						// Trigger a separate task because it may run in parallel, while the current one may not (until
-						// we figure out how to make VoxelStream I/Os parallel enough)
-						GenerateInstancesBlockTask *task = ZN_NEW(GenerateInstancesBlockTask);
-						task->mesh_block_grid_position = _render_grid_position;
-						task->layer_id = item.id;
-						task->mesh_block_size = static_cast<int>(_instance_block_size) << _lod_index;
-						task->lod_index = _lod_index;
-						task->edited_mask = layer.edited_mask;
-						task->up_mode = _up_mode;
-						task->surface_arrays = _mesh_arrays;
-						task->generator = item.generator;
-						task->transforms = std::move(layer.transforms);
-						task->output_queue = _output_queue;
-
-						task_scheduler.push_main_task(task);
-					}
-
-					// We delegated the rest of loading to another task so we remove it from our list.
-					layers[layer_index] = std::move(layers.back());
-					layers.pop_back();
+				}
+				if (all_edited) {
+					// Nothing to generate for this emitter
+					continue;
 				}
 			}
 
-			task_scheduler.flush();
+			Ref<VoxelInstanceGenerator> generator = emitter->get_generator();
+			ZN_ASSERT_CONTINUE(generator.is_valid());
+
+			// TODO Temp allocator
+			StdVector<Transform3f> base_transforms;
+
+			PackedVector3Array vertices = _mesh_arrays[ArrayMesh::ARRAY_VERTEX];
+			const int lod_block_size = static_cast<int>(_instance_block_size) << _lod_index;
+
+			generator->generate_transforms(
+					base_transforms,
+					_render_grid_position,
+					_lod_index,
+					0, // TODO Need to change that parameter to be "seed_modifier"
+					_mesh_arrays,
+					_up_mode,
+					0xff,
+					lod_block_size
+			);
+
+			// TODO Temp allocator
+			StdVector<StdVector<Transform3f>> groups;
+			dispatch_item_transforms_default(base_transforms, groups, item_count);
+
+			for (unsigned int item_index = 0; item_index < item_count; ++item_index) {
+				// TODO May have to separate persistent IDs from layer IDs, the refactoring makes them unreliable
+				const int layer_id = layer_ids[item_index];
+				if (layer_id == -1) {
+					// Drop items...
+					continue;
+				}
+
+				StdVector<Transform3f> &transforms = groups[item_index];
+
+				// Check if that item has an edited layer (which is therefore persistent)
+				Layer *layer = L::find_layer(to_span_from_position_and_size(layers, 0, edited_layers_count), layer_id);
+
+				if (layer != nullptr) {
+					// That layer was edited
+
+					if (layer->edited_mask == 0xff) {
+						// All edited, skip all instances
+						continue;
+					}
+					if (data_factor == 2 && layer->edited_mask != 0) {
+						// Partially edited
+						const uint8_t octants_to_generate_mask = (~layer->edited_mask) & 0xff;
+						// Remove generated instances in edited octants
+						filter_octants(transforms, octants_to_generate_mask, lod_block_size);
+					}
+
+					// Combine
+					append_array(layer->transforms, transforms);
+
+				} else {
+					// Note: can't std::move if `transform` uses a temp allocator
+
+					// I can't figure out how to use emplace_back with simple brace init...
+					// Or it needs a constructor and that's just annoying...
+					// layers.emplace_back(layer_id, 0, transforms);
+
+					layers.push_back(Layer{ layer_id, 0, StdVector<Transform3f>() });
+					layers.back().transforms = transforms;
+				}
+			}
 		}
 	}
 

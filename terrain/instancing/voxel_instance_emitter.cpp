@@ -1,6 +1,7 @@
 #include "voxel_instance_emitter.h"
 #include "../../constants/voxel_string_names.h"
 #include "../../util/containers/container_funcs.h"
+#include "../../util/godot/classes/resource.h"
 #include "../../util/godot/core/typed_array.h"
 #include "../../util/string/format.h"
 #include "array_utils.h"
@@ -27,6 +28,8 @@ int VoxelInstanceEmitter::get_lod_index() const {
 }
 
 void VoxelInstanceEmitter::set_generator(Ref<VoxelInstanceGenerator> generator) {
+	MutexLock mlock(_mutex);
+
 	if (generator == _generator) {
 		return;
 	}
@@ -53,8 +56,30 @@ void VoxelInstanceEmitter::set_generator(Ref<VoxelInstanceGenerator> generator) 
 }
 
 Ref<VoxelInstanceGenerator> VoxelInstanceEmitter::get_generator() const {
+	MutexLock mlock(_mutex);
 	return _generator;
 }
+
+#ifdef TOOLS_ENABLED
+void VoxelInstanceEmitter::get_configuration_warnings(PackedStringArray &warnings) const {
+	if (get_generator().is_null()) {
+		warnings.push_back("Generator is null");
+	}
+	if (_items.size() == 0) {
+		warnings.push_back("No items registered");
+	}
+	for (unsigned int item_index = 0; item_index < _items.size(); ++item_index) {
+		const Ref<VoxelInstanceLibraryItem> &item = _items[item_index];
+		if (item.is_valid()) {
+			godot::get_resource_configuration_warnings(**item, warnings, [item_index, &item]() {
+				return String("Item {0} (\"{1}\"): ").format(varray(item_index, item->get_item_name()));
+			});
+		} else {
+			warnings.push_back(String("Item {0} is null").format(varray(item_index)));
+		}
+	}
+}
+#endif
 
 void VoxelInstanceEmitter::on_generator_changed() {
 	for (IInstanceEmitterListener *listener : _listeners) {
@@ -69,7 +94,6 @@ void VoxelInstanceEmitter::add_listener(IInstanceEmitterListener *listener) {
 }
 
 void VoxelInstanceEmitter::remove_listener(const IInstanceEmitterListener *listener) {
-	size_t i;
 	auto it = std::find(_listeners.begin(), _listeners.end(), listener);
 	ZN_ASSERT_RETURN(it != _listeners.end());
 	_listeners.erase(it);
@@ -101,6 +125,10 @@ void VoxelInstanceEmitter::_b_set_items(TypedArray<VoxelInstanceLibraryItem> arr
 		for (IInstanceEmitterListener *listener : _listeners) {
 			listener->on_emitter_item_removed(this, item);
 		}
+	}
+
+	for (IInstanceEmitterListener *listener : _listeners) {
+		listener->on_emitter_array_assigned();
 	}
 }
 

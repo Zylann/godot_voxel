@@ -1043,4 +1043,59 @@ void VoxelInstanceGenerator::_bind_methods() {
 	BIND_ENUM_CONSTANT(DIMENSION_COUNT);
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void dispatch_item_transforms_default(
+		const StdVector<Transform3f> &src,
+		StdVector<StdVector<Transform3f>> &dst_groups,
+		const uint8_t item_count
+) {
+	ZN_PROFILE_SCOPE();
+	ZN_ASSERT_RETURN(item_count > 0);
+	// TODO Optimize case with single item?
+
+	// TODO Candidate for temp allocator
+	dst_groups.resize(item_count);
+
+	if (item_count == 1) {
+		dst_groups[0] = src;
+		return;
+	}
+
+	// TODO Candidate for temp allocator
+	StdVector<uint8_t> item_indices;
+	item_indices.resize(src.size());
+	for (unsigned int i = 0; i < src.size(); ++i) {
+		const Vector3f &pos = src[i].origin;
+		// TODO not sure if it's a good idea to directly hash floats
+		const uint32_t h = get_hash_32(pos);
+		const uint8_t item_index = h % item_count;
+		item_indices[i] = item_index;
+	}
+
+	// TODO Might be optimizable
+	for (unsigned int i = 0; i < item_indices.size(); ++i) {
+		const uint8_t ii = item_indices[i];
+		dst_groups[ii].push_back(src[i]);
+	}
+}
+
+void filter_octants(StdVector<Transform3f> &transforms, const uint8_t octant_mask, const float chunk_size) {
+	if ((octant_mask & 0xff) == 0xff) {
+		// Keep everything
+		return;
+	}
+	ZN_PROFILE_SCOPE_NAMED("octant filter");
+	const float h = chunk_size / 2.f;
+	for (unsigned int i = 0; i < transforms.size();) {
+		const Transform3f &trans = transforms[i];
+		const uint8_t octant_index = VoxelInstanceGenerator::get_octant_index(trans.origin, h);
+		if ((octant_mask & (1 << octant_index)) == 0) {
+			unordered_remove(transforms, i);
+		} else {
+			++i;
+		}
+	}
+}
+
 } // namespace zylann::voxel

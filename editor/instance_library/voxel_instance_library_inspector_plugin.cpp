@@ -1,3 +1,5 @@
+#ifdef VOXEL_INSTANCE_LIBRARY_CUSTOM_LIST
+
 #include "voxel_instance_library_inspector_plugin.h"
 #include "../../constants/voxel_string_names.h"
 #include "control_sizer.h"
@@ -46,3 +48,5 @@ bool VoxelInstanceLibraryInspectorPlugin::_zn_parse_property(
 }
 
 } // namespace zylann::voxel
+
+#endif // VOXEL_INSTANCE_LIBRARY_CUSTOM_LIST

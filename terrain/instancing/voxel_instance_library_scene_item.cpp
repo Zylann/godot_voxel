@@ -5,7 +5,7 @@ namespace zylann::voxel {
 void VoxelInstanceLibrarySceneItem::set_scene(Ref<PackedScene> scene) {
 	if (scene != _scene) {
 		_scene = scene;
-		notify_listeners(IInstanceLibraryItemListener::CHANGE_SCENE);
+		notify_listeners(IInstanceLibraryItemListener::ITEM_CHANGE_SCENE);
 	}
 }
 

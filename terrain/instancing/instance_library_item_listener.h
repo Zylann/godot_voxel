@@ -3,14 +3,12 @@
 
 namespace zylann::voxel {
 
+class VoxelInstanceLibraryItem;
+
 class IInstanceLibraryItemListener {
 public:
 	enum ItemChangeType { //
-		// CHANGE_LOD_INDEX,
-		// CHANGE_GENERATOR,
 		ITEM_CHANGE_VISUAL,
-		// CHANGE_ADDED,
-		// CHANGE_REMOVED,
 		ITEM_CHANGE_SCENE
 	};
 

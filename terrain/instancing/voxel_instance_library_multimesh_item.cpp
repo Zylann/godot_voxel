@@ -108,7 +108,7 @@ void VoxelInstanceLibraryMultiMeshItem::set_mesh(Ref<Mesh> mesh, int mesh_lod_in
 	}
 	settings.mesh_lod_count = count;
 
-	notify_listeners(IInstanceLibraryItemListener::CHANGE_VISUAL);
+	notify_listeners(IInstanceLibraryItemListener::ITEM_CHANGE_VISUAL);
 }
 
 int VoxelInstanceLibraryMultiMeshItem::get_mesh_lod_count() const {
@@ -145,7 +145,7 @@ void VoxelInstanceLibraryMultiMeshItem::set_render_layer(int render_layer) {
 		return;
 	}
 	settings.render_layer = render_layer;
-	notify_listeners(IInstanceLibraryItemListener::CHANGE_VISUAL);
+	notify_listeners(IInstanceLibraryItemListener::ITEM_CHANGE_VISUAL);
 }
 
 int VoxelInstanceLibraryMultiMeshItem::get_render_layer() const {
@@ -159,7 +159,7 @@ void VoxelInstanceLibraryMultiMeshItem::set_material_override(Ref<Material> mate
 		return;
 	}
 	settings.material_override = material;
-	notify_listeners(IInstanceLibraryItemListener::CHANGE_VISUAL);
+	notify_listeners(IInstanceLibraryItemListener::ITEM_CHANGE_VISUAL);
 }
 
 Ref<Material> VoxelInstanceLibraryMultiMeshItem::get_material_override() const {
@@ -173,7 +173,7 @@ void VoxelInstanceLibraryMultiMeshItem::set_cast_shadows_setting(RenderingServer
 		return;
 	}
 	settings.shadow_casting_setting = mode;
-	notify_listeners(IInstanceLibraryItemListener::CHANGE_VISUAL);
+	notify_listeners(IInstanceLibraryItemListener::ITEM_CHANGE_VISUAL);
 }
 
 void VoxelInstanceLibraryMultiMeshItem::set_gi_mode(GeometryInstance3D::GIMode mode) {
@@ -182,7 +182,7 @@ void VoxelInstanceLibraryMultiMeshItem::set_gi_mode(GeometryInstance3D::GIMode m
 		return;
 	}
 	settings.gi_mode = mode;
-	notify_listeners(IInstanceLibraryItemListener::CHANGE_VISUAL);
+	notify_listeners(IInstanceLibraryItemListener::ITEM_CHANGE_VISUAL);
 }
 
 GeometryInstance3D::GIMode VoxelInstanceLibraryMultiMeshItem::get_gi_mode() const {
@@ -472,7 +472,7 @@ void VoxelInstanceLibraryMultiMeshItem::setup_from_template(Object *root_o) {
 	Node *root = Object::cast_to<Node>(root_o);
 #endif
 	ERR_FAIL_COND(!zylann::voxel::setup_from_template(root, _manual_settings));
-	notify_listeners(IInstanceLibraryItemListener::CHANGE_VISUAL);
+	notify_listeners(IInstanceLibraryItemListener::ITEM_CHANGE_VISUAL);
 }
 
 void VoxelInstanceLibraryMultiMeshItem::set_scene(Ref<PackedScene> scene) {
@@ -486,7 +486,7 @@ void VoxelInstanceLibraryMultiMeshItem::set_scene(Ref<PackedScene> scene) {
 		ERR_FAIL_COND(!zylann::voxel::setup_from_template(root, _scene_settings));
 		memdelete(root);
 	}
-	notify_listeners(IInstanceLibraryItemListener::CHANGE_VISUAL);
+	notify_listeners(IInstanceLibraryItemListener::ITEM_CHANGE_VISUAL);
 #ifdef TOOLS_ENABLED
 	notify_property_list_changed();
 #endif
@@ -547,7 +547,7 @@ void VoxelInstanceLibraryMultiMeshItem::deserialize_multimesh_item_properties(Ar
 	settings.collision_shapes.clear();
 	deserialize_collision_shape_infos(a[ai++], settings.collision_shapes);
 	deserialize_group_names(a[ai++], settings.group_names);
-	notify_listeners(IInstanceLibraryItemListener::CHANGE_VISUAL);
+	notify_listeners(IInstanceLibraryItemListener::ITEM_CHANGE_VISUAL);
 }
 
 void VoxelInstanceLibraryMultiMeshItem::_b_set_collision_shapes(Array shape_infos) {

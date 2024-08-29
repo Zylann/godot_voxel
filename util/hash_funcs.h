@@ -43,6 +43,24 @@ inline uint32_t hash_fmix32(uint32_t h) {
 	return h;
 }
 
+inline uint32_t hash_murmur3_one_float(float p_in, uint32_t p_seed = HASH_MURMUR3_SEED) {
+	union {
+		float f;
+		uint32_t i;
+	} u;
+
+	// Normalize +/- 0.0 and NaN values so they hash the same.
+	if (p_in == 0.0f) {
+		u.f = 0.0;
+	} else if (Math::is_nan(p_in)) {
+		u.f = NAN;
+	} else {
+		u.f = p_in;
+	}
+
+	return hash_murmur3_one_32(u.i, p_seed);
+}
+
 } // namespace zylann
 
 #endif // ZN_HASH_FUNCS_H

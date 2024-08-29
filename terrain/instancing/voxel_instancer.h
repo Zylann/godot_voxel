@@ -164,9 +164,10 @@ private:
 	Layer &get_layer(int id);
 	const Layer &get_layer_const(int id) const;
 
-	void regenerate_layer(uint16_t layer_id, bool regenerate_blocks);
-	void update_layer_meshes(int layer_id);
-	void update_layer_scenes(int layer_id);
+	void regenerate_emitter(const VoxelInstanceEmitter &emitter, bool regenerate_blocks);
+	// void regenerate_layer(uint16_t layer_id, bool regenerate_blocks);
+	void update_layer_meshes(const int layer_id);
+	void update_layer_scenes(const int layer_id);
 	void create_render_blocks(Vector3i grid_position, int lod_index, Array surface_arrays);
 
 #ifdef TOOLS_ENABLED
@@ -189,17 +190,25 @@ private:
 
 	void update_block_from_transforms(
 			int block_index,
-			Span<const Transform3f> transforms,
-			Vector3i grid_position,
+			const Span<const Transform3f> transforms,
+			const Vector3i grid_position,
 			Layer &layer,
 			const VoxelInstanceLibraryItem &item_base,
-			uint16_t layer_id,
+			const uint16_t layer_id,
 			World3D &world,
 			const Transform3D &block_transform,
-			Vector3 block_local_position
+			const Vector3 block_local_position
 	);
 
-	void on_library_item_changed(int item_id, IInstanceLibraryItemListener::ChangeType change) override;
+	// These callbacks will fire after the library was loaded, so most of the time in the editor when the user changes
+	// things. If it happens in-game, it might cause performance issues. If so, it's better to configure the library
+	// before assigning it to the instancer.
+
+	// void on_library_item_changed(int item_id, IInstanceLibraryItemListener::ChangeType change) override;
+	void on_library_item_registered(const int layer_id, const uint8_t lod_index) override;
+	void on_library_item_unregistered(const int layer_id) override;
+	void on_library_item_changed(const int layer_id, const ItemChange change) override;
+	void on_library_emitter_changed(const VoxelInstanceEmitter &emitter) override;
 
 	struct Block;
 

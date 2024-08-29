@@ -11,7 +11,7 @@ public:
 
 	enum ItemChange { ITEM_CHANGE_VISUAL, ITEM_CHANGE_SCENE };
 
-	virtual void on_library_item_registered(const int layer_id) = 0;
+	virtual void on_library_item_registered(const int layer_id, const uint8_t lod_index) = 0;
 	virtual void on_library_item_unregistered(const int layer_id) = 0;
 	virtual void on_library_item_changed(const int layer_id, const ItemChange change) = 0;
 	virtual void on_library_emitter_changed(const VoxelInstanceEmitter &emitter) = 0;
