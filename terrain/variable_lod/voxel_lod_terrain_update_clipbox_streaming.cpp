@@ -560,6 +560,7 @@ void process_data_blocks_sliding_box(
 
 					{
 						ZN_PROFILE_SCOPE_NAMED("Add loading blocks");
+						MutexLock mlock(lod.loading_blocks_mutex);
 						for (const Vector3i bpos : tls_missing_blocks) {
 							add_loading_block(lod, bpos, lod_index, data_blocks_to_load);
 						}
@@ -589,19 +590,25 @@ void process_data_blocks_sliding_box(
 
 					// Remove loading blocks regardless of refcount (those were loaded and had their refcount reach
 					// zero)
-					for (const Vector3i bpos : tls_found_blocks_positions) {
-						// emit_data_block_unloaded(bpos);
+					if (tls_found_blocks_positions.size() > 0) {
+						MutexLock mlock(lod.loading_blocks_mutex);
+						for (const Vector3i bpos : tls_found_blocks_positions) {
+							// emit_data_block_unloaded(bpos);
 
-						// TODO If they were loaded, why would they be in loading blocks?
-						// Maybe to make sure they are not in here regardless
-						lod.loading_blocks.erase(bpos);
+							// TODO If they were loaded, why would they be in loading blocks?
+							// Maybe to make sure they are not in here regardless
+							lod.loading_blocks.erase(bpos);
+						}
 					}
 
 					// Remove refcount from loading blocks, and cancel loading if it reaches zero
-					for (const Vector3i bpos : tls_missing_blocks) {
-						unreference_data_block_from_loading_lists(
-								lod.loading_blocks, data_blocks_to_load, bpos, lod_index
-						);
+					if (tls_missing_blocks.size() > 0) {
+						MutexLock mlock(lod.loading_blocks_mutex);
+						for (const Vector3i bpos : tls_missing_blocks) {
+							unreference_data_block_from_loading_lists(
+									lod.loading_blocks, data_blocks_to_load, bpos, lod_index
+							);
+						}
 					}
 				}
 			}
