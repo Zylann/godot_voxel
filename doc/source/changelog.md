@@ -14,6 +14,7 @@ Primarily developped with Godot 4.3.
 
 - Fixes
     - `VoxelInstanceLibrary`: Editor: reworked the way items are exposed as a Blender-style list. Now removing an item while the library is open as a sub-inspector is no longer problematic
+    - `VoxelInstancer`: Fixed persistent instances reloading with wrong positions (in the air, underground...) when mesh block size is set to 32
     - `VoxelLodTerrain`:
         - Fixed potential crash when when using the Clipbox streaming system with threaded update (thanks to lenesxy, issue #692)
         - Fixed blocks were saved with incorrect LOD index when they get unloaded using Clipbox, leading to holes and mismatched terrain (#691)
