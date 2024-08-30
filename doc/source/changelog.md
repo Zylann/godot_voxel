@@ -17,6 +17,7 @@ Primarily developped with Godot 4.3.
     - `VoxelTerrain`: edits and copies across fixed bounds no longer behave as if terrain generates beyond (was causing "walls" to appear).
     - `VoxelGeneratorGraph`: fix wrong values when using `OutputWeight` with optimized execution map enabled, when weights are determined to be locally constant
     - `VoxelMesherTransvoxel`: revert texturing logic that attempted to prevent air voxels from contributing, but was lowering quality. It is now optional as an experimental property.
+    - `VoxelStreamSQLite`: Fixed "empty size" errors when loading areas with edited `VoxelInstancer` data
 
 - Breaking changes
     - `VoxelInstanceLibrary`: Items should no longer be accessed using generated properties (`item1`, `item2` etc). Use `get_item` instead.
