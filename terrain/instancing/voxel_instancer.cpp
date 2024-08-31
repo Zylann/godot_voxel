@@ -707,6 +707,45 @@ Ref<VoxelInstanceLibrary> VoxelInstancer::get_library() const {
 	return _library;
 }
 
+void VoxelInstancer::get_meshed_block_positions_at_lod(const unsigned int lod_index, StdVector<Vector3i> &positions)
+		const {
+	const VoxelLodTerrain *parent_vlt = Object::cast_to<VoxelLodTerrain>(_parent);
+	const VoxelTerrain *parent_vt = Object::cast_to<VoxelTerrain>(_parent);
+
+	if (parent_vlt != nullptr) {
+		parent_vlt->get_meshed_block_positions_at_lod(lod_index, positions);
+
+	} else if (parent_vt != nullptr) {
+		// Only LOD 0 is supported
+		if (lod_index == 0) {
+			parent_vt->get_meshed_block_positions(positions);
+		}
+	}
+}
+
+void VoxelInstancer::create_missing_blocks(const unsigned int lod_index, Span<const int> layer_ids) {
+	// TODO Candidate for temp allocator
+	StdVector<Vector3i> positions;
+	get_meshed_block_positions_at_lod(lod_index, positions);
+
+	for (const int layer_id : layer_ids) {
+		auto layer_it = _layers.find(layer_id);
+		ZN_ASSERT_RETURN(layer_it != _layers.end());
+		Layer &layer = layer_it->second;
+
+		for (unsigned int i = 0; i < positions.size(); ++i) {
+			const Vector3i pos = positions[i];
+
+			auto it = layer.blocks.find(pos);
+			if (it != layer.blocks.end()) {
+				continue;
+			}
+
+			create_block(layer, layer_id, pos, false);
+		}
+	};
+}
+
 void VoxelInstancer::regenerate_emitter(const VoxelInstanceEmitter &emitter, bool regenerate_blocks) {
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT_RETURN(_parent != nullptr);
@@ -739,36 +778,8 @@ void VoxelInstancer::regenerate_emitter(const VoxelInstanceEmitter &emitter, boo
 	}
 
 	if (regenerate_blocks) {
-		// Create blocks
-		// TODO Candidate for temp allocator
-		StdVector<Vector3i> positions;
-
-		if (parent_vlt != nullptr) {
-			parent_vlt->get_meshed_block_positions_at_lod(lod_index, positions);
-
-		} else if (parent_vt != nullptr) {
-			// Only LOD 0 is supported
-			if (lod_index == 0) {
-				parent_vt->get_meshed_block_positions(positions);
-			}
-		}
-
-		for (const int layer_id : layer_ids) {
-			auto layer_it = _layers.find(layer_id);
-			ZN_ASSERT_RETURN(layer_it != _layers.end());
-			Layer &layer = layer_it->second;
-
-			for (unsigned int i = 0; i < positions.size(); ++i) {
-				const Vector3i pos = positions[i];
-
-				auto it = layer.blocks.find(pos);
-				if (it != layer.blocks.end()) {
-					continue;
-				}
-
-				create_block(layer, layer_id, pos, false);
-			}
-		};
+		// Create blocks if not present
+		create_missing_blocks(lod_index, to_span_const(layer_ids));
 	}
 
 	const int render_to_data_factor = 1 << (_parent_mesh_block_size_po2 - _parent_mesh_block_size_po2);
@@ -1016,9 +1027,14 @@ void VoxelInstancer::update_layer_scenes(const int layer_id) {
 void VoxelInstancer::on_library_item_registered(const int layer_id, const uint8_t lod_index) {
 	if (_layers.find(layer_id) == _layers.end()) {
 		add_layer(layer_id, lod_index);
+
+		const Lod &lod = _lods[lod_index];
+		create_missing_blocks(lod_index, to_span_const(lod.layers));
+
 	} else {
 		ZN_PRINT_ERROR("Layer already exists");
 	}
+
 	update_configuration_warnings();
 }
 

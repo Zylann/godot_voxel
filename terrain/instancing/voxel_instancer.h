@@ -164,6 +164,8 @@ private:
 	Layer &get_layer(int id);
 	const Layer &get_layer_const(int id) const;
 
+	void get_meshed_block_positions_at_lod(const unsigned int lod_index, StdVector<Vector3i> &positions) const;
+	void create_missing_blocks(const unsigned int lod_index, Span<const int> layer_ids);
 	void regenerate_emitter(const VoxelInstanceEmitter &emitter, bool regenerate_blocks);
 	// void regenerate_layer(uint16_t layer_id, bool regenerate_blocks);
 	void update_layer_meshes(const int layer_id);
