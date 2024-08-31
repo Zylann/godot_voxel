@@ -82,6 +82,13 @@ unsigned int VoxelInstanceLibrary::get_registered_item_count() const {
 	return _layer_id_to_item.size();
 }
 
+int VoxelInstanceLibrary::get_next_available_layer_id() const {
+	if (_layer_id_to_item.size() == 0) {
+		return 1;
+	}
+	return _layer_id_to_item.rbegin()->first + 1;
+}
+
 // TODO Identifying items by layer ID is only really useful for multimeshes, scenes could be tagged with it instead.
 // This means all scenes could share a same special layer ID per LOD. We may want to refactor that later...
 
@@ -91,7 +98,7 @@ void VoxelInstanceLibrary::register_item(Ref<VoxelInstanceLibraryItem> item, con
 		// Already registered
 		return;
 	}
-	const int id = _layer_id_to_item.rbegin()->first + 1;
+	const int id = get_next_available_layer_id();
 	_item_to_layer_id.insert({ key, id });
 	_layer_id_to_item.insert({ id, item });
 
