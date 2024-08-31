@@ -145,7 +145,16 @@ void VoxelInstanceEmitter::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_items"), &Self::_b_get_items);
 
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "lod_index"), "set_lod_index", "get_lod_index");
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "generator"), "set_generator", "get_generator");
+	ADD_PROPERTY(
+			PropertyInfo(
+					Variant::OBJECT,
+					"generator",
+					PROPERTY_HINT_RESOURCE_TYPE,
+					VoxelInstanceGenerator::get_class_static()
+			),
+			"set_generator",
+			"get_generator"
+	);
 
 	ADD_PROPERTY(
 			PropertyInfo(
