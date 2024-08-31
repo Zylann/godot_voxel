@@ -730,7 +730,8 @@ void VoxelInstancer::regenerate_emitter(const VoxelInstanceEmitter &emitter, boo
 
 	// TODO Candidate for temp allocator
 	StdVector<int> layer_ids;
-	for_each_layer_in_emitter(**_library, emitter, [this, &layer_ids](const int layer_id) {
+	for_each_layer_in_emitter(**_library, emitter, [&layer_ids](const int layer_id) {
+		ZN_ASSERT_RETURN(layer_id >= 0);
 		layer_ids.push_back(layer_id);
 	});
 	if (layer_ids.size() == 0) {
