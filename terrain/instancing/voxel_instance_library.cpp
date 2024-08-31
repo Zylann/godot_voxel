@@ -282,6 +282,7 @@ void VoxelInstanceLibrary::_b_set_emitters(TypedArray<VoxelInstanceEmitter> arra
 	diff_set_array(_emitters, array, added, removed);
 
 	for (const Ref<VoxelInstanceEmitter> &emitter : added) {
+		emitter->add_listener(this);
 		for (const Ref<VoxelInstanceLibraryItem> &item : emitter->get_items()) {
 			if (item.is_valid()) {
 				register_item(item, emitter.ptr());
@@ -290,6 +291,7 @@ void VoxelInstanceLibrary::_b_set_emitters(TypedArray<VoxelInstanceEmitter> arra
 	}
 
 	for (const Ref<VoxelInstanceEmitter> &emitter : removed) {
+		emitter->remove_listener(this);
 		for (const Ref<VoxelInstanceLibraryItem> &item : emitter->get_items()) {
 			if (item.is_valid()) {
 				unregister_item(item, emitter.ptr());

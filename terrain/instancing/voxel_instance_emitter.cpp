@@ -127,6 +127,8 @@ void VoxelInstanceEmitter::_b_set_items(TypedArray<VoxelInstanceLibraryItem> arr
 		}
 	}
 
+	// We emit a separate signal after all the add/removes because there could be multiple, which can cause redundant
+	// updates in the listener. So we trigger that event so the listener can perform updates once.
 	for (IInstanceEmitterListener *listener : _listeners) {
 		listener->on_emitter_array_assigned();
 	}
