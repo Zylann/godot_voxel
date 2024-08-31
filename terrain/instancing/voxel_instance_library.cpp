@@ -317,7 +317,7 @@ void VoxelInstanceLibrary::_bind_methods() {
 					Variant::ARRAY,
 					"emitters",
 					PROPERTY_HINT_ARRAY_TYPE,
-					MAKE_RESOURCE_TYPE_HINT(VoxelInstanceLibraryItem::get_class_static())
+					MAKE_RESOURCE_TYPE_HINT(VoxelInstanceEmitter::get_class_static())
 			),
 			"set_emitters",
 			"get_emitters"
