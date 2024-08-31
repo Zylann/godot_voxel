@@ -251,8 +251,11 @@ void LoadInstanceChunkTask::run(ThreadedTaskContext &ctx) {
 				bool all_edited = true;
 				Span<const Layer> edited_layers(layers.data(), edited_layers_count);
 				for (const int layer_id : layer_ids) {
-					const Layer *layer = L::find_layer(edited_layers, layer_id);
-					if (layer->edited_mask != 0xff) {
+					if (layer_id == -1) {
+						continue;
+					}
+					const Layer *edited_layer = L::find_layer(edited_layers, layer_id);
+					if (edited_layer == nullptr || edited_layer->edited_mask != 0xff) {
 						all_edited = false;
 						break;
 					}
