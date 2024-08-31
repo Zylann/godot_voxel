@@ -48,4 +48,4 @@ If you are not using an atlas and every side uses the same full texture, use (1,
 
 *(This method has no documentation)*
 
-_Generated on Apr 06, 2024_
+_Generated on Aug 27, 2024_

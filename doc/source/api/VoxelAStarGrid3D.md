@@ -31,7 +31,7 @@ Return                                                                          
 
 ## Signals: 
 
-### async_search_completed( [Vector3i[]](https://docs.godotengine.org/en/stable/classes/class_vector3i[].html) name ) 
+### async_search_completed( [Vector3i[]](https://docs.godotengine.org/en/stable/classes/class_vector3i[].html) path ) 
 
 *(This signal has no documentation)*
 
@@ -65,4 +65,4 @@ Return                                                                          
 
 *(This method has no documentation)*
 
-_Generated on Apr 06, 2024_
+_Generated on Aug 27, 2024_

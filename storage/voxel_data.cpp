@@ -1160,7 +1160,7 @@ void VoxelData::unview_area(
 	// Locking for write because we are potentially going to remove blocks from the map.
 	RWLockWrite wlock(lod.map_lock);
 
-	blocks_box.for_each_cell_zxy([&lod, missing_blocks, removed_blocks, to_save](Vector3i bpos) {
+	blocks_box.for_each_cell_zxy([&lod, missing_blocks, removed_blocks, to_save, lod_index](Vector3i bpos) {
 		VoxelDataBlock *block = lod.map.get_block(bpos);
 		if (block != nullptr) {
 			block->viewers.remove();
@@ -1168,7 +1168,7 @@ void VoxelData::unview_area(
 				if (to_save == nullptr) {
 					lod.map.remove_block(bpos, VoxelDataMap::NoAction());
 				} else {
-					lod.map.remove_block(bpos, BeforeUnloadSaveAction{ to_save, bpos, 0 });
+					lod.map.remove_block(bpos, BeforeUnloadSaveAction{ to_save, bpos, lod_index });
 				}
 				if (removed_blocks != nullptr) {
 					removed_blocks->push_back(bpos);
