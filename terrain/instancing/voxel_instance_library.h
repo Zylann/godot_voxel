@@ -102,6 +102,7 @@ public:
 	const PackedData &get_packed_data() const;
 
 private:
+	int get_next_available_layer_id() const;
 	void register_item(Ref<VoxelInstanceLibraryItem> item, const VoxelInstanceEmitter *emitter);
 	void unregister_item(Ref<VoxelInstanceLibraryItem> item, const VoxelInstanceEmitter *emitter);
 
