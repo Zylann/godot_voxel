@@ -102,6 +102,8 @@ void VoxelInstanceLibrary::register_item(Ref<VoxelInstanceLibraryItem> item, con
 	_item_to_layer_id.insert({ key, id });
 	_layer_id_to_item.insert({ id, item });
 
+	item->add_listener(this);
+
 	for (IInstanceLibraryListener *listener : _listeners) {
 		listener->on_library_item_registered(id, emitter->get_lod_index());
 	}
@@ -146,6 +148,8 @@ void VoxelInstanceLibrary::unregister_item(Ref<VoxelInstanceLibraryItem> item, c
 	const int id = item_to_id_it->second;
 	_item_to_layer_id.erase(item_to_id_it);
 	_layer_id_to_item.erase(id);
+
+	item->remove_listener(this);
 
 	for (IInstanceLibraryListener *listener : _listeners) {
 		listener->on_library_item_unregistered(id);
