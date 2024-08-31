@@ -17,8 +17,8 @@ template <typename TResource>
 void diff_set_array(
 		StdVector<Ref<TResource>> &dst,
 		const TypedArray<TResource> &src,
-		StdVector<Ref<TResource>> &added,
-		StdVector<Ref<TResource>> &removed
+		StdVector<Ref<TResource>> &added_items,
+		StdVector<Ref<TResource>> &removed_items
 ) {
 	StdVector<Ref<TResource>> new_items;
 	zylann::godot::copy_to(new_items, src);
@@ -38,9 +38,6 @@ void diff_set_array(
 		);
 		new_items[res.second] = Ref<TResource>();
 	}
-
-	StdVector<Ref<TResource>> added_items;
-	StdVector<Ref<TResource>> removed_items;
 
 	for (unsigned int i = 0; i < new_items.size(); ++i) {
 		const Ref<TResource> &new_item = new_items[i];
