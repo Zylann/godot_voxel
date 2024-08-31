@@ -232,10 +232,13 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_class<VoxelBlockyTypeLibrary>();
 
 		ClassDB::register_class<VoxelColorPalette>();
+
 		ClassDB::register_class<VoxelInstanceLibrary>();
+		ClassDB::register_class<VoxelInstanceEmitter>();
 		ClassDB::register_abstract_class<VoxelInstanceLibraryItem>();
 		ClassDB::register_class<VoxelInstanceLibraryMultiMeshItem>();
 		ClassDB::register_class<VoxelInstanceLibrarySceneItem>();
+
 		ClassDB::register_class<VoxelDataBlockEnterInfo>();
 		ClassDB::register_class<VoxelSaveCompletionTracker>();
 		ClassDB::register_class<pg::VoxelGraphFunction>();
