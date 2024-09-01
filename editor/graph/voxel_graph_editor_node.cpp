@@ -303,7 +303,9 @@ void VoxelGraphEditorNode::poll_params(const VoxelGraphFunction &graph) {
 }
 
 void VoxelGraphEditorNode::update_range_analysis_tooltips(
-		const VoxelGeneratorGraph &generator, const pg::Runtime::State &state) {
+		const VoxelGeneratorGraph &generator,
+		const pg::Runtime::State &state
+) {
 	for (unsigned int port_index = 0; port_index < _output_labels.size(); ++port_index) {
 		ProgramGraph::PortLocation loc;
 		loc.node_id = get_generator_node_id();
@@ -343,10 +345,11 @@ void VoxelGraphEditorNode::set_profiling_ratio(float ratio) {
 
 inline Color lerp(Color a, Color b, float t) {
 	return Color( //
-			Math::lerp(a.r, b.r, t), //
-			Math::lerp(a.g, b.g, t), //
-			Math::lerp(a.b, b.b, t), //
-			Math::lerp(a.a, b.a, t));
+			Math::lerp(a.r, b.r, t),
+			Math::lerp(a.g, b.g, t),
+			Math::lerp(a.b, b.b, t),
+			Math::lerp(a.a, b.a, t)
+	);
 }
 
 void VoxelGraphEditorNode::_notification(int p_what) {

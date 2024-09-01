@@ -27,7 +27,8 @@ VoxelGraphEditorShaderDialog::VoxelGraphEditorShaderDialog() {
 	Button *copy_to_clipboard_button = memnew(Button);
 	copy_to_clipboard_button->set_text(ZN_TTR("Copy to clipboard"));
 	copy_to_clipboard_button->connect(
-			"pressed", callable_mp(this, &VoxelGraphEditorShaderDialog::_on_copy_to_clipboard_button_pressed));
+			"pressed", callable_mp(this, &VoxelGraphEditorShaderDialog::_on_copy_to_clipboard_button_pressed)
+	);
 	buttons_container->add_child(copy_to_clipboard_button);
 
 	v_box_container->add_child(buttons_container);
