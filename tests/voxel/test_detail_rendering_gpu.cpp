@@ -118,7 +118,8 @@ void test_normalmap_render_gpu() {
 	const PackedByteArray atlas_texture_data = gpu_task->collect_texture_and_cleanup(rd, storage_buffer_pool);
 
 	Ref<Image> gpu_atlas_image = Image::create_from_data(
-			gpu_task->texture_width, gpu_task->texture_height, false, Image::FORMAT_RGBA8, atlas_texture_data);
+			gpu_task->texture_width, gpu_task->texture_height, false, Image::FORMAT_RGBA8, atlas_texture_data
+	);
 	ERR_FAIL_COND(gpu_atlas_image.is_null());
 	gpu_atlas_image->convert(Image::FORMAT_RGB8);
 
@@ -129,15 +130,29 @@ void test_normalmap_render_gpu() {
 	nm_task.cell_iterator->rewind();
 	DetailTextureData detail_textures_data;
 
-	compute_detail_texture_data(*nm_task.cell_iterator, to_span(nm_task.mesh_vertices), to_span(nm_task.mesh_normals),
-			to_span(nm_task.mesh_indices), detail_textures_data, detail_texture_settings.tile_resolution_min,
-			**generator, nm_task.voxel_data.get(), origin_in_voxels, mesher_input.voxels.get_size(), lod_index,
+	compute_detail_texture_data(
+			*nm_task.cell_iterator,
+			to_span(nm_task.mesh_vertices),
+			to_span(nm_task.mesh_normals),
+			to_span(nm_task.mesh_indices),
+			detail_textures_data,
+			detail_texture_settings.tile_resolution_min,
+			**generator,
+			nm_task.voxel_data.get(),
+			origin_in_voxels,
+			mesher_input.voxels.get_size(),
+			lod_index,
 			detail_texture_settings.octahedral_encoding_enabled,
-			math::deg_to_rad(float(detail_texture_settings.max_deviation_degrees)), false);
+			math::deg_to_rad(float(detail_texture_settings.max_deviation_degrees)),
+			false
+	);
 
-	DetailImages images =
-			store_normalmap_data_to_images(detail_textures_data, detail_texture_settings.tile_resolution_min,
-					nm_task.mesh_block_size, detail_texture_settings.octahedral_encoding_enabled);
+	DetailImages images = store_normalmap_data_to_images(
+			detail_textures_data,
+			detail_texture_settings.tile_resolution_min,
+			nm_task.mesh_block_size,
+			detail_texture_settings.octahedral_encoding_enabled
+	);
 	ZN_ASSERT(images.atlas.is_valid());
 	Ref<Image> cpu_atlas_image = images.atlas;
 
@@ -153,8 +168,10 @@ void test_normalmap_render_gpu() {
 				for (int x = 0; x < size.x; ++x) {
 					const Color c1 = im1.get_pixel(x, y);
 					const Color c2 = im2.get_pixel(x, y);
-					const float d = Math::sqrt(math::squared(c1.r - c2.r) + math::squared(c1.g - c2.g) +
-							math::squared(c1.b - c2.b) + math::squared(c1.a - c2.a));
+					const float d = Math::sqrt(
+							math::squared(c1.r - c2.r) + math::squared(c1.g - c2.g) + math::squared(c1.b - c2.b) +
+							math::squared(c1.a - c2.a)
+					);
 					dsum += d;
 					++counted_pixels;
 				}
