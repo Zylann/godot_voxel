@@ -9,8 +9,6 @@
 namespace zylann {
 namespace math {
 
-// TODO Optimization: make template, I don't always need `real_t`, sometimes it uses doubles unnecessarily
-
 namespace interval_impl {
 void check_range_once(float min, float max);
 void check_range_once(double min, double max);
