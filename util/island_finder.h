@@ -1,6 +1,7 @@
 #ifndef ISLAND_FINDER_H
 #define ISLAND_FINDER_H
 
+#include "containers/fixed_array.h"
 #include "containers/span.h"
 #include "math/box3i.h"
 

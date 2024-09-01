@@ -1,6 +1,7 @@
 #ifndef VOXEL_GRAPH_RUNTIME_H
 #define VOXEL_GRAPH_RUNTIME_H
 
+#include "../../util/containers/fixed_array.h"
 #include "../../util/containers/span.h"
 #include "../../util/containers/std_unordered_map.h"
 #include "../../util/containers/std_vector.h"

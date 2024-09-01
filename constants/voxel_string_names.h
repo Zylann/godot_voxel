@@ -1,6 +1,7 @@
 #ifndef VOXEL_STRING_NAMES_H
 #define VOXEL_STRING_NAMES_H
 
+#include "../util/containers/fixed_array.h"
 #include "../util/godot/core/string_name.h"
 #include "../util/math/ortho_basis.h"
 
