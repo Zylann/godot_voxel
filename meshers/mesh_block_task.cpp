@@ -494,13 +494,12 @@ void MeshBlockTask::build_mesh() {
 	const Vector3i origin_in_voxels = mesh_block_position * (mesh_block_size << lod_index);
 
 	const VoxelMesher::Input input{
-		_voxels, //
-		meshing_dependency->generator.ptr(), //
-		data.get(), //
-		origin_in_voxels, //
-		lod_index, //
-		collision_hint, //
-		lod_hint, //
+		_voxels,
+		meshing_dependency->generator.ptr(),
+		origin_in_voxels,
+		lod_index,
+		collision_hint,
+		lod_hint,
 		// TODO Gathering detail texture information is not always necessary
 		true // detail_texture_hint
 	};

@@ -22,7 +22,7 @@ Ref<Mesh> VoxelMesher::build_mesh(
 	ZN_PROFILE_SCOPE();
 
 	Output output;
-	Input input = { voxels, nullptr, nullptr, Vector3i(), 0, false, false, false };
+	Input input{ voxels, nullptr, Vector3i(), 0, false, false, false };
 
 	DetailRenderingSettings detail_texture_settings;
 	detail_texture_settings.begin_lod_index = 0;

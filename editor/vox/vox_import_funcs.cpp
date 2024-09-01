@@ -14,7 +14,7 @@ Ref<Mesh> build_mesh(
 		Vector3 p_offset
 ) {
 	VoxelMesher::Output output;
-	VoxelMesher::Input input = { voxels, nullptr, nullptr, Vector3i(), 0, false };
+	VoxelMesher::Input input{ voxels, nullptr, Vector3i(), 0, false };
 	mesher.build(output, input);
 
 	if (output.surfaces.size() == 0) {
