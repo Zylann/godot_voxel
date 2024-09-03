@@ -11,7 +11,7 @@
 namespace zylann::voxel::godot {
 
 VoxelModifier::VoxelModifier() {
-	set_notify_local_transform(true);
+	set_notify_transform(true);
 }
 
 zylann::voxel::VoxelModifier *VoxelModifier::create(zylann::voxel::VoxelModifierStack &modifiers, uint32_t id) {
@@ -75,15 +75,31 @@ float VoxelModifier::get_smoothness() const {
 	return _smoothness;
 }
 
+// Essentially, the transform this modifier would have were it a direct
+// child of the terrain.
+Transform3D VoxelModifier::get_terrain_local_transform() const {
+	ERR_FAIL_COND_V(_volume == nullptr, Transform3D());
+	return _volume->get_global_transform().affine_inverse() * get_global_transform();
+}
+
+VoxelLodTerrain *VoxelModifier::get_ancestor_volume() const {
+	Node *parent = get_parent();
+	while (parent != nullptr) {
+		VoxelLodTerrain *volume = Object::cast_to<VoxelLodTerrain>(parent);
+		if (volume != nullptr) {
+			return volume;
+		}
+		parent = parent->get_parent();
+	}
+	return nullptr;
+}
+
 void VoxelModifier::_notification(int p_what) {
 	switch (p_what) {
-		case NOTIFICATION_PARENTED: {
-			Node *parent = get_parent();
-			ZN_ASSERT_RETURN(parent != nullptr);
+		case NOTIFICATION_ENTER_TREE: {
 			ZN_ASSERT_RETURN(_volume == nullptr);
-			VoxelLodTerrain *volume = Object::cast_to<VoxelLodTerrain>(parent);
-			_volume = volume;
 
+			_volume = get_ancestor_volume();
 			if (_volume != nullptr) {
 				VoxelData &voxel_data = _volume->get_storage();
 				VoxelModifierStack &modifiers = voxel_data.get_modifiers();
@@ -97,7 +113,9 @@ void VoxelModifier::_notification(int p_what) {
 					sdf_modifier->set_smoothness(_smoothness);
 				}
 
-				modifier->set_transform(get_transform());
+				Transform3D terrain_local = get_terrain_local_transform();
+				modifier->set_transform(terrain_local);
+				_last_tl_transform = terrain_local;
 				_modifier_id = id;
 				// TODO Optimize: on loading of a scene, this could be very bad for performance because there could be,
 				// a lot of modifiers on the map, but there is no distinction possible in Godot at the moment...
@@ -107,7 +125,7 @@ void VoxelModifier::_notification(int p_what) {
 			update_configuration_warnings();
 		} break;
 
-		case NOTIFICATION_UNPARENTED: {
+		case NOTIFICATION_EXIT_TREE: {
 			if (_volume != nullptr) {
 				VoxelData &voxel_data = _volume->get_storage();
 				VoxelModifierStack &modifiers = voxel_data.get_modifiers();
@@ -120,26 +138,29 @@ void VoxelModifier::_notification(int p_what) {
 			}
 		} break;
 
-		case Node3D::NOTIFICATION_LOCAL_TRANSFORM_CHANGED: {
+		case Node3D::NOTIFICATION_TRANSFORM_CHANGED: {
 			if (_volume == nullptr || !is_inside_tree()) {
 				return;
 			}
-			
+
+			// Only trigger update if the transform has actually changed in terrain-local space.
+			const Transform3D terrain_local = get_terrain_local_transform();
+			if (terrain_local.is_equal_approx(_last_tl_transform)) {
+				return;
+			}
+			_last_tl_transform = terrain_local;
+
 			VoxelData &voxel_data = _volume->get_storage();
 			VoxelModifierStack &modifiers = voxel_data.get_modifiers();
 			zylann::voxel::VoxelModifier *modifier = modifiers.get_modifier(_modifier_id);
 			ZN_ASSERT_RETURN(modifier != nullptr);
 
+			
 			const AABB prev_aabb = modifier->get_aabb();
-			modifier->set_transform(get_transform());
+			modifier->set_transform(terrain_local);
 			const AABB aabb = modifier->get_aabb();
 			post_edit_modifier(*_volume, prev_aabb);
 			post_edit_modifier(*_volume, aabb);
-
-			// TODO Handle nesting properly, though it's a pain in the ass
-			// When the terrain is moved, the local transform of modifiers technically changes too.
-			// However it did not change relative to the terrain. But because we don't have a way to check that,
-			// all modifiers will trigger updates at the same time...
 		} break;
 	}
 }
@@ -162,7 +183,7 @@ PackedStringArray VoxelModifier::_get_configuration_warnings() const {
 
 void VoxelModifier::get_configuration_warnings(PackedStringArray &warnings) const {
 	if (_volume == nullptr) {
-		warnings.append(ZN_TTR("The parent of this node must be of type {0}.")
+		warnings.append(ZN_TTR("An ancestor of this node must be of type {0}.")
 								.format(varray(VoxelLodTerrain::get_class_static())));
 	}
 }
