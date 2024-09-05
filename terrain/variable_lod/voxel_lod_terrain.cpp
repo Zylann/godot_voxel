@@ -3442,10 +3442,10 @@ void VoxelLodTerrain::update_gizmos() {
 	// Modifiers
 	if (debug_get_draw_flag(DEBUG_DRAW_MODIFIER_BOUNDS)) {
 		const VoxelModifierStack &modifiers = _data->get_modifiers();
-		modifiers.for_each_modifier([&dr](const VoxelModifier &modifier) {
+		modifiers.for_each_modifier([&dr, parent_transform](const VoxelModifier &modifier) {
 			const AABB aabb = modifier.get_aabb();
 			const Transform3D t(Basis().scaled(aabb.size), aabb.get_center() - aabb.size * 0.5);
-			dr.draw_box(t, Color8(0, 0, 255, 255));
+			dr.draw_box(parent_transform * t, Color8(0, 0, 255, 255));
 		});
 	}
 
