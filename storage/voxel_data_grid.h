@@ -2,6 +2,7 @@
 #define VOXEL_DATA_GRID_H
 
 #include "../storage/voxel_buffer.h"
+#include "../util/thread/rw_lock.h"
 #include "../util/thread/spatial_lock_3d.h"
 #include "voxel_data_map.h"
 
@@ -21,30 +22,39 @@ public:
 	// }
 
 	// TODO This API is a bit risky, it should just be encapsulated into VoxelData maybe
-	inline void reference_area_block_coords(const VoxelDataMap &map, Box3i blocks_box, SpatialLock3D *sl) {
+	inline void reference_area_block_coords(
+			const VoxelDataMap &map,
+			RWLock &map_lock,
+			const Box3i blocks_box,
+			// Will be referenced for operations, assuming its lifetime is equal or greater than the grid
+			SpatialLock3D &spatial_lock
+	) {
 		ZN_PROFILE_SCOPE();
 		create(blocks_box.size, map.get_block_size());
+
 		_offset_in_blocks = blocks_box.position;
 		_logical_offset_in_blocks = blocks_box.position;
-		if (sl != nullptr) {
-			// Locking is needed because we access `has_voxels`
-			sl->lock_read(blocks_box);
+
+		// Locking is needed because we access `has_voxels`
+		spatial_lock.lock_read(blocks_box);
+
+		{
+			RWLockRead rlock(map_lock);
+			blocks_box.for_each_cell_zxy([&map, this](const Vector3i pos) {
+				const VoxelDataBlock *block = map.get_block(pos);
+				// TODO Might need to invoke the generator at some level for present blocks without voxels,
+				// or make sure all blocks contain voxel data
+				if (block != nullptr && block->has_voxels()) {
+					set_block(pos, block->get_voxels_shared());
+				} else {
+					set_block(pos, nullptr);
+				}
+			});
 		}
-		// WARNING: Assumes `map` is already locked for reading
-		blocks_box.for_each_cell_zxy([&map, this](const Vector3i pos) {
-			const VoxelDataBlock *block = map.get_block(pos);
-			// TODO Might need to invoke the generator at some level for present blocks without voxels,
-			// or make sure all blocks contain voxel data
-			if (block != nullptr && block->has_voxels()) {
-				set_block(pos, block->get_voxels_shared());
-			} else {
-				set_block(pos, nullptr);
-			}
-		});
-		if (sl != nullptr) {
-			sl->unlock_read(blocks_box);
-		}
-		_spatial_lock = sl;
+
+		spatial_lock.unlock_read(blocks_box);
+
+		_spatial_lock = &spatial_lock;
 	}
 
 	inline bool has_any_block() const {
