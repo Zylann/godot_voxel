@@ -26,6 +26,7 @@ void VoxelInstanceGenerator::generate_transforms(
 		// TODO `lod_index` has become unused, remove?
 		int lod_index,
 		int layer_id,
+		// TODO Provide arrays or offset to ignore transition meshes (transvoxel)
 		Array surface_arrays,
 		UpMode up_mode,
 		uint8_t octant_mask,
@@ -67,8 +68,7 @@ void VoxelInstanceGenerator::generate_transforms(
 
 	out_transforms.clear();
 
-	// TODO This part might be moved to the meshing thread if it turns out to be too heavy
-
+	// TODO Candidates for temp allocator
 	static thread_local StdVector<Vector3f> g_vertex_cache;
 	static thread_local StdVector<Vector3f> g_normal_cache;
 	static thread_local StdVector<float> g_noise_cache;
@@ -178,8 +178,12 @@ void VoxelInstanceGenerator::generate_transforms(
 				// This is roughly the size of one voxel's triangle
 				// const float unit_area = 0.5f * squared(block_size / 32.f);
 
-				float accumulator = 0.f;
+				float area_accumulator = 0.f;
+				// Here density means "instances per space unit squared".
+				// So inverse density means "units squared per instance"
 				const float inv_density = 1.f / _density;
+
+				const float triangle_area_threshold = math::squared(1 << lod_index) * _triangle_area_threshold_lod0;
 
 				for (int triangle_index = 0; triangle_index < triangle_count; ++triangle_index) {
 					const uint32_t ii = triangle_index * 3;
@@ -188,18 +192,22 @@ void VoxelInstanceGenerator::generate_transforms(
 					const int ib = indices[ii + 1];
 					const int ic = indices[ii + 2];
 
-					const Vector3 &pa = vertices[ia];
-					const Vector3 &pb = vertices[ib];
-					const Vector3 &pc = vertices[ic];
-
-					const Vector3 &na = normals[ia];
-					const Vector3 &nb = normals[ib];
-					const Vector3 &nc = normals[ic];
+					const Vector3f &pa = to_vec3f(vertices[ia]);
+					const Vector3f &pb = to_vec3f(vertices[ib]);
+					const Vector3f &pc = to_vec3f(vertices[ic]);
 
 					const float triangle_area = math::get_triangle_area(pa, pb, pc);
-					accumulator += triangle_area;
+					if (triangle_area <= triangle_area_threshold) {
+						continue;
+					}
 
-					const int count_in_triangle = int(accumulator * _density);
+					const Vector3f &na = to_vec3f(normals[ia]);
+					const Vector3f &nb = to_vec3f(normals[ib]);
+					const Vector3f &nc = to_vec3f(normals[ic]);
+
+					area_accumulator += triangle_area;
+
+					const int count_in_triangle = int(area_accumulator * _density);
 
 					for (int i = 0; i < count_in_triangle; ++i) {
 						const float t0 = pcg1.randf();
@@ -209,16 +217,71 @@ void VoxelInstanceGenerator::generate_transforms(
 						// const Vector3 p = pa.linear_interpolate(pb, t0).linear_interpolate(pc, 1.f - sqrt(t1));
 
 						// This is an approximation
-						const Vector3 p = pa.lerp(pb, t0).lerp(pc, t1);
-						const Vector3 n = na.lerp(nb, t0).lerp(nc, t1);
+						const Vector3f rp = math::lerp(math::lerp(pa, pb, t0), pc, t1);
+						const Vector3f rn = math::lerp(math::lerp(na, nb, t0), nc, t1);
 
-						vertex_cache.push_back(to_vec3f(p));
-						normal_cache.push_back(to_vec3f(n));
+						vertex_cache.push_back(rp);
+						normal_cache.push_back(rn);
 					}
 
-					accumulator -= count_in_triangle * inv_density;
+					area_accumulator -= count_in_triangle * inv_density;
 				}
 
+			} break;
+
+			case EMIT_ONE_PER_TRIANGLE: {
+				// Density has no effect here.
+
+				const int triangle_count = indices.size() / 3;
+				const float one_third = 1.f / 3.f;
+				const float triangle_area_threshold = math::squared(1 << lod_index) * _triangle_area_threshold_lod0;
+
+				for (int triangle_index = 0; triangle_index < triangle_count; ++triangle_index) {
+					const uint32_t ii = triangle_index * 3;
+
+					const int ia = indices[ii];
+					const int ib = indices[ii + 1];
+					const int ic = indices[ii + 2];
+
+					const Vector3f &pa = to_vec3f(vertices[ia]);
+					const Vector3f &pb = to_vec3f(vertices[ib]);
+					const Vector3f &pc = to_vec3f(vertices[ic]);
+
+					if (triangle_area_threshold > 0.f) {
+						const float triangle_area = math::get_triangle_area(pa, pb, pc);
+						if (triangle_area < triangle_area_threshold) {
+							continue;
+						}
+					}
+
+					const Vector3f &na = to_vec3f(normals[ia]);
+					const Vector3f &nb = to_vec3f(normals[ib]);
+					const Vector3f &nc = to_vec3f(normals[ic]);
+
+					const Vector3f cp = (pa + pb + pc) * one_third;
+					const Vector3f cn = (na + nb + nc) * one_third;
+
+					if (_jitter == 0.f) {
+						vertex_cache.push_back(to_vec3f(cp));
+						normal_cache.push_back(to_vec3f(cn));
+
+					} else {
+						const float t0 = pcg1.randf();
+						const float t1 = pcg1.randf();
+
+						// This formula gives pretty uniform distribution but involves a square root
+						// const Vector3 p = pa.linear_interpolate(pb, t0).linear_interpolate(pc, 1.f - sqrt(t1));
+						// This is an approximation
+						const Vector3f rp = math::lerp(math::lerp(pa, pb, t0), pc, t1);
+						const Vector3f rn = math::lerp(math::lerp(na, nb, t0), nc, t1);
+
+						const Vector3f p = math::lerp(cp, rp, _jitter);
+						const Vector3f n = math::lerp(cn, rn, _jitter);
+
+						vertex_cache.push_back(p);
+						normal_cache.push_back(n);
+					}
+				}
 			} break;
 
 			default:
@@ -609,6 +672,32 @@ VoxelInstanceGenerator::EmitMode VoxelInstanceGenerator::get_emit_mode() const {
 	return _emit_mode;
 }
 
+void VoxelInstanceGenerator::set_jitter(const float p_jitter) {
+	const float jitter = math::clamp(p_jitter, 0.f, 1.f);
+	if (jitter == _jitter) {
+		return;
+	}
+	_jitter = jitter;
+	emit_changed();
+}
+
+float VoxelInstanceGenerator::get_jitter() const {
+	return _jitter;
+}
+
+void VoxelInstanceGenerator::set_triangle_area_threshold(const float p_threshold) {
+	const float threshold = math::max(p_threshold, 0.f);
+	if (threshold == _triangle_area_threshold_lod0) {
+		return;
+	}
+	_triangle_area_threshold_lod0 = threshold;
+	emit_changed();
+}
+
+float VoxelInstanceGenerator::get_triangle_area_threshold() const {
+	return _triangle_area_threshold_lod0;
+}
+
 void VoxelInstanceGenerator::set_min_scale(float min_scale) {
 	if (_min_scale == min_scale) {
 		return;
@@ -889,6 +978,12 @@ void VoxelInstanceGenerator::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_emit_mode", "density"), &Self::set_emit_mode);
 	ClassDB::bind_method(D_METHOD("get_emit_mode"), &Self::get_emit_mode);
 
+	ClassDB::bind_method(D_METHOD("set_jitter", "jitter"), &Self::set_jitter);
+	ClassDB::bind_method(D_METHOD("get_jitter"), &Self::get_jitter);
+
+	ClassDB::bind_method(D_METHOD("set_triangle_area_threshold", "threshold"), &Self::set_triangle_area_threshold);
+	ClassDB::bind_method(D_METHOD("get_triangle_area_threshold"), &Self::get_triangle_area_threshold);
+
 	ClassDB::bind_method(D_METHOD("set_min_scale", "min_scale"), &Self::set_min_scale);
 	ClassDB::bind_method(D_METHOD("get_min_scale"), &Self::get_min_scale);
 
@@ -942,10 +1037,21 @@ void VoxelInstanceGenerator::_bind_methods() {
 			"get_density"
 	);
 	ADD_PROPERTY(
-			PropertyInfo(Variant::INT, "emit_mode", PROPERTY_HINT_ENUM, "Vertices,FacesFast,Faces"),
+			PropertyInfo(Variant::INT, "emit_mode", PROPERTY_HINT_ENUM, "Vertices,FacesFast,Faces,OnePerTriangle"),
 			"set_emit_mode",
 			"get_emit_mode"
 	);
+
+	ADD_PROPERTY(
+			PropertyInfo(Variant::FLOAT, "jitter", PROPERTY_HINT_RANGE, "0.0, 1.0, 0.01"), "set_jitter", "get_jitter"
+	);
+
+	ADD_PROPERTY(
+			PropertyInfo(Variant::FLOAT, "triangle_area_threshold", PROPERTY_HINT_RANGE, "0.0, 10.0, 0.01"),
+			"set_triangle_area_threshold",
+			"get_triangle_area_threshold"
+	);
+
 	ADD_PROPERTY(
 			PropertyInfo(Variant::FLOAT, "min_slope_degrees", PROPERTY_HINT_RANGE, "0.0, 180.0, 0.1"),
 			"set_min_slope_degrees",
@@ -1026,6 +1132,7 @@ void VoxelInstanceGenerator::_bind_methods() {
 	BIND_ENUM_CONSTANT(EMIT_FROM_VERTICES);
 	BIND_ENUM_CONSTANT(EMIT_FROM_FACES_FAST);
 	BIND_ENUM_CONSTANT(EMIT_FROM_FACES);
+	BIND_ENUM_CONSTANT(EMIT_ONE_PER_TRIANGLE);
 	BIND_ENUM_CONSTANT(EMIT_MODE_COUNT);
 
 	BIND_ENUM_CONSTANT(DISTRIBUTION_LINEAR);
