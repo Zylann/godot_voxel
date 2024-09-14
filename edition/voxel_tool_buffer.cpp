@@ -25,7 +25,7 @@ void VoxelToolBuffer::do_sphere(Vector3 center, float radius) {
 	VoxelBuffer &vb = _buffer->get_buffer();
 
 	ops::DoShapeSingleBuffer<ops::SdfSphere> op;
-	op.shape.center = center;
+	op.shape.center = to_vec3f(center);
 	op.shape.radius = radius;
 	op.shape.sdf_scale = get_sdf_scale();
 	op.box = op.shape.get_box().clipped(vb.get_size());
@@ -64,8 +64,8 @@ void VoxelToolBuffer::do_box(Vector3i begin, Vector3i end) {
 		});
 #else
 		ops::DoShapeSingleBuffer<ops::SdfAxisAlignedBox> op;
-		op.shape.center = to_vec3(begin + end) * 0.5;
-		op.shape.half_size = to_vec3(end - begin) * 0.5;
+		op.shape.center = to_vec3f(begin + end) * 0.5f;
+		op.shape.half_size = to_vec3f(end - begin) * 0.5f;
 		op.shape.sdf_scale = get_sdf_scale();
 		op.box = op.shape.get_box().clipped(vb.get_size());
 		op.mode = static_cast<ops::Mode>(get_mode());
@@ -200,8 +200,9 @@ void VoxelToolBuffer::do_path(Span<const Vector3> positions, Span<const float> r
 	for (unsigned int point_index = 1; point_index < positions.size(); ++point_index) {
 		// TODO Could run this in local space so we dont need doubles
 		// TODO Apply terrain scale
-		const Vector3 p0 = positions[point_index - 1];
-		const Vector3 p1 = positions[point_index];
+		// TODO Do cones in local space, better than using doubles when considering SIMD
+		const Vector3f p0 = to_vec3f(positions[point_index - 1]);
+		const Vector3f p1 = to_vec3f(positions[point_index]);
 
 		const float r0 = radii[point_index - 1];
 		const float r1 = radii[point_index];
@@ -211,7 +212,7 @@ void VoxelToolBuffer::do_path(Span<const Vector3> positions, Span<const float> r
 			continue;
 		}
 
-		math::SdfRoundConePrecalc cone;
+		math::SdfRoundConePrecalc<float> cone;
 		cone.a = p0;
 		cone.b = p1;
 		cone.r1 = r0;

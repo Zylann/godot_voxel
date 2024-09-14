@@ -111,8 +111,11 @@ You may turn off those checks in Project Settings: `voxel/ownership_checks`
 The module can also compile as a GDExtension library, which doesn't require to build Godot. However, C# support of extensions implemented in C++ is not well defined at the moment.
 
 
-Export templates
+Exporting
 -------------------
+
+!!! note 
+	You will need this section if you want to export your game.
 
 ### Getting a template
 

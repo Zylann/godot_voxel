@@ -1,10 +1,8 @@
 #include "voxel_instance_library_inspector_plugin.h"
 #include "../../constants/voxel_string_names.h"
-#include "../../util/godot/classes/button.h"
-#include "../../util/godot/classes/h_box_container.h"
-#include "../../util/godot/classes/menu_button.h"
-#include "../../util/godot/classes/popup_menu.h"
+#include "control_sizer.h"
 #include "voxel_instance_library_editor_plugin.h"
+#include "voxel_instance_library_list_editor.h"
 
 namespace zylann::voxel {
 
@@ -20,37 +18,31 @@ void VoxelInstanceLibraryInspectorPlugin::_zn_parse_begin(Object *p_object) {
 	// confusing because these buttons are about the property list of "VoxelInstanceLibrary" specifically.
 	// I could neither use `parse_property` nor `parse_category`, because when the list is empty,
 	// the class returns no properties AND no category.
-	add_buttons();
 }
 
-void VoxelInstanceLibraryInspectorPlugin::add_buttons() {
-	CRASH_COND(icon_provider == nullptr);
-	CRASH_COND(button_listener == nullptr);
-	const VoxelStringNames &sn = VoxelStringNames::get_singleton();
+bool VoxelInstanceLibraryInspectorPlugin::_zn_parse_property(
+		Object *p_object,
+		const Variant::Type p_type,
+		const String &p_path,
+		const PropertyHint p_hint,
+		const String &p_hint_text,
+		const BitField<PropertyUsageFlags> p_usage,
+		const bool p_wide
+) {
+	// We use this property as anchor to put our list on top of it
+	if (p_path == "_selected_item") {
+		Ref<VoxelInstanceLibrary> library(Object::cast_to<VoxelInstanceLibrary>(p_object));
 
-	// Put buttons on top of the list of items
-	HBoxContainer *hb = memnew(HBoxContainer);
+		VoxelInstanceLibraryListEditor *list_editor = memnew(VoxelInstanceLibraryListEditor);
+		list_editor->setup(icon_provider, plugin);
+		list_editor->set_library(library);
+		add_custom_control(list_editor);
 
-	MenuButton *button_add = memnew(MenuButton);
-	godot::set_button_icon(*button_add, icon_provider->get_theme_icon(sn.Add, sn.EditorIcons));
-	button_add->get_popup()->add_item("MultiMesh item (fast)", BUTTON_ADD_MULTIMESH_ITEM);
-	button_add->get_popup()->add_item("Scene item (slow)", BUTTON_ADD_SCENE_ITEM);
-	button_add->get_popup()->connect(
-			"id_pressed", callable_mp(button_listener, &VoxelInstanceLibraryEditorPlugin::_on_add_item_button_pressed));
-	hb->add_child(button_add);
-
-	Button *button_remove = memnew(Button);
-	godot::set_button_icon(*button_remove, icon_provider->get_theme_icon(sn.Remove, sn.EditorIcons));
-	button_remove->set_flat(true);
-	button_remove->connect(
-			"pressed", callable_mp(button_listener, &VoxelInstanceLibraryEditorPlugin::_on_remove_item_button_pressed));
-	hb->add_child(button_remove);
-
-	Control *spacer = memnew(Control);
-	spacer->set_h_size_flags(Control::SIZE_EXPAND_FILL);
-	hb->add_child(spacer);
-
-	add_custom_control(hb);
+		ZN_ControlSizer *sizer = memnew(ZN_ControlSizer);
+		sizer->set_target_control(list_editor);
+		add_custom_control(sizer);
+	}
+	return false;
 }
 
 } // namespace zylann::voxel

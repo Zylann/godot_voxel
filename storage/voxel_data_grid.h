@@ -2,6 +2,7 @@
 #define VOXEL_DATA_GRID_H
 
 #include "../storage/voxel_buffer.h"
+#include "../util/thread/rw_lock.h"
 #include "../util/thread/spatial_lock_3d.h"
 #include "voxel_data_map.h"
 
@@ -21,29 +22,39 @@ public:
 	// }
 
 	// TODO This API is a bit risky, it should just be encapsulated into VoxelData maybe
-	inline void reference_area_block_coords(const VoxelDataMap &map, Box3i blocks_box, SpatialLock3D *sl) {
+	inline void reference_area_block_coords(
+			const VoxelDataMap &map,
+			RWLock &map_lock,
+			const Box3i blocks_box,
+			// Will be referenced for operations, assuming its lifetime is equal or greater than the grid
+			SpatialLock3D &spatial_lock
+	) {
 		ZN_PROFILE_SCOPE();
 		create(blocks_box.size, map.get_block_size());
+
 		_offset_in_blocks = blocks_box.position;
-		if (sl != nullptr) {
-			// Locking is needed because we access `has_voxels`
-			sl->lock_read(blocks_box);
+		_logical_offset_in_blocks = blocks_box.position;
+
+		// Locking is needed because we access `has_voxels`
+		spatial_lock.lock_read(blocks_box);
+
+		{
+			RWLockRead rlock(map_lock);
+			blocks_box.for_each_cell_zxy([&map, this](const Vector3i pos) {
+				const VoxelDataBlock *block = map.get_block(pos);
+				// TODO Might need to invoke the generator at some level for present blocks without voxels,
+				// or make sure all blocks contain voxel data
+				if (block != nullptr && block->has_voxels()) {
+					set_block(pos, block->get_voxels_shared());
+				} else {
+					set_block(pos, nullptr);
+				}
+			});
 		}
-		// WARNING: Assumes `map` is already locked for reading
-		blocks_box.for_each_cell_zxy([&map, this](const Vector3i pos) {
-			const VoxelDataBlock *block = map.get_block(pos);
-			// TODO Might need to invoke the generator at some level for present blocks without voxels,
-			// or make sure all blocks contain voxel data
-			if (block != nullptr && block->has_voxels()) {
-				set_block(pos, block->get_voxels_shared());
-			} else {
-				set_block(pos, nullptr);
-			}
-		});
-		if (sl != nullptr) {
-			sl->unlock_read(blocks_box);
-		}
-		_spatial_lock = sl;
+
+		spatial_lock.unlock_read(blocks_box);
+
+		_spatial_lock = &spatial_lock;
 	}
 
 	inline bool has_any_block() const {
@@ -109,7 +120,7 @@ public:
 #ifdef DEBUG_ENABLED
 		ZN_ASSERT(_locked);
 #endif
-		const Vector3i bpos = (pos >> _block_size_po2) - _offset_in_blocks;
+		const Vector3i bpos = (pos >> _block_size_po2) - _logical_offset_in_blocks;
 		if (!is_valid_relative_block_position(bpos)) {
 			return false;
 		}
@@ -191,15 +202,32 @@ public:
 		return _block_size_po2;
 	}
 
+	inline Vector3i get_origin_block_position_in_blocks() const {
+		return _offset_in_blocks;
+	}
+
+	inline Vector3i get_origin_block_position_in_voxels() const {
+		return _offset_in_blocks << _block_size_po2;
+	}
+
+	inline void use_relative_coordinates() {
+		_logical_offset_in_blocks = Vector3i();
+	}
+
 private:
 	inline unsigned int get_block_size() const {
 		return _block_size;
 	}
 
 	template <typename Block_F>
-	inline void _box_loop(Box3i voxel_box, Block_F block_action) {
+	inline void _box_loop(const Box3i voxel_box, Block_F block_action) {
+		_box_loop_with_offset(voxel_box, _logical_offset_in_blocks, block_action);
+	}
+
+	template <typename Block_F>
+	inline void _box_loop_with_offset(const Box3i voxel_box, const Vector3i offset_in_blocks, Block_F block_action) {
 		Vector3i block_rpos;
-		const Vector3i area_origin_in_voxels = _offset_in_blocks * _block_size;
+		const Vector3i area_origin_in_voxels = offset_in_blocks * _block_size;
 		unsigned int index = 0;
 		for (block_rpos.z = 0; block_rpos.z < _size_in_blocks.z; ++block_rpos.z) {
 			for (block_rpos.x = 0; block_rpos.x < _size_in_blocks.x; ++block_rpos.x) {
@@ -264,6 +292,7 @@ private:
 	// Block coordinates offset. This is used for when we cache a sub-region of a map, we need to keep the origin
 	// of the area in memory so we can keep using the same coordinate space
 	Vector3i _offset_in_blocks;
+	Vector3i _logical_offset_in_blocks;
 	// Size of a block in voxels
 	unsigned int _block_size_po2 = constants::DEFAULT_BLOCK_SIZE_PO2;
 	unsigned int _block_size = 1 << constants::DEFAULT_BLOCK_SIZE_PO2;

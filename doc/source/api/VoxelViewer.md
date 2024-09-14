@@ -13,13 +13,14 @@ The voxel world uses the position and options of all the [VoxelViewer](VoxelView
 ## Properties: 
 
 
-Type                                                                    | Name                                                                       | Default 
------------------------------------------------------------------------ | -------------------------------------------------------------------------- | --------
-[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)  | [enabled_in_editor](#i_enabled_in_editor)                                  | false   
-[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)  | [requires_collisions](#i_requires_collisions)                              | true    
-[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)  | [requires_data_block_notifications](#i_requires_data_block_notifications)  | false   
-[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)  | [requires_visuals](#i_requires_visuals)                                    | true    
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)    | [view_distance](#i_view_distance)                                          | 128     
+Type                                                                      | Name                                                                       | Default 
+------------------------------------------------------------------------- | -------------------------------------------------------------------------- | --------
+[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)    | [enabled_in_editor](#i_enabled_in_editor)                                  | false   
+[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)    | [requires_collisions](#i_requires_collisions)                              | true    
+[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)    | [requires_data_block_notifications](#i_requires_data_block_notifications)  | false   
+[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)    | [requires_visuals](#i_requires_visuals)                                    | true    
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)      | [view_distance](#i_view_distance)                                          | 128     
+[float](https://docs.godotengine.org/en/stable/classes/class_float.html)  | [view_distance_vertical_ratio](#i_view_distance_vertical_ratio)            | 1.0     
 <p></p>
 
 ## Methods: 
@@ -55,6 +56,10 @@ If set to `true`, the engine will generate meshes around this viewer. This may b
 
 How far should voxels generate around this viewer.
 
+### [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_view_distance_vertical_ratio"></span> **view_distance_vertical_ratio** = 1.0
+
+Modifies vertical view distance to be a ratio of the [VoxelViewer.view_distance](VoxelViewer.md#i_view_distance) property. For example, if [VoxelViewer.view_distance](VoxelViewer.md#i_view_distance) is 100 and this property is 0.5, then horizontal view distance will be 100 and vertical view distance will be 50.
+
 ## Method Descriptions
 
 ### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_get_network_peer_id"></span> **get_network_peer_id**( ) 
@@ -65,4 +70,4 @@ How far should voxels generate around this viewer.
 
 *(This method has no documentation)*
 
-_Generated on Apr 06, 2024_
+_Generated on Aug 27, 2024_

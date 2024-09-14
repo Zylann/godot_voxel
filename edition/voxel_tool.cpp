@@ -155,12 +155,12 @@ void VoxelTool::_set_voxel_f(Vector3i pos, float v) {
 // defined in subclasses of VoxelTool. Ideally, a function may be exposed on the base class only if it has an optimal
 // definition in all specialized classes.
 
-void VoxelTool::do_sphere(Vector3 center, float radius) {
+void VoxelTool::do_sphere(Vector3 p_center, float radius) {
 	ZN_PROFILE_SCOPE();
 	// Default, suboptimal implementation
 
 	const Box3i box(
-			math::floor_to_int(center) - Vector3iUtil::create(Math::floor(radius)),
+			math::floor_to_int(p_center) - Vector3iUtil::create(Math::floor(radius)),
 			Vector3iUtil::create(Math::ceil(radius) * 2)
 	);
 
@@ -170,16 +170,17 @@ void VoxelTool::do_sphere(Vector3 center, float radius) {
 	}
 
 	if (_channel == VoxelBuffer::CHANNEL_SDF) {
+		const Vector3f center = to_vec3f(p_center);
 		box.for_each_cell([this, center, radius](Vector3i pos) {
-			float d = _sdf_scale * zylann::math::sdf_sphere(pos, center, radius);
+			float d = _sdf_scale * zylann::math::sdf_sphere(to_vec3f(pos), center, radius);
 			_set_voxel_f(pos, ops::sdf_blend(d, get_voxel_f(pos), static_cast<ops::Mode>(_mode)));
 		});
 
 	} else {
 		int value = _mode == MODE_REMOVE ? _eraser_value : _value;
 
-		box.for_each_cell([this, center, radius, value](Vector3i pos) {
-			float d = Vector3(pos).distance_to(center);
+		box.for_each_cell([this, p_center, radius, value](Vector3i pos) {
+			float d = Vector3(pos).distance_to(p_center);
 			if (d <= radius) {
 				_set_voxel(pos, value);
 			}

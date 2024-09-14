@@ -499,14 +499,35 @@ void VoxelBlockyModel::rotate_collision_boxes_ortho(math::OrthoBasis ortho_basis
 	}
 }
 
-void VoxelBlockyModel::rotate_90(math::Axis axis, bool clockwise) {
-	ZN_PRINT_ERROR("Not implemented");
-	// Implemented in child classes
+void VoxelBlockyModel::set_mesh_ortho_rotation_index(int i) {
+	ZN_ASSERT_RETURN(i >= 0 && i < math::ORTHOGONAL_BASIS_COUNT);
+	if (i != int(_mesh_ortho_rotation)) {
+		_mesh_ortho_rotation = i;
+	}
 }
 
-void VoxelBlockyModel::rotate_ortho(math::OrthoBasis ortho_basis) {
-	ZN_PRINT_ERROR("Not implemented");
-	// Implemented in child classes
+int VoxelBlockyModel::get_mesh_ortho_rotation_index() const {
+	return _mesh_ortho_rotation;
+}
+
+void VoxelBlockyModel::rotate_90(math::Axis axis, bool clockwise) {
+	math::OrthoBasis ortho_basis = math::get_ortho_basis_from_index(_mesh_ortho_rotation);
+	ortho_basis.rotate_90(axis, clockwise);
+	_mesh_ortho_rotation = math::get_index_from_ortho_basis(ortho_basis);
+
+	rotate_collision_boxes_90(axis, clockwise);
+
+	emit_changed();
+}
+
+void VoxelBlockyModel::rotate_ortho(math::OrthoBasis p_ortho_basis) {
+	math::OrthoBasis ortho_basis = math::get_ortho_basis_from_index(_mesh_ortho_rotation);
+	ortho_basis = p_ortho_basis * ortho_basis;
+	_mesh_ortho_rotation = math::get_index_from_ortho_basis(ortho_basis);
+
+	rotate_collision_boxes_ortho(p_ortho_basis);
+
+	emit_changed();
 }
 
 void VoxelBlockyModel::_b_rotate_90(Vector3i::Axis axis, bool clockwise) {
@@ -553,6 +574,11 @@ void VoxelBlockyModel::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_collision_mask", "mask"), &VoxelBlockyModel::set_collision_mask);
 	ClassDB::bind_method(D_METHOD("get_collision_mask"), &VoxelBlockyModel::get_collision_mask);
 
+	ClassDB::bind_method(
+			D_METHOD("set_mesh_ortho_rotation_index", "i"), &VoxelBlockyModel::set_mesh_ortho_rotation_index
+	);
+	ClassDB::bind_method(D_METHOD("get_mesh_ortho_rotation_index"), &VoxelBlockyModel::get_mesh_ortho_rotation_index);
+
 	// Bound for editor purposes
 	ClassDB::bind_method(D_METHOD("rotate_90", "axis", "clockwise"), &VoxelBlockyModel::_b_rotate_90);
 
@@ -578,6 +604,8 @@ void VoxelBlockyModel::_bind_methods() {
 			"set_collision_mask",
 			"get_collision_mask"
 	);
+
+	ADD_GROUP("Rotation", "");
 
 	BIND_ENUM_CONSTANT(SIDE_NEGATIVE_X);
 	BIND_ENUM_CONSTANT(SIDE_POSITIVE_X);

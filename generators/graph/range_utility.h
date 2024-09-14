@@ -2,9 +2,9 @@
 #define RANGE_UTILITY_H
 
 #include "../../util/containers/std_vector.h"
+#include "../../util/godot/core/rect2i.h"
 #include "../../util/godot/macros.h"
 #include "../../util/math/interval.h"
-#include "../../util/math/rect2i.h"
 
 ZN_GODOT_FORWARD_DECLARE(class Curve)
 ZN_GODOT_FORWARD_DECLARE(class Image)

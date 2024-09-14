@@ -35,11 +35,23 @@ public:
 	bool has_modifier(uint32_t id) const;
 	VoxelModifier *get_modifier(uint32_t id) const;
 	void apply(VoxelBuffer &voxels, AABB aabb) const;
-	void apply(float &sdf, Vector3 position) const;
-	void apply(Span<const float> x_buffer, Span<const float> y_buffer, Span<const float> z_buffer,
-			Span<float> sdf_buffer, Vector3f min_pos, Vector3f max_pos) const;
+	void apply(float &sdf, Vector3f position) const;
+
+	void apply(
+			Span<const float> x_buffer,
+			Span<const float> y_buffer,
+			Span<const float> z_buffer,
+			Span<float> sdf_buffer,
+			Vector3f min_pos,
+			Vector3f max_pos
+	) const;
+
 	void apply_for_gpu_rendering(
-			StdVector<VoxelModifier::ShaderData> &out_data, AABB aabb, VoxelModifier::ShaderData::Type type) const;
+			StdVector<VoxelModifier::ShaderData> &out_data,
+			AABB aabb,
+			VoxelModifier::ShaderData::Type type
+	) const;
+
 	void clear();
 
 	template <typename F>

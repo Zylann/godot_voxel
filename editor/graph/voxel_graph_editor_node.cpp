@@ -7,6 +7,7 @@
 #include "../../util/godot/classes/style_box_empty.h"
 #include "../../util/godot/core/array.h"
 #include "../../util/godot/editor_scale.h"
+#include "../../util/math/color.h"
 #include "voxel_graph_editor_node_preview.h"
 
 namespace zylann::voxel {
@@ -303,7 +304,9 @@ void VoxelGraphEditorNode::poll_params(const VoxelGraphFunction &graph) {
 }
 
 void VoxelGraphEditorNode::update_range_analysis_tooltips(
-		const VoxelGeneratorGraph &generator, const pg::Runtime::State &state) {
+		const VoxelGeneratorGraph &generator,
+		const pg::Runtime::State &state
+) {
 	for (unsigned int port_index = 0; port_index < _output_labels.size(); ++port_index) {
 		ProgramGraph::PortLocation loc;
 		loc.node_id = get_generator_node_id();
@@ -341,14 +344,6 @@ void VoxelGraphEditorNode::set_profiling_ratio(float ratio) {
 	queue_redraw();
 }
 
-inline Color lerp(Color a, Color b, float t) {
-	return Color( //
-			Math::lerp(a.r, b.r, t), //
-			Math::lerp(a.g, b.g, t), //
-			Math::lerp(a.b, b.b, t), //
-			Math::lerp(a.a, b.a, t));
-}
-
 void VoxelGraphEditorNode::_notification(int p_what) {
 	using namespace zylann::godot;
 
@@ -368,7 +363,7 @@ void VoxelGraphEditorNode::_notification(int p_what) {
 			const Vector2 control_size = get_size();
 			const float bgw = control_size.x;
 			const Color bg_color(0.1, 0.1, 0.1);
-			const Color fg_color = lerp(Color(0.8, 0.8, 0.0), Color(1.0, 0.2, 0.0), _profiling_ratio);
+			const Color fg_color = math::lerp(Color(0.8, 0.8, 0.0), Color(1.0, 0.2, 0.0), _profiling_ratio);
 			draw_rect(Rect2(0, control_size.y - bgh, bgw, bgh), bg_color);
 			draw_rect(Rect2(0, control_size.y - bgh, bgw * _profiling_ratio, bgh), fg_color);
 		}

@@ -33,6 +33,7 @@ jobs:
             # To fix this we would have to cherry-pick 41890ff9c3028d3b05d993f8f7ec42c346824304 to the 4.0 branch.
             # There might be other issues cropping up, since there doesn't seem to be an official CI checking this.
             warnings: all
+            werror: yes
 
           - name: 4.1 Editor
             precision: single
@@ -41,7 +42,26 @@ jobs:
             executable_name: godot.linuxbsd.editor.x86_64
             godot_base_branch: "4.1"
             warnings: extra
-          
+            werror: yes
+
+          - name: 4.2 Editor
+            precision: single
+            target: editor
+            production: no
+            executable_name: godot.linuxbsd.editor.x86_64
+            godot_base_branch: "4.2"
+            warnings: extra
+            # TODO Had to turn off warning as errors, even though it worked in the past.
+            # Downgrading warnings to `all` or `moderate` did not fix it.
+            # Something in Godot 4.2, or in the version of GCC in the buildroot, has changed causing this to happen:
+            # drivers/gles3/storage/texture_storage.cpp:1513:31: error: 'void* memset(void*, int, size_t)' 
+            #     specified bound between 18446744065119617024 and 18446744073709551612 exceeds maximum object size 
+            #     [-Werror=stringop-overflow=]
+            #     memset(v_offsets, 0, sizeof(int) * base_size);
+            #     ~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            # Looking at the code, I could not find what's wrong.
+            werror: no
+
           - name: master Editor
             precision: single
             target: editor
@@ -49,32 +69,36 @@ jobs:
             executable_name: godot.linuxbsd.editor.x86_64
             godot_base_branch: "master"
             warnings: extra
+            werror: yes
 
           # --- Builds with artifacts ---
 
-          - name: 4.2 Editor
+          - name: 4.3 Editor
             precision: single
             target: editor
             production: yes
             executable_name: godot.linuxbsd.editor.x86_64
-            godot_base_branch: "4.2.2-stable"
+            godot_base_branch: "4.3-stable"
             warnings: extra
+            werror: yes
 
-          - name: 4.2 Template
+          - name: 4.3 Template
             precision: single
             target: template_release
             production: yes
             executable_name: godot.linuxbsd.template_release.x86_64
-            godot_base_branch: "4.2.2-stable"
+            godot_base_branch: "4.3-stable"
             warnings: extra
+            werror: yes
 
-          - name: 4.2 Editor Float64
+          - name: 4.3 Editor Float64
             precision: double
             target: editor
             production: yes
             executable_name: godot.linuxbsd.editor.double.x86_64
-            godot_base_branch: "4.2.2-stable"
+            godot_base_branch: "4.3-stable"
             warnings: extra
+            werror: yes
 
     steps:
       # Clone Godot
@@ -155,7 +179,7 @@ jobs:
           SCONS_CACHE: ${{github.workspace}}/.scons_cache/
         run: |
           PATH=${GITHUB_WORKSPACE}/x86_64-godot-linux-gnu_sdk-buildroot/bin:$PATH
-          scons verbose=yes warnings=${{matrix.warnings}} werror=yes platform=linuxbsd tests=no dev_build=no target=${{matrix.target}} production=${{matrix.production}} precision=${{matrix.precision}}
+          scons verbose=yes warnings=${{matrix.warnings}} werror=${{matrix.werror}} platform=linuxbsd tests=no dev_build=no target=${{matrix.target}} production=${{matrix.production}} precision=${{matrix.precision}}
 
       # Make build available
       - uses: actions/upload-artifact@v4

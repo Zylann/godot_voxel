@@ -12,8 +12,12 @@
 namespace zylann::voxel {
 
 namespace {
-const float MAX_DENSITY = 1.f;
-const char *DENSITY_HINT_STRING = "0.0, 1.0, 0.01";
+
+// This cap is for sanity, to prevent potential crashing.
+const float MAX_DENSITY = 10.f;
+// We expose a slider going below max density as it should not often be needed, but we allow greater if really necessary
+const char *DENSITY_HINT_STRING = "0.0, 1.0, 0.01, or_greater";
+
 } // namespace
 
 void VoxelInstanceGenerator::generate_transforms(
@@ -93,8 +97,10 @@ void VoxelInstanceGenerator::generate_transforms(
 				// so it's possible a different emit mode will produce different amounts of instances.
 				// I had to use `uint64` and clamp it because floats can't contain `0xffffffff` accurately. Instead
 				// it results in `0x100000000`, one unit above.
+				const float density = math::clamp(_density, 0.f, 1.f);
+				static constexpr float max_density = 1.f;
 				const uint32_t density_u32 =
-						math::min(uint64_t(double(0xffffffff) * _density / MAX_DENSITY), uint64_t(0xffffffff));
+						math::min(uint64_t(double(0xffffffff) * density / max_density), uint64_t(0xffffffff));
 				const int size = vertices.size();
 				const float margin = block_size - block_size * 0.01f;
 				for (int i = 0; i < size; ++i) {
@@ -578,7 +584,7 @@ void VoxelInstanceGenerator::generate_transforms(
 }
 
 void VoxelInstanceGenerator::set_density(float density) {
-	density = math::max(density, 0.f);
+	density = math::clamp(density, 0.f, MAX_DENSITY);
 	if (density == _density) {
 		return;
 	}
@@ -875,62 +881,58 @@ void VoxelInstanceGenerator::get_configuration_warnings(PackedStringArray &warni
 #endif
 
 void VoxelInstanceGenerator::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("set_density", "density"), &VoxelInstanceGenerator::set_density);
-	ClassDB::bind_method(D_METHOD("get_density"), &VoxelInstanceGenerator::get_density);
+	using Self = VoxelInstanceGenerator;
 
-	ClassDB::bind_method(D_METHOD("set_emit_mode", "density"), &VoxelInstanceGenerator::set_emit_mode);
-	ClassDB::bind_method(D_METHOD("get_emit_mode"), &VoxelInstanceGenerator::get_emit_mode);
+	ClassDB::bind_method(D_METHOD("set_density", "density"), &Self::set_density);
+	ClassDB::bind_method(D_METHOD("get_density"), &Self::get_density);
 
-	ClassDB::bind_method(D_METHOD("set_min_scale", "min_scale"), &VoxelInstanceGenerator::set_min_scale);
-	ClassDB::bind_method(D_METHOD("get_min_scale"), &VoxelInstanceGenerator::get_min_scale);
+	ClassDB::bind_method(D_METHOD("set_emit_mode", "density"), &Self::set_emit_mode);
+	ClassDB::bind_method(D_METHOD("get_emit_mode"), &Self::get_emit_mode);
 
-	ClassDB::bind_method(D_METHOD("set_max_scale", "max_scale"), &VoxelInstanceGenerator::set_max_scale);
-	ClassDB::bind_method(D_METHOD("get_max_scale"), &VoxelInstanceGenerator::get_max_scale);
+	ClassDB::bind_method(D_METHOD("set_min_scale", "min_scale"), &Self::set_min_scale);
+	ClassDB::bind_method(D_METHOD("get_min_scale"), &Self::get_min_scale);
 
-	ClassDB::bind_method(
-			D_METHOD("set_scale_distribution", "distribution"), &VoxelInstanceGenerator::set_scale_distribution
-	);
-	ClassDB::bind_method(D_METHOD("get_scale_distribution"), &VoxelInstanceGenerator::get_scale_distribution);
+	ClassDB::bind_method(D_METHOD("set_max_scale", "max_scale"), &Self::set_max_scale);
+	ClassDB::bind_method(D_METHOD("get_max_scale"), &Self::get_max_scale);
 
-	ClassDB::bind_method(D_METHOD("set_vertical_alignment", "amount"), &VoxelInstanceGenerator::set_vertical_alignment);
-	ClassDB::bind_method(D_METHOD("get_vertical_alignment"), &VoxelInstanceGenerator::get_vertical_alignment);
+	ClassDB::bind_method(D_METHOD("set_scale_distribution", "distribution"), &Self::set_scale_distribution);
+	ClassDB::bind_method(D_METHOD("get_scale_distribution"), &Self::get_scale_distribution);
 
-	ClassDB::bind_method(
-			D_METHOD("set_offset_along_normal", "offset"), &VoxelInstanceGenerator::set_offset_along_normal
-	);
-	ClassDB::bind_method(D_METHOD("get_offset_along_normal"), &VoxelInstanceGenerator::get_offset_along_normal);
+	ClassDB::bind_method(D_METHOD("set_vertical_alignment", "amount"), &Self::set_vertical_alignment);
+	ClassDB::bind_method(D_METHOD("get_vertical_alignment"), &Self::get_vertical_alignment);
 
-	ClassDB::bind_method(D_METHOD("set_min_slope_degrees", "degrees"), &VoxelInstanceGenerator::set_min_slope_degrees);
-	ClassDB::bind_method(D_METHOD("get_min_slope_degrees"), &VoxelInstanceGenerator::get_min_slope_degrees);
+	ClassDB::bind_method(D_METHOD("set_offset_along_normal", "offset"), &Self::set_offset_along_normal);
+	ClassDB::bind_method(D_METHOD("get_offset_along_normal"), &Self::get_offset_along_normal);
 
-	ClassDB::bind_method(D_METHOD("set_max_slope_degrees", "degrees"), &VoxelInstanceGenerator::set_max_slope_degrees);
-	ClassDB::bind_method(D_METHOD("get_max_slope_degrees"), &VoxelInstanceGenerator::get_max_slope_degrees);
+	ClassDB::bind_method(D_METHOD("set_min_slope_degrees", "degrees"), &Self::set_min_slope_degrees);
+	ClassDB::bind_method(D_METHOD("get_min_slope_degrees"), &Self::get_min_slope_degrees);
 
-	ClassDB::bind_method(D_METHOD("set_min_height", "height"), &VoxelInstanceGenerator::set_min_height);
-	ClassDB::bind_method(D_METHOD("get_min_height"), &VoxelInstanceGenerator::get_min_height);
+	ClassDB::bind_method(D_METHOD("set_max_slope_degrees", "degrees"), &Self::set_max_slope_degrees);
+	ClassDB::bind_method(D_METHOD("get_max_slope_degrees"), &Self::get_max_slope_degrees);
 
-	ClassDB::bind_method(D_METHOD("set_max_height", "height"), &VoxelInstanceGenerator::set_max_height);
-	ClassDB::bind_method(D_METHOD("get_max_height"), &VoxelInstanceGenerator::get_max_height);
+	ClassDB::bind_method(D_METHOD("set_min_height", "height"), &Self::set_min_height);
+	ClassDB::bind_method(D_METHOD("get_min_height"), &Self::get_min_height);
 
-	ClassDB::bind_method(
-			D_METHOD("set_random_vertical_flip", "enabled"), &VoxelInstanceGenerator::set_random_vertical_flip
-	);
-	ClassDB::bind_method(D_METHOD("get_random_vertical_flip"), &VoxelInstanceGenerator::get_random_vertical_flip);
+	ClassDB::bind_method(D_METHOD("set_max_height", "height"), &Self::set_max_height);
+	ClassDB::bind_method(D_METHOD("get_max_height"), &Self::get_max_height);
 
-	ClassDB::bind_method(D_METHOD("set_random_rotation", "enabled"), &VoxelInstanceGenerator::set_random_rotation);
-	ClassDB::bind_method(D_METHOD("get_random_rotation"), &VoxelInstanceGenerator::get_random_rotation);
+	ClassDB::bind_method(D_METHOD("set_random_vertical_flip", "enabled"), &Self::set_random_vertical_flip);
+	ClassDB::bind_method(D_METHOD("get_random_vertical_flip"), &Self::get_random_vertical_flip);
 
-	ClassDB::bind_method(D_METHOD("set_noise", "noise"), &VoxelInstanceGenerator::set_noise);
-	ClassDB::bind_method(D_METHOD("get_noise"), &VoxelInstanceGenerator::get_noise);
+	ClassDB::bind_method(D_METHOD("set_random_rotation", "enabled"), &Self::set_random_rotation);
+	ClassDB::bind_method(D_METHOD("get_random_rotation"), &Self::get_random_rotation);
 
-	ClassDB::bind_method(D_METHOD("set_noise_graph", "graph"), &VoxelInstanceGenerator::set_noise_graph);
-	ClassDB::bind_method(D_METHOD("get_noise_graph"), &VoxelInstanceGenerator::get_noise_graph);
+	ClassDB::bind_method(D_METHOD("set_noise", "noise"), &Self::set_noise);
+	ClassDB::bind_method(D_METHOD("get_noise"), &Self::get_noise);
 
-	ClassDB::bind_method(D_METHOD("set_noise_dimension", "dim"), &VoxelInstanceGenerator::set_noise_dimension);
-	ClassDB::bind_method(D_METHOD("get_noise_dimension"), &VoxelInstanceGenerator::get_noise_dimension);
+	ClassDB::bind_method(D_METHOD("set_noise_graph", "graph"), &Self::set_noise_graph);
+	ClassDB::bind_method(D_METHOD("get_noise_graph"), &Self::get_noise_graph);
 
-	ClassDB::bind_method(D_METHOD("set_noise_on_scale", "amount"), &VoxelInstanceGenerator::set_noise_on_scale);
-	ClassDB::bind_method(D_METHOD("get_noise_on_scale"), &VoxelInstanceGenerator::get_noise_on_scale);
+	ClassDB::bind_method(D_METHOD("set_noise_dimension", "dim"), &Self::set_noise_dimension);
+	ClassDB::bind_method(D_METHOD("get_noise_dimension"), &Self::get_noise_dimension);
+
+	ClassDB::bind_method(D_METHOD("set_noise_on_scale", "amount"), &Self::set_noise_on_scale);
+	ClassDB::bind_method(D_METHOD("get_noise_on_scale"), &Self::get_noise_on_scale);
 
 	ADD_GROUP("Emission", "");
 

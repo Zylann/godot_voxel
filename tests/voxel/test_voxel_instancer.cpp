@@ -8,10 +8,18 @@ namespace zylann::voxel::tests {
 void test_instance_data_serialization() {
 	struct L {
 		static InstanceBlockData::InstanceData create_instance(
-				float x, float y, float z, float rotx, float roty, float rotz, float scale) {
+				const float x,
+				const float y,
+				const float z,
+				const float rotx,
+				const float roty,
+				const float rotz,
+				const float scale
+		) {
 			InstanceBlockData::InstanceData d;
 			d.transform = to_transform3f(Transform3D(
-					Basis().rotated(Vector3(rotx, roty, rotz)).scaled(Vector3(scale, scale, scale)), Vector3(x, y, z)));
+					Basis().rotated(Vector3(rotx, roty, rotz)).scaled(Vector3(scale, scale, scale)), Vector3(x, y, z)
+			));
 			return d;
 		}
 	};
@@ -73,8 +81,10 @@ void test_instance_data_serialization() {
 		}
 		ZN_TEST_ASSERT(src_layer.instances.size() == dst_layer.instances.size());
 
-		const float scale_error = math::max(src_layer.scale_max - src_layer.scale_min,
-										  InstanceBlockData::SIMPLE_11B_V1_SCALE_RANGE_MINIMUM) /
+		const float scale_error =
+				math::max(
+						src_layer.scale_max - src_layer.scale_min, InstanceBlockData::SIMPLE_11B_V1_SCALE_RANGE_MINIMUM
+				) /
 				float(InstanceBlockData::SIMPLE_11B_V1_SCALE_RESOLUTION);
 
 		const float rotation_error = 2.f / float(InstanceBlockData::SIMPLE_11B_V1_QUAT_RESOLUTION);
@@ -85,7 +95,8 @@ void test_instance_data_serialization() {
 			const InstanceBlockData::InstanceData &dst_instance = dst_layer.instances[instance_index];
 
 			ZN_TEST_ASSERT(
-					math::distance(src_instance.transform.origin, dst_instance.transform.origin) <= distance_error);
+					math::distance(src_instance.transform.origin, dst_instance.transform.origin) <= distance_error
+			);
 
 			const Basis src_basis = to_basis3(src_instance.transform.basis);
 			const Basis dst_basis = to_basis3(dst_instance.transform.basis);

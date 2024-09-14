@@ -1,11 +1,10 @@
 #ifndef ZN_SPAN_H
 #define ZN_SPAN_H
 
-#include "fixed_array.h"
+#include "../errors.h"
 #include <algorithm>
 #include <array>
 #include <cstddef>
-#include <vector>
 
 namespace zylann {
 
@@ -209,54 +208,6 @@ private:
 	size_t _size;
 };
 
-template <typename TValue, typename TAllocator>
-Span<TValue> to_span(std::vector<TValue, TAllocator> &vec) {
-	return Span<TValue>(vec.data(), 0, vec.size());
-}
-
-template <typename TValue, typename TAllocator>
-Span<const TValue> to_span(const std::vector<TValue, TAllocator> &vec) {
-	return Span<const TValue>(vec.data(), 0, vec.size());
-}
-
-template <typename TValue, typename TAllocator>
-Span<TValue> to_span_from_position_and_size(std::vector<TValue, TAllocator> &vec, unsigned int pos, unsigned int size) {
-	ZN_ASSERT(pos + size <= vec.size());
-	return Span<TValue>(vec.data(), pos, pos + size);
-}
-
-template <typename TValue, typename TAllocator>
-Span<const TValue> to_span_from_position_and_size(
-		const std::vector<TValue, TAllocator> &vec,
-		unsigned int pos,
-		unsigned int size
-) {
-	ZN_ASSERT(pos + size <= vec.size());
-	return Span<const TValue>(vec.data(), pos, pos + size);
-}
-
-// TODO Deprecate, now Span has a conversion constructor that can allow doing that
-template <typename TValue, typename TAllocator>
-Span<const TValue> to_span_const(const std::vector<TValue, TAllocator> &vec) {
-	return Span<const TValue>(vec.data(), 0, vec.size());
-}
-
-template <typename T, unsigned int N>
-Span<T> to_span(FixedArray<T, N> &a) {
-	return Span<T>(a.data(), a.size());
-}
-
-template <typename T, unsigned int N>
-Span<const T> to_span(const FixedArray<T, N> &a) {
-	return Span<const T>(a.data(), a.size());
-}
-
-template <typename T, unsigned int N>
-Span<T> to_span(FixedArray<T, N> &a, unsigned int count) {
-	ZN_ASSERT(count <= a.size());
-	return Span<T>(a.data(), count);
-}
-
 template <typename T, unsigned int N>
 Span<T> to_span(std::array<T, N> &a, unsigned int count) {
 	ZN_ASSERT(count <= a.size());
@@ -266,19 +217,6 @@ Span<T> to_span(std::array<T, N> &a, unsigned int count) {
 template <typename T, unsigned int N>
 Span<T> to_span(std::array<T, N> &a) {
 	return Span<T>(a.data(), a.size());
-}
-
-// TODO Deprecate, now Span has a conversion constructor that can allow doing that
-template <typename T, unsigned int N>
-Span<const T> to_span_const(const FixedArray<T, N> &a, unsigned int count) {
-	ZN_ASSERT(count <= a.size());
-	return Span<const T>(a.data(), count);
-}
-
-// TODO Deprecate, now Span has a conversion constructor that can allow doing that
-template <typename T, unsigned int N>
-Span<const T> to_span_const(const FixedArray<T, N> &a) {
-	return Span<const T>(a.data(), 0, a.size());
 }
 
 // TODO Deprecate, now Span has a conversion constructor that can allow doing that

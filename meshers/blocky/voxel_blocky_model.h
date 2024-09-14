@@ -175,6 +175,9 @@ public:
 	void set_random_tickable(bool rt);
 	bool is_random_tickable() const;
 
+	void set_mesh_ortho_rotation_index(int i);
+	int get_mesh_ortho_rotation_index() const;
+
 	//------------------------------------------
 	// Properties for internal usage only
 
@@ -211,8 +214,8 @@ public:
 
 	virtual Ref<Mesh> get_preview_mesh() const;
 
-	virtual void rotate_90(math::Axis axis, bool clockwise);
-	virtual void rotate_ortho(math::OrthoBasis ortho_basis);
+	void rotate_90(math::Axis axis, bool clockwise);
+	void rotate_ortho(math::OrthoBasis ortho_basis);
 
 	static Ref<Mesh> make_mesh_from_baked_data(const BakedData &baked_data, bool tangents_enabled);
 
@@ -259,6 +262,7 @@ private:
 	// can be useful for denser transparent voxels, such as foliage.
 	bool _culls_neighbors = true;
 	bool _random_tickable = false;
+	uint8_t _mesh_ortho_rotation = 0;
 
 	Color _color;
 

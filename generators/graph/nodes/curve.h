@@ -78,8 +78,13 @@ void register_curve_node(Span<NodeType> types) {
 			const StdString uniform_texture = ctx.add_uniform(std::move(res));
 			// We are offsetting X to match the interpolation Godot's Curve does, because the default linear
 			// interpolation sampler is offset by half a pixel
-			ctx.add_format("{} = texture({}, vec2({} + 0.5 / float(textureSize({}, 0).x), 0.0)).r;\n",
-					ctx.get_output_name(0), uniform_texture, ctx.get_input_name(0), uniform_texture);
+			ctx.add_format(
+					"{} = texture({}, vec2({} + 0.5 / float(textureSize({}, 0).x), 0.0)).r;\n",
+					ctx.get_output_name(0),
+					uniform_texture,
+					ctx.get_input_name(0),
+					uniform_texture
+			);
 		};
 	}
 }
