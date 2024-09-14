@@ -101,7 +101,7 @@ void rotate_mesh_arrays(Span<Vector3> vertices, Span<Vector3> normals, Span<floa
 
 	} else {
 		const unsigned int tangent_count = tangents.size() / 4;
-		ZN_ASSERT_RETURN(int(tangent_count) == normals.size());
+		ZN_ASSERT_RETURN(tangent_count == normals.size());
 
 		for (unsigned int ti = 0; ti < tangent_count; ++ti) {
 			const unsigned int i0 = ti * 4;
@@ -142,7 +142,7 @@ void rotate_mesh_arrays(Span<Vector3f> vertices, Span<Vector3f> normals, Span<fl
 
 	} else {
 		const unsigned int tangent_count = tangents.size() / 4;
-		ZN_ASSERT_RETURN(int(tangent_count) == normals.size());
+		ZN_ASSERT_RETURN(tangent_count == normals.size());
 
 		for (unsigned int ti = 0; ti < tangent_count; ++ti) {
 			const unsigned int i0 = ti * 4;
