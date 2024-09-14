@@ -236,6 +236,9 @@ void VoxelInstanceGenerator::generate_transforms(
 				const float one_third = 1.f / 3.f;
 				const float triangle_area_threshold = math::squared(1 << lod_index) * _triangle_area_threshold_lod0;
 
+				vertex_cache.reserve(triangle_count);
+				normal_cache.reserve(triangle_count);
+
 				for (int triangle_index = 0; triangle_index < triangle_count; ++triangle_index) {
 					const uint32_t ii = triangle_index * 3;
 
@@ -666,6 +669,7 @@ void VoxelInstanceGenerator::set_emit_mode(EmitMode mode) {
 	}
 	_emit_mode = mode;
 	emit_changed();
+	notify_property_list_changed();
 }
 
 VoxelInstanceGenerator::EmitMode VoxelInstanceGenerator::get_emit_mode() const {
@@ -858,6 +862,7 @@ void VoxelInstanceGenerator::set_noise(Ref<Noise> noise) {
 	}
 	// Emit signal outside of the locked region to avoid eventual deadlocks if handlers want to access the property
 	emit_changed();
+	notify_property_list_changed();
 }
 
 Ref<Noise> VoxelInstanceGenerator::get_noise() const {
@@ -901,6 +906,7 @@ void VoxelInstanceGenerator::set_noise_graph(Ref<pg::VoxelGraphFunction> func) {
 	}
 	// Emit signal outside of the locked region to avoid eventual deadlocks if handlers want to access the property
 	emit_changed();
+	notify_property_list_changed();
 }
 
 Ref<pg::VoxelGraphFunction> VoxelInstanceGenerator::get_noise_graph() const {
@@ -963,6 +969,41 @@ void VoxelInstanceGenerator::get_configuration_warnings(PackedStringArray &warni
 		if (output_count != expected_output_count) {
 			warnings.append(String("The noise graph has an invalid number of outputs. Expected {0}, found {1}")
 									.format(varray(expected_output_count, output_count)));
+		}
+	}
+}
+
+void VoxelInstanceGenerator::_validate_property(PropertyInfo &p_property) const {
+	if (p_property.name == "jitter") {
+		if (_emit_mode != EMIT_ONE_PER_TRIANGLE) {
+			p_property.usage = PROPERTY_USAGE_NO_EDITOR;
+		}
+		return;
+	}
+
+	if (p_property.name == "triangle_area_threshold") {
+		if (_emit_mode != EMIT_FROM_FACES && _emit_mode != EMIT_ONE_PER_TRIANGLE) {
+			p_property.usage = PROPERTY_USAGE_NO_EDITOR;
+		}
+		return;
+	}
+
+	if (p_property.name == "density") {
+		if (_emit_mode == EMIT_ONE_PER_TRIANGLE) {
+			p_property.usage = PROPERTY_USAGE_NO_EDITOR;
+		}
+		return;
+	}
+
+	if (_noise.is_null() && _noise_graph.is_null()) {
+		if (p_property.name == "noise_dimension") {
+			p_property.usage = PROPERTY_USAGE_NO_EDITOR;
+			return;
+		}
+
+		if (p_property.name == "noise_on_scale") {
+			p_property.usage = PROPERTY_USAGE_NO_EDITOR;
+			return;
 		}
 	}
 }
@@ -1032,14 +1073,15 @@ void VoxelInstanceGenerator::_bind_methods() {
 	ADD_GROUP("Emission", "");
 
 	ADD_PROPERTY(
-			PropertyInfo(Variant::FLOAT, "density", PROPERTY_HINT_RANGE, DENSITY_HINT_STRING),
-			"set_density",
-			"get_density"
-	);
-	ADD_PROPERTY(
 			PropertyInfo(Variant::INT, "emit_mode", PROPERTY_HINT_ENUM, "Vertices,FacesFast,Faces,OnePerTriangle"),
 			"set_emit_mode",
 			"get_emit_mode"
+	);
+
+	ADD_PROPERTY(
+			PropertyInfo(Variant::FLOAT, "density", PROPERTY_HINT_RANGE, DENSITY_HINT_STRING),
+			"set_density",
+			"get_density"
 	);
 
 	ADD_PROPERTY(

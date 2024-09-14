@@ -139,6 +139,7 @@ public:
 
 #ifdef TOOLS_ENABLED
 	void get_configuration_warnings(PackedStringArray &warnings) const;
+	void _validate_property(PropertyInfo &p_property) const;
 #endif
 
 private:
