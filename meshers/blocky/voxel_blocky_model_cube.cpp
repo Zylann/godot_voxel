@@ -1,6 +1,7 @@
 #include "voxel_blocky_model_cube.h"
 #include "../../util/containers/container_funcs.h"
 #include "../../util/math/conv.h"
+#include "voxel_blocky_model_mesh.h"
 
 namespace zylann::voxel {
 
@@ -115,6 +116,46 @@ float VoxelBlockyModelCube::get_height() const {
 
 namespace {
 
+Cube::Side get_rotated_side(const Cube::Side src_side, const math::OrthoBasis ortho_basis) {
+	const Vector3i dir = ortho_basis.xform(Cube::g_side_normals[src_side]);
+	return Cube::dir_to_side(dir);
+}
+
+void add(Span<Vector3f> vecs, Vector3f a) {
+	for (Vector3f &v : vecs) {
+		v += a;
+	}
+}
+
+void rotate_ortho(
+		FixedArray<VoxelBlockyModel::BakedData::SideSurface, Cube::SIDE_COUNT> &sides,
+		const unsigned int ortho_rotation_index
+) {
+	const math::OrthoBasis ortho_basis = math::get_ortho_basis_from_index(ortho_rotation_index);
+	const Basis3f basis(to_vec3f(ortho_basis.x), to_vec3f(ortho_basis.y), to_vec3f(ortho_basis.z));
+
+	FixedArray<VoxelBlockyModel::BakedData::SideSurface, Cube::SIDE_COUNT> rotated_sides;
+
+	for (unsigned int side = 0; side < Cube::SIDE_COUNT; ++side) {
+		VoxelBlockyModel::BakedData::SideSurface &side_surface = sides[side];
+
+		FixedArray<Vector3f, 4> normals;
+		for (Vector3f &n : normals) {
+			n = to_vec3f(Cube::g_side_normals[side]);
+		}
+
+		// Move mesh to origin for easier rotation, since the baked mesh spans 0..1 instead of -0.5..0.5
+		add(to_span(side_surface.positions), Vector3f(-0.5));
+		rotate_mesh_arrays(to_span(side_surface.positions), to_span(normals), to_span(side_surface.tangents), basis);
+		add(to_span(side_surface.positions), Vector3f(0.5));
+
+		const Cube::Side dst_side = get_rotated_side(static_cast<Cube::Side>(side), ortho_basis);
+		rotated_sides[dst_side] = std::move(side_surface);
+	}
+
+	sides = std::move(rotated_sides);
+}
+
 void bake_cube_geometry(
 		const VoxelBlockyModelCube &config,
 		VoxelBlockyModel::BakedData &baked_data,
@@ -195,6 +236,10 @@ void bake_cube_geometry(
 		}
 	}
 
+	if (config.get_mesh_ortho_rotation_index() != 0) {
+		rotate_ortho(surface.sides, config.get_mesh_ortho_rotation_index());
+	}
+
 	baked_data.empty = false;
 }
 
@@ -229,7 +274,7 @@ Ref<Mesh> VoxelBlockyModelCube::get_preview_mesh() const {
 	return mesh;
 }
 
-void VoxelBlockyModelCube::rotate_90(math::Axis axis, bool clockwise) {
+void VoxelBlockyModelCube::rotate_tiles_90(const math::Axis axis, const bool clockwise) {
 	FixedArray<Vector2i, Cube::SIDE_COUNT> rotated_tiles;
 
 	for (unsigned int src_side = 0; src_side < Cube::SIDE_COUNT; ++src_side) {
@@ -250,12 +295,11 @@ void VoxelBlockyModelCube::rotate_90(math::Axis axis, bool clockwise) {
 	emit_changed();
 }
 
-void VoxelBlockyModelCube::rotate_ortho(math::OrthoBasis ortho_basis) {
+void VoxelBlockyModelCube::rotate_tiles_ortho(const math::OrthoBasis ortho_basis) {
 	FixedArray<Vector2i, Cube::SIDE_COUNT> rotated_tiles;
 
 	for (unsigned int src_side = 0; src_side < Cube::SIDE_COUNT; ++src_side) {
-		const Vector3i dir = ortho_basis.xform(Cube::g_side_normals[src_side]);
-		Cube::Side dst_side = Cube::dir_to_side(dir);
+		Cube::Side dst_side = get_rotated_side(static_cast<Cube::Side>(src_side), ortho_basis);
 		rotated_tiles[dst_side] = _tiles[src_side];
 	}
 
