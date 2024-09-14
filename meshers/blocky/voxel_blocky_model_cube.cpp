@@ -128,32 +128,42 @@ void add(Span<Vector3f> vecs, Vector3f a) {
 }
 
 void rotate_ortho(
-		FixedArray<VoxelBlockyModel::BakedData::SideSurface, Cube::SIDE_COUNT> &sides,
+		FixedArray<
+				FixedArray<VoxelBlockyModel::BakedData::SideSurface, VoxelBlockyModel::BakedData::Model::MAX_SURFACES>,
+				Cube::SIDE_COUNT> &sides_surfaces,
 		const unsigned int ortho_rotation_index
 ) {
 	const math::OrthoBasis ortho_basis = math::get_ortho_basis_from_index(ortho_rotation_index);
 	const Basis3f basis(to_vec3f(ortho_basis.x), to_vec3f(ortho_basis.y), to_vec3f(ortho_basis.z));
 
-	FixedArray<VoxelBlockyModel::BakedData::SideSurface, Cube::SIDE_COUNT> rotated_sides;
+	FixedArray<
+			FixedArray<VoxelBlockyModel::BakedData::SideSurface, VoxelBlockyModel::BakedData::Model::MAX_SURFACES>,
+			Cube::SIDE_COUNT>
+			rotated_sides_surfaces;
 
 	for (unsigned int side = 0; side < Cube::SIDE_COUNT; ++side) {
-		VoxelBlockyModel::BakedData::SideSurface &side_surface = sides[side];
+		FixedArray<VoxelBlockyModel::BakedData::SideSurface, VoxelBlockyModel::BakedData::Model::MAX_SURFACES>
+				&surfaces = sides_surfaces[side];
 
 		FixedArray<Vector3f, 4> normals;
 		for (Vector3f &n : normals) {
 			n = to_vec3f(Cube::g_side_normals[side]);
 		}
 
-		// Move mesh to origin for easier rotation, since the baked mesh spans 0..1 instead of -0.5..0.5
-		add(to_span(side_surface.positions), Vector3f(-0.5));
-		rotate_mesh_arrays(to_span(side_surface.positions), to_span(normals), to_span(side_surface.tangents), basis);
-		add(to_span(side_surface.positions), Vector3f(0.5));
+		unsigned int surface_index = 0;
+		for (VoxelBlockyModel::BakedData::SideSurface &surface : surfaces) {
+			// Move mesh to origin for easier rotation, since the baked mesh spans 0..1 instead of -0.5..0.5
+			add(to_span(surface.positions), Vector3f(-0.5));
+			rotate_mesh_arrays(to_span(surface.positions), to_span(normals), to_span(surface.tangents), basis);
+			add(to_span(surface.positions), Vector3f(0.5));
 
-		const Cube::Side dst_side = get_rotated_side(static_cast<Cube::Side>(side), ortho_basis);
-		rotated_sides[dst_side] = std::move(side_surface);
+			const Cube::Side dst_side = get_rotated_side(static_cast<Cube::Side>(side), ortho_basis);
+			rotated_sides_surfaces[dst_side][surface_index] = std::move(surface);
+			++surface_index;
+		}
 	}
 
-	sides = std::move(rotated_sides);
+	sides_surfaces = std::move(rotated_sides_surfaces);
 }
 
 void bake_cube_geometry(
@@ -238,7 +248,7 @@ void bake_cube_geometry(
 	}
 
 	if (config.get_mesh_ortho_rotation_index() != 0) {
-		rotate_ortho(surface.sides, config.get_mesh_ortho_rotation_index());
+		rotate_ortho(baked_data.model.sides_surfaces, config.get_mesh_ortho_rotation_index());
 	}
 
 	baked_data.empty = false;
