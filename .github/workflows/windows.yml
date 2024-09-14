@@ -12,7 +12,7 @@ concurrency:
 # Global Cache Settings
 # SCONS_CACHE for windows must be set in the build environment
 env:
-  GODOT_BASE_BRANCH: "4.2.2-stable"
+  GODOT_BASE_BRANCH: "4.3-stable"
   SCONS_CACHE_MSVC_CONFIG: true
   SCONS_CACHE_LIMIT: 4096
 
@@ -25,13 +25,13 @@ jobs:
     strategy:
       matrix:
         include:
-          - name: 4.2 Editor
+          - name: 4.3 Editor
             target: editor
             precision: single
             executable_name: godot.windows.editor.x86_64.exe
             tracy: no
           
-          - name: 4.2 Profiling Editor
+          - name: 4.3 Profiling Editor
             target: editor
             precision: single
             # This is not a built-in feature of Godot so we have to do some changes manually
@@ -39,13 +39,13 @@ jobs:
             original_executable_name: godot.windows.editor.x86_64.exe
             tracy: yes
 
-          - name: 4.2 Editor Float64
+          - name: 4.3 Editor Float64
             target: editor
             precision: double
             executable_name: godot.windows.editor.double.x86_64.exe
             tracy: no
 
-          - name: 4.2 Template
+          - name: 4.3 Template
             target: template_release
             precision: single
             executable_name: godot.windows.template_release.x86_64.exe

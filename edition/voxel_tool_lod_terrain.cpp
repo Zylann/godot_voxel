@@ -179,8 +179,8 @@ void VoxelToolLodTerrain::do_box(Vector3i begin, Vector3i end) {
 	ERR_FAIL_COND(_terrain == nullptr);
 
 	ops::DoShapeChunked<ops::SdfAxisAlignedBox, ops::VoxelDataGridAccess> op;
-	op.shape.center = to_vec3(begin + end) * 0.5;
-	op.shape.half_size = to_vec3(end - begin) * 0.5;
+	op.shape.center = to_vec3f(begin + end) * 0.5f;
+	op.shape.half_size = to_vec3f(end - begin) * 0.5f;
 	op.shape.sdf_scale = get_sdf_scale();
 	op.box = op.shape.get_box().clipped(_terrain->get_voxel_bounds());
 	op.mode = static_cast<ops::Mode>(get_mode());
@@ -215,7 +215,7 @@ void VoxelToolLodTerrain::do_sphere(Vector3 center, float radius) {
 	ERR_FAIL_COND(_terrain == nullptr);
 
 	ops::DoSphere op;
-	op.shape.center = center;
+	op.shape.center = to_vec3f(center);
 	op.shape.radius = radius;
 	op.shape.sdf_scale = get_sdf_scale();
 	op.box = op.shape.get_box().clipped(_terrain->get_voxel_bounds());
@@ -225,18 +225,27 @@ void VoxelToolLodTerrain::do_sphere(Vector3 center, float radius) {
 	op.channel = get_channel();
 	op.strength = get_sdf_strength();
 
-	if (!is_area_editable(op.box)) {
+	const Box3i world_box = op.box;
+
+	if (!is_area_editable(world_box)) {
 		ZN_PRINT_WARNING("Area not editable");
 		return;
 	}
 
 	VoxelData &data = _terrain->get_storage();
 
-	data.pre_generate_box(op.box);
-	data.get_blocks_grid(op.blocks, op.box, 0);
+	data.pre_generate_box(world_box);
+	data.get_blocks_grid(op.blocks, world_box, 0);
+
+	// We can use floats by doing the operation in local space
+	const Vector3i origin_in_voxels = op.blocks.get_origin_block_position_in_voxels();
+	op.shape.center = to_vec3f(center - to_vec3(origin_in_voxels));
+	op.box.position -= origin_in_voxels;
+	op.blocks.use_relative_coordinates();
+
 	op();
 
-	_post_edit(op.box);
+	_post_edit(world_box);
 }
 
 void VoxelToolLodTerrain::do_hemisphere(Vector3 center, float radius, Vector3 flat_direction, float smoothness) {
@@ -244,9 +253,9 @@ void VoxelToolLodTerrain::do_hemisphere(Vector3 center, float radius, Vector3 fl
 	ERR_FAIL_COND(_terrain == nullptr);
 
 	ops::DoShapeChunked<ops::SdfHemisphere, ops::VoxelDataGridAccess> op;
-	op.shape.center = center;
+	op.shape.center = to_vec3f(center);
 	op.shape.radius = radius;
-	op.shape.flat_direction = flat_direction;
+	op.shape.flat_direction = to_vec3f(flat_direction);
 	op.shape.plane_d = flat_direction.dot(center);
 	op.shape.smoothness = smoothness;
 	op.shape.sdf_scale = get_sdf_scale();
@@ -314,7 +323,7 @@ void VoxelToolLodTerrain::do_sphere_async(Vector3 center, float radius) {
 	ERR_FAIL_COND(_terrain == nullptr);
 
 	ops::DoSphere op;
-	op.shape.center = center;
+	op.shape.center = to_vec3f(center);
 	op.shape.radius = radius;
 	op.shape.sdf_scale = get_sdf_scale();
 	op.box = op.shape.get_box().clipped(_terrain->get_voxel_bounds());

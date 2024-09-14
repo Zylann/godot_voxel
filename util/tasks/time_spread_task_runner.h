@@ -1,6 +1,7 @@
 #ifndef ZYLANN_TIME_SPREAD_TASK_RUNNER_H
 #define ZYLANN_TIME_SPREAD_TASK_RUNNER_H
 
+#include "../containers/fixed_array.h"
 #include "../containers/span.h"
 #include "../containers/std_queue.h"
 #include "../thread/mutex.h"

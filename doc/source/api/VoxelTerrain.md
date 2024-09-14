@@ -17,6 +17,7 @@ Type                                                                            
 [float](https://docs.godotengine.org/en/stable/classes/class_float.html)        | [collision_margin](#i_collision_margin)                                  | 0.04                                                                                  
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)            | [collision_mask](#i_collision_mask)                                      | 1                                                                                     
 [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)          | [debug_draw_enabled](#i_debug_draw_enabled)                              | false                                                                                 
+[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)          | [debug_draw_shadow_occluders](#i_debug_draw_shadow_occluders)            | false                                                                                 
 [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)          | [debug_draw_volume_bounds](#i_debug_draw_volume_bounds)                  | false                                                                                 
 [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)          | [generate_collisions](#i_generate_collisions)                            | true                                                                                  
 [Material](https://docs.godotengine.org/en/stable/classes/class_material.html)  | [material_override](#i_material_override)                                |                                                                                       
@@ -105,6 +106,10 @@ Defines the bounds within which the terrain is allowed to have voxels. If an inf
 *(This property has no documentation)*
 
 ### [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_debug_draw_enabled"></span> **debug_draw_enabled** = false
+
+*(This property has no documentation)*
+
+### [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_debug_draw_shadow_occluders"></span> **debug_draw_shadow_occluders** = false
 
 *(This property has no documentation)*
 
@@ -244,4 +249,4 @@ Note that blocks getting unloaded as the viewer moves around can also trigger sa
 
 *(This method has no documentation)*
 
-_Generated on Apr 06, 2024_
+_Generated on Aug 27, 2024_

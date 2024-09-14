@@ -210,14 +210,16 @@ void VoxelInstancer::_notification(int p_what) {
 
 void VoxelInstancer::process() {
 	process_task_results();
-	if (_parent != nullptr && _library.is_valid() && _mesh_lod_distances[0] > 0.f) {
-		process_mesh_lods();
-	}
+	if (_parent != nullptr) {
+		if (_library.is_valid() && _mesh_lod_distances[0] > 0.f) {
+			process_mesh_lods();
+		}
 #ifdef TOOLS_ENABLED
-	if (_gizmos_enabled && is_visible_in_tree()) {
-		process_gizmos();
-	}
+		if (_gizmos_enabled && is_visible_in_tree()) {
+			process_gizmos();
+		}
 #endif
+	}
 }
 
 void VoxelInstancer::process_task_results() {

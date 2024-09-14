@@ -25,10 +25,9 @@ Type                                                                            
 
 Return                                                                | Signature                                                                                                                                                             
 --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)  | [add_model](#i_add_model) ( [VoxelBlockyModel](VoxelBlockyModel.md) _unnamed_arg0 )                                                                                   
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)  | [add_model](#i_add_model) ( [VoxelBlockyModel](VoxelBlockyModel.md) model )                                                                                           
 [VoxelBlockyModel](VoxelBlockyModel.md)                               | [get_model](#i_get_model) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) index ) const                                                        
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)  | [get_model_index_from_resource_name](#i_get_model_index_from_resource_name) ( [String](https://docs.godotengine.org/en/stable/classes/class_string.html) name ) const 
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)  | [get_voxel_index_from_name](#i_get_voxel_index_from_name) ( [String](https://docs.godotengine.org/en/stable/classes/class_string.html) name ) const *(deprecated)*    
 <p></p>
 
 ## Property Descriptions
@@ -39,7 +38,7 @@ Array of all the models. The index of each model corresponds to the value repres
 
 ## Method Descriptions
 
-### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_add_model"></span> **add_model**( [VoxelBlockyModel](VoxelBlockyModel.md) _unnamed_arg0 ) 
+### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_add_model"></span> **add_model**( [VoxelBlockyModel](VoxelBlockyModel.md) model ) 
 
 Adds a model to the library. Returns its index, which will be the value of voxels representing it.
 
@@ -51,9 +50,4 @@ Gets a model from its index.
 
 Finds the index of the first model having the specified resource name. If not found, returns `null`.
 
-### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_get_voxel_index_from_name"></span> **get_voxel_index_from_name**( [String](https://docs.godotengine.org/en/stable/classes/class_string.html) name ) 
-
-*This method is deprecated. Use [VoxelBlockyLibrary.get_model_index_from_resource_name](VoxelBlockyLibrary.md#i_get_model_index_from_resource_name) instead.*
-Finds the index of the first model having the specified resource name. If not found, returns `null`.
-
-_Generated on Apr 06, 2024_
+_Generated on Aug 27, 2024_

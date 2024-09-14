@@ -12,10 +12,6 @@ void VoxelBlockyModelEmpty::bake(blocky::ModelBakingContext &ctx) const {
 	VoxelBlockyModel::bake(ctx);
 }
 
-void VoxelBlockyModelEmpty::rotate_90(math::Axis axis, bool clockwise) {
-	rotate_collision_boxes_90(axis, clockwise);
-}
-
 Ref<Mesh> VoxelBlockyModelEmpty::get_preview_mesh() const {
 	return Ref<Mesh>();
 }

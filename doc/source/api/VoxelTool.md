@@ -264,4 +264,4 @@ Decodes raw voxel integer data from the WEIGHTS channel into a normalized 4-floa
 
 Encodes a 4-integer vector into 16-bit integer voxel data, for use in the INDICES channel.
 
-_Generated on Apr 06, 2024_
+_Generated on Aug 27, 2024_

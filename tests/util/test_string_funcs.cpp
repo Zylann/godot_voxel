@@ -1,4 +1,5 @@
 #include "test_string_funcs.h"
+#include "../../util/containers/fixed_array.h"
 #include "../../util/string/conv.h"
 
 namespace zylann::tests {

@@ -10,8 +10,14 @@ using namespace godot;
 
 namespace zylann::godot {
 
-void add_custom_project_setting(Variant::Type type, const char *name, PropertyHint hint, const char *hint_string,
-		Variant default_value, bool requires_restart);
+void add_custom_project_setting(
+		Variant::Type type,
+		const char *name,
+		PropertyHint hint,
+		const char *hint_string,
+		Variant default_value,
+		bool requires_restart
+);
 
 } // namespace zylann::godot
 

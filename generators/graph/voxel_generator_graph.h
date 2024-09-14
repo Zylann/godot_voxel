@@ -73,8 +73,15 @@ public:
 	}
 	VoxelSingleValue generate_single(Vector3i position, unsigned int channel) override;
 
-	void generate_series(Span<const float> positions_x, Span<const float> positions_y, Span<const float> positions_z,
-			unsigned int channel, Span<float> out_values, Vector3f min_pos, Vector3f max_pos) override;
+	void generate_series(
+			Span<const float> positions_x,
+			Span<const float> positions_y,
+			Span<const float> positions_z,
+			unsigned int channel,
+			Span<float> out_values,
+			Vector3f min_pos,
+			Vector3f max_pos
+	) override;
 
 	// Ref<Resource> duplicate(bool p_subresources) const ZN_OVERRIDE_UNLESS_GODOT_EXTENSION;
 
@@ -147,8 +154,15 @@ private:
 		unsigned int output_buffer_index;
 	};
 
-	static void gather_indices_and_weights(Span<const WeightOutput> weight_outputs, const pg::Runtime::State &state,
-			Vector3i rmin, Vector3i rmax, int ry, VoxelBuffer &out_voxel_buffer, FixedArray<uint8_t, 4> spare_indices);
+	static void gather_indices_and_weights(
+			Span<const WeightOutput> weight_outputs,
+			const pg::Runtime::State &state,
+			Vector3i rmin,
+			Vector3i rmax,
+			int ry,
+			VoxelBuffer &out_voxel_buffer,
+			FixedArray<uint8_t, 4> spare_indices
+	);
 
 	static void _bind_methods();
 

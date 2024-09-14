@@ -2,8 +2,14 @@
 
 namespace zylann::godot {
 
-void add_custom_project_setting(Variant::Type type, const char *name, PropertyHint hint, const char *hint_string,
-		Variant default_value, bool requires_restart) {
+void add_custom_project_setting(
+		Variant::Type type,
+		const char *name,
+		PropertyHint hint,
+		const char *hint_string,
+		Variant default_value,
+		bool requires_restart
+) {
 #if defined(ZN_GODOT)
 	if (requires_restart) {
 		GLOBAL_DEF_RST(name, default_value);

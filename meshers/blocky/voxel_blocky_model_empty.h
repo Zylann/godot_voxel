@@ -12,7 +12,7 @@ public:
 	VoxelBlockyModelEmpty();
 
 	void bake(blocky::ModelBakingContext &ctx) const override;
-	void rotate_90(math::Axis axis, bool clockwise) override;
+
 	Ref<Mesh> get_preview_mesh() const override;
 	bool is_empty() const override;
 

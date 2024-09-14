@@ -1,4 +1,5 @@
 #include "fast_noise_2.h"
+#include "../containers/fixed_array.h"
 #include "../containers/std_vector.h"
 #include "../math/funcs.h"
 #include "../math/vector3.h"

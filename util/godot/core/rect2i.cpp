@@ -1,5 +1,5 @@
 #include "rect2i.h"
-#include "vector2i.h"
+#include "../../math/vector2i.h"
 #include <sstream>
 
 namespace zylann {

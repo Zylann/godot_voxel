@@ -7,13 +7,39 @@ At the moment, this module doesn't have a distinct release schedule, so this cha
 
 Semver is not yet in place, so each version can have breaking changes, although it shouldn't happen often across minor versions.
 
-1.3.dev - ongoing development - `master`
------------------------------------------
+1.4 - ongoing development - `master`
+--------------------------------------
+
+Primarily developped with Godot 4.3.
+
+- `VoxelBlockyModelCube`: Added support for mesh rotation like `VoxelBlockyMesh` (prior to that, rotation buttons in the editor only swapped tiles around)
+
+- Fixes
+    - Fixed potential deadlock when using detail rendering and various editing features (thanks to lenesxy, issue #693)
+    - `VoxelInstanceLibrary`: Editor: reworked the way items are exposed as a Blender-style list. Now removing an item while the library is open as a sub-inspector is no longer problematic
+    - `VoxelInstancer`: Fixed persistent instances reloading with wrong positions (in the air, underground...) when mesh block size is set to 32
+    - `VoxelLodTerrain`:
+        - Fixed potential crash when when using the Clipbox streaming system with threaded update (thanks to lenesxy, issue #692)
+        - Fixed blocks were saved with incorrect LOD index when they get unloaded using Clipbox, leading to holes and mismatched terrain (#691)
+    - `VoxelTerrain`: edits and copies across fixed bounds no longer behave as if terrain generates beyond (was causing "walls" to appear).
+    - `VoxelGeneratorGraph`: fix wrong values when using `OutputWeight` with optimized execution map enabled, when weights are determined to be locally constant
+    - `VoxelMesherTransvoxel`: revert texturing logic that attempted to prevent air voxels from contributing, but was lowering quality. It is now optional as an experimental property.
+    - `VoxelStreamSQLite`: Fixed "empty size" errors when loading areas with edited `VoxelInstancer` data
+
+- Breaking changes
+    - `VoxelInstanceLibrary`: Items should no longer be accessed using generated properties (`item1`, `item2` etc). Use `get_item` instead.
+    - `VoxelMesherTransvoxel`: Removed `deep_sampling` experimental option
+    - `VoxelTool`: The `flat_direction` of `do_hemisphere` now points away from the flat side of the hemisphere (like its normal), instead of pointing towards it
+
+
+1.3 - 17/08/2024 - branch `1.3` - tag `v1.3.0`
+----------------------------------------------
 
 Primarily developped with Godot 4.3.
 
 - Added project setting `voxel/ownership_checks` to turn off sanity checks done by certain virtual functions that pass an object (such as `_generate_block`). Relevant for C#, where the garbage collection model prevents such checks from working properly.
 - `VoxelBuffer`: Added several functions to do arithmetic operations on all voxels
+- `VoxelInstanceGenerator`: allow to set density beyond 1, up to 10, by typing it in the field
 - `VoxelMesherBlocky`:
     - Can be used with `VoxelLodTerrain`. Basic support: meshes scale with LOD and LOD>1 chunks have extra geometry to reduce cracks between LODs
     - Added experimental "shadow occluders": generates quads on chunk sides if they are covered by opaque voxels, to force shadows to project in caves when  there is no surface for DirectionalLight to project from (see #622).
@@ -32,7 +58,10 @@ Primarily developped with Godot 4.3.
         - Fixed `set_key_cache_enabled(true)` caused nothing to load
         - Fixed slow loading when the database path contains `res://` or `user://`
         - Fixed crash if the database has an invalid path and `flush()` is called after `set_key_cache_enabled(true)`
-    - `VoxelInstancer`: Fixed instances with LOD > 0 were generated on `VoxelTerrain` even though LOD isn't supported (ending up in weird positions). No instances should generate.
+    - `VoxelInstancer`:
+        - Fixed instances with LOD > 0 were generated on `VoxelTerrain` even though LOD isn't supported (ending up in weird positions). No instances should generate.
+        - Fixed error spam in the editor when instancing the node without a terrain parent
+    - `VoxelInstanceLibrary`: Fixed `Assertion failed: "p_id < 0 || p_id >= MAX_ID" is false` when removing items from a VoxelInstanceLibrary
     - `VoxelMeshSDF`: Fixed error in the editor when trying to visualize the last slice (which turns out to be off by 1)
     - `VoxelModifierMesh`: 
         - Fixed setting `isolevel` had no effect

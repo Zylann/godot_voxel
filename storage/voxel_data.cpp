@@ -167,7 +167,7 @@ VoxelSingleValue VoxelData::get_voxel(Vector3i pos, unsigned int channel_index, 
 				VoxelSingleValue value = generator->generate_single(pos, channel_index);
 				if (channel_index == VoxelBuffer::CHANNEL_SDF) {
 					float sdf = value.f;
-					_modifiers.apply(sdf, to_vec3(pos));
+					_modifiers.apply(sdf, to_vec3f(pos));
 					value.f = sdf;
 				}
 				return value;
@@ -209,7 +209,7 @@ VoxelSingleValue VoxelData::get_voxel(Vector3i pos, unsigned int channel_index, 
 						VoxelSingleValue value = generator->generate_single(pos, channel_index);
 						if (channel_index == VoxelBuffer::CHANNEL_SDF) {
 							float sdf = value.f;
-							_modifiers.apply(sdf, to_vec3(pos));
+							_modifiers.apply(sdf, to_vec3f(pos));
 							value.f = sdf;
 						}
 						return value;
@@ -308,9 +308,10 @@ void VoxelData::copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsigned int cha
 		struct GenContext {
 			VoxelGenerator &generator;
 			const VoxelModifierStack &modifiers;
+			Box3i voxel_bounds;
 		};
 
-		GenContext gctx{ **generator, modifiers };
+		GenContext gctx{ **generator, modifiers, _bounds_in_voxels };
 
 		// Note, when streaming is enabled and this intersects non-loaded areas, they will fallback on the generator.
 		// That's technically not correct as we don't really know what these areas should contain, they could have been
@@ -327,6 +328,12 @@ void VoxelData::copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsigned int cha
 				[](void *callback_data, VoxelBuffer &voxels, Vector3i pos) {
 					// Suffixed with `2` because GCC warns it shadows a previous local...
 					GenContext *gctx2 = reinterpret_cast<GenContext *>(callback_data);
+					if (!gctx2->voxel_bounds.contains(pos)) {
+						// Out of bounds, produce empty voxels?
+						// Note: due to how `copy` works, we expect `pos` to be within a specific chunk and not copying
+						// across multiple chunks, so we don't have to check for every intersecting chunk
+						return;
+					}
 					VoxelGenerator::VoxelQueryData q{ voxels, pos, 0 };
 					gctx2->generator.generate_block(q);
 					gctx2->modifiers.apply(voxels, AABB(pos, voxels.get_size()));
@@ -1045,10 +1052,9 @@ void VoxelData::get_blocks_with_voxel_data(
 void VoxelData::get_blocks_grid(VoxelDataGrid &grid, Box3i box_in_voxels, unsigned int lod_index) const {
 	ZN_PROFILE_SCOPE();
 	const Lod &data_lod = _lods[lod_index];
-	RWLockRead rlock(data_lod.map_lock);
 	const int bs = data_lod.map.get_block_size() << lod_index;
 	const Box3i box_in_blocks = box_in_voxels.downscaled(bs);
-	grid.reference_area_block_coords(data_lod.map, box_in_blocks, &data_lod.spatial_lock);
+	grid.reference_area_block_coords(data_lod.map, data_lod.map_lock, box_in_blocks, data_lod.spatial_lock);
 }
 
 SpatialLock3D &VoxelData::get_spatial_lock(unsigned int lod_index) const {
@@ -1153,7 +1159,7 @@ void VoxelData::unview_area(
 	// Locking for write because we are potentially going to remove blocks from the map.
 	RWLockWrite wlock(lod.map_lock);
 
-	blocks_box.for_each_cell_zxy([&lod, missing_blocks, removed_blocks, to_save](Vector3i bpos) {
+	blocks_box.for_each_cell_zxy([&lod, missing_blocks, removed_blocks, to_save, lod_index](Vector3i bpos) {
 		VoxelDataBlock *block = lod.map.get_block(bpos);
 		if (block != nullptr) {
 			block->viewers.remove();
@@ -1161,7 +1167,7 @@ void VoxelData::unview_area(
 				if (to_save == nullptr) {
 					lod.map.remove_block(bpos, VoxelDataMap::NoAction());
 				} else {
-					lod.map.remove_block(bpos, BeforeUnloadSaveAction{ to_save, bpos, 0 });
+					lod.map.remove_block(bpos, BeforeUnloadSaveAction{ to_save, bpos, lod_index });
 				}
 				if (removed_blocks != nullptr) {
 					removed_blocks->push_back(bpos);

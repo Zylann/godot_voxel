@@ -52,7 +52,6 @@
             - [VoxelMesher](VoxelMesher.md)
                 - [VoxelMesherBlocky](VoxelMesherBlocky.md)
                 - [VoxelMesherCubes](VoxelMesherCubes.md)
-                - [VoxelMesherDMC](VoxelMesherDMC.md)
                 - [VoxelMesherTransvoxel](VoxelMesherTransvoxel.md)
             - [VoxelStream](VoxelStream.md)
                 - [VoxelStreamMemory](VoxelStreamMemory.md)

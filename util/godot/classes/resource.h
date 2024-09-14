@@ -19,7 +19,7 @@ template <typename TResource, typename FContext>
 inline void get_resource_configuration_warnings(
 		const TResource &resource,
 		PackedStringArray &warnings,
-		FContext get_context_func
+		FContext get_context_string_func
 ) {
 	const int prev_size = warnings.size();
 
@@ -29,7 +29,7 @@ inline void get_resource_configuration_warnings(
 	const int current_size = warnings.size();
 	if (current_size != prev_size) {
 		// New warnings were added
-		const String context = get_context_func();
+		String context = get_context_string_func();
 		for (int i = prev_size; i < current_size; ++i) {
 			const String w = context + warnings[i];
 #if defined(ZN_GODOT)

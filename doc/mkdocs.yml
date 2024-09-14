@@ -80,7 +80,6 @@ nav:
     - api/VoxelMesher.md
     - api/VoxelMesherBlocky.md
     - api/VoxelMesherCubes.md
-    - api/VoxelMesherDMC.md
     - api/VoxelMesherTransvoxel.md
     - api/VoxelModifier.md
     - api/VoxelModifierMesh.md

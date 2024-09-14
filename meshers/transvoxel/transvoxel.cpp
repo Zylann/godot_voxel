@@ -186,9 +186,9 @@ struct CellTextureDatas {
 template <unsigned int NVoxels, typename WeightSampler_T>
 CellTextureDatas<NVoxels> select_textures_4_per_voxel(
 		const FixedArray<unsigned int, NVoxels> &voxel_indices,
-		Span<const uint16_t> indices_data,
+		const Span<const uint16_t> indices_data,
 		const WeightSampler_T &weights_sampler,
-		unsigned int case_code
+		const unsigned int case_code
 ) {
 	// TODO Optimization: this function takes almost half of the time when polygonizing non-empty cells.
 	// I wonder how it can be optimized further?
@@ -284,7 +284,8 @@ inline void get_cell_texture_data(
 		const TextureIndicesData &texture_indices_data,
 		const FixedArray<unsigned int, NVoxels> &voxel_indices,
 		const WeightSampler_T &weights_data,
-		unsigned int case_code
+		// Used for rejecting air voxels. Can be set to 0 so all corners are always used.
+		const unsigned int case_code
 ) {
 	if (texture_indices_data.buffer.size() == 0) {
 		// Indices are known for the whole block, just read weights directly
@@ -293,6 +294,9 @@ inline void get_cell_texture_data(
 		for (unsigned int ci = 0; ci < voxel_indices.size(); ++ci) {
 			if ((case_code & (1 << ci)) != 0) {
 				// Force air voxels to not contribute
+				// TODO This is not great, because every Transvoxel vertex interpolates between a matter and air corner.
+				// This approach means we would always interpolate towards 0 as a result.
+				// Maybe we'll have to use a different approach and remove this option in the future.
 				fill(cell_textures.weights[ci], uint8_t(0));
 			} else {
 				const unsigned int wi = voxel_indices[ci];
@@ -325,34 +329,6 @@ inline float get_isolevel<float>() {
 	return 0.f;
 }
 
-Vector3f binary_search_interpolate(
-		const IDeepSDFSampler &sampler,
-		float s0,
-		float s1,
-		Vector3i p0,
-		Vector3i p1,
-		uint32_t initial_lod_index,
-		uint32_t min_lod_index
-) {
-	for (uint32_t lod_index = initial_lod_index; lod_index > min_lod_index; --lod_index) {
-		const Vector3i pm = (p0 + p1) >> 1;
-		// TODO Optimization: this is quite slow for a small difference in the result.
-		// Could be improved somewhat, but for now I don't think it's worth it
-		const float sm = -sampler.get_single(pm, lod_index - 1);
-		if (sign_f(s0) != sign_f(sm)) {
-			p1 = pm;
-			s1 = sm;
-		} else {
-			p0 = pm;
-			s0 = sm;
-		}
-	}
-	const float t = s1 / (s1 - s0);
-	const float t0 = t;
-	const float t1 = 1.f - t;
-	return to_vec3f(p0) * t0 + to_vec3f(p1) * t1;
-}
-
 // This function is template so we avoid branches and checks when sampling voxels
 template <typename Sdf_T, typename WeightSampler_T>
 void build_regular_mesh(
@@ -364,9 +340,9 @@ void build_regular_mesh(
 		TexturingMode texturing_mode,
 		Cache &cache,
 		MeshArrays &output,
-		const IDeepSDFSampler *deep_sdf_sampler,
 		StdVector<CellInfo> *cell_info,
-		const float edge_clamp_margin
+		const float edge_clamp_margin,
+		const bool textures_skip_air_voxels
 ) {
 	ZN_PROFILE_SCOPE();
 
@@ -492,7 +468,11 @@ void build_regular_mesh(
 				CellTextureDatas<8> cell_textures;
 				if (texturing_mode == TEXTURES_BLEND_4_OVER_16) {
 					get_cell_texture_data(
-							cell_textures, texture_indices_data, corner_data_indices, weights_sampler, case_code
+							cell_textures,
+							texture_indices_data,
+							corner_data_indices,
+							weights_sampler,
+							textures_skip_air_voxels ? case_code : 0
 					);
 					current_reuse_cell.packed_texture_indices = cell_textures.packed_indices;
 				}
@@ -597,14 +577,7 @@ void build_regular_mesh(
 							// const int ti1 = 0x100 - t;
 							// const Vector3i primary = p0 * ti0 + p1 * ti1;
 
-							Vector3f primaryf;
-							if (deep_sdf_sampler != nullptr) {
-								primaryf = binary_search_interpolate(
-										*deep_sdf_sampler, sample0, sample1, p0, p1, lod_index, 0
-								);
-							} else {
-								primaryf = to_vec3f(p0) * t0 + to_vec3f(p1) * t1;
-							}
+							const Vector3f primaryf = to_vec3f(p0) * t0 + to_vec3f(p1) * t1;
 							// TODO Binary search gives better positional results, but does not improve normals.
 							// I'm not sure how to overcome this because if we sample low-detail normals, we get a
 							// "blocky" result due to SDF clipping. If we sample high-detail gradients, we get details,
@@ -919,7 +892,8 @@ void build_transition_mesh(
 		TexturingMode texturing_mode,
 		Cache &cache,
 		MeshArrays &output,
-		const float edge_clamp_margin
+		const float edge_clamp_margin,
+		const bool textures_skip_air_voxels
 ) {
 	// From this point, we expect the buffer to contain allocated data.
 	// This function has some comments as quotes from the Transvoxel paper.
@@ -1076,15 +1050,15 @@ void build_transition_mesh(
 			CellTextureDatas<13> cell_textures;
 			if (texturing_mode == TEXTURES_BLEND_4_OVER_16) {
 				// Re-making an ordered case code...
-				//                       |436785210|
-				const uint16_t alt_case_code = 0 //
-						| ((case_code & 0b000000111)) // 210
-						| ((case_code & 0b110000000) >> 4) // 43
-						| ((case_code & 0b000001000) << 2) // 5
-						| ((case_code & 0b001000000)) // 6
-						| ((case_code & 0b000100000) << 2) // 7
-						| ((case_code & 0b000010000) << 4) // 8
-						;
+				//                               |436785210|
+				const uint16_t alt_case_code = textures_skip_air_voxels ? 0 //
+								| ((case_code & 0b000000111)) // 210
+								| ((case_code & 0b110000000) >> 4) // 43
+								| ((case_code & 0b000001000) << 2) // 5
+								| ((case_code & 0b001000000)) // 6
+								| ((case_code & 0b000100000) << 2) // 7
+								| ((case_code & 0b000010000) << 4) // 8
+																		: 0;
 
 				// uint16_t alt_case_code = sign_f(cell_samples[0]);
 				// alt_case_code |= (sign_f(cell_samples[1]) << 1);
@@ -1491,9 +1465,9 @@ DefaultTextureIndicesData build_regular_mesh(
 		const TexturingMode texturing_mode,
 		Cache &cache,
 		MeshArrays &output,
-		const IDeepSDFSampler *deep_sdf_sampler,
 		StdVector<CellInfo> *cell_infos,
-		const float edge_clamp_margin
+		const float edge_clamp_margin,
+		const bool textures_ignore_air_voxels
 ) {
 	ZN_PROFILE_SCOPE();
 	// From this point, we expect the buffer to contain allocated data in the relevant channels.
@@ -1548,9 +1522,9 @@ DefaultTextureIndicesData build_regular_mesh(
 					texturing_mode,
 					cache,
 					output,
-					deep_sdf_sampler,
 					cell_infos,
-					edge_clamp_margin
+					edge_clamp_margin,
+					textures_ignore_air_voxels
 			);
 		} break;
 
@@ -1565,9 +1539,9 @@ DefaultTextureIndicesData build_regular_mesh(
 					texturing_mode,
 					cache,
 					output,
-					deep_sdf_sampler,
 					cell_infos,
-					edge_clamp_margin
+					edge_clamp_margin,
+					textures_ignore_air_voxels
 			);
 		} break;
 
@@ -1585,9 +1559,9 @@ DefaultTextureIndicesData build_regular_mesh(
 					texturing_mode,
 					cache,
 					output,
-					deep_sdf_sampler,
 					cell_infos,
-					edge_clamp_margin
+					edge_clamp_margin,
+					textures_ignore_air_voxels
 			);
 		} break;
 
@@ -1613,7 +1587,8 @@ void build_transition_mesh(
 		Cache &cache,
 		MeshArrays &output,
 		DefaultTextureIndicesData default_texture_indices_data,
-		const float edge_clamp_margin
+		const float edge_clamp_margin,
+		const bool textures_ignore_air_voxels
 ) {
 	ZN_PROFILE_SCOPE();
 	// From this point, we expect the buffer to contain allocated data in the relevant channels.
@@ -1678,7 +1653,8 @@ void build_transition_mesh(
 					texturing_mode,
 					cache,
 					output,
-					edge_clamp_margin
+					edge_clamp_margin,
+					textures_ignore_air_voxels
 			);
 		} break;
 
@@ -1694,7 +1670,8 @@ void build_transition_mesh(
 					texturing_mode,
 					cache,
 					output,
-					edge_clamp_margin
+					edge_clamp_margin,
+					textures_ignore_air_voxels
 			);
 		} break;
 
@@ -1710,7 +1687,8 @@ void build_transition_mesh(
 					texturing_mode,
 					cache,
 					output,
-					edge_clamp_margin
+					edge_clamp_margin,
+					textures_ignore_air_voxels
 			);
 		} break;
 

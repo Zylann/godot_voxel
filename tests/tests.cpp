@@ -89,6 +89,7 @@ void run_voxel_tests() {
 	VOXEL_TEST(test_voxel_graph_many_weight_outputs);
 	VOXEL_TEST(test_voxel_graph_many_subdivisions);
 	VOXEL_TEST(test_voxel_graph_non_square_image);
+	VOXEL_TEST(test_voxel_graph_4_default_weights);
 	VOXEL_TEST(test_island_finder);
 	VOXEL_TEST(test_unordered_remove_if);
 	VOXEL_TEST(test_instance_data_serialization);
@@ -127,6 +128,7 @@ void run_voxel_tests() {
 	VOXEL_TEST(test_voxel_stream_sqlite_key_blob80_encoding);
 	VOXEL_TEST(test_voxel_stream_sqlite_basic);
 	VOXEL_TEST(test_voxel_stream_sqlite_coordinate_format);
+	VOXEL_TEST(test_sdf_hemisphere);
 
 	print_line("------------ Voxel tests end -------------");
 }

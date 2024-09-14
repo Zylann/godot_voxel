@@ -12,29 +12,29 @@ StdVector<float> &get_tls_sdf() {
 	return tls_sdf;
 }
 
-StdVector<Vector3> &get_tls_positions() {
-	thread_local StdVector<Vector3> tls_positions;
+StdVector<Vector3f> &get_tls_positions() {
+	thread_local StdVector<Vector3f> tls_positions;
 	return tls_positions;
 }
 
-void get_positions_buffer(Vector3i buffer_size, Vector3 origin, Vector3 size, StdVector<Vector3> &positions) {
+void get_positions_buffer(Vector3i buffer_size, Vector3f origin, Vector3f size, StdVector<Vector3f> &positions) {
 	positions.resize(Vector3iUtil::get_volume(buffer_size));
 
-	const Vector3 end = origin + size;
-	const Vector3 inv_bsf = Vector3(1.0, 1.0, 1.0) / buffer_size;
+	const Vector3f end = origin + size;
+	const Vector3f inv_bsf = Vector3f(1.0, 1.0, 1.0) / to_vec3f(buffer_size);
 
 	unsigned int i = 0;
 
-	Vector3 pos;
+	Vector3f pos;
 
 	for (int z = 0; z < buffer_size.z; ++z) {
-		pos.z = Math::lerp(origin.z, end.z, z * inv_bsf.z);
+		pos.z = math::lerp(origin.z, end.z, z * inv_bsf.z);
 
 		for (int x = 0; x < buffer_size.x; ++x) {
-			pos.x = Math::lerp(origin.x, end.x, x * inv_bsf.x);
+			pos.x = math::lerp(origin.x, end.x, x * inv_bsf.x);
 
 			for (int y = 0; y < buffer_size.y; ++y) {
-				pos.y = Math::lerp(origin.y, end.y, y * inv_bsf.y);
+				pos.y = math::lerp(origin.y, end.y, y * inv_bsf.y);
 
 				positions[i] = pos;
 				++i;
@@ -43,15 +43,18 @@ void get_positions_buffer(Vector3i buffer_size, Vector3 origin, Vector3 size, St
 	}
 }
 
-Span<const Vector3> get_positions_temporary(
-		Span<const float> x_buffer, Span<const float> y_buffer, Span<const float> z_buffer) {
+Span<const Vector3f> get_positions_temporary(
+		Span<const float> x_buffer,
+		Span<const float> y_buffer,
+		Span<const float> z_buffer
+) {
 	ZN_ASSERT(x_buffer.size() == z_buffer.size() && y_buffer.size() == z_buffer.size());
 
 	get_tls_positions().resize(x_buffer.size());
-	Span<Vector3> positions = to_span(get_tls_positions());
+	Span<Vector3f> positions = to_span(get_tls_positions());
 
 	for (unsigned int i = 0; i < x_buffer.size(); ++i) {
-		positions[i] = Vector3(x_buffer[i], y_buffer[i], z_buffer[i]);
+		positions[i] = Vector3f(x_buffer[i], y_buffer[i], z_buffer[i]);
 	}
 
 	return positions;
@@ -189,7 +192,7 @@ void VoxelModifierStack::apply(VoxelBuffer &voxels, AABB aabb) const {
 	thread_local StdVector<float> tls_block_sdf;
 
 	StdVector<float> &area_sdf = get_tls_sdf();
-	StdVector<Vector3> &area_positions = get_tls_positions();
+	StdVector<Vector3f> &area_positions = get_tls_positions();
 
 	const Vector3 v_to_w = aabb.size / Vector3(voxels.get_size());
 	const Vector3 w_to_v = Vector3(voxels.get_size()) / aabb.size;
@@ -220,11 +223,22 @@ void VoxelModifierStack::apply(VoxelBuffer &voxels, AABB aabb) const {
 
 			const int64_t volume = Vector3iUtil::get_volume(modifier_box.size);
 			area_sdf.resize(volume);
-			copy_3d_region_zxy(to_span(area_sdf), modifier_box.size, Vector3i(), to_span_const(tls_block_sdf),
-					voxels.get_size(), local_origin_in_voxels, local_origin_in_voxels + modifier_box.size);
+			copy_3d_region_zxy(
+					to_span(area_sdf),
+					modifier_box.size,
+					Vector3i(),
+					to_span_const(tls_block_sdf),
+					voxels.get_size(),
+					local_origin_in_voxels,
+					local_origin_in_voxels + modifier_box.size
+			);
 
 			get_positions_buffer(
-					modifier_box.size, v_to_w * modifier_box.position, v_to_w * modifier_box.size, area_positions);
+					modifier_box.size,
+					to_vec3f(v_to_w * modifier_box.position),
+					to_vec3f(v_to_w * modifier_box.size),
+					area_positions
+			);
 
 			ctx.positions = to_span(area_positions);
 			ctx.sdf = to_span(area_sdf);
@@ -232,8 +246,15 @@ void VoxelModifierStack::apply(VoxelBuffer &voxels, AABB aabb) const {
 
 			// Write modifications back to the full-block decompressed buffer
 			// TODO Maybe use an unchecked version for a bit more speed?
-			copy_3d_region_zxy(to_span(tls_block_sdf), voxels.get_size(), local_origin_in_voxels,
-					Span<const float>(ctx.sdf), modifier_box.size, Vector3i(), modifier_box.size);
+			copy_3d_region_zxy(
+					to_span(tls_block_sdf),
+					voxels.get_size(),
+					local_origin_in_voxels,
+					Span<const float>(ctx.sdf),
+					modifier_box.size,
+					Vector3i(),
+					modifier_box.size
+			);
 		}
 	}
 
@@ -244,7 +265,7 @@ void VoxelModifierStack::apply(VoxelBuffer &voxels, AABB aabb) const {
 	}
 }
 
-void VoxelModifierStack::apply(float &sdf, Vector3 position) const {
+void VoxelModifierStack::apply(float &sdf, Vector3f position) const {
 	ZN_PROFILE_SCOPE();
 	RWLockRead lock(_stack_lock);
 
@@ -253,10 +274,10 @@ void VoxelModifierStack::apply(float &sdf, Vector3 position) const {
 	}
 
 	VoxelModifierContext ctx;
-	ctx.positions = Span<Vector3>(&position, 1);
+	ctx.positions = Span<Vector3f>(&position, 1);
 	ctx.sdf = Span<float>(&sdf, 1);
 
-	const AABB aabb(position, Vector3(1, 1, 1));
+	const AABB aabb(to_vec3(position), Vector3(1, 1, 1));
 
 	for (unsigned int i = 0; i < _stack.size(); ++i) {
 		const VoxelModifier *modifier = _stack[i];
@@ -268,8 +289,14 @@ void VoxelModifierStack::apply(float &sdf, Vector3 position) const {
 	}
 }
 
-void VoxelModifierStack::apply(Span<const float> x_buffer, Span<const float> y_buffer, Span<const float> z_buffer,
-		Span<float> sdf_buffer, Vector3f min_pos, Vector3f max_pos) const {
+void VoxelModifierStack::apply(
+		Span<const float> x_buffer,
+		Span<const float> y_buffer,
+		Span<const float> z_buffer,
+		Span<float> sdf_buffer,
+		Vector3f min_pos,
+		Vector3f max_pos
+) const {
 	ZN_PROFILE_SCOPE();
 	RWLockRead lock(_stack_lock);
 
@@ -294,7 +321,10 @@ void VoxelModifierStack::apply(Span<const float> x_buffer, Span<const float> y_b
 }
 
 void VoxelModifierStack::apply_for_gpu_rendering(
-		StdVector<VoxelModifier::ShaderData> &out_data, AABB aabb, VoxelModifier::ShaderData::Type type) const {
+		StdVector<VoxelModifier::ShaderData> &out_data,
+		AABB aabb,
+		VoxelModifier::ShaderData::Type type
+) const {
 	ZN_PROFILE_SCOPE();
 	RWLockRead lock(_stack_lock);
 

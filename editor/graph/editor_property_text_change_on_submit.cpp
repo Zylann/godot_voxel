@@ -4,17 +4,14 @@
 namespace zylann {
 
 ZN_EditorPropertyTextChangeOnSubmit::ZN_EditorPropertyTextChangeOnSubmit() {
+	using Self = ZN_EditorPropertyTextChangeOnSubmit;
 	_line_edit = memnew(LineEdit);
 	add_child(_line_edit);
 	add_focusable(_line_edit);
-	_line_edit->connect(
-			"text_submitted", callable_mp(this, &ZN_EditorPropertyTextChangeOnSubmit::_on_line_edit_text_submitted));
-	_line_edit->connect(
-			"text_changed", callable_mp(this, &ZN_EditorPropertyTextChangeOnSubmit::_on_line_edit_text_changed));
-	_line_edit->connect(
-			"focus_exited", callable_mp(this, &ZN_EditorPropertyTextChangeOnSubmit::_on_line_edit_focus_exited));
-	_line_edit->connect(
-			"focus_entered", callable_mp(this, &ZN_EditorPropertyTextChangeOnSubmit::_on_line_edit_focus_entered));
+	_line_edit->connect("text_submitted", callable_mp(this, &Self::_on_line_edit_text_submitted));
+	_line_edit->connect("text_changed", callable_mp(this, &Self::_on_line_edit_text_changed));
+	_line_edit->connect("focus_exited", callable_mp(this, &Self::_on_line_edit_focus_exited));
+	_line_edit->connect("focus_entered", callable_mp(this, &Self::_on_line_edit_focus_entered));
 }
 
 void ZN_EditorPropertyTextChangeOnSubmit::_zn_update_property() {

@@ -46,7 +46,7 @@ String VoxelVoxSceneImporter::_zn_get_resource_type() const {
 	return "PackedScene";
 }
 
-double VoxelVoxSceneImporter::_zn_get_priority() const {
+float VoxelVoxSceneImporter::_zn_get_priority() const {
 	// Higher import priority means the importer is preferred over another.
 	// By default, use this importer (the other Vox importer has lower priority).
 	return 1.0;
@@ -57,14 +57,20 @@ int VoxelVoxSceneImporter::_zn_get_import_order() const {
 }
 
 void VoxelVoxSceneImporter::_zn_get_import_options(
-		StdVector<ImportOptionWrapper> &p_out_options, const String &p_path, int p_preset_index) const {
+		StdVector<ImportOptionWrapper> &p_out_options,
+		const String &p_path,
+		int p_preset_index
+) const {
 	p_out_options.push_back(ImportOptionWrapper(PropertyInfo(Variant::BOOL, "store_colors_in_texture"), false));
 	p_out_options.push_back(ImportOptionWrapper(PropertyInfo(Variant::FLOAT, "scale"), 1.f));
 	p_out_options.push_back(ImportOptionWrapper(PropertyInfo(Variant::BOOL, "enable_baked_lighting"), true));
 }
 
 bool VoxelVoxSceneImporter::_zn_get_option_visibility(
-		const String &p_path, const StringName &p_option_name, const KeyValueWrapper p_options) const {
+		const String &p_path,
+		const StringName &p_option_name,
+		const KeyValueWrapper p_options
+) const {
 	return true;
 }
 
@@ -87,8 +93,16 @@ struct VoxMesh {
 	Vector3 pivot;
 };
 
-Error process_scene_node_recursively(const Data &data, int node_id, Node3D *parent_node, Node3D *&out_root_node,
-		int depth, const StdVector<VoxMesh> &meshes, float scale, bool p_enable_baked_lighting) {
+Error process_scene_node_recursively(
+		const Data &data,
+		int node_id,
+		Node3D *parent_node,
+		Node3D *&out_root_node,
+		int depth,
+		const StdVector<VoxMesh> &meshes,
+		float scale,
+		bool p_enable_baked_lighting
+) {
 	//
 	ERR_FAIL_COND_V(depth > 10, ERR_INVALID_DATA);
 	const Node *vox_node = data.get_node(node_id);
@@ -105,9 +119,18 @@ Error process_scene_node_recursively(const Data &data, int node_id, Node3D *pare
 			}
 			const TransformNode *vox_transform_node = reinterpret_cast<const TransformNode *>(vox_node);
 			node->set_transform(
-					Transform3D(vox_transform_node->rotation.basis, Vector3(vox_transform_node->position) * scale));
-			process_scene_node_recursively(data, vox_transform_node->child_node_id, node, out_root_node, depth + 1,
-					meshes, scale, p_enable_baked_lighting);
+					Transform3D(vox_transform_node->rotation.basis, Vector3(vox_transform_node->position) * scale)
+			);
+			process_scene_node_recursively(
+					data,
+					vox_transform_node->child_node_id,
+					node,
+					out_root_node,
+					depth + 1,
+					meshes,
+					scale,
+					p_enable_baked_lighting
+			);
 
 			// If the parent isn't anything special and has only one child,
 			// it may be cleaner to flatten the hierarchy. We keep the root node unaffected.
@@ -131,8 +154,16 @@ Error process_scene_node_recursively(const Data &data, int node_id, Node3D *pare
 			const GroupNode *vox_group_node = reinterpret_cast<const GroupNode *>(vox_node);
 			for (unsigned int i = 0; i < vox_group_node->child_node_ids.size(); ++i) {
 				const int child_node_id = vox_group_node->child_node_ids[i];
-				process_scene_node_recursively(data, child_node_id, parent_node, out_root_node, depth + 1, meshes,
-						scale, p_enable_baked_lighting);
+				process_scene_node_recursively(
+						data,
+						child_node_id,
+						parent_node,
+						out_root_node,
+						depth + 1,
+						meshes,
+						scale,
+						p_enable_baked_lighting
+				);
 			}
 		} break;
 
@@ -242,9 +273,13 @@ Error process_scene_node_recursively(const Data &data, int node_id, Node3D *pare
 
 } // namespace
 
-Error VoxelVoxSceneImporter::_zn_import(const String &p_source_file, const String &p_save_path,
-		const KeyValueWrapper p_options, StringListWrapper p_out_platform_variants,
-		StringListWrapper p_out_gen_files) const {
+Error VoxelVoxSceneImporter::_zn_import(
+		const String &p_source_file,
+		const String &p_save_path,
+		const KeyValueWrapper p_options,
+		StringListWrapper p_out_platform_variants,
+		StringListWrapper p_out_gen_files
+) const {
 	ZN_PROFILE_SCOPE();
 
 	const bool p_store_colors_in_textures = p_options.get("store_colors_in_texture");
@@ -296,8 +331,15 @@ Error VoxelVoxSceneImporter::_zn_import(const String &p_source_file, const Strin
 		Span<uint8_t> dst_color_indices;
 		ERR_FAIL_COND_V(!voxels.get_channel_as_bytes(VoxelBuffer::CHANNEL_COLOR, dst_color_indices), ERR_BUG);
 		Span<const uint8_t> src_color_indices = to_span_const(model.color_indexes);
-		copy_3d_region_zxy(dst_color_indices, voxels.get_size(), Vector3iUtil::create(VoxelMesherCubes::PADDING),
-				src_color_indices, model.size, Vector3i(), model.size);
+		copy_3d_region_zxy(
+				dst_color_indices,
+				voxels.get_size(),
+				Vector3iUtil::create(VoxelMesherCubes::PADDING),
+				src_color_indices,
+				model.size,
+				Vector3i(),
+				model.size
+		);
 
 		StdVector<unsigned int> surface_index_to_material;
 		Ref<Image> atlas;
@@ -362,7 +404,8 @@ Error VoxelVoxSceneImporter::_zn_import(const String &p_source_file, const Strin
 	if (data.get_root_node_id() != -1) {
 		// Convert scene graph into a node tree
 		process_scene_node_recursively(
-				data, data.get_root_node_id(), nullptr, root_node, 0, meshes, p_scale, p_enable_baked_lighting);
+				data, data.get_root_node_id(), nullptr, root_node, 0, meshes, p_scale, p_enable_baked_lighting
+		);
 		ERR_FAIL_COND_V(root_node == nullptr, ERR_INVALID_DATA);
 
 	} else if (meshes.size() > 0) {
@@ -381,7 +424,8 @@ Error VoxelVoxSceneImporter::_zn_import(const String &p_source_file, const Strin
 		mesh->set_path(res_save_path);
 		const Error mesh_save_err = save_resource(mesh, res_save_path, ResourceSaver::FLAG_NONE);
 		ERR_FAIL_COND_V_MSG(
-				mesh_save_err != OK, mesh_save_err, String("Failed to save {0}").format(varray(res_save_path)));
+				mesh_save_err != OK, mesh_save_err, String("Failed to save {0}").format(varray(res_save_path))
+		);
 	}
 
 	root_node->set_name(p_save_path.get_file().get_basename());
