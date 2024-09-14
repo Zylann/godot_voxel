@@ -31,7 +31,7 @@ private:
 	float _side_vertex_tolerance = 0.001f;
 };
 
-void rotate_mesh_arrays(Span<Vector3f> vertices, Span<Vector3f> normals, Span<float> &tangents, const Basis3f &basis);
+void rotate_mesh_arrays(Span<Vector3f> vertices, Span<Vector3f> normals, Span<float> tangents, const Basis3f &basis);
 
 } // namespace zylann::voxel
 

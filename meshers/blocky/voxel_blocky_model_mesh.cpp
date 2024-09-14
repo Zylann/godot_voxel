@@ -134,7 +134,7 @@ void mul(Span<Vector3f> vectors, const Basis3f &basis) {
 
 } // namespace
 
-void rotate_mesh_arrays(Span<Vector3f> vertices, Span<Vector3f> normals, Span<float> &tangents, const Basis3f &basis) {
+void rotate_mesh_arrays(Span<Vector3f> vertices, Span<Vector3f> normals, Span<float> tangents, const Basis3f &basis) {
 	mul(vertices, basis);
 
 	if (tangents.size() == 0) {
