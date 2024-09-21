@@ -32,9 +32,14 @@ public:
 		}
 		const int after_count = _rc->get_reference_count();
 		if (after_count != _initial_count) {
-			ZN_PRINT_ERROR(format("Holding a reference to the passed {} outside {} is not allowed (count before: {}, "
-								  "count after: {})",
-					_rc->get_class(), _method_name, _initial_count, after_count));
+			ZN_PRINT_ERROR(
+					format("Holding a reference to the passed {} outside {} is not allowed (count before: {}, "
+						   "count after: {})",
+						   _rc->get_class(),
+						   _method_name,
+						   _initial_count,
+						   after_count)
+			);
 		}
 	}
 
