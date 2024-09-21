@@ -31,10 +31,12 @@ public:
 			return;
 		}
 		const int after_count = _rc->get_reference_count();
-		if (after_count != _initial_count) {
+		if (after_count != _initial_count && !was_reported()) {
+			mark_reported();
 			ZN_PRINT_ERROR(
 					format("Holding a reference to the passed {} outside {} is not allowed (count before: {}, "
-						   "count after: {})",
+						   "count after: {}). If you are using a garbage-collected language (like C#), "
+						   "you may want to turn off this check in ProjectSettings.",
 						   _rc->get_class(),
 						   _method_name,
 						   _initial_count,
@@ -44,6 +46,9 @@ public:
 	}
 
 private:
+	static bool was_reported();
+	static void mark_reported();
+
 	const char *_method_name;
 	const RefCounted *_rc;
 	const int _initial_count;
