@@ -48,11 +48,6 @@ public:
 		DIMENSION_COUNT
 	};
 
-	enum JitterMode {
-		RANDOM = 0,
-		TRIANGLE_POSITION_HASH,
-	};
-
 	// This API might change so for now it's not exposed to scripts.
 	// Using 32-bit float transforms because those transforms are chunked, so their origins never really need to hold
 	// large coordinates.
