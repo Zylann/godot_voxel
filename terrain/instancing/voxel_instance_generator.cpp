@@ -974,21 +974,26 @@ void VoxelInstanceGenerator::get_configuration_warnings(PackedStringArray &warni
 }
 
 void VoxelInstanceGenerator::_validate_property(PropertyInfo &p_property) const {
-	if (p_property.name == "jitter") {
+	// In core, `PropertyInfo.name` is a String so `operator == "literal"` works.
+	// But in GodotCpp, it is a StringName, which does not have such operator.
+	// So I had to use StringNames to make the code compile in both scenarios without hurting performance.
+	const VoxelStringNames &sn = VoxelStringNames::get_singleton();
+
+	if (p_property.name == sn.jitter) {
 		if (_emit_mode != EMIT_ONE_PER_TRIANGLE) {
 			p_property.usage = PROPERTY_USAGE_NO_EDITOR;
 		}
 		return;
 	}
 
-	if (p_property.name == "triangle_area_threshold") {
+	if (p_property.name == sn.triangle_area_threshold) {
 		if (_emit_mode != EMIT_FROM_FACES && _emit_mode != EMIT_ONE_PER_TRIANGLE) {
 			p_property.usage = PROPERTY_USAGE_NO_EDITOR;
 		}
 		return;
 	}
 
-	if (p_property.name == "density") {
+	if (p_property.name == sn.density) {
 		if (_emit_mode == EMIT_ONE_PER_TRIANGLE) {
 			p_property.usage = PROPERTY_USAGE_NO_EDITOR;
 		}
@@ -996,12 +1001,12 @@ void VoxelInstanceGenerator::_validate_property(PropertyInfo &p_property) const 
 	}
 
 	if (_noise.is_null() && _noise_graph.is_null()) {
-		if (p_property.name == "noise_dimension") {
+		if (p_property.name == sn.noise_dimension) {
 			p_property.usage = PROPERTY_USAGE_NO_EDITOR;
 			return;
 		}
 
-		if (p_property.name == "noise_on_scale") {
+		if (p_property.name == sn.noise_on_scale) {
 			p_property.usage = PROPERTY_USAGE_NO_EDITOR;
 			return;
 		}
