@@ -12,6 +12,8 @@ Semver is not yet in place, so each version can have breaking changes, although 
 
 Primarily developped with Godot 4.3.
 
+- `VoxelBlockyModelCube`: Added support for mesh rotation like `VoxelBlockyMesh` (prior to that, rotation buttons in the editor only swapped tiles around)
+
 - Fixes
     - Fixed potential deadlock when using detail rendering and various editing features (thanks to lenesxy, issue #693)
     - `VoxelInstanceLibrary`: Editor: reworked the way items are exposed as a Blender-style list. Now removing an item while the library is open as a sub-inspector is no longer problematic

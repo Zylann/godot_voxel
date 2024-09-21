@@ -93,6 +93,82 @@ void add(PackedVector3Array &vectors, Vector3 rhs) {
 	add(Span<Vector3>(vectors.ptrw(), vectors.size()), rhs);
 }
 
+void rotate_mesh_arrays(Span<Vector3> vertices, Span<Vector3> normals, Span<float> &tangents, const Basis &basis) {
+	mul(vertices, basis);
+
+	if (tangents.size() == 0) {
+		mul(normals, basis);
+
+	} else {
+		const unsigned int tangent_count = tangents.size() / 4;
+		ZN_ASSERT_RETURN(tangent_count == normals.size());
+
+		for (unsigned int ti = 0; ti < tangent_count; ++ti) {
+			const unsigned int i0 = ti * 4;
+
+			Vector3 normal = normals[ti];
+			Vector3 tangent(tangents[i0], tangents[i0 + 1], tangents[i0 + 2]);
+			Vector3 bitangent(normal.cross(tangent) * tangents[i0 + 3]);
+
+			normal = basis.xform(normal);
+			tangent = basis.xform(tangent);
+			bitangent = basis.xform(bitangent);
+
+			const float bitangent_s = math::sign_nonzero(bitangent.dot(normal.cross(tangent)));
+
+			normals[ti] = normal;
+
+			tangents[i0] = tangent.x;
+			tangents[i0 + 1] = tangent.y;
+			tangents[i0 + 2] = tangent.z;
+			tangents[i0 + 3] = bitangent_s;
+		}
+	}
+}
+
+void mul(Span<Vector3f> vectors, const Basis3f &basis) {
+	for (Vector3f &v : vectors) {
+		v = basis.xform(v);
+	}
+}
+
+} // namespace
+
+void rotate_mesh_arrays(Span<Vector3f> vertices, Span<Vector3f> normals, Span<float> tangents, const Basis3f &basis) {
+	mul(vertices, basis);
+
+	if (tangents.size() == 0) {
+		mul(normals, basis);
+
+	} else {
+		const unsigned int tangent_count = tangents.size() / 4;
+		ZN_ASSERT_RETURN(tangent_count == normals.size());
+
+		for (unsigned int ti = 0; ti < tangent_count; ++ti) {
+			const unsigned int i0 = ti * 4;
+
+			Vector3f normal = normals[ti];
+			Vector3f tangent(tangents[i0], tangents[i0 + 1], tangents[i0 + 2]);
+			Vector3f bitangent(math::cross(normal, tangent) * tangents[i0 + 3]);
+
+			normal = basis.xform(normal);
+			tangent = basis.xform(tangent);
+			bitangent = basis.xform(bitangent);
+
+			const float bitangent_s = math::sign_nonzero(math::dot(bitangent, math::cross(normal, tangent)));
+
+			normals[ti] = normal;
+
+			tangents[i0] = tangent.x;
+			tangents[i0 + 1] = tangent.y;
+			tangents[i0 + 2] = tangent.z;
+			tangents[i0 + 3] = bitangent_s;
+		}
+	}
+}
+
+namespace {
+
 void rotate_mesh_arrays(
 		PackedVector3Array &vertices,
 		PackedVector3Array &normals,
@@ -103,36 +179,7 @@ void rotate_mesh_arrays(
 	Span<Vector3> normals_w(normals.ptrw(), normals.size());
 	Span<float> tangents_w(tangents.ptrw(), tangents.size());
 
-	mul(vertices_w, basis);
-
-	if (tangents.size() == 0) {
-		mul(normals_w, basis);
-
-	} else {
-		const unsigned int tangent_count = tangents_w.size() / 4;
-		ZN_ASSERT_RETURN(int(tangent_count) == normals.size());
-
-		for (unsigned int ti = 0; ti < tangent_count; ++ti) {
-			const unsigned int i0 = ti * 4;
-
-			Vector3 normal = normals_w[ti];
-			Vector3 tangent(tangents_w[i0], tangents_w[i0 + 1], tangents_w[i0 + 2]);
-			Vector3 bitangent(normal.cross(tangent) * tangents_w[i0 + 3]);
-
-			normal = basis.xform(normal);
-			tangent = basis.xform(tangent);
-			bitangent = basis.xform(bitangent);
-
-			const float bitangent_s = math::sign_nonzero(bitangent.dot(normal.cross(tangent)));
-
-			normals_w[ti] = normal;
-
-			tangents_w[i0] = tangent.x;
-			tangents_w[i0 + 1] = tangent.y;
-			tangents_w[i0 + 2] = tangent.z;
-			tangents_w[i0 + 3] = bitangent_s;
-		}
-	}
+	rotate_mesh_arrays(vertices_w, normals_w, tangents_w, basis);
 }
 
 void rotate_mesh_arrays_ortho(
@@ -389,7 +436,7 @@ void bake_mesh_geometry(
 				}
 			}
 		}
-	} // namespace zylann::voxel
+	}
 }
 
 void bake_mesh_geometry(
@@ -456,17 +503,6 @@ bool VoxelBlockyModelMesh::is_empty() const {
 	return false;
 }
 
-void VoxelBlockyModelMesh::set_mesh_ortho_rotation_index(int i) {
-	ZN_ASSERT_RETURN(i >= 0 && i < math::ORTHOGONAL_BASIS_COUNT);
-	if (i != int(_mesh_ortho_rotation)) {
-		_mesh_ortho_rotation = i;
-	}
-}
-
-int VoxelBlockyModelMesh::get_mesh_ortho_rotation_index() const {
-	return _mesh_ortho_rotation;
-}
-
 Ref<Mesh> VoxelBlockyModelMesh::get_preview_mesh() const {
 	const float bake_tangents = false;
 	VoxelBlockyModel::BakedData baked_data;
@@ -493,26 +529,6 @@ Ref<Mesh> VoxelBlockyModelMesh::get_preview_mesh() const {
 	return mesh;
 }
 
-void VoxelBlockyModelMesh::rotate_90(math::Axis axis, bool clockwise) {
-	math::OrthoBasis ortho_basis = math::get_ortho_basis_from_index(_mesh_ortho_rotation);
-	ortho_basis.rotate_90(axis, clockwise);
-	_mesh_ortho_rotation = math::get_index_from_ortho_basis(ortho_basis);
-
-	rotate_collision_boxes_90(axis, clockwise);
-
-	emit_changed();
-}
-
-void VoxelBlockyModelMesh::rotate_ortho(math::OrthoBasis p_ortho_basis) {
-	math::OrthoBasis ortho_basis = math::get_ortho_basis_from_index(_mesh_ortho_rotation);
-	ortho_basis = p_ortho_basis * ortho_basis;
-	_mesh_ortho_rotation = math::get_index_from_ortho_basis(ortho_basis);
-
-	rotate_collision_boxes_ortho(p_ortho_basis);
-
-	emit_changed();
-}
-
 void VoxelBlockyModelMesh::set_side_vertex_tolerance(float tolerance) {
 	_side_vertex_tolerance = math::max(tolerance, 0.f);
 }
@@ -522,20 +538,13 @@ float VoxelBlockyModelMesh::get_side_vertex_tolerance() const {
 }
 
 void VoxelBlockyModelMesh::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("set_mesh", "mesh"), &VoxelBlockyModelMesh::set_mesh);
-	ClassDB::bind_method(D_METHOD("get_mesh"), &VoxelBlockyModelMesh::get_mesh);
+	using Self = VoxelBlockyModelMesh;
 
-	ClassDB::bind_method(
-			D_METHOD("set_mesh_ortho_rotation_index", "i"), &VoxelBlockyModelMesh::set_mesh_ortho_rotation_index
-	);
-	ClassDB::bind_method(
-			D_METHOD("get_mesh_ortho_rotation_index"), &VoxelBlockyModelMesh::get_mesh_ortho_rotation_index
-	);
+	ClassDB::bind_method(D_METHOD("set_mesh", "mesh"), &Self::set_mesh);
+	ClassDB::bind_method(D_METHOD("get_mesh"), &Self::get_mesh);
 
-	ClassDB::bind_method(
-			D_METHOD("set_side_vertex_tolerance", "tolerance"), &VoxelBlockyModelMesh::set_side_vertex_tolerance
-	);
-	ClassDB::bind_method(D_METHOD("get_side_vertex_tolerance"), &VoxelBlockyModelMesh::get_side_vertex_tolerance);
+	ClassDB::bind_method(D_METHOD("set_side_vertex_tolerance", "tolerance"), &Self::set_side_vertex_tolerance);
+	ClassDB::bind_method(D_METHOD("get_side_vertex_tolerance"), &Self::get_side_vertex_tolerance);
 
 	ADD_PROPERTY(
 			PropertyInfo(Variant::OBJECT, "mesh", PROPERTY_HINT_RESOURCE_TYPE, Mesh::get_class_static()),
