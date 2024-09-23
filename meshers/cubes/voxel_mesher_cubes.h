@@ -40,7 +40,7 @@ public:
 	VoxelMesherCubes();
 	~VoxelMesherCubes();
 
-	void build(VoxelMesher::Output &output, const VoxelMesher::Input &input) override;
+	void build(VoxelMesherOutput &output, const VoxelMesherInput &input) override;
 
 	void set_greedy_meshing_enabled(bool enable);
 	bool is_greedy_meshing_enabled() const;

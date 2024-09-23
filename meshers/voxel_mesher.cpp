@@ -21,8 +21,8 @@ Ref<Mesh> VoxelMesher::build_mesh(
 ) {
 	ZN_PROFILE_SCOPE();
 
-	Output output;
-	Input input{ voxels, nullptr, Vector3i(), 0, false, false, false };
+	VoxelMesherOutput output;
+	VoxelMesherInput input{ voxels, nullptr, Vector3i(), 0, false, false, false };
 
 	DetailRenderingSettings detail_texture_settings;
 	detail_texture_settings.begin_lod_index = 0;
@@ -56,7 +56,7 @@ Ref<Mesh> VoxelMesher::build_mesh(
 
 	int gd_surface_index = 0;
 	for (unsigned int i = 0; i < output.surfaces.size(); ++i) {
-		Output::Surface &surface = output.surfaces[i];
+		VoxelMesherOutput::Surface &surface = output.surfaces[i];
 		Array &arrays = surface.arrays;
 
 		if (arrays.is_empty()) {
@@ -128,7 +128,7 @@ Ref<Mesh> VoxelMesher::build_mesh(
 	return mesh;
 }
 
-void VoxelMesher::build(Output &output, const Input &input) {
+void VoxelMesher::build(VoxelMesherOutput &output, const VoxelMesherInput &input) {
 	ERR_PRINT("Not implemented");
 }
 
@@ -157,11 +157,11 @@ unsigned int VoxelMesher::get_material_index_count() const {
 	return 0;
 }
 
-bool VoxelMesher::is_mesh_empty(const StdVector<Output::Surface> &surfaces) {
+bool VoxelMesher::is_mesh_empty(const StdVector<VoxelMesherOutput::Surface> &surfaces) {
 	if (surfaces.size() == 0) {
 		return true;
 	}
-	for (const Output::Surface &surface : surfaces) {
+	for (const VoxelMesherOutput::Surface &surface : surfaces) {
 		if (is_surface_triangulated(surface.arrays)) {
 			return false;
 		}

@@ -202,7 +202,7 @@ void simplify(
 
 } // namespace
 
-void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher::Input &input) {
+void VoxelMesherTransvoxel::build(VoxelMesherOutput &output, const VoxelMesherInput &input) {
 	ZN_PROFILE_SCOPE();
 
 	static thread_local transvoxel::Cache tls_cache;

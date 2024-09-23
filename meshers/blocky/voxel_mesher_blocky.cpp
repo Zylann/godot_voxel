@@ -64,7 +64,7 @@ StdVector<int> &get_tls_index_offsets() {
 template <typename Type_T>
 void generate_blocky_mesh( //
 		StdVector<VoxelMesherBlocky::Arrays> &out_arrays_per_material, //
-		VoxelMesher::Output::CollisionSurface *collision_surface, //
+		VoxelMesherOutput::CollisionSurface *collision_surface, //
 		const Span<const Type_T> type_buffer, //
 		const Vector3i block_size, //
 		const VoxelBlockyLibraryBase::BakedData &library, //
@@ -1094,7 +1094,7 @@ uint8_t VoxelMesherBlocky::get_shadow_occluder_mask() const {
 	return _parameters.shadow_occluders_mask;
 }
 
-void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::Input &input) {
+void VoxelMesherBlocky::build(VoxelMesherOutput &output, const VoxelMesherInput &input) {
 	const VoxelBuffer::ChannelId channel = VoxelBuffer::CHANNEL_TYPE;
 	Parameters params;
 	{
@@ -1163,7 +1163,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 	const Vector3i block_size = voxels.get_size();
 	const VoxelBuffer::Depth channel_depth = voxels.get_channel_depth(channel);
 
-	VoxelMesher::Output::CollisionSurface *collision_surface = nullptr;
+	VoxelMesherOutput::CollisionSurface *collision_surface = nullptr;
 	if (input.collision_hint) {
 		collision_surface = &output.collision_surface;
 	}
@@ -1269,8 +1269,8 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 				}
 			}
 
-			output.surfaces.push_back(Output::Surface());
-			Output::Surface &surface = output.surfaces.back();
+			output.surfaces.push_back(VoxelMesherOutput::Surface());
+			VoxelMesherOutput::Surface &surface = output.surfaces.back();
 			surface.arrays = mesh_arrays;
 			surface.material_index = material_index;
 		}

@@ -1,13 +1,10 @@
 #ifndef VOXEL_MESHER_H
 #define VOXEL_MESHER_H
 
-#include "../constants/cube_tables.h"
-#include "../util/containers/fixed_array.h"
 #include "../util/containers/span.h"
-#include "../util/containers/std_vector.h"
-#include "../util/godot/classes/image.h"
-#include "../util/godot/classes/mesh.h"
 #include "../util/macros.h"
+#include "voxel_mesher_input.h"
+#include "voxel_mesher_output.h"
 
 ZN_GODOT_FORWARD_DECLARE(class ShaderMaterial)
 
@@ -17,69 +14,14 @@ namespace godot {
 class VoxelBuffer;
 }
 
-class VoxelBuffer;
-class VoxelGenerator;
-class VoxelData;
-
 // Base class for algorithms that generate meshes from voxels.
 class VoxelMesher : public Resource {
 	GDCLASS(VoxelMesher, Resource)
 public:
-	struct Input {
-		// Voxels to be used as the primary source of data.
-		const VoxelBuffer &voxels;
-		// When using LOD, some meshers can use the generator and edited voxels to affine results.
-		// If not provided, the mesher will only use `voxels`.
-		VoxelGenerator *generator = nullptr;
-		// Origin of the block is required when doing deep sampling.
-		Vector3i origin_in_voxels;
-		// LOD index. 0 means highest detail. 1 means half detail etc.
-		uint8_t lod_index = 0;
-		// If true, collision information is required.
-		// Sometimes it doesn't change anything as the rendering mesh can be used as collider,
-		// but in other setups it can be different and will be returned in `collision_surface`.
-		bool collision_hint = false;
-		// If true, the mesher is told that the mesh will be used in a context with variable level of detail.
-		// For example, transition meshes will or will not be generated based on this (overriding mesher settings).
-		bool lod_hint = false;
-		// If true, the mesher can collect some extra information which can be useful to speed up detail texture
-		// baking. Depends on the mesher.
-		bool detail_texture_hint = false;
-	};
-
-	struct Output {
-		struct Surface {
-			Array arrays;
-			uint16_t material_index = 0;
-		};
-		StdVector<Surface> surfaces;
-		FixedArray<StdVector<Surface>, Cube::SIDE_COUNT> transition_surfaces;
-		Mesh::PrimitiveType primitive_type = Mesh::PRIMITIVE_TRIANGLES;
-		// Flags for creating the Godot mesh resource
-		uint32_t mesh_flags = 0;
-
-		struct CollisionSurface {
-			StdVector<Vector3f> positions;
-			StdVector<int> indices;
-			// If >= 0, the collision surface may actually be picked from a sub-section of arrays of the first surface
-			// in the render mesh (It may start from index 0).
-			// Used when transition meshes are combined with the main mesh.
-			int32_t submesh_vertex_end = -1;
-			int32_t submesh_index_end = -1;
-		};
-		CollisionSurface collision_surface;
-
-		Array shadow_occluder;
-
-		// May be used to store extra information needed in shader to render the mesh properly
-		// (currently used only by the cubes mesher when baking colors)
-		Ref<Image> atlas_image;
-	};
-
-	static bool is_mesh_empty(const StdVector<Output::Surface> &surfaces);
+	static bool is_mesh_empty(const StdVector<VoxelMesherOutput::Surface> &surfaces);
 
 	// This can be called from multiple threads at once. Make sure member vars are protected or thread-local.
-	virtual void build(Output &output, const Input &voxels);
+	virtual void build(VoxelMesherOutput &output, const VoxelMesherInput &voxels);
 
 	// Builds a mesh from the given voxels. This function is simplified to be used by the script API.
 	Ref<Mesh> build_mesh(const VoxelBuffer &voxels, TypedArray<Material> materials, Dictionary additional_data);

@@ -745,7 +745,7 @@ VoxelMesherCubes::Cache &VoxelMesherCubes::get_tls_cache() {
 	return cache;
 }
 
-void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Input &input) {
+void VoxelMesherCubes::build(VoxelMesherOutput &output, const VoxelMesherInput &input) {
 	ZN_PROFILE_SCOPE();
 	const int channel = VoxelBuffer::CHANNEL_COLOR;
 	Cache &cache = get_tls_cache();
@@ -1003,7 +1003,7 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 		const Arrays &arrays = cache.arrays_per_material[material_index];
 
 		if (arrays.positions.size() != 0) {
-			Output::Surface surface;
+			VoxelMesherOutput::Surface surface;
 			Array &mesh_arrays = surface.arrays;
 			mesh_arrays.resize(Mesh::ARRAY_MAX);
 
@@ -1188,8 +1188,8 @@ Ref<Mesh> VoxelMesherCubes::generate_mesh_from_image(Ref<Image> image, float vox
 
 	Ref<VoxelMesherCubes> mesher;
 	mesher.instantiate();
-	VoxelMesher::Output output;
-	VoxelMesher::Input input{ voxels, nullptr, Vector3i(), 0, false };
+	VoxelMesherOutput output;
+	VoxelMesherInput input{ voxels, nullptr, Vector3i(), 0, false };
 	mesher->build(output, input);
 
 	if (output.surfaces.size() == 0) {
@@ -1204,7 +1204,7 @@ Ref<Mesh> VoxelMesherCubes::generate_mesh_from_image(Ref<Image> image, float vox
 	for (unsigned int i = 0; i < output.surfaces.size(); ++i) {
 		using namespace zylann::godot;
 
-		VoxelMesher::Output::Surface &surface = output.surfaces[i];
+		VoxelMesherOutput::Surface &surface = output.surfaces[i];
 		Array arrays = surface.arrays;
 
 		if (arrays.is_empty()) {

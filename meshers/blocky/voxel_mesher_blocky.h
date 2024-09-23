@@ -44,7 +44,7 @@ public:
 	bool get_shadow_occluder_side(Side side) const;
 	uint8_t get_shadow_occluder_mask() const;
 
-	void build(VoxelMesher::Output &output, const VoxelMesher::Input &input) override;
+	void build(VoxelMesherOutput &output, const VoxelMesherInput &input) override;
 
 	// TODO GDX: Resource::duplicate() cannot be overriden (while it can in modules).
 	// This will lead to performance degradation and maybe unexpected behavior

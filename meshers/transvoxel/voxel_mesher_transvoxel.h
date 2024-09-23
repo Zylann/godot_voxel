@@ -26,7 +26,7 @@ public:
 	VoxelMesherTransvoxel();
 	~VoxelMesherTransvoxel();
 
-	void build(VoxelMesher::Output &output, const VoxelMesher::Input &input) override;
+	void build(VoxelMesherOutput &output, const VoxelMesherInput &input) override;
 	Ref<ArrayMesh> build_transition_mesh(Ref<godot::VoxelBuffer> voxels, int direction);
 
 	int get_used_channels_mask() const override;
