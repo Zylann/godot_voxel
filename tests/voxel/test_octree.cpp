@@ -81,7 +81,7 @@ void test_octree_update() {
 		const Vector3 relative_viewer_pos = viewer_pos - block_size_v * Vector3(block_offset_lod0);
 
 		OctreeActions actions;
-		actions.viewer_pos_octree_space = viewer_pos / block_size;
+		actions.viewer_pos_octree_space = relative_viewer_pos / block_size;
 		actions.lod_distance_octree_space = lod_distance / block_size;
 		octree.update(actions);
 
@@ -116,7 +116,7 @@ void test_octree_update() {
 			const Vector3 relative_viewer_pos = viewer_pos - block_size_v * Vector3(block_offset_lod0);
 
 			OctreeActions actions;
-			actions.viewer_pos_octree_space = viewer_pos / block_size;
+			actions.viewer_pos_octree_space = relative_viewer_pos / block_size;
 			actions.lod_distance_octree_space = lod_distance / block_size;
 			octree.update(actions);
 
