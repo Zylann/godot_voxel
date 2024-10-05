@@ -668,6 +668,9 @@ bool deserialize(Span<const uint8_t> p_data, VoxelBuffer &out_voxel_buffer) {
 						v = f.get_64();
 						break;
 					default:
+						// Fix uninitialized variable warning on Clang, even though it is not supposed to carry on after
+						// the switch
+						v = 0;
 						CRASH_NOW();
 				}
 				out_voxel_buffer.clear_channel(channel_index, v);
