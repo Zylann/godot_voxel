@@ -4,6 +4,7 @@
 #include "../../generators/graph/voxel_graph_function.h"
 #include "../../util/containers/std_vector.h"
 #include "../../util/godot/classes/confirmation_dialog.h"
+#include "../../util/godot/core/version.h"
 #include "../../util/godot/macros.h"
 
 ZN_GODOT_FORWARD_DECLARE(class Tree);
@@ -11,7 +12,7 @@ ZN_GODOT_FORWARD_DECLARE(class LineEdit);
 ZN_GODOT_FORWARD_DECLARE(class EditorFileDialog)
 ZN_GODOT_FORWARD_DECLARE(class RichTextLabel)
 #ifdef ZN_GODOT
-#ifdef ZN_GODOT_OLD_EDITOR_QUICK_OPEN
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR <= 3
 ZN_GODOT_FORWARD_DECLARE(class EditorQuickOpen)
 #endif
 #endif
@@ -39,7 +40,7 @@ private:
 	void _on_tree_item_selected();
 	void _on_tree_nothing_selected();
 	void _on_function_file_dialog_file_selected(String fpath);
-#ifdef ZN_GODOT_OLD_EDITOR_QUICK_OPEN
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR <= 3
 	void _on_function_quick_open_dialog_quick_open();
 #endif
 	void on_function_quick_open_dialog_item_selected(String fpath);
@@ -70,7 +71,7 @@ private:
 	RichTextLabel *_description_label = nullptr;
 	EditorFileDialog *_function_file_dialog = nullptr;
 #ifdef ZN_GODOT
-#ifdef ZN_GODOT_OLD_EDITOR_QUICK_OPEN
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR <= 3
 	// TODO GDX: EditorQuickOpen is not exposed!
 	EditorQuickOpen *_function_quick_open_dialog = nullptr;
 #endif

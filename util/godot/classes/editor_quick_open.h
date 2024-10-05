@@ -5,8 +5,6 @@
 
 #if VERSION_MAJOR == 4 && VERSION_MINOR <= 3
 #include <editor/editor_quick_open.h>
-// using EditorQuickOpenDialog = EditorQuickOpen;
-#define ZN_GODOT_OLD_EDITOR_QUICK_OPEN
 #else
 #include <editor/gui/editor_quick_open_dialog.h>
 #endif

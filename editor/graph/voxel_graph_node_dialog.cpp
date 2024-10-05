@@ -22,7 +22,7 @@
 #include "graph_nodes_doc_data.h"
 
 #ifdef ZN_GODOT
-#ifndef ZN_GODOT_OLD_EDITOR_QUICK_OPEN
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR >= 4
 #include <editor/editor_node.h>
 #endif
 #endif
@@ -173,7 +173,7 @@ VoxelGraphNodeDialog::VoxelGraphNodeDialog() {
 	// TODO Replace QuickOpen with listing of project functions directly in the dialog
 	// TODO GDX: EditorQuickOpen is not exposed to extensions
 #ifdef ZN_GODOT
-#ifdef ZN_GODOT_OLD_EDITOR_QUICK_OPEN
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR <= 3
 	_function_quick_open_dialog = memnew(EditorQuickOpen);
 	_function_quick_open_dialog->connect(
 			"quick_open", callable_mp(this, &VoxelGraphNodeDialog::_on_function_quick_open_dialog_quick_open)
@@ -381,7 +381,7 @@ void VoxelGraphNodeDialog::_on_tree_item_activated() {
 
 	} else if (id == ID_FUNCTION_QUICK_OPEN) {
 #ifdef ZN_GODOT
-#ifdef ZN_GODOT_OLD_EDITOR_QUICK_OPEN
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR <= 3
 		// Quick open function nodes
 		_function_quick_open_dialog->popup_dialog(pg::VoxelGraphFunction::get_class_static());
 #else
@@ -439,7 +439,7 @@ void VoxelGraphNodeDialog::_on_function_file_dialog_file_selected(String fpath) 
 	hide();
 }
 
-#ifdef ZN_GODOT_OLD_EDITOR_QUICK_OPEN
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR <= 3
 void VoxelGraphNodeDialog::_on_function_quick_open_dialog_quick_open() {
 #ifdef ZN_GODOT
 	String fpath = _function_quick_open_dialog->get_selected();
@@ -447,7 +447,7 @@ void VoxelGraphNodeDialog::_on_function_quick_open_dialog_quick_open() {
 #endif
 }
 
-#else
+#endif
 
 void VoxelGraphNodeDialog::on_function_quick_open_dialog_item_selected(String fpath) {
 #ifdef ZN_GODOT
@@ -458,8 +458,6 @@ void VoxelGraphNodeDialog::on_function_quick_open_dialog_item_selected(String fp
 	hide();
 #endif
 }
-
-#endif
 
 void VoxelGraphNodeDialog::_on_description_label_meta_clicked(Variant meta) {
 	// TODO Open docs if a class name is clicked
