@@ -11,7 +11,9 @@ ZN_GODOT_FORWARD_DECLARE(class LineEdit);
 ZN_GODOT_FORWARD_DECLARE(class EditorFileDialog)
 ZN_GODOT_FORWARD_DECLARE(class RichTextLabel)
 #ifdef ZN_GODOT
+#ifdef ZN_GODOT_OLD_EDITOR_QUICK_OPEN
 ZN_GODOT_FORWARD_DECLARE(class EditorQuickOpen)
+#endif
 #endif
 
 namespace zylann::voxel {
@@ -37,7 +39,10 @@ private:
 	void _on_tree_item_selected();
 	void _on_tree_nothing_selected();
 	void _on_function_file_dialog_file_selected(String fpath);
+#ifdef ZN_GODOT_OLD_EDITOR_QUICK_OPEN
 	void _on_function_quick_open_dialog_quick_open();
+#endif
+	void on_function_quick_open_dialog_item_selected(String fpath);
 	void _on_description_label_meta_clicked(Variant meta);
 
 	void _notification(int p_what);
@@ -65,8 +70,10 @@ private:
 	RichTextLabel *_description_label = nullptr;
 	EditorFileDialog *_function_file_dialog = nullptr;
 #ifdef ZN_GODOT
+#ifdef ZN_GODOT_OLD_EDITOR_QUICK_OPEN
 	// TODO GDX: EditorQuickOpen is not exposed!
 	EditorQuickOpen *_function_quick_open_dialog = nullptr;
+#endif
 #endif
 };
 
