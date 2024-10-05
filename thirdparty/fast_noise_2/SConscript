@@ -52,7 +52,9 @@ fn2_sources_arm = [
 env_fn2 = env_voxel.Clone()
 # In case we need common options for FastNoise2 we can add them here
 
-if env.msvc:
+# Note: when compiling with clang-cl on Windows, `env.msvc` is still True because clang-cl behaves like an MSVC 
+# frontend. However, Clang is more picky and generates more warnings, so we use Clang options anyways.
+if env.msvc and not env["use_llvm"]:
     # In some places, integral constants are multiplied but cause overflow (ex: Simplex.inl(432) in 0.10.0-alpha).
     # This is usually expected by the devs though.
     env_fn2.Append(CXXFLAGS=["/wd4307"])
@@ -81,7 +83,10 @@ env_fn2_avx512 = env_fn2.Clone()
 env_fn2_arm = env_fn2.Clone()
 # TODO NEON?
 
-if env.msvc:
+# Note: when compiling with clang-cl on Windows, `env.msvc` is still True because clang-cl behaves like an MSVC 
+# frontend. However, Clang is more picky about architecture, so we have to specify each option, which MSVC doesnt have.
+# Since Clang still allows to pass `-`style arguments, might as well use the non-MSVC path...
+if env.msvc and not env["use_llvm"]:
     if env["arch"] == "x86_32":
         # MSVC/64 warns:
         # ignoring unknown option "/arch:SSE2" as 64 bit already has SSE2 built in
@@ -95,7 +100,7 @@ if env.msvc:
     env_fn2_avx2.Append(CCFLAGS=["/arch:AVX2"])
     env_fn2_avx512.Append(CCFLAGS=["/arch:AVX512"])
 
-else: # Clang, GCC, AppleClang
+else: # Clang, GCC, AppleClang, Clang-Cl
     # TODO The Cmake build script still has a big `if(MSVC)` in that section.
     # what does it mean?
 
