@@ -55,9 +55,12 @@ env_fn2 = env_voxel.Clone()
 # Note: when compiling with clang-cl on Windows, `env.msvc` is still True because clang-cl behaves like an MSVC 
 # frontend. However, Clang is more picky and generates more warnings, so we use Clang options anyways.
 if env.msvc and not env["use_llvm"]:
+    # Avoid a compiler bug in VS 2022 (doesn't occur in VS 2019)
+    env_fn2['CCFLAGS'].remove('/permissive-')
     # In some places, integral constants are multiplied but cause overflow (ex: Simplex.inl(432) in 0.10.0-alpha).
     # This is usually expected by the devs though.
     env_fn2.Append(CXXFLAGS=["/wd4307"])
+
 else:
     # We compile with `-Wall`, but FastNoise2 does not, so a lot of pedantic things show up treated as errors
     env_fn2.Append(CXXFLAGS=["-Wno-parentheses"])
