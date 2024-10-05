@@ -1039,7 +1039,7 @@ void test_voxel_graph_functions_misc() {
 			Ref<VoxelGeneratorGraph> generator;
 			generator.instantiate();
 			//      X
-			//       \ 
+			//       \
 			//  Z --- Func --- OutSDF
 			//
 			{
