@@ -317,7 +317,7 @@ void test_threaded_task_postponing() {
 		EventList &events;
 
 		Task1(int p_sleep_amount_usec, Map &p_map, Vector3i p_bpos, EventList &p_events) :
-				sleep_amount_usec(p_sleep_amount_usec), map(p_map), bpos0(p_bpos), events(p_events) {}
+				sleep_amount_usec(p_sleep_amount_usec), bpos0(p_bpos), map(p_map), events(p_events) {}
 
 		bool try_lock_area(StdVector<Block *> &locked_blocks) {
 			Vector3i delta;

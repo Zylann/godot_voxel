@@ -295,7 +295,7 @@ void test_spatial_lock_dependent_map_chunks() {
 		EventList &events;
 
 		Task1(int p_sleep_amount_usec, Map &p_map, Vector2i p_column_pos, EventList &p_events) :
-				sleep_amount_usec(p_sleep_amount_usec), map(p_map), column_pos(p_column_pos), events(p_events) {}
+				sleep_amount_usec(p_sleep_amount_usec), column_pos(p_column_pos), map(p_map), events(p_events) {}
 
 		void run(ThreadedTaskContext &ctx) override {
 			ZN_PROFILE_SCOPE();
@@ -343,7 +343,7 @@ void test_spatial_lock_dependent_map_chunks() {
 		EventList &events;
 
 		Task2(int p_sleep_amount_usec, Map &p_map, Vector3i p_bpos, EventList &p_events) :
-				sleep_amount_usec(p_sleep_amount_usec), map(p_map), bpos0(p_bpos), events(p_events) {}
+				sleep_amount_usec(p_sleep_amount_usec), bpos0(p_bpos), map(p_map), events(p_events) {}
 
 		void run(ThreadedTaskContext &ctx) override {
 			ZN_PROFILE_SCOPE();
