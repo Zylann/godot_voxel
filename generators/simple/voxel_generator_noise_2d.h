@@ -31,8 +31,15 @@ public:
 		return true;
 	}
 
-	void generate_series(Span<const float> positions_x, Span<const float> positions_y, Span<const float> positions_z,
-			unsigned int channel, Span<float> out_values, Vector3f min_pos, Vector3f max_pos) override;
+	void generate_series(
+			Span<const float> positions_x,
+			Span<const float> positions_y,
+			Span<const float> positions_z,
+			unsigned int channel,
+			Span<float> out_values,
+			Vector3f min_pos,
+			Vector3f max_pos
+	) override;
 
 private:
 	void _on_noise_changed();
