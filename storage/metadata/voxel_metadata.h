@@ -2,7 +2,7 @@
 #define VOXEL_METADATA_H
 
 #include "../../util/memory/memory.h"
-//#include "../../util/non_copyable.h"
+// #include "../../util/non_copyable.h"
 #include "../../util/containers/span.h"
 #include <cstdint>
 
