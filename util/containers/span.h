@@ -208,13 +208,13 @@ private:
 	size_t _size;
 };
 
-template <typename T, unsigned int N>
+template <typename T, size_t N>
 Span<T> to_span(std::array<T, N> &a, unsigned int count) {
 	ZN_ASSERT(count <= a.size());
 	return Span<T>(a.data(), count);
 }
 
-template <typename T, unsigned int N>
+template <typename T, size_t N>
 Span<T> to_span(std::array<T, N> &a) {
 	return Span<T>(a.data(), a.size());
 }
