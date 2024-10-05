@@ -5,7 +5,7 @@
 
 namespace zylann::testing {
 
-constexpr char *DEFAULT_TEST_DATA_DIRECTORY = "zylann_testing_dir";
+const char *DEFAULT_TEST_DATA_DIRECTORY = "zylann_testing_dir";
 
 bool create_empty_file(String fpath) {
 	if (!FileAccess::exists(fpath)) {
@@ -79,4 +79,4 @@ String TestDirectory::get_path() const {
 	return DEFAULT_TEST_DATA_DIRECTORY;
 }
 
-} //namespace zylann::testing
+} // namespace zylann::testing
