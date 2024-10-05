@@ -51,7 +51,7 @@ public:
 		return true;
 	}
 
-	virtual ICustomVoxelMetadata *duplicate() {
+	ICustomVoxelMetadata *duplicate() override {
 		CustomMetadataTest *d = ZN_NEW(CustomMetadataTest);
 		*d = *this;
 		return d;
