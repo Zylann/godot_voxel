@@ -151,7 +151,7 @@ void test_spatial_lock_spam() {
 				expected_values.push_back(map.at(pos));
 			});
 
-			for (int i = 0; /* keep looping at least once */; ++i) {
+			while (true) {
 				int j = 0;
 				box.for_each_cell([&map, &expected_values, &j](Vector3i pos) {
 					// Cells must not change while we read them.

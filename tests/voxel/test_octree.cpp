@@ -155,7 +155,7 @@ void test_octree_update() {
 
 void test_octree_find_in_box() {
 	const int blocks_across = 32;
-	const int block_size = 16;
+	// const int block_size = 16;
 	int lods = 0;
 	{
 		int diameter = blocks_across;
