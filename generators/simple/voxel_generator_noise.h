@@ -32,7 +32,7 @@ public:
 	void set_height_range(real_t hrange);
 	real_t get_height_range() const;
 
-	Result generate_block(VoxelGenerator::VoxelQueryData &input) override;
+	Result generate_block(VoxelGenerator::VoxelQueryData input) override;
 
 private:
 	void _on_noise_changed();

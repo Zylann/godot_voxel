@@ -25,7 +25,7 @@ public:
 	void set_curve(Ref<Curve> curve);
 	Ref<Curve> get_curve() const;
 
-	Result generate_block(VoxelGenerator::VoxelQueryData &input) override;
+	Result generate_block(VoxelGenerator::VoxelQueryData input) override;
 
 	bool supports_series_generation() const override {
 		return true;

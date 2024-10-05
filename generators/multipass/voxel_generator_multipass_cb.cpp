@@ -21,7 +21,7 @@ VoxelGeneratorMultipassCB::VoxelGeneratorMultipassCB() {
 
 VoxelGeneratorMultipassCB::~VoxelGeneratorMultipassCB() {}
 
-VoxelGenerator::Result VoxelGeneratorMultipassCB::generate_block(VoxelQueryData &input) {
+VoxelGenerator::Result VoxelGeneratorMultipassCB::generate_block(VoxelQueryData input) {
 	if (input.lod > 0) {
 		// Not supported
 		return { false };
