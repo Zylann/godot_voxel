@@ -210,7 +210,6 @@ bool deserialize_metadata(VoxelMetadata &meta, MemoryReader &mr) {
 				return false;
 			}
 	}
-	return false;
 }
 
 bool deserialize_metadata(Span<const uint8_t> p_src, VoxelBuffer &buffer) {

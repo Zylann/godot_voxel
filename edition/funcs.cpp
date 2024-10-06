@@ -295,7 +295,6 @@ bool indices_to_bitarray_u16(Span<const int32_t> indices, DynamicBitset &bitarra
 				false,
 				format("Index {} is out of supported range 0..{}", i, max_supported_value)
 		);
-		return false;
 	}
 #endif
 
