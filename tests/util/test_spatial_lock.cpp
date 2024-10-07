@@ -402,9 +402,11 @@ void test_spatial_lock_dependent_map_chunks() {
 	Vector2i column_pos;
 	for (column_pos.y = 0; column_pos.y < MAP_SIZE; ++column_pos.y) {
 		for (column_pos.x = 0; column_pos.x < MAP_SIZE; ++column_pos.x) {
-			Task1 *task = ZN_NEW(Task1(1000 + rng.rand(2000), map, column_pos, events));
-			runner.enqueue(task, false);
-			++in_flight_count;
+			{
+				Task1 *task = ZN_NEW(Task1(1000 + rng.rand(2000), map, column_pos, events));
+				runner.enqueue(task, false);
+				++in_flight_count;
+			}
 
 			// Add some reading requests
 			for (int i = 0; i < 2; ++i) {

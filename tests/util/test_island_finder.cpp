@@ -39,7 +39,7 @@ void test_island_finder() {
 			;
 
 	const Vector3i grid_size(5, 5, 5);
-	ZN_TEST_ASSERT(Vector3iUtil::get_volume(grid_size) == strlen(cdata) / 2);
+	ZN_TEST_ASSERT(Vector3iUtil::get_volume(grid_size) == static_cast<int64_t>(strlen(cdata) / 2));
 
 	StdVector<int> grid;
 	grid.resize(Vector3iUtil::get_volume(grid_size));
@@ -66,7 +66,9 @@ void test_island_finder() {
 				CRASH_COND(i >= grid.size());
 				return grid[i] == 1;
 			},
-			to_span(output), &label_count);
+			to_span(output),
+			&label_count
+	);
 
 	// unsigned int i = 0;
 	// for (int z = 0; z < grid_size.z; ++z) {

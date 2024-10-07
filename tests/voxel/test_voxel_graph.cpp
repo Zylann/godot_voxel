@@ -2088,15 +2088,15 @@ void test_image_range_grid() {
 	using namespace math;
 
 	struct L {
-		static Color get_pixel_repeat(const Image &im, int x, int y) {
+		static Color get_pixel_repeat(const Image &im, const int x, const int y) {
 			return im.get_pixel(math::wrap(x, im.get_width()), math::wrap(y, im.get_height()));
 		}
 
-		static Interval get_range_repeat(const Image &im, Interval x, Interval y) {
-			const int min_x = Math::floor(x.min);
-			const int min_y = Math::floor(y.min);
-			const int max_x = Math::ceil(x.max);
-			const int max_y = Math::ceil(y.max);
+		static Interval get_range_repeat(const Image &im, const Interval x_range, const Interval y_range) {
+			const int min_x = Math::floor(x_range.min);
+			const int min_y = Math::floor(y_range.min);
+			const int max_x = Math::ceil(x_range.max);
+			const int max_y = Math::ceil(y_range.max);
 
 			Interval i = Interval::from_single_value(get_pixel_repeat(im, min_x, min_y).r);
 			for (int y = min_y; y < max_y; ++y) {
@@ -2109,7 +2109,7 @@ void test_image_range_grid() {
 			return i;
 		}
 
-		static void test_range(const Image &im, const ImageRangeGrid &range_grid, Interval x, Interval y) {
+		static void test_range(const Image &im, const ImageRangeGrid &range_grid, const Interval x, const Interval y) {
 			const Interval accurate_range = L::get_range_repeat(im, x, y);
 			const Interval estimated_range = range_grid.get_range_repeat(x, y);
 			ZN_TEST_ASSERT(estimated_range.contains(accurate_range));
