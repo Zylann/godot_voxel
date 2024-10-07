@@ -1,6 +1,5 @@
 #include "transvoxel.h"
 #include "../../constants/cube_tables.h"
-#include "../../draft/robin_hood_hashing/robin_hood.h"
 #include "../../storage/materials_4i4w.h"
 #include "../../util/godot/core/sort_array.h"
 #include "../../util/math/conv.h"
