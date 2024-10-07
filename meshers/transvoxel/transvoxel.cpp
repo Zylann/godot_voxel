@@ -9,6 +9,10 @@
 #include "transvoxel_materials_mixel4.h"
 #include "transvoxel_tables.cpp"
 
+#if defined(_MSC_VER)
+#pragma warning(disable : 4701) // Potentially uninitialized local variable used.
+#endif
+
 // #define VOXEL_TRANSVOXEL_REUSE_VERTEX_ON_COINCIDENT_CASES
 
 namespace zylann::voxel::transvoxel {

@@ -76,8 +76,8 @@ else:
     # env_fn2.Append(CXXFLAGS=["-Wno-shadow"])
     # if '-Wshadow' in env_fn2['CXXFLAGS']:
     #     env_fn2['CXXFLAGS'].remove('-Wshadow')
-    env_fn2.disable_warnings()
 
+env_fn2.disable_warnings()
 env_fn2_scalar = env_fn2.Clone()
 env_fn2_sse2 = env_fn2.Clone()
 env_fn2_sse3 = env_fn2.Clone()
