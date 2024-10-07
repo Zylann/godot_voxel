@@ -9,6 +9,10 @@
 #include "../../util/math/triangle.h"
 #include "../../util/profiling.h"
 
+#if defined(_MSC_VER)
+#pragma warning(disable : 4701) // Potentially uninitialized local variable used.
+#endif
+
 namespace zylann::voxel {
 
 namespace {
