@@ -180,11 +180,14 @@ inline float get_isolevel<float>() {
 }
 
 struct MaterialProcessorNull {
-	// Called for every 2x2x2 cell containing triangles (more if polygonizing transition meshes). The returned value is
-	// used to determine if the next cell can re-use vertices from previous cells, when equal.
+	// Called for every 2x2x2 cell containing triangles.
+	// The returned value is used to determine if the next cell can re-use vertices from previous cells, when equal.
 	inline uint32_t on_cell(const FixedArray<uint32_t, 8> &corner_voxel_indices, const uint8_t case_code) const {
 		return 0;
 	}
+	// Called for every 2x3x3 transition cell containing triangles.
+	// Such cells are actually in 2D data-wise, so corners are the same value, so only 9 are passed in.
+	// The returned value is used to determine if the next cell can re-use vertices from previous cells, when equal.
 	inline uint32_t on_transition_cell(const FixedArray<uint32_t, 9> &corner_voxel_indices, const uint8_t case_code)
 			const {
 		return 0;
