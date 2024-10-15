@@ -13,6 +13,7 @@
 			<param index="0" name="voxel_buffer" type="VoxelBuffer" />
 			<param index="1" name="direction" type="int" />
 			<description>
+				Generates only the part of the mesh that Transvoxel uses to connect surfaces with different level of detail. This method is mainly for testing purposes.
 			</description>
 		</method>
 	</methods>
@@ -35,8 +36,13 @@
 	</members>
 	<constants>
 		<constant name="TEXTURES_NONE" value="0" enum="TexturingMode">
+			Disables texturing information. This mode is the fastest if you can use a shader to apply textures procedurally.
 		</constant>
 		<constant name="TEXTURES_BLEND_4_OVER_16" value="1" enum="TexturingMode">
+			Adds texturing information as 4 texture indices and 4 weights, encoded in [code]CUSTOM1.xy[/code] in Godot fragment shaders, where x and y contain 4 packed 8-bit values.
+			Expects voxels to have 4 4-bit indices packed in 16-bit values in [constant VoxelBuffer.CHANNEL_INDICES], and 4 4-bit weights in [constant VoxelBuffer.CHANNEL_WEIGHTS].
+			In cases where more than 4 textures cross each other in a 2x2x2 voxel area, triangles in that area will only use the 4 indices with the highest weights.
+			A custom shader is required to render this, usually with texture arrays to index textures easily.
 		</constant>
 	</constants>
 </class>

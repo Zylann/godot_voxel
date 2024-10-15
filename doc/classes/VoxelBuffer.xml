@@ -164,6 +164,7 @@
 		<method name="get_allocator" qualifiers="const">
 			<return type="int" enum="VoxelBuffer.Allocator" />
 			<description>
+				Gets which memory allocator is used by this buffer.
 			</description>
 		</method>
 		<method name="get_block_metadata" qualifiers="const">
@@ -408,12 +409,15 @@
 			How many compression modes there are.
 		</constant>
 		<constant name="ALLOCATOR_DEFAULT" value="0" enum="Allocator">
+			Uses Godot's default memory allocator (at time of writing, it is [code]malloc[/code]). Preferred for occasional buffers with uncommon size, or very large size.
 		</constant>
 		<constant name="ALLOCATOR_POOL" value="1" enum="Allocator">
+			Uses a pool allocator. Can be faster than the default allocator buffers are created very frequently with similar size. This memory will remain allocated after use, under the assumption that other buffers will need it soon after. Does not support very large buffers (greater than 2 megabytes)
 		</constant>
 		<constant name="ALLOCATOR_COUNT" value="2" enum="Allocator">
 		</constant>
 		<constant name="MAX_SIZE" value="65535">
+			Maximum size a buffer can have when serialized. Buffers that contain uniform-compressed voxels can reach it, but in practice, the limit is much lower and depends on available memory.
 		</constant>
 	</constants>
 </class>

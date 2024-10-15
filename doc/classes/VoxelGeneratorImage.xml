@@ -4,6 +4,8 @@
 		Voxel generator producing a heightmap-based shape using an image.
 	</brief_description>
 	<description>
+		Uses the red channel of an image to generate a heightmap, such that the top left corner is centered on the world origin. The image will repeat if terrain generates beyond its size.
+		Note: values in the image are read using `get_pixel` and are assumed to be between 0 and 1 (normalized). These values will be transformed by [member VoxelGeneratorHeightmap.height_start] and [member VoxelGeneratorHeightmap.height_range].
 	</description>
 	<tutorials>
 	</tutorials>
@@ -12,6 +14,7 @@
 		</member>
 		<member name="height_range" type="float" setter="set_height_range" getter="get_height_range" overrides="VoxelGeneratorHeightmap" default="200.0" />
 		<member name="image" type="Image" setter="set_image" getter="get_image">
+			Sets the image that will be used as a heightmap. Only the red channel will be used. It is preferable to use an image using the `RF` or `RH` format, which contain higher resolution heights. Common images only have 8-bit depth and will appear blocky.
 		</member>
 	</members>
 </class>

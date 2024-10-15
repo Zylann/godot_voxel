@@ -5,6 +5,7 @@
 	</brief_description>
 	<description>
 		This is an alternate implementation of [FastNoiseLite], because Godot's integration does not expose methods to access gradients directly.
+		These algorithms are specialized to generate vectors to perturb positions, and can be faster than calculating 2 or 3 times a regular noise.
 	</description>
 	<tutorials>
 	</tutorials>

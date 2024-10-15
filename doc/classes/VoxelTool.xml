@@ -49,6 +49,7 @@
 			<param index="0" name="points" type="PackedVector3Array" />
 			<param index="1" name="radii" type="PackedFloat32Array" />
 			<description>
+				Traces a "tube" defined by a list of points, each having a corresponding radius to control the width of the tube at each point. The begin and end of the path is rounded. This is equivalent to placing/carving multiple connected capsules with varying top/bottom radius. The path is not using bezier or splines, each point is connected linearly to the next. If you need more smoothness, you may add points to areas that need them. The more points, the slower it is.
 			</description>
 		</method>
 		<method name="do_point">
@@ -245,6 +246,7 @@
 		<member name="texture_falloff" type="float" setter="set_texture_falloff" getter="get_texture_falloff">
 		</member>
 		<member name="texture_index" type="int" setter="set_texture_index" getter="get_texture_index">
+			Index of the texture used in smooth voxel texture painting mode. The choice of this index depends on the way you setup rendering of textured voxel meshes (for example, layer index in a texture array).
 		</member>
 		<member name="texture_opacity" type="float" setter="set_texture_opacity" getter="get_texture_opacity">
 		</member>
