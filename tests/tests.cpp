@@ -8,6 +8,7 @@
 #include "util/test_flat_map.h"
 #include "util/test_island_finder.h"
 #include "util/test_math_funcs.h"
+#include "util/test_noise.h"
 #include "util/test_slot_map.h"
 #include "util/test_spatial_lock.h"
 #include "util/test_string_funcs.h"
@@ -129,6 +130,7 @@ void run_voxel_tests() {
 	VOXEL_TEST(test_voxel_stream_sqlite_basic);
 	VOXEL_TEST(test_voxel_stream_sqlite_coordinate_format);
 	VOXEL_TEST(test_sdf_hemisphere);
+	VOXEL_TEST(test_fnl_range);
 
 	print_line("------------ Voxel tests end -------------");
 }

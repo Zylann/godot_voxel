@@ -38,7 +38,8 @@ inline int64_t get_volume(const Vector3i &v) {
 #ifdef DEBUG_ENABLED
 	ZN_ASSERT_RETURN_V(v.x >= 0 && v.y >= 0 && v.z >= 0, 0);
 #endif
-	return v.x * v.y * v.z;
+	// TODO Overflow-checking multiplication in debug builds?
+	return static_cast<int64_t>(v.x) * static_cast<int64_t>(v.y) * static_cast<int64_t>(v.z);
 }
 
 inline unsigned int get_zxy_index(const Vector3i &v, const Vector3i area_size) {
