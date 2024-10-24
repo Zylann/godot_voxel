@@ -8,6 +8,8 @@
 using namespace godot;
 #endif
 
+#include "../core/version.h"
+
 #include "../../containers/std_vector.h"
 
 namespace zylann::godot {
@@ -108,6 +110,10 @@ public:
 			Variant *r_metadata = nullptr
 	) override;
 
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR >= 3
+	bool can_import_threaded() const override;
+#endif
+
 #elif defined(ZN_GODOT_EXTENSION)
 	String _get_importer_name() const override;
 	String _get_visible_name() const override;
@@ -130,6 +136,10 @@ public:
 			const TypedArray<String> &gen_files
 	) const override;
 
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR >= 3
+	bool _can_import_threaded() const override;
+#endif
+
 #endif
 
 protected:
@@ -144,6 +154,7 @@ protected:
 	virtual String _zn_get_resource_type() const;
 	virtual float _zn_get_priority() const;
 	virtual int _zn_get_import_order() const;
+	virtual bool _zn_can_import_threaded() const;
 
 	virtual void _zn_get_import_options(
 			StdVector<ImportOptionWrapper> &p_out_options,

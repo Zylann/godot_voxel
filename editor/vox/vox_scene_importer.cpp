@@ -445,4 +445,14 @@ Error VoxelVoxSceneImporter::_zn_import(
 	return OK;
 }
 
+bool VoxelVoxSceneImporter::_zn_can_import_threaded() const {
+	// By default it is `true`, but `ResourceSaver::save` ended up deadlocking the editor when saving meshes.
+	// I don't know if this is a known issue or something importers should do when saving meshes.
+
+	// TODO Make a bug report? Might take a while to create an MRP :(
+	// this happens in a crowded project and might be timing-dependent...
+
+	return false;
+}
+
 } // namespace zylann::voxel::magica

@@ -29,6 +29,7 @@ Primarily developped with Godot 4.3.
         - Fixed occasional holes in terrain when using `FastNoise3D` nodes with the `OpenSimplex2S` noise type
     - `VoxelMesherTransvoxel`: revert texturing logic that attempted to prevent air voxels from contributing, but was lowering quality. It is now optional as an experimental property.
     - `VoxelStreamSQLite`: Fixed "empty size" errors when loading areas with edited `VoxelInstancer` data
+    - `.vox` scene importer: disabled threaded import to workaround the editor freezing when saving meshes
 
 - Breaking changes
     - `VoxelInstanceLibrary`: Items should no longer be accessed using generated properties (`item1`, `item2` etc). Use `get_item` instead.

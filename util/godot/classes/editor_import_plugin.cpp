@@ -83,6 +83,12 @@ Error ZN_EditorImportPlugin::import(
 	);
 }
 
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR >= 3
+bool ZN_EditorImportPlugin::can_import_threaded() const {
+	return _zn_can_import_threaded();
+}
+#endif
+
 #elif defined(ZN_GODOT_EXTENSION)
 
 String ZN_EditorImportPlugin::_get_importer_name() const {
@@ -172,6 +178,12 @@ Error ZN_EditorImportPlugin::_import(
 	);
 }
 
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR >= 3
+bool ZN_EditorImportPlugin::_can_import_threaded() const {
+	return _zn_can_import_threaded();
+}
+#endif
+
 #endif
 
 String ZN_EditorImportPlugin::_zn_get_importer_name() const {
@@ -242,6 +254,12 @@ Error ZN_EditorImportPlugin::_zn_import(
 ) const {
 	ZN_PRINT_ERROR("Method is not implemented");
 	return ERR_METHOD_NOT_FOUND;
+}
+
+bool ZN_EditorImportPlugin::_zn_can_import_threaded() const {
+	// According to docs
+	// https://docs.godotengine.org/en/stable/classes/class_editorimportplugin.html#class-editorimportplugin-private-method-can-import-threaded
+	return true;
 }
 
 } // namespace zylann::godot
