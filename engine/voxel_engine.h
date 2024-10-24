@@ -201,6 +201,19 @@ public:
 	void push_async_io_tasks(Span<IThreadedTask *> tasks);
 	void push_gpu_task(IGPUTask *task);
 
+	template <typename F>
+	void push_gpu_task(F f) {
+		struct Task : public IGPUTask {
+			F f;
+			Task(F pf) f(pf) {}
+			void prepare(GPUTaskContext &ctx) override {
+				f(ctx);
+			}
+			void collect(GPUTaskContext &ctx) override {}
+		};
+		push_gpu_task(ZN_NEW(Task(f)));
+	}
+
 	void process();
 	void wait_and_clear_all_tasks(bool warn);
 
@@ -233,45 +246,13 @@ public:
 	Stats get_stats() const;
 
 	bool has_rendering_device() const {
-		return _rendering_device != nullptr;
+		return _gpu_task_runner.has_rendering_device();
 	}
 
-	RenderingDevice &get_rendering_device() const {
-		ZN_ASSERT(_rendering_device != nullptr);
-		return *_rendering_device;
-	}
-
-	const ComputeShader &get_dilate_normalmap_compute_shader() const {
-		return _dilate_normalmap_shader;
-	}
-
-	const ComputeShader &get_detail_gather_hits_compute_shader() const {
-		return _detail_gather_hits_shader;
-	}
-
-	const ComputeShader &get_detail_normalmap_compute_shader() const {
-		return _detail_normalmap_shader;
-	}
-
-	const ComputeShader &get_detail_modifier_sphere_shader() const {
-		return _detail_modifier_sphere_shader;
-	}
-
-	const ComputeShader &get_detail_modifier_mesh_shader() const {
-		return _detail_modifier_mesh_shader;
-	}
-
-	const ComputeShader &get_block_modifier_sphere_shader() const {
-		return _block_modifier_sphere_shader;
-	}
-
-	const ComputeShader &get_block_modifier_mesh_shader() const {
-		return _block_modifier_mesh_shader;
-	}
-
-	RID get_filtering_sampler() const {
-		return _filtering_sampler_rid;
-	}
+	// RenderingDevice &get_rendering_device() const {
+	// 	ZN_ASSERT(_rendering_device != nullptr);
+	// 	return *_rendering_device;
+	// }
 
 	// TODO Should be private, but can't because `memdelete<T>` would be unable to call it otherwise...
 	~VoxelEngine();
@@ -299,8 +280,6 @@ public:
 
 private:
 	VoxelEngine(Config config);
-
-	void load_shaders();
 
 	// Since we are going to send data to tasks running in multiple threads, a few strategies are in place:
 	//
@@ -339,23 +318,7 @@ private:
 
 	bool _threaded_graphics_resource_building_enabled = false;
 
-	// Rendering device used for compute shaders. May not be available depending on the chosen renderer.
-	RenderingDevice *_rendering_device = nullptr;
-	RID _filtering_sampler_rid;
-	// TODO Can `RenderingDevice` be used on multiple threads? There is no documentation.
-	// So I'll assume I can't...
-	Mutex _rendering_device_mutex;
 	GPUTaskRunner _gpu_task_runner;
-	GPUStorageBufferPool _gpu_storage_buffer_pool;
-
-	// TODO I don't know yet where to store these resource, at some point we may find a more dedicated place
-	ComputeShader _dilate_normalmap_shader;
-	ComputeShader _detail_gather_hits_shader;
-	ComputeShader _detail_normalmap_shader;
-	ComputeShader _detail_modifier_sphere_shader;
-	ComputeShader _detail_modifier_mesh_shader;
-	ComputeShader _block_modifier_sphere_shader;
-	ComputeShader _block_modifier_mesh_shader;
 
 	// There can be multiple types of generation tasks, so we count them with a common counter.
 	std::atomic_int _debug_generate_block_task_count = { 0 };

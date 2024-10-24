@@ -26,9 +26,11 @@ ComputeShaderResource::ComputeShaderResource(ComputeShaderResource &&other) {
 void ComputeShaderResource::clear() {
 	ZN_DSTACK();
 	if (_rid.is_valid()) {
-		RenderingDevice &rd = VoxelEngine::get_singleton().get_rendering_device();
-		zylann::godot::free_rendering_device_rid(rd, _rid);
+		RID rid = _rid;
 		_rid = RID();
+		VoxelEngine::get_singleton().push_gpu_task([rid](GPUTaskContext &ctx) {
+			zylann::godot::free_rendering_device_rid(ctx.rendering_device, rid);
+		});
 	}
 }
 
