@@ -419,6 +419,10 @@ Error VoxelVoxSceneImporter::_zn_import(
 	for (unsigned int model_index = 0; model_index < meshes.size(); ++model_index) {
 		ZN_PROFILE_SCOPE();
 		Ref<Mesh> mesh = meshes[model_index].mesh;
+		// Some models might be empty, as seen earlier
+		if (mesh.is_null()) {
+			continue;
+		}
 		String res_save_path = String("{0}.model{1}.mesh").format(varray(p_save_path, model_index));
 		// `FLAG_CHANGE_PATH` did not do what I thought it did.
 		mesh->set_path(res_save_path);
