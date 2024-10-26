@@ -14,7 +14,7 @@ String ZN_EditorImportPlugin::get_visible_name() const {
 }
 
 void ZN_EditorImportPlugin::get_recognized_extensions(List<String> *p_extensions) const {
-	ZN_ASSERT(p_extensions != nullptr);
+	ZN_ASSERT_RETURN(p_extensions != nullptr);
 	const PackedStringArray extensions = _zn_get_recognized_extensions();
 	for (const String &extension : extensions) {
 		p_extensions->push_back(extension);
@@ -47,7 +47,7 @@ int ZN_EditorImportPlugin::get_import_order() const {
 
 void ZN_EditorImportPlugin::get_import_options(const String &p_path, List<ImportOption> *r_options, int p_preset)
 		const {
-	ZN_ASSERT(r_options != nullptr);
+	ZN_ASSERT_RETURN(r_options != nullptr);
 	StdVector<ImportOptionWrapper> options;
 	_zn_get_import_options(options, p_path, p_preset);
 	for (const ImportOptionWrapper &option : options) {
@@ -72,8 +72,8 @@ Error ZN_EditorImportPlugin::import(
 		List<String> *r_gen_files,
 		Variant *r_metadata
 ) {
-	ZN_ASSERT(r_platform_variants != nullptr);
-	ZN_ASSERT(r_gen_files != nullptr);
+	ZN_ASSERT_RETURN_V(r_platform_variants != nullptr, ERR_BUG);
+	ZN_ASSERT_RETURN_V(r_gen_files != nullptr, ERR_BUG);
 	return _zn_import(
 			p_source_file,
 			p_save_path,
