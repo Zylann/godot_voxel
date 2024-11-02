@@ -202,10 +202,10 @@ public:
 	void push_gpu_task(IGPUTask *task);
 
 	template <typename F>
-	void push_gpu_task(F f) {
+	void push_gpu_task_f(F f) {
 		struct Task : public IGPUTask {
 			F f;
-			Task(F pf) f(pf) {}
+			Task(F pf) : f(pf) {}
 			void prepare(GPUTaskContext &ctx) override {
 				f(ctx);
 			}
@@ -213,6 +213,8 @@ public:
 		};
 		push_gpu_task(ZN_NEW(Task(f)));
 	}
+
+	uint32_t get_pending_gpu_tasks_count() const;
 
 	void process();
 	void wait_and_clear_all_tasks(bool warn);

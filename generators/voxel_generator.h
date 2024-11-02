@@ -118,7 +118,7 @@ public:
 
 	struct ShaderParameter {
 		String name;
-		ComputeShaderResource resource;
+		std::shared_ptr<ComputeShaderResource> resource;
 	};
 
 	struct ShaderOutput {

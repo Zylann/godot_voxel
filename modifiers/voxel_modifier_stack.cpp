@@ -320,11 +320,8 @@ void VoxelModifierStack::apply(
 	}
 }
 
-void VoxelModifierStack::apply_for_gpu_rendering(
-		StdVector<VoxelModifier::ShaderData> &out_data,
-		AABB aabb,
-		VoxelModifier::ShaderData::Type type
-) const {
+void VoxelModifierStack::apply_for_gpu_rendering(StdVector<VoxelModifier::ShaderData> &out_data, const AABB aabb)
+		const {
 	ZN_PROFILE_SCOPE();
 	RWLockRead lock(_stack_lock);
 
@@ -339,9 +336,7 @@ void VoxelModifierStack::apply_for_gpu_rendering(
 		if (modifier->get_aabb().intersects(aabb)) {
 			VoxelModifier::ShaderData sd;
 			modifier->get_shader_data(sd);
-			if (sd.shader_rids[type].is_valid()) {
-				out_data.push_back(sd);
-			}
+			out_data.push_back(sd);
 		}
 	}
 }

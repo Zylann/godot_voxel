@@ -39,7 +39,7 @@ void GenerateBlockGPUTask::prepare(GPUTaskContext &ctx) {
 	ZN_DSTACK();
 
 	ZN_ASSERT_RETURN(generator_shader != nullptr);
-	ZN_ASSERT_RETURN(generator_shader->is_valid());
+	ZN_ASSERT_RETURN(generator_shader->get_rid().is_valid());
 
 	ZN_ASSERT_RETURN(generator_shader_params != nullptr);
 	ZN_ASSERT_RETURN(generator_shader_outputs != nullptr);
@@ -116,9 +116,10 @@ void GenerateBlockGPUTask::prepare(GPUTaskContext &ctx) {
 	_generator_pipeline_rid = rd.compute_pipeline_create(generator_shader_rid);
 	ERR_FAIL_COND(!_generator_pipeline_rid.is_valid());
 
-	for (const ModifierData &modifier : modifiers) {
-		ERR_FAIL_COND(!modifier.shader_rid.is_valid());
-		const RID rid = rd.compute_pipeline_create(modifier.shader_rid);
+	for (const VoxelModifier::ShaderData &modifier : modifiers) {
+		const RID modifier_shader_rid = VoxelModifier::get_block_shader(ctx.base_resources, modifier.modifier_type);
+		ERR_FAIL_COND(!modifier_shader_rid.is_valid());
+		const RID rid = rd.compute_pipeline_create(modifier_shader_rid);
 		ERR_FAIL_COND(!rid.is_valid());
 		_modifier_pipelines.push_back(rid);
 	}
@@ -142,7 +143,9 @@ void GenerateBlockGPUTask::prepare(GPUTaskContext &ctx) {
 
 		// Additional params
 		if (generator_shader_params != nullptr && generator_shader_params->params.size() > 0) {
-			add_uniform_params(generator_shader_params->params, generator_uniforms);
+			add_uniform_params(
+					generator_shader_params->params, generator_uniforms, ctx.base_resources.filtering_sampler_rid
+			);
 		}
 
 		// Note, this internally locks RenderingDeviceVulkan's class mutex. Which means it could perhaps be used outside
@@ -187,8 +190,10 @@ void GenerateBlockGPUTask::prepare(GPUTaskContext &ctx) {
 			Ref<RDUniform> sd_buffer0_uniform = bd.output_uniform;
 
 			for (unsigned int modifier_index = 0; modifier_index < modifiers.size(); ++modifier_index) {
-				const ModifierData &modifier_data = modifiers[modifier_index];
-				ZN_ASSERT_CONTINUE(modifier_data.shader_rid.is_valid());
+				const VoxelModifier::ShaderData &modifier_data = modifiers[modifier_index];
+				const RID modifier_shader_rid =
+						VoxelModifier::get_block_shader(ctx.base_resources, modifier_data.modifier_type);
+				ZN_ASSERT_CONTINUE(modifier_shader_rid.is_valid());
 
 				bd.params_uniform->set_binding(0);
 				sd_buffer0_uniform->set_binding(1);
@@ -200,11 +205,13 @@ void GenerateBlockGPUTask::prepare(GPUTaskContext &ctx) {
 
 				// Extra params
 				if (modifier_data.params != nullptr) {
-					add_uniform_params(modifier_data.params->params, modifier_uniforms);
+					add_uniform_params(
+							modifier_data.params->params, modifier_uniforms, ctx.base_resources.filtering_sampler_rid
+					);
 				}
 
 				const RID modifier_uniform_set =
-						zylann::godot::uniform_set_create(rd, modifier_uniforms, modifier_data.shader_rid, 0);
+						zylann::godot::uniform_set_create(rd, modifier_uniforms, modifier_shader_rid, 0);
 
 				const RID pipeline_rid = _modifier_pipelines[modifier_index];
 				rd.compute_list_bind_compute_pipeline(compute_list_id, pipeline_rid);

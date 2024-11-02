@@ -51,7 +51,7 @@ RID load_compute_shader_from_glsl(RenderingDevice &rd, String source_text, Strin
 	// MutexLock mlock(VoxelEngine::get_singleton().get_rendering_device_mutex());
 
 	Ref<RDShaderSPIRV> shader_spirv = zylann::godot::shader_compile_spirv_from_source(rd, **shader_source, false);
-	ERR_FAIL_COND(shader_spirv.is_null());
+	ERR_FAIL_COND_V(shader_spirv.is_null(), RID());
 
 	const String error_message = shader_spirv->get_stage_compile_error(RenderingDevice::SHADER_STAGE_COMPUTE);
 	if (error_message != "") {
@@ -63,12 +63,12 @@ RID load_compute_shader_from_glsl(RenderingDevice &rd, String source_text, Strin
 			::print_line(formatted_source_text);
 		}
 
-		return;
+		return RID();
 	}
 
 	// TODO What name should I give this shader? Seems it is used for caching
 	const RID shader_rid = zylann::godot::shader_create_from_spirv(rd, **shader_spirv, name);
-	ERR_FAIL_COND(!shader_rid.is_valid());
+	ERR_FAIL_COND_V(!shader_rid.is_valid(), RID());
 
 	return shader_rid;
 }
@@ -93,19 +93,23 @@ void ComputeShaderInternal::load_from_glsl(RenderingDevice &rd, String source_te
 
 ComputeShader::~ComputeShader() {
 	ComputeShaderInternal internal = _internal;
-	VoxelEngine::get_singleton().push_gpu_task([internal](GPUTaskContext &ctx) { //
+	VoxelEngine::get_singleton().push_gpu_task_f([internal](GPUTaskContext &ctx) { //
 		// *sigh*
 		ComputeShaderInternal internal2 = internal;
 		internal2.clear(ctx.rendering_device);
 	});
 }
 
-std::shared_ptr<ComputeShader> ComputeShader::create_from_glsl(String source_text, String name) {
+std::shared_ptr<ComputeShader> ComputeShaderFactory::create_from_glsl(String source_text, String name) {
 	std::shared_ptr<ComputeShader> shader = make_shared_instance<ComputeShader>();
-	VoxelEngine::get_singleton().push_gpu_task([shader, source_text, name](GPUTaskContext &ctx) {
+	VoxelEngine::get_singleton().push_gpu_task_f([shader, source_text, name](GPUTaskContext &ctx) {
 		shader->_internal.load_from_glsl(ctx.rendering_device, source_text, name);
 	});
 	return shader;
+}
+
+std::shared_ptr<ComputeShader> ComputeShaderFactory::create_invalid() {
+	return make_shared_instance<ComputeShader>();
 }
 
 RID ComputeShader::get_rid() const {

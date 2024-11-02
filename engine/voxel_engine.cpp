@@ -245,6 +245,10 @@ void VoxelEngine::push_gpu_task(IGPUTask *task) {
 	_gpu_task_runner.push(task);
 }
 
+uint32_t VoxelEngine::get_pending_gpu_tasks_count() const {
+	return _gpu_task_runner.get_pending_task_count();
+}
+
 void VoxelEngine::process() {
 	ZN_PROFILE_SCOPE();
 	ZN_PROFILE_PLOT("Static memory usage", int64_t(OS::get_singleton()->get_static_memory_usage()));

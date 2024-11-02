@@ -21,17 +21,30 @@ struct ComputeShaderInternal {
 	}
 };
 
+class ComputeShader;
+
+// See ComputeShaderResourceFactory
+struct ComputeShaderFactory {
+	ComputeShaderFactory() = delete;
+
+	[[nodiscard]]
+	static std::shared_ptr<ComputeShader> create_from_glsl(String source_text, String name);
+
+	[[nodiscard]]
+	static std::shared_ptr<ComputeShader> create_invalid();
+};
+
 // Thin RAII wrapper around compute shaders created with the `RenderingDevice` held inside `VoxelEngine`.
 // If the source can change at runtime, it may be passed around using shared pointers and a new instance may be created,
 // rather than clearing the old shader anytime, for thread-safety. A reference should be kept as long as a dispatch of
 // this shader is running on the graphics card.
 class ComputeShader {
 public:
-	static std::shared_ptr<ComputeShader> create_from_glsl(String source_text, String name);
-	static std::shared_ptr<ComputeShader> create_invalid();
+	friend struct ComputeShaderFactory;
 
 	~ComputeShader();
 
+	// Only use on GPU task thread
 	RID get_rid() const;
 
 private:

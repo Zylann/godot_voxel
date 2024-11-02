@@ -17,7 +17,7 @@ struct ComputeShaderParameters {
 	StdVector<ComputeShaderParameter> params;
 };
 
-void add_uniform_params(const StdVector<ComputeShaderParameter> &params, Array &uniforms);
+void add_uniform_params(const StdVector<ComputeShaderParameter> &params, Array &uniforms, const RID filtering_sampler);
 
 } // namespace zylann::voxel
 

@@ -390,8 +390,8 @@ std::shared_ptr<ComputeShaderResource> VoxelMeshSDF::get_gpu_resource() {
 		Span<const float> sdf_grid;
 		ZN_ASSERT_RETURN_V(buffer.get_channel_data_read_only(VoxelBuffer::CHANNEL_SDF, sdf_grid), _gpu_resource);
 
-		std::shared_ptr<ComputeShaderResource> resource = make_shared_instance<ComputeShaderResource>();
-		resource->create_texture_3d_zxy(sdf_grid, buffer.get_size());
+		std::shared_ptr<ComputeShaderResource> resource =
+				ComputeShaderResourceFactory::create_texture_3d_zxy(sdf_grid, buffer.get_size());
 		_gpu_resource = resource;
 	}
 

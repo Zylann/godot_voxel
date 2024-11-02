@@ -1626,7 +1626,7 @@ bool VoxelGeneratorGraph::get_shader_source(ShaderSourceData &out_data) const {
 	if (params.size() > 0) {
 		out_data.parameters.reserve(params.size());
 		for (pg::ShaderParameter &p : params) {
-			out_data.parameters.push_back(ShaderParameter{ String::utf8(p.name.c_str()), std::move(p.resource) });
+			out_data.parameters.push_back(ShaderParameter{ String::utf8(p.name.c_str()), p.resource });
 		}
 	}
 
