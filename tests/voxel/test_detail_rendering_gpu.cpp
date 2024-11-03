@@ -124,7 +124,7 @@ void test_normalmap_render_gpu() {
 			// Check if the task times out
 			const uint64_t timeout_seconds = 10;
 			const uint64_t now = Time::get_singleton()->get_ticks_usec();
-			const uint64_t time_elapsed_microseconds = time_before - now;
+			const uint64_t time_elapsed_microseconds = now - time_before;
 			ZN_TEST_ASSERT(time_elapsed_microseconds < timeout_seconds * 1'000'000);
 		}
 	}
