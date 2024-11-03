@@ -30,6 +30,7 @@ String format_source_code_with_line_numbers(String src) {
 }
 
 RID load_compute_shader_from_glsl(RenderingDevice &rd, String source_text, String name) {
+	ZN_PRINT_VERBOSE(format("Creating VoxelRD compute shader {}", name));
 	// For debugging
 	// {
 	// 	Ref<FileAccess> f = FileAccess::open("debug_" + name + ".txt", FileAccess::WRITE);
@@ -78,6 +79,11 @@ RID load_compute_shader_from_glsl(RenderingDevice &rd, String source_text, Strin
 void ComputeShaderInternal::clear(RenderingDevice &rd) {
 	if (rid.is_valid()) {
 		ZN_PROFILE_SCOPE();
+#if DEBUG_ENABLED
+		ZN_PRINT_VERBOSE(format("Freeing VoxelRD compute shader {}", debug_name));
+#else
+		ZN_PRINT_VERBOSE("Freeing VoxelRD compute shader");
+#endif
 		zylann::godot::free_rendering_device_rid(rd, rid);
 		rid = RID();
 	}
@@ -87,6 +93,9 @@ void ComputeShaderInternal::load_from_glsl(RenderingDevice &rd, String source_te
 	ZN_PROFILE_SCOPE();
 	clear(rd);
 	rid = load_compute_shader_from_glsl(rd, source_text, name);
+#if DEBUG_ENABLED
+	debug_name = name;
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

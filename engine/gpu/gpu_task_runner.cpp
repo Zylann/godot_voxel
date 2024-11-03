@@ -71,6 +71,7 @@ void GPUTaskRunner::thread_func() {
 	ZN_DSTACK();
 
 	{
+		ZN_PRINT_VERBOSE("Creating Voxel RenderingDevice");
 		// MutexLock mlock(_rendering_device_ptr_mutex);
 		// We have to create this RenderingDevice in the same thread where we'll use it in, because otherwise it
 		// triggers errors from threading guards in some of its methods.
@@ -230,6 +231,7 @@ void GPUTaskRunner::thread_func() {
 	_storage_buffer_pool.set_rendering_device(nullptr);
 
 	{
+		ZN_PRINT_VERBOSE("Freeing Voxel RenderingDevice");
 		// MutexLock mlock(_rendering_device_ptr_mutex);
 		memdelete(_rendering_device);
 		_rendering_device = nullptr;
@@ -239,6 +241,7 @@ void GPUTaskRunner::thread_func() {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void BaseGPUResources::load(RenderingDevice &rd) {
+	ZN_PROFILE_SCOPE();
 	{
 		ZN_PROFILE_SCOPE_NAMED("Base Compute Shaders");
 

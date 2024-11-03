@@ -7,6 +7,7 @@
 #include "../../util/godot/classes/rendering_device.h"
 #include "../../util/godot/core/array.h" // for `varray` in GDExtension builds
 #include "../../util/profiling.h"
+#include "../../util/string/format.h"
 #include "../voxel_engine.h"
 
 namespace zylann::voxel {
@@ -27,6 +28,7 @@ namespace zylann::voxel {
 void ComputeShaderResourceInternal::clear(RenderingDevice &rd) {
 	ZN_DSTACK();
 	if (rid.is_valid()) {
+		ZN_PRINT_VERBOSE(format("Freeing VoxelRD resource type {}", type));
 		zylann::godot::free_rendering_device_rid(rd, rid);
 		rid = RID();
 	}
@@ -94,6 +96,9 @@ bool image_to_normalized_rd_format(Image::Format image_format, RenderingDevice::
 
 void ComputeShaderResourceInternal::create_texture_2d(RenderingDevice &rd, const Image &image) {
 	ZN_PROFILE_SCOPE();
+	ZN_PRINT_VERBOSE(format(
+			"Creating VoxelRD texture2d {}x{} format {}", image.get_width(), image.get_height(), image.get_format()
+	));
 	clear(rd);
 
 	RenderingDevice::DataFormat data_format;
@@ -127,7 +132,10 @@ void ComputeShaderResourceInternal::create_texture_2d(RenderingDevice &rd, const
 
 void ComputeShaderResourceInternal::create_texture_2d(RenderingDevice &rd, const Curve &curve) {
 	ZN_PROFILE_SCOPE();
+	const Image::Format image_format = Image::FORMAT_RF;
 	const unsigned int width = curve.get_bake_resolution();
+
+	ZN_PRINT_VERBOSE(format("Creating VoxelRD curve texture {}x1 format {}", width, image_format));
 
 	PackedByteArray data;
 	data.resize(width * sizeof(float));
@@ -144,7 +152,7 @@ void ComputeShaderResourceInternal::create_texture_2d(RenderingDevice &rd, const
 		}
 	}
 
-	Ref<Image> image = Image::create_from_data(width, 1, false, Image::FORMAT_RF, data);
+	Ref<Image> image = Image::create_from_data(width, 1, false, image_format, data);
 	create_texture_2d(rd, **image);
 }
 
@@ -172,6 +180,7 @@ void ComputeShaderResourceInternal::create_texture_3d_float32(
 		const Vector3i size
 ) {
 	ZN_PROFILE_SCOPE();
+	ZN_PRINT_VERBOSE(format("Creating VoxelRD texture3d {}x{}x{} float32", size.x, size.y, size.z));
 
 	ZN_ASSERT(Vector3iUtil::is_valid_size(size));
 	const size_t expected_size_in_bytes = Vector3iUtil::get_volume(size) * sizeof(float);
@@ -205,6 +214,7 @@ void ComputeShaderResourceInternal::create_texture_3d_float32(
 
 void ComputeShaderResourceInternal::create_storage_buffer(RenderingDevice &rd, const PackedByteArray &data) {
 	clear(rd);
+	ZN_PRINT_VERBOSE(format("Creating VoxelRD storage buffer {}b", data.size()));
 	rid = rd.storage_buffer_create(data.size(), data);
 	ERR_FAIL_COND(!rid.is_valid());
 	type = TYPE_STORAGE_BUFFER;

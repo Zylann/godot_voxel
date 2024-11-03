@@ -11,6 +11,9 @@ namespace zylann::voxel {
 
 struct ComputeShaderInternal {
 	RID rid;
+#if DEBUG_ENABLED
+	String debug_name;
+#endif
 
 	void clear(RenderingDevice &rd);
 	void load_from_glsl(RenderingDevice &rd, String source_text, String name);
