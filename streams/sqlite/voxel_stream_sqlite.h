@@ -128,6 +128,24 @@ private:
 
 	sqlite::Connection *get_connection();
 	void recycle_connection(sqlite::Connection *con);
+
+	struct ScopeRecycle {
+		VoxelStreamSQLite *stream;
+		sqlite::Connection *connection;
+
+		ScopeRecycle(VoxelStreamSQLite *p_stream, sqlite::Connection *p_connection) :
+				stream(p_stream), connection(p_connection) {
+#ifdef DEV_ENABLED
+			ZN_ASSERT(stream != nullptr);
+			ZN_ASSERT(connection != nullptr);
+#endif
+		}
+
+		~ScopeRecycle() {
+			stream->recycle_connection(connection);
+		}
+	};
+
 	void flush_cache_to_connection(sqlite::Connection *p_connection);
 
 	static void _bind_methods();

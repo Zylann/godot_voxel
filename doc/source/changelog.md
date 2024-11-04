@@ -23,6 +23,7 @@ Primarily developped with Godot 4.3.
         - Fixed potential crash when when using the Clipbox streaming system with threaded update (thanks to lenesxy, issue #692)
         - Fixed blocks were saved with incorrect LOD index when they get unloaded using Clipbox, leading to holes and mismatched terrain (#691)
         - Fixed incorrect loading of chunks near terrain borders when viewers are far away from bounds, when using the Clipbox streaming system
+    - `VoxelStreamSQLite`: fixed connection leaks (thanks to lenesxy, issue #713)
     - `VoxelTerrain`: edits and copies across fixed bounds no longer behave as if terrain generates beyond (was causing "walls" to appear).
     - `VoxelGeneratorGraph`: 
         - Fixed wrong values when using `OutputWeight` with optimized execution map enabled, when weights are determined to be locally constant
