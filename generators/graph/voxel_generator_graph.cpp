@@ -1665,7 +1665,7 @@ VoxelSingleValue VoxelGeneratorGraph::generate_single(Vector3i position, unsigne
 			RWLockRead rlock(_runtime_lock);
 			runtime_ptr = _runtime;
 		}
-		ERR_FAIL_COND_V(runtime_ptr == nullptr, v);
+		ERR_FAIL_COND_V_MSG(runtime_ptr == nullptr, v, "no compiled graph available");
 		if (runtime_ptr->sdf_output_buffer_index == -1) {
 			return v;
 		}
@@ -1688,7 +1688,7 @@ VoxelSingleValue VoxelGeneratorGraph::generate_single(Vector3i position, unsigne
 			RWLockRead rlock(_runtime_lock);
 			runtime_ptr = _runtime;
 		}
-		ERR_FAIL_COND_V(runtime_ptr == nullptr, v);
+		ERR_FAIL_COND_V_MSG(runtime_ptr == nullptr, v, "no compiled graph available");
 		if (runtime_ptr->single_texture_output_buffer_index == -1) {
 			return v;
 		}

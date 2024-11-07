@@ -2329,4 +2329,33 @@ void test_voxel_graph_4_default_weights() { // Related to issue #686
 	L::test(0.5, 0.2, 0.4, 0.8);
 }
 
+void test_voxel_graph_empty_image() {
+	// This used to crash
+
+	Ref<VoxelGeneratorGraph> generator;
+	generator.instantiate();
+
+	VoxelGraphFunction &g = **generator->get_main_function();
+
+	const uint32_t n_x = g.create_node(VoxelGraphFunction::NODE_INPUT_X);
+	const uint32_t n_z = g.create_node(VoxelGraphFunction::NODE_INPUT_Z);
+	const uint32_t n_image = g.create_node(VoxelGraphFunction::NODE_IMAGE_2D);
+	const uint32_t n_out_sdf = g.create_node(VoxelGraphFunction::NODE_OUTPUT_SDF);
+
+	Ref<Image> image;
+	image.instantiate();
+	g.set_node_param(n_image, 0, image);
+
+	g.add_connection(n_x, 0, n_image, 0);
+	g.add_connection(n_z, 0, n_image, 1);
+	g.add_connection(n_image, 0, n_out_sdf, 0);
+
+	CompilationResult result = generator->compile(false);
+
+	// Try to generate before asserting compilation result. It should fail without crashing.
+	generator->generate_single(Vector3i(405, 2, 305), VoxelBuffer::CHANNEL_SDF);
+
+	ZN_TEST_ASSERT(result.success == false);
+}
+
 } // namespace zylann::voxel::tests

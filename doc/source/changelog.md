@@ -29,6 +29,7 @@ Primarily developped with Godot 4.3.
         - Fixed wrong values when using `OutputWeight` with optimized execution map enabled, when weights are determined to be locally constant
         - Fixed occasional holes in terrain when using `FastNoise3D` nodes with the `OpenSimplex2S` noise type
         - Fixed shader generation error when using the `Distance3D` node (vec2 instead of vec3, thanks to scwich)
+        - Fixed crash when assigning an empty image to the `Image` node
     - `VoxelMesherTransvoxel`: revert texturing logic that attempted to prevent air voxels from contributing, but was lowering quality. It is now optional as an experimental property.
     - `VoxelStreamSQLite`: Fixed "empty size" errors when loading areas with edited `VoxelInstancer` data
     - `.vox` scene importer: disabled threaded import to workaround the editor freezing when saving meshes
