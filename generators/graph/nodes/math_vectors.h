@@ -87,7 +87,7 @@ void register_math_vector_nodes(Span<NodeType> types) {
 		};
 		t.shader_gen_func = [](ShaderGenContext &ctx) {
 			ctx.add_format(
-					"{} = distance(vec3({}, {}, {}), vec2({}, {}, {}));\n",
+					"{} = distance(vec3({}, {}, {}), vec3({}, {}, {}));\n",
 					ctx.get_output_name(0),
 					ctx.get_input_name(0),
 					ctx.get_input_name(1),
