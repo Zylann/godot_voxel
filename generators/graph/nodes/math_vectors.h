@@ -36,8 +36,14 @@ void register_math_vector_nodes(Span<NodeType> types) {
 			ctx.set_output(0, r);
 		};
 		t.shader_gen_func = [](ShaderGenContext &ctx) {
-			ctx.add_format("{} = distance(vec2({}, {}), vec2({}, {}));\n", ctx.get_output_name(0),
-					ctx.get_input_name(0), ctx.get_input_name(1), ctx.get_input_name(2), ctx.get_input_name(3));
+			ctx.add_format(
+					"{} = distance(vec2({}, {}), vec2({}, {}));\n",
+					ctx.get_output_name(0),
+					ctx.get_input_name(0),
+					ctx.get_input_name(1),
+					ctx.get_input_name(2),
+					ctx.get_input_name(3)
+			);
 		};
 	}
 	{
@@ -60,8 +66,10 @@ void register_math_vector_nodes(Span<NodeType> types) {
 			const Runtime::Buffer &z1 = ctx.get_input(5);
 			Runtime::Buffer &out = ctx.get_output(0);
 			for (uint32_t i = 0; i < out.size; ++i) {
-				out.data[i] = Math::sqrt(squared(x1.data[i] - x0.data[i]) + squared(y1.data[i] - y0.data[i]) +
-						squared(z1.data[i] - z0.data[i]));
+				out.data[i] = Math::sqrt(
+						squared(x1.data[i] - x0.data[i]) + squared(y1.data[i] - y0.data[i]) +
+						squared(z1.data[i] - z0.data[i])
+				);
 			}
 		};
 		t.range_analysis_func = [](Runtime::RangeAnalysisContext &ctx) {
@@ -78,9 +86,16 @@ void register_math_vector_nodes(Span<NodeType> types) {
 			ctx.set_output(0, r);
 		};
 		t.shader_gen_func = [](ShaderGenContext &ctx) {
-			ctx.add_format("{} = distance(vec3({}, {}, {}), vec2({}, {}, {}));\n", ctx.get_output_name(0),
-					ctx.get_input_name(0), ctx.get_input_name(1), ctx.get_input_name(2), ctx.get_input_name(3),
-					ctx.get_input_name(4), ctx.get_input_name(5));
+			ctx.add_format(
+					"{} = distance(vec3({}, {}, {}), vec3({}, {}, {}));\n",
+					ctx.get_output_name(0),
+					ctx.get_input_name(0),
+					ctx.get_input_name(1),
+					ctx.get_input_name(2),
+					ctx.get_input_name(3),
+					ctx.get_input_name(4),
+					ctx.get_input_name(5)
+			);
 		};
 	}
 	{
@@ -132,17 +147,26 @@ void register_math_vector_nodes(Span<NodeType> types) {
 		};
 
 		t.shader_gen_func = [](ShaderGenContext &ctx) {
-			ctx.require_lib_code("vg_normalize",
+			ctx.require_lib_code(
+					"vg_normalize",
 					"void vg_normalize(vec3 v, out float x, out float y, out float z, out float mag) {\n"
 					"    mag = length(v);\n"
 					"    v /= mag;\n"
 					"    x = v.x;\n"
 					"    y = v.y;\n"
 					"    z = v.z;\n"
-					"}\n");
-			ctx.add_format("vg_normalize(vec3({}, {}, {}), {}, {}, {}, {});\n", ctx.get_input_name(0),
-					ctx.get_input_name(1), ctx.get_input_name(2), ctx.get_output_name(0), ctx.get_output_name(1),
-					ctx.get_output_name(2), ctx.get_output_name(3));
+					"}\n"
+			);
+			ctx.add_format(
+					"vg_normalize(vec3({}, {}, {}), {}, {}, {}, {});\n",
+					ctx.get_input_name(0),
+					ctx.get_input_name(1),
+					ctx.get_input_name(2),
+					ctx.get_output_name(0),
+					ctx.get_output_name(1),
+					ctx.get_output_name(2),
+					ctx.get_output_name(3)
+			);
 		};
 	}
 }

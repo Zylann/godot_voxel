@@ -23,12 +23,16 @@ Primarily developped with Godot 4.3.
         - Fixed potential crash when when using the Clipbox streaming system with threaded update (thanks to lenesxy, issue #692)
         - Fixed blocks were saved with incorrect LOD index when they get unloaded using Clipbox, leading to holes and mismatched terrain (#691)
         - Fixed incorrect loading of chunks near terrain borders when viewers are far away from bounds, when using the Clipbox streaming system
+    - `VoxelStreamSQLite`: fixed connection leaks (thanks to lenesxy, issue #713)
     - `VoxelTerrain`: edits and copies across fixed bounds no longer behave as if terrain generates beyond (was causing "walls" to appear).
     - `VoxelGeneratorGraph`: 
         - Fixed wrong values when using `OutputWeight` with optimized execution map enabled, when weights are determined to be locally constant
         - Fixed occasional holes in terrain when using `FastNoise3D` nodes with the `OpenSimplex2S` noise type
+        - Fixed shader generation error when using the `Distance3D` node (vec2 instead of vec3, thanks to scwich)
+        - Fixed crash when assigning an empty image to the `Image` node
     - `VoxelMesherTransvoxel`: revert texturing logic that attempted to prevent air voxels from contributing, but was lowering quality. It is now optional as an experimental property.
     - `VoxelStreamSQLite`: Fixed "empty size" errors when loading areas with edited `VoxelInstancer` data
+    - `.vox` scene importer: disabled threaded import to workaround the editor freezing when saving meshes
 
 - Breaking changes
     - `VoxelInstanceLibrary`: Items should no longer be accessed using generated properties (`item1`, `item2` etc). Use `get_item` instead.

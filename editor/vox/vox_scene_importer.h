@@ -40,6 +40,8 @@ public:
 			zylann::godot::StringListWrapper p_out_gen_files
 	) const override;
 
+	bool _zn_can_import_threaded() const override;
+
 private:
 	// When compiling with GodotCpp, `_bind_methods` is not optional.
 	static void _bind_methods() {}
