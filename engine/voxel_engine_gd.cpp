@@ -122,6 +122,7 @@ Dictionary to_dict(const zylann::voxel::VoxelEngine::Stats &stats) {
 	tasks["generation"] = stats.generation_tasks;
 	tasks["meshing"] = stats.meshing_tasks;
 	tasks["main_thread"] = stats.main_thread_tasks;
+	tasks["gpu"] = stats.gpu_tasks;
 
 	// This part is additional for scripts because VoxelMemoryPool is not exposed
 	Dictionary mem;

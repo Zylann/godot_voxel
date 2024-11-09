@@ -13,6 +13,7 @@ Semver is not yet in place, so each version can have breaking changes, although 
 Primarily developped with Godot 4.3.
 
 - `VoxelBlockyModelCube`: Added support for mesh rotation like `VoxelBlockyMesh` (prior to that, rotation buttons in the editor only swapped tiles around)
+- `VoxelEngine`: Added the `tasks.gpu` entry to the dictionary returned by `get_stats`, which may be useful for loading screens (notably asynchronous compiling of compute shaders, which can delay generation if GPU is enabled)
 - `VoxelInstanceGenerator`: Added `OnePerTriangle` emission mode
 
 - Fixes

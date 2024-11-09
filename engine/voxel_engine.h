@@ -243,6 +243,7 @@ public:
 		int streaming_tasks;
 		int meshing_tasks;
 		int main_thread_tasks;
+		int gpu_tasks;
 	};
 
 	Stats get_stats() const;

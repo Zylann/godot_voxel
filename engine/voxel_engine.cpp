@@ -351,6 +351,7 @@ VoxelEngine::Stats VoxelEngine::get_stats() const {
 	s.meshing_tasks = MeshBlockTask::debug_get_running_count();
 	s.streaming_tasks = LoadBlockDataTask::debug_get_running_count() + SaveBlockDataTask::debug_get_running_count();
 	s.main_thread_tasks = _time_spread_task_runner.get_pending_count() + _progressive_task_runner.get_pending_count();
+	s.gpu_tasks = _gpu_task_runner.get_pending_task_count();
 	return s;
 }
 
