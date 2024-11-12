@@ -236,7 +236,7 @@ void test_octree_find_in_box() {
 		});
 		ZN_TEST_ASSERT(checksum2 == checksum);
 		const int for_each_cell_time = profiling_clock.restart();
-		const float single_query_time = float(for_each_cell_time) / Vector3iUtil::get_volume(full_box.size);
+		const float single_query_time = float(for_each_cell_time) / Vector3iUtil::get_volume_u64(full_box.size);
 		print_line(String("for_each_cell time with {0} lods: total {1} us, single query {2} us, checksum: {3}")
 						   .format(varray(lods, for_each_cell_time, single_query_time, checksum2)));
 	}

@@ -554,7 +554,7 @@ Array separate_floating_chunks(
 	// Label distinct voxel groups
 
 	static thread_local StdVector<uint8_t> ccl_output;
-	ccl_output.resize(Vector3iUtil::get_volume(world_box.size));
+	ccl_output.resize(Vector3iUtil::get_volume_u64(world_box.size));
 
 	unsigned int label_count = 0;
 
@@ -1038,7 +1038,7 @@ void VoxelToolLodTerrain::do_graph(Ref<VoxelGeneratorGraph> graph, Transform3D t
 
 	// Convert input SDF
 	static thread_local StdVector<float> tls_in_sdf_full;
-	tls_in_sdf_full.resize(Vector3iUtil::get_volume(buffer.get_size()));
+	tls_in_sdf_full.resize(Vector3iUtil::get_volume_u64(buffer.get_size()));
 	Span<float> in_sdf_full = to_span(tls_in_sdf_full);
 	get_unscaled_sdf(buffer, in_sdf_full);
 

@@ -49,8 +49,8 @@ void test_copy_3d_region_zxy() {
 		StdVector<uint16_t> dst;
 		const Vector3i src_size(8, 8, 8);
 		const Vector3i dst_size(3, 4, 5);
-		src.resize(Vector3iUtil::get_volume(src_size), 0);
-		dst.resize(Vector3iUtil::get_volume(dst_size), 0);
+		src.resize(Vector3iUtil::get_volume_u64(src_size), 0);
+		dst.resize(Vector3iUtil::get_volume_u64(dst_size), 0);
 		for (unsigned int i = 0; i < src.size(); ++i) {
 			src[i] = i;
 		}
@@ -102,8 +102,8 @@ void test_copy_3d_region_zxy() {
 		StdVector<uint16_t> dst;
 		const Vector3i src_size(3, 4, 5);
 		const Vector3i dst_size(3, 4, 5);
-		src.resize(Vector3iUtil::get_volume(src_size), 0);
-		dst.resize(Vector3iUtil::get_volume(dst_size), 0);
+		src.resize(Vector3iUtil::get_volume_u64(src_size), 0);
+		dst.resize(Vector3iUtil::get_volume_u64(dst_size), 0);
 		for (unsigned int i = 0; i < src.size(); ++i) {
 			src[i] = i;
 		}
@@ -131,7 +131,7 @@ void test_transform_3d_array_zxy() {
 		20, 21, 22, 23 //
 	};
 	const Vector3i src_size(3, 4, 2);
-	const unsigned int volume = Vector3iUtil::get_volume(src_size);
+	const unsigned int volume = Vector3iUtil::get_volume_u64(src_size);
 
 	FixedArray<int, 24> dst_grid;
 	ZN_TEST_ASSERT(dst_grid.size() == volume);

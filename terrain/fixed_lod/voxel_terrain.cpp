@@ -1811,7 +1811,7 @@ void VoxelTerrain::process_meshing() {
 
 		// This iteration order is specifically chosen to match VoxelEngine and threaded access
 		_data->get_blocks_with_voxel_data(data_box, 0, to_span(task->blocks));
-		task->blocks_count = Vector3iUtil::get_volume(data_box.size);
+		task->blocks_count = Vector3iUtil::get_volume_u64(data_box.size);
 
 #ifdef DEBUG_ENABLED
 		{

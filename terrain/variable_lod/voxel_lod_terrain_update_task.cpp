@@ -361,7 +361,7 @@ void send_mesh_requests( //
 			// The array also implicitly encodes block position due to the convention being used,
 			// so there is no need to also include positions in the request
 			data.get_blocks_with_voxel_data(data_box, lod_index, to_span(task->blocks));
-			task->blocks_count = Vector3iUtil::get_volume(data_box.size);
+			task->blocks_count = Vector3iUtil::get_volume_u64(data_box.size);
 
 			// TODO There is inconsistency with coordinates sent to this function.
 			// Sometimes we send data block coordinates, sometimes we send mesh block coordinates. They aren't always

@@ -432,7 +432,7 @@ public:
 	}
 
 	inline uint64_t get_volume() const {
-		return Vector3iUtil::get_volume(_size);
+		return Vector3iUtil::get_volume_u64(_size);
 	}
 
 	bool get_channel_as_bytes(unsigned int channel_index, Span<uint8_t> &slice);

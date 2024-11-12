@@ -38,10 +38,10 @@ bool RegionFormat::validate() const {
 	for (unsigned int i = 0; i < channel_depths.size(); ++i) {
 		bytes_per_block += VoxelBuffer::get_depth_bit_count(channel_depths[i]) / 8;
 	}
-	bytes_per_block *= Vector3iUtil::get_volume(Vector3iUtil::create(1 << block_size_po2));
+	bytes_per_block *= Vector3iUtil::get_volume_u64(Vector3iUtil::create(1 << block_size_po2));
 	const size_t sectors_per_block = (bytes_per_block - 1) / sector_size + 1;
 	ERR_FAIL_COND_V(sectors_per_block > RegionBlockInfo::MAX_SECTOR_COUNT, false);
-	const size_t max_potential_sectors = Vector3iUtil::get_volume(region_size) * sectors_per_block;
+	const size_t max_potential_sectors = Vector3iUtil::get_volume_u64(region_size) * sectors_per_block;
 	ERR_FAIL_COND_V(max_potential_sectors > RegionBlockInfo::MAX_SECTOR_INDEX, false);
 
 	return true;
@@ -61,7 +61,7 @@ uint32_t get_header_size_v3(const RegionFormat &format) {
 	// Which file offset blocks data is starting
 	// magic + version + blockinfos
 	return MAGIC_AND_VERSION_SIZE + FIXED_HEADER_DATA_SIZE + (format.has_palette ? PALETTE_SIZE_IN_BYTES : 0) +
-			Vector3iUtil::get_volume(format.region_size) * sizeof(RegionBlockInfo);
+			Vector3iUtil::get_volume_u64(format.region_size) * sizeof(RegionBlockInfo);
 }
 
 bool save_header(
@@ -129,7 +129,8 @@ bool load_header(
 	FixedArray<char, 5> magic;
 	fill(magic, '\0');
 	ERR_FAIL_COND_V(
-			zylann::godot::get_buffer(f, Span<uint8_t>(reinterpret_cast<uint8_t *>(magic.data()), 4)) != 4, false);
+			zylann::godot::get_buffer(f, Span<uint8_t>(reinterpret_cast<uint8_t *>(magic.data()), 4)) != 4, false
+	);
 	ERR_FAIL_COND_V(strcmp(magic.data(), FORMAT_REGION_MAGIC) != 0, false);
 
 	const uint8_t version = f.get_8();
@@ -171,7 +172,7 @@ bool load_header(
 	}
 
 	out_version = version;
-	out_block_infos.resize(Vector3iUtil::get_volume(out_format.region_size));
+	out_block_infos.resize(Vector3iUtil::get_volume_u64(out_format.region_size));
 
 	// TODO Deal with endianness
 	const size_t blocks_len = out_block_infos.size() * sizeof(RegionBlockInfo);
@@ -322,7 +323,7 @@ bool RegionFile::set_format(const RegionFormat &format) {
 
 	// This will be the format used to create the next file if not found on open()
 	_header.format = format;
-	_header.blocks.resize(Vector3iUtil::get_volume(format.region_size));
+	_header.blocks.resize(Vector3iUtil::get_volume_u64(format.region_size));
 
 	return true;
 }
@@ -602,7 +603,7 @@ bool RegionFile::migrate_from_v2_to_v3(FileAccess &f, RegionFormat &format) {
 
 	// Which file offset blocks data is starting
 	// magic + version + blockinfos
-	const unsigned int old_header_size = Vector3iUtil::get_volume(format.region_size) * sizeof(uint32_t);
+	const unsigned int old_header_size = Vector3iUtil::get_volume_u64(format.region_size) * sizeof(uint32_t);
 
 	const unsigned int new_header_size = get_header_size_v3(format) - MAGIC_AND_VERSION_SIZE;
 	ERR_FAIL_COND_V_MSG(new_header_size < old_header_size, false, "New version is supposed to have larger header");
@@ -697,7 +698,8 @@ void RegionFile::debug_check() {
 		const unsigned int block_begin = _blocks_begin_offset + sector_index * _header.format.sector_size;
 		if (block_begin >= file_len) {
 			ZN_PRINT_ERROR(format(
-					"LUT {} {}: offset {} is larger than file size {}", lut_index, position, block_begin, file_len));
+					"LUT {} {}: offset {} is larger than file size {}", lut_index, position, block_begin, file_len
+			));
 			continue;
 		}
 		f.seek(block_begin);

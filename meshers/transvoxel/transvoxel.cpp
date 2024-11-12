@@ -1109,7 +1109,7 @@ Span<const T> get_or_decompress_channel(const VoxelBuffer &voxels, StdVector<T> 
 	);
 
 	if (voxels.get_channel_compression(channel) == VoxelBuffer::COMPRESSION_UNIFORM) {
-		backing_buffer.resize(Vector3iUtil::get_volume(voxels.get_size()));
+		backing_buffer.resize(Vector3iUtil::get_volume_u64(voxels.get_size()));
 		const T v = voxels.get_voxel(Vector3i(), channel);
 		// TODO Could use a fast fill using 8-byte blocks or intrinsics?
 		for (unsigned int i = 0; i < backing_buffer.size(); ++i) {
@@ -1256,7 +1256,7 @@ DefaultTextureIndicesData build_regular_mesh(
 	ZN_PROFILE_SCOPE();
 	// From this point, we expect the buffer to contain allocated data in the relevant channels.
 
-	const unsigned int voxels_count = Vector3iUtil::get_volume(voxels.get_size());
+	const unsigned int voxels_count = Vector3iUtil::get_volume_u64(voxels.get_size());
 
 	output.clear();
 
@@ -1400,7 +1400,7 @@ void build_transition_mesh(
 	ZN_PROFILE_SCOPE();
 	// From this point, we expect the buffer to contain allocated data in the relevant channels.
 
-	const unsigned int voxels_count = Vector3iUtil::get_volume(voxels.get_size());
+	const unsigned int voxels_count = Vector3iUtil::get_volume_u64(voxels.get_size());
 
 	switch (texturing_mode) {
 		case TEXTURES_NONE:

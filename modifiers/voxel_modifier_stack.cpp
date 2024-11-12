@@ -18,7 +18,7 @@ StdVector<Vector3f> &get_tls_positions() {
 }
 
 void get_positions_buffer(Vector3i buffer_size, Vector3f origin, Vector3f size, StdVector<Vector3f> &positions) {
-	positions.resize(Vector3iUtil::get_volume(buffer_size));
+	positions.resize(Vector3iUtil::get_volume_u64(buffer_size));
 
 	const Vector3f end = origin + size;
 	const Vector3f inv_bsf = Vector3f(1.0, 1.0, 1.0) / to_vec3f(buffer_size);
@@ -64,7 +64,7 @@ Span<const Vector3f> get_positions_temporary(
 void decompress_sdf_to_buffer(VoxelBuffer &voxels, StdVector<float> &sdf) {
 	ZN_DSTACK();
 
-	sdf.resize(Vector3iUtil::get_volume(voxels.get_size()));
+	sdf.resize(Vector3iUtil::get_volume_u64(voxels.get_size()));
 
 	const VoxelBuffer::ChannelId channel = VoxelBuffer::CHANNEL_SDF;
 	voxels.decompress_channel(channel);
@@ -221,7 +221,7 @@ void VoxelModifierStack::apply(VoxelBuffer &voxels, AABB aabb) const {
 			modifier_box.clip(Box3i(origin_voxels, voxels.get_size()));
 			const Vector3i local_origin_in_voxels = modifier_box.position - origin_voxels;
 
-			const int64_t volume = Vector3iUtil::get_volume(modifier_box.size);
+			const size_t volume = Vector3iUtil::get_volume_u64(modifier_box.size);
 			area_sdf.resize(volume);
 			copy_3d_region_zxy(
 					to_span(area_sdf),

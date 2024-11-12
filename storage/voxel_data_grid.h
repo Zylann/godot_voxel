@@ -250,7 +250,7 @@ private:
 	inline void create(Vector3i size, unsigned int block_size) {
 		ZN_PROFILE_SCOPE();
 		_blocks.clear();
-		_blocks.resize(Vector3iUtil::get_volume(size));
+		_blocks.resize(Vector3iUtil::get_volume_u64(size));
 		_size_in_blocks = size;
 		_block_size = block_size;
 	}
