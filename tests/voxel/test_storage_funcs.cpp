@@ -22,8 +22,15 @@ void test_encode_weights_packed_u16() {
 
 void test_copy_3d_region_zxy() {
 	struct L {
-		static void compare(Span<const uint16_t> srcs, Vector3i src_size, Vector3i src_min, Vector3i src_max,
-				Span<const uint16_t> dsts, Vector3i dst_size, Vector3i dst_min) {
+		static void compare(
+				Span<const uint16_t> srcs,
+				Vector3i src_size,
+				Vector3i src_min,
+				Vector3i src_max,
+				Span<const uint16_t> dsts,
+				Vector3i dst_size,
+				Vector3i dst_min
+		) {
 			Vector3i pos;
 			for (pos.z = src_min.z; pos.z < src_max.z; ++pos.z) {
 				for (pos.x = src_min.x; pos.x < src_max.x; ++pos.x) {
@@ -115,9 +122,9 @@ void test_copy_3d_region_zxy() {
 void test_transform_3d_array_zxy() {
 	// YXZ
 	int src_grid[] = {
-		0, 1, 2, 3, //
-		4, 5, 6, 7, //
-		8, 9, 10, 11, //
+		0,	1,	2,	3, //
+		4,	5,	6,	7, //
+		8,	9,	10, 11, //
 
 		12, 13, 14, 15, //
 		16, 17, 18, 19, //
@@ -131,10 +138,10 @@ void test_transform_3d_array_zxy() {
 
 	{
 		int expected_dst_grid[] = {
-			0, 4, 8, //
-			1, 5, 9, //
-			2, 6, 10, //
-			3, 7, 11, //
+			0,	4,	8, //
+			1,	5,	9, //
+			2,	6,	10, //
+			3,	7,	11, //
 
 			12, 16, 20, //
 			13, 17, 21, //
@@ -158,9 +165,9 @@ void test_transform_3d_array_zxy() {
 	}
 	{
 		int expected_dst_grid[] = {
-			3, 2, 1, 0, //
-			7, 6, 5, 4, //
-			11, 10, 9, 8, //
+			3,	2,	1,	0, //
+			7,	6,	5,	4, //
+			11, 10, 9,	8, //
 
 			15, 14, 13, 12, //
 			19, 18, 17, 16, //
@@ -187,9 +194,9 @@ void test_transform_3d_array_zxy() {
 			19, 18, 17, 16, //
 			23, 22, 21, 20, //
 
-			3, 2, 1, 0, //
-			7, 6, 5, 4, //
-			11, 10, 9, 8 //
+			3,	2,	1,	0, //
+			7,	6,	5,	4, //
+			11, 10, 9,	8 //
 		};
 		const Vector3i expected_dst_size(3, 4, 2);
 		IntBasis basis;

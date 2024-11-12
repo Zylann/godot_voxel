@@ -65,7 +65,11 @@ uint32_t get_header_size_v3(const RegionFormat &format) {
 }
 
 bool save_header(
-		FileAccess &f, uint8_t version, const RegionFormat &format, const StdVector<RegionBlockInfo> &block_infos) {
+		FileAccess &f,
+		uint8_t version,
+		const RegionFormat &format,
+		const StdVector<RegionBlockInfo> &block_infos
+) {
 	// `f` could be anywhere in the file, we seek to ensure we start at the beginning
 	f.seek(0);
 
@@ -98,9 +102,12 @@ bool save_header(
 	}
 
 	// TODO Deal with endianness, this should be little-endian
-	zylann::godot::store_buffer(f,
-			Span<const uint8_t>(reinterpret_cast<const uint8_t *>(block_infos.data()),
-					block_infos.size() * sizeof(RegionBlockInfo)));
+	zylann::godot::store_buffer(
+			f,
+			Span<const uint8_t>(
+					reinterpret_cast<const uint8_t *>(block_infos.data()), block_infos.size() * sizeof(RegionBlockInfo)
+			)
+	);
 
 #ifdef DEBUG_ENABLED
 	const size_t blocks_begin_offset = f.get_position();
@@ -111,7 +118,11 @@ bool save_header(
 }
 
 bool load_header(
-		FileAccess &f, uint8_t &out_version, RegionFormat &out_format, StdVector<RegionBlockInfo> &out_block_infos) {
+		FileAccess &f,
+		uint8_t &out_version,
+		RegionFormat &out_format,
+		StdVector<RegionBlockInfo> &out_block_infos
+) {
 	ERR_FAIL_COND_V(f.get_position() != 0, false);
 	ERR_FAIL_COND_V(f.get_length() < MAGIC_AND_VERSION_SIZE, false);
 
@@ -250,10 +261,13 @@ Error RegionFile::open(const String &fpath, bool create_if_not_found) {
 		}
 	}
 
-	std::sort(blocks_sorted_by_offset.begin(), blocks_sorted_by_offset.end(),
+	std::sort(
+			blocks_sorted_by_offset.begin(),
+			blocks_sorted_by_offset.end(),
 			[](const BlockInfoAndIndex &a, const BlockInfoAndIndex &b) {
 				return a.b.get_sector_index() < b.b.get_sector_index();
-			});
+			}
+	);
 
 	CRASH_COND(_sectors.size() != 0);
 	for (unsigned int i = 0; i < blocks_sorted_by_offset.size(); ++i) {
@@ -353,8 +367,11 @@ Error RegionFile::load_block(Vector3i position, VoxelBuffer &out_block) {
 	unsigned int block_data_size = f.get_32();
 	CRASH_COND(f.eof_reached());
 
-	ERR_FAIL_COND_V_MSG(!BlockSerializer::decompress_and_deserialize(f, block_data_size, out_block), ERR_PARSE_ERROR,
-			String("Failed to read block {0}").format(varray(position)));
+	ERR_FAIL_COND_V_MSG(
+			!BlockSerializer::decompress_and_deserialize(f, block_data_size, out_block),
+			ERR_PARSE_ERROR,
+			String("Failed to read block {0}").format(varray(position))
+	);
 
 	return OK;
 }
@@ -391,9 +408,11 @@ Error RegionFile::save_block(Vector3i position, VoxelBuffer &block) {
 		zylann::godot::store_buffer(f, to_span(res.data));
 
 		const unsigned int end_pos = f.get_position();
-		CRASH_COND_MSG(written_size != (end_pos - block_offset),
+		CRASH_COND_MSG(
+				written_size != (end_pos - block_offset),
 				String("written_size: {0}, block_offset: {1}, end_pos: {2}")
-						.format(varray(written_size, block_offset, end_pos)));
+						.format(varray(written_size, block_offset, end_pos))
+		);
 		pad_to_sector_size(f);
 
 		block_info.set_sector_index((block_offset - _blocks_begin_offset) / _header.format.sector_size);
@@ -538,8 +557,10 @@ void RegionFile::remove_sectors_from_block(Vector3i block_pos, unsigned int p_se
 	// but FileAccess doesn't have any function to do that... so can't rely on EOF either
 
 	// Erase sectors from cache
-	_sectors.erase(_sectors.begin() + (block_info.get_sector_index() + block_info.get_sector_count() - p_sector_count),
-			_sectors.begin() + (block_info.get_sector_index() + block_info.get_sector_count()));
+	_sectors.erase(
+			_sectors.begin() + (block_info.get_sector_index() + block_info.get_sector_count() - p_sector_count),
+			_sectors.begin() + (block_info.get_sector_index() + block_info.get_sector_count())
+	);
 
 	const unsigned int old_sector_index = block_info.get_sector_index();
 
@@ -684,8 +705,14 @@ void RegionFile::debug_check() {
 		const size_t pos = f.get_position();
 		const size_t remaining_size = file_len - pos;
 		if (block_data_size > remaining_size) {
-			ZN_PRINT_ERROR(format("LUT {} {}: block size {} at offset {} is larger than remaining size {}", lut_index,
-					position, block_data_size, block_begin, remaining_size));
+			ZN_PRINT_ERROR(
+					format("LUT {} {}: block size {} at offset {} is larger than remaining size {}",
+						   lut_index,
+						   position,
+						   block_data_size,
+						   block_begin,
+						   remaining_size)
+			);
 		}
 	}
 }
