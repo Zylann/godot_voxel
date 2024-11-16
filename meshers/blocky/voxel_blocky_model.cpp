@@ -244,6 +244,8 @@ void VoxelBlockyModel::bake(BakedData &baked_data, bool bake_tangents, MaterialI
 
 	BakedData::Model &model = baked_data.model;
 
+	// Note: mesh rotation is not implemented here, it is done in derived classes.
+
 	// Set empty sides mask
 	model.empty_sides_mask = 0;
 	for (unsigned int side = 0; side < Cube::SIDE_COUNT; ++side) {
@@ -612,7 +614,8 @@ void VoxelBlockyModel::_bind_methods() {
 			"get_collision_mask"
 	);
 
-	ADD_GROUP("Rotation", "");
+	// Note: rotation property is currently exposed only in derived classes.
+	// It will not necessarily be supported by all derived classes.
 
 	BIND_ENUM_CONSTANT(SIDE_NEGATIVE_X);
 	BIND_ENUM_CONSTANT(SIDE_POSITIVE_X);
