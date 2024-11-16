@@ -65,6 +65,9 @@ bool ZN_EditorImportPlugin::get_option_visibility(
 }
 
 Error ZN_EditorImportPlugin::import(
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR >= 4
+		ResourceUID::ID p_source_id,
+#endif
 		const String &p_source_file,
 		const String &p_save_path,
 		const HashMap<StringName, Variant> &p_options,
