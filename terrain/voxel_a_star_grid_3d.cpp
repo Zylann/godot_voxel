@@ -230,17 +230,20 @@ void VoxelAStarGrid3D::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("find_path", "from_position", "to_position"), &VoxelAStarGrid3D::find_path);
 	ClassDB::bind_method(
-			D_METHOD("find_path_async", "from_position", "to_position"), &VoxelAStarGrid3D::find_path_async);
+			D_METHOD("find_path_async", "from_position", "to_position"), &VoxelAStarGrid3D::find_path_async
+	);
 	ClassDB::bind_method(D_METHOD("is_running_async"), &VoxelAStarGrid3D::is_running_async);
 
 	ClassDB::bind_method(D_METHOD("debug_get_visited_positions"), &VoxelAStarGrid3D::debug_get_visited_positions);
 
 	// Internal
 	ClassDB::bind_method(
-			D_METHOD("_on_async_search_completed", "path"), &VoxelAStarGrid3D::_b_on_async_search_completed);
+			D_METHOD("_on_async_search_completed", "path"), &VoxelAStarGrid3D::_b_on_async_search_completed
+	);
 
 	ADD_SIGNAL(MethodInfo(
-			"async_search_completed", PropertyInfo(Variant::ARRAY, "path", PROPERTY_HINT_ARRAY_TYPE, "Vector3i")));
+			"async_search_completed", PropertyInfo(Variant::ARRAY, "path", PROPERTY_HINT_ARRAY_TYPE, "Vector3i")
+	));
 }
 
 } // namespace zylann::voxel
