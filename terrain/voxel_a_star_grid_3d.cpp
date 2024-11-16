@@ -3,6 +3,7 @@
 // #include "../util/string/format.h"
 #include "../constants/voxel_string_names.h"
 #include "../util/math/conv.h"
+#include "../util/string/format.h"
 
 namespace zylann::voxel {
 
@@ -122,10 +123,18 @@ void VoxelAStarGrid3D::check_params(Vector3i from_position, Vector3i to_position
 		ZN_PRINT_WARNING("The region is empty or not defined, no path will be found");
 	}
 	if (!get_region().contains(from_position)) {
-		ZN_PRINT_WARNING("The current region does not contain the source position, no path will be found");
+		ZN_PRINT_WARNING(
+				format("The current region {} does not contain the source position {}, no path will be found",
+					   get_region(),
+					   from_position)
+		);
 	}
 	if (!get_region().contains(to_position)) {
-		ZN_PRINT_WARNING("The current region does not contain the destination, no path will be found");
+		ZN_PRINT_WARNING(
+				format("The current region {} does not contain the destination {}, no path will be found",
+					   get_region(),
+					   to_position)
+		);
 	}
 }
 #endif
