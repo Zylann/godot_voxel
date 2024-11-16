@@ -124,7 +124,7 @@ void VoxelAStarGrid3D::check_params(Vector3i from_position, Vector3i to_position
 	if (!get_region().contains(from_position)) {
 		ZN_PRINT_WARNING("The current region does not contain the source position, no path will be found");
 	}
-	if (!get_region().contains(from_position)) {
+	if (!get_region().contains(to_position)) {
 		ZN_PRINT_WARNING("The current region does not contain the destination, no path will be found");
 	}
 }
