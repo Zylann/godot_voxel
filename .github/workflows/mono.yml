@@ -194,6 +194,13 @@ jobs:
           repository: godotengine/godot
           ref: ${{ env.GODOT_BASE_BRANCH }}
 
+      # The version of ThorVG in 4.3-stable hits an error in latest MSVC (see godot#95861).
+      # We should no longer need this in 4.3.1 and later.
+      - name: Patch ThorVG
+        run: |
+          curl -LO https://github.com/godotengine/godot/commit/4abc358952a69427617b0683fd76427a14d6faa8.patch
+          git apply 4abc358952a69427617b0683fd76427a14d6faa8.patch
+
       # Clone our module under the correct directory
       - uses: actions/checkout@v4
         with:
