@@ -7,6 +7,8 @@
 #include "../util/godot/classes/mesh_instance_3d.h"
 #include "../util/godot/classes/rendering_server.h"
 #include "../util/godot/classes/rigid_body_3d.h"
+#include "../util/godot/classes/shader.h"
+#include "../util/godot/classes/shader_material.h"
 #include "../util/godot/classes/timer.h"
 #include "../util/island_finder.h"
 #include "../util/profiling.h"
