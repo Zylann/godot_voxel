@@ -931,6 +931,21 @@ void append_side_skirts(
 			const Vector3f pos = side_to_block_coordinates(Vector3f(x - pad, y - pad, z - (side_sign + 1)), side);
 
 			const VoxelBlockyModel::BakedData &voxel = library.models[nv4];
+
+			if (!voxel.lod_skirts) {
+				// A typical issue is making an ocean:
+				// - Skirts will show up behind the water surface so it's not a good solution in that case.
+				// - If sea level does not line up at different LODs, then there will be LOD "cracks" anyways. I don't
+				// have a good solution for this. One way to workaround is to choose a sea level that lines up at every
+				// LOD (such as Y=0), and let the seams occur in other cases which are usually way less frequent.
+				// - Another way is to only reduce LOD resolution horizontally and not vertically, but that has a high
+				// memory cost on large distances, so not silver bullet.
+				// - Make water opaque when at large distances? If acceptable, this can be a good fix (Distant Horizons
+				// mod was doing this at some point) but either require custom shader or the ability to specify
+				// different models for different LODs in the library
+				continue;
+			}
+
 			const VoxelBlockyModel::BakedData::Model &model = voxel.model;
 
 			for (unsigned int surface_index = 0; surface_index < model.surface_count; ++surface_index) {

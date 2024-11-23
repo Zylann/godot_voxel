@@ -217,6 +217,14 @@ void VoxelBlockyModel::set_culls_neighbors(bool cn) {
 	_culls_neighbors = cn;
 }
 
+void VoxelBlockyModel::set_lod_skirts_enabled(bool enabled) {
+	_lod_skirts = enabled;
+}
+
+bool VoxelBlockyModel::get_lod_skirts_enabled() const {
+	return _lod_skirts;
+}
+
 void VoxelBlockyModel::set_surface_count(unsigned int new_count) {
 	if (new_count != _surface_count) {
 		_surface_count = new_count;
@@ -241,6 +249,7 @@ void VoxelBlockyModel::bake(BakedData &baked_data, bool bake_tangents, MaterialI
 	baked_data.is_random_tickable = _random_tickable;
 	baked_data.box_collision_mask = _collision_mask;
 	baked_data.box_collision_aabbs = _collision_aabbs;
+	baked_data.lod_skirts = _lod_skirts;
 
 	BakedData::Model &model = baked_data.model;
 
@@ -591,11 +600,15 @@ void VoxelBlockyModel::_bind_methods() {
 	// Bound for editor purposes
 	ClassDB::bind_method(D_METHOD("rotate_90", "axis", "clockwise"), &VoxelBlockyModel::_b_rotate_90);
 
+	ClassDB::bind_method(D_METHOD("set_lod_skirts_enabled", "enabled"), &VoxelBlockyModel::set_lod_skirts_enabled);
+	ClassDB::bind_method(D_METHOD("get_lod_skirts_enabled"), &VoxelBlockyModel::get_lod_skirts_enabled);
+
 	// TODO Update to StringName in Godot 4
 	ADD_PROPERTY(PropertyInfo(Variant::COLOR, "color"), "set_color", "get_color");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "transparency_index"), "set_transparency_index", "get_transparency_index");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "culls_neighbors"), "set_culls_neighbors", "get_culls_neighbors");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "random_tickable"), "set_random_tickable", "is_random_tickable");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "lod_skirts_enabled"), "set_lod_skirts_enabled", "get_lod_skirts_enabled");
 
 	ADD_GROUP("Box collision", "");
 
