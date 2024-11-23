@@ -876,7 +876,7 @@ int get_side_sign(const VoxelBlockyModel::Side side) {
 // cracks, but the assumption is that it will do most of the time.
 // AO is not handled, and probably doesn't need to be
 template <typename TModelID>
-void append_side_seams(
+void append_side_skirts(
 		Span<const TModelID> buffer,
 		const Vector3T<int> jump,
 		const int z, // Coordinate of the first or last voxel (not within the padded region)
@@ -1005,7 +1005,7 @@ void append_side_seams(
 }
 
 template <typename TModelID>
-void append_seams(
+void append_skirts(
 		Span<const TModelID> buffer,
 		const Vector3i size,
 		StdVector<VoxelMesherBlocky::Arrays> &out_arrays_per_material,
@@ -1024,12 +1024,12 @@ void append_seams(
 	constexpr VoxelBlockyModel::Side NEGATIVE_Z = VoxelBlockyModel::SIDE_NEGATIVE_Z;
 	constexpr VoxelBlockyModel::Side POSITIVE_Z = VoxelBlockyModel::SIDE_POSITIVE_Z;
 
-	append_side_seams(buffer, jump.xyz(), 0, size.x, size.y, NEGATIVE_Z, library, out);
-	append_side_seams(buffer, jump.xyz(), (size.z - 1), size.x, size.y, POSITIVE_Z, library, out);
-	append_side_seams(buffer, jump.zyx(), 0, size.z, size.y, NEGATIVE_X, library, out);
-	append_side_seams(buffer, jump.zyx(), (size.x - 1), size.z, size.y, POSITIVE_X, library, out);
-	append_side_seams(buffer, jump.zxy(), 0, size.z, size.x, NEGATIVE_Y, library, out);
-	append_side_seams(buffer, jump.zxy(), (size.y - 1), size.z, size.x, POSITIVE_Y, library, out);
+	append_side_skirts(buffer, jump.xyz(), 0, size.x, size.y, NEGATIVE_Z, library, out);
+	append_side_skirts(buffer, jump.xyz(), (size.z - 1), size.x, size.y, POSITIVE_Z, library, out);
+	append_side_skirts(buffer, jump.zyx(), 0, size.z, size.y, NEGATIVE_X, library, out);
+	append_side_skirts(buffer, jump.zyx(), (size.x - 1), size.z, size.y, POSITIVE_X, library, out);
+	append_side_skirts(buffer, jump.zxy(), 0, size.z, size.x, NEGATIVE_Y, library, out);
+	append_side_skirts(buffer, jump.zxy(), (size.y - 1), size.z, size.x, POSITIVE_Y, library, out);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1192,7 +1192,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 						baked_occlusion_darkness //
 				);
 				if (input.lod_index > 0) {
-					append_seams(raw_channel, block_size, arrays_per_material, library_baked_data);
+					append_skirts(raw_channel, block_size, arrays_per_material, library_baked_data);
 				}
 				break;
 
@@ -1208,7 +1208,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 						baked_occlusion_darkness
 				);
 				if (input.lod_index > 0) {
-					append_seams(model_ids, block_size, arrays_per_material, library_baked_data);
+					append_skirts(model_ids, block_size, arrays_per_material, library_baked_data);
 				}
 			} break;
 
