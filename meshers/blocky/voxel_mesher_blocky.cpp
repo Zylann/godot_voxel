@@ -1182,14 +1182,14 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 
 		switch (channel_depth) {
 			case VoxelBuffer::DEPTH_8_BIT:
-				generate_blocky_mesh( //
-						arrays_per_material, //
-						collision_surface, //
-						raw_channel, //
-						block_size, //
-						library_baked_data, //
-						params.bake_occlusion, //
-						baked_occlusion_darkness //
+				generate_blocky_mesh(
+						arrays_per_material,
+						collision_surface,
+						raw_channel,
+						block_size,
+						library_baked_data,
+						params.bake_occlusion,
+						baked_occlusion_darkness
 				);
 				if (input.lod_index > 0) {
 					append_skirts(raw_channel, block_size, arrays_per_material, library_baked_data);
