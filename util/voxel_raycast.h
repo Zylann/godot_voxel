@@ -1,3 +1,6 @@
+#ifndef ZN_VOXEL_RAYCAST_H
+#define ZN_VOXEL_RAYCAST_H
+
 #include "../util/math/vector3i.h"
 // #include "../util/profiling.h"
 #include "errors.h"
@@ -202,3 +205,5 @@ bool voxel_raycast(
 }
 
 } // namespace zylann
+
+#endif // ZN_VOXEL_RAYCAST_H
