@@ -9,7 +9,7 @@
 #include "../util/godot/core/array.h"
 #include "../util/godot/core/packed_arrays.h"
 #include "../util/math/conv.h"
-#include "../util/voxel_raycast.h"
+#include "raycast.h"
 
 using namespace zylann::godot;
 
@@ -37,126 +37,16 @@ Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(
 		float p_max_distance,
 		uint32_t p_collision_mask
 ) {
-	// TODO Implement broad-phase on blocks to minimize locking and increase performance
-
-	// TODO Optimization: voxel raycast uses `get_voxel` which is the slowest, but could be made faster.
-	// See `VoxelToolLodTerrain` for information about how to implement improvements.
-
-	struct RaycastPredicateColor {
-		const VoxelData &data;
-
-		bool operator()(const VoxelRaycastState &rs) const {
-			VoxelSingleValue defval;
-			defval.i = 0;
-			const uint64_t v = data.get_voxel(rs.hit_position, VoxelBuffer::CHANNEL_COLOR, defval).i;
-			return v != 0;
-		}
-	};
-
-	struct RaycastPredicateSDF {
-		const VoxelData &data;
-
-		bool operator()(const VoxelRaycastState &rs) const {
-			const float v = data.get_voxel_f(rs.hit_position, VoxelBuffer::CHANNEL_SDF);
-			return v < 0;
-		}
-	};
-
-	struct RaycastPredicateBlocky {
-		const VoxelData &data;
-		const VoxelBlockyLibraryBase::BakedData &baked_data;
-		const uint32_t collision_mask;
-		const Vector3 p_from;
-		const Vector3 p_to;
-
-		bool operator()(const VoxelRaycastState &rs) const {
-			VoxelSingleValue defval;
-			defval.i = 0;
-			const int v = data.get_voxel(rs.hit_position, VoxelBuffer::CHANNEL_TYPE, defval).i;
-
-			if (baked_data.has_model(v) == false) {
-				return false;
-			}
-
-			const VoxelBlockyModel::BakedData &model = baked_data.models[v];
-			if ((model.box_collision_mask & collision_mask) == 0) {
-				return false;
-			}
-
-			for (const AABB &aabb : model.box_collision_aabbs) {
-				if (AABB(aabb.position + rs.hit_position, aabb.size).intersects_segment(p_from, p_to)) {
-					return true;
-				}
-			}
-
-			return false;
-		}
-	};
-
-	Ref<VoxelRaycastResult> res;
-
-	Ref<VoxelMesherBlocky> mesher_blocky;
-	Ref<VoxelMesherCubes> mesher_cubes;
-
-	Vector3i hit_pos;
-	Vector3i prev_pos;
-
-	const Transform3D to_world = _terrain->get_global_transform();
-	const Transform3D to_local = to_world.affine_inverse();
-	const Vector3 local_pos = to_local.xform(p_pos);
-	const Vector3 local_dir = to_local.basis.xform(p_dir).normalized();
-	const float to_world_scale = to_world.basis.get_column(Vector3::AXIS_X).length();
-	const float max_distance = p_max_distance / to_world_scale;
-
-	if (try_get_as(_terrain->get_mesher(), mesher_blocky)) {
-		Ref<VoxelBlockyLibraryBase> library_ref = mesher_blocky->get_library();
-		if (library_ref.is_null()) {
-			return res;
-		}
-		RaycastPredicateBlocky predicate{ _terrain->get_storage(),
-										  library_ref->get_baked_data(),
-										  p_collision_mask,
-										  local_pos,
-										  local_pos + local_dir * max_distance };
-		float hit_distance;
-		float hit_distance_prev;
-		if (zylann::voxel_raycast(
-					local_pos, local_dir, predicate, max_distance, hit_pos, prev_pos, hit_distance, hit_distance_prev
-			)) {
-			res.instantiate();
-			res->position = hit_pos;
-			res->previous_position = prev_pos;
-			res->distance_along_ray = hit_distance * to_world_scale;
-		}
-
-	} else if (try_get_as(_terrain->get_mesher(), mesher_cubes)) {
-		RaycastPredicateColor predicate{ _terrain->get_storage() };
-		float hit_distance;
-		float hit_distance_prev;
-		if (zylann::voxel_raycast(
-					local_pos, local_dir, predicate, max_distance, hit_pos, prev_pos, hit_distance, hit_distance_prev
-			)) {
-			res.instantiate();
-			res->position = hit_pos;
-			res->previous_position = prev_pos;
-			res->distance_along_ray = hit_distance * to_world_scale;
-		}
-
-	} else {
-		RaycastPredicateSDF predicate{ _terrain->get_storage() };
-		float hit_distance;
-		float hit_distance_prev;
-		if (zylann::voxel_raycast(
-					local_pos, local_dir, predicate, max_distance, hit_pos, prev_pos, hit_distance, hit_distance_prev
-			)) {
-			res.instantiate();
-			res->position = hit_pos;
-			res->previous_position = prev_pos;
-			res->distance_along_ray = hit_distance * to_world_scale;
-		}
-	}
-
-	return res;
+	return raycast_generic_world(
+			_terrain->get_storage(),
+			_terrain->get_mesher(),
+			_terrain->get_global_transform(),
+			p_pos,
+			p_dir,
+			p_max_distance,
+			p_collision_mask,
+			0
+	);
 }
 
 void VoxelToolTerrain::copy(Vector3i pos, VoxelBuffer &dst, uint8_t channels_mask) const {

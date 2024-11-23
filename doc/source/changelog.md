@@ -14,6 +14,7 @@ Primarily developped with Godot 4.3.
 
 - `VoxelBlockyModelCube`: Added support for mesh rotation like `VoxelBlockyMesh` (prior to that, rotation buttons in the editor only swapped tiles around)
 - `VoxelInstanceGenerator`: Added `OnePerTriangle` emission mode
+- `VoxelToolLodTerrain`: Implemented raycast when the mesher is `VoxelMesherBlocky` or `VoxelMesherCubes`
 
 - Fixes
     - Fixed potential deadlock when using detail rendering and various editing features (thanks to lenesxy, issue #693)
@@ -38,6 +39,7 @@ Primarily developped with Godot 4.3.
     - `VoxelInstanceLibrary`: Items should no longer be accessed using generated properties (`item1`, `item2` etc). Use `get_item` instead.
     - `VoxelMesherTransvoxel`: Removed `deep_sampling` experimental option
     - `VoxelTool`: The `flat_direction` of `do_hemisphere` now points away from the flat side of the hemisphere (like its normal), instead of pointing towards it
+    - `VoxelToolLodTerrain`: `raycast` used to take coordinates in terrain space. It is now in world space, for consistency with `VoxelToolTerrain`.
 
 
 1.3 - 17/08/2024 - branch `1.3` - tag `v1.3.0`

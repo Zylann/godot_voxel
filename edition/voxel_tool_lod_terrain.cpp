@@ -19,6 +19,7 @@
 #include "../util/tasks/async_dependency_tracker.h"
 #include "../util/voxel_raycast.h"
 #include "funcs.h"
+#include "raycast.h"
 #include "voxel_mesh_sdf_gd.h"
 
 namespace zylann::voxel {
@@ -34,144 +35,22 @@ bool VoxelToolLodTerrain::is_area_editable(const Box3i &box) const {
 	return _terrain->get_storage().is_area_loaded(box);
 }
 
-// Binary search can be more accurate than linear regression because the SDF can be inaccurate in the first place.
-// An alternative would be to polygonize a tiny area around the middle-phase hit position.
-// `d1` is how far from `pos0` along `dir` the binary search will take place.
-// The segment may be adjusted internally if it does not contain a zero-crossing of the
-template <typename Volume_F>
-float approximate_distance_to_isosurface_binary_search(
-		const Volume_F &f,
-		Vector3 pos0,
-		Vector3 dir,
-		float d1,
-		int iterations
-) {
-	float d0 = 0.f;
-	float sdf0 = get_sdf_interpolated(f, pos0);
-	// The position given as argument may be a rough approximation coming from the middle-phase,
-	// so it can be slightly below the surface. We can adjust it a little so it is above.
-	for (int i = 0; i < 4 && sdf0 < 0.f; ++i) {
-		d0 -= 0.5f;
-		sdf0 = get_sdf_interpolated(f, pos0 + dir * d0);
-	}
-
-	float sdf1 = get_sdf_interpolated(f, pos0 + dir * d1);
-	for (int i = 0; i < 4 && sdf1 > 0.f; ++i) {
-		d1 += 0.5f;
-		sdf1 = get_sdf_interpolated(f, pos0 + dir * d1);
-	}
-
-	if ((sdf0 > 0) != (sdf1 > 0)) {
-		// Binary search
-		for (int i = 0; i < iterations; ++i) {
-			const float dm = 0.5f * (d0 + d1);
-			const float sdf_mid = get_sdf_interpolated(f, pos0 + dir * dm);
-
-			if ((sdf_mid > 0) != (sdf0 > 0)) {
-				sdf1 = sdf_mid;
-				d1 = dm;
-			} else {
-				sdf0 = sdf_mid;
-				d0 = dm;
-			}
-		}
-	}
-
-	// Pick distance closest to the surface
-	if (Math::abs(sdf0) < Math::abs(sdf1)) {
-		return d0;
-	} else {
-		return d1;
-	}
-}
-
 Ref<VoxelRaycastResult> VoxelToolLodTerrain::raycast(
 		Vector3 pos,
 		Vector3 dir,
 		float max_distance,
 		uint32_t collision_mask
 ) {
-	// TODO Transform input if the terrain is rotated
-	// TODO Implement reverse raycast? (going from inside ground to air, could be useful for undigging)
-
-	// TODO Optimization: voxel raycast uses `get_voxel` which is the slowest, but could be made faster.
-	// Instead, do a broad-phase on blocks. If a block's voxels need to be parsed, get all positions the ray could go
-	// through in that block, then query them all at once (better for bulk processing without going again through
-	// locking and data structures, and allows SIMD). Then check results in order.
-	// If no hit is found, carry on with next blocks.
-
-	struct RaycastPredicate {
-		VoxelData &data;
-
-		bool operator()(const VoxelRaycastState &rs) {
-			// This is not particularly optimized, but runs fast enough for player raycasts
-			VoxelSingleValue defval;
-			defval.f = constants::SDF_FAR_OUTSIDE;
-			const VoxelSingleValue v = data.get_voxel(rs.hit_position, VoxelBuffer::CHANNEL_SDF, defval);
-			return v.f < 0;
-		}
-	};
-
-	Ref<VoxelRaycastResult> res;
-
-	// We use grid-raycast as a middle-phase to roughly detect where the hit will be
-	RaycastPredicate predicate = { _terrain->get_storage() };
-	Vector3i hit_pos;
-	Vector3i prev_pos;
-	float hit_distance;
-	float hit_distance_prev;
-	// Voxels polygonized using marching cubes influence a region centered on their lower corner,
-	// and extend up to 0.5 units in all directions.
-	//
-	//   o--------o--------o
-	//   | A      |     B  |  Here voxel B is full, voxels A, C and D are empty.
-	//   |       xxx       |  Matter will show up at the lower corner of B due to interpolation.
-	//   |     xxxxxxx     |
-	//   o---xxxxxoxxxxx---o
-	//   |     xxxxxxx     |
-	//   |       xxx       |
-	//   | C      |     D  |
-	//   o--------o--------o
-	//
-	// `voxel_raycast` operates on a discrete grid of cubic voxels, so to account for the smooth interpolation,
-	// we may offset the ray so that cubes act as if they were centered on the filtered result.
-	const Vector3 offset(0.5, 0.5, 0.5);
-	if (voxel_raycast(pos + offset, dir, predicate, max_distance, hit_pos, prev_pos, hit_distance, hit_distance_prev)) {
-		// Approximate surface
-
-		float d = hit_distance;
-
-		if (_raycast_binary_search_iterations > 0) {
-			// This is not particularly optimized, but runs fast enough for player raycasts
-			struct VolumeSampler {
-				VoxelData &data;
-
-				inline float operator()(const Vector3i &pos) const {
-					VoxelSingleValue defval;
-					defval.f = constants::SDF_FAR_OUTSIDE;
-					const VoxelSingleValue value = data.get_voxel(pos, VoxelBuffer::CHANNEL_SDF, defval);
-					return value.f;
-				}
-			};
-
-			VolumeSampler sampler{ _terrain->get_storage() };
-			d = hit_distance_prev +
-					approximate_distance_to_isosurface_binary_search(
-							sampler,
-							pos + dir * hit_distance_prev,
-							dir,
-							hit_distance - hit_distance_prev,
-							_raycast_binary_search_iterations
-					);
-		}
-
-		res.instantiate();
-		res->position = hit_pos;
-		res->previous_position = prev_pos;
-		res->distance_along_ray = d;
-	}
-
-	return res;
+	return raycast_generic_world(
+			_terrain->get_storage(),
+			_terrain->get_mesher(),
+			_terrain->get_global_transform(),
+			pos,
+			dir,
+			max_distance,
+			collision_mask,
+			_raycast_binary_search_iterations
+	);
 }
 
 void VoxelToolLodTerrain::do_box(Vector3i begin, Vector3i end) {

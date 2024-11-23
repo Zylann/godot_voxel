@@ -62,7 +62,9 @@ bool voxel_raycast(
 
 	// Note : the grid is assumed to have 1-unit square cells.
 
+#ifdef DEBUG_ENABLED
 	ZN_ASSERT_RETURN_V(math::is_normalized(ray_direction), false); // Must be normalized
+#endif
 
 	/* Initialisation */
 
