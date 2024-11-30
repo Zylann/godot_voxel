@@ -622,6 +622,8 @@ void VoxelBlockyModel::_bind_methods() {
 			"get_collision_aabbs"
 	);
 	ADD_PROPERTY(
+			// TODO This collision mask might not actually be related to Godot standard physics.
+			// It is mostly used in voxel raycasts, box collision and maybe other things
 			PropertyInfo(Variant::INT, "collision_mask", PROPERTY_HINT_LAYERS_3D_PHYSICS),
 			"set_collision_mask",
 			"get_collision_mask"

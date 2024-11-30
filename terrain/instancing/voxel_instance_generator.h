@@ -124,6 +124,12 @@ public:
 	void set_noise_on_scale(float amount);
 	float get_noise_on_scale() const;
 
+	void set_voxel_material_filter_enabled(bool enabled);
+	bool is_voxel_material_filter_enabled() const;
+
+	void set_voxel_material_filter_mask(const uint32_t mask);
+	uint32_t get_voxel_material_filter_mask() const;
+
 	static inline int get_octant_index(const Vector3f pos, float half_block_size) {
 		return get_octant_index(pos.x > half_block_size, pos.y > half_block_size, pos.z > half_block_size);
 	}
@@ -140,6 +146,9 @@ public:
 private:
 	void _on_noise_changed();
 	void _on_noise_graph_changed();
+
+	PackedInt32Array _b_get_voxel_material_filter_array() const;
+	void _b_set_voxel_material_filter_array(PackedInt32Array material_indices);
 
 	static void _bind_methods();
 
@@ -161,6 +170,8 @@ private:
 	Ref<Noise> _noise;
 	Dimension _noise_dimension = DIMENSION_3D;
 	float _noise_on_scale = 0.f;
+	bool _voxel_material_filter_enabled = false;
+	uint32_t _voxel_material_filter_mask = 1;
 
 	// TODO Protect noise and noise graph members from multithreaded access
 

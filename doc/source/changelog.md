@@ -15,6 +15,7 @@ Primarily developped with Godot 4.3.
 - `VoxelBlockyModelCube`: Added support for mesh rotation like `VoxelBlockyMesh` (prior to that, rotation buttons in the editor only swapped tiles around)
 - `VoxelInstanceGenerator`: Added `OnePerTriangle` emission mode
 - `VoxelToolLodTerrain`: Implemented raycast when the mesher is `VoxelMesherBlocky` or `VoxelMesherCubes`
+- `VoxelInstanceGenerator`: Added ability to filter spawning by voxel texture indices, when using `VoxelMesherTransvoxel` with `texturing_mode` set to `4-blend over 16 textures`
 
 - Fixes
     - Fixed potential deadlock when using detail rendering and various editing features (thanks to lenesxy, issue #693)
