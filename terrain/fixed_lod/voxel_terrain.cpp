@@ -484,6 +484,7 @@ void VoxelTerrain::unview_mesh_block(Vector3i bpos, bool mesh_flag, bool collisi
 		if (block->mesh_viewers.get() == 0) {
 			// Mesh no longer required
 			block->drop_mesh();
+			block->set_visible(false);
 		}
 	}
 
@@ -492,6 +493,7 @@ void VoxelTerrain::unview_mesh_block(Vector3i bpos, bool mesh_flag, bool collisi
 		if (block->collision_viewers.get() == 0) {
 			// Collision no longer required
 			block->drop_collision();
+			block->set_collision_enabled(false);
 		}
 	}
 
@@ -1806,7 +1808,8 @@ void VoxelTerrain::process_meshing() {
 		task->mesh_block_position = mesh_block_pos;
 		task->lod_index = 0;
 		task->meshing_dependency = _meshing_dependency;
-		task->collision_hint = _generate_collisions;
+		task->require_visual = mesh_block->mesh_viewers.get() > 0;
+		task->collision_hint = _generate_collisions && mesh_block->collision_viewers.get() > 0;
 		task->data = _data;
 
 		// This iteration order is specifically chosen to match VoxelEngine and threaded access
@@ -1882,22 +1885,24 @@ void VoxelTerrain::apply_mesh_update(const VoxelEngine::BlockMeshOutput &ob) {
 	Ref<ArrayMesh> mesh;
 	Ref<Mesh> shadow_occluder_mesh;
 	StdVector<uint16_t> material_indices;
-	if (ob.has_mesh_resource) {
-		// The mesh was already built as part of the threaded task
-		mesh = ob.mesh;
-		shadow_occluder_mesh = ob.shadow_occluder_mesh;
-		// It can be empty
-		material_indices = std::move(ob.mesh_material_indices);
-	} else {
-		// Can't build meshes in threads, do it here
-		material_indices.clear();
-		mesh = build_mesh(
-				to_span_const(ob.surfaces.surfaces),
-				ob.surfaces.primitive_type,
-				ob.surfaces.mesh_flags,
-				material_indices
-		);
-		shadow_occluder_mesh = build_mesh(ob.surfaces.shadow_occluder);
+	if (ob.visual_was_required) {
+		if (ob.has_mesh_resource) {
+			// The mesh was already built as part of the threaded task
+			mesh = ob.mesh;
+			shadow_occluder_mesh = ob.shadow_occluder_mesh;
+			// It can be empty
+			material_indices = std::move(ob.mesh_material_indices);
+		} else {
+			// Can't build meshes in threads, do it here
+			material_indices.clear();
+			mesh = build_mesh(
+					to_span_const(ob.surfaces.surfaces),
+					ob.surfaces.primitive_type,
+					ob.surfaces.mesh_flags,
+					material_indices
+			);
+			shadow_occluder_mesh = build_mesh(ob.surfaces.shadow_occluder);
+		}
 	}
 	if (mesh.is_valid()) {
 		const unsigned int surface_count = mesh->get_surface_count();
@@ -1955,8 +1960,8 @@ void VoxelTerrain::apply_mesh_update(const VoxelEngine::BlockMeshOutput &ob) {
 		block->set_collision_mask(_collision_mask);
 	}
 
-	block->set_visible(true);
-	block->set_collision_enabled(true);
+	block->set_visible(block->mesh_viewers.get() > 0);
+	block->set_collision_enabled(gen_collisions);
 	block->set_parent_visible(is_visible());
 	block->set_parent_transform(get_global_transform());
 	// TODO We don't set MESH_UP_TO_DATE anywhere, but it seems to work?
@@ -2163,6 +2168,30 @@ void VoxelTerrain::process_debug_draw() {
 			);
 			dr.draw_box(parent_transform * local_transform, Color(1, 1, 1));
 		}
+	}
+
+	if (debug_get_draw_flag(DEBUG_DRAW_VISUAL_AND_COLLISION_BLOCKS)) {
+		const int mesh_block_size = get_mesh_block_size();
+		_mesh_map.for_each_block([&parent_transform, &dr, mesh_block_size](const VoxelMeshBlockVT &block) {
+			Color8 color;
+			const bool visual = block.is_visible();
+			const bool collision = block.is_collision_enabled();
+			if (visual && collision) {
+				color = Color8(255, 255, 0, 255);
+			} else if (visual) {
+				color = Color8(0, 255, 0, 255);
+			} else if (collision) {
+				color = Color8(255, 0, 0, 255);
+			} else {
+				return;
+			}
+			const Vector3i voxel_pos = block.position * mesh_block_size;
+			const Transform3D local_transform(
+					Basis().scaled(Vector3(mesh_block_size, mesh_block_size, mesh_block_size)), voxel_pos
+			);
+			const Transform3D t = parent_transform * local_transform;
+			dr.draw_box(t, color);
+		});
 	}
 
 	dr.end();
@@ -2426,6 +2455,7 @@ void VoxelTerrain::_bind_methods() {
 	);
 
 	ADD_DEBUG_DRAW_FLAG("debug_draw_volume_bounds", DEBUG_DRAW_VOLUME_BOUNDS);
+	ADD_DEBUG_DRAW_FLAG("debug_draw_visual_and_collision_blocks", DEBUG_DRAW_VISUAL_AND_COLLISION_BLOCKS);
 
 	ADD_PROPERTY(
 			PropertyInfo(Variant::BOOL, "debug_draw_shadow_occluders", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR),
