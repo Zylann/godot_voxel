@@ -133,12 +133,15 @@ void ComputeShaderResource::create_texture_2d(const Curve &curve) {
 	PackedByteArray data;
 	data.resize(width * sizeof(float));
 
+	const math::Interval curve_domain = zylann::godot::get_curve_domain(curve);
+	const float curve_domain_range = curve_domain.length();
+
 	{
 		uint8_t *wd8 = data.ptrw();
 		float *wd = (float *)wd8;
 
 		for (unsigned int i = 0; i < width; ++i) {
-			const float t = i / static_cast<float>(width);
+			const float t = curve_domain.min + curve_domain_range + i / static_cast<float>(width);
 			// TODO Thread-safety: `sample_baked` can actually be a WRITING method! The baked cache is lazily created
 			wd[i] = curve.sample_baked(t);
 			// print_line(String("X: {0}, Y: {1}").format(varray(t, wd[i])));
