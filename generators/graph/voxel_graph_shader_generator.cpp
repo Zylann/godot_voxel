@@ -80,7 +80,7 @@ CompilationResult generate_shader(
 	// 	return type.debug_only;
 	// });
 
-	expanded_graph.find_dependencies(terminal_nodes, order);
+	expanded_graph.find_dependencies(to_span(terminal_nodes), order);
 
 	StdStringStream main_ss;
 	StdStringStream lib_ss;

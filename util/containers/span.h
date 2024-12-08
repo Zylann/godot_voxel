@@ -103,14 +103,16 @@ public:
 		}
 	}
 
-	inline void copy_to(Span<T> other) const {
+	// Template because T could be const and TDst should not be
+	template <typename TDst>
+	inline void copy_to(Span<TDst> other) const {
 		ZN_ASSERT(other.size() == _size);
-		ZN_ASSERT(other._ptr != nullptr);
+		ZN_ASSERT(other.data() != nullptr);
 		// for (size_t i = 0; i < _size; ++i) {
 		// 	other._ptr[i] = _ptr[i];
 		// }
 		// Should compile to memcpy if T is simple enough
-		std::copy(_ptr, _ptr + _size, other._ptr);
+		std::copy(_ptr, _ptr + _size, other.data());
 	}
 
 	inline bool overlaps(const Span<T> other) const {

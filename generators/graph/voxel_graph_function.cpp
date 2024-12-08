@@ -715,7 +715,7 @@ uint64_t VoxelGraphFunction::get_output_graph_hash() const {
 	std::sort(terminal_nodes.begin(), terminal_nodes.end());
 
 	StdVector<uint32_t> order;
-	_graph.find_dependencies(terminal_nodes, order);
+	_graph.find_dependencies(to_span(terminal_nodes), order);
 
 	StdVector<uint64_t> node_hashes;
 	uint64_t hash = hash_djb2_one_64(0);
@@ -754,9 +754,7 @@ uint64_t VoxelGraphFunction::get_output_graph_hash() const {
 #endif
 
 void VoxelGraphFunction::find_dependencies(uint32_t node_id, StdVector<uint32_t> &out_dependencies) const {
-	StdVector<uint32_t> dst;
-	dst.push_back(node_id);
-	_graph.find_dependencies(dst, out_dependencies);
+	_graph.find_dependencies(to_single_element_span(node_id), out_dependencies);
 }
 
 const ProgramGraph &VoxelGraphFunction::get_graph() const {
