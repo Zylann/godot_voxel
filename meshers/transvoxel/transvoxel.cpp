@@ -1231,10 +1231,14 @@ inline void build_regular_mesh_dispatch_sd(
 			);
 		} break;
 
-		case VoxelBuffer::DEPTH_64_BIT:
-			ZN_PRINT_ERROR("Double-precision SDF channel is not supported");
-			// Not worth growing executable size for relatively pointless double-precision sdf
-			break;
+		case VoxelBuffer::DEPTH_64_BIT: {
+			static bool s_once = false;
+			if (s_once == false) {
+				s_once = true;
+				ZN_PRINT_ERROR("Double-precision SDF channel is not supported");
+				// Not worth growing executable size for relatively pointless double-precision sdf
+			}
+		} break;
 
 		default:
 			ZN_PRINT_ERROR("Invalid channel");
