@@ -1953,7 +1953,19 @@ void VoxelTerrain::apply_mesh_update(const VoxelEngine::BlockMeshOutput &ob) {
 	const bool gen_collisions = _generate_collisions && block->collision_viewers.get() > 0;
 	if (gen_collisions) {
 		Ref<Shape3D> collision_shape = make_collision_shape_from_mesher_output(ob.surfaces, **_mesher);
-		const bool debug_collisions = is_inside_tree() ? get_tree()->is_debugging_collisions_hint() : false;
+
+		bool debug_collisions = false;
+		if (is_inside_tree()) {
+			const SceneTree *scene_tree = get_tree();
+#if DEBUG_ENABLED
+			if (collision_shape.is_valid()) {
+				const Color debug_color = scene_tree->get_debug_collisions_color();
+				collision_shape->set_debug_color(debug_color);
+			}
+#endif
+			debug_collisions = scene_tree->is_debugging_collisions_hint();
+		}
+
 		block->set_collision_shape(collision_shape, debug_collisions, this, _collision_margin);
 
 		block->set_collision_layer(_collision_layer);

@@ -139,7 +139,7 @@ void VoxelMeshBlock::set_parent_transform(const Transform3D &parent_transform) {
 	}
 }
 
-void VoxelMeshBlock::set_collision_shape(Ref<Shape3D> shape, bool debug_collision, Node3D *node, float margin) {
+void VoxelMeshBlock::set_collision_shape(Ref<Shape3D> shape, bool debug_collision, const Node3D *node, float margin) {
 	ERR_FAIL_COND(node == nullptr);
 	ERR_FAIL_COND_MSG(node->get_world_3d() != _world, "Physics body and attached node must be from the same world");
 
