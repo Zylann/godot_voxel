@@ -287,6 +287,8 @@ void VoxelGeneratorMultipassCB::process_viewer_diff_internal(Box3i p_requested_b
 	const int column_height = internal->column_height_blocks;
 	load_requested_box.difference(prev_load_requested_box, [&map, column_height](Box2i new_box) {
 		{
+			ZN_PROFILE_SCOPE_NAMED("Enter box");
+
 			SpatialLock2D::Write swlock(map.spatial_lock, new_box);
 			MutexLock mlock(map.mutex);
 
@@ -308,9 +310,18 @@ void VoxelGeneratorMultipassCB::process_viewer_diff_internal(Box3i p_requested_b
 
 	// Blocks to unview
 	prev_load_requested_box.difference(load_requested_box, [&map, &task_scheduler](Box2i old_box) {
+		ZN_PROFILE_SCOPE_NAMED("Leave box (locking)");
+
+		// TODO This can be a bottleneck if the generator is slow and a player teleports far away while columns are
+		// still generating. Could take a second of freezing.
+		// Not sure of the best approach to this. Delegate this somehow to generation tasks so the main thread is not
+		// affected? Use a coroutine that keeps continuing from here and retries to lock? This is tricky because we need
+		// symmetry when entering new chunks to ensure consistency, which is also done on the main thread earlier
+		SpatialLock2D::Write swlock(map.spatial_lock, old_box);
+		MutexLock mlock(map.mutex);
+
 		{
-			SpatialLock2D::Write swlock(map.spatial_lock, old_box);
-			MutexLock mlock(map.mutex);
+			ZN_PROFILE_SCOPE_NAMED("Leave box");
 
 			old_box.for_each_cell_yx([&map, &task_scheduler](Vector2i cpos) {
 				auto it = map.columns.find(cpos);

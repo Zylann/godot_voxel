@@ -1477,36 +1477,42 @@ void VoxelTerrain::process_viewer_data_box_change(
 			_unloaded_saving_blocks[bts.position] = bts.voxels;
 		}
 
-		// Remove loading blocks (those were loaded and had their refcount reach zero)
-		for (const Vector3i bpos : tls_found_blocks_positions) {
-			emit_data_block_unloaded(bpos);
-			// TODO If they were loaded, why would they be in loading blocks?
-			// Probably in case we move so fast that blocks haven't even finished loading
-			_loading_blocks.erase(bpos);
+		{
+			ZN_PROFILE_SCOPE_NAMED("Unload signals");
+			// Remove loading blocks (those were loaded and had their refcount reach zero)
+			for (const Vector3i bpos : tls_found_blocks_positions) {
+				emit_data_block_unloaded(bpos);
+				// TODO If they were loaded, why would they be in loading blocks?
+				// Probably in case we move so fast that blocks haven't even finished loading
+				_loading_blocks.erase(bpos);
+			}
 		}
 
 		// Remove refcount from loading blocks, and cancel loading if it reaches zero
-		for (const Vector3i bpos : tls_missing_blocks) {
-			auto loading_block_it = _loading_blocks.find(bpos);
-			if (loading_block_it == _loading_blocks.end()) {
-				ZN_PRINT_VERBOSE("Request to unview a loading block that was never requested");
-				// Not expected, but fine I guess
-				return;
-			}
+		{
+			ZN_PROFILE_SCOPE_NAMED("Cancel missing blocks");
+			for (const Vector3i bpos : tls_missing_blocks) {
+				auto loading_block_it = _loading_blocks.find(bpos);
+				if (loading_block_it == _loading_blocks.end()) {
+					ZN_PRINT_VERBOSE("Request to unview a loading block that was never requested");
+					// Not expected, but fine I guess
+					return;
+				}
 
-			LoadingBlock &loading_block = loading_block_it->second;
-			loading_block.viewers.remove();
+				LoadingBlock &loading_block = loading_block_it->second;
+				loading_block.viewers.remove();
 
-			if (loading_block.viewers.get() == 0) {
-				// No longer want to load it
-				_loading_blocks.erase(loading_block_it);
+				if (loading_block.viewers.get() == 0) {
+					// No longer want to load it
+					_loading_blocks.erase(loading_block_it);
 
-				// TODO Do we really need that vector after all?
-				for (size_t i = 0; i < _blocks_pending_load.size(); ++i) {
-					if (_blocks_pending_load[i] == bpos) {
-						_blocks_pending_load[i] = _blocks_pending_load.back();
-						_blocks_pending_load.pop_back();
-						break;
+					// TODO Do we really need that vector after all?
+					for (size_t i = 0; i < _blocks_pending_load.size(); ++i) {
+						if (_blocks_pending_load[i] == bpos) {
+							_blocks_pending_load[i] = _blocks_pending_load.back();
+							_blocks_pending_load.pop_back();
+							break;
+						}
 					}
 				}
 			}
@@ -1533,33 +1539,37 @@ void VoxelTerrain::process_viewer_data_box_change(
 		});
 
 		// Schedule loading of missing blocks
-		for (const Vector3i missing_bpos : tls_missing_blocks) {
-			auto loading_block_it = _loading_blocks.find(missing_bpos);
+		{
+			ZN_PROFILE_SCOPE_NAMED("Gather missing blocks");
+			for (const Vector3i missing_bpos : tls_missing_blocks) {
+				auto loading_block_it = _loading_blocks.find(missing_bpos);
 
-			if (loading_block_it == _loading_blocks.end()) {
-				// First viewer to request it
-				LoadingBlock new_loading_block;
-				new_loading_block.viewers.add();
+				if (loading_block_it == _loading_blocks.end()) {
+					// First viewer to request it
+					LoadingBlock new_loading_block;
+					new_loading_block.viewers.add();
 
-				if (require_notifications) {
-					new_loading_block.viewers_to_notify.push_back(viewer_id);
-				}
+					if (require_notifications) {
+						new_loading_block.viewers_to_notify.push_back(viewer_id);
+					}
 
-				_loading_blocks.insert({ missing_bpos, new_loading_block });
-				_blocks_pending_load.push_back(missing_bpos);
+					_loading_blocks.insert({ missing_bpos, new_loading_block });
+					_blocks_pending_load.push_back(missing_bpos);
 
-			} else {
-				// More viewers
-				LoadingBlock &loading_block = loading_block_it->second;
-				loading_block.viewers.add();
+				} else {
+					// More viewers
+					LoadingBlock &loading_block = loading_block_it->second;
+					loading_block.viewers.add();
 
-				if (require_notifications) {
-					loading_block.viewers_to_notify.push_back(viewer_id);
+					if (require_notifications) {
+						loading_block.viewers_to_notify.push_back(viewer_id);
+					}
 				}
 			}
 		}
 
 		if (require_notifications) {
+			ZN_PROFILE_SCOPE_NAMED("Enter notifications");
 			// Notifications for blocks that were already loaded
 			for (unsigned int i = 0; i < tls_found_blocks.size(); ++i) {
 				const Vector3i bpos = tls_found_blocks_positions[i];
