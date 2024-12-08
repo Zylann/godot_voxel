@@ -163,7 +163,8 @@ void ProgramGraph::connect(PortLocation src, PortLocation dst) {
 	ZN_ASSERT_RETURN_MSG(src.port_index < src_node.outputs.size(), "Source port doesn't exist");
 	ZN_ASSERT_RETURN_MSG(dst.port_index < dst_node.inputs.size(), "Destination port doesn't exist");
 	ZN_ASSERT_RETURN_MSG(
-			dst_node.inputs[dst.port_index].connections.size() == 0, "Destination node's port is already connected");
+			dst_node.inputs[dst.port_index].connections.size() == 0, "Destination node's port is already connected"
+	);
 	src_node.outputs[src.port_index].connections.push_back(dst);
 	dst_node.inputs[dst.port_index].connections.push_back(src);
 }
