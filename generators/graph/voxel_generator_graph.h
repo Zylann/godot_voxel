@@ -90,6 +90,8 @@ public:
 	void bake_sphere_bumpmap(Ref<Image> im, float ref_radius, float min_height, float max_height);
 	void bake_sphere_normalmap(Ref<Image> im, float ref_radius, float strength);
 
+	int raycast_down_sdf_approx(const Vector3i ray_origin, const int ray_end_y, const int stride);
+
 	// Internal
 
 	pg::CompilationResult compile(bool debug);

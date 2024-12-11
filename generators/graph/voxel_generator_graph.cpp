@@ -7,6 +7,7 @@
 #include "../../util/godot/classes/image.h"
 #include "../../util/godot/classes/object.h"
 #include "../../util/godot/core/array.h"
+#include "../../util/godot/core/packed_arrays.h"
 #include "../../util/godot/core/string.h"
 #include "../../util/hash_funcs.h"
 #include "../../util/io/log.h"
@@ -1602,6 +1603,145 @@ void VoxelGeneratorGraph::bake_sphere_normalmap(Ref<Image> im, float ref_radius,
 
 	ProcessChunk pc(cache.state, **im, *runtime_ptr, strength, ref_radius);
 	for_chunks_2d(im->get_width(), im->get_height(), 32, pc);
+}
+
+struct MaybeHitY {
+	int y;
+	bool valid;
+};
+
+MaybeHitY raycast_vertical_sdf_approx_batch(
+		const int ray_origin_y,
+		Span<float> y_array,
+		Span<Span<float>> inputs_spans,
+		const int stride,
+		const pg::Runtime &runtime,
+		const unsigned int sdf_output_buffer_index,
+		pg::Runtime::State &state
+) {
+	{
+		int y = ray_origin_y;
+		for (float &dst_y : y_array) {
+			dst_y = y;
+			y -= stride;
+		}
+	}
+
+	// Generate a group of values
+	runtime.generate_set(state, inputs_spans, false, nullptr);
+	const pg::Runtime::Buffer &sd_output_buffer = state.get_buffer(sdf_output_buffer_index);
+	ZN_ASSERT(y_array.size() == sd_output_buffer.size);
+	Span<const float> out_sd_values(sd_output_buffer.data, sd_output_buffer.size);
+
+	// Analyse values
+	unsigned int hit_index = 0;
+	for (const float sd : out_sd_values) {
+		if (sd < 0.f) {
+			break;
+		}
+		++hit_index;
+	}
+
+	if (hit_index < out_sd_values.size()) {
+		// Found a hit
+		MaybeHitY hit;
+		hit.y = y_array[hit_index];
+		hit.valid = true;
+		return hit;
+	} else {
+		return MaybeHitY{ 0, false };
+	}
+}
+
+int VoxelGeneratorGraph::raycast_down_sdf_approx(const Vector3i ray_origin, const int ray_end_y, const int stride) {
+	// Casts a ray downwards through integer voxel positions, until a voxel is found generating with SDF < 0, or until
+	// `ray_end_y` is reached. If a hit is found, return its Y coordinate. If no hit is found, or if the first evaluated
+	// voxel is a hit, returns `ray_end_y`.
+	// Use case: determining where trees are growing when generating a specific chunk, relying on base terrain noise
+	// determinism, without actually accessing neighbor chunks, and when base terrain uses 3D noise instead of a pure
+	// heightmap.
+
+	// TODO Detect if the graph is purely 2D, and if it is, fast-track to a heightmap single evaluation?
+	// TODO Optimize 2D parts of the graph if possible
+	// TODO Use range analysis? Could be effective on such a restricted XZ range
+	// TODO Allow rational stride, for LOD use cases?
+
+	ZN_PROFILE_SCOPE();
+
+	ZN_ASSERT_RETURN_V(stride >= 1, ray_end_y);
+	// For sanity
+	ZN_ASSERT_RETURN_V(stride < 256, ray_end_y);
+
+	// Only works downwards and non-null distances.
+	ZN_ASSERT_RETURN_V(ray_origin.y > ray_end_y, ray_end_y);
+
+	std::shared_ptr<const Runtime> runtime_ptr;
+	{
+		RWLockRead rlock(_runtime_lock);
+		runtime_ptr = _runtime;
+	}
+
+	ZN_ASSERT_RETURN_V(runtime_ptr != nullptr, ray_end_y);
+	ZN_ASSERT_RETURN_V_MSG(
+			runtime_ptr->sdf_output_buffer_index != -1, ray_end_y, "This function only works with an SDF output."
+	);
+	ZN_ASSERT_RETURN_V_MSG(
+			runtime_ptr->sdf_input_index == -1,
+			ray_end_y,
+			"This function doesn't support graphs that have an SDF input."
+	);
+
+	// We'll compute batches of values instead of one by one, as the graph runtime prefers it.
+	// It's chosen such that the runtime could use SIMD.
+	static const unsigned int BATCH_COUNT = 16;
+
+	FixedArray<float, BATCH_COUNT> x_array;
+	FixedArray<float, BATCH_COUNT> y_array;
+	FixedArray<float, BATCH_COUNT> z_array;
+
+	const unsigned int distance = ray_origin.y - ray_end_y;
+	const unsigned int batch_count = math::ceildiv(distance, x_array.size());
+	// For sanity
+	ZN_ASSERT_RETURN_V(batch_count < 256, ray_end_y);
+
+	for (float &x : x_array) {
+		x = ray_origin.x;
+	}
+	for (float &z : z_array) {
+		z = ray_origin.z;
+	}
+
+	Cache &cache = get_tls_cache();
+
+	runtime_ptr->runtime.prepare_state(cache.state, x_array.size(), false);
+
+	FixedArray<Span<float>, 3> inputs;
+	inputs[0] = to_span(x_array);
+	inputs[1] = to_span(y_array);
+	inputs[2] = to_span(z_array);
+
+	int batch_start_y = ray_origin.y;
+	for (unsigned int batch_index = 0; batch_index < batch_count;
+		 ++batch_index, batch_start_y -= stride * y_array.size()) {
+		const MaybeHitY hit = raycast_vertical_sdf_approx_batch(
+				batch_start_y,
+				to_span(y_array),
+				to_span(inputs),
+				stride,
+				runtime_ptr->runtime,
+				runtime_ptr->sdf_output_buffer_index,
+				cache.state
+		);
+		if (hit.valid) {
+			if (stride == 1) {
+				return hit.y;
+			}
+			// TODO Affine search
+			// Evaluate voxels between hit.y and hit.y+stride
+		}
+	}
+
+	return ray_end_y;
 }
 
 bool VoxelGeneratorGraph::get_shader_source(ShaderSourceData &out_data) const {
