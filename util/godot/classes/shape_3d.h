@@ -18,11 +18,13 @@ using namespace godot;
 
 namespace zylann::godot {
 
+#ifdef DEBUG_ENABLED
 inline void set_shape_3d_debug_color(Shape3D &shape, const Color color) {
 #if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR >= 4
 	shape.set_debug_color(color);
 #endif
 }
+#endif
 
 } // namespace zylann::godot
 
