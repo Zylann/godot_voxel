@@ -88,6 +88,13 @@
 				The [code]scale[/code] parameter can be used to change contrast of images by scaling the SDF.
 			</description>
 		</method>
+		<method name="decompress_channel">
+			<return type="void" />
+			<param index="0" name="channel" type="int" />
+			<description>
+				If the given channel is currently compressed, decompresses it so that all voxel values are individually stored in full. This will use more memory.
+			</description>
+		</method>
 		<method name="downscale_to" qualifiers="const">
 			<return type="void" />
 			<param index="0" name="dst" type="VoxelBuffer" />
@@ -157,6 +164,7 @@
 		<method name="get_allocator" qualifiers="const">
 			<return type="int" enum="VoxelBuffer.Allocator" />
 			<description>
+				Gets which memory allocator is used by this buffer.
 			</description>
 		</method>
 		<method name="get_block_metadata" qualifiers="const">
@@ -225,9 +233,64 @@
 				Checks if every voxel within a channel has the same value.
 			</description>
 		</method>
-		<method name="optimize" is_deprecated="true" deprecated="Use [method compress_uniform_channels] instead.">
+		<method name="op_add_buffer_f">
 			<return type="void" />
+			<param index="0" name="other" type="VoxelBuffer" />
+			<param index="1" name="channel" type="int" enum="VoxelBuffer.ChannelId" />
 			<description>
+				Computes the sum of corresponding voxels between the current buffer and the other buffer, and stores the result in the current buffer. Voxels are interpreted as signed distances (usually the [constant VoxelBuffer.CHANNEL_SDF] channel).
+			</description>
+		</method>
+		<method name="op_max_buffer_f">
+			<return type="void" />
+			<param index="0" name="other" type="VoxelBuffer" />
+			<param index="1" name="channel" type="int" enum="VoxelBuffer.ChannelId" />
+			<description>
+				Computes the maximum of corresponding voxels between the current buffer and the other buffer, and stores the result in the current buffer. Voxels are interpreted as signed distances (usually the [constant VoxelBuffer.CHANNEL_SDF] channel).
+			</description>
+		</method>
+		<method name="op_min_buffer_f">
+			<return type="void" />
+			<param index="0" name="other" type="VoxelBuffer" />
+			<param index="1" name="channel" type="int" enum="VoxelBuffer.ChannelId" />
+			<description>
+				Computes the minimum of corresponding voxels between the current buffer and the other buffer, and stores the result in the current buffer. Voxels are interpreted as signed distances (usually the [constant VoxelBuffer.CHANNEL_SDF] channel).
+			</description>
+		</method>
+		<method name="op_mul_buffer_f">
+			<return type="void" />
+			<param index="0" name="other" type="VoxelBuffer" />
+			<param index="1" name="channel" type="int" enum="VoxelBuffer.ChannelId" />
+			<description>
+				Computes the multiplication of corresponding voxels between the current buffer and the other buffer, and stores the result in the current buffer. Voxels are interpreted as signed distances (usually the [constant VoxelBuffer.CHANNEL_SDF] channel).
+			</description>
+		</method>
+		<method name="op_mul_value_f">
+			<return type="void" />
+			<param index="0" name="other" type="float" />
+			<param index="1" name="channel" type="int" enum="VoxelBuffer.ChannelId" />
+			<description>
+				Multiplies every voxels in the buffer by the given value. Voxels are interpreted as signed distances (usually the [constant VoxelBuffer.CHANNEL_SDF] channel).
+			</description>
+		</method>
+		<method name="op_select_less_src_f_dst_i_values">
+			<return type="void" />
+			<param index="0" name="src" type="VoxelBuffer" />
+			<param index="1" name="src_channel" type="int" enum="VoxelBuffer.ChannelId" />
+			<param index="2" name="threshold" type="float" />
+			<param index="3" name="value_if_less" type="int" />
+			<param index="4" name="value_if_more" type="int" />
+			<param index="5" name="dst_channel" type="int" enum="VoxelBuffer.ChannelId" />
+			<description>
+				For every voxel in the source buffer, if the value is lower than a threshold, set the corresponding voxel in the current buffer to a specific integer value, or another value otherwise. Voxels in the source buffer are interpreted as signed distances (usually the [constant VoxelBuffer.CHANNEL_SDF] channel).
+			</description>
+		</method>
+		<method name="op_sub_buffer_f">
+			<return type="void" />
+			<param index="0" name="other" type="VoxelBuffer" />
+			<param index="1" name="channel" type="int" enum="VoxelBuffer.ChannelId" />
+			<description>
+				Computes the subtraction of corresponding voxels between the current buffer and the other buffer ([code]current - other[/code]), and stores the result in the current buffer. Voxels are interpreted as signed distances (usually the [constant VoxelBuffer.CHANNEL_SDF] channel).
 			</description>
 		</method>
 		<method name="remap_values">
@@ -346,12 +409,15 @@
 			How many compression modes there are.
 		</constant>
 		<constant name="ALLOCATOR_DEFAULT" value="0" enum="Allocator">
+			Uses Godot's default memory allocator (at time of writing, it is [code]malloc[/code]). Preferred for occasional buffers with uncommon size, or very large size.
 		</constant>
 		<constant name="ALLOCATOR_POOL" value="1" enum="Allocator">
+			Uses a pool allocator. Can be faster than the default allocator buffers are created very frequently with similar size. This memory will remain allocated after use, under the assumption that other buffers will need it soon after. Does not support very large buffers (greater than 2 megabytes)
 		</constant>
 		<constant name="ALLOCATOR_COUNT" value="2" enum="Allocator">
 		</constant>
 		<constant name="MAX_SIZE" value="65535">
+			Maximum size a buffer can have when serialized. Buffers that contain uniform-compressed voxels can reach it, but in practice, the limit is much lower and depends on available memory.
 		</constant>
 	</constants>
 </class>

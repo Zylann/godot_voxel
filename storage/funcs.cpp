@@ -33,8 +33,8 @@ void copy_3d_region_zxy(
 		ZN_PRINT_ERROR("Different overlapping spans are not allowed");
 		return;
 	}
-	ZN_ASSERT_RETURN(Vector3iUtil::get_volume(area_size) * item_size <= dst.size());
-	ZN_ASSERT_RETURN(Vector3iUtil::get_volume(area_size) * item_size <= src.size());
+	ZN_ASSERT_RETURN(Vector3iUtil::get_volume_u64(area_size) * item_size <= dst.size());
+	ZN_ASSERT_RETURN(Vector3iUtil::get_volume_u64(area_size) * item_size <= src.size());
 #endif
 
 	if (area_size == src_size && area_size == dst_size) {

@@ -1,6 +1,7 @@
 #ifndef VOXEL_GRAPH_RUNTIME_H
 #define VOXEL_GRAPH_RUNTIME_H
 
+#include "../../util/containers/fixed_array.h"
 #include "../../util/containers/span.h"
 #include "../../util/containers/std_unordered_map.h"
 #include "../../util/containers/std_vector.h"
@@ -135,6 +136,16 @@ public:
 			return ranges[address];
 		}
 
+		inline const math::Interval &get_range_const_ref(uint16_t address) const {
+			// TODO Just for convenience because STL bound checks aren't working in Godot 3
+			ZN_ASSERT(address < buffers.size());
+			return ranges[address];
+		}
+
+		inline uint32_t get_buffer_size() const {
+			return buffer_size;
+		}
+
 		void clear() {
 			buffer_size = 0;
 			// buffer_capacity = 0;
@@ -206,7 +217,11 @@ public:
 	void generate_single(State &state, Span<float> inputs, const ExecutionMap *execution_map) const;
 
 	void generate_set(
-			State &state, Span<Span<float>> p_inputs, bool skip_outer_group, const ExecutionMap *p_execution_map) const;
+			State &state,
+			Span<Span<float>> p_inputs,
+			bool skip_outer_group,
+			const ExecutionMap *p_execution_map
+	) const;
 
 #ifdef DEBUG_ENABLED
 	void debug_print_operations();
@@ -234,8 +249,12 @@ public:
 	// Call this after `analyze_range` if you intend to actually generate a set or single values in the area.
 	// This allows to use the execution map optimization, until you choose another area.
 	// (i.e when using this, querying values outside of the analyzed area may be invalid)
-	void generate_optimized_execution_map(const State &state, ExecutionMap &execution_map,
-			Span<const unsigned int> required_outputs, bool debug) const;
+	void generate_optimized_execution_map(
+			const State &state,
+			ExecutionMap &execution_map,
+			Span<const unsigned int> required_outputs,
+			bool debug
+	) const;
 
 	// Convenience function to require all outputs
 	void generate_optimized_execution_map(const State &state, ExecutionMap &execution_map, bool debug) const;
@@ -254,8 +273,11 @@ public:
 
 	class _ProcessContext {
 	public:
-		inline _ProcessContext(const Span<const uint16_t> inputs, const Span<const uint16_t> outputs,
-				const Span<const uint8_t> params) :
+		inline _ProcessContext(
+				const Span<const uint16_t> inputs,
+				const Span<const uint16_t> outputs,
+				const Span<const uint8_t> params
+		) :
 				_inputs(inputs), _outputs(outputs), _params(params) {}
 
 		template <typename T>
@@ -284,8 +306,13 @@ public:
 	// Functions usable by node implementations during execution
 	class ProcessBufferContext : public _ProcessContext {
 	public:
-		inline ProcessBufferContext(const Span<const uint16_t> inputs, const Span<const uint16_t> outputs,
-				const Span<const uint8_t> params, Span<Buffer> buffers, bool using_execution_map) :
+		inline ProcessBufferContext(
+				const Span<const uint16_t> inputs,
+				const Span<const uint16_t> outputs,
+				const Span<const uint8_t> params,
+				Span<Buffer> buffers,
+				bool using_execution_map
+		) :
 				_ProcessContext(inputs, outputs, params),
 				_buffers(buffers),
 				_using_execution_map(using_execution_map) {}
@@ -298,8 +325,11 @@ public:
 			// because it won't be filled with relevant data. If it is still used,
 			// then the result can be completely different from what the range analysis predicted.
 			const Buffer &b = _buffers[address];
-			ERR_FAIL_COND_V_MSG(_using_execution_map && !b.is_binding && b.local_users_count == 0, b,
-					"buffer marked as 'ignored' is still being used");
+			ERR_FAIL_COND_V_MSG(
+					_using_execution_map && !b.is_binding && b.local_users_count == 0,
+					b,
+					"buffer marked as 'ignored' is still being used"
+			);
 #endif
 			return _buffers[address];
 		}
@@ -325,8 +355,13 @@ public:
 	// Functions usable by node implementations during range analysis
 	class RangeAnalysisContext : public _ProcessContext {
 	public:
-		inline RangeAnalysisContext(const Span<const uint16_t> inputs, const Span<const uint16_t> outputs,
-				const Span<const uint8_t> params, Span<math::Interval> ranges, Span<Buffer> buffers) :
+		inline RangeAnalysisContext(
+				const Span<const uint16_t> inputs,
+				const Span<const uint16_t> outputs,
+				const Span<const uint8_t> params,
+				Span<math::Interval> ranges,
+				Span<Buffer> buffers
+		) :
 				_ProcessContext(inputs, outputs, params), _ranges(ranges), _buffers(buffers) {}
 
 		inline const math::Interval get_input(uint32_t i) const {
@@ -356,8 +391,14 @@ public:
 private:
 	struct Program;
 
-	static CompilationResult compile_preprocessed_graph(Program &program, const ProgramGraph &graph,
-			unsigned int input_count, Span<const uint32_t> input_node_ids, bool debug, const NodeTypeDB &type_db);
+	static CompilationResult compile_preprocessed_graph(
+			Program &program,
+			const ProgramGraph &graph,
+			unsigned int input_count,
+			Span<const uint32_t> input_node_ids,
+			bool debug,
+			const NodeTypeDB &type_db
+	);
 
 	bool is_operation_constant(const State &state, uint16_t op_address) const;
 

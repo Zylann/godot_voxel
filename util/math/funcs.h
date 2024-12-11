@@ -12,6 +12,7 @@ using namespace godot;
 
 #include "constants.h"
 #include <cmath>
+#include <type_traits>
 
 namespace zylann::math {
 
@@ -19,41 +20,52 @@ namespace zylann::math {
 
 template <typename T>
 inline constexpr T min(const T a, const T b) {
+	// Godot's vector types have an operator<, which means if the wrong headers are included, this function could be
+	// used instead of the dedicated component-wise one, without causing errors. So we have to guard against that silent
+	// ambiguity issue.
+	static_assert(std::is_scalar<T>::value);
 	return a < b ? a : b;
 }
 
 template <typename T>
 inline constexpr T max(const T a, const T b) {
+	static_assert(std::is_scalar<T>::value);
 	return a > b ? a : b;
 }
 
 template <typename T>
 inline T min(const T a, const T b, const T c, const T d) {
+	static_assert(std::is_scalar<T>::value);
 	return min(min(a, b), min(c, d));
 }
 
 template <typename T>
 inline T max(const T a, const T b, const T c, const T d) {
+	static_assert(std::is_scalar<T>::value);
 	return max(max(a, b), max(c, d));
 }
 
 template <typename T>
 inline T min(const T a, const T b, const T c, const T d, const T e, const T f) {
+	static_assert(std::is_scalar<T>::value);
 	return min(min(min(a, b), min(c, d)), min(e, f));
 }
 
 template <typename T>
 inline T max(const T a, const T b, const T c, const T d, const T e, const T f) {
+	static_assert(std::is_scalar<T>::value);
 	return max(max(max(a, b), max(c, d)), max(e, f));
 }
 
 template <typename T>
 inline T min(const T a, const T b, const T c, const T d, const T e, const T f, const T g, const T h) {
+	static_assert(std::is_scalar<T>::value);
 	return min(min(a, b, c, d), min(e, f, g, h));
 }
 
 template <typename T>
 inline T max(const T a, const T b, const T c, const T d, const T e, const T f, const T g, const T h) {
+	static_assert(std::is_scalar<T>::value);
 	return max(max(a, b, c, d), max(e, f, g, h));
 }
 
@@ -79,6 +91,7 @@ inline double maxf(double a, double b) {
 
 template <typename T>
 inline constexpr T clamp(const T x, const T min_value, const T max_value) {
+	static_assert(std::is_scalar<T>::value);
 	// TODO Enforce T as being numeric
 	return min(max(x, min_value), max_value);
 }
@@ -424,7 +437,7 @@ inline void remap_intervals_to_linear_params(
 // The result of the right-shift operator `>>` is implementation-defined until C++20, where it performs arithmetic
 // shift. This function makes it explicit to handle eventual issues before C++20.
 // https://en.cppreference.com/w/cpp/language/operator_arithmetic#Built-in_bitwise_shift_operators
-inline int32_t arithmetic_rshift(int32_t a, unsigned int b) {
+inline constexpr int32_t arithmetic_rshift(int32_t a, unsigned int b) {
 	// MSVC documents right shift as arithmetic.
 	// https://learn.microsoft.com/en-us/cpp/cpp/left-shift-and-right-shift-operators-input-and-output?view=msvc-170#right-shifts
 
@@ -434,6 +447,79 @@ inline int32_t arithmetic_rshift(int32_t a, unsigned int b) {
 	static_assert(-4 >> 1 == -2, "Signed right-shift is not arithmetic, patch needed to support current compiler.");
 
 	return a >> b;
+}
+
+template <unsigned int NBits>
+inline constexpr int32_t sign_extend_to_32bit(int32_t i) {
+	static_assert(NBits > 0 && NBits < 32);
+	struct S {
+		int32_t v : NBits;
+	};
+	return S{ i }.v;
+}
+
+template <typename T>
+inline T abs(T a) {
+	return Math::abs(a);
+}
+
+template <typename T>
+inline T lerp(T a, T b, T t) {
+	static_assert(std::is_floating_point<T>::value);
+	return Math::lerp(a, b, t);
+}
+
+template <typename T>
+inline T sqrt(T x) {
+	static_assert(std::is_floating_point<T>::value);
+	return Math::sqrt(x);
+}
+
+template <typename T>
+inline T sin(T x) {
+	static_assert(std::is_floating_point<T>::value);
+	return Math::sin(x);
+}
+
+template <typename T>
+inline T cos(T x) {
+	static_assert(std::is_floating_point<T>::value);
+	return Math::cos(x);
+}
+
+template <typename T>
+inline T atan(T x) {
+	static_assert(std::is_floating_point<T>::value);
+	return Math::atan(x);
+}
+
+template <typename T>
+inline T atan2(T y, T x) {
+	static_assert(std::is_floating_point<T>::value);
+	return Math::atan2(y, x);
+}
+
+template <typename T>
+inline T floor(T x) {
+	static_assert(std::is_floating_point<T>::value);
+	return Math::floor(x);
+}
+
+template <typename T>
+inline T pow(T x, T y) {
+	static_assert(std::is_floating_point<T>::value);
+	return Math::pow(x, y);
+}
+
+inline uint64_t multiply_check_overflow_u64(const uint64_t a, const uint64_t b) {
+	const uint64_t r = a * b;
+#ifdef DEV_ENABLED
+	if (a != 0 && r / a != b) {
+		ZN_PRINT_ERROR("Multiplication overflow");
+		return 0;
+	}
+#endif
+	return r;
 }
 
 } // namespace zylann::math

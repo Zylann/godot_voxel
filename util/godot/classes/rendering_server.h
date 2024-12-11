@@ -27,6 +27,8 @@ struct ShaderParameterInfo {
 
 void get_shader_parameter_list(const RID &shader_rid, StdVector<ShaderParameterInfo> &out_parameters);
 
+String get_current_rendering_method();
+
 } // namespace zylann::godot
 
 #endif // ZN_GODOT_RENDERING_SERVER_H

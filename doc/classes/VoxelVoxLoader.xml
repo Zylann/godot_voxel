@@ -1,19 +1,26 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="VoxelVoxLoader" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
+		Utility class to load voxels from MagicaVoxel files
 	</brief_description>
 	<description>
 	</description>
 	<tutorials>
 	</tutorials>
 	<methods>
-		<method name="load_from_file">
+		<method name="load_from_file" qualifiers="static">
 			<return type="int" />
 			<param index="0" name="fpath" type="String" />
 			<param index="1" name="voxels" type="VoxelBuffer" />
 			<param index="2" name="palette" type="VoxelColorPalette" />
 			<param index="3" name="dst_channel" type="int" enum="VoxelBuffer.ChannelId" default="2" />
 			<description>
+				Loads voxels from the first model found in a vox file and stores it in a single [VoxelBuffer]. Other models that might be in the file are not loaded. Transform of the model is not considered.
+				Data will be stored in one channel of the provided buffer. 64-bit depth channel is not supported.
+				If palette is provided, it will also load the color palette from the file and voxels will be indices pointing into it. 8-bit channel depth is optimal (as MagicaVoxel voxels use 8-bit indices), but 16-bit and 32-bit are also supported. 
+				If palette is not provided (null), the loader will attempt to store colors bit-packed directly into the voxels, according to the depth the provided buffer has (2-bit per component if 8-bit, 4-bit per component if 16-bit, 8-bit per component if 32-bit).
+				Returns an [Error] enum code to tell if loading succeeded or not.
+				Note: MagicaVoxel uses a different axis convention than Godot: X is right, Y is forwards and Z is up. Voxel coordinates will be the same when looked up in the buffer, but they mean different location in space.
 			</description>
 		</method>
 	</methods>

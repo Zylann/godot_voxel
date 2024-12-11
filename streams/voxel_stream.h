@@ -1,9 +1,11 @@
 #ifndef VOXEL_STREAM_H
 #define VOXEL_STREAM_H
 
+#include "../constants/voxel_constants.h"
 #include "../util/containers/span.h"
 #include "../util/containers/std_vector.h"
 #include "../util/godot/classes/resource.h"
+#include "../util/math/box3i.h"
 #include "../util/math/vector3.h"
 #include "../util/math/vector3i.h"
 #include "../util/memory/memory.h"
@@ -29,6 +31,11 @@ class VoxelBuffer;
 class VoxelStream : public Resource {
 	GDCLASS(VoxelStream, Resource)
 public:
+	static const int32_t DEFAULT_MIN_SUPPORTED_BLOCK_COORDINATE =
+			-math::arithmetic_rshift(constants::MAX_VOLUME_EXTENT, constants::DEFAULT_BLOCK_SIZE_PO2);
+	static const int32_t DEFAULT_MAX_SUPPORTED_BLOCK_COORDINATE =
+			math::arithmetic_rshift(constants::MAX_VOLUME_EXTENT, constants::DEFAULT_BLOCK_SIZE_PO2);
+
 	VoxelStream();
 	~VoxelStream();
 
@@ -111,6 +118,8 @@ public:
 	// Gets at how many levels of details blocks can be queried.
 	virtual int get_lod_count() const;
 
+	virtual Box3i get_supported_block_range() const;
+
 	// Should generated blocks be saved immediately? If not, they will be saved only when modified.
 	// If this is enabled, generated blocks will immediately be considered edited and will be saved to the stream.
 	// Warning: this is incompatible with non-destructive workflows such as modifiers.
@@ -128,13 +137,10 @@ public:
 private:
 	static void _bind_methods();
 
-	ResultCode _b_load_voxel_block(Ref<godot::VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod_index);
-	void _b_save_voxel_block(Ref<godot::VoxelBuffer> buffer, Vector3i origin_in_voxels, int lod_index);
+	ResultCode _b_load_voxel_block(Ref<godot::VoxelBuffer> out_buffer, Vector3i block_position, int lod_index);
+	void _b_save_voxel_block(Ref<godot::VoxelBuffer> buffer, Vector3i block_position, int lod_index);
 	int _b_get_used_channels_mask() const;
 	Vector3 _b_get_block_size() const;
-	// Deprecated
-	ResultCode _b_emerge_block(Ref<godot::VoxelBuffer> out_buffer, Vector3 origin_in_voxels, int lod_index);
-	void _b_immerge_block(Ref<godot::VoxelBuffer> buffer, Vector3 origin_in_voxels, int lod_index);
 
 	struct Parameters {
 		bool save_generator_output = false;

@@ -221,6 +221,7 @@ VoxelAboutWindow::VoxelAboutWindow() {
 						"[b]Gold supporters:[/b]\n"
 						"Aaron Franke (aaronfranke)\n"
 						"Bewildering\n"
+						"Eerrikki\n"
 						"\n"
 						"[b]Silver supporters:[/b]\n"
 						"TheConceptBoy\n"
@@ -254,7 +255,8 @@ VoxelAboutWindow::VoxelAboutWindow() {
 						"SummitCollie\n"
 						"nulshift\n"
 						"ddel-rio (Daniel del Río Román)\n"
-						"Cyberphinx";
+						"Cyberphinx\n"
+						"Mia (Tigxette)";
 	{
 		Dictionary d;
 

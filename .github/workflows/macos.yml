@@ -24,15 +24,15 @@ jobs:
         arch: [x86_64, arm64]
         target: [editor, template_release]
         include:
-          - name: 4.2 Editor
+          - name: 4.3 Editor
             target: editor
             executable_name: godot.macos.editor
-            godot_base_branch: "4.2.2-stable"
+            godot_base_branch: "4.3-stable"
 
-          - name: 4.2 Template
+          - name: 4.3 Template
             target: template_release
             executable_name: godot.macos.template_release
-            godot_base_branch: "4.2.2-stable"
+            godot_base_branch: "4.3-stable"
 
     steps:
       # Clone Godot
@@ -125,7 +125,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: godotengine/godot
-          ref: 4.2
+          ref: "4.3-stable"
      
       - uses: actions/download-artifact@v4
         with:
@@ -136,27 +136,27 @@ jobs:
       # Use `ditto` # macos specific archiver to workaround https://github.com/actions/upload-artifact/issues/38
       - name: Create editor .app bundle
         run: | 
-          cp -r misc/dist/macos_tools.app ./Godot.app
-          mkdir -p Godot.app/Contents/MacOS
-          cp bin/godot.macos.editor.universal Godot.app/Contents/MacOS/Godot
-          chmod +x Godot.app/Contents/MacOS/Godot
-          codesign --force --timestamp --options=runtime --entitlements misc/dist/macos/editor.entitlements -s - Godot.app
-          ditto -c -k --sequesterRsrc --keepParent Godot.app Godot.app.zip
+          cp -r misc/dist/macos_tools.app ./godot.macos.editor.app
+          mkdir -p godot.macos.editor.app/Contents/MacOS
+          cp bin/godot.macos.editor.universal godot.macos.editor.app/Contents/MacOS/Godot
+          chmod +x godot.macos.editor.app/Contents/MacOS/Godot
+          codesign --force --timestamp --options=runtime --entitlements misc/dist/macos/editor.entitlements -s - godot.macos.editor.app
+          ditto -c -k --sequesterRsrc --keepParent godot.macos.editor.app godot.macos.editor.app.zip
           
       - name: Create macos template
         run: |
-          cp -r misc/dist/macos_template.app .
-          mkdir -p macos_template.app/Contents/MacOS
-          cp bin/godot.macos.template_release.universal macos_template.app/Contents/MacOS/godot_macos_release.universal
-          chmod +x macos_template.app/Contents/MacOS/godot_macos*
-          ditto -c -k --sequesterRsrc --keepParent macos_template.app macos_template.app.zip
+          cp -r misc/dist/macos_template.app ./godot.macos.template.app
+          mkdir -p godot.macos.template.app/Contents/MacOS
+          cp bin/godot.macos.template_release.universal godot.macos.template.app/Contents/MacOS/godot_macos_release.universal
+          chmod +x godot.macos.template.app/Contents/MacOS/godot_macos*
+          ditto -c -k --sequesterRsrc --keepParent godot.macos.template.app godot.macos.template.app.zip
       
       - uses: actions/upload-artifact@v4
         with:
-          name: Godot.app
-          path: Godot.app.zip
+          name: godot.macos.editor.app
+          path: godot.macos.editor.app.zip
 
       - uses: actions/upload-artifact@v4
         with:
-          name: macos_template
-          path: macos_template.app.zip
+          name: godot.macos.template.app
+          path: godot.macos.template.app.zip

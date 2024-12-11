@@ -256,8 +256,8 @@ void VoxelToolMultipassGenerator::do_path(Span<const Vector3> positions, Span<co
 		const float r1 = radii[point_index];
 
 		ops::DoShapeChunked<ops::SdfRoundCone, GridAccess> op;
-		op.shape.cone.a = p0;
-		op.shape.cone.b = p1;
+		op.shape.cone.a = to_vec3f(p0);
+		op.shape.cone.b = to_vec3f(p1);
 		op.shape.cone.r1 = r0;
 		op.shape.cone.r2 = r1;
 		op.box = op.shape.get_box().padded(margin);

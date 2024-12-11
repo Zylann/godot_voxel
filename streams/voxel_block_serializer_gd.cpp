@@ -26,7 +26,11 @@ int VoxelBlockSerializer::serialize_to_stream_peer(Ref<StreamPeer> peer, Ref<Vox
 }
 
 void VoxelBlockSerializer::deserialize_from_stream_peer(
-		Ref<StreamPeer> peer, Ref<VoxelBuffer> voxel_buffer, int size, bool decompress) {
+		Ref<StreamPeer> peer,
+		Ref<VoxelBuffer> voxel_buffer,
+		int size,
+		bool decompress
+) {
 	ERR_FAIL_COND(voxel_buffer.is_null());
 	ERR_FAIL_COND(peer.is_null());
 	ERR_FAIL_COND(size <= 0);
@@ -67,7 +71,10 @@ PackedByteArray VoxelBlockSerializer::serialize_to_byte_array(Ref<VoxelBuffer> v
 }
 
 void VoxelBlockSerializer::deserialize_from_byte_array(
-		PackedByteArray bytes, Ref<VoxelBuffer> voxel_buffer, bool decompress) {
+		PackedByteArray bytes,
+		Ref<VoxelBuffer> voxel_buffer,
+		bool decompress
+) {
 	ERR_FAIL_COND(voxel_buffer.is_null());
 	ERR_FAIL_COND(bytes.size() == 0);
 
@@ -89,16 +96,27 @@ void VoxelBlockSerializer::_bind_methods() {
 	// - Convenience, if you do write to a peer already
 	// - Avoiding an allocation. When serializing to a PackedByteArray, the Godot API incurs allocating that
 	// temporary array every time.
-	ClassDB::bind_static_method(cname, D_METHOD("serialize_to_stream_peer", "peer", "voxel_buffer", "compress"),
-			&VoxelBlockSerializer::serialize_to_stream_peer);
-	ClassDB::bind_static_method(cname,
+	ClassDB::bind_static_method(
+			cname,
+			D_METHOD("serialize_to_stream_peer", "peer", "voxel_buffer", "compress"),
+			&VoxelBlockSerializer::serialize_to_stream_peer
+	);
+	ClassDB::bind_static_method(
+			cname,
 			D_METHOD("deserialize_from_stream_peer", "peer", "voxel_buffer", "size", "decompress"),
-			&VoxelBlockSerializer::deserialize_from_stream_peer);
+			&VoxelBlockSerializer::deserialize_from_stream_peer
+	);
 
-	ClassDB::bind_static_method(cname, D_METHOD("serialize_to_byte_array", "voxel_buffer", "compress"),
-			&VoxelBlockSerializer::serialize_to_byte_array);
-	ClassDB::bind_static_method(cname, D_METHOD("deserialize_from_byte_array", "bytes", "voxel_buffer", "decompress"),
-			&VoxelBlockSerializer::deserialize_from_byte_array);
+	ClassDB::bind_static_method(
+			cname,
+			D_METHOD("serialize_to_byte_array", "voxel_buffer", "compress"),
+			&VoxelBlockSerializer::serialize_to_byte_array
+	);
+	ClassDB::bind_static_method(
+			cname,
+			D_METHOD("deserialize_from_byte_array", "bytes", "voxel_buffer", "decompress"),
+			&VoxelBlockSerializer::deserialize_from_byte_array
+	);
 }
 
 } // namespace zylann::voxel::godot

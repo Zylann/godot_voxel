@@ -60,6 +60,7 @@ Thanks for your support :)
 ```
 Aaron Franke (aaronfranke)
 Bewildering
+Eerrikki
 ```
 
 ### Silver supporters
@@ -102,6 +103,7 @@ SummitCollie
 nulshift
 ddel-rio (Daniel del Río Román)
 Cyberphinx
+Mia (Tigxette)
 ```
 
 

@@ -129,19 +129,30 @@ public:
 	void remove_node(uint32_t node_id);
 
 	uint32_t create_function_node(
-			Ref<VoxelGraphFunction> func, Vector2 position = Vector2(), uint32_t p_id = ProgramGraph::NULL_ID);
+			Ref<VoxelGraphFunction> func,
+			Vector2 position = Vector2(),
+			uint32_t p_id = ProgramGraph::NULL_ID
+	);
 
 	// Checks if the specified connection can be created
-	bool can_connect(
-			uint32_t src_node_id, uint32_t src_port_index, uint32_t dst_node_id, uint32_t dst_port_index) const;
+	bool can_connect(uint32_t src_node_id, uint32_t src_port_index, uint32_t dst_node_id, uint32_t dst_port_index)
+			const;
 
 	// Checks if the specified connection is valid (without considering existing connections)
 	bool is_valid_connection(
-			uint32_t src_node_id, uint32_t src_port_index, uint32_t dst_node_id, uint32_t dst_port_index) const;
+			uint32_t src_node_id,
+			uint32_t src_port_index,
+			uint32_t dst_node_id,
+			uint32_t dst_port_index
+	) const;
 
 	void add_connection(uint32_t src_node_id, uint32_t src_port_index, uint32_t dst_node_id, uint32_t dst_port_index);
 	void remove_connection(
-			uint32_t src_node_id, uint32_t src_port_index, uint32_t dst_node_id, uint32_t dst_port_index);
+			uint32_t src_node_id,
+			uint32_t src_port_index,
+			uint32_t dst_node_id,
+			uint32_t dst_port_index
+	);
 	void get_connections(StdVector<ProgramGraph::Connection> &p_connections) const;
 
 	// Finds which source port is connected to the given destination.
@@ -216,8 +227,8 @@ public:
 	static bool try_get_node_type_id_from_auto_connect(AutoConnect ac, NodeTypeID &out_node_type);
 	static bool try_get_auto_connect_from_node_type_id(NodeTypeID node_type, AutoConnect &out_ac);
 
-	void get_node_input_info(
-			uint32_t node_id, unsigned int input_index, String *out_name, AutoConnect *out_autoconnect) const;
+	void get_node_input_info(uint32_t node_id, unsigned int input_index, String *out_name, AutoConnect *out_autoconnect)
+			const;
 	String get_node_output_name(uint32_t node_id, unsigned int output_index) const;
 	Span<const Port> get_input_definitions() const;
 	Span<const Port> get_output_definitions() const;
@@ -238,8 +249,12 @@ public:
 	// Resources in node parameters will be duplicated if they don't have a file path.
 	// If `dst_node_ids` is provided with non-zero size, defines the IDs of copied nodes. Otherwise, they are
 	// generated.
-	void duplicate_subgraph(Span<const uint32_t> src_node_ids, Span<const uint32_t> dst_node_ids,
-			VoxelGraphFunction &dst_graph, Vector2 gui_offset) const;
+	void duplicate_subgraph(
+			Span<const uint32_t> src_node_ids,
+			Span<const uint32_t> dst_node_ids,
+			VoxelGraphFunction &dst_graph,
+			Vector2 gui_offset
+	) const;
 
 	void paste_graph(const VoxelGraphFunction &src_graph, Span<const uint32_t> dst_node_ids, Vector2 gui_offset);
 
@@ -288,7 +303,10 @@ private:
 	void _b_set_output_definitions(Array data);
 
 	void _b_paste_graph_with_pre_generated_ids(
-			Ref<VoxelGraphFunction> graph, PackedInt32Array dst_node_ids, Vector2 gui_offset);
+			Ref<VoxelGraphFunction> graph,
+			PackedInt32Array dst_node_ids,
+			Vector2 gui_offset
+	);
 
 	static void _bind_methods();
 
@@ -314,17 +332,29 @@ private:
 	Mutex _compiled_graph_mutex;
 };
 
-ProgramGraph::Node *create_node_internal(ProgramGraph &graph, VoxelGraphFunction::NodeTypeID type_id, Vector2 position,
-		uint32_t id, bool create_default_instances);
+ProgramGraph::Node *create_node_internal(
+		ProgramGraph &graph,
+		VoxelGraphFunction::NodeTypeID type_id,
+		Vector2 position,
+		uint32_t id,
+		bool create_default_instances
+);
 
-void auto_pick_inputs_and_outputs(const ProgramGraph &graph, StdVector<VoxelGraphFunction::Port> &inputs,
-		StdVector<VoxelGraphFunction::Port> &outputs);
+void auto_pick_inputs_and_outputs(
+		const ProgramGraph &graph,
+		StdVector<VoxelGraphFunction::Port> &inputs,
+		StdVector<VoxelGraphFunction::Port> &outputs
+);
 
 Array serialize_io_definitions(Span<const VoxelGraphFunction::Port> ports);
 
 // Duplicates a node into the target graph (can be a different graph). Connections are not copied.
-ProgramGraph::Node *duplicate_node(ProgramGraph &dst_graph, const ProgramGraph::Node &src_node,
-		bool duplicate_resources, uint32_t id = ProgramGraph::NULL_ID);
+ProgramGraph::Node *duplicate_node(
+		ProgramGraph &dst_graph,
+		const ProgramGraph::Node &src_node,
+		bool duplicate_resources,
+		uint32_t id = ProgramGraph::NULL_ID
+);
 
 #ifdef TOOLS_ENABLED
 

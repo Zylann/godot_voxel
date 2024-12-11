@@ -142,25 +142,59 @@ void VoxelGeneratorGraph::gather_indices_and_weights(
 	// TODO Optimization: exclude up-front outputs that are known to be zero?
 	// So we choose the cases below based on non-zero outputs instead of total output count
 
+	// It is unfortunately not practical to handle all combinations of single-value/array-of-values for every
+	// layer, so for now we try to workaround that
+	struct WeightBufferArray {
+		FixedArray<Span<const float>, 16> array;
+
+		inline float get_weight(unsigned int output_index, size_t value_index) const {
+			Span<const float> s = array[output_index];
+#ifdef DEV_ENABLED
+			// That span can either have size 1 (means all values would be the same) or have regular buffer
+			// size. We use min() to quickly access that without branching, but that could hide actual OOB bugs, so
+			// make sure they are detected
+			ZN_ASSERT(s.size() > 0 && (value_index < s.size() || s.size() == 1));
+#endif
+			const float weight = s[math::min(value_index, s.size() - 1)];
+			return weight;
+		}
+	};
+
+	// TODO This should not be necessary!
+	// We could use a pointer to the `min` member of intervals inside State, however Interval uses `real_t`, which
+	// breaks our code in 64-bit float builds of Godot. We should refactor Interval so everything can line up.
+	FixedArray<float, 16> constants;
+
 	// TODO Could maybe put this part outside?
-	FixedArray<Span<const float>, 16> buffers;
+	WeightBufferArray buffers;
 	const unsigned int buffers_count = weight_outputs.size();
 	for (unsigned int oi = 0; oi < buffers_count; ++oi) {
 		const WeightOutput &info = weight_outputs[oi];
-		const pg::Runtime::Buffer &buffer = state.get_buffer(info.output_buffer_index);
-		buffers[oi] = Span<const float>(buffer.data, buffer.size);
+		const math::Interval &range = state.get_range_const_ref(info.output_buffer_index);
+
+		if (range.is_single_value()) {
+			// The weight is locally constant (or compile-time constant).
+			// We can't use the usual buffer because if we use optimized execution mapping, they won't be filled by any
+			// operation and would contain garbage
+			constants[oi] = range.min;
+			buffers.array[oi] = Span<const float>(&constants[oi], 1);
+			// buffers.array[oi] = Span<const float>(&range.min, 1);
+		} else {
+			const pg::Runtime::Buffer &buffer = state.get_buffer(info.output_buffer_index);
+			buffers.array[oi] = Span<const float>(buffer.data, buffer.size);
+		}
 	}
 
 	if (buffers_count <= 4) {
 		// Pick all results and fill with spare indices to keep semantic
-		unsigned int value_index = 0;
+		size_t value_index = 0;
 		for (int rz = rmin.z; rz < rmax.z; ++rz) {
 			for (int rx = rmin.x; rx < rmax.x; ++rx) {
 				FixedArray<uint8_t, 4> weights;
 				FixedArray<uint8_t, 4> indices = spare_indices;
 				fill(weights, uint8_t(0));
 				for (unsigned int oi = 0; oi < buffers_count; ++oi) {
-					const float weight = buffers[oi][value_index];
+					const float weight = buffers.get_weight(oi, value_index);
 					// TODO Optimization: weight output nodes could already multiply by 255 and clamp afterward
 					// so we would not need to do it here
 					weights[oi] = math::clamp(weight * 255.f, 0.f, 255.f);
@@ -180,13 +214,13 @@ void VoxelGeneratorGraph::gather_indices_and_weights(
 
 	} else if (buffers_count == 4) {
 		// Pick all results
-		unsigned int value_index = 0;
+		size_t value_index = 0;
 		for (int rz = rmin.z; rz < rmax.z; ++rz) {
 			for (int rx = rmin.x; rx < rmax.x; ++rx) {
 				FixedArray<uint8_t, 4> weights;
 				FixedArray<uint8_t, 4> indices;
 				for (unsigned int oi = 0; oi < buffers_count; ++oi) {
-					const float weight = buffers[oi][value_index];
+					const float weight = buffers.get_weight(oi, value_index);
 					weights[oi] = math::clamp(weight * 255.f, 0.f, 255.f);
 					indices[oi] = weight_outputs[oi].layer_index;
 				}
@@ -204,7 +238,7 @@ void VoxelGeneratorGraph::gather_indices_and_weights(
 	} else {
 		// More weights than we can have per voxel. Will need to pick most represented weights
 		const float pivot = 1.f / 5.f;
-		unsigned int value_index = 0;
+		size_t value_index = 0;
 		FixedArray<uint8_t, 16> skipped_outputs;
 		for (int rz = rmin.z; rz < rmax.z; ++rz) {
 			for (int rx = rmin.x; rx < rmax.x; ++rx) {
@@ -219,7 +253,8 @@ void VoxelGeneratorGraph::gather_indices_and_weights(
 				unsigned int recorded_weights = 0;
 				// Pick up weights above pivot (this is not as correct as a sort but faster)
 				for (unsigned int oi = 0; oi < buffers_count && recorded_weights < indices.size(); ++oi) {
-					const float weight = buffers[oi][value_index];
+					const float weight = buffers.get_weight(oi, value_index);
+
 					if (weight > pivot) {
 						weights[recorded_weights] = math::clamp(weight * 255.f, 0.f, 255.f);
 						indices[recorded_weights] = weight_outputs[oi].layer_index;
@@ -488,7 +523,7 @@ void fill_zx_integer_slice(
 
 } // namespace
 
-VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelGenerator::VoxelQueryData &input) {
+VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelGenerator::VoxelQueryData input) {
 	std::shared_ptr<Runtime> runtime_ptr;
 	{
 		RWLockRead rlock(_runtime_lock);
@@ -564,7 +599,7 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelGenerator::Voxel
 		cache.input_sdf_slice_cache.resize(slice_buffer_size);
 		input_sdf_slice_cache = to_span(cache.input_sdf_slice_cache);
 
-		const int64_t volume = Vector3iUtil::get_volume(bs);
+		const size_t volume = Vector3iUtil::get_volume_u64(bs);
 		cache.input_sdf_full_cache.resize(volume);
 		input_sdf_full_cache = to_span(cache.input_sdf_full_cache);
 
@@ -648,6 +683,8 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelGenerator::Voxel
 				if (runtime_ptr->weight_outputs_count > 0 && !sdf_is_air) {
 					// We can skip this when SDF is air because there won't be any matter to give a texture to
 					// TODO Range analysis on that?
+					// Not easy to do that from here, they would have to ALL be locally constant in order to use a
+					// short-circuit...
 					for (unsigned int i = 0; i < runtime_ptr->weight_outputs_count; ++i) {
 						required_outputs.push_back(runtime_ptr->weight_output_indices[i]);
 					}
@@ -793,7 +830,7 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelGenerator::Voxel
 	return result;
 }
 
-bool VoxelGeneratorGraph::generate_broad_block(VoxelGenerator::VoxelQueryData &input) {
+bool VoxelGeneratorGraph::generate_broad_block(VoxelGenerator::VoxelQueryData input) {
 	// This is a reduced version of whan `generate_block` does already, so it can be used before scheduling GPU work.
 	// If range analysis and SDF clipping finds that we don't need to generate the full block, we can get away with the
 	// broad result. If any channel cannot be determined this way, we have to perform full generation.
@@ -1628,7 +1665,7 @@ VoxelSingleValue VoxelGeneratorGraph::generate_single(Vector3i position, unsigne
 			RWLockRead rlock(_runtime_lock);
 			runtime_ptr = _runtime;
 		}
-		ERR_FAIL_COND_V(runtime_ptr == nullptr, v);
+		ERR_FAIL_COND_V_MSG(runtime_ptr == nullptr, v, "no compiled graph available");
 		if (runtime_ptr->sdf_output_buffer_index == -1) {
 			return v;
 		}
@@ -1651,7 +1688,7 @@ VoxelSingleValue VoxelGeneratorGraph::generate_single(Vector3i position, unsigne
 			RWLockRead rlock(_runtime_lock);
 			runtime_ptr = _runtime;
 		}
-		ERR_FAIL_COND_V(runtime_ptr == nullptr, v);
+		ERR_FAIL_COND_V_MSG(runtime_ptr == nullptr, v, "no compiled graph available");
 		if (runtime_ptr->single_texture_output_buffer_index == -1) {
 			return v;
 		}
@@ -1679,10 +1716,24 @@ VoxelSingleValue VoxelGeneratorGraph::generate_single(Vector3i position, unsigne
 	}
 }
 
+math::Interval get_range(const Span<const float> values) {
+	float minv = values[0];
+	float maxv = minv;
+	for (const float v : values) {
+		minv = math::min(v, minv);
+		maxv = math::max(v, maxv);
+	}
+	return math::Interval(minv, maxv);
+}
+
 // Note, this wrapper may not be used for main generation tasks.
 // It is mostly used as a debug tool.
 math::Interval VoxelGeneratorGraph::debug_analyze_range(Vector3i min_pos, Vector3i max_pos, bool optimize_execution_map)
 		const {
+	ZN_ASSERT_RETURN_V(max_pos.x >= min_pos.x, math::Interval());
+	ZN_ASSERT_RETURN_V(max_pos.y >= min_pos.y, math::Interval());
+	ZN_ASSERT_RETURN_V(max_pos.z >= min_pos.z, math::Interval());
+
 	std::shared_ptr<const Runtime> runtime_ptr;
 	{
 		RWLockRead rlock(_runtime_lock);
@@ -1706,6 +1757,105 @@ math::Interval VoxelGeneratorGraph::debug_analyze_range(Vector3i min_pos, Vector
 	if (optimize_execution_map) {
 		runtime.generate_optimized_execution_map(cache.state, cache.optimized_execution_map, true);
 	}
+
+#if 0
+	const bool range_validation = true;
+	if (range_validation) {
+		// Actually calculate every value and check if range analysis bounds them.
+		// If it does not, then it's a bug.
+		// This is not 100% accurate. We would have to calculate every value at every point in space in the area which
+		// is not possible, we can only sample a finite number within a grid.
+
+		// TODO Make sure the graph is compiled in debug mode, otherwise buffer lookups won't match
+		// TODO Even with debug on, it appears buffers don't really match???
+
+		const Vector3i cube_size = max_pos - min_pos;
+		if (cube_size.x > 64 || cube_size.y > 64 || cube_size.z > 64) {
+			ZN_PRINT_ERROR("Area too big for range validation");
+		} else {
+			const int64_t cube_volume = Vector3iUtil::get_volume(cube_size);
+			ZN_ASSERT_RETURN_V(cube_volume >= 0, math::Interval());
+
+			StdVector<float> src_x;
+			StdVector<float> src_y;
+			StdVector<float> src_z;
+			StdVector<float> src_sdf;
+			src_x.resize(cube_volume);
+			src_y.resize(cube_volume);
+			src_z.resize(cube_volume);
+			src_sdf.resize(cube_volume);
+			Span<float> sx = to_span(src_x);
+			Span<float> sy = to_span(src_y);
+			Span<float> sz = to_span(src_z);
+			Span<float> ssdf = to_span(src_sdf);
+
+			{
+				unsigned int i = 0;
+				for (int z = min_pos.z; z < max_pos.z; ++z) {
+					for (int y = min_pos.y; y < max_pos.y; ++y) {
+						for (int x = min_pos.x; x < max_pos.x; ++x) {
+							src_x[i] = x;
+							src_y[i] = y;
+							src_z[i] = z;
+							++i;
+						}
+					}
+				}
+			}
+
+			QueryInputs inputs(*runtime_ptr, sx, sy, sz, ssdf);
+
+			runtime.prepare_state(cache.state, sx.size(), false);
+			runtime.generate_set(cache.state, inputs.get(), false, nullptr);
+
+			const pg::Runtime::State &state = get_last_state_from_current_thread();
+
+			_main_function->get_graph().for_each_node_const([this, &state](const ProgramGraph::Node &node) {
+				for (uint32_t output_index = 0; output_index < node.outputs.size(); ++output_index) {
+					// const ProgramGraph::Port &output_port = node.outputs[output_index];
+					const ProgramGraph::PortLocation loc{ node.id, output_index };
+
+					uint32_t address;
+					if (!try_get_output_port_address(loc, address)) {
+						continue;
+					}
+
+					const math::Interval analytic_range = state.get_range(address);
+
+					const pg::Runtime::Buffer &buffer = state.get_buffer(address);
+
+					if (buffer.data == nullptr) {
+						if (buffer.is_binding) {
+							// Not supported
+							continue;
+						}
+						ZN_PRINT_ERROR("Didn't expect nullptr in buffer data");
+						continue;
+					}
+
+					const Span<const float> values(buffer.data, buffer.size);
+					const math::Interval empiric_range = get_range(values);
+
+					if (!analytic_range.contains(empiric_range)) {
+						const String node_name = node.name;
+						const pg::NodeType &node_type = pg::NodeTypeDB::get_singleton().get_type(node.type_id);
+						ZN_PRINT_WARNING(
+								format("Empiric range not included in analytic range. A: {}, E: {}; {} "
+									   "output {} instance {} \"{}\"",
+									   analytic_range,
+									   empiric_range,
+									   node_type.name,
+									   output_index,
+									   node.id,
+									   node_name)
+						);
+					}
+				}
+			});
+		}
+	}
+#endif
+
 	// TODO Change return value to allow checking other outputs
 	if (runtime_ptr->sdf_output_buffer_index != -1) {
 		return cache.state.get_range(runtime_ptr->sdf_output_buffer_index);

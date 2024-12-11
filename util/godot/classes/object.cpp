@@ -83,6 +83,8 @@ void set_object_edited(Object &obj) {
 
 	// A dirty workaround is to call a method without side-effects with a temporary UndoRedo instance, which should
 	// internally call `set_edited` in the editor, if the object is a resource...
+	// See
+	// https://github.com/godotengine/godot/blob/da5f39889f155658cef7f7ec3cc1abb94e17d815/core/object/undo_redo.cpp#L372
 
 	UndoRedo *ur = memnew(UndoRedo);
 	ur->create_action("Dummy Action");
@@ -94,6 +96,6 @@ void set_object_edited(Object &obj) {
 #endif
 }
 
-#endif
+#endif // TOOLS_ENABLED
 
 } // namespace zylann::godot

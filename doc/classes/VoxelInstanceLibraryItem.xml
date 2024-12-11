@@ -9,12 +9,18 @@
 	</tutorials>
 	<members>
 		<member name="generator" type="VoxelInstanceGenerator" setter="set_generator" getter="get_generator">
+			Generator that will be used to pick points where the item will spawn.
 		</member>
 		<member name="lod_index" type="int" setter="set_lod_index" getter="get_lod_index" default="0">
+			LOD index of chunks of the terrain where this item will spawn. The higher it is, the broader the range it will spawn at around viewers, however it will have lower precision because it uses meshes of a lower level of detail. Prefer spawning larger objects on higher LOD indexes (large trees, boulders), and small objects on lower LOD indexes (grass, small rocks)
 		</member>
 		<member name="name" type="String" setter="set_item_name" getter="get_item_name" default="&quot;&quot;">
 		</member>
 		<member name="persistent" type="bool" setter="set_persistent" getter="is_persistent" default="false">
+			If not enabled, items will always spawn if generator conditions are met: for example, if you dig a hole, it will remove grass in the surface, but if you leave the area and come back, grass will spawn inside the hole.
+			If enabled, and if the terrain has a [VoxelStream] supporting instances, this item will be saved in chunks where instances of it got modified (following the same events as voxel modifications), so if you leave and come back, instances of the item will remain in the same state as you left them. Only the transform of items is saved.
+			Note: saving relies on identifying the item in save files with the same number given in the [VoxelInstanceLibrary]. Removing the item or changing its ID can lead saves to load the item incorrectly.
+			See also [url]https://voxel-tools.readthedocs.io/en/latest/instancing/#persistence[/url]
 		</member>
 	</members>
 </class>

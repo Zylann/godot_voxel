@@ -1,6 +1,7 @@
 #ifndef ISLAND_FINDER_H
 #define ISLAND_FINDER_H
 
+#include "containers/fixed_array.h"
 #include "containers/span.h"
 #include "math/box3i.h"
 
@@ -22,7 +23,7 @@ public:
 
 	template <typename VolumePredicate_F>
 	void scan_3d(Box3i box, VolumePredicate_F volume_predicate_func, Span<uint8_t> output, unsigned int *out_count) {
-		const size_t volume = Vector3iUtil::get_volume(box.size);
+		const size_t volume = Vector3iUtil::get_volume_u64(box.size);
 		CRASH_COND(output.size() != volume);
 		memset(output.data(), 0, volume * sizeof(uint8_t));
 
@@ -76,9 +77,9 @@ public:
 						} else if (top_label == 0 && back_label == 0) {
 							label = left_label;
 
-						} else if (left_label == 0 ||//
-								(top_label != 0 && back_label != 0 &&
-										(left_label == top_label || left_label == back_label))) {
+						} else if (left_label == 0 || //
+								   (top_label != 0 && back_label != 0 &&
+									(left_label == top_label || left_label == back_label))) {
 							if (top_label == back_label) {
 								label = back_label;
 
@@ -91,9 +92,9 @@ public:
 								add_equivalence(top_label, back_label);
 							}
 
-						} else if (top_label == 0 ||//
-								(left_label != 0 && back_label != 0 &&
-										(top_label == left_label || top_label == back_label))) {
+						} else if (top_label == 0 || //
+								   (left_label != 0 && back_label != 0 &&
+									(top_label == left_label || top_label == back_label))) {
 							if (left_label == back_label) {
 								label = back_label;
 
@@ -106,9 +107,9 @@ public:
 								add_equivalence(left_label, back_label);
 							}
 
-						} else if (back_label == 0 ||//
-								(left_label != 0 && top_label != 0 &&
-										(back_label == left_label || back_label == top_label))) {
+						} else if (back_label == 0 || //
+								   (left_label != 0 && top_label != 0 &&
+									(back_label == left_label || back_label == top_label))) {
 							if (left_label == top_label) {
 								label = top_label;
 

@@ -420,6 +420,18 @@ void compute_near_chunks(ChunkGrid &chunk_grid) {
 				// This is to account for the fact the closest chunk might contain a triangle further away than
 				// a closer triangle found in a farther chunk.
 
+				// TODO This creates artifacts when the mesh has few/big triangles and subdivision is high.
+				// A diagonal triangle D could have an AABB so large that it intersects many chunks while not
+				// relatively being close to them. Yet, 2 chunks away (>sqrt(3)) there could be a chunk intersected by
+				// an axis-aligned triangle A that would be closer than D. Yet it won't be detected.
+				//
+				// To fix this we could:
+				// - Increase the margin we use to add more triangles? That might work but reduce efficiency.
+				// - Instead of using AABBs to figure if a triangle is in a chunk, we could attempt a box/triangle
+				//   intersection, or 3D rasterization. Then we could keep using the sqrt(3) margin since we know if
+				//   a triangle is in a chunk, and if we pick any point on the sides of hat chunk, the distance from
+				//   that point to the triangle is always closer than the diagonal of that chunk.
+
 				const int margin_distance_squared =
 						math::squared(sqrtf(closest_chunk_distance_squared) + math::SQRT3_32);
 
@@ -456,7 +468,7 @@ void partition_triangles(
 	const Vector3i grid_max = to_vec3i(math::ceil(max_pos / chunk_size));
 
 	chunk_grid.size = grid_max - grid_min;
-	chunk_grid.chunks.resize(Vector3iUtil::get_volume(chunk_grid.size));
+	chunk_grid.chunks.resize(Vector3iUtil::get_volume_u64(chunk_grid.size));
 	chunk_grid.chunk_size = chunk_size;
 	chunk_grid.min_pos = to_vec3f(grid_min) * chunk_size;
 
@@ -795,7 +807,7 @@ void generate_mesh_sdf_approx_interp(
 	const float node_subdiv_threshold = 0.6f * node_size;
 
 	StdVector<float> node_grid;
-	node_grid.resize(Vector3iUtil::get_volume(node_grid_size));
+	node_grid.resize(Vector3iUtil::get_volume_u64(node_grid_size));
 
 	// Fill SDF grid with far distances as "infinity", we'll use that to check if we computed it already
 	sdf_grid.fill(FAR_SD);
@@ -911,7 +923,7 @@ void generate_mesh_sdf_naive(
 ) {
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT(Box3i(Vector3i(), res).contains(sub_box));
-	ZN_ASSERT(int64_t(sdf_grid.size()) == Vector3iUtil::get_volume(res));
+	ZN_ASSERT(sdf_grid.size() == Vector3iUtil::get_volume_u64(res));
 
 	const Vector3f mesh_size = max_pos - min_pos;
 	const Vector3f cell_size = mesh_size / Vector3f(res.x, res.y, res.z);
@@ -951,7 +963,7 @@ void generate_mesh_sdf_partitioned(
 ) {
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT(Box3i(Vector3i(), res).contains(sub_box));
-	ZN_ASSERT(int64_t(sdf_grid.size()) == Vector3iUtil::get_volume(res));
+	ZN_ASSERT(sdf_grid.size() == Vector3iUtil::get_volume_u64(res));
 
 	const Vector3f mesh_size = max_pos - min_pos;
 	const Vector3f cell_size = mesh_size / Vector3f(res.x, res.y, res.z);
@@ -1399,7 +1411,7 @@ void generate_mesh_sdf_approx_floodfill(
 	ZN_PROFILE_SCOPE();
 
 	StdVector<uint8_t> flag_grid;
-	flag_grid.resize(Vector3iUtil::get_volume(res));
+	flag_grid.resize(Vector3iUtil::get_volume_u64(res));
 	memset(flag_grid.data(), FLAG_NOT_VISITED, sizeof(uint8_t) * flag_grid.size());
 
 	generate_mesh_sdf_hull(sdf_grid, res, triangles, min_pos, max_pos, chunk_grid, to_span(flag_grid), FLAG_FROZEN);

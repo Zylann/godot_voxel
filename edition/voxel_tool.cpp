@@ -102,7 +102,7 @@ float VoxelTool::get_voxel_f(Vector3i pos) const {
 void VoxelTool::set_voxel(Vector3i pos, uint64_t v) {
 	Box3i box(pos, Vector3i(1, 1, 1));
 	if (!is_area_editable(box)) {
-		ZN_PRINT_VERBOSE("Area not editable");
+		ZN_PRINT_WARNING("Area not editable");
 		return;
 	}
 	_set_voxel(pos, v);
@@ -112,7 +112,7 @@ void VoxelTool::set_voxel(Vector3i pos, uint64_t v) {
 void VoxelTool::set_voxel_f(Vector3i pos, float v) {
 	Box3i box(pos, Vector3i(1, 1, 1));
 	if (!is_area_editable(box)) {
-		ZN_PRINT_VERBOSE("Area not editable");
+		ZN_PRINT_WARNING("Area not editable");
 		return;
 	}
 	_set_voxel_f(pos, v);
@@ -155,31 +155,32 @@ void VoxelTool::_set_voxel_f(Vector3i pos, float v) {
 // defined in subclasses of VoxelTool. Ideally, a function may be exposed on the base class only if it has an optimal
 // definition in all specialized classes.
 
-void VoxelTool::do_sphere(Vector3 center, float radius) {
+void VoxelTool::do_sphere(Vector3 p_center, float radius) {
 	ZN_PROFILE_SCOPE();
 	// Default, suboptimal implementation
 
 	const Box3i box(
-			math::floor_to_int(center) - Vector3iUtil::create(Math::floor(radius)),
+			math::floor_to_int(p_center) - Vector3iUtil::create(Math::floor(radius)),
 			Vector3iUtil::create(Math::ceil(radius) * 2)
 	);
 
 	if (_allow_out_of_bounds == false && !is_area_editable(box)) {
-		ZN_PRINT_VERBOSE("Area not editable");
+		ZN_PRINT_WARNING("Area not editable");
 		return;
 	}
 
 	if (_channel == VoxelBuffer::CHANNEL_SDF) {
+		const Vector3f center = to_vec3f(p_center);
 		box.for_each_cell([this, center, radius](Vector3i pos) {
-			float d = _sdf_scale * zylann::math::sdf_sphere(pos, center, radius);
+			float d = _sdf_scale * zylann::math::sdf_sphere(to_vec3f(pos), center, radius);
 			_set_voxel_f(pos, ops::sdf_blend(d, get_voxel_f(pos), static_cast<ops::Mode>(_mode)));
 		});
 
 	} else {
 		int value = _mode == MODE_REMOVE ? _eraser_value : _value;
 
-		box.for_each_cell([this, center, radius, value](Vector3i pos) {
-			float d = Vector3(pos).distance_to(center);
+		box.for_each_cell([this, p_center, radius, value](Vector3i pos) {
+			float d = Vector3(pos).distance_to(p_center);
 			if (d <= radius) {
 				_set_voxel(pos, value);
 			}
@@ -201,7 +202,7 @@ void VoxelTool::sdf_stamp_erase(const VoxelBuffer &stamp, Vector3i pos) {
 
 	const Box3i box(pos, stamp.get_size());
 	if (!is_area_editable(box)) {
-		ZN_PRINT_VERBOSE("Area not editable");
+		ZN_PRINT_WARNING("Area not editable");
 		return;
 	}
 
@@ -226,7 +227,7 @@ void VoxelTool::do_box(Vector3i begin, Vector3i end) {
 	const Box3i box = Box3i::from_min_max(begin, end + Vector3i(1, 1, 1));
 
 	if (_allow_out_of_bounds == false && !is_area_editable(box)) {
-		ZN_PRINT_VERBOSE("Area not editable");
+		ZN_PRINT_WARNING("Area not editable");
 		return;
 	}
 
@@ -351,7 +352,7 @@ void VoxelTool::grow_sphere(Vector3 sphere_center, float sphere_radius, float st
 	);
 
 	if (_allow_out_of_bounds == false && !is_area_editable(voxel_box)) {
-		ZN_PRINT_VERBOSE("Area not editable");
+		ZN_PRINT_WARNING("Area not editable");
 		return;
 	}
 

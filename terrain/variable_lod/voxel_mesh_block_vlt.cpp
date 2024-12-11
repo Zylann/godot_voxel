@@ -53,12 +53,37 @@ void VoxelMeshBlockVLT::set_mesh(
 		Ref<Mesh> mesh,
 		GeometryInstance3D::GIMode gi_mode,
 		RenderingServer::ShadowCastingSetting shadow_casting,
-		int render_layers_mask
+		int render_layers_mask,
+		Ref<Mesh> shadow_occluder_mesh
+#ifdef TOOLS_ENABLED
+		,
+		RenderingServer::ShadowCastingSetting shadow_occluder_mode
+#endif
 ) {
 	// TODO Don't add mesh instance to the world if it's not visible.
 	// I suspect Godot is trying to include invisible mesh instances into the culling process,
 	// which is killing performance when LOD is used (i.e many meshes are in pool but hidden)
 	// This needs investigation.
+
+	if (shadow_occluder_mesh.is_null()) {
+		if (_shadow_occluder.is_valid()) {
+			_shadow_occluder.destroy();
+		}
+	} else {
+		if (!_shadow_occluder.is_valid()) {
+			_shadow_occluder.create();
+			_shadow_occluder.set_render_layers_mask(render_layers_mask);
+#ifdef TOOLS_ENABLED
+			_shadow_occluder.set_cast_shadows_setting(shadow_occluder_mode);
+#else
+			_shadow_occluder.set_cast_shadows_setting(RenderingServer::SHADOW_CASTING_SETTING_SHADOWS_ONLY);
+#endif
+			// TODO Should we hide it if shadow casting is off?
+			// TBH it would be even better for the user to simply turn these off in the mesher...
+			set_mesh_instance_visible(_shadow_occluder, _visible && _parent_visible);
+		}
+		_shadow_occluder.set_mesh(shadow_occluder_mesh);
+	}
 
 	if (mesh.is_valid()) {
 		if (!_mesh_instance.is_valid()) {
@@ -99,6 +124,10 @@ void VoxelMeshBlockVLT::drop_visuals() {
 	}
 	FreeMeshTask::try_add_and_destroy(_mesh_instance);
 
+	if (_shadow_occluder.is_valid()) {
+		_shadow_occluder.destroy();
+	}
+
 	for (unsigned int i = 0; i < _transition_mesh_instances.size(); ++i) {
 		DirectMeshInstance &tmi = _transition_mesh_instances[i];
 		if (tmi.is_valid()) {
@@ -126,6 +155,7 @@ void VoxelMeshBlockVLT::set_gi_mode(GeometryInstance3D::GIMode mode) {
 
 void VoxelMeshBlockVLT::set_shadow_casting(RenderingServer::ShadowCastingSetting mode) {
 	VoxelMeshBlock::set_shadow_casting(mode);
+
 	for (unsigned int i = 0; i < _transition_mesh_instances.size(); ++i) {
 		DirectMeshInstance &mi = _transition_mesh_instances[i];
 		if (mi.is_valid()) {
@@ -203,6 +233,11 @@ void VoxelMeshBlockVLT::set_visible(bool visible) {
 
 void VoxelMeshBlockVLT::_set_visible(bool visible) {
 	VoxelMeshBlock::_set_visible(visible);
+
+	if (_shadow_occluder.is_valid()) {
+		set_mesh_instance_visible(_shadow_occluder, visible);
+	}
+
 	for (unsigned int dir = 0; dir < _transition_mesh_instances.size(); ++dir) {
 		DirectMeshInstance &mi = _transition_mesh_instances[dir];
 		if (mi.is_valid()) {
@@ -316,6 +351,10 @@ void VoxelMeshBlockVLT::set_parent_transform(const Transform3D &parent_transform
 					mi.set_transform(world_transform);
 				}
 			}
+		}
+
+		if (_shadow_occluder.is_valid()) {
+			_shadow_occluder.set_transform(world_transform);
 		}
 
 		if (_static_body.is_valid()) {

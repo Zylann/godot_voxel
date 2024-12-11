@@ -297,7 +297,7 @@ uint64_t VoxelBuffer::get_voxel(int x, int y, int z, unsigned int channel_index)
 void VoxelBuffer::set_voxel(uint64_t value, int x, int y, int z, unsigned int channel_index) {
 	ZN_DSTACK();
 	ZN_ASSERT_RETURN(channel_index < MAX_CHANNELS);
-	ZN_ASSERT_RETURN_MSG(is_position_valid(x, y, z), format("At position ({}, {}, {})", x, y, z));
+	ZN_ASSERT_RETURN_MSG(is_position_valid(x, y, z), format("Invalid position ({}, {}, {})", x, y, z));
 
 	Channel &channel = _channels[channel_index];
 
@@ -1088,7 +1088,7 @@ void VoxelBuffer::copy_voxel_metadata(const VoxelBuffer &src_buffer) {
 void get_unscaled_sdf(const VoxelBuffer &voxels, Span<float> sdf) {
 	ZN_PROFILE_SCOPE();
 	ZN_DSTACK();
-	const uint64_t volume = Vector3iUtil::get_volume(voxels.get_size());
+	const uint64_t volume = Vector3iUtil::get_volume_u64(voxels.get_size());
 	ZN_ASSERT_RETURN(volume == sdf.size());
 
 	const VoxelBuffer::ChannelId channel = VoxelBuffer::CHANNEL_SDF;

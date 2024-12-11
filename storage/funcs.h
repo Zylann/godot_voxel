@@ -96,7 +96,7 @@ void fill_3d_region_zxy(Span<T> dst, Vector3i dst_size, Vector3i dst_min, Vector
 	}
 
 #ifdef DEBUG_ENABLED
-	ZN_ASSERT_RETURN(Vector3iUtil::get_volume(area_size) <= dst.size());
+	ZN_ASSERT_RETURN(Vector3iUtil::get_volume_u64(area_size) <= dst.size());
 #endif
 
 	if (area_size == dst_size) {
@@ -200,8 +200,8 @@ Vector3i transform_3d_array_zxy(Span<const T> src_grid, Span<T> dst_grid, Vector
 	ZN_ASSERT_RETURN_V(Vector3iUtil::is_unit_vector(basis.x), src_size);
 	ZN_ASSERT_RETURN_V(Vector3iUtil::is_unit_vector(basis.y), src_size);
 	ZN_ASSERT_RETURN_V(Vector3iUtil::is_unit_vector(basis.z), src_size);
-	ZN_ASSERT_RETURN_V(src_grid.size() == static_cast<size_t>(Vector3iUtil::get_volume(src_size)), src_size);
-	ZN_ASSERT_RETURN_V(dst_grid.size() == static_cast<size_t>(Vector3iUtil::get_volume(src_size)), src_size);
+	ZN_ASSERT_RETURN_V(src_grid.size() == Vector3iUtil::get_volume_u64(src_size), src_size);
+	ZN_ASSERT_RETURN_V(dst_grid.size() == Vector3iUtil::get_volume_u64(src_size), src_size);
 
 	const int xa = basis.x.x != 0 ? 0 : basis.x.y != 0 ? 1 : 2;
 	const int ya = basis.y.x != 0 ? 0 : basis.y.y != 0 ? 1 : 2;

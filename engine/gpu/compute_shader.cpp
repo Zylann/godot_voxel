@@ -1,8 +1,10 @@
 #include "compute_shader.h"
 #include "../../util/godot/classes/rd_shader_source.h"
+#include "../../util/godot/classes/rendering_server.h"
 #include "../../util/godot/core/array.h" // for `varray` in GDExtension builds
 #include "../../util/godot/core/print_string.h"
 #include "../../util/profiling.h"
+#include "../../util/string/format.h"
 #include "../voxel_engine.h"
 
 namespace zylann::voxel {
@@ -61,7 +63,12 @@ void ComputeShader::load_from_glsl(String source_text, String name) {
 	shader_source->set_language(RenderingDevice::SHADER_LANGUAGE_GLSL);
 	shader_source->set_stage_source(RenderingDevice::SHADER_STAGE_COMPUTE, source_text);
 
-	ZN_ASSERT_RETURN(VoxelEngine::get_singleton().has_rendering_device());
+	ZN_ASSERT_RETURN_MSG(
+			VoxelEngine::get_singleton().has_rendering_device(),
+			format("Can't create compute shader \"{}\". Maybe the selected renderer doesn't support it? ({})",
+				   name,
+				   zylann::godot::get_current_rendering_method())
+	);
 	RenderingDevice &rd = VoxelEngine::get_singleton().get_rendering_device();
 	// MutexLock mlock(VoxelEngine::get_singleton().get_rendering_device_mutex());
 

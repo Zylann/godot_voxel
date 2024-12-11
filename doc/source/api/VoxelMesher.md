@@ -2,7 +2,7 @@
 
 Inherits: [Resource](https://docs.godotengine.org/en/stable/classes/class_resource.html)
 
-Inherited by: [VoxelMesherBlocky](VoxelMesherBlocky.md), [VoxelMesherCubes](VoxelMesherCubes.md), [VoxelMesherDMC](VoxelMesherDMC.md), [VoxelMesherTransvoxel](VoxelMesherTransvoxel.md)
+Inherited by: [VoxelMesherBlocky](VoxelMesherBlocky.md), [VoxelMesherCubes](VoxelMesherCubes.md), [VoxelMesherTransvoxel](VoxelMesherTransvoxel.md)
 
 Base class for all meshing algorithms.
 
@@ -24,7 +24,9 @@ Return                                                                  | Signat
 
 ### [Mesh](https://docs.godotengine.org/en/stable/classes/class_mesh.html)<span id="i_build_mesh"></span> **build_mesh**( [VoxelBuffer](VoxelBuffer.md) voxel_buffer, [Material[]](https://docs.godotengine.org/en/stable/classes/class_material[].html) materials, [Dictionary](https://docs.godotengine.org/en/stable/classes/class_dictionary.html) additional_data={} ) 
 
-Builds a mesh from the provided voxels. Materials will be attached to each surface based on the provided array. The way materials are used can depend on the type of mesher.
+Builds a mesh from the provided voxels. Materials will be attached to each surface based on the provided array. The way materials are used can depend on the type of mesher. 
+
+Meshers are initially meant to work on chunks, so voxels within an outer margin of the buffer will not be part of the result. They are considered "neighbors" and may eventually affect face culling. If you want to use a mesher to make a standalone voxel mesh, make sure it is padded by air. The size of that margin is determined by [VoxelMesher.get_minimum_padding](VoxelMesher.md#i_get_minimum_padding) and [VoxelMesher.get_maximum_padding](VoxelMesher.md#i_get_maximum_padding).
 
 ### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_get_maximum_padding"></span> **get_maximum_padding**( ) 
 
@@ -34,4 +36,4 @@ Gets by how much voxels must be padded before their lower corner in order for th
 
 Gets by how much voxels must be padded after their upper corner in order for the mesher to work.
 
-_Generated on Apr 06, 2024_
+_Generated on Aug 27, 2024_

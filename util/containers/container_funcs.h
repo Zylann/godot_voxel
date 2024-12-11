@@ -85,22 +85,35 @@ inline void remove_if(std::vector<T> &vec, F predicate) {
 }
 */
 
+struct DuplicateSearchResult {
+	size_t first;
+	size_t second;
+
+	inline bool is_null() const {
+		return first == second;
+	}
+
+	inline bool is_valid() const {
+		return !is_null();
+	}
+};
+
 template <typename T>
-size_t find_duplicate(Span<const T> items) {
+DuplicateSearchResult find_duplicate(Span<const T> items) {
 	for (unsigned int i = 0; i < items.size(); ++i) {
 		const T &a = items[i];
 		for (unsigned int j = i + 1; j < items.size(); ++j) {
 			if (items[j] == a) {
-				return j;
+				return { i, j };
 			}
 		}
 	}
-	return items.size();
+	return { 0, 0 };
 }
 
 template <typename T>
 bool has_duplicate(Span<const T> items) {
-	return find_duplicate(items) != items.size();
+	return find_duplicate(items).is_valid();
 }
 
 // Tests if POD items in an array are all the same.

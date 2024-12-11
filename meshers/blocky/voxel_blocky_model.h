@@ -80,8 +80,10 @@ public:
 			// If more is needed or profiling tells better, we could change it to a vector?
 			FixedArray<Surface, MAX_SURFACES> surfaces;
 			unsigned int surface_count = 0;
-			// Cached information to check this case early
+			// Cached information to check this case early.
+			// Bits are indexed with the Cube::Side enum.
 			uint8_t empty_sides_mask = 0;
+			uint8_t full_sides_mask = 0;
 
 			// Tells what is the "shape" of each side in order to cull them quickly when in contact with neighbors.
 			// Side patterns are still determined based on a combination of all surfaces.
@@ -108,6 +110,7 @@ public:
 		bool empty;
 		bool is_random_tickable;
 		bool is_transparent;
+		bool lod_skirts;
 
 		uint32_t box_collision_mask;
 		StdVector<AABB> box_collision_aabbs;
@@ -139,15 +142,10 @@ public:
 
 	void set_material_override(int index, Ref<Material> material);
 	Ref<Material> get_material_override(int index) const;
+	bool has_material_override() const;
 
 	void set_mesh_collision_enabled(int surface_index, bool enabled);
 	bool is_mesh_collision_enabled(int surface_index) const;
-
-	// TODO Might become obsoleted by transparency index
-	void set_transparent(bool t = true);
-	_FORCE_INLINE_ bool is_transparent() const {
-		return _transparency_index != 0;
-	}
 
 	void set_transparency_index(int i);
 	int get_transparency_index() const {
@@ -170,6 +168,12 @@ public:
 
 	void set_random_tickable(bool rt);
 	bool is_random_tickable() const;
+
+	void set_mesh_ortho_rotation_index(int i);
+	int get_mesh_ortho_rotation_index() const;
+
+	void set_lod_skirts_enabled(bool rt);
+	bool get_lod_skirts_enabled() const;
 
 	//------------------------------------------
 	// Properties for internal usage only
@@ -207,8 +211,8 @@ public:
 
 	virtual Ref<Mesh> get_preview_mesh() const;
 
-	virtual void rotate_90(math::Axis axis, bool clockwise);
-	virtual void rotate_ortho(math::OrthoBasis ortho_basis);
+	void rotate_90(math::Axis axis, bool clockwise);
+	void rotate_ortho(math::OrthoBasis ortho_basis);
 
 	static Ref<Mesh> make_mesh_from_baked_data(const BakedData &baked_data, bool tangents_enabled);
 
@@ -255,6 +259,9 @@ private:
 	// can be useful for denser transparent voxels, such as foliage.
 	bool _culls_neighbors = true;
 	bool _random_tickable = false;
+	uint8_t _mesh_ortho_rotation = 0;
+
+	bool _lod_skirts = true;
 
 	Color _color;
 

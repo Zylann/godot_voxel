@@ -66,7 +66,7 @@ public:
 	virtual void set_voxel(Vector3i pos, uint64_t v);
 	virtual void set_voxel_f(Vector3i pos, float v);
 	virtual void do_point(Vector3i pos);
-	virtual void do_sphere(Vector3 center, float radius);
+	virtual void do_sphere(Vector3 p_center, float radius);
 	virtual void do_box(Vector3i begin, Vector3i end);
 	virtual void do_path(Span<const Vector3> positions, Span<const float> radii);
 

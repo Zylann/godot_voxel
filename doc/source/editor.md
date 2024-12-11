@@ -22,7 +22,7 @@ The whole terrain can be told to re-mesh or re-load by using one of the options 
 
 ### Camera options
 
-Blocks will only load around the node's origin by default. If the volume is very big or uses LOD, it will not load further and concentrate detail at its center. You can override this by going in the `Terrain` menu and enabling `Stream follow camera`. This will make the terrain adapt its level of detail and blocks to be around the editor's camera, and will update as the camera moves. Turning off the option will freeze the terrain.
+In the editor, blocks will only load around the node's origin by default. If the volume is very big or uses LOD, it will not load further and concentrate detail at its center. You can override this by going in the `Terrain` menu and enabling `Stream follow camera`. This will make the terrain adapt its level of detail and blocks to be around the editor's camera, and will update as the camera moves. Turning off the option will freeze the terrain.
 
 ![Stream follow camera menu](images/menu_stream_follow_camera.webp)
 
@@ -37,9 +37,9 @@ Terrains can be very big, and sometimes Godot might prevent you from zooming out
 Editing
 --------
 
-Editing voxel volumes destructively in the Godot Editor is not supported yet. This feature may be implemented in the future.
+There are no tools to edit voxel volumes destructively in the Godot Editor yet. This feature might be implemented in the future.
 
-It is possible to use non-destructive [modifiers](generators.md#modifiers).
+It is possible to use non-destructive [modifiers](generators.md#modifiers), but they are limited.
 
-Terrains can be fully edited in-game using scripts and [VoxelTool](scripting.md).
+Terrains can be fully edited in-game using scripts and [VoxelTool](scripting.md). It is also possible to create a script editor plugin to implement edition in a similar manner.
 

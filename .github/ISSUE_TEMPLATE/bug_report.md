@@ -21,6 +21,7 @@ Linking a minimal project that reproduces the issue may help:
 - Remove any scripts, nodes and assets that aren't necessary to reproduce the issue.
 - Don't use fullscreen or large screen size.
 - If scripts are needed, prefer GDScript, as C# is harder to setup
+- Don't embed scripts or shaders inside resource or scenes, save them as their own files
 
 If you see any errors in the console, that may also help.
 

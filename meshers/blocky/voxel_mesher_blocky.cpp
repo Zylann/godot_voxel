@@ -424,6 +424,418 @@ void generate_blocky_mesh( //
 	}
 }
 
+struct OccluderArrays {
+	StdVector<Vector3f> vertices;
+	StdVector<int32_t> indices;
+};
+
+void generate_occluders_geometry(
+		OccluderArrays &out_arrays,
+		const Vector3f maxf,
+		bool positive_x,
+		bool positive_y,
+		bool positive_z,
+		bool negative_x,
+		bool negative_y,
+		bool negative_z
+) {
+	const unsigned int quad_count = //
+			static_cast<unsigned int>(positive_x) + //
+			static_cast<unsigned int>(positive_y) + //
+			static_cast<unsigned int>(positive_z) + //
+			static_cast<unsigned int>(negative_x) + //
+			static_cast<unsigned int>(negative_y) + //
+			static_cast<unsigned int>(negative_z);
+
+	if (quad_count == 0) {
+		return;
+	}
+
+	out_arrays.vertices.resize(out_arrays.vertices.size() + 4 * quad_count);
+	out_arrays.indices.resize(out_arrays.indices.size() + 6 * quad_count);
+
+	unsigned int vi0 = 0;
+	unsigned int ii0 = 0;
+
+	if (positive_x) {
+		// 3---2  y
+		// |   |  |
+		// 0---1  x--z
+
+		Span<Vector3f> vertices = to_span_from_position_and_size(out_arrays.vertices, 0, 4);
+		Span<int32_t> indices = to_span_from_position_and_size(out_arrays.indices, 0, 6);
+
+		vertices[0] = Vector3f(maxf.x, 0.f, 0.f);
+		vertices[1] = Vector3f(maxf.x, 0.f, maxf.z);
+		vertices[2] = Vector3f(maxf.x, maxf.y, maxf.z);
+		vertices[3] = Vector3f(maxf.x, maxf.y, 0.f);
+
+		indices[0] = 0;
+		indices[1] = 1;
+		indices[2] = 2;
+		indices[3] = 0;
+		indices[4] = 2;
+		indices[5] = 3;
+
+		vi0 += 4;
+		ii0 += 6;
+	}
+
+	if (positive_y) {
+		// 3---2  z
+		// |   |  |
+		// 0---1  y--x
+
+		Span<Vector3f> vertices = to_span_from_position_and_size(out_arrays.vertices, vi0, 4);
+		Span<int32_t> indices = to_span_from_position_and_size(out_arrays.indices, ii0, 6);
+
+		vertices[0] = Vector3f(0.f, maxf.y, 0.f);
+		vertices[1] = Vector3f(maxf.x, maxf.y, 0.f);
+		vertices[2] = Vector3f(maxf.x, maxf.y, maxf.z);
+		vertices[3] = Vector3f(0.f, maxf.y, maxf.z);
+
+		indices[0] = vi0 + 0;
+		indices[1] = vi0 + 1;
+		indices[2] = vi0 + 2;
+		indices[3] = vi0 + 0;
+		indices[4] = vi0 + 2;
+		indices[5] = vi0 + 3;
+
+		vi0 += 4;
+		ii0 += 6;
+	}
+
+	if (positive_z) {
+		// 3---2  y
+		// |   |  |
+		// 0---1  z--x
+
+		Span<Vector3f> vertices = to_span_from_position_and_size(out_arrays.vertices, vi0, 4);
+		Span<int32_t> indices = to_span_from_position_and_size(out_arrays.indices, ii0, 6);
+
+		vertices[0] = Vector3f(0.f, 0.f, maxf.z);
+		vertices[1] = Vector3f(maxf.x, 0.f, maxf.z);
+		vertices[2] = Vector3f(maxf.x, maxf.y, maxf.z);
+		vertices[3] = Vector3f(0.f, maxf.y, maxf.z);
+
+		indices[0] = vi0 + 0;
+		indices[1] = vi0 + 2;
+		indices[2] = vi0 + 1;
+		indices[3] = vi0 + 0;
+		indices[4] = vi0 + 3;
+		indices[5] = vi0 + 2;
+
+		vi0 += 4;
+		ii0 += 6;
+	}
+
+	if (negative_x) {
+		// 3---2  y
+		// |   |  |
+		// 0---1  x--z
+
+		Span<Vector3f> vertices = to_span_from_position_and_size(out_arrays.vertices, vi0, 4);
+		Span<int32_t> indices = to_span_from_position_and_size(out_arrays.indices, ii0, 6);
+
+		vertices[0] = Vector3f(0.f, 0.f, 0.f);
+		vertices[1] = Vector3f(0.f, 0.f, maxf.z);
+		vertices[2] = Vector3f(0.f, maxf.y, maxf.z);
+		vertices[3] = Vector3f(0.f, maxf.y, 0.f);
+
+		indices[0] = vi0 + 0;
+		indices[1] = vi0 + 2;
+		indices[2] = vi0 + 1;
+		indices[3] = vi0 + 0;
+		indices[4] = vi0 + 3;
+		indices[5] = vi0 + 2;
+
+		vi0 += 4;
+		ii0 += 6;
+	}
+
+	if (negative_y) {
+		// 3---2  z
+		// |   |  |
+		// 0---1  y--x
+
+		Span<Vector3f> vertices = to_span_from_position_and_size(out_arrays.vertices, vi0, 4);
+		Span<int32_t> indices = to_span_from_position_and_size(out_arrays.indices, ii0, 6);
+
+		vertices[0] = Vector3f(0.f, 0.f, 0.f);
+		vertices[1] = Vector3f(maxf.x, 0.f, 0.f);
+		vertices[2] = Vector3f(maxf.x, 0.f, maxf.z);
+		vertices[3] = Vector3f(0.f, 0.f, maxf.z);
+
+		indices[0] = vi0 + 0;
+		indices[1] = vi0 + 2;
+		indices[2] = vi0 + 1;
+		indices[3] = vi0 + 0;
+		indices[4] = vi0 + 3;
+		indices[5] = vi0 + 2;
+
+		vi0 += 4;
+		ii0 += 6;
+	}
+
+	if (negative_z) {
+		// 3---2  y
+		// |   |  |
+		// 0---1  z--x
+
+		Span<Vector3f> vertices = to_span_from_position_and_size(out_arrays.vertices, vi0, 4);
+		Span<int32_t> indices = to_span_from_position_and_size(out_arrays.indices, ii0, 6);
+
+		vertices[0] = Vector3f(0.f, 0.f, 0.f);
+		vertices[1] = Vector3f(maxf.x, 0.f, 0.f);
+		vertices[2] = Vector3f(maxf.x, maxf.y, 0.f);
+		vertices[3] = Vector3f(0.f, maxf.y, 0.f);
+
+		indices[0] = vi0 + 0;
+		indices[1] = vi0 + 1;
+		indices[2] = vi0 + 2;
+		indices[3] = vi0 + 0;
+		indices[4] = vi0 + 2;
+		indices[5] = vi0 + 3;
+	}
+}
+
+template <typename TModelID>
+void classify_chunk_occlusion_from_voxels(
+		Span<const TModelID> id_buffer,
+		const VoxelBlockyLibraryBase::BakedData &baked_data,
+		const Vector3i block_size,
+		const Vector3i min,
+		const Vector3i max,
+		const uint8_t enabled_mask,
+		bool &out_positive_x,
+		bool &out_positive_y,
+		bool &out_positive_z,
+		bool &out_negative_x,
+		bool &out_negative_y,
+		bool &out_negative_z
+) {
+	struct L {
+		static inline bool is_fully_occluded(
+				const TModelID v0,
+				const TModelID v1,
+				const VoxelBlockyLibraryBase::BakedData &baked_data,
+				const uint8_t side0_mask,
+				const uint8_t side1_mask
+		) {
+			if (v0 >= baked_data.models.size() || v1 >= baked_data.models.size()) {
+				return false;
+			}
+			const VoxelBlockyModel::BakedData &b0 = baked_data.models[v0];
+			const VoxelBlockyModel::BakedData &b1 = baked_data.models[v1];
+			if (b0.empty || b1.empty) {
+				return false;
+			}
+			if (b0.transparency_index > 0 || b1.transparency_index > 0) {
+				// Either side is transparent
+				return false;
+			}
+			if ((b0.model.full_sides_mask & side0_mask) == 0) {
+				return false;
+			}
+			if ((b1.model.full_sides_mask & side1_mask) == 0) {
+				return false;
+			}
+			return true;
+		}
+
+		static bool is_chunk_side_occluded_x(
+				const Vector3i min,
+				const Vector3i max,
+				Span<const TModelID> id_buffer,
+				const Vector3i block_size,
+				const int sign,
+				const VoxelBlockyLibraryBase::BakedData &baked_data
+		) {
+			const Cube::SideAxis side0 = sign < 0 ? Cube::SIDE_NEGATIVE_X : Cube::SIDE_POSITIVE_X;
+			const Cube::SideAxis side1 = sign < 0 ? Cube::SIDE_POSITIVE_X : Cube::SIDE_NEGATIVE_X;
+			const uint8_t side0_mask = (1 << side0);
+			const uint8_t side1_mask = (1 << side1);
+
+			Vector3i pos(sign < 0 ? min.x : max.x - 1, 0, 0);
+			for (pos.z = min.z; pos.z < max.z; ++pos.z) {
+				for (pos.y = min.y; pos.y < max.y; ++pos.y) {
+					const unsigned int loc0 = Vector3iUtil::get_zxy_index(pos, block_size);
+					const unsigned int loc1 = Vector3iUtil::get_zxy_index(pos + Vector3i(sign, 0, 0), block_size);
+
+					const TModelID v0 = id_buffer[loc0];
+					const TModelID v1 = id_buffer[loc1];
+
+					if (!is_fully_occluded(v0, v1, baked_data, side0_mask, side1_mask)) {
+						return false;
+					}
+				}
+			}
+			return true;
+		}
+
+		static bool is_chunk_side_occluded_y(
+				const Vector3i min,
+				const Vector3i max,
+				Span<const TModelID> id_buffer,
+				const Vector3i block_size,
+				const int sign,
+				const VoxelBlockyLibraryBase::BakedData &baked_data
+		) {
+			const Cube::SideAxis side0 = sign < 0 ? Cube::SIDE_NEGATIVE_Y : Cube::SIDE_POSITIVE_Y;
+			const Cube::SideAxis side1 = sign < 0 ? Cube::SIDE_POSITIVE_Y : Cube::SIDE_NEGATIVE_Y;
+			const uint8_t side0_mask = (1 << side0);
+			const uint8_t side1_mask = (1 << side1);
+
+			Vector3i pos(0, sign < 0 ? min.y : max.y - 1, 0);
+			for (pos.z = min.z; pos.z < max.z; ++pos.z) {
+				for (pos.x = min.x; pos.x < max.x; ++pos.x) {
+					const unsigned int loc0 = Vector3iUtil::get_zxy_index(pos, block_size);
+					const unsigned int loc1 = Vector3iUtil::get_zxy_index(pos + Vector3i(0, sign, 0), block_size);
+
+					const TModelID v0 = id_buffer[loc0];
+					const TModelID v1 = id_buffer[loc1];
+
+					if (!is_fully_occluded(v0, v1, baked_data, side0_mask, side1_mask)) {
+						return false;
+					}
+				}
+			}
+			return true;
+		}
+
+		static bool is_chunk_side_occluded_z(
+				const Vector3i min,
+				const Vector3i max,
+				Span<const TModelID> id_buffer,
+				const Vector3i block_size,
+				const int sign,
+				const VoxelBlockyLibraryBase::BakedData &baked_data
+		) {
+			const Cube::SideAxis side0 = sign < 0 ? Cube::SIDE_NEGATIVE_Z : Cube::SIDE_POSITIVE_Z;
+			const Cube::SideAxis side1 = sign < 0 ? Cube::SIDE_POSITIVE_Z : Cube::SIDE_NEGATIVE_Z;
+			const uint8_t side0_mask = (1 << side0);
+			const uint8_t side1_mask = (1 << side1);
+
+			Vector3i pos(0, 0, sign < 0 ? min.z : max.z - 1);
+			for (pos.x = min.x; pos.x < max.x; ++pos.x) {
+				for (pos.y = min.y; pos.y < max.y; ++pos.y) {
+					const unsigned int loc0 = Vector3iUtil::get_zxy_index(pos, block_size);
+					const unsigned int loc1 = Vector3iUtil::get_zxy_index(pos + Vector3i(0, 0, sign), block_size);
+
+					const TModelID v0 = id_buffer[loc0];
+					const TModelID v1 = id_buffer[loc1];
+
+					if (!is_fully_occluded(v0, v1, baked_data, side0_mask, side1_mask)) {
+						return false;
+					}
+				}
+			}
+			return true;
+		}
+	};
+
+	const bool positive_x_enabled = (enabled_mask & (1 << VoxelMesherBlocky::SIDE_POSITIVE_X)) != 0;
+	const bool positive_y_enabled = (enabled_mask & (1 << VoxelMesherBlocky::SIDE_POSITIVE_Y)) != 0;
+	const bool positive_z_enabled = (enabled_mask & (1 << VoxelMesherBlocky::SIDE_POSITIVE_Z)) != 0;
+
+	const bool negative_x_enabled = (enabled_mask & (1 << VoxelMesherBlocky::SIDE_NEGATIVE_X)) != 0;
+	const bool negative_y_enabled = (enabled_mask & (1 << VoxelMesherBlocky::SIDE_NEGATIVE_Y)) != 0;
+	const bool negative_z_enabled = (enabled_mask & (1 << VoxelMesherBlocky::SIDE_NEGATIVE_Z)) != 0;
+
+	out_positive_x = positive_x_enabled && L::is_chunk_side_occluded_x(min, max, id_buffer, block_size, 1, baked_data);
+	out_positive_y = positive_y_enabled && L::is_chunk_side_occluded_y(min, max, id_buffer, block_size, 1, baked_data);
+	out_positive_z = positive_z_enabled && L::is_chunk_side_occluded_z(min, max, id_buffer, block_size, 1, baked_data);
+
+	out_negative_x = negative_x_enabled && L::is_chunk_side_occluded_x(min, max, id_buffer, block_size, -1, baked_data);
+	out_negative_y = negative_y_enabled && L::is_chunk_side_occluded_y(min, max, id_buffer, block_size, -1, baked_data);
+	out_negative_z = negative_z_enabled && L::is_chunk_side_occluded_z(min, max, id_buffer, block_size, -1, baked_data);
+}
+
+void generate_shadow_occluders(
+		OccluderArrays &out_arrays,
+		const Span<const uint8_t> id_buffer_raw,
+		const VoxelBuffer::Depth depth,
+		const Vector3i block_size,
+		const VoxelBlockyLibraryBase::BakedData &baked_data,
+		const uint8_t enabled_mask
+) {
+	ZN_PROFILE_SCOPE();
+
+	// Data must be padded, hence the off-by-one
+	const Vector3i min = Vector3iUtil::create(VoxelMesherBlocky::PADDING);
+	const Vector3i max = block_size - Vector3iUtil::create(VoxelMesherBlocky::PADDING);
+
+	// Not doing only positive sides, because it allows to self-contain the calculation in the chunk.
+	// Doing only positive sides requires to also do this when the main mesh is actually empty, which means we would end
+	// up with lots of useless occluders across all space instead of just near chunks that actually have meshes. That
+	// would in turn require to lookup neighbor chunks, which introduces dependencies that complicate multi-threading
+	// and sorting.
+
+	// Rendering idea: instead of baking this into every mesh, batch all occluders into a single mesh? Then rebuild it
+	// at most once per frame if there was any change? Means we have to store occlusion info somewhere that is fast
+	// to access.
+
+	bool positive_x;
+	bool positive_y;
+	bool positive_z;
+	bool negative_x;
+	bool negative_y;
+	bool negative_z;
+
+	switch (depth) {
+		case VoxelBuffer::DEPTH_8_BIT:
+			classify_chunk_occlusion_from_voxels(
+					id_buffer_raw,
+					baked_data,
+					block_size,
+					min,
+					max,
+					enabled_mask,
+					positive_x,
+					positive_y,
+					positive_z,
+					negative_x,
+					negative_y,
+					negative_z
+			);
+			break;
+
+		case VoxelBuffer::DEPTH_16_BIT:
+			classify_chunk_occlusion_from_voxels(
+					id_buffer_raw.reinterpret_cast_to<const uint16_t>(),
+					baked_data,
+					block_size,
+					min,
+					max,
+					enabled_mask,
+					positive_x,
+					positive_y,
+					positive_z,
+					negative_x,
+					negative_y,
+					negative_z
+			);
+			break;
+
+		default:
+			ERR_PRINT("Unsupported voxel depth");
+			return;
+	}
+
+	generate_occluders_geometry(
+			out_arrays, to_vec3f(max - min), positive_x, positive_y, positive_z, negative_x, negative_y, negative_z
+	);
+}
+
+bool is_empty(const StdVector<VoxelMesherBlocky::Arrays> &arrays_per_material) {
+	for (const VoxelMesherBlocky::Arrays &arrays : arrays_per_material) {
+		if (arrays.indices.size() > 0) {
+			return false;
+		}
+	}
+	return true;
+}
+
 Vector3f side_to_block_coordinates(const Vector3f v, const VoxelBlockyModel::Side side) {
 	switch (side) {
 		case VoxelBlockyModel::SIDE_NEGATIVE_X:
@@ -464,7 +876,7 @@ int get_side_sign(const VoxelBlockyModel::Side side) {
 // cracks, but the assumption is that it will do most of the time.
 // AO is not handled, and probably doesn't need to be
 template <typename TModelID>
-void append_side_seams(
+void append_side_skirts(
 		Span<const TModelID> buffer,
 		const Vector3T<int> jump,
 		const int z, // Coordinate of the first or last voxel (not within the padded region)
@@ -519,6 +931,21 @@ void append_side_seams(
 			const Vector3f pos = side_to_block_coordinates(Vector3f(x - pad, y - pad, z - (side_sign + 1)), side);
 
 			const VoxelBlockyModel::BakedData &voxel = library.models[nv4];
+
+			if (!voxel.lod_skirts) {
+				// A typical issue is making an ocean:
+				// - Skirts will show up behind the water surface so it's not a good solution in that case.
+				// - If sea level does not line up at different LODs, then there will be LOD "cracks" anyways. I don't
+				// have a good solution for this. One way to workaround is to choose a sea level that lines up at every
+				// LOD (such as Y=0), and let the seams occur in other cases which are usually way less frequent.
+				// - Another way is to only reduce LOD resolution horizontally and not vertically, but that has a high
+				// memory cost on large distances, so not silver bullet.
+				// - Make water opaque when at large distances? If acceptable, this can be a good fix (Distant Horizons
+				// mod was doing this at some point) but either require custom shader or the ability to specify
+				// different models for different LODs in the library
+				continue;
+			}
+
 			const VoxelBlockyModel::BakedData::Model &model = voxel.model;
 
 			for (unsigned int surface_index = 0; surface_index < model.surface_count; ++surface_index) {
@@ -593,7 +1020,7 @@ void append_side_seams(
 }
 
 template <typename TModelID>
-void append_seams(
+void append_skirts(
 		Span<const TModelID> buffer,
 		const Vector3i size,
 		StdVector<VoxelMesherBlocky::Arrays> &out_arrays_per_material,
@@ -612,12 +1039,12 @@ void append_seams(
 	constexpr VoxelBlockyModel::Side NEGATIVE_Z = VoxelBlockyModel::SIDE_NEGATIVE_Z;
 	constexpr VoxelBlockyModel::Side POSITIVE_Z = VoxelBlockyModel::SIDE_POSITIVE_Z;
 
-	append_side_seams(buffer, jump.xyz(), 0, size.x, size.y, NEGATIVE_Z, library, out);
-	append_side_seams(buffer, jump.xyz(), (size.z - 1), size.x, size.y, POSITIVE_Z, library, out);
-	append_side_seams(buffer, jump.zyx(), 0, size.z, size.y, NEGATIVE_X, library, out);
-	append_side_seams(buffer, jump.zyx(), (size.x - 1), size.z, size.y, POSITIVE_X, library, out);
-	append_side_seams(buffer, jump.zxy(), 0, size.z, size.x, NEGATIVE_Y, library, out);
-	append_side_seams(buffer, jump.zxy(), (size.y - 1), size.z, size.x, POSITIVE_Y, library, out);
+	append_side_skirts(buffer, jump.xyz(), 0, size.x, size.y, NEGATIVE_Z, library, out);
+	append_side_skirts(buffer, jump.xyz(), (size.z - 1), size.x, size.y, POSITIVE_Z, library, out);
+	append_side_skirts(buffer, jump.zyx(), 0, size.z, size.y, NEGATIVE_X, library, out);
+	append_side_skirts(buffer, jump.zyx(), (size.x - 1), size.z, size.y, POSITIVE_X, library, out);
+	append_side_skirts(buffer, jump.zxy(), 0, size.z, size.x, NEGATIVE_Y, library, out);
+	append_side_skirts(buffer, jump.zxy(), (size.y - 1), size.z, size.x, POSITIVE_Y, library, out);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -661,6 +1088,25 @@ void VoxelMesherBlocky::set_occlusion_enabled(bool enable) {
 bool VoxelMesherBlocky::get_occlusion_enabled() const {
 	RWLockRead rlock(_parameters_lock);
 	return _parameters.bake_occlusion;
+}
+
+void VoxelMesherBlocky::set_shadow_occluder_side(Side side, bool enabled) {
+	RWLockWrite wlock(_parameters_lock);
+	if (enabled) {
+		_parameters.shadow_occluders_mask |= (1 << side);
+	} else {
+		_parameters.shadow_occluders_mask &= ~(1 << side);
+	}
+}
+
+bool VoxelMesherBlocky::get_shadow_occluder_side(Side side) const {
+	RWLockRead rlock(_parameters_lock);
+	return (_parameters.shadow_occluders_mask & (1 << side)) != 0;
+}
+
+uint8_t VoxelMesherBlocky::get_shadow_occluder_mask() const {
+	RWLockRead rlock(_parameters_lock);
+	return _parameters.shadow_occluders_mask;
 }
 
 void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::Input &input) {
@@ -751,17 +1197,17 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 
 		switch (channel_depth) {
 			case VoxelBuffer::DEPTH_8_BIT:
-				generate_blocky_mesh( //
-						arrays_per_material, //
-						collision_surface, //
-						raw_channel, //
-						block_size, //
-						library_baked_data, //
-						params.bake_occlusion, //
-						baked_occlusion_darkness //
+				generate_blocky_mesh(
+						arrays_per_material,
+						collision_surface,
+						raw_channel,
+						block_size,
+						library_baked_data,
+						params.bake_occlusion,
+						baked_occlusion_darkness
 				);
 				if (input.lod_index > 0) {
-					append_seams(raw_channel, block_size, arrays_per_material, library_baked_data);
+					append_skirts(raw_channel, block_size, arrays_per_material, library_baked_data);
 				}
 				break;
 
@@ -777,7 +1223,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 						baked_occlusion_darkness
 				);
 				if (input.lod_index > 0) {
-					append_seams(model_ids, block_size, arrays_per_material, library_baked_data);
+					append_skirts(model_ids, block_size, arrays_per_material, library_baked_data);
 				}
 			} break;
 
@@ -847,6 +1293,52 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 		// 	// Empty
 		// 	output.surfaces.push_back(Output::Surface());
 		// }
+	}
+
+	if (params.shadow_occluders_mask != 0 && !is_empty(arrays_per_material)) {
+		// TODO Candidate for temp allocator (maybe even stack allocator in this case?)
+		OccluderArrays occluder_arrays;
+
+		RWLockRead lock(params.library->get_baked_data_rw_lock());
+		const VoxelBlockyLibraryBase::BakedData &library_baked_data = params.library->get_baked_data();
+
+		generate_shadow_occluders( //
+				occluder_arrays, //
+				raw_channel, //
+				channel_depth, //
+				block_size, //
+				library_baked_data, //
+				params.shadow_occluders_mask //
+		);
+
+		if (input.lod_index > 0) {
+			const float lod_scale = 1 << input.lod_index;
+			for (Vector3f &p : occluder_arrays.vertices) {
+				p *= lod_scale;
+			}
+		}
+
+		if (occluder_arrays.indices.size() > 0) {
+			Array mesh_arrays;
+			mesh_arrays.resize(Mesh::ARRAY_MAX);
+
+			{
+				PackedVector3Array vertices;
+				PackedInt32Array indices;
+
+				copy_to(vertices, occluder_arrays.vertices);
+				copy_to(indices, occluder_arrays.indices);
+
+				mesh_arrays[Mesh::ARRAY_VERTEX] = vertices;
+				mesh_arrays[Mesh::ARRAY_INDEX] = indices;
+			}
+
+			output.shadow_occluder = mesh_arrays;
+			// output.surfaces.push_back(Output::Surface());
+			// Output::Surface &surface = output.surfaces.back();
+			// surface.arrays = mesh_arrays;
+			// surface.material_index = 0;
+		}
 	}
 
 	output.primitive_type = Mesh::PRIMITIVE_TRIANGLES;
@@ -927,6 +1419,11 @@ void VoxelMesherBlocky::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_occlusion_darkness", "value"), &VoxelMesherBlocky::set_occlusion_darkness);
 	ClassDB::bind_method(D_METHOD("get_occlusion_darkness"), &VoxelMesherBlocky::get_occlusion_darkness);
 
+	ClassDB::bind_method(
+			D_METHOD("set_shadow_occluder_side", "side", "enabled"), &VoxelMesherBlocky::set_shadow_occluder_side
+	);
+	ClassDB::bind_method(D_METHOD("get_shadow_occluder_side", "side"), &VoxelMesherBlocky::get_shadow_occluder_side);
+
 	ADD_PROPERTY(
 			PropertyInfo(
 					Variant::OBJECT,
@@ -947,6 +1444,25 @@ void VoxelMesherBlocky::_bind_methods() {
 			"set_occlusion_darkness",
 			"get_occlusion_darkness"
 	);
+
+	ADD_GROUP("Shadow Occluders", "shadow_occluder_");
+
+#define ADD_SHADOW_OCCLUDER_PROPERTY(m_name, m_flag)                                                                   \
+	ADD_PROPERTYI(PropertyInfo(Variant::BOOL, m_name), "set_shadow_occluder_side", "get_shadow_occluder_side", m_flag);
+
+	ADD_SHADOW_OCCLUDER_PROPERTY("shadow_occluder_negative_x", SIDE_NEGATIVE_X);
+	ADD_SHADOW_OCCLUDER_PROPERTY("shadow_occluder_positive_x", SIDE_POSITIVE_X);
+	ADD_SHADOW_OCCLUDER_PROPERTY("shadow_occluder_negative_y", SIDE_NEGATIVE_Y);
+	ADD_SHADOW_OCCLUDER_PROPERTY("shadow_occluder_positive_y", SIDE_POSITIVE_Y);
+	ADD_SHADOW_OCCLUDER_PROPERTY("shadow_occluder_negative_z", SIDE_NEGATIVE_Z);
+	ADD_SHADOW_OCCLUDER_PROPERTY("shadow_occluder_positive_z", SIDE_POSITIVE_Z);
+
+	BIND_ENUM_CONSTANT(SIDE_NEGATIVE_X);
+	BIND_ENUM_CONSTANT(SIDE_POSITIVE_X);
+	BIND_ENUM_CONSTANT(SIDE_NEGATIVE_Y);
+	BIND_ENUM_CONSTANT(SIDE_POSITIVE_Y);
+	BIND_ENUM_CONSTANT(SIDE_NEGATIVE_Z);
+	BIND_ENUM_CONSTANT(SIDE_POSITIVE_Z);
 }
 
 } // namespace zylann::voxel

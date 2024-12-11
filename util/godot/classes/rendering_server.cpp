@@ -29,4 +29,14 @@ void get_shader_parameter_list(const RID &shader_rid, StdVector<ShaderParameterI
 #endif
 }
 
+String get_current_rendering_method() {
+	// TODO This is not well exposed at the moment.
+	// See https://github.com/godotengine/godot/pull/85430
+#if defined(ZN_GODOT)
+	return OS::get_singleton()->get_current_rendering_method();
+#elif defined(ZN_GODOT_EXTENSION)
+	return "<unable to get current rendering method, Godot doesn't expose it>";
+#endif
+}
+
 } // namespace zylann::godot

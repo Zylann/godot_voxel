@@ -10,7 +10,7 @@
 	</tutorials>
 	<members>
 		<member name="mesh" type="Mesh" setter="set_mesh" getter="get_mesh">
-			Mesh that will be used for this model. Must not be empty (if you want an empty model, use [VoxelBlockyModelEmpty]). If it has more than 2 surfaces (2 materials) the next surfaces will be ignored. Surfaces must be made of triangles. Must be indexed (if you generate meshes with [SurfaceTool], use [method SurfaceTool.index]). Should ideally contain geometry within a 0..1 area. Only triangles located on the sides of that cubic area will be considered for neighbor side culling (see also [member side_vertex_tolerance]). 
+			Mesh that will be used for this model. Must not be empty (if you want an empty model, use [VoxelBlockyModelEmpty]). If it has more than 2 surfaces (2 materials) the next surfaces will be ignored. Surfaces must be made of triangles. Must be indexed (if you generate meshes with [SurfaceTool], use [method SurfaceTool.index]). Should ideally contain geometry within a 0..1 area. Only triangles located on the sides of that cubic area will be considered for neighbor side culling (see also [member side_vertex_tolerance]).
 		</member>
 		<member name="mesh_ortho_rotation_index" type="int" setter="set_mesh_ortho_rotation_index" getter="get_mesh_ortho_rotation_index" default="0">
 			Orthogonal rotation applied to the mesh when baking. Values are taken from the same convention as [GridMap] tiles.

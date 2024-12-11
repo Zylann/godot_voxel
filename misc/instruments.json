@@ -6,11 +6,6 @@
             "void Memory::free_static("
         ]
     },
-    "//to_add_in_godot4.3": {
-        "editor/themes/editor_theme_manager.cpp": [
-            "> EditorThemeManager::generate_theme("
-        ]
-    },
     "files": {
         "core/io/resource_loader.cpp": [
             "Ref<Resource> ResourceFormatLoader::load("
@@ -23,8 +18,8 @@
         ],
         "core/os/memory.cpp": [
             {
-                "markup": "TracyAlloc(mem, p_bytes + (prepad ? PAD_ALIGN : 0));",
-                "match_text": "void *mem = malloc(p_bytes + (prepad ? PAD_ALIGN : 0));",
+                "markup": "TracyAlloc(mem, p_bytes + (prepad ? DATA_OFFSET : 0));",
+                "match_text": "void *mem = malloc(p_bytes + (prepad ? DATA_OFFSET : 0));",
                 "mode": "append"
             },
             {
@@ -35,12 +30,12 @@
             },
             {
                 "markup": "TracyFree(mem);",
-                "match_text": "mem = (uint8_t *)realloc(mem, p_bytes + PAD_ALIGN);",
+                "match_text": "mem = (uint8_t *)realloc(mem, p_bytes + DATA_OFFSET);",
                 "mode": "prepend"
             },
             {
-                "markup": "TracyAlloc(mem, p_bytes + PAD_ALIGN);",
-                "match_text": "mem = (uint8_t *)realloc(mem, p_bytes + PAD_ALIGN);",
+                "markup": "TracyAlloc(mem, p_bytes + DATA_OFFSET);",
+                "match_text": "mem = (uint8_t *)realloc(mem, p_bytes + DATA_OFFSET);",
                 "mode": "append"
             },
             {
@@ -61,15 +56,15 @@
             "void MeshStorage::mesh_add_surface(",
             "void MeshStorage::multimesh_set_buffer("
         ],
-        "drivers/vulkan/rendering_device_vulkan.cpp": [
-            "RenderingDeviceVulkan::framebuffer_create(",
-            "RenderingDeviceVulkan::shader_compile_binary_from_spirv(",
-            "RenderingDeviceVulkan::shader_create_from_bytecode(",
-            "RenderingDeviceVulkan::render_pipeline_create("
-        ],
-        "drivers/vulkan/vulkan_context.cpp": [
-            "Error VulkanContext::swap_buffers() {",
-            "VulkanContext::_update_swap_chain("
+        "drivers/vulkan/rendering_device_driver_vulkan.cpp": [
+            "RenderingDeviceDriverVulkan::framebuffer_create(",
+            "RenderingDeviceDriverVulkan::shader_compile_binary_from_spirv(",
+            "RenderingDeviceDriverVulkan::shader_create_from_bytecode(",
+            {
+                "//": "RenderingDeviceDriverVulkan::render_pipeline_create(",
+                "match_text": "const VkPipelineVertexInputStateCreateInfo *vertex_input_state_create_info = nullptr;",
+                "mode": "prepend"
+            }
         ],
         "editor/editor_file_system.cpp": [
             "void EditorFileSystem::_scan_filesystem(",
@@ -77,19 +72,18 @@
             "void EditorFileSystem::reimport_files(",
             "Error EditorFileSystem::_reimport_file("
         ],
-        "editor/editor_fonts.cpp": [
+        "editor/themes/editor_fonts.cpp": [
             "void editor_register_fonts("
+        ],
+        "editor/themes/editor_theme_manager.cpp": [
+            "> EditorThemeManager::generate_theme("
         ],
         "editor/editor_node.cpp": [
             "EditorNode::EditorNode() {"
         ],
-        "editor/editor_themes.cpp": [
-            "void editor_register_and_generate_icons(",
-            "> create_editor_theme("
-        ],
         "main/main.cpp": [
             "Error Main::setup(",
-            "Error Main::setup2() {",
+            "Error Main::setup2(",
             "bool Main::iteration() {",
             "for (int iters = 0; iters < advance.physics_steps; ++iters) {"
         ],
@@ -117,7 +111,7 @@
             "void SceneTree::_process(",
             "void SceneTree::_call_input_pause("
         ],
-        "scene/resources/concave_polygon_shape_3d.cpp": [
+        "scene/resources/3d/concave_polygon_shape_3d.cpp": [
             "void ConcavePolygonShape3D::_update_shape() {"
         ],
         "scene/resources/mesh.cpp": [
@@ -135,6 +129,9 @@
         ],
         "servers/physics_3d/godot_physics_server_3d.cpp": [
             "void GodotPhysicsServer3D::step("
+        ],
+        "servers/rendering/rendering_device.cpp": [
+            "void RenderingDevice::swap_buffers("
         ],
         "servers/rendering/renderer_rd/forward_clustered/render_forward_clustered.cpp": [
             "void RenderForwardClustered::_render_scene("

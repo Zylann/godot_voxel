@@ -6,7 +6,7 @@ Voxel volume using variable level of detail.
 
 ## Description: 
 
-Renders large terrain using variable level of details. This is preferably used with smooth meshing such as [VoxelMesherTransvoxel](VoxelMesherTransvoxel.md).
+Renders large terrain using variable level of details. This is preferably used with smooth meshing such as [VoxelMesherTransvoxel](VoxelMesherTransvoxel.md). Blocky meshers can be used, but currently don't have as much support for LOD.
 
 ## Properties: 
 
@@ -28,6 +28,7 @@ Type                                                                            
 [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)          | [debug_draw_modifier_bounds](#i_debug_draw_modifier_bounds)                                        | false                                                                                 
 [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)          | [debug_draw_octree_bounds](#i_debug_draw_octree_bounds)                                            | false                                                                                 
 [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)          | [debug_draw_octree_nodes](#i_debug_draw_octree_nodes)                                              | false                                                                                 
+[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)          | [debug_draw_shadow_occluders](#i_debug_draw_shadow_occluders)                                      | false                                                                                 
 [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)          | [debug_draw_viewer_clipboxes](#i_debug_draw_viewer_clipboxes)                                      | false                                                                                 
 [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)          | [debug_draw_volume_bounds](#i_debug_draw_volume_bounds)                                            | false                                                                                 
 [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)          | [full_load_mode_enabled](#i_full_load_mode_enabled)                                                | false                                                                                 
@@ -109,7 +110,7 @@ enum **DebugDrawFlag**:
 
 enum **StreamingSystem**: 
 
-- <span id="i_STREAMING_SYSTEM_LEGACY_OCTREE"></span>**STREAMING_SYSTEM_LEGACY_OCTREE** = **0** --- Loads chunks around the viewer in a spherical pattern. Does not support multiple viewers. Does not support collision-only viewers. This was the first system to be implemented, therefore it remains available as default for compatibility.
+- <span id="i_STREAMING_SYSTEM_LEGACY_OCTREE"></span>**STREAMING_SYSTEM_LEGACY_OCTREE** = **0** --- Loads chunks around the viewer in a spherical pattern. Does not support multiple viewers. Does not support collision-only viewers. Does not support "no viewers" (will assume origin instead). Does not support per-viewer view distance, only [VoxelLodTerrain.view_distance](VoxelLodTerrain.md#i_view_distance) is used. This was the first system to be implemented, therefore it remains available as default for compatibility.
 - <span id="i_STREAMING_SYSTEM_CLIPBOX"></span>**STREAMING_SYSTEM_CLIPBOX** = **1** --- Loads chunks around the viewer in concentric boxes. Supports multiple viewers and collision-only viewers. This is a better system for multiplayer streaming. Due to simplifications, chunk locations at each LOD might be less optimal than [VoxelLodTerrain.STREAMING_SYSTEM_LEGACY_OCTREE](VoxelLodTerrain.md#i_STREAMING_SYSTEM_LEGACY_OCTREE).
 
 
@@ -172,6 +173,10 @@ How long to wait before updating colliders after an edit, in milliseconds. Colli
 *(This property has no documentation)*
 
 ### [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_debug_draw_octree_nodes"></span> **debug_draw_octree_nodes** = false
+
+*(This property has no documentation)*
+
+### [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_debug_draw_shadow_occluders"></span> **debug_draw_shadow_occluders** = false
 
 *(This property has no documentation)*
 
@@ -275,7 +280,9 @@ Enables GPU block generation, which can speed it up. This is only valid for gene
 
 ### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_view_distance"></span> **view_distance** = 512
 
-Maximum distance where terrain will load around viewers. If your terrain size is finite (like for a planet) and you want to keep it in view, you may want to set this value to a very large number. This is mainly useful for infinite terrains.
+Maximum distance viewers can have. If a viewer has a larger distance, it will be clamped. Note that this is only a hint and not an exact boundary. Terrain may load within that distance, but can continue beyond it, rounding up to block size of the biggest LOD.
+
+If your terrain size is finite (like an island or planet) and you want to keep it in view, you may want to set this value to a very large number. This is mainly useful for infinite terrains where a cap is desired.
 
 ### [AABB](https://docs.godotengine.org/en/stable/classes/class_aabb.html)<span id="i_voxel_bounds"></span> **voxel_bounds** = AABB(-5.36871e+08, -5.36871e+08, -5.36871e+08, 1.07374e+09, 1.07374e+09, 1.07374e+09)
 
@@ -463,4 +470,4 @@ Converts a voxel position into a data block position for a specific LOD index.
 
 Converts a voxel position into a mesh block position for a specific LOD index.
 
-_Generated on Apr 06, 2024_
+_Generated on Aug 27, 2024_

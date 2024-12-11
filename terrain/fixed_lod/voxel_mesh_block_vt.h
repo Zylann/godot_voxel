@@ -14,6 +14,11 @@ namespace zylann::voxel {
 // to not knowing while threads are still computing the mesh).
 class VoxelMeshBlockVT : public VoxelMeshBlock {
 public:
+	// See VoxelMesherBlocky.
+	// This unfortunately has to be a whole separate mesh instance because Godot doesn't support setting
+	// `cast_shadow` mode per mesh surface. This might have an impact on performance.
+	zylann::godot::DirectMeshInstance shadow_occluder;
+
 	RefCount mesh_viewers;
 	RefCount collision_viewers;
 
@@ -30,11 +35,111 @@ public:
 		_position_in_voxels = bpos * size;
 	}
 
+	void set_world(Ref<World3D> p_world) {
+		if (_world != p_world) {
+			_world = p_world;
+
+			// To update world. I replaced visibility by presence in world because Godot 3 culling performance is
+			// horrible
+			_set_visible(_visible && _parent_visible);
+
+			if (_static_body.is_valid()) {
+				_static_body.set_world(*p_world);
+			}
+		}
+	}
+
 	void set_material_override(Ref<Material> material) {
 		// Can be invalid if the mesh is empty, we don't create instances for empty meshes
 		if (_mesh_instance.is_valid()) {
 			_mesh_instance.set_material_override(material);
 		}
+	}
+
+	void set_mesh(
+			Ref<Mesh> mesh,
+			GeometryInstance3D::GIMode gi_mode,
+			RenderingServer::ShadowCastingSetting shadow_setting,
+			int render_layers_mask,
+			Ref<Mesh> shadow_occluder_mesh
+#ifdef TOOLS_ENABLED
+			,
+			RenderingServer::ShadowCastingSetting shadow_occluder_mode
+#endif
+	) {
+		if (shadow_occluder_mesh.is_null()) {
+			if (shadow_occluder.is_valid()) {
+				shadow_occluder.destroy();
+			}
+		} else {
+			if (!shadow_occluder.is_valid()) {
+				// Create instance if it doesn't exist
+				shadow_occluder.create();
+				shadow_occluder.set_render_layers_mask(render_layers_mask);
+#ifdef TOOLS_ENABLED
+				shadow_occluder.set_cast_shadows_setting(shadow_occluder_mode);
+#else
+				shadow_occluder.set_cast_shadows_setting(RenderingServer::SHADOW_CASTING_SETTING_SHADOWS_ONLY);
+#endif
+				set_mesh_instance_visible(shadow_occluder, _visible && _parent_visible);
+			}
+			shadow_occluder.set_mesh(shadow_occluder_mesh);
+		}
+
+		VoxelMeshBlock::set_mesh(mesh, gi_mode, shadow_setting, render_layers_mask);
+	}
+
+	void drop_mesh() {
+		if (shadow_occluder.is_valid()) {
+			shadow_occluder.destroy();
+		}
+		VoxelMeshBlock::drop_mesh();
+	}
+
+	void set_render_layers_mask(int mask) {
+		if (shadow_occluder.is_valid()) {
+			shadow_occluder.set_render_layers_mask(mask);
+		}
+		VoxelMeshBlock::set_render_layers_mask(mask);
+	}
+
+	void set_visible(bool visible) {
+		if (_visible == visible) {
+			return;
+		}
+		_visible = visible;
+		_set_visible(_visible && _parent_visible);
+	}
+
+	void set_parent_visible(bool parent_visible) {
+		if (_parent_visible && parent_visible) {
+			return;
+		}
+		_parent_visible = parent_visible;
+		_set_visible(_visible && _parent_visible);
+	}
+
+	void set_parent_transform(const Transform3D &parent_transform) {
+		ZN_PROFILE_SCOPE();
+
+		if (shadow_occluder.is_valid()) {
+			const Transform3D local_transform(Basis(), _position_in_voxels);
+			const Transform3D world_transform = parent_transform * local_transform;
+
+			if (shadow_occluder.is_valid()) {
+				shadow_occluder.set_transform(world_transform);
+			}
+		}
+
+		VoxelMeshBlock::set_parent_transform(parent_transform);
+	}
+
+protected:
+	void _set_visible(bool visible) {
+		if (shadow_occluder.is_valid()) {
+			set_mesh_instance_visible(shadow_occluder, visible);
+		}
+		VoxelMeshBlock::_set_visible(visible);
 	}
 };
 

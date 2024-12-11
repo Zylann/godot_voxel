@@ -140,6 +140,7 @@ public:
 
 	void compress_uniform_channels();
 	Compression get_channel_compression(int channel_index) const;
+	void decompress_channel(int channel_index);
 
 	void downscale_to(Ref<VoxelBuffer> dst, Vector3i src_min, Vector3i src_max, Vector3i dst_min) const;
 
@@ -158,6 +159,26 @@ public:
 	static float get_sdf_quantization_scale(Depth d);
 
 	Allocator get_allocator() const;
+
+	// Operations
+
+	void op_add_buffer_f(Ref<VoxelBuffer> other, VoxelBuffer::ChannelId channel);
+	void op_sub_buffer_f(Ref<VoxelBuffer> other, VoxelBuffer::ChannelId channel);
+	void op_mul_buffer_f(Ref<VoxelBuffer> other, VoxelBuffer::ChannelId channel);
+	void op_mul_value_f(float scale, VoxelBuffer::ChannelId channel);
+	void op_min_buffer_f(Ref<VoxelBuffer> other, VoxelBuffer::ChannelId channel);
+	void op_max_buffer_f(Ref<VoxelBuffer> other, VoxelBuffer::ChannelId channel);
+
+	// Checks if float/SDF values from a channel of the source buffer are lower than a threshold, and sets an integer
+	// value into the destination buffer depending on the result of that comparison.
+	void op_select_less_src_f_dst_i_values(
+			Ref<VoxelBuffer> src_ref,
+			const VoxelBuffer::ChannelId src_channel,
+			const float threshold,
+			const int value_if_less,
+			const int value_if_more,
+			const VoxelBuffer::ChannelId dst_channel
+	);
 
 	// Metadata
 
@@ -189,8 +210,6 @@ public:
 	static Ref<Image> debug_print_sdf_z_slice(const zylann::voxel::VoxelBuffer &buffer, float scale, int z);
 
 private:
-	void _b_deprecated_optimize();
-
 	// In GDExtension, `create` is defined by `GDCLASS`, preventing anyone from binding a `create` function directly
 	void _b_create(int x, int y, int z) {
 		create(x, y, z);

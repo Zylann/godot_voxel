@@ -3,16 +3,17 @@
 
 #include "../../util/containers/std_unordered_set.h"
 #include "../../util/containers/std_vector.h"
-#include "../../util/math/vector3i16.h"
 #include "../../util/string/std_string.h"
 #include "../../util/thread/mutex.h"
 #include "../voxel_block_serializer.h"
 #include "../voxel_stream.h"
 #include "../voxel_stream_cache.h"
 
-namespace zylann::voxel {
+namespace zylann::voxel::sqlite {
+class Connection;
+}
 
-class VoxelStreamSQLiteInternal;
+namespace zylann::voxel {
 
 // Saves voxel data into a single SQLite database file.
 class VoxelStreamSQLite : public VoxelStream {
@@ -54,24 +55,42 @@ public:
 	void set_key_cache_enabled(bool enable);
 	bool is_key_cache_enabled() const;
 
+	Box3i get_supported_block_range() const override;
+	int get_lod_count() const override;
+
+	enum CoordinateFormat {
+		COORDINATE_FORMAT_INT64_X16_Y16_Z16_L16 = 0,
+		COORDINATE_FORMAT_INT64_X19_Y19_Z19_L7,
+		COORDINATE_FORMAT_STRING_CSD,
+		COORDINATE_FORMAT_BLOB80_X25_Y25_Z25_L5,
+		COORDINATE_FORMAT_COUNT
+	};
+
+	void set_preferred_coordinate_format(CoordinateFormat format);
+	CoordinateFormat get_preferred_coordinate_format() const;
+
+	CoordinateFormat get_current_coordinate_format();
+
+	bool copy_blocks_to_other_sqlite_stream(Ref<VoxelStreamSQLite> dst_stream);
+
 private:
 	void rebuild_key_cache();
 
 	struct BlockKeysCache {
-		FixedArray<StdUnorderedSet<Vector3i16>, constants::MAX_LOD> lods;
+		FixedArray<StdUnorderedSet<Vector3i>, constants::MAX_LOD> lods;
 		RWLock rw_lock;
 
-		inline bool contains(Vector3i16 bpos, unsigned int lod_index) const {
-			const StdUnorderedSet<Vector3i16> &keys = lods[lod_index];
+		inline bool contains(Vector3i bpos, unsigned int lod_index) const {
+			const StdUnorderedSet<Vector3i> &keys = lods[lod_index];
 			RWLockRead rlock(rw_lock);
 			return keys.find(bpos) != keys.end();
 		}
 
-		inline void add_no_lock(Vector3i16 bpos, unsigned int lod_index) {
+		inline void add_no_lock(Vector3i bpos, unsigned int lod_index) {
 			lods[lod_index].insert(bpos);
 		}
 
-		inline void add(Vector3i16 bpos, unsigned int lod_index) {
+		inline void add(Vector3i bpos, unsigned int lod_index) {
 			RWLockWrite wlock(rw_lock);
 			add_no_lock(bpos, lod_index);
 		}
@@ -107,15 +126,33 @@ private:
 	// Because of this, in our use case, it might be simpler to just leave SQLite in thread-safe mode,
 	// and synchronize ourselves.
 
-	VoxelStreamSQLiteInternal *get_connection();
-	void recycle_connection(VoxelStreamSQLiteInternal *con);
-	void flush_cache_to_connection(VoxelStreamSQLiteInternal *p_connection);
+	sqlite::Connection *get_connection();
+	void recycle_connection(sqlite::Connection *con);
+
+	struct ScopeRecycle {
+		VoxelStreamSQLite *stream;
+		sqlite::Connection *connection;
+
+		ScopeRecycle(VoxelStreamSQLite *p_stream, sqlite::Connection *p_connection) :
+				stream(p_stream), connection(p_connection) {
+#ifdef DEV_ENABLED
+			ZN_ASSERT(stream != nullptr);
+			ZN_ASSERT(connection != nullptr);
+#endif
+		}
+
+		~ScopeRecycle() {
+			stream->recycle_connection(connection);
+		}
+	};
+
+	void flush_cache_to_connection(sqlite::Connection *p_connection);
 
 	static void _bind_methods();
 
 	String _user_specified_connection_path;
 	StdString _globalized_connection_path;
-	StdVector<VoxelStreamSQLiteInternal *> _connection_pool;
+	StdVector<sqlite::Connection *> _connection_pool;
 	Mutex _connection_mutex;
 	// This cache stores blocks in memory, and gets flushed to the database when big enough.
 	// This is because save queries are more expensive.
@@ -129,8 +166,13 @@ private:
 	// such a cache can become quite large. In this case we could either allow turning it off, or use an octree.
 	BlockKeysCache _block_keys_cache;
 	bool _block_keys_cache_enabled = false;
+	// Format that will be used when creating new databases. May not necessarily match the format actually used by
+	// existing databases.
+	CoordinateFormat _preferred_coordinate_format = COORDINATE_FORMAT_STRING_CSD;
 };
 
 } // namespace zylann::voxel
+
+VARIANT_ENUM_CAST(zylann::voxel::VoxelStreamSQLite::CoordinateFormat);
 
 #endif // VOXEL_STREAM_SQLITE_H

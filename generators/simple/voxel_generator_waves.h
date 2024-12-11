@@ -14,7 +14,7 @@ public:
 	VoxelGeneratorWaves();
 	~VoxelGeneratorWaves();
 
-	Result generate_block(VoxelGenerator::VoxelQueryData &input) override;
+	Result generate_block(VoxelGenerator::VoxelQueryData input) override;
 
 	Vector2 get_pattern_size() const;
 	void set_pattern_size(Vector2 size);

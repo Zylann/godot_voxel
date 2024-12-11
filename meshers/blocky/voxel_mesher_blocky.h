@@ -30,6 +30,20 @@ public:
 	void set_occlusion_enabled(bool enable);
 	bool get_occlusion_enabled() const;
 
+	enum Side {
+		SIDE_NEGATIVE_X = 0,
+		SIDE_POSITIVE_X,
+		SIDE_NEGATIVE_Y,
+		SIDE_POSITIVE_Y,
+		SIDE_NEGATIVE_Z,
+		SIDE_POSITIVE_Z,
+		SIDE_COUNT
+	};
+
+	void set_shadow_occluder_side(Side side, bool enabled);
+	bool get_shadow_occluder_side(Side side) const;
+	uint8_t get_shadow_occluder_mask() const;
+
 	void build(VoxelMesher::Output &output, const VoxelMesher::Input &input) override;
 
 	// TODO GDX: Resource::duplicate() cannot be overriden (while it can in modules).
@@ -84,6 +98,7 @@ private:
 	struct Parameters {
 		float baked_occlusion_darkness = 0.8;
 		bool bake_occlusion = true;
+		uint8_t shadow_occluders_mask = 0;
 		Ref<VoxelBlockyLibraryBase> library;
 	};
 
@@ -100,5 +115,7 @@ private:
 };
 
 } // namespace zylann::voxel
+
+VARIANT_ENUM_CAST(zylann::voxel::VoxelMesherBlocky::Side)
 
 #endif // VOXEL_MESHER_BLOCKY_H

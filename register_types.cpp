@@ -31,7 +31,6 @@
 #include "meshers/blocky/voxel_blocky_model_mesh.h"
 #include "meshers/blocky/voxel_mesher_blocky.h"
 #include "meshers/cubes/voxel_mesher_cubes.h"
-#include "meshers/dmc/voxel_mesher_dmc.h"
 #include "meshers/transvoxel/voxel_mesher_transvoxel.h"
 #include "modifiers/godot/voxel_modifier_gd.h"
 #include "modifiers/godot/voxel_modifier_mesh_gd.h"
@@ -95,7 +94,9 @@
 #include "editor/graph/graph_nodes_doc_tool.h"
 #include "editor/graph/voxel_graph_editor_node_preview.h"
 #include "editor/graph/voxel_graph_editor_plugin.h"
+#include "editor/instance_library/control_sizer.h"
 #include "editor/instance_library/voxel_instance_library_editor_plugin.h"
+#include "editor/instance_library/voxel_instance_library_list_editor.h"
 #include "editor/instance_library/voxel_instance_library_multimesh_item_editor_plugin.h"
 #include "editor/instancer/voxel_instancer_editor_plugin.h"
 #include "editor/mesh_sdf/voxel_mesh_sdf_editor_plugin.h"
@@ -304,7 +305,6 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_abstract_class<VoxelMesher>();
 		ClassDB::register_class<VoxelMesherBlocky>();
 		ClassDB::register_class<VoxelMesherTransvoxel>();
-		ClassDB::register_class<VoxelMesherDMC>();
 		ClassDB::register_class<VoxelMesherCubes>();
 
 #ifdef ZN_GODOT_EXTENSION
@@ -403,6 +403,8 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_internal_class<ZN_Axes3DControl>();
 		ClassDB::register_internal_class<ZN_ModelViewer>();
 		ClassDB::register_internal_class<ZN_EditorPropertyAABBMinMax>();
+		ClassDB::register_internal_class<ZN_EditorPropertyTextChangeOnSubmit>();
+		ClassDB::register_internal_class<ZN_ControlSizer>();
 
 		ClassDB::register_internal_class<ZN_FastNoiseLiteEditorPlugin>();
 		ClassDB::register_internal_class<ZN_FastNoiseLiteEditorInspectorPlugin>();
@@ -439,12 +441,12 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_internal_class<VoxelInstanceLibraryInspectorPlugin>();
 		ClassDB::register_internal_class<VoxelInstanceLibraryMultiMeshItemEditorPlugin>();
 		ClassDB::register_internal_class<VoxelInstanceLibraryMultiMeshItemInspectorPlugin>();
+		ClassDB::register_internal_class<VoxelInstanceLibraryListEditor>();
 
 		ClassDB::register_internal_class<VoxelMeshSDFViewer>();
 		ClassDB::register_internal_class<VoxelMeshSDFEditorPlugin>();
 		ClassDB::register_internal_class<VoxelMeshSDFInspectorPlugin>();
 
-		ClassDB::register_internal_class<ZN_EditorPropertyTextChangeOnSubmit>();
 		ClassDB::register_internal_class<VoxelGraphEditorInspectorPlugin>();
 		ClassDB::register_internal_class<VoxelGraphFunctionInspectorPlugin>();
 		ClassDB::register_internal_class<VoxelGraphEditorNodePreview>();

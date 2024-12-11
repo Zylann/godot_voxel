@@ -232,7 +232,7 @@ void test_discord_soakil_copypaste() {
 
 	const Box3i terrain_blocks_box(Vector3i(-2, -2, -2), Vector3i(4, 4, 4));
 
-	terrain_blocks_box.for_each_cell([&voxel_data, &generator](Vector3i bpos) {
+	terrain_blocks_box.for_each_cell([&voxel_data](Vector3i bpos) {
 		// std::shared_ptr<VoxelBuffer> vb = make_shared_instance<VoxelBuffer>();
 		// vb->create(Vector3iUtil::create(1 << constants::DEFAULT_BLOCK_SIZE_PO2));
 		// VoxelGenerator::VoxelQueryData q{ *vb, bpos << constants::DEFAULT_BLOCK_SIZE_PO2, 0 };
@@ -320,7 +320,7 @@ void test_discord_soakil_copypaste() {
 
 	{
 		ops::DoSphere op;
-		op.shape.center = Vector3();
+		op.shape.center = Vector3f();
 		op.shape.radius = 5.f;
 		op.shape.sdf_scale = 1.f;
 		op.box = op.shape.get_box();
@@ -343,6 +343,20 @@ void test_discord_soakil_copypaste() {
 	// Checks terrain is still as we expect. Not relying on copy() followed by equals(), because copy() is part of what
 	// we are testing
 	L::check_original(voxel_data);
+}
+
+void test_sdf_hemisphere() {
+	ops::SdfHemisphere shape;
+	shape.center = Vector3f();
+	shape.flat_direction = Vector3f(0, 1, 0);
+	shape.plane_d = 0.f;
+	shape.radius = 1.0;
+	shape.sdf_scale = 1.0;
+	shape.smoothness = 0.1;
+
+	ZN_TEST_ASSERT(shape(Vector3f(0, 0.5, 0)) > 0);
+	ZN_TEST_ASSERT(shape(Vector3f(0, -0.5, 0)) < 0);
+	ZN_TEST_ASSERT(shape(Vector3f(2, 0, 0)) > 0);
 }
 
 } // namespace zylann::voxel::tests

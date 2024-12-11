@@ -2,6 +2,7 @@
 #define VOXEL_INSTANCE_MODEL_LIBRARY_H
 
 #include "../../constants/voxel_constants.h"
+#include "../../util/containers/fixed_array.h"
 #include "../../util/containers/std_map.h"
 #include "../../util/containers/std_vector.h"
 #include "../../util/godot/classes/resource.h"
@@ -58,6 +59,9 @@ public:
 
 #ifdef TOOLS_ENABLED
 	void get_configuration_warnings(PackedStringArray &warnings) const;
+
+	void set_selected_item_id(int id);
+	int get_selected_item_id() const;
 #endif
 
 	struct PackedItem {
@@ -77,6 +81,14 @@ protected:
 	bool _set(const StringName &p_name, const Variant &p_value);
 	bool _get(const StringName &p_name, Variant &r_ret) const;
 	void _get_property_list(List<PropertyInfo> *p_list) const;
+
+	Array _b_get_data() const;
+	void _b_set_data(Array data);
+
+#ifdef TOOLS_ENABLED
+	Ref<VoxelInstanceLibraryItem> _b_get_selected_item() const;
+	void _b_set_selected_item(Ref<VoxelInstanceLibraryItem> item);
+#endif
 
 private:
 	void on_library_item_changed(int id, IInstanceLibraryItemListener::ChangeType change) override;
@@ -101,6 +113,10 @@ private:
 
 	// Packed representation of items for use in procedural generation tasks
 	PackedItems _packed_items;
+
+#ifdef TOOLS_ENABLED
+	int _selected_item_id = -1;
+#endif
 };
 
 } // namespace zylann::voxel

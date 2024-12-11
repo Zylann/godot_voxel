@@ -207,6 +207,15 @@ void generate_side_culling_matrix(VoxelBlockyLibraryBase::BakedData &baked_data)
 			std::bitset<RASTER_SIZE * RASTER_SIZE> bitmap;
 			rasterize_side_all_surfaces(model_data, side, bitmap);
 
+			{
+				std::bitset<RASTER_SIZE * RASTER_SIZE> full_bitmap;
+				full_bitmap.set();
+
+				if ((bitmap & full_bitmap) == full_bitmap) {
+					model_data.model.full_sides_mask |= (1 << side);
+				}
+			}
+
 			// Find if the same pattern already exists
 			uint32_t pattern_index = VoxelBlockyLibraryBase::NULL_INDEX;
 			for (unsigned int i = 0; i < patterns.size(); ++i) {
