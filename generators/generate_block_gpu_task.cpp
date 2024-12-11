@@ -28,7 +28,7 @@ GenerateBlockGPUTask::~GenerateBlockGPUTask() {
 unsigned int GenerateBlockGPUTask::get_required_shared_output_buffer_size() const {
 	unsigned int volume = 0;
 	for (const Box3i &box : boxes_to_generate) {
-		volume += Vector3iUtil::get_volume(box.size);
+		volume += Vector3iUtil::get_volume_u64(box.size);
 	}
 	// All outputs are floats at the moment...
 	return generator_shader_outputs->outputs.size() * volume * sizeof(float);
@@ -73,7 +73,7 @@ void GenerateBlockGPUTask::prepare(GPUTaskContext &ctx) {
 		BoxData &bd = _boxes_data[i];
 		const Box3i box = boxes_to_generate[i];
 		const Vector3i buffer_resolution = box.size;
-		const unsigned int buffer_volume = Vector3iUtil::get_volume(buffer_resolution);
+		const unsigned int buffer_volume = Vector3iUtil::get_volume_u64(buffer_resolution);
 
 		// Params
 
@@ -434,7 +434,7 @@ void GenerateBlockGPUTask::collect(GPUTaskContext &ctx) {
 		const Box3i box = boxes_to_generate[box_index];
 
 		// Every output is the same size for now
-		const unsigned int size_per_output = Vector3iUtil::get_volume(box.size) * sizeof(float);
+		const unsigned int size_per_output = Vector3iUtil::get_volume_u64(box.size) * sizeof(float);
 
 		for (unsigned int output_index = 0; output_index < generator_shader_outputs->outputs.size(); ++output_index) {
 			const VoxelGenerator::ShaderOutput &output_info = generator_shader_outputs->outputs[output_index];

@@ -1739,6 +1739,32 @@ void VoxelLodTerrain::apply_data_block_response(VoxelEngine::BlockDataOutput &ob
 	// }
 }
 
+inline void set_block_collision_shape(
+		const VoxelLodTerrain &terrain,
+		VoxelMeshBlockVLT &block,
+		Ref<Shape3D> shape,
+		const uint64_t now
+) {
+	bool debug_collisions = false;
+	if (terrain.is_inside_tree()) {
+		const SceneTree *scene_tree = terrain.get_tree();
+#if DEBUG_ENABLED
+		if (shape.is_valid()) {
+			const Color debug_color = scene_tree->get_debug_collisions_color();
+			shape->set_debug_color(debug_color);
+		}
+#endif
+		debug_collisions = scene_tree->is_debugging_collisions_hint();
+	}
+
+	block.set_collision_shape(shape, debug_collisions, &terrain, terrain.get_collision_margin());
+
+	block.set_collision_layer(terrain.get_collision_layer());
+	block.set_collision_mask(terrain.get_collision_mask());
+	block.last_collider_update_time = now;
+	block.deferred_collider_data.reset();
+}
+
 void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 	// The following is done on the main thread because Godot doesn't really support everything done here.
 	// Building meshes can be done in the threaded task when using Vulkan, but not OpenGL.
@@ -2019,14 +2045,8 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 			static_cast<int>(now - block->last_collider_update_time) > _collision_update_delay) {
 			ZN_ASSERT(_mesher.is_valid());
 			Ref<Shape3D> collision_shape = make_collision_shape_from_mesher_output(ob.surfaces, **_mesher);
-			const bool debug_collisions = is_inside_tree() ? get_tree()->is_debugging_collisions_hint() : false;
-			block->set_collision_shape(collision_shape, debug_collisions, this, _collision_margin);
-
-			block->set_collision_layer(_collision_layer);
-			block->set_collision_mask(_collision_mask);
+			set_block_collision_shape(*this, *block, collision_shape, now);
 			block->set_collision_enabled(collision_active);
-			block->last_collider_update_time = now;
-			block->deferred_collider_data.reset();
 
 		} else {
 			if (block->deferred_collider_data == nullptr) {
@@ -2272,13 +2292,7 @@ void VoxelLodTerrain::process_deferred_collision_updates(uint32_t timeout_msec) 
 							make_collision_shape_from_mesher_output(*block->deferred_collider_data, **_mesher);
 				}
 
-				block->set_collision_shape(
-						collision_shape, get_tree()->is_debugging_collisions_hint(), this, _collision_margin
-				);
-				block->set_collision_layer(_collision_layer);
-				block->set_collision_mask(_collision_mask);
-				block->last_collider_update_time = now;
-				block->deferred_collider_data.reset();
+				set_block_collision_shape(*this, *block, collision_shape, now);
 
 				unordered_remove(deferred_collision_updates, i);
 				--i;
@@ -2790,6 +2804,11 @@ void VoxelLodTerrain::get_configuration_warnings(PackedStringArray &warnings) co
 		if (generator.is_valid() && !generator->supports_shaders()) {
 			warnings.append(String("`use_gpu_generation` is enabled, but {0} does not support running on the GPU.")
 									.format(varray(generator->get_class())));
+		}
+		if (!VoxelEngine::get_singleton().has_rendering_device()) {
+			warnings.append(String("`use_gpu_generation` is enabled, but the selected renderer does not support the "
+								   "RenderingDevice API ({0}).")
+									.format(varray(ZN_CLASS_NAME_C(VoxelLodTerrain), get_current_rendering_method())));
 		}
 	}
 
@@ -3467,7 +3486,7 @@ Array VoxelLodTerrain::_b_debug_print_sdf_top_down(Vector3i center, Vector3i ext
 	for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
 		const Box3i world_box = Box3i::from_center_extents(center >> lod_index, extents >> lod_index);
 
-		if (Vector3iUtil::get_volume(world_box.size) == 0) {
+		if (Vector3iUtil::get_volume_u64(world_box.size) == 0) {
 			continue;
 		}
 

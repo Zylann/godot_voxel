@@ -1026,7 +1026,7 @@ void VoxelData::get_blocks_with_voxel_data(
 		Span<std::shared_ptr<VoxelBuffer>> out_blocks
 ) const {
 	ZN_PROFILE_SCOPE();
-	ZN_ASSERT(int64_t(out_blocks.size()) >= Vector3iUtil::get_volume(p_blocks_box.size));
+	ZN_ASSERT(out_blocks.size() >= Vector3iUtil::get_volume_u64(p_blocks_box.size));
 
 	const Lod &data_lod = _lods[lod_index];
 

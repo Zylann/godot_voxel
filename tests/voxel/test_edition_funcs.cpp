@@ -232,7 +232,7 @@ void test_discord_soakil_copypaste() {
 
 	const Box3i terrain_blocks_box(Vector3i(-2, -2, -2), Vector3i(4, 4, 4));
 
-	terrain_blocks_box.for_each_cell([&voxel_data, &generator](Vector3i bpos) {
+	terrain_blocks_box.for_each_cell([&voxel_data](Vector3i bpos) {
 		// std::shared_ptr<VoxelBuffer> vb = make_shared_instance<VoxelBuffer>();
 		// vb->create(Vector3iUtil::create(1 << constants::DEFAULT_BLOCK_SIZE_PO2));
 		// VoxelGenerator::VoxelQueryData q{ *vb, bpos << constants::DEFAULT_BLOCK_SIZE_PO2, 0 };

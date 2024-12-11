@@ -88,7 +88,7 @@ public:
 
 	bool has_path(uint32_t p_src_node_id, uint32_t p_dst_node_id) const;
 	void find_dependencies(uint32_t node_id, StdVector<uint32_t> &out_order) const;
-	void find_dependencies(StdVector<uint32_t> nodes_to_process, StdVector<uint32_t> &out_order) const;
+	void find_dependencies(Span<const uint32_t> p_nodes_to_process, StdVector<uint32_t> &out_order) const;
 	void find_immediate_dependencies(uint32_t node_id, StdVector<uint32_t> &deps) const;
 	void find_terminal_nodes(StdVector<uint32_t> &node_ids) const;
 

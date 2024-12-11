@@ -255,6 +255,9 @@ uint32_t expand_node(
 					node_type_id = VoxelGraphFunction::NODE_POW;
 					break;
 				default:
+					// Fix uninitialized variable warning on Clang, even though it is not supposed to carry on after the
+					// switch
+					node_type_id = VoxelGraphFunction::NODE_CONSTANT;
 					ZN_CRASH();
 					break;
 			}
@@ -1340,7 +1343,7 @@ void compute_node_execution_order(
 		});
 	}
 
-	graph.find_dependencies(terminal_nodes, order);
+	graph.find_dependencies(to_span(terminal_nodes), order);
 }
 
 } // namespace

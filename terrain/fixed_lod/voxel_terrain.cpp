@@ -484,6 +484,7 @@ void VoxelTerrain::unview_mesh_block(Vector3i bpos, bool mesh_flag, bool collisi
 		if (block->mesh_viewers.get() == 0) {
 			// Mesh no longer required
 			block->drop_mesh();
+			block->set_visible(false);
 		}
 	}
 
@@ -492,6 +493,7 @@ void VoxelTerrain::unview_mesh_block(Vector3i bpos, bool mesh_flag, bool collisi
 		if (block->collision_viewers.get() == 0) {
 			// Collision no longer required
 			block->drop_collision();
+			block->set_collision_enabled(false);
 		}
 	}
 
@@ -1475,36 +1477,42 @@ void VoxelTerrain::process_viewer_data_box_change(
 			_unloaded_saving_blocks[bts.position] = bts.voxels;
 		}
 
-		// Remove loading blocks (those were loaded and had their refcount reach zero)
-		for (const Vector3i bpos : tls_found_blocks_positions) {
-			emit_data_block_unloaded(bpos);
-			// TODO If they were loaded, why would they be in loading blocks?
-			// Probably in case we move so fast that blocks haven't even finished loading
-			_loading_blocks.erase(bpos);
+		{
+			ZN_PROFILE_SCOPE_NAMED("Unload signals");
+			// Remove loading blocks (those were loaded and had their refcount reach zero)
+			for (const Vector3i bpos : tls_found_blocks_positions) {
+				emit_data_block_unloaded(bpos);
+				// TODO If they were loaded, why would they be in loading blocks?
+				// Probably in case we move so fast that blocks haven't even finished loading
+				_loading_blocks.erase(bpos);
+			}
 		}
 
 		// Remove refcount from loading blocks, and cancel loading if it reaches zero
-		for (const Vector3i bpos : tls_missing_blocks) {
-			auto loading_block_it = _loading_blocks.find(bpos);
-			if (loading_block_it == _loading_blocks.end()) {
-				ZN_PRINT_VERBOSE("Request to unview a loading block that was never requested");
-				// Not expected, but fine I guess
-				return;
-			}
+		{
+			ZN_PROFILE_SCOPE_NAMED("Cancel missing blocks");
+			for (const Vector3i bpos : tls_missing_blocks) {
+				auto loading_block_it = _loading_blocks.find(bpos);
+				if (loading_block_it == _loading_blocks.end()) {
+					ZN_PRINT_VERBOSE("Request to unview a loading block that was never requested");
+					// Not expected, but fine I guess
+					return;
+				}
 
-			LoadingBlock &loading_block = loading_block_it->second;
-			loading_block.viewers.remove();
+				LoadingBlock &loading_block = loading_block_it->second;
+				loading_block.viewers.remove();
 
-			if (loading_block.viewers.get() == 0) {
-				// No longer want to load it
-				_loading_blocks.erase(loading_block_it);
+				if (loading_block.viewers.get() == 0) {
+					// No longer want to load it
+					_loading_blocks.erase(loading_block_it);
 
-				// TODO Do we really need that vector after all?
-				for (size_t i = 0; i < _blocks_pending_load.size(); ++i) {
-					if (_blocks_pending_load[i] == bpos) {
-						_blocks_pending_load[i] = _blocks_pending_load.back();
-						_blocks_pending_load.pop_back();
-						break;
+					// TODO Do we really need that vector after all?
+					for (size_t i = 0; i < _blocks_pending_load.size(); ++i) {
+						if (_blocks_pending_load[i] == bpos) {
+							_blocks_pending_load[i] = _blocks_pending_load.back();
+							_blocks_pending_load.pop_back();
+							break;
+						}
 					}
 				}
 			}
@@ -1531,33 +1539,37 @@ void VoxelTerrain::process_viewer_data_box_change(
 		});
 
 		// Schedule loading of missing blocks
-		for (const Vector3i missing_bpos : tls_missing_blocks) {
-			auto loading_block_it = _loading_blocks.find(missing_bpos);
+		{
+			ZN_PROFILE_SCOPE_NAMED("Gather missing blocks");
+			for (const Vector3i missing_bpos : tls_missing_blocks) {
+				auto loading_block_it = _loading_blocks.find(missing_bpos);
 
-			if (loading_block_it == _loading_blocks.end()) {
-				// First viewer to request it
-				LoadingBlock new_loading_block;
-				new_loading_block.viewers.add();
+				if (loading_block_it == _loading_blocks.end()) {
+					// First viewer to request it
+					LoadingBlock new_loading_block;
+					new_loading_block.viewers.add();
 
-				if (require_notifications) {
-					new_loading_block.viewers_to_notify.push_back(viewer_id);
-				}
+					if (require_notifications) {
+						new_loading_block.viewers_to_notify.push_back(viewer_id);
+					}
 
-				_loading_blocks.insert({ missing_bpos, new_loading_block });
-				_blocks_pending_load.push_back(missing_bpos);
+					_loading_blocks.insert({ missing_bpos, new_loading_block });
+					_blocks_pending_load.push_back(missing_bpos);
 
-			} else {
-				// More viewers
-				LoadingBlock &loading_block = loading_block_it->second;
-				loading_block.viewers.add();
+				} else {
+					// More viewers
+					LoadingBlock &loading_block = loading_block_it->second;
+					loading_block.viewers.add();
 
-				if (require_notifications) {
-					loading_block.viewers_to_notify.push_back(viewer_id);
+					if (require_notifications) {
+						loading_block.viewers_to_notify.push_back(viewer_id);
+					}
 				}
 			}
 		}
 
 		if (require_notifications) {
+			ZN_PROFILE_SCOPE_NAMED("Enter notifications");
 			// Notifications for blocks that were already loaded
 			for (unsigned int i = 0; i < tls_found_blocks.size(); ++i) {
 				const Vector3i bpos = tls_found_blocks_positions[i];
@@ -1806,12 +1818,13 @@ void VoxelTerrain::process_meshing() {
 		task->mesh_block_position = mesh_block_pos;
 		task->lod_index = 0;
 		task->meshing_dependency = _meshing_dependency;
-		task->collision_hint = _generate_collisions;
+		task->require_visual = mesh_block->mesh_viewers.get() > 0;
+		task->collision_hint = _generate_collisions && mesh_block->collision_viewers.get() > 0;
 		task->data = _data;
 
 		// This iteration order is specifically chosen to match VoxelEngine and threaded access
 		_data->get_blocks_with_voxel_data(data_box, 0, to_span(task->blocks));
-		task->blocks_count = Vector3iUtil::get_volume(data_box.size);
+		task->blocks_count = Vector3iUtil::get_volume_u64(data_box.size);
 
 #ifdef DEBUG_ENABLED
 		{
@@ -1882,22 +1895,24 @@ void VoxelTerrain::apply_mesh_update(const VoxelEngine::BlockMeshOutput &ob) {
 	Ref<ArrayMesh> mesh;
 	Ref<Mesh> shadow_occluder_mesh;
 	StdVector<uint16_t> material_indices;
-	if (ob.has_mesh_resource) {
-		// The mesh was already built as part of the threaded task
-		mesh = ob.mesh;
-		shadow_occluder_mesh = ob.shadow_occluder_mesh;
-		// It can be empty
-		material_indices = std::move(ob.mesh_material_indices);
-	} else {
-		// Can't build meshes in threads, do it here
-		material_indices.clear();
-		mesh = build_mesh(
-				to_span_const(ob.surfaces.surfaces),
-				ob.surfaces.primitive_type,
-				ob.surfaces.mesh_flags,
-				material_indices
-		);
-		shadow_occluder_mesh = build_mesh(ob.surfaces.shadow_occluder);
+	if (ob.visual_was_required) {
+		if (ob.has_mesh_resource) {
+			// The mesh was already built as part of the threaded task
+			mesh = ob.mesh;
+			shadow_occluder_mesh = ob.shadow_occluder_mesh;
+			// It can be empty
+			material_indices = std::move(ob.mesh_material_indices);
+		} else {
+			// Can't build meshes in threads, do it here
+			material_indices.clear();
+			mesh = build_mesh(
+					to_span_const(ob.surfaces.surfaces),
+					ob.surfaces.primitive_type,
+					ob.surfaces.mesh_flags,
+					material_indices
+			);
+			shadow_occluder_mesh = build_mesh(ob.surfaces.shadow_occluder);
+		}
 	}
 	if (mesh.is_valid()) {
 		const unsigned int surface_count = mesh->get_surface_count();
@@ -1948,15 +1963,27 @@ void VoxelTerrain::apply_mesh_update(const VoxelEngine::BlockMeshOutput &ob) {
 	const bool gen_collisions = _generate_collisions && block->collision_viewers.get() > 0;
 	if (gen_collisions) {
 		Ref<Shape3D> collision_shape = make_collision_shape_from_mesher_output(ob.surfaces, **_mesher);
-		const bool debug_collisions = is_inside_tree() ? get_tree()->is_debugging_collisions_hint() : false;
+
+		bool debug_collisions = false;
+		if (is_inside_tree()) {
+			const SceneTree *scene_tree = get_tree();
+#if DEBUG_ENABLED
+			if (collision_shape.is_valid()) {
+				const Color debug_color = scene_tree->get_debug_collisions_color();
+				collision_shape->set_debug_color(debug_color);
+			}
+#endif
+			debug_collisions = scene_tree->is_debugging_collisions_hint();
+		}
+
 		block->set_collision_shape(collision_shape, debug_collisions, this, _collision_margin);
 
 		block->set_collision_layer(_collision_layer);
 		block->set_collision_mask(_collision_mask);
 	}
 
-	block->set_visible(true);
-	block->set_collision_enabled(true);
+	block->set_visible(block->mesh_viewers.get() > 0);
+	block->set_collision_enabled(gen_collisions);
 	block->set_parent_visible(is_visible());
 	block->set_parent_transform(get_global_transform());
 	// TODO We don't set MESH_UP_TO_DATE anywhere, but it seems to work?
@@ -2163,6 +2190,30 @@ void VoxelTerrain::process_debug_draw() {
 			);
 			dr.draw_box(parent_transform * local_transform, Color(1, 1, 1));
 		}
+	}
+
+	if (debug_get_draw_flag(DEBUG_DRAW_VISUAL_AND_COLLISION_BLOCKS)) {
+		const int mesh_block_size = get_mesh_block_size();
+		_mesh_map.for_each_block([&parent_transform, &dr, mesh_block_size](const VoxelMeshBlockVT &block) {
+			Color8 color;
+			const bool visual = block.is_visible();
+			const bool collision = block.is_collision_enabled();
+			if (visual && collision) {
+				color = Color8(255, 255, 0, 255);
+			} else if (visual) {
+				color = Color8(0, 255, 0, 255);
+			} else if (collision) {
+				color = Color8(255, 0, 0, 255);
+			} else {
+				return;
+			}
+			const Vector3i voxel_pos = block.position * mesh_block_size;
+			const Transform3D local_transform(
+					Basis().scaled(Vector3(mesh_block_size, mesh_block_size, mesh_block_size)), voxel_pos
+			);
+			const Transform3D t = parent_transform * local_transform;
+			dr.draw_box(t, color);
+		});
 	}
 
 	dr.end();
@@ -2424,6 +2475,7 @@ void VoxelTerrain::_bind_methods() {
 	);
 
 	ADD_DEBUG_DRAW_FLAG("debug_draw_volume_bounds", DEBUG_DRAW_VOLUME_BOUNDS);
+	ADD_DEBUG_DRAW_FLAG("debug_draw_visual_and_collision_blocks", DEBUG_DRAW_VISUAL_AND_COLLISION_BLOCKS);
 
 	ADD_PROPERTY(
 			PropertyInfo(Variant::BOOL, "debug_draw_shadow_occluders", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR),

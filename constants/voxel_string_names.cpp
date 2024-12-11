@@ -118,6 +118,12 @@ VoxelStringNames::VoxelStringNames() {
 	async_search_completed = StringName("async_search_completed");
 
 	file_selected = StringName("file_selected");
+
+	jitter = StringName("jitter");
+	triangle_area_threshold = StringName("triangle_area_threshold");
+	density = StringName("density");
+	noise_dimension = StringName("noise_dimension");
+	noise_on_scale = StringName("noise_on_scale");
 }
 
 } // namespace zylann::voxel

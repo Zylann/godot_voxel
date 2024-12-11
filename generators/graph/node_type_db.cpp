@@ -244,7 +244,7 @@ VoxelGraphFunction::Port make_port_from_io_node(const ProgramGraph::Node &node, 
 }
 
 bool is_node_matching_port(const ProgramGraph::Node &node, const VoxelGraphFunction::Port &port) {
-	if (node.type_id != port.type) {
+	if (node.type_id != static_cast<uint32_t>(port.type)) {
 		return false;
 	}
 

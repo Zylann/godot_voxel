@@ -23,6 +23,10 @@ void ImageRangeGrid::generate(const Image &im) {
 
 	clear();
 
+	if (im.is_empty()) {
+		return;
+	}
+
 	const int lod_base = 4; // Start at 16
 
 	// Compute first lod

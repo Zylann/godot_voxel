@@ -58,12 +58,14 @@ void test_octree_update() {
 
 		bool can_split(Vector3i node_pos, int lod_index, LodOctree::NodeData &data) {
 			return LodOctree::is_below_split_distance(
-					node_pos, lod_index, viewer_pos_octree_space, lod_distance_octree_space);
+					node_pos, lod_index, viewer_pos_octree_space, lod_distance_octree_space
+			);
 		}
 
 		bool can_join(Vector3i node_pos, int parent_lod_index) {
 			return !LodOctree::is_below_split_distance(
-					node_pos, parent_lod_index, viewer_pos_octree_space, lod_distance_octree_space);
+					node_pos, parent_lod_index, viewer_pos_octree_space, lod_distance_octree_space
+			);
 		}
 	};
 
@@ -79,7 +81,7 @@ void test_octree_update() {
 		const Vector3 relative_viewer_pos = viewer_pos - block_size_v * Vector3(block_offset_lod0);
 
 		OctreeActions actions;
-		actions.viewer_pos_octree_space = viewer_pos / block_size;
+		actions.viewer_pos_octree_space = relative_viewer_pos / block_size;
 		actions.lod_distance_octree_space = lod_distance / block_size;
 		octree.update(actions);
 
@@ -114,7 +116,7 @@ void test_octree_update() {
 			const Vector3 relative_viewer_pos = viewer_pos - block_size_v * Vector3(block_offset_lod0);
 
 			OctreeActions actions;
-			actions.viewer_pos_octree_space = viewer_pos / block_size;
+			actions.viewer_pos_octree_space = relative_viewer_pos / block_size;
 			actions.lod_distance_octree_space = lod_distance / block_size;
 			octree.update(actions);
 
@@ -153,7 +155,7 @@ void test_octree_update() {
 
 void test_octree_find_in_box() {
 	const int blocks_across = 32;
-	const int block_size = 16;
+	// const int block_size = 16;
 	int lods = 0;
 	{
 		int diameter = blocks_across;
@@ -204,16 +206,19 @@ void test_octree_find_in_box() {
 		ZN_TEST_ASSERT(it != expected_positions.end());
 		const StdUnorderedSet<Vector3i> &expected_area_positions = it->second;
 		StdUnorderedSet<Vector3i> found_positions;
-		octree.for_leaves_in_box(area_box,
-				[&found_positions, &expected_area_positions, &checksum](
-						Vector3i node_pos, int lod, const LodOctree::NodeData &node_data) {
+		octree.for_leaves_in_box(
+				area_box,
+				[&found_positions,
+				 &expected_area_positions,
+				 &checksum](Vector3i node_pos, int lod, const LodOctree::NodeData &node_data) {
 					auto insert_result = found_positions.insert(node_pos);
 					// Must be one of the expected positions
 					ZN_TEST_ASSERT(expected_area_positions.find(node_pos) != expected_area_positions.end());
 					// Must not be a duplicate
 					ZN_TEST_ASSERT(insert_result.second == true);
 					checksum += node_data.state;
-				});
+				}
+		);
 	});
 
 	// Doing it again just to measure time
@@ -223,13 +228,15 @@ void test_octree_find_in_box() {
 		full_box.for_each_cell([&octree, &checksum2](Vector3i pos) {
 			const Box3i area_box(pos - Vector3i(1, 1, 1), Vector3i(3, 3, 3));
 			octree.for_leaves_in_box(
-					area_box, [&checksum2](Vector3i node_pos, int lod, const LodOctree::NodeData &node_data) {
+					area_box,
+					[&checksum2](Vector3i node_pos, int lod, const LodOctree::NodeData &node_data) {
 						checksum2 += node_data.state;
-					});
+					}
+			);
 		});
 		ZN_TEST_ASSERT(checksum2 == checksum);
 		const int for_each_cell_time = profiling_clock.restart();
-		const float single_query_time = float(for_each_cell_time) / Vector3iUtil::get_volume(full_box.size);
+		const float single_query_time = float(for_each_cell_time) / Vector3iUtil::get_volume_u64(full_box.size);
 		print_line(String("for_each_cell time with {0} lods: total {1} us, single query {2} us, checksum: {3}")
 						   .format(varray(lods, for_each_cell_time, single_query_time, checksum2)));
 	}

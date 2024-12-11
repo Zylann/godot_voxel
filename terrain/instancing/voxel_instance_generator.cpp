@@ -4,10 +4,15 @@
 #include "../../util/godot/classes/array_mesh.h"
 #include "../../util/godot/classes/engine.h"
 #include "../../util/godot/core/array.h"
+#include "../../util/godot/core/packed_arrays.h"
 #include "../../util/godot/core/random_pcg.h"
 #include "../../util/math/conv.h"
 #include "../../util/math/triangle.h"
 #include "../../util/profiling.h"
+
+#if defined(_MSC_VER)
+#pragma warning(disable : 4701) // Potentially uninitialized local variable used.
+#endif
 
 namespace zylann::voxel {
 
@@ -26,6 +31,7 @@ void VoxelInstanceGenerator::generate_transforms(
 		// TODO `lod_index` has become unused, remove?
 		int lod_index,
 		int layer_id,
+		// TODO Provide arrays or offset to ignore transition meshes (transvoxel)
 		Array surface_arrays,
 		UpMode up_mode,
 		uint8_t octant_mask,
@@ -50,9 +56,10 @@ void VoxelInstanceGenerator::generate_transforms(
 	PackedVector3Array normals = surface_arrays[ArrayMesh::ARRAY_NORMAL];
 	ERR_FAIL_COND(normals.size() == 0);
 
-	PackedInt32Array indices = surface_arrays[ArrayMesh::ARRAY_INDEX];
-	ERR_FAIL_COND(indices.size() == 0);
-	ERR_FAIL_COND(indices.size() % 3 != 0);
+	PackedInt32Array mesh_indices_pba = surface_arrays[ArrayMesh::ARRAY_INDEX];
+	ERR_FAIL_COND(mesh_indices_pba.size() == 0);
+	ERR_FAIL_COND(mesh_indices_pba.size() % 3 != 0);
+	Span<const int32_t> mesh_indices = to_span(mesh_indices_pba);
 
 	const uint32_t block_pos_hash = Vector3iHasher::hash(grid_position);
 
@@ -67,10 +74,10 @@ void VoxelInstanceGenerator::generate_transforms(
 
 	out_transforms.clear();
 
-	// TODO This part might be moved to the meshing thread if it turns out to be too heavy
-
+	// TODO Candidates for temp allocator
 	static thread_local StdVector<Vector3f> g_vertex_cache;
 	static thread_local StdVector<Vector3f> g_normal_cache;
+	static thread_local StdVector<uint32_t> g_index_cache;
 	static thread_local StdVector<float> g_noise_cache;
 	// static thread_local StdVector<float> g_noise_graph_output_cache;
 	static thread_local StdVector<float> g_noise_graph_x_cache;
@@ -79,9 +86,16 @@ void VoxelInstanceGenerator::generate_transforms(
 
 	StdVector<Vector3f> &vertex_cache = g_vertex_cache;
 	StdVector<Vector3f> &normal_cache = g_normal_cache;
+	StdVector<uint32_t> &index_cache = g_index_cache;
 
 	vertex_cache.clear();
 	normal_cache.clear();
+	index_cache.clear();
+
+	const bool voxel_material_filter_enabled = _voxel_material_filter_enabled;
+	const uint32_t voxel_material_filter_mask = _voxel_material_filter_mask;
+
+	const bool index_cache_used = voxel_material_filter_enabled;
 
 	// Pick random points
 	{
@@ -117,13 +131,16 @@ void VoxelInstanceGenerator::generate_transforms(
 					}
 					vertex_cache.push_back(pos);
 					normal_cache.push_back(to_vec3f(normals[i]));
+					if (index_cache_used) {
+						index_cache.push_back(i);
+					}
 				}
 			} break;
 
 			case EMIT_FROM_FACES_FAST: {
 				// PoolIntArray::Read indices_r = indices.read();
 
-				const int triangle_count = indices.size() / 3;
+				const int triangle_count = mesh_indices.size() / 3;
 
 				// Assumes triangles are all roughly under the same size, and Transvoxel ones do (when not simplified),
 				// so we can use number of triangles as a metric proportional to the number of instances
@@ -136,9 +153,9 @@ void VoxelInstanceGenerator::generate_transforms(
 					// Pick a random triangle
 					const uint32_t ii = (pcg0.rand() % triangle_count) * 3;
 
-					const int ia = indices[ii];
-					const int ib = indices[ii + 1];
-					const int ic = indices[ii + 2];
+					const int ia = mesh_indices[ii];
+					const int ib = mesh_indices[ii + 1];
+					const int ic = mesh_indices[ii + 2];
 
 					const Vector3 &pa = vertices[ia];
 					const Vector3 &pb = vertices[ib];
@@ -160,6 +177,10 @@ void VoxelInstanceGenerator::generate_transforms(
 
 					vertex_cache[instance_index] = to_vec3f(p);
 					normal_cache[instance_index] = to_vec3f(n);
+
+					if (index_cache_used) {
+						index_cache.push_back(ii);
+					}
 				}
 
 			} break;
@@ -167,7 +188,7 @@ void VoxelInstanceGenerator::generate_transforms(
 			case EMIT_FROM_FACES: {
 				// PackedInt32Array::Read indices_r = indices.read();
 
-				const int triangle_count = indices.size() / 3;
+				const int triangle_count = mesh_indices.size() / 3;
 
 				// static thread_local StdVector<float> g_area_cache;
 				// StdVector<float> &area_cache = g_area_cache;
@@ -178,28 +199,36 @@ void VoxelInstanceGenerator::generate_transforms(
 				// This is roughly the size of one voxel's triangle
 				// const float unit_area = 0.5f * squared(block_size / 32.f);
 
-				float accumulator = 0.f;
+				float area_accumulator = 0.f;
+				// Here density means "instances per space unit squared".
+				// So inverse density means "units squared per instance"
 				const float inv_density = 1.f / _density;
+
+				const float triangle_area_threshold = math::squared(1 << lod_index) * _triangle_area_threshold_lod0;
 
 				for (int triangle_index = 0; triangle_index < triangle_count; ++triangle_index) {
 					const uint32_t ii = triangle_index * 3;
 
-					const int ia = indices[ii];
-					const int ib = indices[ii + 1];
-					const int ic = indices[ii + 2];
+					const int ia = mesh_indices[ii];
+					const int ib = mesh_indices[ii + 1];
+					const int ic = mesh_indices[ii + 2];
 
-					const Vector3 &pa = vertices[ia];
-					const Vector3 &pb = vertices[ib];
-					const Vector3 &pc = vertices[ic];
-
-					const Vector3 &na = normals[ia];
-					const Vector3 &nb = normals[ib];
-					const Vector3 &nc = normals[ic];
+					const Vector3f &pa = to_vec3f(vertices[ia]);
+					const Vector3f &pb = to_vec3f(vertices[ib]);
+					const Vector3f &pc = to_vec3f(vertices[ic]);
 
 					const float triangle_area = math::get_triangle_area(pa, pb, pc);
-					accumulator += triangle_area;
+					if (triangle_area <= triangle_area_threshold) {
+						continue;
+					}
 
-					const int count_in_triangle = int(accumulator * _density);
+					const Vector3f &na = to_vec3f(normals[ia]);
+					const Vector3f &nb = to_vec3f(normals[ib]);
+					const Vector3f &nc = to_vec3f(normals[ic]);
+
+					area_accumulator += triangle_area;
+
+					const int count_in_triangle = int(area_accumulator * _density);
 
 					for (int i = 0; i < count_in_triangle; ++i) {
 						const float t0 = pcg1.randf();
@@ -209,16 +238,82 @@ void VoxelInstanceGenerator::generate_transforms(
 						// const Vector3 p = pa.linear_interpolate(pb, t0).linear_interpolate(pc, 1.f - sqrt(t1));
 
 						// This is an approximation
-						const Vector3 p = pa.lerp(pb, t0).lerp(pc, t1);
-						const Vector3 n = na.lerp(nb, t0).lerp(nc, t1);
+						const Vector3f rp = math::lerp(math::lerp(pa, pb, t0), pc, t1);
+						const Vector3f rn = math::lerp(math::lerp(na, nb, t0), nc, t1);
 
-						vertex_cache.push_back(to_vec3f(p));
-						normal_cache.push_back(to_vec3f(n));
+						vertex_cache.push_back(rp);
+						normal_cache.push_back(rn);
+
+						if (index_cache_used) {
+							index_cache.push_back(ii);
+						}
 					}
 
-					accumulator -= count_in_triangle * inv_density;
+					area_accumulator -= count_in_triangle * inv_density;
 				}
 
+			} break;
+
+			case EMIT_ONE_PER_TRIANGLE: {
+				// Density has no effect here.
+
+				const int triangle_count = mesh_indices.size() / 3;
+				const float one_third = 1.f / 3.f;
+				const float triangle_area_threshold = math::squared(1 << lod_index) * _triangle_area_threshold_lod0;
+
+				vertex_cache.reserve(triangle_count);
+				normal_cache.reserve(triangle_count);
+
+				for (int triangle_index = 0; triangle_index < triangle_count; ++triangle_index) {
+					const uint32_t ii = triangle_index * 3;
+
+					const int ia = mesh_indices[ii];
+					const int ib = mesh_indices[ii + 1];
+					const int ic = mesh_indices[ii + 2];
+
+					const Vector3f &pa = to_vec3f(vertices[ia]);
+					const Vector3f &pb = to_vec3f(vertices[ib]);
+					const Vector3f &pc = to_vec3f(vertices[ic]);
+
+					if (triangle_area_threshold > 0.f) {
+						const float triangle_area = math::get_triangle_area(pa, pb, pc);
+						if (triangle_area < triangle_area_threshold) {
+							continue;
+						}
+					}
+
+					const Vector3f &na = to_vec3f(normals[ia]);
+					const Vector3f &nb = to_vec3f(normals[ib]);
+					const Vector3f &nc = to_vec3f(normals[ic]);
+
+					const Vector3f cp = (pa + pb + pc) * one_third;
+					const Vector3f cn = (na + nb + nc) * one_third;
+
+					if (_jitter == 0.f) {
+						vertex_cache.push_back(to_vec3f(cp));
+						normal_cache.push_back(to_vec3f(cn));
+
+					} else {
+						const float t0 = pcg1.randf();
+						const float t1 = pcg1.randf();
+
+						// This formula gives pretty uniform distribution but involves a square root
+						// const Vector3 p = pa.linear_interpolate(pb, t0).linear_interpolate(pc, 1.f - sqrt(t1));
+						// This is an approximation
+						const Vector3f rp = math::lerp(math::lerp(pa, pb, t0), pc, t1);
+						const Vector3f rn = math::lerp(math::lerp(na, nb, t0), nc, t1);
+
+						const Vector3f p = math::lerp(cp, rp, _jitter);
+						const Vector3f n = math::lerp(cn, rn, _jitter);
+
+						vertex_cache.push_back(p);
+						normal_cache.push_back(n);
+					}
+
+					if (index_cache_used) {
+						index_cache.push_back(ii);
+					}
+				}
 			} break;
 
 			default:
@@ -238,9 +333,106 @@ void VoxelInstanceGenerator::generate_transforms(
 			if ((octant_mask & (1 << octant_index)) == 0) {
 				unordered_remove(vertex_cache, i);
 				unordered_remove(normal_cache, i);
+				if (index_cache_used) {
+					unordered_remove(index_cache, i);
+				}
 				--i;
 			}
 		}
+	}
+
+	// Filter out by voxel materials
+	// Assuming 4x8-bit weights and 4x8-bit indices as used in VoxelMesherTransvoxel for now, but might have other
+	// formats in the future
+	if (voxel_material_filter_enabled && surface_arrays.size() >= Mesh::ARRAY_CUSTOM1) {
+		ZN_PROFILE_SCOPE();
+
+		struct Attrib {
+			uint32_t packed_indices;
+			uint32_t packed_weights;
+		};
+		const PackedFloat32Array src_vertex_data = surface_arrays[Mesh::ARRAY_CUSTOM1];
+		const Span<const Attrib> attrib_array = to_span(src_vertex_data).reinterpret_cast_to<const Attrib>();
+
+		const unsigned int weight_threshold = 128;
+
+		struct L {
+			static inline bool vertex_contains_enough_material(
+					const Attrib attrib,
+					const unsigned int threshold,
+					const uint32_t material_mask
+			) {
+				for (unsigned int i = 0; i < 4; ++i) {
+					const unsigned int vmat_weight = (attrib.packed_weights >> (i * 8)) & 0xff;
+					if (vmat_weight > threshold) {
+						const unsigned int vmat_index = (attrib.packed_indices >> (i * 8)) & 0xff;
+						if (((1 << vmat_index) & material_mask) != 0) {
+							return true;
+						}
+					}
+				}
+				return false;
+			}
+
+			static inline bool triangle_contains_enough_material(
+					const Span<const Attrib> attrib_array,
+					const Span<const int32_t> mesh_indices,
+					const unsigned int ii0,
+					const unsigned int threshold,
+					const uint32_t material_mask
+			) {
+				const uint32_t vi0 = mesh_indices[ii0 + 0];
+				const uint32_t vi1 = mesh_indices[ii0 + 1];
+				const uint32_t vi2 = mesh_indices[ii0 + 2];
+
+				return vertex_contains_enough_material(attrib_array[vi0], threshold, material_mask) ||
+						vertex_contains_enough_material(attrib_array[vi1], threshold, material_mask) ||
+						vertex_contains_enough_material(attrib_array[vi2], threshold, material_mask);
+			}
+		};
+
+		switch (_emit_mode) {
+			case EMIT_FROM_VERTICES: {
+				// Indices are vertices
+				for (unsigned int instance_index = 0; instance_index < vertex_cache.size();) {
+					const unsigned int vi = index_cache[instance_index];
+					const Attrib attrib = attrib_array[vi];
+					if (L::vertex_contains_enough_material(attrib, weight_threshold, voxel_material_filter_mask)) {
+						instance_index += 1;
+					} else {
+						// Remove instance
+						unordered_remove(vertex_cache, instance_index);
+						unordered_remove(normal_cache, instance_index);
+						unordered_remove(index_cache, instance_index);
+					}
+				}
+			} break;
+			case EMIT_FROM_FACES:
+			case EMIT_FROM_FACES_FAST:
+			case EMIT_ONE_PER_TRIANGLE: {
+				// Indices are the index in the index buffer of the first vertex of the triangle in which the instance
+				// was spawned in
+				for (unsigned int instance_index = 0; instance_index < vertex_cache.size();) {
+					const uint32_t ii0 = index_cache[instance_index];
+					if (L::triangle_contains_enough_material(
+								attrib_array, mesh_indices, ii0, weight_threshold, voxel_material_filter_mask
+						)) {
+						instance_index += 1;
+					} else {
+						// Remove instance
+						unordered_remove(vertex_cache, instance_index);
+						unordered_remove(normal_cache, instance_index);
+						unordered_remove(index_cache, instance_index);
+					}
+				}
+			} break;
+			default:
+				ZN_PRINT_ERROR_ONCE("Unhandled emit mode");
+				break;
+		}
+
+		// Index cache has no use yet after this. To detect future mistakes if any, make it obvious by clearing it
+		index_cache.clear();
 	}
 
 	// Position of the block relative to the instancer node.
@@ -405,6 +597,10 @@ void VoxelInstanceGenerator::generate_transforms(
 				unordered_remove(vertex_cache, i);
 				unordered_remove(normal_cache, i);
 				unordered_remove(noise_cache, i);
+				// We don't use the index cache after this... for now
+				// if (index_cache_used) {
+				// 	unordered_remove(index_cache, i);
+				// }
 				--i;
 			}
 		}
@@ -603,10 +799,37 @@ void VoxelInstanceGenerator::set_emit_mode(EmitMode mode) {
 	}
 	_emit_mode = mode;
 	emit_changed();
+	notify_property_list_changed();
 }
 
 VoxelInstanceGenerator::EmitMode VoxelInstanceGenerator::get_emit_mode() const {
 	return _emit_mode;
+}
+
+void VoxelInstanceGenerator::set_jitter(const float p_jitter) {
+	const float jitter = math::clamp(p_jitter, 0.f, 1.f);
+	if (jitter == _jitter) {
+		return;
+	}
+	_jitter = jitter;
+	emit_changed();
+}
+
+float VoxelInstanceGenerator::get_jitter() const {
+	return _jitter;
+}
+
+void VoxelInstanceGenerator::set_triangle_area_threshold(const float p_threshold) {
+	const float threshold = math::max(p_threshold, 0.f);
+	if (threshold == _triangle_area_threshold_lod0) {
+		return;
+	}
+	_triangle_area_threshold_lod0 = threshold;
+	emit_changed();
+}
+
+float VoxelInstanceGenerator::get_triangle_area_threshold() const {
+	return _triangle_area_threshold_lod0;
 }
 
 void VoxelInstanceGenerator::set_min_scale(float min_scale) {
@@ -769,6 +992,7 @@ void VoxelInstanceGenerator::set_noise(Ref<Noise> noise) {
 	}
 	// Emit signal outside of the locked region to avoid eventual deadlocks if handlers want to access the property
 	emit_changed();
+	notify_property_list_changed();
 }
 
 Ref<Noise> VoxelInstanceGenerator::get_noise() const {
@@ -812,6 +1036,7 @@ void VoxelInstanceGenerator::set_noise_graph(Ref<pg::VoxelGraphFunction> func) {
 	}
 	// Emit signal outside of the locked region to avoid eventual deadlocks if handlers want to access the property
 	emit_changed();
+	notify_property_list_changed();
 }
 
 Ref<pg::VoxelGraphFunction> VoxelInstanceGenerator::get_noise_graph() const {
@@ -843,6 +1068,63 @@ void VoxelInstanceGenerator::set_noise_on_scale(float amount) {
 
 float VoxelInstanceGenerator::get_noise_on_scale() const {
 	return _noise_on_scale;
+}
+
+void VoxelInstanceGenerator::set_voxel_material_filter_enabled(bool enabled) {
+	if (enabled == _voxel_material_filter_enabled) {
+		return;
+	}
+	_voxel_material_filter_enabled = enabled;
+	emit_changed();
+}
+
+bool VoxelInstanceGenerator::is_voxel_material_filter_enabled() const {
+	return _voxel_material_filter_enabled;
+}
+
+void VoxelInstanceGenerator::set_voxel_material_filter_mask(const uint32_t mask) {
+	if (mask == _voxel_material_filter_mask) {
+		return;
+	}
+	_voxel_material_filter_mask = mask;
+	emit_changed();
+}
+
+uint32_t VoxelInstanceGenerator::get_voxel_material_filter_mask() const {
+	return _voxel_material_filter_mask;
+}
+
+PackedInt32Array VoxelInstanceGenerator::_b_get_voxel_material_filter_array() const {
+	const unsigned int bit_count = sizeof(_voxel_material_filter_mask) * 8;
+	PackedInt32Array array;
+	for (unsigned int i = 0; i < bit_count; ++i) {
+		if ((_voxel_material_filter_mask & (1 << i)) != 0) {
+			array.append(i);
+		}
+	}
+	return array;
+}
+
+void VoxelInstanceGenerator::_b_set_voxel_material_filter_array(PackedInt32Array material_indices) {
+	const unsigned int bit_count = sizeof(_voxel_material_filter_mask) * 8;
+	uint32_t mask = 0;
+	Span<const int32_t> indices = to_span(material_indices);
+	for (const int32_t si : indices) {
+		ZN_ASSERT_CONTINUE(si >= 0);
+		const unsigned int i = static_cast<unsigned int>(si);
+		ZN_ASSERT_CONTINUE(i < bit_count);
+		mask |= (1 << i);
+	}
+#if TOOLS_ENABLED
+	// Only warn when running the game, because when users add new items to the array in the editor,
+	// it is likely to have duplicates temporarily, until they set the desired values.
+	if (!Engine::get_singleton()->is_editor_hint()) {
+		if (has_duplicate(indices)) {
+			ZN_PRINT_WARNING("The array of indices contains a duplicate.");
+		}
+	}
+#endif
+	set_voxel_material_filter_mask(mask);
 }
 
 void VoxelInstanceGenerator::_on_noise_changed() {
@@ -878,6 +1160,46 @@ void VoxelInstanceGenerator::get_configuration_warnings(PackedStringArray &warni
 	}
 }
 
+void VoxelInstanceGenerator::_validate_property(PropertyInfo &p_property) const {
+	// In core, `PropertyInfo.name` is a String so `operator == "literal"` works.
+	// But in GodotCpp, it is a StringName, which does not have such operator.
+	// So I had to use StringNames to make the code compile in both scenarios without hurting performance.
+	const VoxelStringNames &sn = VoxelStringNames::get_singleton();
+
+	if (p_property.name == sn.jitter) {
+		if (_emit_mode != EMIT_ONE_PER_TRIANGLE) {
+			p_property.usage = PROPERTY_USAGE_NO_EDITOR;
+		}
+		return;
+	}
+
+	if (p_property.name == sn.triangle_area_threshold) {
+		if (_emit_mode != EMIT_FROM_FACES && _emit_mode != EMIT_ONE_PER_TRIANGLE) {
+			p_property.usage = PROPERTY_USAGE_NO_EDITOR;
+		}
+		return;
+	}
+
+	if (p_property.name == sn.density) {
+		if (_emit_mode == EMIT_ONE_PER_TRIANGLE) {
+			p_property.usage = PROPERTY_USAGE_NO_EDITOR;
+		}
+		return;
+	}
+
+	if (_noise.is_null() && _noise_graph.is_null()) {
+		if (p_property.name == sn.noise_dimension) {
+			p_property.usage = PROPERTY_USAGE_NO_EDITOR;
+			return;
+		}
+
+		if (p_property.name == sn.noise_on_scale) {
+			p_property.usage = PROPERTY_USAGE_NO_EDITOR;
+			return;
+		}
+	}
+}
+
 #endif
 
 void VoxelInstanceGenerator::_bind_methods() {
@@ -888,6 +1210,12 @@ void VoxelInstanceGenerator::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("set_emit_mode", "density"), &Self::set_emit_mode);
 	ClassDB::bind_method(D_METHOD("get_emit_mode"), &Self::get_emit_mode);
+
+	ClassDB::bind_method(D_METHOD("set_jitter", "jitter"), &Self::set_jitter);
+	ClassDB::bind_method(D_METHOD("get_jitter"), &Self::get_jitter);
+
+	ClassDB::bind_method(D_METHOD("set_triangle_area_threshold", "threshold"), &Self::set_triangle_area_threshold);
+	ClassDB::bind_method(D_METHOD("get_triangle_area_threshold"), &Self::get_triangle_area_threshold);
 
 	ClassDB::bind_method(D_METHOD("set_min_scale", "min_scale"), &Self::set_min_scale);
 	ClassDB::bind_method(D_METHOD("get_min_scale"), &Self::get_min_scale);
@@ -934,18 +1262,43 @@ void VoxelInstanceGenerator::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_noise_on_scale", "amount"), &Self::set_noise_on_scale);
 	ClassDB::bind_method(D_METHOD("get_noise_on_scale"), &Self::get_noise_on_scale);
 
+	ClassDB::bind_method(
+			D_METHOD("set_voxel_texture_filter_enabled", "enabled"), &Self::set_voxel_material_filter_enabled
+	);
+	ClassDB::bind_method(D_METHOD("is_voxel_texture_filter_enabled"), &Self::is_voxel_material_filter_enabled);
+
+	ClassDB::bind_method(D_METHOD("set_voxel_texture_filter_mask", "mask"), &Self::set_voxel_material_filter_mask);
+	ClassDB::bind_method(D_METHOD("get_voxel_texture_filter_mask"), &Self::get_voxel_material_filter_mask);
+
+	ClassDB::bind_method(
+			D_METHOD("set_voxel_texture_filter_array", "texture_indices"), &Self::_b_set_voxel_material_filter_array
+	);
+	ClassDB::bind_method(D_METHOD("get_voxel_texture_filter_array"), &Self::_b_get_voxel_material_filter_array);
+
 	ADD_GROUP("Emission", "");
+
+	ADD_PROPERTY(
+			PropertyInfo(Variant::INT, "emit_mode", PROPERTY_HINT_ENUM, "Vertices,FacesFast,Faces,OnePerTriangle"),
+			"set_emit_mode",
+			"get_emit_mode"
+	);
 
 	ADD_PROPERTY(
 			PropertyInfo(Variant::FLOAT, "density", PROPERTY_HINT_RANGE, DENSITY_HINT_STRING),
 			"set_density",
 			"get_density"
 	);
+
 	ADD_PROPERTY(
-			PropertyInfo(Variant::INT, "emit_mode", PROPERTY_HINT_ENUM, "Vertices,FacesFast,Faces"),
-			"set_emit_mode",
-			"get_emit_mode"
+			PropertyInfo(Variant::FLOAT, "jitter", PROPERTY_HINT_RANGE, "0.0, 1.0, 0.01"), "set_jitter", "get_jitter"
 	);
+
+	ADD_PROPERTY(
+			PropertyInfo(Variant::FLOAT, "triangle_area_threshold", PROPERTY_HINT_RANGE, "0.0, 10.0, 0.01"),
+			"set_triangle_area_threshold",
+			"get_triangle_area_threshold"
+	);
+
 	ADD_PROPERTY(
 			PropertyInfo(Variant::FLOAT, "min_slope_degrees", PROPERTY_HINT_RANGE, "0.0, 180.0, 0.1"),
 			"set_min_slope_degrees",
@@ -1023,9 +1376,28 @@ void VoxelInstanceGenerator::_bind_methods() {
 			"get_noise_on_scale"
 	);
 
+	ADD_GROUP("Filtering", "");
+
+	ADD_PROPERTY(
+			PropertyInfo(Variant::BOOL, "voxel_texture_filter_enabled"),
+			"set_voxel_texture_filter_enabled",
+			"is_voxel_texture_filter_enabled"
+	);
+	// ADD_PROPERTY(
+	// 		PropertyInfo(Variant::INT, "voxel_texture_filter_mask"),
+	// 		"set_voxel_texture_filter_mask",
+	// 		"get_voxel_texture_filter_mask"
+	// );
+	ADD_PROPERTY(
+			PropertyInfo(Variant::PACKED_INT32_ARRAY, "voxel_texture_filter_array"),
+			"set_voxel_texture_filter_array",
+			"get_voxel_texture_filter_array"
+	);
+
 	BIND_ENUM_CONSTANT(EMIT_FROM_VERTICES);
 	BIND_ENUM_CONSTANT(EMIT_FROM_FACES_FAST);
 	BIND_ENUM_CONSTANT(EMIT_FROM_FACES);
+	BIND_ENUM_CONSTANT(EMIT_ONE_PER_TRIANGLE);
 	BIND_ENUM_CONSTANT(EMIT_MODE_COUNT);
 
 	BIND_ENUM_CONSTANT(DISTRIBUTION_LINEAR);
