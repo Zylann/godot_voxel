@@ -116,6 +116,6 @@ VoxelMaterialIndices get_material_indices_from_vb(
 	return data;
 }
 
-#endif // VOXEL_TRANSVOXEL_MATERIALS_SINGLE_COMMON_H
+} // namespace zylann::voxel::transvoxel::materials::single
 
-} // zylann::voxel::transvoxel::materials::single
+#endif // VOXEL_TRANSVOXEL_MATERIALS_SINGLE_COMMON_H
