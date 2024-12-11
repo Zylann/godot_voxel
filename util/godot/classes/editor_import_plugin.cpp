@@ -14,7 +14,7 @@ String ZN_EditorImportPlugin::get_visible_name() const {
 }
 
 void ZN_EditorImportPlugin::get_recognized_extensions(List<String> *p_extensions) const {
-	ZN_ASSERT(p_extensions != nullptr);
+	ZN_ASSERT_RETURN(p_extensions != nullptr);
 	const PackedStringArray extensions = _zn_get_recognized_extensions();
 	for (const String &extension : extensions) {
 		p_extensions->push_back(extension);
@@ -47,7 +47,7 @@ int ZN_EditorImportPlugin::get_import_order() const {
 
 void ZN_EditorImportPlugin::get_import_options(const String &p_path, List<ImportOption> *r_options, int p_preset)
 		const {
-	ZN_ASSERT(r_options != nullptr);
+	ZN_ASSERT_RETURN(r_options != nullptr);
 	StdVector<ImportOptionWrapper> options;
 	_zn_get_import_options(options, p_path, p_preset);
 	for (const ImportOptionWrapper &option : options) {
@@ -65,6 +65,9 @@ bool ZN_EditorImportPlugin::get_option_visibility(
 }
 
 Error ZN_EditorImportPlugin::import(
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR >= 4
+		ResourceUID::ID p_source_id,
+#endif
 		const String &p_source_file,
 		const String &p_save_path,
 		const HashMap<StringName, Variant> &p_options,
@@ -72,8 +75,8 @@ Error ZN_EditorImportPlugin::import(
 		List<String> *r_gen_files,
 		Variant *r_metadata
 ) {
-	ZN_ASSERT(r_platform_variants != nullptr);
-	ZN_ASSERT(r_gen_files != nullptr);
+	ZN_ASSERT_RETURN_V(r_platform_variants != nullptr, ERR_BUG);
+	ZN_ASSERT_RETURN_V(r_gen_files != nullptr, ERR_BUG);
 	return _zn_import(
 			p_source_file,
 			p_save_path,
@@ -82,6 +85,12 @@ Error ZN_EditorImportPlugin::import(
 			StringListWrapper{ *r_gen_files }
 	);
 }
+
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR >= 3
+bool ZN_EditorImportPlugin::can_import_threaded() const {
+	return _zn_can_import_threaded();
+}
+#endif
 
 #elif defined(ZN_GODOT_EXTENSION)
 
@@ -172,6 +181,12 @@ Error ZN_EditorImportPlugin::_import(
 	);
 }
 
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR >= 3
+bool ZN_EditorImportPlugin::_can_import_threaded() const {
+	return _zn_can_import_threaded();
+}
+#endif
+
 #endif
 
 String ZN_EditorImportPlugin::_zn_get_importer_name() const {
@@ -242,6 +257,12 @@ Error ZN_EditorImportPlugin::_zn_import(
 ) const {
 	ZN_PRINT_ERROR("Method is not implemented");
 	return ERR_METHOD_NOT_FOUND;
+}
+
+bool ZN_EditorImportPlugin::_zn_can_import_threaded() const {
+	// According to docs
+	// https://docs.godotengine.org/en/stable/classes/class_editorimportplugin.html#class-editorimportplugin-private-method-can-import-threaded
+	return true;
 }
 
 } // namespace zylann::godot

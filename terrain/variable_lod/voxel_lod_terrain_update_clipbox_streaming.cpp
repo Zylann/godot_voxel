@@ -266,8 +266,6 @@ void process_viewers(
 				const int lod_mesh_block_size_po2 = volume_settings.mesh_block_size_po2 + lod_index;
 				const int lod_mesh_block_size = 1 << lod_mesh_block_size_po2;
 
-				const Box3i volume_bounds_in_mesh_blocks = volume_bounds_in_voxels.downscaled(lod_mesh_block_size);
-
 				const Vector3i ld = get_relative_lod_distance_in_chunks(
 						lod_index,
 						lod_count,
@@ -301,10 +299,17 @@ void process_viewers(
 					new_mesh_box = enforce_neighboring_rule(new_mesh_box, child_box, even_coordinates_required);
 				}
 
-				// Clip last
-				new_mesh_box.clip(volume_bounds_in_mesh_blocks);
-
 				paired_viewer.state.mesh_box_per_lod[lod_index] = new_mesh_box;
+			}
+
+			// Clip all mesh boxes in a second pass, because `enforce_neighboring_rule` depends on the child LOD box
+			for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
+				const int lod_mesh_block_size_po2 = volume_settings.mesh_block_size_po2 + lod_index;
+				const int lod_mesh_block_size = 1 << lod_mesh_block_size_po2;
+				const Box3i volume_bounds_in_mesh_blocks = volume_bounds_in_voxels.downscaled(lod_mesh_block_size);
+
+				Box3i &box = paired_viewer.state.mesh_box_per_lod[lod_index];
+				box.clip(volume_bounds_in_mesh_blocks);
 			}
 
 			// TODO We should have a flag server side to force data boxes to be based on mesh boxes, even though the

@@ -63,6 +63,13 @@ jobs:
         with:
           path: modules/voxel
 
+      # The version of ThorVG in 4.3-stable hits an error in latest MSVC (see godot#95861).
+      # We should no longer need this in 4.3.1 and later.
+      - name: Patch ThorVG
+        run: |
+          curl -LO https://github.com/godotengine/godot/commit/4abc358952a69427617b0683fd76427a14d6faa8.patch
+          git apply 4abc358952a69427617b0683fd76427a14d6faa8.patch
+
       # Upload cache on completion and check it out now
       # Editing this is pretty dangerous for Windows since it can break and needs to be properly tested with a fresh cache.
       - name: Load .scons_cache directory

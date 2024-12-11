@@ -8,7 +8,6 @@ void test_int32_to_string_base10(const int32_t x, std::string_view expected) {
 	FixedArray<uint8_t, 64> buffer;
 	const unsigned int nchars = int32_to_string_base10(x, to_span(buffer));
 
-	unsigned int expected_length = 0;
 	const unsigned int expected_nchars = expected.size();
 	ZN_ASSERT(nchars == expected_nchars);
 

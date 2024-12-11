@@ -12,7 +12,7 @@ namespace zylann::voxel {
 
 VoxelGenerator::VoxelGenerator() {}
 
-VoxelGenerator::Result VoxelGenerator::generate_block(VoxelQueryData &input) {
+VoxelGenerator::Result VoxelGenerator::generate_block(VoxelQueryData input) {
 	return Result();
 }
 
@@ -294,7 +294,7 @@ void VoxelGenerator::invalidate_shaders() {
 	}
 }
 
-bool VoxelGenerator::generate_broad_block(VoxelQueryData &input) {
+bool VoxelGenerator::generate_broad_block(VoxelQueryData input) {
 	// By default, generators don't support this separately and just do it inside `generate_block`.
 	// However if a generator supports GPU, it is recommended to implement it.
 	return false;

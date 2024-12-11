@@ -9,13 +9,13 @@
 	</tutorials>
 	<members>
 		<member name="channel" type="int" setter="set_channel" getter="get_channel" enum="VoxelBuffer.ChannelId" default="1">
-			Channel that will be used to generate the ground.
+			Channel that will be used to generate the ground. Use [member VoxelBuffer.CHANNEL_SDF] for smooth terrain, other channels for blocky.
 		</member>
 		<member name="height" type="float" setter="set_height" getter="get_height" default="0.0">
 			Altitude of the ground.
 		</member>
 		<member name="voxel_type" type="int" setter="set_voxel_type" getter="get_voxel_type" default="1">
-			If [member channel] is set to [constant VoxelBuffer.CHANNEL_TYPE], this value will be used to fill ground voxels.
+			If [member channel] is set to any channel other than [constant VoxelBuffer.CHANNEL_SDF], this value will be used to fill ground voxels, while air voxels will be set to 0.
 		</member>
 	</members>
 </class>

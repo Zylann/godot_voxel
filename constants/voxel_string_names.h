@@ -106,6 +106,12 @@ public:
 	StringName async_search_completed;
 
 	StringName file_selected;
+
+	StringName jitter;
+	StringName triangle_area_threshold;
+	StringName density;
+	StringName noise_dimension;
+	StringName noise_on_scale;
 };
 
 } // namespace zylann::voxel

@@ -35,8 +35,12 @@ public:
 
 	// Visuals
 
-	void set_mesh(Ref<Mesh> mesh, GeometryInstance3D::GIMode gi_mode,
-			RenderingServer::ShadowCastingSetting shadow_setting, int render_layers_mask);
+	void set_mesh(
+			Ref<Mesh> mesh,
+			GeometryInstance3D::GIMode gi_mode,
+			RenderingServer::ShadowCastingSetting shadow_setting,
+			int render_layers_mask
+	);
 	Ref<Mesh> get_mesh() const;
 	bool has_mesh() const;
 	void drop_mesh();
@@ -61,7 +65,7 @@ public:
 
 	// Collisions
 
-	void set_collision_shape(Ref<Shape3D> shape, bool debug_collision, Node3D *node, float margin);
+	void set_collision_shape(Ref<Shape3D> shape, bool debug_collision, const Node3D *node, float margin);
 	bool has_collision_shape() const;
 	void set_collision_layer(int layer);
 	void set_collision_mask(int mask);
@@ -97,7 +101,9 @@ protected:
 };
 
 Ref<ConcavePolygonShape3D> make_collision_shape_from_mesher_output(
-		const VoxelMesher::Output &mesher_output, const VoxelMesher &mesher);
+		const VoxelMesher::Output &mesher_output,
+		const VoxelMesher &mesher
+);
 
 } // namespace zylann::voxel
 

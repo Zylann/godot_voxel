@@ -123,6 +123,7 @@ public:
 		bool cutout_sides_enabled = false;
 		uint8_t fluid_index = NULL_FLUID_INDEX;
 		uint8_t fluid_level;
+		bool lod_skirts;
 
 		uint32_t box_collision_mask;
 		StdVector<AABB> box_collision_aabbs;
@@ -187,6 +188,9 @@ public:
 
 	void set_mesh_ortho_rotation_index(int i);
 	int get_mesh_ortho_rotation_index() const;
+
+	void set_lod_skirts_enabled(bool rt);
+	bool get_lod_skirts_enabled() const;
 
 	//------------------------------------------
 	// Properties for internal usage only
@@ -274,6 +278,8 @@ private:
 	bool _culls_neighbors = true;
 	bool _random_tickable = false;
 	uint8_t _mesh_ortho_rotation = 0;
+
+	bool _lod_skirts = true;
 
 	Color _color;
 

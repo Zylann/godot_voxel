@@ -2,6 +2,7 @@ Module development
 =====================
 
 This page will give some info about the module's internals.
+It may be useful if you want to contribute, or write custom C++ code for your game in order to get better performance.
 
 The source code of the module can be found on [Github](https://github.com/Zylann/godot_voxel).
 
@@ -73,18 +74,18 @@ constants/     | Constants and lookup tables used throughout the engine.
 doc/           | Contains documentation
 edition/       | High-level utilities to access and modify voxels. May depend on voxel nodes.
 editor/        | Editor-specific code. May also depend on voxel nodes.
-engine/        | Contains task management. Depends on meshers, streams, storage but not directly on nodes.
+engine/        | Contains global stuff with the VoxelEngine singleton. Depends on meshers, streams, storage but not directly on nodes.
 generators/    | Procedural generators. They only depend on voxel storage and math.
 meshers/       | Only depends on voxel storage, math and some Godot graphics APIs.
 misc/          | Various scripts and configuration files, stored here to avoid cluttering the main folder.
 modifiers/     | Files related to the modifiers feature.
 shaders/       | Shaders used internally by the engine, both in text form and formatted C++ form.
 storage/       | Storage and memory data structures.
-streams/       | Files handling code. Only depends on filesystem and storage.
+streams/       | File storage handling code. Only depends on filesystem and storage.
 terrain/       | Contains all the nodes. Depends on the rest of the module, except editor-only parts.
-tests/         | Contains tests. These run when Godot starts if enabled in the build script.
+tests/         | Contains tests. These run when Godot starts if enabled in the build script and specified by command line.
 thirdparty/    | Third-party libraries, in source code form. They are compiled statically so Godot remains a single executable.
-util/          | Generic utility functions and structures. They don't depend on voxel stuff.
+util/          | Generic utility functions and data structures. They don't depend on voxel stuff.
 
 <p></p>
 
@@ -136,7 +137,7 @@ There is one pool of threads. This pool can be given many tasks and distributes 
 
 Some tasks are scheduled in a "serial" group, which means only one of them will run at a time (although any thread can run them). This is to avoid clogging up all the threads with waiting tasks if they all lock a shared resource. This is used for I/O such as loading and saving to disk.
 
-Threads are managed in [VoxelEngine](api/VoxelEngine.md).
+The thread pool is in [VoxelEngine](api/VoxelEngine.md).
 
 Note: this task system does not account for "frames". Tasks can run at any time for less or more than one frame of the main thread.
 
@@ -146,7 +147,7 @@ Code guidelines
 
 ### Syntax
 
-For the most part, use `clang-format` and follow Godot conventions.
+For the most part, use `clang-format` and follow most of Godot conventions.
 
 - Class and struct names `PascalCase`
 - Constants, enums and macros `CAPSLOCK_CASE`
@@ -177,6 +178,7 @@ For the most part, use `clang-format` and follow Godot conventions.
 - Bindings go at the bottom.
 - Avoid long lines. Preferred maximum line length is 120 characters. Don't fit too many operations on the same line, use locals.
 - Defining types or functions in `.cpp` may be better for compilation times than in header if they are internal.
+- When a line is too long to fit a function signature, function call or list, write elements in column.
 
 ### C++ features
 
@@ -186,7 +188,7 @@ For the most part, use `clang-format` and follow Godot conventions.
 - STL is ok if it measurably performs better than Godot alternatives.
 - Initialize variables next to declaration
 - Avoid using macros to define logic or constants. Prefer `static const`, `constexpr` and `inline` functions.
-- Prefer adding `const` to variables that won't change after being initialized (function arguments are spared for now as it would make signatures very long)
+- Prefer adding `const` to variables that won't change after being initialized
 - Don't exploit booleanization when an explicit alternative exists. Example: use `if (a == nullptr)` instead of `if (!a)`
 - If possible, avoid plain arrays like `int a[42]`. Debuggers don't catch overruns on them. Prefer using wrappers such as `FixedArray` and `Span`.
 - Use `uint32_t`, `uint16_t`, `uint8_t` in case integer size matters.
@@ -216,7 +218,7 @@ In performance-critical areas which run a lot:
 - Careful about what is thread-safe and what isn't. Some major areas of this module work within threads.
 - Reduce mutex locking to a minimum, and avoid locking for long periods.
 - Use data structures that are fit to the most frequent use over time (will often be either array, vector or hash map).
-- Consider statistics if their impact is negligible. It helps users to monitor how well the module performs even in release builds.
+- Consider tracking debug stats if their impact is negligible. It helps users to monitor how well the module performs even in release builds.
 - Profile your code, in release mode. This module is Tracy-friendly, see `util/profiling.hpp`.
 - Care about alignment when making data structures. For exmaple, pack fields smaller than 4 bytes so they use space better
 
@@ -227,7 +229,7 @@ In performance-critical areas which run a lot:
 - Use `memnew` and `memdelete` instead of `new` and `delete` on types derived from Godot `Object`
 - Don't leave random prints. For verbose mode you may also use `ZN_PRINT_VERBOSE()` instead of `print_verbose()`.
 - Use `int` as argument for functions exposed to scripts if they don't need to exceed 2^31, even if they are never negative, so errors are clearer if the user makes a mistake
-- If possible, keep Godot usage to a minimum, to make the code more portable, and sometimes faster for future GDExtension. Some areas use custom equivalents defined in `util/`.
+- If possible, keep Godot usage to a minimum, to make the code more portable, and sometimes faster for GDExtension builds. Some areas use custom equivalents defined in `util/`.
 
 Compiling as a module or an extension is both supported, so it involves some restrictions:
 
@@ -238,9 +240,9 @@ Compiling as a module or an extension is both supported, so it involves some res
 
 The intented namespaces are `zylann::` as main, and `zylann::voxel::` for voxel-related stuff. There may be others for different parts of the module.
 
-Registered classes are also namespaced to prevent conflicts. These do not appear in Godot's ClassDB, so voxel-related classes are also prefixed `Voxel`. Other more generic classes are prefixed `ZN_`.
+Registered classes are also namespaced to prevent conflicts. Namespaces do not appear in Godot's ClassDB, so voxel-related classes are also prefixed `Voxel`. Other more generic classes are prefixed `ZN_`.
 
-If a registered class needs the same name as an internal one, it can be placed into a `::gd` sub-namespace. On the other hand, internal classes can also be suffixed `Internal`.
+If a registered class needs the same name as an internal one, it can be placed into a `::godot` sub-namespace. On the other hand, internal classes can also be suffixed `Internal`.
 
 ### Version control
 

@@ -33,12 +33,15 @@ inline void sort_min_max(Vector3i &a, Vector3i &b) {
 }
 
 // Returning a 64-bit integer because volumes can quickly overflow INT_MAX (like 1300^3),
-// even though dense volumes of that size will rarely be encountered in this module
-inline int64_t get_volume(const Vector3i &v) {
+// even though dense volumes of that size will rarely be encountered in this module.
+inline uint64_t get_volume_u64(const Vector3i &v) {
 #ifdef DEBUG_ENABLED
 	ZN_ASSERT_RETURN_V(v.x >= 0 && v.y >= 0 && v.z >= 0, 0);
 #endif
-	return v.x * v.y * v.z;
+	return math::multiply_check_overflow_u64(
+			static_cast<uint64_t>(v.x),
+			math::multiply_check_overflow_u64(static_cast<uint64_t>(v.y), static_cast<uint64_t>(v.z))
+	);
 }
 
 inline unsigned int get_zxy_index(const Vector3i &v, const Vector3i area_size) {

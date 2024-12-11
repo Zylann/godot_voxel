@@ -54,7 +54,7 @@ public:
 		return false;
 	}
 
-	Result generate_block(VoxelQueryData &input) override;
+	Result generate_block(VoxelQueryData input) override;
 	int get_used_channels_mask() const override;
 
 	IThreadedTask *create_block_task(const VoxelGenerator::BlockTaskParams &params) const override;

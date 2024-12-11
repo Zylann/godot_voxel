@@ -51,7 +51,8 @@ void test_spatial_lock_misc() {
 
 				spatial_lock.unlock_write(box4);
 			},
-			&spatial_lock);
+			&spatial_lock
+	);
 
 	thread.wait_to_finish();
 
@@ -81,7 +82,7 @@ void test_spatial_lock_spam() {
 	public:
 		Map(Vector3i p_size) {
 			_size = p_size;
-			_cells.resize(Vector3iUtil::get_volume(_size), 0);
+			_cells.resize(Vector3iUtil::get_volume_u64(_size), 0);
 		}
 
 		inline Vector3i get_size() const {
@@ -145,14 +146,14 @@ void test_spatial_lock_spam() {
 
 			StdVector<int> &expected_values = reusable_vector;
 			expected_values.clear();
-			expected_values.reserve(Vector3iUtil::get_volume(box.size));
+			expected_values.reserve(Vector3iUtil::get_volume_u64(box.size));
 			box.for_each_cell([&map, &expected_values](Vector3i pos) { //
 				expected_values.push_back(map.at(pos));
 			});
 
-			for (int i = 0; /* keep looping at least once */; ++i) {
+			while (true) {
 				int j = 0;
-				box.for_each_cell([&map, &expected_values, &j](Vector3i pos) { //
+				box.for_each_cell([&map, &expected_values, &j](Vector3i pos) {
 					// Cells must not change while we read them.
 					ZN_TEST_ASSERT(expected_values[j] == map.at(pos));
 					// Note, iteration order is the same as when we cached expected values
@@ -168,7 +169,7 @@ void test_spatial_lock_spam() {
 		static Box3i make_random_box(const Vector3i area_size, RandomPCG &rng) {
 			ZN_ASSERT(area_size.x > 0 && area_size.y > 0 && area_size.z > 0);
 			return Box3i(Vector3i(rng.rand(area_size.x), rng.rand(area_size.y), rng.rand(area_size.z)),
-					Vector3i(1 + rng.rand(4), 1 + rng.rand(4), 1 + rng.rand(4)))
+						 Vector3i(1 + rng.rand(4), 1 + rng.rand(4), 1 + rng.rand(4)))
 					.clipped(Box3i(Vector3i(), area_size));
 		}
 
@@ -294,14 +295,15 @@ void test_spatial_lock_dependent_map_chunks() {
 		EventList &events;
 
 		Task1(int p_sleep_amount_usec, Map &p_map, Vector2i p_column_pos, EventList &p_events) :
-				sleep_amount_usec(p_sleep_amount_usec), map(p_map), column_pos(p_column_pos), events(p_events) {}
+				sleep_amount_usec(p_sleep_amount_usec), column_pos(p_column_pos), map(p_map), events(p_events) {}
 
 		void run(ThreadedTaskContext &ctx) override {
 			ZN_PROFILE_SCOPE();
 
 			const BoxBounds3i box( //
 					Vector3i(column_pos.x - 1, 0, column_pos.y - 1), //
-					Vector3i(column_pos.x + 1, 24, column_pos.y + 1) + Vector3i(1, 1, 1));
+					Vector3i(column_pos.x + 1, 24, column_pos.y + 1) + Vector3i(1, 1, 1)
+			);
 
 			if (!map.spatial_lock.try_lock_write(box)) {
 				ctx.status = ThreadedTaskContext::STATUS_POSTPONED;
@@ -341,7 +343,7 @@ void test_spatial_lock_dependent_map_chunks() {
 		EventList &events;
 
 		Task2(int p_sleep_amount_usec, Map &p_map, Vector3i p_bpos, EventList &p_events) :
-				sleep_amount_usec(p_sleep_amount_usec), map(p_map), bpos0(p_bpos), events(p_events) {}
+				sleep_amount_usec(p_sleep_amount_usec), bpos0(p_bpos), map(p_map), events(p_events) {}
 
 		void run(ThreadedTaskContext &ctx) override {
 			ZN_PROFILE_SCOPE();
@@ -381,7 +383,8 @@ void test_spatial_lock_dependent_map_chunks() {
 	const unsigned int hw_concurrency = Thread::get_hardware_concurrency();
 	if (hw_concurrency < test_thread_count) {
 		ZN_PRINT_WARNING(format(
-				"Hardware concurrency is {}, smaller than test requirement {}", test_thread_count, hw_concurrency));
+				"Hardware concurrency is {}, smaller than test requirement {}", test_thread_count, hw_concurrency
+		));
 	}
 
 	ThreadedTaskRunner runner;
@@ -399,14 +402,20 @@ void test_spatial_lock_dependent_map_chunks() {
 	Vector2i column_pos;
 	for (column_pos.y = 0; column_pos.y < MAP_SIZE; ++column_pos.y) {
 		for (column_pos.x = 0; column_pos.x < MAP_SIZE; ++column_pos.x) {
-			Task1 *task = ZN_NEW(Task1(1000 + rng.rand(2000), map, column_pos, events));
-			runner.enqueue(task, false);
-			++in_flight_count;
+			{
+				Task1 *task = ZN_NEW(Task1(1000 + rng.rand(2000), map, column_pos, events));
+				runner.enqueue(task, false);
+				++in_flight_count;
+			}
 
 			// Add some reading requests
 			for (int i = 0; i < 2; ++i) {
-				Task2 *task = ZN_NEW(Task2(1000 + rng.rand(2000), map,
-						Vector3i(rng.rand(MAP_SIZE), rng.rand(MAP_SIZE), rng.rand(MAP_SIZE)), events));
+				Task2 *task = ZN_NEW(
+						Task2(1000 + rng.rand(2000),
+							  map,
+							  Vector3i(rng.rand(MAP_SIZE), rng.rand(MAP_SIZE), rng.rand(MAP_SIZE)),
+							  events)
+				);
 				runner.enqueue(task, false);
 				++in_flight_count;
 			}

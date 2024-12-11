@@ -447,7 +447,7 @@ Dictionary VoxelMeshSDF::_b_get_data() const {
 	d["res"] = vb.get_size();
 
 	PackedFloat32Array sdf_f32;
-	sdf_f32.resize(Vector3iUtil::get_volume(vb.get_size()));
+	sdf_f32.resize(Vector3iUtil::get_volume_u64(vb.get_size()));
 	Span<const float> channel;
 	ERR_FAIL_COND_V(!vb.get_channel_data_read_only(VoxelBuffer::CHANNEL_SDF, channel), Dictionary());
 	memcpy(sdf_f32.ptrw(), channel.data(), channel.size() * sizeof(float));

@@ -29,18 +29,21 @@
 		<method name="load_voxel_block">
 			<return type="int" enum="VoxelStream.ResultCode" />
 			<param index="0" name="out_buffer" type="VoxelBuffer" />
-			<param index="1" name="origin_in_voxels" type="Vector3i" />
+			<param index="1" name="block_position" type="Vector3i" />
 			<param index="2" name="lod_index" type="int" />
 			<description>
+				[code]out_buffer[/code]: Block of voxels to load. Must be a pre-created instance (not null).
+				[code]block_position[/code]: Position of the block in block coordinates within the specified LOD.
 			</description>
 		</method>
 		<method name="save_voxel_block">
 			<return type="void" />
 			<param index="0" name="buffer" type="VoxelBuffer" />
-			<param index="1" name="origin_in_voxels" type="Vector3i" />
+			<param index="1" name="block_position" type="Vector3i" />
 			<param index="2" name="lod_index" type="int" />
 			<description>
 				[code]buffer[/code]: Block of voxels to save. It is strongly recommended to not keep a reference to that data afterward, because streams are allowed to cache it, and saved data must represent either snapshots (copies) or last references to the data after the volume they belonged to is destroyed.
+				[code]block_position[/code]: Position of the block in block coordinates within the specified LOD.
 			</description>
 		</method>
 	</methods>

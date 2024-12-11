@@ -48,6 +48,14 @@ inline float get_triangle_area(Vector3 p0, Vector3 p1, Vector3 p2) {
 	return 0.5 * c.length();
 }
 
+template <typename T>
+inline T get_triangle_area(const Vector3T<T> p0, const Vector3T<T> p1, const Vector3T<T> p2) {
+	const Vector3T<T> p01 = p1 - p0;
+	const Vector3T<T> p02 = p2 - p0;
+	const Vector3T<T> c = cross(p01, p02);
+	return T(0.5) * length(c);
+}
+
 inline Vector3f get_triangle_barycentric_coordinates(Vector2f p0, Vector2f p1, Vector2f p2, Vector2f p) {
 	const float den = (p1.y - p2.y) * (p0.x - p2.x) + (p2.x - p1.x) * (p0.y - p2.y);
 	Vector3f weights;

@@ -51,7 +51,7 @@ public:
 		return true;
 	}
 
-	virtual ICustomVoxelMetadata *duplicate() {
+	ICustomVoxelMetadata *duplicate() override {
 		CustomMetadataTest *d = ZN_NEW(CustomMetadataTest);
 		*d = *this;
 		return d;
@@ -265,6 +265,7 @@ void test_voxel_buffer_paste_masked() {
 	VoxelBuffer src(VoxelBuffer::ALLOCATOR_DEFAULT);
 	VoxelBuffer dst(VoxelBuffer::ALLOCATOR_DEFAULT);
 
+	// clang-format off
 	const uint8_t src_values[] = {
 		0, 0, 0, 0, 0, //
 		0, 1, 0, 0, 0, //
@@ -281,6 +282,7 @@ void test_voxel_buffer_paste_masked() {
 		0, 0, 0, 0, 0, //
 		0, 1, 1, 1, 0, //
 	};
+	// clang-format on
 
 	// const uint8_t src_values_pretransformed[] = {
 	// 	0, 0, 0, 0, //
@@ -302,6 +304,7 @@ void test_voxel_buffer_paste_masked() {
 	// 	1, 1, 1, 0, //
 	// };
 
+	// clang-format off
 	const uint8_t dst_values[] = {
 		3, 3, 3, 3, //
 		3, 3, 3, 3, //
@@ -322,11 +325,13 @@ void test_voxel_buffer_paste_masked() {
 		3, 3, 3, 3, //
 		//
 	};
+	// clang-format on
 
 	const Vector3i paste_dst_pos(-1, 0, 1);
 	const uint8_t src_mask_value = 0;
 	const uint8_t dst_mask_value = 3;
 
+	// clang-format off
 	const uint8_t expected_values[] = {
 		3, 3, 3, 3, //
 		3, 3, 3, 3, //
@@ -347,6 +352,7 @@ void test_voxel_buffer_paste_masked() {
 		1, 1, 1, 3, //
 		//
 	};
+	// clang-format on
 
 	const uint8_t copied_channel_index = 0;
 	const uint8_t src_mask_channel_index = 0;
@@ -355,16 +361,16 @@ void test_voxel_buffer_paste_masked() {
 	load_from_array_literal(src, copied_channel_index, src_values, Vector3i(5, 3, 4));
 	load_from_array_literal(dst, copied_channel_index, dst_values, Vector3i(4, 3, 5));
 
-	paste_src_masked_dst_writable_value( //
-			to_single_element_span(copied_channel_index), //
-			src, //
-			src_mask_channel_index, //
-			src_mask_value, //
-			dst, //
-			paste_dst_pos, //
-			dst_mask_channel_index, //
-			dst_mask_value, //
-			true //
+	paste_src_masked_dst_writable_value(
+			to_single_element_span(copied_channel_index),
+			src,
+			src_mask_channel_index,
+			src_mask_value,
+			dst,
+			paste_dst_pos,
+			dst_mask_channel_index,
+			dst_mask_value,
+			true
 	);
 
 	VoxelBuffer expected(VoxelBuffer::ALLOCATOR_DEFAULT);
