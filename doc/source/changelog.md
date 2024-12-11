@@ -12,9 +12,12 @@ Semver is not yet in place, so each version can have breaking changes, although 
 
 Primarily developped with Godot 4.3.
 
+- `VoxelBlockyModel`: Added option to turn off "LOD skirts" when used with `VoxelLodTerrain`, which may be useful with transparent models
 - `VoxelBlockyModelCube`: Added support for mesh rotation like `VoxelBlockyMesh` (prior to that, rotation buttons in the editor only swapped tiles around)
 - `VoxelEngine`: Added the `tasks.gpu` entry to the dictionary returned by `get_stats`, which may be useful for loading screens (notably asynchronous compiling of compute shaders, which can delay generation if GPU is enabled)
 - `VoxelInstanceGenerator`: Added `OnePerTriangle` emission mode
+- `VoxelToolLodTerrain`: Implemented raycast when the mesher is `VoxelMesherBlocky` or `VoxelMesherCubes`
+- `VoxelInstanceGenerator`: Added ability to filter spawning by voxel texture indices, when using `VoxelMesherTransvoxel` with `texturing_mode` set to `4-blend over 16 textures`
 
 - Fixes
     - Fixed potential deadlock when using detail rendering and various editing features (thanks to lenesxy, issue #693)
@@ -25,7 +28,9 @@ Primarily developped with Godot 4.3.
         - Fixed blocks were saved with incorrect LOD index when they get unloaded using Clipbox, leading to holes and mismatched terrain (#691)
         - Fixed incorrect loading of chunks near terrain borders when viewers are far away from bounds, when using the Clipbox streaming system
     - `VoxelStreamSQLite`: fixed connection leaks (thanks to lenesxy, issue #713)
-    - `VoxelTerrain`: edits and copies across fixed bounds no longer behave as if terrain generates beyond (was causing "walls" to appear).
+    - `VoxelTerrain`: 
+        - Edits and copies across fixed bounds no longer behave as if terrain generates beyond (was causing "walls" to appear).
+        - Viewers with collision-only should no longer cause visual meshes to appear
     - `VoxelGeneratorGraph`: 
         - Fixed wrong values when using `OutputWeight` with optimized execution map enabled, when weights are determined to be locally constant
         - Fixed occasional holes in terrain when using `FastNoise3D` nodes with the `OpenSimplex2S` noise type
@@ -39,6 +44,7 @@ Primarily developped with Godot 4.3.
     - `VoxelInstanceLibrary`: Items should no longer be accessed using generated properties (`item1`, `item2` etc). Use `get_item` instead.
     - `VoxelMesherTransvoxel`: Removed `deep_sampling` experimental option
     - `VoxelTool`: The `flat_direction` of `do_hemisphere` now points away from the flat side of the hemisphere (like its normal), instead of pointing towards it
+    - `VoxelToolLodTerrain`: `raycast` used to take coordinates in terrain space. It is now in world space, for consistency with `VoxelToolTerrain`.
 
 
 1.3 - 17/08/2024 - branch `1.3` - tag `v1.3.0`

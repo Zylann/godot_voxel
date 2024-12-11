@@ -39,10 +39,10 @@ void test_island_finder() {
 			;
 
 	const Vector3i grid_size(5, 5, 5);
-	ZN_TEST_ASSERT(Vector3iUtil::get_volume(grid_size) == static_cast<int64_t>(strlen(cdata) / 2));
+	ZN_TEST_ASSERT(Vector3iUtil::get_volume_u64(grid_size) == (strlen(cdata) / 2));
 
 	StdVector<int> grid;
-	grid.resize(Vector3iUtil::get_volume(grid_size));
+	grid.resize(Vector3iUtil::get_volume_u64(grid_size));
 	for (unsigned int i = 0; i < grid.size(); ++i) {
 		const char c = cdata[i * 2];
 		if (c == 'X') {
@@ -55,7 +55,7 @@ void test_island_finder() {
 	}
 
 	StdVector<uint8_t> output;
-	output.resize(Vector3iUtil::get_volume(grid_size));
+	output.resize(Vector3iUtil::get_volume_u64(grid_size));
 	unsigned int label_count;
 
 	IslandFinder island_finder;

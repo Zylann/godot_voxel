@@ -331,6 +331,14 @@ void VoxelBlockyModelCube::_bind_methods() {
 	ADD_PROPERTY(
 			PropertyInfo(Variant::VECTOR2I, "atlas_size_in_tiles"), "set_atlas_size_in_tiles", "get_atlas_size_in_tiles"
 	);
+
+	// ADD_GROUP("Rotation", "");
+
+	ADD_PROPERTY(
+			PropertyInfo(Variant::INT, "mesh_ortho_rotation_index", PROPERTY_HINT_RANGE, "0,24"),
+			"set_mesh_ortho_rotation_index",
+			"get_mesh_ortho_rotation_index"
+	);
 }
 
 } // namespace zylann::voxel

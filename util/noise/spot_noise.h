@@ -199,7 +199,7 @@ inline math::Interval spot_noise_3d_range(
 	ivec3 min_cell_origin_norm_i = to_vec3i(min_cell_origin_norm);
 	ivec3 max_cell_origin_norm_i = to_vec3i(max_cell_origin_norm);
 
-	if (Vector3iUtil::get_volume(max_cell_origin_norm_i - min_cell_origin_norm_i + ivec3(1, 1, 1)) > 30) {
+	if (Vector3iUtil::get_volume_u64(max_cell_origin_norm_i - min_cell_origin_norm_i + ivec3(1, 1, 1)) > 30) {
 		// Don't bother checking too many cells, assume we'll intersect a spot.
 		return math::Interval(0, 1);
 	}

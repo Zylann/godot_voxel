@@ -468,7 +468,7 @@ void partition_triangles(
 	const Vector3i grid_max = to_vec3i(math::ceil(max_pos / chunk_size));
 
 	chunk_grid.size = grid_max - grid_min;
-	chunk_grid.chunks.resize(Vector3iUtil::get_volume(chunk_grid.size));
+	chunk_grid.chunks.resize(Vector3iUtil::get_volume_u64(chunk_grid.size));
 	chunk_grid.chunk_size = chunk_size;
 	chunk_grid.min_pos = to_vec3f(grid_min) * chunk_size;
 
@@ -807,7 +807,7 @@ void generate_mesh_sdf_approx_interp(
 	const float node_subdiv_threshold = 0.6f * node_size;
 
 	StdVector<float> node_grid;
-	node_grid.resize(Vector3iUtil::get_volume(node_grid_size));
+	node_grid.resize(Vector3iUtil::get_volume_u64(node_grid_size));
 
 	// Fill SDF grid with far distances as "infinity", we'll use that to check if we computed it already
 	sdf_grid.fill(FAR_SD);
@@ -923,7 +923,7 @@ void generate_mesh_sdf_naive(
 ) {
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT(Box3i(Vector3i(), res).contains(sub_box));
-	ZN_ASSERT(int64_t(sdf_grid.size()) == Vector3iUtil::get_volume(res));
+	ZN_ASSERT(sdf_grid.size() == Vector3iUtil::get_volume_u64(res));
 
 	const Vector3f mesh_size = max_pos - min_pos;
 	const Vector3f cell_size = mesh_size / Vector3f(res.x, res.y, res.z);
@@ -963,7 +963,7 @@ void generate_mesh_sdf_partitioned(
 ) {
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT(Box3i(Vector3i(), res).contains(sub_box));
-	ZN_ASSERT(int64_t(sdf_grid.size()) == Vector3iUtil::get_volume(res));
+	ZN_ASSERT(sdf_grid.size() == Vector3iUtil::get_volume_u64(res));
 
 	const Vector3f mesh_size = max_pos - min_pos;
 	const Vector3f cell_size = mesh_size / Vector3f(res.x, res.y, res.z);
@@ -1411,7 +1411,7 @@ void generate_mesh_sdf_approx_floodfill(
 	ZN_PROFILE_SCOPE();
 
 	StdVector<uint8_t> flag_grid;
-	flag_grid.resize(Vector3iUtil::get_volume(res));
+	flag_grid.resize(Vector3iUtil::get_volume_u64(res));
 	memset(flag_grid.data(), FLAG_NOT_VISITED, sizeof(uint8_t) * flag_grid.size());
 
 	generate_mesh_sdf_hull(sdf_grid, res, triangles, min_pos, max_pos, chunk_grid, to_span(flag_grid), FLAG_FROZEN);

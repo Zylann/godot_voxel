@@ -47,8 +47,8 @@ private:
 	struct Parameters {
 		VoxelBuffer::ChannelId channel = VoxelBuffer::CHANNEL_SDF;
 		Ref<FastNoiseLite> noise;
-		float height_start = 0;
-		float height_range = 300;
+		float height_start = -100;
+		float height_range = 200;
 	};
 
 	Parameters _parameters;

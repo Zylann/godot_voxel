@@ -1899,7 +1899,7 @@ void test_voxel_graph_function_execute() {
 	}
 
 	const Vector3i block_size(16, 18, 20);
-	const int volume = Vector3iUtil::get_volume(block_size);
+	const size_t volume = Vector3iUtil::get_volume_u64(block_size);
 
 	StdVector<float> x_buffer;
 	StdVector<float> y_buffer;
@@ -1929,7 +1929,7 @@ void test_voxel_graph_function_execute() {
 	Span<float> outputs = to_span(sd_buffer);
 	function->execute(Span<Span<float>>(inputs, 3), Span<Span<float>>(&outputs, 1));
 
-	for (int i = 0; i < volume; ++i) {
+	for (size_t i = 0; i < volume; ++i) {
 		const float obtained_result = sd_buffer[i];
 		const float expected_result = Math::sin(x_buffer[i]) + Math::cos(z_buffer[i]) + y_buffer[i];
 		ZN_TEST_ASSERT(Math::is_equal_approx(obtained_result, expected_result));

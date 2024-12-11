@@ -599,7 +599,7 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelGenerator::Voxel
 		cache.input_sdf_slice_cache.resize(slice_buffer_size);
 		input_sdf_slice_cache = to_span(cache.input_sdf_slice_cache);
 
-		const int64_t volume = Vector3iUtil::get_volume(bs);
+		const size_t volume = Vector3iUtil::get_volume_u64(bs);
 		cache.input_sdf_full_cache.resize(volume);
 		input_sdf_full_cache = to_span(cache.input_sdf_full_cache);
 

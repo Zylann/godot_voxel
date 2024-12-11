@@ -52,7 +52,7 @@
 		<output name="out"/>
 		<parameter name="curve" type="Object" default_value="null"/>
 		<description>
-			Returns the value of a custom [code]curve[/code] at coordinate [code]x[/code], where [code]x[/code] is in the range [code]\[0..1][/code]. The [code]curve[/code] is specified with a [Curve] resource.
+			Returns the value of a custom [code]curve[/code] at coordinate [code]x[/code], where [code]x[/code] is in the range specified by its domain properties (in Godot 4.3 and earlier, it is in [code]\[0..1][/code]). The [code]curve[/code] is specified with a [Curve] resource.
 		</description>
 	</node>
 	<node name="CustomInput" category="Input">

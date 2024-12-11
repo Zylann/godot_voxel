@@ -1343,7 +1343,7 @@ void compute_node_execution_order(
 		});
 	}
 
-	graph.find_dependencies(terminal_nodes, order);
+	graph.find_dependencies(to_span(terminal_nodes), order);
 }
 
 } // namespace

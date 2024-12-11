@@ -82,7 +82,7 @@ void test_spatial_lock_spam() {
 	public:
 		Map(Vector3i p_size) {
 			_size = p_size;
-			_cells.resize(Vector3iUtil::get_volume(_size), 0);
+			_cells.resize(Vector3iUtil::get_volume_u64(_size), 0);
 		}
 
 		inline Vector3i get_size() const {
@@ -146,7 +146,7 @@ void test_spatial_lock_spam() {
 
 			StdVector<int> &expected_values = reusable_vector;
 			expected_values.clear();
-			expected_values.reserve(Vector3iUtil::get_volume(box.size));
+			expected_values.reserve(Vector3iUtil::get_volume_u64(box.size));
 			box.for_each_cell([&map, &expected_values](Vector3i pos) { //
 				expected_values.push_back(map.at(pos));
 			});

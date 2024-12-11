@@ -497,6 +497,17 @@ inline T pow(T x, T y) {
 	return Math::pow(x, y);
 }
 
+inline uint64_t multiply_check_overflow_u64(const uint64_t a, const uint64_t b) {
+	const uint64_t r = a * b;
+#ifdef DEV_ENABLED
+	if (a != 0 && r / a != b) {
+		ZN_PRINT_ERROR("Multiplication overflow");
+		return 0;
+	}
+#endif
+	return r;
+}
+
 } // namespace zylann::math
 
 #endif // VOXEL_MATH_FUNCS_H

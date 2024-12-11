@@ -22,7 +22,7 @@ void copy_from_chunked_storage(
 		const VoxelBuffer *(*get_block_func)(void *, Vector3i),
 		void *get_block_func_ctx
 ) {
-	ZN_ASSERT_RETURN_MSG(Vector3iUtil::get_volume(dst_buffer.get_size()) > 0, "The area to copy is empty");
+	ZN_ASSERT_RETURN_MSG(Vector3iUtil::get_volume_u64(dst_buffer.get_size()) > 0, "The area to copy is empty");
 	ZN_ASSERT_RETURN(get_block_func != nullptr);
 
 	const Vector3i max_pos = min_pos + dst_buffer.get_size();
@@ -206,7 +206,7 @@ void run_blocky_random_tick(
 				const Box3i block_voxel_box(block_origin, Vector3iUtil::create(block_size));
 				Box3i local_voxel_box = voxel_box.clipped(block_voxel_box);
 				local_voxel_box.position -= block_origin;
-				const float volume_ratio = Vector3iUtil::get_volume(local_voxel_box.size) / block_volume;
+				const float volume_ratio = Vector3iUtil::get_volume_u64(local_voxel_box.size) / block_volume;
 				const int local_batch_count = Math::ceil(batch_count * volume_ratio);
 
 				// Choose a bunch of voxels at random within the block.
@@ -347,7 +347,7 @@ void box_blur_slow_ref(const VoxelBuffer &src, VoxelBuffer &dst, int radius, Vec
 	dst.create(dst_size);
 
 	const int box_size = radius * 2 + 1;
-	const float box_volume = Vector3iUtil::get_volume(Vector3i(box_size, box_size, box_size));
+	const float box_volume = Vector3iUtil::get_volume_u64(Vector3i(box_size, box_size, box_size));
 
 	const float sphere_radius_s = sphere_radius * sphere_radius;
 
@@ -427,7 +427,7 @@ void box_blur(const VoxelBuffer &src, VoxelBuffer &dst, int radius, Vector3f sph
 	// Temporary buffer with extra length in two axes
 	StdVector<float> tmp;
 	const Vector3i tmp_size(dst_size.x + 2 * radius, dst_size.y, dst_size.z + 2 * radius);
-	tmp.resize(Vector3iUtil::get_volume(tmp_size));
+	tmp.resize(Vector3iUtil::get_volume_u64(tmp_size));
 
 	// Y blur
 	Vector3i dst_pos;

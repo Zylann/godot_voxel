@@ -23,7 +23,7 @@ public:
 
 	template <typename VolumePredicate_F>
 	void scan_3d(Box3i box, VolumePredicate_F volume_predicate_func, Span<uint8_t> output, unsigned int *out_count) {
-		const size_t volume = Vector3iUtil::get_volume(box.size);
+		const size_t volume = Vector3iUtil::get_volume_u64(box.size);
 		CRASH_COND(output.size() != volume);
 		memset(output.data(), 0, volume * sizeof(uint8_t));
 
