@@ -20,7 +20,8 @@ class VoxelMesherTransvoxel : public VoxelMesher {
 public:
 	enum TexturingMode {
 		TEXTURES_NONE = transvoxel::TEXTURES_NONE,
-		TEXTURES_BLEND_4_OVER_16 = transvoxel::TEXTURES_BLEND_4_OVER_16
+		TEXTURES_BLEND_4_OVER_16 = transvoxel::TEXTURES_BLEND_4_OVER_16,
+		TEXTURES_SINGLE_S4 = transvoxel::TEXTURES_SINGLE_S4
 	};
 
 	VoxelMesherTransvoxel();

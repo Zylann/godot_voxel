@@ -310,6 +310,45 @@ inline void sort(T &a, T &b, T &c, T &d) {
 	sort(b, c);
 }
 
+template <typename TArray, typename TLess>
+inline void sort2_array(TArray array, TLess less) {
+	if (less(array[1], array[0])) {
+		std::swap(array[1], array[0]);
+	}
+}
+
+template <typename TArray, typename TLess>
+inline void sort3_array(TArray array, TLess less) {
+	if (less(array[1], array[0])) {
+		std::swap(array[1], array[0]);
+	}
+	if (less(array[2], array[0])) {
+		std::swap(array[2], array[0]);
+	}
+	if (less(array[2], array[1])) {
+		std::swap(array[2], array[1]);
+	}
+}
+
+template <typename TArray, typename TLess>
+inline void sort4_array(TArray &array, TLess less) {
+	if (less(array[1], array[0])) {
+		std::swap(array[1], array[0]);
+	}
+	if (less(array[3], array[2])) {
+		std::swap(array[3], array[2]);
+	}
+	if (less(array[2], array[0])) {
+		std::swap(array[2], array[0]);
+	}
+	if (less(array[3], array[1])) {
+		std::swap(array[3], array[1]);
+	}
+	if (less(array[2], array[1])) {
+		std::swap(array[2], array[1]);
+	}
+}
+
 // Returns -1 if `x` is negative, and 1 otherwise.
 // Contrary to a usual version like GLSL, this one returns 1 when `x` is 0, instead of 0.
 template <typename T>

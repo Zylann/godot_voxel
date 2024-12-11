@@ -65,11 +65,23 @@ VoxelMesherTransvoxel::VoxelMesherTransvoxel() {
 VoxelMesherTransvoxel::~VoxelMesherTransvoxel() {}
 
 int VoxelMesherTransvoxel::get_used_channels_mask() const {
-	if (_texture_mode == TEXTURES_BLEND_4_OVER_16) {
-		return (1 << VoxelBuffer::CHANNEL_SDF) | (1 << VoxelBuffer::CHANNEL_INDICES) |
-				(1 << VoxelBuffer::CHANNEL_WEIGHTS);
+	uint32_t mask = 1 << VoxelBuffer::CHANNEL_SDF;
+
+	switch (_texture_mode) {
+		case TEXTURES_NONE:
+			break;
+		case TEXTURES_BLEND_4_OVER_16:
+			mask |= (1 << VoxelBuffer::CHANNEL_INDICES) | (1 << VoxelBuffer::CHANNEL_WEIGHTS);
+			break;
+		case TEXTURES_SINGLE_S4:
+			mask |= (1 << VoxelBuffer::CHANNEL_INDICES);
+			break;
+		default:
+			ZN_PRINT_ERROR("Unhandled texture mode");
+			break;
 	}
-	return (1 << VoxelBuffer::CHANNEL_SDF);
+
+	return mask;
 }
 
 bool VoxelMesherTransvoxel::is_generating_collision_surface() const {
@@ -306,7 +318,7 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 	output.mesh_flags = //
 			(RenderingServer::ARRAY_CUSTOM_RGBA_FLOAT << Mesh::ARRAY_FORMAT_CUSTOM0_SHIFT);
 
-	if (_texture_mode == TEXTURES_BLEND_4_OVER_16) {
+	if (_texture_mode == TEXTURES_BLEND_4_OVER_16 || _texture_mode == TEXTURES_SINGLE_S4) {
 		output.mesh_flags |= (RenderingServer::ARRAY_CUSTOM_RG_FLOAT << Mesh::ARRAY_FORMAT_CUSTOM1_SHIFT);
 	}
 }
@@ -493,6 +505,7 @@ void VoxelMesherTransvoxel::_bind_methods() {
 	BIND_ENUM_CONSTANT(TEXTURES_NONE);
 	// TODO Rename MIXEL
 	BIND_ENUM_CONSTANT(TEXTURES_BLEND_4_OVER_16);
+	BIND_ENUM_CONSTANT(TEXTURES_SINGLE_S4);
 }
 
 } // namespace zylann::voxel

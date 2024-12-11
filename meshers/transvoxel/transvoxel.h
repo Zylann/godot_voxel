@@ -16,10 +16,6 @@ namespace zylann::voxel::transvoxel {
 static const int MIN_PADDING = 1;
 // How many extra voxels are needed towards the positive axes
 static const int MAX_PADDING = 2;
-// How many textures can be referred to in total
-static const unsigned int MAX_TEXTURES = 16;
-// How many textures can blend at once
-static const unsigned int MAX_TEXTURE_BLENDS = 4;
 // Transvoxel guarantees a maximum number of triangle generated for each 2x2x2 cell of voxels.
 static const unsigned int MAX_TRIANGLES_PER_CELL = 5;
 
@@ -28,7 +24,9 @@ enum TexturingMode {
 	// Blends the 4 most-represented textures in the given block, ignoring the others.
 	// Texture indices and blend factors have 4-bit precision (maximum 16 textures and 16 transition gradients),
 	// and are respectively encoded in UV.x and UV.y.
-	TEXTURES_BLEND_4_OVER_16
+	TEXTURES_BLEND_4_OVER_16,
+	// Each voxel has only one material index, and up to 4 can blend in shader
+	TEXTURES_SINGLE_S4
 };
 
 struct LodAttrib {

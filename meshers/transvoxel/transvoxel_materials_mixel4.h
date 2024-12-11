@@ -5,29 +5,14 @@
 #include "../../util/containers/fixed_array.h"
 #include "../../util/containers/std_vector.h"
 #include "transvoxel.h"
+#include "transvoxel_materials_common.h"
 
-namespace zylann::voxel::transvoxel {
+namespace zylann::voxel::transvoxel::materials::mixel4 {
 
-inline uint32_t pack_bytes(const FixedArray<uint8_t, 4> &a) {
-	return (a[0] | (a[1] << 8) | (a[2] << 16) | (a[3] << 24));
-}
-
-void add_texture_data(
-		StdVector<Vector2f> &uv,
-		unsigned int packed_indices,
-		FixedArray<uint8_t, MAX_TEXTURE_BLENDS> weights
-) {
-	struct IntUV {
-		uint32_t x;
-		uint32_t y;
-	};
-	static_assert(sizeof(IntUV) == sizeof(Vector2f), "Expected same binary size");
-	uv.push_back(Vector2f());
-	IntUV &iuv = *(reinterpret_cast<IntUV *>(&uv.back()));
-	// print_line(String("{0}, {1}, {2}, {3}").format(varray(weights[0], weights[1], weights[2], weights[3])));
-	iuv.x = packed_indices;
-	iuv.y = pack_bytes(weights);
-}
+// How many textures can be referred to in total
+static const unsigned int MAX_TEXTURES = 16;
+// How many textures can blend at once
+static const unsigned int MAX_TEXTURE_BLENDS = 4;
 
 template <unsigned int NVoxels>
 struct CellTextureDatas {
@@ -203,14 +188,14 @@ inline uint16_t reorder_transition_case_code(const uint16_t case_code) {
 }
 
 template <unsigned int NVoxels>
-struct MaterialProcessorMixel4 {
+struct Processor {
 	const TextureIndicesData voxel_material_indices;
 	const WeightSamplerPackedU16 voxel_material_weights;
 	const bool textures_skip_air_voxels;
 	CellTextureDatas<NVoxels> cell_textures;
 	StdVector<Vector2f> &output_mesh_material_data;
 
-	MaterialProcessorMixel4(
+	Processor(
 			const TextureIndicesData p_voxel_material_indices,
 			const WeightSamplerPackedU16 p_voxel_material_weights,
 			StdVector<Vector2f> &p_output_mesh_material_data,
@@ -251,14 +236,7 @@ struct MaterialProcessorMixel4 {
 		cell_textures.indices = cell_textures_partial.indices;
 		cell_textures.packed_indices = cell_textures_partial.packed_indices;
 
-		for (unsigned int i = 0; i < cell_textures_partial.weights.size(); ++i) {
-			cell_textures.weights[i] = cell_textures_partial.weights[i];
-		}
-
-		cell_textures.weights[0x9] = cell_textures_partial.weights[0];
-		cell_textures.weights[0xA] = cell_textures_partial.weights[2];
-		cell_textures.weights[0xB] = cell_textures_partial.weights[6];
-		cell_textures.weights[0xC] = cell_textures_partial.weights[8];
+		fill_redundant_transition_cell_values(cell_textures_partial.weights, cell_textures.weights);
 
 		return cell_textures.packed_indices;
 	}
@@ -276,15 +254,15 @@ struct MaterialProcessorMixel4 {
 
 TextureIndicesData get_texture_indices_data(
 		const VoxelBuffer &voxels,
-		unsigned int channel,
+		const unsigned int indices_channel,
 		DefaultTextureIndicesData &out_default_texture_indices_data
 ) {
-	ZN_ASSERT_RETURN_V(voxels.get_channel_depth(channel) == VoxelBuffer::DEPTH_16_BIT, TextureIndicesData());
+	ZN_ASSERT_RETURN_V(voxels.get_channel_depth(indices_channel) == VoxelBuffer::DEPTH_16_BIT, TextureIndicesData());
 
 	TextureIndicesData data;
 
-	if (voxels.is_uniform(channel)) {
-		const uint16_t encoded_indices = voxels.get_voxel(Vector3i(), channel);
+	if (voxels.is_uniform(indices_channel)) {
+		const uint16_t encoded_indices = voxels.get_voxel(Vector3i(), indices_channel);
 		data.default_indices = decode_indices_from_packed_u16(encoded_indices);
 		data.packed_default_indices = pack_bytes(data.default_indices);
 
@@ -294,7 +272,7 @@ TextureIndicesData get_texture_indices_data(
 
 	} else {
 		Span<const uint8_t> data_bytes;
-		ZN_ASSERT(voxels.get_channel_as_bytes_read_only(channel, data_bytes) == true);
+		ZN_ASSERT(voxels.get_channel_as_bytes_read_only(indices_channel, data_bytes) == true);
 		data.buffer = data_bytes.reinterpret_cast_to<const uint16_t>();
 
 		out_default_texture_indices_data.use = false;
@@ -303,6 +281,6 @@ TextureIndicesData get_texture_indices_data(
 	return data;
 }
 
-} // namespace zylann::voxel::transvoxel
+} // namespace zylann::voxel::transvoxel::materials::mixel4
 
 #endif // VOXEL_TRANSVOXEL_MATERIALS_MIXEL4_H

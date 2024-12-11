@@ -6,6 +6,8 @@
 #include "../../util/math/funcs.h"
 #include "../../util/profiling.h"
 #include "transvoxel_materials_mixel4.h"
+#include "transvoxel_materials_null.h"
+#include "transvoxel_materials_single_s4.h"
 #include "transvoxel_tables.cpp"
 
 // #define VOXEL_TRANSVOXEL_REUSE_VERTEX_ON_COINCIDENT_CASES
@@ -173,25 +175,6 @@ template <>
 inline float get_isolevel<float>() {
 	return 0.f;
 }
-
-struct MaterialProcessorNull {
-	// Called for every 2x2x2 cell containing triangles.
-	// The returned value is used to determine if the next cell can re-use vertices from previous cells, when equal.
-	inline uint32_t on_cell(const FixedArray<uint32_t, 8> &corner_voxel_indices, const uint8_t case_code) const {
-		return 0;
-	}
-	// Called for every 2x3x3 transition cell containing triangles.
-	// Such cells are actually in 2D data-wise, so corners are the same value, so only 9 are passed in.
-	// The returned value is used to determine if the next cell can re-use vertices from previous cells, when equal.
-	inline uint32_t on_transition_cell(const FixedArray<uint32_t, 9> &corner_voxel_indices, const uint8_t case_code)
-			const {
-		return 0;
-	}
-	// Called one or more times after each `on_cell` for every new vertex, to interpolate and add material data
-	inline void on_vertex(const unsigned int v0, const unsigned int v1, const float alpha) const {
-		return;
-	}
-};
 
 // This function is template so we avoid branches and checks when sampling voxels
 template <typename TSdf, typename TMaterialProcessor>
@@ -1164,9 +1147,16 @@ Span<const Sdf_T> apply_zero_sdf_fix(Span<const Sdf_T> p_sdf_data) {
 	return to_span_const(sdf_data);
 }*/
 
+// TODO Candidate for temp allocator
 StdVector<uint16_t> &get_tls_weights_backing_buffer_u16() {
 	thread_local StdVector<uint16_t> tls_weights_backing_buffer_u16;
 	return tls_weights_backing_buffer_u16;
+}
+
+// TODO Candidate for temp allocator
+StdVector<uint8_t> &get_tls_u8_conversion_buffer() {
+	static thread_local StdVector<uint8_t> tls_conversion_backing_buffer;
+	return tls_conversion_backing_buffer;
 }
 
 template <typename TMaterialProcessor>
@@ -1272,7 +1262,7 @@ DefaultTextureIndicesData build_regular_mesh(
 			build_regular_mesh_dispatch_sd(
 					voxels,
 					sdf_channel,
-					MaterialProcessorNull{},
+					materials::NullProcessor{},
 					lod_index,
 					cache,
 					output,
@@ -1282,29 +1272,54 @@ DefaultTextureIndicesData build_regular_mesh(
 			break;
 
 		case TEXTURES_BLEND_4_OVER_16: {
-			TextureIndicesData voxel_material_indices;
-			WeightSamplerPackedU16 voxel_material_weights;
-			if (texturing_mode == TEXTURES_BLEND_4_OVER_16) {
+			materials::mixel4::TextureIndicesData voxel_material_indices;
+			materials::mixel4::WeightSamplerPackedU16 voxel_material_weights;
+			{
 				ZN_PROFILE_SCOPE_NAMED("Prepare material info");
 
 				// From this point we know SDF is not uniform so it has an allocated buffer,
 				// but it might have uniform indices or weights so we need to ensure there is a backing buffer.
-				voxel_material_indices =
-						get_texture_indices_data(voxels, VoxelBuffer::CHANNEL_INDICES, default_texture_indices);
+				voxel_material_indices = materials::mixel4::get_texture_indices_data(
+						voxels, VoxelBuffer::CHANNEL_INDICES, default_texture_indices
+				);
 				voxel_material_weights.u16_data = get_or_decompress_channel(
-						voxels, get_tls_weights_backing_buffer_u16(), VoxelBuffer::CHANNEL_WEIGHTS
+						voxels,
+						// TODO Candidate for Temp allocator
+						get_tls_weights_backing_buffer_u16(),
+						VoxelBuffer::CHANNEL_WEIGHTS
 				);
 				ZN_ASSERT_RETURN_V(voxel_material_weights.u16_data.size() == voxels_count, default_texture_indices);
 			}
 			build_regular_mesh_dispatch_sd(
 					voxels,
 					sdf_channel,
-					MaterialProcessorMixel4<8>(
+					materials::mixel4::Processor<8>(
 							voxel_material_indices,
 							voxel_material_weights,
 							output.texturing_data,
 							textures_ignore_air_voxels
 					),
+					lod_index,
+					cache,
+					output,
+					cell_infos,
+					edge_clamp_margin
+			);
+		} break;
+
+		case TEXTURES_SINGLE_S4: {
+			const materials::single::VoxelMaterialIndices voxel_material_indices =
+					materials::single::get_material_indices_from_vb(
+							voxels, VoxelBuffer::CHANNEL_INDICES, get_tls_u8_conversion_buffer()
+					);
+			if (voxel_material_indices.is_uniform) {
+				default_texture_indices.indices[0] = voxel_material_indices.uniform_value;
+				default_texture_indices.use = true;
+			}
+			build_regular_mesh_dispatch_sd(
+					voxels,
+					sdf_channel,
+					materials::single::s4::Processor<8>(voxel_material_indices.to_span(), output.texturing_data),
 					lod_index,
 					cache,
 					output,
@@ -1409,14 +1424,21 @@ void build_transition_mesh(
 	switch (texturing_mode) {
 		case TEXTURES_NONE:
 			build_transition_mesh_dispatch_sd(
-					voxels, sdf_channel, MaterialProcessorNull{}, direction, lod_index, cache, output, edge_clamp_margin
+					voxels,
+					sdf_channel,
+					materials::NullProcessor{},
+					direction,
+					lod_index,
+					cache,
+					output,
+					edge_clamp_margin
 			);
 			break;
 
 		case TEXTURES_BLEND_4_OVER_16: {
 			// TODO Support more texturing data configurations
-			TextureIndicesData indices_data;
-			WeightSamplerPackedU16 weights_data;
+			materials::mixel4::TextureIndicesData indices_data;
+			materials::mixel4::WeightSamplerPackedU16 weights_data;
 
 			if (default_texture_indices_data.use) {
 				indices_data.default_indices = default_texture_indices_data.indices;
@@ -1425,20 +1447,46 @@ void build_transition_mesh(
 				// From this point we know SDF is not uniform so it has an allocated buffer,
 				// but it might have uniform indices or weights so we need to ensure there is a backing buffer.
 				// TODO Is it worth doing conditionnals instead during meshing?
-				indices_data =
-						get_texture_indices_data(voxels, VoxelBuffer::CHANNEL_INDICES, default_texture_indices_data);
+				indices_data = materials::mixel4::get_texture_indices_data(
+						voxels, VoxelBuffer::CHANNEL_INDICES, default_texture_indices_data
+				);
 			}
 			weights_data.u16_data = get_or_decompress_channel(
-					voxels, get_tls_weights_backing_buffer_u16(), VoxelBuffer::CHANNEL_WEIGHTS
+					voxels,
+					// TODO Candidate for Temp allocator
+					get_tls_weights_backing_buffer_u16(),
+					VoxelBuffer::CHANNEL_WEIGHTS
 			);
 			ZN_ASSERT_RETURN(weights_data.u16_data.size() == voxels_count);
 
 			build_transition_mesh_dispatch_sd(
 					voxels,
 					sdf_channel,
-					MaterialProcessorMixel4<13>(
+					materials::mixel4::Processor<13>(
 							indices_data, weights_data, output.texturing_data, textures_ignore_air_voxels
 					),
+					direction,
+					lod_index,
+					cache,
+					output,
+					edge_clamp_margin
+			);
+		} break;
+
+		case TEXTURES_SINGLE_S4: {
+			materials::single::VoxelMaterialIndices voxel_material_indices;
+			if (default_texture_indices_data.use) {
+				voxel_material_indices.is_uniform = true;
+				voxel_material_indices.uniform_value = default_texture_indices_data.indices[0];
+			} else {
+				voxel_material_indices = materials::single::get_material_indices_from_vb(
+						voxels, VoxelBuffer::CHANNEL_INDICES, get_tls_u8_conversion_buffer()
+				);
+			}
+			build_transition_mesh_dispatch_sd(
+					voxels,
+					sdf_channel,
+					materials::single::s4::Processor<13>(voxel_material_indices.to_span(), output.texturing_data),
 					direction,
 					lod_index,
 					cache,
