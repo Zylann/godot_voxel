@@ -36,6 +36,9 @@ bool sd_equals_approx(const VoxelBuffer &vb1, const VoxelBuffer &vb2) {
 							return false;
 						}
 					} break;
+					default:
+						ZN_CRASH_MSG("Unhandled depth");
+						break;
 				}
 			}
 		}

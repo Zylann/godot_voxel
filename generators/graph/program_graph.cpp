@@ -163,7 +163,8 @@ void ProgramGraph::connect(PortLocation src, PortLocation dst) {
 	ZN_ASSERT_RETURN_MSG(src.port_index < src_node.outputs.size(), "Source port doesn't exist");
 	ZN_ASSERT_RETURN_MSG(dst.port_index < dst_node.inputs.size(), "Destination port doesn't exist");
 	ZN_ASSERT_RETURN_MSG(
-			dst_node.inputs[dst.port_index].connections.size() == 0, "Destination node's port is already connected");
+			dst_node.inputs[dst.port_index].connections.size() == 0, "Destination node's port is already connected"
+	);
 	src_node.outputs[src.port_index].connections.push_back(dst);
 	dst_node.inputs[dst.port_index].connections.push_back(src);
 }
@@ -268,15 +269,18 @@ void ProgramGraph::find_terminal_nodes(StdVector<uint32_t> &node_ids) const {
 }
 
 void ProgramGraph::find_dependencies(uint32_t node_id, StdVector<uint32_t> &out_order) const {
-	StdVector<uint32_t> nodes_to_process;
-	nodes_to_process.push_back(node_id);
-	find_dependencies(nodes_to_process, out_order);
+	find_dependencies(to_single_element_span(node_id), out_order);
 }
 
 // Finds dependencies of the given nodes, and returns them in the order they should be processed.
 // Given nodes are included in the result.
-void ProgramGraph::find_dependencies(StdVector<uint32_t> nodes_to_process, StdVector<uint32_t> &out_order) const {
+void ProgramGraph::find_dependencies(Span<const uint32_t> p_nodes_to_process, StdVector<uint32_t> &out_order) const {
 	StdUnorderedSet<uint32_t> visited_nodes;
+
+	// TODO Candidate for temp allocator
+	StdVector<uint32_t> nodes_to_process;
+	nodes_to_process.resize(p_nodes_to_process.size());
+	p_nodes_to_process.copy_to(to_span(nodes_to_process));
 
 	while (nodes_to_process.size() > 0) {
 	found:

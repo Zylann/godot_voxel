@@ -299,6 +299,7 @@
 		</member>
 		<member name="material" type="Material" setter="set_material" getter="get_material">
 			Material used for the surface of the volume. The main usage of this node is with smooth voxels, which means if you want more than one "material" on the ground, you need to use splatmapping techniques with a shader. In addition, many features require shaders to work properly. Check the online documentation or examples for more information.
+			Note: if you use a [ShaderMaterial], it will be instanced on every chunk in order to support per-chunk/LOD features, so dynamic changes done to parameters will not apply. You can use [url=https://docs.godotengine.org/en/stable/tutorials/shaders/shader_reference/shading_language.html#global-uniforms]global uniforms[/url] to workaround this limitation.
 		</member>
 		<member name="mesh_block_size" type="int" setter="set_mesh_block_size" getter="get_mesh_block_size" default="16">
 			Size of meshes used for chunks of this volume, in voxels. Can only be set to either 16 or 32. Using 32 is expected to increase rendering performance, and slightly increase the cost of edits.
@@ -344,7 +345,8 @@
 			Enables GPU block generation, which can speed it up. This is only valid for generators that support it. Vulkan is required.
 		</member>
 		<member name="view_distance" type="int" setter="set_view_distance" getter="get_view_distance" default="512">
-			Maximum distance where terrain will load around viewers. If your terrain size is finite (like for a planet) and you want to keep it in view, you may want to set this value to a very large number. This is mainly useful for infinite terrains.
+			Maximum distance viewers can have. If a viewer has a larger distance, it will be clamped. Note that this is only a hint and not an exact boundary. Terrain may load within that distance, but can continue beyond it, rounding up to block size of the biggest LOD.
+			If your terrain size is finite (like an island or planet) and you want to keep it in view, you may want to set this value to a very large number. This is mainly useful for infinite terrains where a cap is desired.
 		</member>
 		<member name="voxel_bounds" type="AABB" setter="set_voxel_bounds" getter="get_voxel_bounds" default="AABB(-5.36871e+08, -5.36871e+08, -5.36871e+08, 1.07374e+09, 1.07374e+09, 1.07374e+09)">
 			Bounds within which volume data can exist (loaded or not), in voxels. By default, it is pseudo-infinite. If you make a planet, island or some sort of arena, you may want to choose a finite size.
@@ -387,7 +389,7 @@
 		</constant>
 		<constant name="STREAMING_SYSTEM_LEGACY_OCTREE" value="0" enum="StreamingSystem">
 			Loads chunks around the viewer in a spherical pattern.
-			Does not support multiple viewers. Does not support collision-only viewers.
+			Does not support multiple viewers. Does not support collision-only viewers. Does not support "no viewers" (will assume origin instead). Does not support per-viewer view distance, only [member view_distance] is used.
 			This was the first system to be implemented, therefore it remains available as default for compatibility.
 		</constant>
 		<constant name="STREAMING_SYSTEM_CLIPBOX" value="1" enum="StreamingSystem">

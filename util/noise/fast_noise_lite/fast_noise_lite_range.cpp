@@ -184,7 +184,7 @@ Interval fnl_single_opensimplex2s(
 ) {
 	return get_noise_range_3d(
 			[&fn, seed](real_t x, real_t y, real_t z) { //
-				return fn.SingleOpenSimplex2(seed, x, y, z);
+				return fn.SingleOpenSimplex2S(seed, x, y, z);
 			},
 			// Max derivative found from empiric tests
 			p_x,

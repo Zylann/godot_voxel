@@ -111,6 +111,7 @@ void VoxelStreamSQLite::load_voxel_blocks(Span<VoxelStream::VoxelQueryData> p_bl
 	// This should be quick after the first call because the connection is cached.
 	sqlite::Connection *con = get_connection();
 	ERR_FAIL_COND(con == nullptr);
+	const ScopeRecycle con_scope(this, con);
 
 	// Check the cache first
 	StdVector<unsigned int> blocks_to_load;
@@ -133,7 +134,6 @@ void VoxelStreamSQLite::load_voxel_blocks(Span<VoxelStream::VoxelQueryData> p_bl
 
 	if (blocks_to_load.size() == 0) {
 		// Everything was cached, no need to query the database
-		recycle_connection(con);
 		return;
 	}
 
@@ -161,16 +161,16 @@ void VoxelStreamSQLite::load_voxel_blocks(Span<VoxelStream::VoxelQueryData> p_bl
 	}
 
 	ERR_FAIL_COND(con->end_transaction() == false);
-
-	recycle_connection(con);
 }
 
 void VoxelStreamSQLite::save_voxel_blocks(Span<VoxelStream::VoxelQueryData> p_blocks) {
 	sqlite::Connection *con = get_connection();
+	ZN_ASSERT_RETURN(con != nullptr);
 	const BlockLocation::CoordinateFormat coordinate_format = con->get_meta().coordinate_format;
+	recycle_connection(con);
+
 	const Box3i coordinate_range = BlockLocation::get_coordinate_range(coordinate_format);
 	const unsigned int lod_count = BlockLocation::get_lod_count(coordinate_format);
-	recycle_connection(con);
 
 	// First put in cache
 	for (unsigned int i = 0; i < p_blocks.size(); ++i) {
@@ -223,9 +223,9 @@ void VoxelStreamSQLite::load_instance_blocks(Span<VoxelStream::InstancesQueryDat
 
 	sqlite::Connection *con = get_connection();
 	ERR_FAIL_COND(con == nullptr);
+	const ScopeRecycle con_scope(this, con);
 
 	// TODO We should handle busy return codes
-	// TODO recycle on error
 	ERR_FAIL_COND(con->begin_transaction() == false);
 
 	for (unsigned int i = 0; i < blocks_to_load.size(); ++i) {
@@ -260,16 +260,16 @@ void VoxelStreamSQLite::load_instance_blocks(Span<VoxelStream::InstancesQueryDat
 	}
 
 	ERR_FAIL_COND(con->end_transaction() == false);
-
-	recycle_connection(con);
 }
 
 void VoxelStreamSQLite::save_instance_blocks(Span<VoxelStream::InstancesQueryData> p_blocks) {
 	sqlite::Connection *con = get_connection();
+	ZN_ASSERT_RETURN(con != nullptr);
 	const BlockLocation::CoordinateFormat coordinate_format = con->get_meta().coordinate_format;
+	recycle_connection(con);
+
 	const Box3i coordinate_range = BlockLocation::get_coordinate_range(coordinate_format);
 	const unsigned int lod_count = BlockLocation::get_lod_count(coordinate_format);
-	recycle_connection(con);
 
 	// First put in cache
 	for (size_t i = 0; i < p_blocks.size(); ++i) {
@@ -296,6 +296,7 @@ void VoxelStreamSQLite::load_all_blocks(FullLoadingResult &result) {
 
 	sqlite::Connection *con = get_connection();
 	ERR_FAIL_COND(con == nullptr);
+	const ScopeRecycle con_scope(this, con);
 
 	struct Context {
 		FullLoadingResult &result;
@@ -362,8 +363,8 @@ int VoxelStreamSQLite::get_used_channels_mask() const {
 void VoxelStreamSQLite::flush_cache() {
 	sqlite::Connection *con = get_connection();
 	ERR_FAIL_COND(con == nullptr);
+	const ScopeRecycle con_scope(this, con);
 	flush_cache_to_connection(con);
-	recycle_connection(con);
 }
 
 void VoxelStreamSQLite::flush() {
@@ -509,10 +510,11 @@ VoxelStreamSQLite::CoordinateFormat VoxelStreamSQLite::get_preferred_coordinate_
 }
 
 VoxelStreamSQLite::CoordinateFormat VoxelStreamSQLite::get_current_coordinate_format() {
-	const sqlite::Connection *con = get_connection();
+	sqlite::Connection *con = get_connection();
 	if (con == nullptr) {
 		return get_preferred_coordinate_format();
 	}
+	const ScopeRecycle con_scope(this, con);
 	return to_exposed_coordinate_format(con->get_meta().coordinate_format);
 }
 
@@ -524,9 +526,6 @@ bool VoxelStreamSQLite::copy_blocks_to_other_sqlite_stream(Ref<VoxelStreamSQLite
 	ZN_ASSERT_RETURN_V(dst_stream.is_valid(), false);
 	ZN_ASSERT_RETURN_V(dst_stream.ptr() != this, false);
 
-	sqlite::Connection *src_con = get_connection();
-	ZN_ASSERT_RETURN_V(src_con != nullptr, false);
-
 	ZN_ASSERT_RETURN_V(dst_stream->get_database_path() != get_database_path(), false);
 
 	ZN_ASSERT_RETURN_V_MSG(
@@ -534,6 +533,10 @@ bool VoxelStreamSQLite::copy_blocks_to_other_sqlite_stream(Ref<VoxelStreamSQLite
 			false,
 			"Copying between streams of different block sizes is not supported"
 	);
+
+	sqlite::Connection *src_con = get_connection();
+	ZN_ASSERT_RETURN_V(src_con != nullptr, false);
+	const ScopeRecycle src_con_scope(this, src_con);
 
 	// We can skip deserialization and copy data blocks directly.
 	// We also don't use cache.
@@ -555,8 +558,12 @@ bool VoxelStreamSQLite::copy_blocks_to_other_sqlite_stream(Ref<VoxelStreamSQLite
 
 	Context context;
 	context.dst_con = dst_stream->get_connection();
+	ZN_ASSERT_RETURN_V(context.dst_con != nullptr, false);
+	const ScopeRecycle dst_con_scope(dst_stream.ptr(), context.dst_con);
 
-	return src_con->load_all_blocks(&context, Context::save);
+	const bool success = src_con->load_all_blocks(&context, Context::save);
+
+	return success;
 }
 
 void VoxelStreamSQLite::_bind_methods() {

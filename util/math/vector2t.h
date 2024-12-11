@@ -117,6 +117,11 @@ inline T length_squared(const Vector2T<T> v) {
 }
 
 template <typename T>
+inline T length(const Vector2T<T> &v) {
+	return math::sqrt(length_squared(v));
+}
+
+template <typename T>
 inline T distance_squared(const Vector2T<T> &a, const Vector2T<T> &b) {
 	return length_squared(b - a);
 }

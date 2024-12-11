@@ -417,6 +417,7 @@ bool Connection::save_block(const BlockLocation loc, const Span<const uint8_t> b
 			update_block_statement = _update_instance_block_statement;
 			break;
 		default:
+			update_block_statement = nullptr;
 			CRASH_NOW();
 	}
 
@@ -471,6 +472,7 @@ VoxelStream::ResultCode Connection::load_block(
 			get_block_statement = _get_instance_block_statement;
 			break;
 		default:
+			get_block_statement = nullptr;
 			CRASH_NOW();
 	}
 

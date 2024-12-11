@@ -148,6 +148,10 @@ void register_image_nodes(Span<NodeType> types) {
 									   .format(varray(Image::get_class_static())));
 				return;
 			}
+			if (image->is_empty()) {
+				ctx.make_error(String(ZN_TTR("{0} is empty").format(varray(Image::get_class_static()))));
+				return;
+			}
 			ImageRangeGrid *im_range = ZN_NEW(ImageRangeGrid);
 			im_range->generate(**image);
 			Params p;
@@ -167,6 +171,12 @@ void register_image_nodes(Span<NodeType> types) {
 			// Cache image size to reduce API calls in GDExtension
 			const int w = im.get_width();
 			const int h = im.get_height();
+#ifdef DEBUG_ENABLED
+			if (w == 0 || h == 0) {
+				ZN_PRINT_ERROR_ONCE("Image is empty");
+				return;
+			}
+#endif
 			// TODO Optimized path for most used formats, `get_pixel` is kinda slow
 			if (p.filter == FILTER_NEAREST) {
 				for (uint32_t i = 0; i < out.size; ++i) {

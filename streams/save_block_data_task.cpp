@@ -98,7 +98,9 @@ void SaveBlockDataTask::run(zylann::ThreadedTaskContext &ctx) {
 		// On the other hand, if we want to represent the fact that "everything was deleted here",
 		// this should not be null.
 
-		ZN_PRINT_VERBOSE(format("Saving instance block {} lod {} with data {}", _position, _lod, _instances.get()));
+		ZN_PRINT_VERBOSE(format(
+				"Saving instance block {} lod {} with data {}", _position, static_cast<int>(_lod), _instances.get()
+		));
 
 		VoxelStream::InstancesQueryData instances_query{
 			std::move(_instances), _position, _lod, VoxelStream::RESULT_ERROR

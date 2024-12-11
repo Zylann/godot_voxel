@@ -210,7 +210,6 @@ bool deserialize_metadata(VoxelMetadata &meta, MemoryReader &mr) {
 				return false;
 			}
 	}
-	return false;
 }
 
 bool deserialize_metadata(Span<const uint8_t> p_src, VoxelBuffer &buffer) {
@@ -296,7 +295,7 @@ SerializeResult serialize(const VoxelBuffer &voxel_buffer) {
 	metadata_tmp.clear();
 
 	// Cannot serialize an empty block
-	ERR_FAIL_COND_V(Vector3iUtil::get_volume(voxel_buffer.get_size()) == 0, SerializeResult(dst_data, false));
+	ERR_FAIL_COND_V(Vector3iUtil::get_volume_u64(voxel_buffer.get_size()) == 0, SerializeResult(dst_data, false));
 
 	size_t expected_metadata_size = 0;
 	const size_t expected_data_size = get_size_in_bytes(voxel_buffer, expected_metadata_size);
@@ -668,6 +667,9 @@ bool deserialize(Span<const uint8_t> p_data, VoxelBuffer &out_voxel_buffer) {
 						v = f.get_64();
 						break;
 					default:
+						// Fix uninitialized variable warning on Clang, even though it is not supposed to carry on after
+						// the switch
+						v = 0;
 						CRASH_NOW();
 				}
 				out_voxel_buffer.clear_channel(channel_index, v);

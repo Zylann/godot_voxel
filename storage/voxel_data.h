@@ -361,7 +361,7 @@ private:
 		// This lock should be locked in write mode only when the map gets modified (adding or removing blocks).
 		// Otherwise it may be locked in read mode.
 		// It is possible to unlock it after we are done querying the map.
-		RWLock map_lock;
+		mutable RWLock map_lock;
 		// This should be used when reading or writing voxels/metadata in blocks. It uses block coordinates as
 		// spatial unit.
 		mutable SpatialLock3D spatial_lock;

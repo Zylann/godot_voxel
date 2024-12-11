@@ -5,6 +5,10 @@
 #include <algorithm>
 #include <cmath>
 
+#if defined(_MSC_VER)
+#pragma warning(disable : 4701) // Potentially uninitialized local variable used.
+#endif
+
 namespace zylann {
 namespace ExpressionParser {
 

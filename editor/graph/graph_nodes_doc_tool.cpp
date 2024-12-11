@@ -130,7 +130,10 @@ String strip_eols(String text) {
 }
 
 void write_graph_nodes_doc_xml(
-		FileAccess &f, const StdVector<GraphNodeDocumentation> &nodes_doc, const pg::NodeTypeDB &type_db) {
+		FileAccess &f,
+		const StdVector<GraphNodeDocumentation> &nodes_doc,
+		const pg::NodeTypeDB &type_db
+) {
 	class CodeWriter {
 	public:
 		CodeWriter(FileAccess &f) : _f(f) {}
@@ -247,10 +250,12 @@ void write_graph_nodes_doc_xml(
 
 		for (const pg::NodeType::Param &param : type.params) {
 			w.write_line(String("<parameter name=\"{0}\" type=\"{1}\" default_value=\"{2}\"/>")
-								 .format(varray(param.name,
-										 param.type == Variant::OBJECT ? param.class_name
-																	   : Variant::get_type_name(param.type),
-										 param.default_value == Variant() ? "null" : param.default_value)));
+								 .format(
+										 varray(param.name,
+												param.type == Variant::OBJECT ? param.class_name
+																			  : Variant::get_type_name(param.type),
+												param.default_value == Variant() ? "null" : param.default_value)
+								 ));
 		}
 
 		w.write_line("<description>");

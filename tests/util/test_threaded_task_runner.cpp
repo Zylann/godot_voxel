@@ -12,7 +12,7 @@
 #include "../../util/tasks/threaded_task_runner.h"
 #include "../testing.h"
 
-//#define VOXEL_TEST_TASK_POSTPONING_DUMP_EVENTS
+// #define VOXEL_TEST_TASK_POSTPONING_DUMP_EVENTS
 #ifdef VOXEL_TEST_TASK_POSTPONING_DUMP_EVENTS
 #include <fstream>
 #endif
@@ -81,7 +81,8 @@ void test_threaded_task_runner_misc() {
 	const unsigned int hw_concurrency = Thread::get_hardware_concurrency();
 	if (hw_concurrency < test_thread_count) {
 		ZN_PRINT_WARNING(format(
-				"Hardware concurrency is {}, smaller than test requirement {}", test_thread_count, hw_concurrency));
+				"Hardware concurrency is {}, smaller than test requirement {}", test_thread_count, hw_concurrency
+		));
 	}
 
 	std::shared_ptr<TaskCounter> parallel_counter = make_unique_instance<TaskCounter>();
@@ -191,7 +192,8 @@ void test_threaded_task_runner_debug_names() {
 	const unsigned int hw_concurrency = Thread::get_hardware_concurrency();
 	if (hw_concurrency < test_thread_count) {
 		ZN_PRINT_WARNING(format(
-				"Hardware concurrency is {}, smaller than test requirement {}", test_thread_count, hw_concurrency));
+				"Hardware concurrency is {}, smaller than test requirement {}", test_thread_count, hw_concurrency
+		));
 	}
 
 	ThreadedTaskRunner runner;
@@ -315,7 +317,7 @@ void test_threaded_task_postponing() {
 		EventList &events;
 
 		Task1(int p_sleep_amount_usec, Map &p_map, Vector3i p_bpos, EventList &p_events) :
-				sleep_amount_usec(p_sleep_amount_usec), map(p_map), bpos0(p_bpos), events(p_events) {}
+				sleep_amount_usec(p_sleep_amount_usec), bpos0(p_bpos), map(p_map), events(p_events) {}
 
 		bool try_lock_area(StdVector<Block *> &locked_blocks) {
 			Vector3i delta;
@@ -396,7 +398,8 @@ void test_threaded_task_postponing() {
 	const unsigned int hw_concurrency = Thread::get_hardware_concurrency();
 	if (hw_concurrency < test_thread_count) {
 		ZN_PRINT_WARNING(format(
-				"Hardware concurrency is {}, smaller than test requirement {}", test_thread_count, hw_concurrency));
+				"Hardware concurrency is {}, smaller than test requirement {}", test_thread_count, hw_concurrency
+		));
 	}
 
 	ThreadedTaskRunner runner;

@@ -48,16 +48,15 @@ Terrains are rendered with many unique meshes. That can amount for a lot of draw
 - Increase mesh block size: they default to 16, but it can be set to 32 instead. This reduces the number of draw calls, but may increase the time it takes to modify voxels.
 
 
-Slow mesh updates issue with OpenGL
-------------------------------------
+### Slow mesh updates issue with OpenGL
 
-### Issue
+#### Issue
 
 Godot 3.x is using OpenGL, and there is an issue which currently degrades performance of this voxel engine a lot. Framerate is not necessarily bad, but the speed at which voxel terrain updates is very low, compared to what it should be. So far the issue has been seen on Windows, on both Intel or nVidia cards.
 
 Note: Godot 4.x will have an OpenGL renderer, but this issue has not been tested here yet.
 
-### Workarounds
+#### Workarounds
 
 Note: you don't have to do them all at once, picking just one of them can improve the situation.
 
@@ -66,7 +65,7 @@ Note: you don't have to do them all at once, picking just one of them can improv
 - Or turn off `display/window/vsync/use_vsync` in project settings. Not as effective and eats more resources, but improves performance.
 - Or turn on `display/window/vsync/vsync_via_compositor` in project settings. Not as effective but can improve performance in windowed mode.
 
-### Explanation
+#### Explanation
 
 The engine relies a lot on uploading many meshes at runtime, and this cannot be threaded efficiently in Godot 3.x so far. So instead, meshes are uploaded in the main thread, until part of the frame time elapsed. Beyond that time, the engine stops and continues next frame. This is intented to smooth out the load and avoid stutters *caused by the task CPU-side*. Other tasks that cannot be threaded are also put into the same queue, like creating colliders.
 
@@ -76,10 +75,9 @@ When one workaround is used, like enabling `verbose_stdout`, this slowdown compl
 For more information, see [Godot issue #52801](https://github.com/godotengine/godot/issues/52801).
 
 
-Slowdown when moving fast with Vulkan
---------------------------------------
+### Slowdown when moving fast with Vulkan
 
-### Issue
+#### Issue
 
 If you move fast while near a terrain with a lot of chunks (mesh size 16 and high LOD detail), the renderer can cause noticeable slowdowns. This is because Godot4's Vulkan allocator is much slower to destroy mesh buffers than Godot 3 was, and it does that on the main thread. When you move fast, a lot of meshes get created in front of the camera, and a lot get destroyed behind the camera at the same time. Creation is cheap, destruction is expensive.
 
@@ -93,7 +91,7 @@ This issue also was not noticeable in Godot 3.
 
 This problem reproduces specifically when a lot of small meshes are destroyed (small as in 16x16 pieces of terrain, variable size), while a lot of them (thousands) already exist at the same time. Note, some of them are not necessarily visible.
 
-### Workarounds
+#### Workarounds
 
 It is not possible for the module to just "pool the meshes", because when new meshes need to be created, the API requires to create new buffers anyways and drops the old ones (AFAIK). It is also not possible to use a thread on our side because the work is deferred to the end of the frame, not on the call site.
 
@@ -106,7 +104,42 @@ The only workarounds involve limiting the game:
 - Reduce LOD distance so less blocks have to be destroyed, at the expense of quality
 
 
-Iteration order
+Physics
+----------
+
+The voxel engine offers two different approaches to physics:
+- Standard Physics: the official API Godot exposes through `PhysicsServer3D` (Godot Physics, Godot Jolt...).
+- Box Physics: a small specialized API that only works with axis-aligned boxes on blocky terrain, exposed with `VoxelBoxMover` and voxel raycasts. It is much more limited and requires some setup, but performs faster.
+
+### Standard Physics
+
+#### Mesh colliders simulation
+
+Similar to rendering 16x16x16 or 32x32x32 blocks, the voxel engine uses "mesh" colliders for every terrain block (or "chunk"). These colliders are static and can be concave. Therefore, any terrain shape should be supported, but depends a lot on how performant these colliders are in the underlying physics engine.
+
+Moving terrain remains possible, but do not expect physics to work correctly on the surface while moving it.
+
+#### Tunnelling 
+
+Mesh colliders used by terrain have no "thickness". An object can sit undisturbed outside or inside of it, contrary to convex colliders which usually have a "depenetration force" pushing objects away from their inside. This makes mesh colliders more prone to "tunneling": if an object goes too fast, or is too small relative to its velocity, it can pass through the ground.
+
+- Limit speed of your objects
+- For fast-moving objects (projectiles?), use elongated shapes, or just raycasts, making sure that the "trail" of the shape "connects" between each physics frame
+- Enable Continuous Collision Detection, if the physics engine supports it
+- Check voxel data to find out if a point is underground and move up the object
+
+#### Shape creation is very slow
+
+Similar to rendering, the voxel engine has to convert voxels into meshes ("meshing"), and does this with our own prioritised pool of threads.
+It will use those meshes as colliders. Creating a collider from a mesh is actually much more expensive than meshing itself (about 3 to 5 times), because it involves creating an acceleration structure to speed up collision detection (BVH, octree...).
+
+Unfortunately, Godot does not offer a reliable way to safely create these shapes *including their acceleration structure* from within out meshing threads. So instead, we had to defer it all to the main thread, and spread it over multiple frames. This slows down terrain loading tremendously (compared to disabling collisions).
+
+- A [proposal](https://github.com/godotengine/godot-proposals/issues/483) has been opened to expose this issue, still not addressed
+- [Godot Jolt](https://github.com/godotengine/godot/pull/99895) also has this issue, exacerbated by the fact it was implemented to defer shape setup to the very last moment, when entering the scene tree. So even if we were allowed to create mesh colliders from our threads, it still defers all the hard work to the main thread.
+
+
+Voxel Iteration order
 -----------------
 
 In this engine, voxels are stored in flat arrays indexed in ZXY order. Y is the "deepest" coordinate: when iterating a `VoxelBuffer` of dimensions `(size.x, size.y, size.z)`, adding 1 to the Y coordinate is equivalent to advancing by 1 element in memory. Conversely, adding 1 to the X coordinate advances by `size.y` elements, and adding 1 to the Z coordinate advances by `(size.x * size.y)` elements.

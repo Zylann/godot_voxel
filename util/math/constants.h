@@ -3,6 +3,8 @@
 
 namespace zylann::math {
 
+// TODO In C++20 we can use <numbers>
+
 static constexpr float TAU_32 = 6.2831853071795864769252867666;
 static constexpr double TAU_64 = 6.2831853071795864769252867666;
 

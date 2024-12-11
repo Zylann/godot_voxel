@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="VoxelGeneratorHeightmap" inherits="VoxelGenerator" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
+		Base class for several basic height-based generators.
 	</brief_description>
 	<description>
 	</description>
@@ -8,6 +9,7 @@
 	</tutorials>
 	<members>
 		<member name="channel" type="int" setter="set_channel" getter="get_channel" enum="VoxelBuffer.ChannelId" default="1">
+			Channel where voxels will be generated. If set to [constant VoxelBuffer.CHANNEL_SDF], voxels will be a signed distance field usable by smooth meshers. Otherwise, the value 1 will be set below ground, and the value 0 will be set above ground (blocky).
 		</member>
 		<member name="height_range" type="float" setter="set_height_range" getter="get_height_range" default="30.0">
 			Maximum distance between the lowest and highest surface points that can generate. 
@@ -17,7 +19,7 @@
 			Minimum height where the surface will generate.
 		</member>
 		<member name="iso_scale" type="float" setter="set_iso_scale" getter="get_iso_scale" default="1.0">
-			Scale applied to the signed distance field. This is useful when smooth voxels are used, to reduce blockyness over large distances.
+			Scale applied to the signed distance field when using a smooth terrain configuration.
 		</member>
 	</members>
 </class>

@@ -15,15 +15,14 @@ A model can be setup in various ways, see child classes.
 ## Properties: 
 
 
-Type                                                                        | Name                                          | Default           
---------------------------------------------------------------------------- | --------------------------------------------- | ------------------
-[AABB[]](https://docs.godotengine.org/en/stable/classes/class_aabb[].html)  | [collision_aabbs](#i_collision_aabbs)         | []                
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)        | [collision_mask](#i_collision_mask)           | 1                 
-[Color](https://docs.godotengine.org/en/stable/classes/class_color.html)    | [color](#i_color)                             | Color(1, 1, 1, 1) 
-[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)      | [culls_neighbors](#i_culls_neighbors)         | true              
-[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)      | [random_tickable](#i_random_tickable)         | false             
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)        | [transparency_index](#i_transparency_index)   | 0                 
-[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)      | [transparent](#i_transparent) *(deprecated)*  | false             
+Type                                                                        | Name                                         | Default           
+--------------------------------------------------------------------------- | -------------------------------------------- | ------------------
+[AABB[]](https://docs.godotengine.org/en/stable/classes/class_aabb[].html)  | [collision_aabbs](#i_collision_aabbs)        | []                
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)        | [collision_mask](#i_collision_mask)          | 1                 
+[Color](https://docs.godotengine.org/en/stable/classes/class_color.html)    | [color](#i_color)                            | Color(1, 1, 1, 1) 
+[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)      | [culls_neighbors](#i_culls_neighbors)        | true              
+[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)      | [random_tickable](#i_random_tickable)        | false             
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)        | [transparency_index](#i_transparency_index)  | 0                 
 <p></p>
 
 ## Methods: 
@@ -79,11 +78,6 @@ Determines how transparency is handled when the sides of the model are culled by
 
 If the neighbor voxel at a given side has a transparency index lower or equal to the current voxel, the side will be culled.
 
-### [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_transparent"></span> **transparent** = false
-
-*This property is deprecated. Use [VoxelBlockyModel.transparency_index](VoxelBlockyModel.md#i_transparency_index) instead.*
-Tells if the model is transparent in the context of sides being culled by neighbor voxels.
-
 ## Method Descriptions
 
 ### [Material](https://docs.godotengine.org/en/stable/classes/class_material.html)<span id="i_get_material_override"></span> **get_material_override**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) index ) 
@@ -106,4 +100,4 @@ Sets a material override for a specific surface of the model. It allows to use t
 
 Enables or disables mesh-based collision on a specific surface. It allows a model to have solid parts and others where players can pass through.
 
-_Generated on Apr 06, 2024_
+_Generated on Aug 27, 2024_
