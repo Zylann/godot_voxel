@@ -2,6 +2,7 @@
 #define VOXEL_STREAM_SQLITE_BLOCK_LOCATION_H
 
 #include "../../constants/voxel_constants.h"
+#include "../../util/containers/fixed_array.h"
 #include "../../util/math/box3i.h"
 #include "../../util/math/vector3i.h"
 #include "../../util/string/conv.h"

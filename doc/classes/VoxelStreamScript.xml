@@ -11,6 +11,7 @@
 		<method name="_get_used_channels_mask" qualifiers="virtual const">
 			<return type="int" />
 			<description>
+				Tells which channels in [VoxelBuffer] are supported to save voxel data, in case the stream only saves specific ones.
 			</description>
 		</method>
 		<method name="_load_voxel_block" qualifiers="virtual">
@@ -19,6 +20,7 @@
 			<param index="1" name="position_in_blocks" type="Vector3i" />
 			<param index="2" name="lod" type="int" />
 			<description>
+				Called when a block of voxels needs to be loaded. Assumes [code]out_buffer[/code] always has the same size. Returns [enum VoxelStream.ResultCode].
 			</description>
 		</method>
 		<method name="_save_voxel_block" qualifiers="virtual">
@@ -27,6 +29,7 @@
 			<param index="1" name="position_in_blocks" type="Vector3i" />
 			<param index="2" name="lod" type="int" />
 			<description>
+				Called when a block of voxels needs to be saved. Assumes [code]out_buffer[/code] always has the same size.
 			</description>
 		</method>
 	</methods>

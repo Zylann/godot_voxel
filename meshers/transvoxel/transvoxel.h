@@ -77,12 +77,12 @@ struct MeshArrays {
 	}
 
 	int add_vertex(
-			Vector3f primary,
-			Vector3f normal,
-			uint8_t cell_border_mask,
-			uint8_t vertex_border_mask,
-			uint8_t transition,
-			Vector3f secondary
+			const Vector3f primary,
+			const Vector3f normal,
+			const uint8_t cell_border_mask,
+			const uint8_t vertex_border_mask,
+			const uint8_t transition,
+			const Vector3f secondary
 	) {
 		int vi = vertices.size();
 		vertices.push_back(primary);
@@ -94,12 +94,12 @@ struct MeshArrays {
 
 struct ReuseCell {
 	FixedArray<int, 4> vertices;
-	unsigned int packed_texture_indices = 0;
+	uint32_t packed_texture_indices = 0;
 };
 
 struct ReuseTransitionCell {
 	FixedArray<int, 12> vertices;
-	unsigned int packed_texture_indices = 0;
+	uint32_t packed_texture_indices = 0;
 };
 
 class Cache {
@@ -149,8 +149,9 @@ private:
 // This is only to re-use some data computed for regular mesh into transition meshes
 struct DefaultTextureIndicesData {
 	FixedArray<uint8_t, 4> indices;
-	uint32_t packed_indices;
-	bool use;
+	uint32_t packed_indices = 0;
+	// TODO Use an optional?
+	bool use = false;
 };
 
 struct CellInfo {

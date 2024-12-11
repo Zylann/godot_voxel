@@ -133,12 +133,15 @@ void ComputeShaderResource::create_texture_2d(const Curve &curve) {
 	PackedByteArray data;
 	data.resize(width * sizeof(float));
 
+	const math::Interval curve_domain = zylann::godot::get_curve_domain(curve);
+	const float curve_domain_range = curve_domain.length();
+
 	{
 		uint8_t *wd8 = data.ptrw();
 		float *wd = (float *)wd8;
 
 		for (unsigned int i = 0; i < width; ++i) {
-			const float t = i / static_cast<float>(width);
+			const float t = curve_domain.min + curve_domain_range + i / static_cast<float>(width);
 			// TODO Thread-safety: `sample_baked` can actually be a WRITING method! The baked cache is lazily created
 			wd[i] = curve.sample_baked(t);
 			// print_line(String("X: {0}, Y: {1}").format(varray(t, wd[i])));
@@ -153,7 +156,7 @@ template <typename T>
 void zxy_grid_to_zyx(Span<const T> src, Span<T> dst, Vector3i size) {
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT(Vector3iUtil::is_valid_size(size));
-	ZN_ASSERT(Vector3iUtil::get_volume(size) == int64_t(src.size()));
+	ZN_ASSERT(Vector3iUtil::get_volume_u64(size) == src.size());
 	ZN_ASSERT(src.size() == dst.size());
 	Vector3i pos;
 	for (pos.z = 0; pos.z < size.z; ++pos.z) {
@@ -171,7 +174,7 @@ void ComputeShaderResource::create_texture_3d_zxy(Span<const float> fdata_zxy, V
 	ZN_PROFILE_SCOPE();
 
 	ZN_ASSERT(Vector3iUtil::is_valid_size(size));
-	ZN_ASSERT(Vector3iUtil::get_volume(size) == int64_t(fdata_zxy.size()));
+	ZN_ASSERT(Vector3iUtil::get_volume_u64(size) == fdata_zxy.size());
 
 	clear();
 
@@ -195,7 +198,7 @@ void ComputeShaderResource::create_texture_3d_zxy(Span<const float> fdata_zxy, V
 	TypedArray<PackedByteArray> data_array;
 	{
 		PackedByteArray pba;
-		pba.resize(sizeof(float) * Vector3iUtil::get_volume(size));
+		pba.resize(sizeof(float) * Vector3iUtil::get_volume_u64(size));
 		uint8_t *pba_w = pba.ptrw();
 		zxy_grid_to_zyx(fdata_zxy, Span<float>(reinterpret_cast<float *>(pba_w), pba.size()), size);
 		data_array.append(pba);

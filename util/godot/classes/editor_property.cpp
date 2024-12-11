@@ -1,4 +1,5 @@
 #include "editor_property.h"
+#include "../../containers/fixed_array.h"
 
 namespace zylann::godot {
 

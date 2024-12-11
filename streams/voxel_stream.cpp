@@ -88,22 +88,22 @@ void VoxelStream::flush() {
 
 VoxelStream::ResultCode VoxelStream::_b_load_voxel_block(
 		Ref<godot::VoxelBuffer> out_buffer,
-		Vector3i origin_in_voxels,
+		Vector3i block_position,
 		int lod_index
 ) {
 	ERR_FAIL_COND_V(lod_index < 0, RESULT_ERROR);
 	ERR_FAIL_COND_V(lod_index >= static_cast<int>(constants::MAX_LOD), RESULT_ERROR);
 	ERR_FAIL_COND_V(out_buffer.is_null(), RESULT_ERROR);
-	VoxelQueryData q{ out_buffer->get_buffer(), origin_in_voxels, static_cast<uint8_t>(lod_index), RESULT_ERROR };
+	VoxelQueryData q{ out_buffer->get_buffer(), block_position, static_cast<uint8_t>(lod_index), RESULT_ERROR };
 	load_voxel_block(q);
 	return q.result;
 }
 
-void VoxelStream::_b_save_voxel_block(Ref<godot::VoxelBuffer> buffer, Vector3i origin_in_voxels, int lod_index) {
+void VoxelStream::_b_save_voxel_block(Ref<godot::VoxelBuffer> buffer, Vector3i block_position, int lod_index) {
 	ERR_FAIL_COND(lod_index < 0);
 	ERR_FAIL_COND(lod_index >= static_cast<int>(constants::MAX_LOD));
 	ERR_FAIL_COND(buffer.is_null());
-	VoxelQueryData q{ buffer->get_buffer(), origin_in_voxels, static_cast<uint8_t>(lod_index), RESULT_ERROR };
+	VoxelQueryData q{ buffer->get_buffer(), block_position, static_cast<uint8_t>(lod_index), RESULT_ERROR };
 	save_voxel_block(q);
 }
 
@@ -117,11 +117,10 @@ Vector3 VoxelStream::_b_get_block_size() const {
 
 void VoxelStream::_bind_methods() {
 	ClassDB::bind_method(
-			D_METHOD("load_voxel_block", "out_buffer", "origin_in_voxels", "lod_index"),
-			&VoxelStream::_b_load_voxel_block
+			D_METHOD("load_voxel_block", "out_buffer", "block_position", "lod_index"), &VoxelStream::_b_load_voxel_block
 	);
 	ClassDB::bind_method(
-			D_METHOD("save_voxel_block", "buffer", "origin_in_voxels", "lod_index"), &VoxelStream::_b_save_voxel_block
+			D_METHOD("save_voxel_block", "buffer", "block_position", "lod_index"), &VoxelStream::_b_save_voxel_block
 	);
 	ClassDB::bind_method(D_METHOD("get_used_channels_mask"), &VoxelStream::_b_get_used_channels_mask);
 

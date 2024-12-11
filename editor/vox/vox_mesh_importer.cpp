@@ -209,7 +209,7 @@ bool make_single_voxel_grid(Span<const ModelInstance> instances, Vector3i &out_o
 	// Extra sanity check
 	// 3 gigabytes
 	const size_t limit = 3'000'000'000ull;
-	const size_t volume = Vector3iUtil::get_volume(bounding_box.size);
+	const size_t volume = Vector3iUtil::get_volume_u64(bounding_box.size);
 	ERR_FAIL_COND_V_MSG(
 			volume > limit,
 			false,

@@ -1,3 +1,6 @@
+#ifndef ZN_VOXEL_RAYCAST_H
+#define ZN_VOXEL_RAYCAST_H
+
 #include "../util/math/vector3i.h"
 // #include "../util/profiling.h"
 #include "errors.h"
@@ -59,7 +62,9 @@ bool voxel_raycast(
 
 	// Note : the grid is assumed to have 1-unit square cells.
 
+#ifdef DEBUG_ENABLED
 	ZN_ASSERT_RETURN_V(math::is_normalized(ray_direction), false); // Must be normalized
+#endif
 
 	/* Initialisation */
 
@@ -202,3 +207,5 @@ bool voxel_raycast(
 }
 
 } // namespace zylann
+
+#endif // ZN_VOXEL_RAYCAST_H

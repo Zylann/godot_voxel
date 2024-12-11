@@ -1,6 +1,7 @@
 #ifndef VOXEL_STRING_NAMES_H
 #define VOXEL_STRING_NAMES_H
 
+#include "../util/containers/fixed_array.h"
 #include "../util/godot/core/string_name.h"
 #include "../util/math/ortho_basis.h"
 
@@ -105,6 +106,12 @@ public:
 	StringName async_search_completed;
 
 	StringName file_selected;
+
+	StringName jitter;
+	StringName triangle_area_threshold;
+	StringName density;
+	StringName noise_dimension;
+	StringName noise_on_scale;
 };
 
 } // namespace zylann::voxel

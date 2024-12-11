@@ -25,7 +25,7 @@ public:
 	Ref<Shape3D> get_shape(int shape_index);
 	void set_world(World3D *world);
 	void set_shape_enabled(int shape_index, bool disabled);
-	void set_attached_object(Object *obj);
+	void set_attached_object(const Object *obj);
 	void set_collision_layer(int layer);
 	void set_collision_mask(int mask);
 

@@ -1026,7 +1026,7 @@ void VoxelData::get_blocks_with_voxel_data(
 		Span<std::shared_ptr<VoxelBuffer>> out_blocks
 ) const {
 	ZN_PROFILE_SCOPE();
-	ZN_ASSERT(int64_t(out_blocks.size()) >= Vector3iUtil::get_volume(p_blocks_box.size));
+	ZN_ASSERT(out_blocks.size() >= Vector3iUtil::get_volume_u64(p_blocks_box.size));
 
 	const Lod &data_lod = _lods[lod_index];
 
@@ -1052,10 +1052,9 @@ void VoxelData::get_blocks_with_voxel_data(
 void VoxelData::get_blocks_grid(VoxelDataGrid &grid, Box3i box_in_voxels, unsigned int lod_index) const {
 	ZN_PROFILE_SCOPE();
 	const Lod &data_lod = _lods[lod_index];
-	RWLockRead rlock(data_lod.map_lock);
 	const int bs = data_lod.map.get_block_size() << lod_index;
 	const Box3i box_in_blocks = box_in_voxels.downscaled(bs);
-	grid.reference_area_block_coords(data_lod.map, box_in_blocks, &data_lod.spatial_lock);
+	grid.reference_area_block_coords(data_lod.map, data_lod.map_lock, box_in_blocks, data_lod.spatial_lock);
 }
 
 SpatialLock3D &VoxelData::get_spatial_lock(unsigned int lod_index) const {

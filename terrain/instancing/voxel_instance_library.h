@@ -2,6 +2,7 @@
 #define VOXEL_INSTANCE_MODEL_LIBRARY_H
 
 #include "../../constants/voxel_constants.h"
+#include "../../util/containers/fixed_array.h"
 #include "../../util/containers/std_map.h"
 #include "../../util/containers/std_unordered_map.h"
 #include "../../util/containers/std_vector.h"

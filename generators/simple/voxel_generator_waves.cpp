@@ -12,7 +12,7 @@ VoxelGeneratorWaves::VoxelGeneratorWaves() {
 
 VoxelGeneratorWaves::~VoxelGeneratorWaves() {}
 
-VoxelGenerator::Result VoxelGeneratorWaves::generate_block(VoxelGenerator::VoxelQueryData &input) {
+VoxelGenerator::Result VoxelGeneratorWaves::generate_block(VoxelGenerator::VoxelQueryData input) {
 	Parameters params;
 	{
 		RWLockRead rlock(_parameters_lock);

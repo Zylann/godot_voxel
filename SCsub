@@ -37,9 +37,9 @@ if INCLUDE_TESTS:
 # SQLite
 env_sqlite = env_voxel.Clone()
 
-# Turn off some warnings produced when compiling with warnings=extra
-if env["warnings"] == "extra":
-	env_sqlite.disable_warnings()
+# Turn off warnings, we get some with Clang and with `warnings=extra`
+env_sqlite.disable_warnings()
+
 # if not env_sqlite.msvc:
 #     env_sqlite.Append(CXXFLAGS=["-Wno-discarded-qualifiers"])
 

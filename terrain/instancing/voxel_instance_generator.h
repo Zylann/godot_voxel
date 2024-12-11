@@ -29,6 +29,7 @@ public:
 		EMIT_FROM_FACES_FAST,
 		// Slower, but tries to not assume the area of triangles.
 		EMIT_FROM_FACES,
+		EMIT_ONE_PER_TRIANGLE,
 
 		EMIT_MODE_COUNT
 	};
@@ -69,6 +70,12 @@ public:
 
 	void set_emit_mode(EmitMode mode);
 	EmitMode get_emit_mode() const;
+
+	void set_jitter(const float p_jitter);
+	float get_jitter() const;
+
+	void set_triangle_area_threshold(const float p_threshold);
+	float get_triangle_area_threshold() const;
 
 	void set_vertical_alignment(float valign);
 	float get_vertical_alignment() const;
@@ -117,6 +124,12 @@ public:
 	void set_noise_on_scale(float amount);
 	float get_noise_on_scale() const;
 
+	void set_voxel_material_filter_enabled(bool enabled);
+	bool is_voxel_material_filter_enabled() const;
+
+	void set_voxel_material_filter_mask(const uint32_t mask);
+	uint32_t get_voxel_material_filter_mask() const;
+
 	static inline int get_octant_index(const Vector3f pos, float half_block_size) {
 		return get_octant_index(pos.x > half_block_size, pos.y > half_block_size, pos.z > half_block_size);
 	}
@@ -127,15 +140,21 @@ public:
 
 #ifdef TOOLS_ENABLED
 	void get_configuration_warnings(PackedStringArray &warnings) const;
+	void _validate_property(PropertyInfo &p_property) const;
 #endif
 
 private:
 	void _on_noise_changed();
 	void _on_noise_graph_changed();
 
+	PackedInt32Array _b_get_voxel_material_filter_array() const;
+	void _b_set_voxel_material_filter_array(PackedInt32Array material_indices);
+
 	static void _bind_methods();
 
 	float _density = 0.1f;
+	float _jitter = 1.f;
+	float _triangle_area_threshold_lod0 = 0.f;
 	float _vertical_alignment = 1.f;
 	float _min_scale = 1.f;
 	float _max_scale = 1.f;
@@ -151,6 +170,8 @@ private:
 	Ref<Noise> _noise;
 	Dimension _noise_dimension = DIMENSION_3D;
 	float _noise_on_scale = 0.f;
+	bool _voxel_material_filter_enabled = false;
+	uint32_t _voxel_material_filter_mask = 1;
 
 	// TODO Protect noise and noise graph members from multithreaded access
 

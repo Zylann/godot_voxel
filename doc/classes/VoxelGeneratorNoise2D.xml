@@ -11,6 +11,7 @@
 		<member name="curve" type="Curve" setter="set_curve" getter="get_curve">
 			When assigned, this curve will alter the distribution of height variations, allowing to give some kind of "profile" to the generated shapes.
 			By default, a linear curve from 0 to 1 is used.
+			It is assumed that the curve's domain goes from 0 to 1.
 		</member>
 		<member name="height_range" type="float" setter="set_height_range" getter="get_height_range" overrides="VoxelGeneratorHeightmap" default="200.0" />
 		<member name="noise" type="Noise" setter="set_noise" getter="get_noise">

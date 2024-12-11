@@ -2,6 +2,7 @@
 #define VOXEL_MODIFIER_H
 
 #include "../engine/gpu/compute_shader_parameters.h"
+#include "../util/containers/fixed_array.h"
 #include "../util/math/transform_3d.h"
 #include "../util/math/vector3f.h"
 #include "../util/thread/rw_lock.h"

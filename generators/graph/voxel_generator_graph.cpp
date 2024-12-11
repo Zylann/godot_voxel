@@ -523,7 +523,7 @@ void fill_zx_integer_slice(
 
 } // namespace
 
-VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelGenerator::VoxelQueryData &input) {
+VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelGenerator::VoxelQueryData input) {
 	std::shared_ptr<Runtime> runtime_ptr;
 	{
 		RWLockRead rlock(_runtime_lock);
@@ -599,7 +599,7 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelGenerator::Voxel
 		cache.input_sdf_slice_cache.resize(slice_buffer_size);
 		input_sdf_slice_cache = to_span(cache.input_sdf_slice_cache);
 
-		const int64_t volume = Vector3iUtil::get_volume(bs);
+		const size_t volume = Vector3iUtil::get_volume_u64(bs);
 		cache.input_sdf_full_cache.resize(volume);
 		input_sdf_full_cache = to_span(cache.input_sdf_full_cache);
 
@@ -830,7 +830,7 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelGenerator::Voxel
 	return result;
 }
 
-bool VoxelGeneratorGraph::generate_broad_block(VoxelGenerator::VoxelQueryData &input) {
+bool VoxelGeneratorGraph::generate_broad_block(VoxelGenerator::VoxelQueryData input) {
 	// This is a reduced version of whan `generate_block` does already, so it can be used before scheduling GPU work.
 	// If range analysis and SDF clipping finds that we don't need to generate the full block, we can get away with the
 	// broad result. If any channel cannot be determined this way, we have to perform full generation.
@@ -1665,7 +1665,7 @@ VoxelSingleValue VoxelGeneratorGraph::generate_single(Vector3i position, unsigne
 			RWLockRead rlock(_runtime_lock);
 			runtime_ptr = _runtime;
 		}
-		ERR_FAIL_COND_V(runtime_ptr == nullptr, v);
+		ERR_FAIL_COND_V_MSG(runtime_ptr == nullptr, v, "no compiled graph available");
 		if (runtime_ptr->sdf_output_buffer_index == -1) {
 			return v;
 		}
@@ -1688,7 +1688,7 @@ VoxelSingleValue VoxelGeneratorGraph::generate_single(Vector3i position, unsigne
 			RWLockRead rlock(_runtime_lock);
 			runtime_ptr = _runtime;
 		}
-		ERR_FAIL_COND_V(runtime_ptr == nullptr, v);
+		ERR_FAIL_COND_V_MSG(runtime_ptr == nullptr, v, "no compiled graph available");
 		if (runtime_ptr->single_texture_output_buffer_index == -1) {
 			return v;
 		}
@@ -1716,10 +1716,24 @@ VoxelSingleValue VoxelGeneratorGraph::generate_single(Vector3i position, unsigne
 	}
 }
 
+math::Interval get_range(const Span<const float> values) {
+	float minv = values[0];
+	float maxv = minv;
+	for (const float v : values) {
+		minv = math::min(v, minv);
+		maxv = math::max(v, maxv);
+	}
+	return math::Interval(minv, maxv);
+}
+
 // Note, this wrapper may not be used for main generation tasks.
 // It is mostly used as a debug tool.
 math::Interval VoxelGeneratorGraph::debug_analyze_range(Vector3i min_pos, Vector3i max_pos, bool optimize_execution_map)
 		const {
+	ZN_ASSERT_RETURN_V(max_pos.x >= min_pos.x, math::Interval());
+	ZN_ASSERT_RETURN_V(max_pos.y >= min_pos.y, math::Interval());
+	ZN_ASSERT_RETURN_V(max_pos.z >= min_pos.z, math::Interval());
+
 	std::shared_ptr<const Runtime> runtime_ptr;
 	{
 		RWLockRead rlock(_runtime_lock);
@@ -1743,6 +1757,105 @@ math::Interval VoxelGeneratorGraph::debug_analyze_range(Vector3i min_pos, Vector
 	if (optimize_execution_map) {
 		runtime.generate_optimized_execution_map(cache.state, cache.optimized_execution_map, true);
 	}
+
+#if 0
+	const bool range_validation = true;
+	if (range_validation) {
+		// Actually calculate every value and check if range analysis bounds them.
+		// If it does not, then it's a bug.
+		// This is not 100% accurate. We would have to calculate every value at every point in space in the area which
+		// is not possible, we can only sample a finite number within a grid.
+
+		// TODO Make sure the graph is compiled in debug mode, otherwise buffer lookups won't match
+		// TODO Even with debug on, it appears buffers don't really match???
+
+		const Vector3i cube_size = max_pos - min_pos;
+		if (cube_size.x > 64 || cube_size.y > 64 || cube_size.z > 64) {
+			ZN_PRINT_ERROR("Area too big for range validation");
+		} else {
+			const int64_t cube_volume = Vector3iUtil::get_volume(cube_size);
+			ZN_ASSERT_RETURN_V(cube_volume >= 0, math::Interval());
+
+			StdVector<float> src_x;
+			StdVector<float> src_y;
+			StdVector<float> src_z;
+			StdVector<float> src_sdf;
+			src_x.resize(cube_volume);
+			src_y.resize(cube_volume);
+			src_z.resize(cube_volume);
+			src_sdf.resize(cube_volume);
+			Span<float> sx = to_span(src_x);
+			Span<float> sy = to_span(src_y);
+			Span<float> sz = to_span(src_z);
+			Span<float> ssdf = to_span(src_sdf);
+
+			{
+				unsigned int i = 0;
+				for (int z = min_pos.z; z < max_pos.z; ++z) {
+					for (int y = min_pos.y; y < max_pos.y; ++y) {
+						for (int x = min_pos.x; x < max_pos.x; ++x) {
+							src_x[i] = x;
+							src_y[i] = y;
+							src_z[i] = z;
+							++i;
+						}
+					}
+				}
+			}
+
+			QueryInputs inputs(*runtime_ptr, sx, sy, sz, ssdf);
+
+			runtime.prepare_state(cache.state, sx.size(), false);
+			runtime.generate_set(cache.state, inputs.get(), false, nullptr);
+
+			const pg::Runtime::State &state = get_last_state_from_current_thread();
+
+			_main_function->get_graph().for_each_node_const([this, &state](const ProgramGraph::Node &node) {
+				for (uint32_t output_index = 0; output_index < node.outputs.size(); ++output_index) {
+					// const ProgramGraph::Port &output_port = node.outputs[output_index];
+					const ProgramGraph::PortLocation loc{ node.id, output_index };
+
+					uint32_t address;
+					if (!try_get_output_port_address(loc, address)) {
+						continue;
+					}
+
+					const math::Interval analytic_range = state.get_range(address);
+
+					const pg::Runtime::Buffer &buffer = state.get_buffer(address);
+
+					if (buffer.data == nullptr) {
+						if (buffer.is_binding) {
+							// Not supported
+							continue;
+						}
+						ZN_PRINT_ERROR("Didn't expect nullptr in buffer data");
+						continue;
+					}
+
+					const Span<const float> values(buffer.data, buffer.size);
+					const math::Interval empiric_range = get_range(values);
+
+					if (!analytic_range.contains(empiric_range)) {
+						const String node_name = node.name;
+						const pg::NodeType &node_type = pg::NodeTypeDB::get_singleton().get_type(node.type_id);
+						ZN_PRINT_WARNING(
+								format("Empiric range not included in analytic range. A: {}, E: {}; {} "
+									   "output {} instance {} \"{}\"",
+									   analytic_range,
+									   empiric_range,
+									   node_type.name,
+									   output_index,
+									   node.id,
+									   node_name)
+						);
+					}
+				}
+			});
+		}
+	}
+#endif
+
 	// TODO Change return value to allow checking other outputs
 	if (runtime_ptr->sdf_output_buffer_index != -1) {
 		return cache.state.get_range(runtime_ptr->sdf_output_buffer_index);

@@ -32,7 +32,7 @@ public:
 	void set_height_range(real_t hrange);
 	real_t get_height_range() const;
 
-	Result generate_block(VoxelGenerator::VoxelQueryData &input) override;
+	Result generate_block(VoxelGenerator::VoxelQueryData input) override;
 
 private:
 	void _on_noise_changed();
@@ -47,8 +47,8 @@ private:
 	struct Parameters {
 		VoxelBuffer::ChannelId channel = VoxelBuffer::CHANNEL_SDF;
 		Ref<FastNoiseLite> noise;
-		float height_start = 0;
-		float height_range = 300;
+		float height_start = -100;
+		float height_range = 200;
 	};
 
 	Parameters _parameters;

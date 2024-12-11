@@ -876,7 +876,7 @@ int get_side_sign(const VoxelBlockyModel::Side side) {
 // cracks, but the assumption is that it will do most of the time.
 // AO is not handled, and probably doesn't need to be
 template <typename TModelID>
-void append_side_seams(
+void append_side_skirts(
 		Span<const TModelID> buffer,
 		const Vector3T<int> jump,
 		const int z, // Coordinate of the first or last voxel (not within the padded region)
@@ -931,6 +931,21 @@ void append_side_seams(
 			const Vector3f pos = side_to_block_coordinates(Vector3f(x - pad, y - pad, z - (side_sign + 1)), side);
 
 			const VoxelBlockyModel::BakedData &voxel = library.models[nv4];
+
+			if (!voxel.lod_skirts) {
+				// A typical issue is making an ocean:
+				// - Skirts will show up behind the water surface so it's not a good solution in that case.
+				// - If sea level does not line up at different LODs, then there will be LOD "cracks" anyways. I don't
+				// have a good solution for this. One way to workaround is to choose a sea level that lines up at every
+				// LOD (such as Y=0), and let the seams occur in other cases which are usually way less frequent.
+				// - Another way is to only reduce LOD resolution horizontally and not vertically, but that has a high
+				// memory cost on large distances, so not silver bullet.
+				// - Make water opaque when at large distances? If acceptable, this can be a good fix (Distant Horizons
+				// mod was doing this at some point) but either require custom shader or the ability to specify
+				// different models for different LODs in the library
+				continue;
+			}
+
 			const VoxelBlockyModel::BakedData::Model &model = voxel.model;
 
 			for (unsigned int surface_index = 0; surface_index < model.surface_count; ++surface_index) {
@@ -1005,7 +1020,7 @@ void append_side_seams(
 }
 
 template <typename TModelID>
-void append_seams(
+void append_skirts(
 		Span<const TModelID> buffer,
 		const Vector3i size,
 		StdVector<VoxelMesherBlocky::Arrays> &out_arrays_per_material,
@@ -1024,12 +1039,12 @@ void append_seams(
 	constexpr VoxelBlockyModel::Side NEGATIVE_Z = VoxelBlockyModel::SIDE_NEGATIVE_Z;
 	constexpr VoxelBlockyModel::Side POSITIVE_Z = VoxelBlockyModel::SIDE_POSITIVE_Z;
 
-	append_side_seams(buffer, jump.xyz(), 0, size.x, size.y, NEGATIVE_Z, library, out);
-	append_side_seams(buffer, jump.xyz(), (size.z - 1), size.x, size.y, POSITIVE_Z, library, out);
-	append_side_seams(buffer, jump.zyx(), 0, size.z, size.y, NEGATIVE_X, library, out);
-	append_side_seams(buffer, jump.zyx(), (size.x - 1), size.z, size.y, POSITIVE_X, library, out);
-	append_side_seams(buffer, jump.zxy(), 0, size.z, size.x, NEGATIVE_Y, library, out);
-	append_side_seams(buffer, jump.zxy(), (size.y - 1), size.z, size.x, POSITIVE_Y, library, out);
+	append_side_skirts(buffer, jump.xyz(), 0, size.x, size.y, NEGATIVE_Z, library, out);
+	append_side_skirts(buffer, jump.xyz(), (size.z - 1), size.x, size.y, POSITIVE_Z, library, out);
+	append_side_skirts(buffer, jump.zyx(), 0, size.z, size.y, NEGATIVE_X, library, out);
+	append_side_skirts(buffer, jump.zyx(), (size.x - 1), size.z, size.y, POSITIVE_X, library, out);
+	append_side_skirts(buffer, jump.zxy(), 0, size.z, size.x, NEGATIVE_Y, library, out);
+	append_side_skirts(buffer, jump.zxy(), (size.y - 1), size.z, size.x, POSITIVE_Y, library, out);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1182,17 +1197,17 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 
 		switch (channel_depth) {
 			case VoxelBuffer::DEPTH_8_BIT:
-				generate_blocky_mesh( //
-						arrays_per_material, //
-						collision_surface, //
-						raw_channel, //
-						block_size, //
-						library_baked_data, //
-						params.bake_occlusion, //
-						baked_occlusion_darkness //
+				generate_blocky_mesh(
+						arrays_per_material,
+						collision_surface,
+						raw_channel,
+						block_size,
+						library_baked_data,
+						params.bake_occlusion,
+						baked_occlusion_darkness
 				);
 				if (input.lod_index > 0) {
-					append_seams(raw_channel, block_size, arrays_per_material, library_baked_data);
+					append_skirts(raw_channel, block_size, arrays_per_material, library_baked_data);
 				}
 				break;
 
@@ -1208,7 +1223,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 						baked_occlusion_darkness
 				);
 				if (input.lod_index > 0) {
-					append_seams(model_ids, block_size, arrays_per_material, library_baked_data);
+					append_skirts(model_ids, block_size, arrays_per_material, library_baked_data);
 				}
 			} break;
 

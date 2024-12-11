@@ -98,7 +98,7 @@ void DirectStaticBody::set_shape_enabled(int shape_index, bool enabled) {
 	}
 }
 
-void DirectStaticBody::set_attached_object(Object *obj) {
+void DirectStaticBody::set_attached_object(const Object *obj) {
 	// Serves in high-level collision query results, `collider` will contain the attached object
 	ERR_FAIL_COND(!_body.is_valid());
 	PhysicsServer3D::get_singleton()->body_attach_object_instance_id(
@@ -123,7 +123,7 @@ void DirectStaticBody::set_debug(bool enabled, World3D *world) {
 		_debug_mesh_instance.create();
 		_debug_mesh_instance.set_world(world);
 
-		Transform3D transform =
+		const Transform3D transform =
 				PhysicsServer3D::get_singleton()->body_get_state(_body, PhysicsServer3D::BODY_STATE_TRANSFORM);
 		_debug_mesh_instance.set_transform(transform);
 

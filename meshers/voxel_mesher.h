@@ -31,7 +31,6 @@ public:
 		// When using LOD, some meshers can use the generator and edited voxels to affine results.
 		// If not provided, the mesher will only use `voxels`.
 		VoxelGenerator *generator = nullptr;
-		const VoxelData *data = nullptr;
 		// Origin of the block is required when doing deep sampling.
 		Vector3i origin_in_voxels;
 		// LOD index. 0 means highest detail. 1 means half detail etc.
