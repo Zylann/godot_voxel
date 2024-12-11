@@ -151,8 +151,9 @@ public:
 
 	enum DebugDrawFlag {
 		DEBUG_DRAW_VOLUME_BOUNDS = 0,
+		DEBUG_DRAW_VISUAL_AND_COLLISION_BLOCKS = 1,
 
-		DEBUG_DRAW_FLAGS_COUNT = 1
+		DEBUG_DRAW_FLAGS_COUNT = 2
 	};
 
 	void debug_set_draw_enabled(bool enabled);

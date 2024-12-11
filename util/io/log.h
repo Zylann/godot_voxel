@@ -13,6 +13,15 @@
 #define ZN_PRINT_WARNING(msg) zylann::print_warning(msg, __FUNCTION__, __FILE__, __LINE__)
 #define ZN_PRINT_ERROR(msg) zylann::print_error(msg, __FUNCTION__, __FILE__, __LINE__)
 
+#define ZN_PRINT_ERROR_ONCE(msg)                                                                                       \
+	{                                                                                                                  \
+		static bool s_first_print = true;                                                                              \
+		if (s_first_print) {                                                                                           \
+			s_first_print = false;                                                                                     \
+			zylann::print_error(msg, __FUNCTION__, __FILE__, __LINE__);                                                \
+		}                                                                                                              \
+	}
+
 namespace zylann {
 
 bool is_verbose_output_enabled();

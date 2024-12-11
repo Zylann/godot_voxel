@@ -2,7 +2,7 @@
 #define VOXEL_METADATA_H
 
 #include "../../util/memory/memory.h"
-//#include "../../util/non_copyable.h"
+// #include "../../util/non_copyable.h"
 #include "../../util/containers/span.h"
 #include <cstdint>
 
@@ -54,8 +54,8 @@ public:
 
 	void clear();
 
-	inline Type get_type() const {
-		return Type(_type);
+	inline uint8_t get_type() const {
+		return _type;
 	}
 
 	void set_u64(const uint64_t &v);

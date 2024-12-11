@@ -21,6 +21,12 @@
 #include "../../util/godot/editor_scale.h"
 #include "graph_nodes_doc_data.h"
 
+#ifdef ZN_GODOT
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR >= 4
+#include <editor/editor_node.h>
+#endif
+#endif
+
 namespace zylann::voxel {
 
 namespace {
@@ -167,11 +173,13 @@ VoxelGraphNodeDialog::VoxelGraphNodeDialog() {
 	// TODO Replace QuickOpen with listing of project functions directly in the dialog
 	// TODO GDX: EditorQuickOpen is not exposed to extensions
 #ifdef ZN_GODOT
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR <= 3
 	_function_quick_open_dialog = memnew(EditorQuickOpen);
 	_function_quick_open_dialog->connect(
 			"quick_open", callable_mp(this, &VoxelGraphNodeDialog::_on_function_quick_open_dialog_quick_open)
 	);
 	add_child(_function_quick_open_dialog);
+#endif
 #endif
 
 	// In this editor, categories come from the documentation and may be unrelated to internal node categories.
@@ -373,8 +381,17 @@ void VoxelGraphNodeDialog::_on_tree_item_activated() {
 
 	} else if (id == ID_FUNCTION_QUICK_OPEN) {
 #ifdef ZN_GODOT
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR <= 3
 		// Quick open function nodes
 		_function_quick_open_dialog->popup_dialog(pg::VoxelGraphFunction::get_class_static());
+#else
+		Vector<StringName> base_types;
+		base_types.append(pg::VoxelGraphFunction::get_class_static());
+		EditorQuickOpenDialog *quick_open_dialog = EditorNode::get_singleton()->get_quick_open_dialog();
+		quick_open_dialog->popup_dialog(
+				base_types, callable_mp(this, &VoxelGraphNodeDialog::on_function_quick_open_dialog_item_selected)
+		);
+#endif
 #endif
 
 	} else {
@@ -422,9 +439,18 @@ void VoxelGraphNodeDialog::_on_function_file_dialog_file_selected(String fpath) 
 	hide();
 }
 
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR <= 3
 void VoxelGraphNodeDialog::_on_function_quick_open_dialog_quick_open() {
 #ifdef ZN_GODOT
 	String fpath = _function_quick_open_dialog->get_selected();
+	on_function_quick_open_dialog_item_selected(fpath);
+#endif
+}
+
+#endif
+
+void VoxelGraphNodeDialog::on_function_quick_open_dialog_item_selected(String fpath) {
+#ifdef ZN_GODOT
 	if (fpath.is_empty()) {
 		return;
 	}

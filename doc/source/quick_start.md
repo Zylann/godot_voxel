@@ -99,6 +99,9 @@ Here are some reasons why you might not need it:
 
 - "I need to make a planet": you can make more efficient planets by stitching 6 spherified heightmaps together. Take a cube where each face is a heightmap, then puff that cube to turn it into a sphere.
 
-- "I want to make Minecraft but free and with my own blocks": Minecraft is a lot more than voxels. While the module can replicate basic functionalities, it is more general than this at the moment, so it doesn't provide a lot of features found in Minecraft out of the box. Alternatively, you could create a mod with [Minetest](https://www.minetest.net/), which is a more specialized engine.
+- "I want to make Minecraft but different and with my own blocks": Minecraft is a lot more than voxels. While the module can replicate basic functionalities, it is more general/low-level than this at the moment, so it doesn't provide a lot of features found in Minecraft out of the box. Alternatively, you could create a mod with [Minetest](https://www.minetest.net/), which is a more specialized engine.
+
+- "I want super small voxels like Teardown or John Lin's sandbox": these games use a very different tech than this module uses. They raytrace voxels in real-time. This module instead uses a classic polygon-based approach. While you could in theory make terrain that looks like that, it won't perform well. 
 
 - "GridMap sucks": how large do you want your grid to be? How complex are your models? This module's blocky mesher is geared towards very large grids with simple geometry, so it has its own restrictions.
+

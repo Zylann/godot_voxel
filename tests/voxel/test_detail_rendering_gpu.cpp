@@ -100,7 +100,8 @@ void test_normalmap_render_gpu() {
 	nm_task.mesh_block_position = Vector3i();
 	nm_task.output_textures = detail_textures;
 	nm_task.detail_texture_settings = detail_texture_settings;
-	nm_task.priority_dependency;
+	// We don't use priority here because we call the task directly instead of scheduling it into a runner
+	// nm_task.priority_dependency;
 	nm_task.use_gpu = true;
 	RenderDetailTextureGPUTask *gpu_task = nm_task.make_gpu_task();
 

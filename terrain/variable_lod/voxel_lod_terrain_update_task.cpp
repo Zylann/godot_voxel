@@ -46,8 +46,10 @@ void init_sparse_octree_priority_dependency( //
 	// Distance beyond which it is safe to drop a block without risking to block LOD subdivision.
 	// This does not depend on viewer's view distance, but on LOD precision instead.
 	// TODO Should `data_block_size` be used here? Should it be mesh_block_size instead?
-	dep.drop_distance_squared = math::squared(2.f * transformed_block_radius *
-			VoxelEngine::get_octree_lod_block_region_extent(octree_lod_distance, data_block_size));
+	dep.drop_distance_squared = math::squared(
+			2.f * transformed_block_radius *
+			VoxelEngine::get_octree_lod_block_region_extent(octree_lod_distance, data_block_size)
+	);
 }
 
 // This is only if we want to cache voxel data
@@ -85,8 +87,15 @@ void request_block_generate( //
 	params.use_gpu = settings.generator_use_gpu;
 	params.cancellation_token = cancellation_token;
 
-	init_sparse_octree_priority_dependency(params.priority_dependency, block_pos, lod_index, data_block_size,
-			shared_viewers_data, volume_transform, settings.lod_distance);
+	init_sparse_octree_priority_dependency(
+			params.priority_dependency,
+			block_pos,
+			lod_index,
+			data_block_size,
+			shared_viewers_data,
+			volume_transform,
+			settings.lod_distance
+	);
 
 	IThreadedTask *task = stream_dependency->generator->create_block_task(params);
 
@@ -130,20 +139,50 @@ void request_block_load( //
 
 	if (stream_dependency->stream.is_valid()) {
 		PriorityDependency priority_dependency;
-		init_sparse_octree_priority_dependency(priority_dependency, block_pos, lod_index, data_block_size,
-				shared_viewers_data, volume_transform, settings.lod_distance);
+		init_sparse_octree_priority_dependency(
+				priority_dependency,
+				block_pos,
+				lod_index,
+				data_block_size,
+				shared_viewers_data,
+				volume_transform,
+				settings.lod_distance
+		);
 
 		const bool request_instances = false;
-		LoadBlockDataTask *task = ZN_NEW(LoadBlockDataTask(volume_id, block_pos, lod_index, data_block_size,
-				request_instances, stream_dependency, priority_dependency, settings.cache_generated_blocks,
-				settings.generator_use_gpu, data, cancellation_token));
+		LoadBlockDataTask *task = ZN_NEW(LoadBlockDataTask(
+				volume_id,
+				block_pos,
+				lod_index,
+				data_block_size,
+				request_instances,
+				stream_dependency,
+				priority_dependency,
+				settings.cache_generated_blocks,
+				settings.generator_use_gpu,
+				data,
+				cancellation_token
+		));
 
 		task_scheduler.push_io_task(task);
 
 	} else if (settings.cache_generated_blocks) {
 		// Directly generate the block without checking the stream.
-		request_block_generate(volume_id, data_block_size, stream_dependency, data, block_pos, lod_index,
-				shared_viewers_data, volume_transform, settings, nullptr, true, task_scheduler, cancellation_token);
+		request_block_generate(
+				volume_id,
+				data_block_size,
+				stream_dependency,
+				data,
+				block_pos,
+				lod_index,
+				shared_viewers_data,
+				volume_transform,
+				settings,
+				nullptr,
+				true,
+				task_scheduler,
+				cancellation_token
+		);
 
 	} else {
 		ZN_PRINT_WARNING("Requesting a block load when it should not have been necessary");
@@ -308,8 +347,8 @@ void send_mesh_requests( //
 
 			// Don't update a detail texture if one update is already processing
 			if (settings.detail_texture_settings.enabled &&
-					lod_index >= settings.detail_texture_settings.begin_lod_index &&
-					mesh_block.detail_texture_state != VoxelLodTerrainUpdateData::DETAIL_TEXTURE_PENDING) {
+				lod_index >= settings.detail_texture_settings.begin_lod_index &&
+				mesh_block.detail_texture_state != VoxelLodTerrainUpdateData::DETAIL_TEXTURE_PENDING) {
 				mesh_block.detail_texture_state = VoxelLodTerrainUpdateData::DETAIL_TEXTURE_PENDING;
 				task->require_detail_texture = true;
 			}
@@ -322,13 +361,20 @@ void send_mesh_requests( //
 			// The array also implicitly encodes block position due to the convention being used,
 			// so there is no need to also include positions in the request
 			data.get_blocks_with_voxel_data(data_box, lod_index, to_span(task->blocks));
-			task->blocks_count = Vector3iUtil::get_volume(data_box.size);
+			task->blocks_count = Vector3iUtil::get_volume_u64(data_box.size);
 
 			// TODO There is inconsistency with coordinates sent to this function.
 			// Sometimes we send data block coordinates, sometimes we send mesh block coordinates. They aren't always
 			// the same, it might cause issues in priority sorting?
-			init_sparse_octree_priority_dependency(task->priority_dependency, task->mesh_block_position,
-					task->lod_index, mesh_block_size, shared_viewers_data, volume_transform, settings.lod_distance);
+			init_sparse_octree_priority_dependency(
+					task->priority_dependency,
+					task->mesh_block_position,
+					task->lod_index,
+					mesh_block_size,
+					shared_viewers_data,
+					volume_transform,
+					settings.lod_distance
+			);
 
 			task_scheduler.push_main_task(task);
 
@@ -362,7 +408,8 @@ std::shared_ptr<AsyncDependencyTracker> preload_boxes_async( //
 	VoxelData &data = *data_ptr;
 
 	ZN_ASSERT_RETURN_V_MSG(
-			data.is_streaming_enabled() == false, nullptr, "This function can only be used in full load mode");
+			data.is_streaming_enabled() == false, nullptr, "This function can only be used in full load mode"
+	);
 
 	struct TaskArguments {
 		Vector3i block_pos;
@@ -417,9 +464,12 @@ std::shared_ptr<AsyncDependencyTracker> preload_boxes_async( //
 
 		// This may first run the generation tasks, and then the edits
 		tracker = make_shared_instance<AsyncDependencyTracker>(
-				todo.size(), next_tasks, [](Span<IThreadedTask *> p_next_tasks) {
+				todo.size(),
+				next_tasks,
+				[](Span<IThreadedTask *> p_next_tasks) { //
 					VoxelEngine::get_singleton().push_async_tasks(p_next_tasks);
-				});
+				}
+		);
 
 		for (unsigned int i = 0; i < todo.size(); ++i) {
 			const TaskArguments args = todo[i];
@@ -480,8 +530,9 @@ void process_async_edits( //
 
 			boxes_to_preload.push_back(edit.box);
 			tasks_to_schedule.push_back(edit.task);
-			state.running_async_edits.push_back(
-					VoxelLodTerrainUpdateData::RunningAsyncEdit{ edit.task_tracker, edit.box });
+			state.running_async_edits.push_back( //
+					VoxelLodTerrainUpdateData::RunningAsyncEdit{ edit.task_tracker, edit.box }
+			);
 		}
 
 		if (boxes_to_preload.size() > 0) {
@@ -519,7 +570,7 @@ void process_changed_generated_areas( //
 		VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
 
 		for (auto box_it = state.changed_generated_areas.begin(); box_it != state.changed_generated_areas.end();
-				++box_it) {
+			 ++box_it) {
 			const Box3i &voxel_box = *box_it;
 			const Box3i bbox = voxel_box.padded(1).downscaled(mesh_block_size << lod_index);
 
@@ -530,8 +581,12 @@ void process_changed_generated_areas( //
 			bbox.for_each_cell_zxy([&lod](const Vector3i bpos) {
 				auto block_it = lod.mesh_map_state.map.find(bpos);
 				if (block_it != lod.mesh_map_state.map.end()) {
-					VoxelLodTerrainUpdateTask::schedule_mesh_update(block_it->second, bpos,
-							lod.mesh_blocks_pending_update, block_it->second.mesh_viewers.get() > 0);
+					VoxelLodTerrainUpdateTask::schedule_mesh_update(
+							block_it->second,
+							bpos,
+							lod.mesh_blocks_pending_update,
+							block_it->second.mesh_viewers.get() > 0
+					);
 				}
 			});
 		}
@@ -703,7 +758,7 @@ uint8_t VoxelLodTerrainUpdateTask::get_transition_mask( //
 				auto lower_neighbor_block_it = lower_lod.mesh_map_state.map.find(lower_neighbor_pos);
 
 				if (lower_neighbor_block_it != lower_lod.mesh_map_state.map.end() &&
-						lower_neighbor_block_it->second.visual_active) {
+					lower_neighbor_block_it->second.visual_active) {
 					// The block has a visible neighbor of lower LOD
 					transition_mask |= dir_mask;
 					continue;
@@ -727,7 +782,7 @@ uint8_t VoxelLodTerrainUpdateTask::get_transition_mask( //
 				auto upper_neighbor_block_it = upper_lod.mesh_map_state.map.find(upper_neighbor_pos);
 
 				if (upper_neighbor_block_it == upper_lod.mesh_map_state.map.end() ||
-						upper_neighbor_block_it->second.visual_active == false) {
+					upper_neighbor_block_it->second.visual_active == false) {
 					// The block has no visible neighbor yet. World border? Assume lower LOD.
 					transition_mask |= dir_mask;
 				}
@@ -779,8 +834,9 @@ void update_transition_masks( //
 
 					if (recomputed_mask != it->second.transition_mask) {
 						mesh_block.transition_mask = recomputed_mask;
-						lod.mesh_blocks_to_update_transitions.push_back(
-								VoxelLodTerrainUpdateData::TransitionUpdate{ it->first, recomputed_mask });
+						lod.mesh_blocks_to_update_transitions.push_back( //
+								VoxelLodTerrainUpdateData::TransitionUpdate{ it->first, recomputed_mask }
+						);
 					}
 				}
 			}

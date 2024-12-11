@@ -137,8 +137,8 @@ public:
 private:
 	static void _bind_methods();
 
-	ResultCode _b_load_voxel_block(Ref<godot::VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod_index);
-	void _b_save_voxel_block(Ref<godot::VoxelBuffer> buffer, Vector3i origin_in_voxels, int lod_index);
+	ResultCode _b_load_voxel_block(Ref<godot::VoxelBuffer> out_buffer, Vector3i block_position, int lod_index);
+	void _b_save_voxel_block(Ref<godot::VoxelBuffer> buffer, Vector3i block_position, int lod_index);
 	int _b_get_used_channels_mask() const;
 	Vector3 _b_get_block_size() const;
 

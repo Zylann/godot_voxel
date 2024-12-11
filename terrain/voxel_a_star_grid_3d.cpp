@@ -3,6 +3,7 @@
 // #include "../util/string/format.h"
 #include "../constants/voxel_string_names.h"
 #include "../util/math/conv.h"
+#include "../util/string/format.h"
 
 namespace zylann::voxel {
 
@@ -122,10 +123,18 @@ void VoxelAStarGrid3D::check_params(Vector3i from_position, Vector3i to_position
 		ZN_PRINT_WARNING("The region is empty or not defined, no path will be found");
 	}
 	if (!get_region().contains(from_position)) {
-		ZN_PRINT_WARNING("The current region does not contain the source position, no path will be found");
+		ZN_PRINT_WARNING(
+				format("The current region {} does not contain the source position {}, no path will be found",
+					   get_region(),
+					   from_position)
+		);
 	}
-	if (!get_region().contains(from_position)) {
-		ZN_PRINT_WARNING("The current region does not contain the destination, no path will be found");
+	if (!get_region().contains(to_position)) {
+		ZN_PRINT_WARNING(
+				format("The current region {} does not contain the destination {}, no path will be found",
+					   get_region(),
+					   to_position)
+		);
 	}
 }
 #endif
@@ -230,17 +239,20 @@ void VoxelAStarGrid3D::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("find_path", "from_position", "to_position"), &VoxelAStarGrid3D::find_path);
 	ClassDB::bind_method(
-			D_METHOD("find_path_async", "from_position", "to_position"), &VoxelAStarGrid3D::find_path_async);
+			D_METHOD("find_path_async", "from_position", "to_position"), &VoxelAStarGrid3D::find_path_async
+	);
 	ClassDB::bind_method(D_METHOD("is_running_async"), &VoxelAStarGrid3D::is_running_async);
 
 	ClassDB::bind_method(D_METHOD("debug_get_visited_positions"), &VoxelAStarGrid3D::debug_get_visited_positions);
 
 	// Internal
 	ClassDB::bind_method(
-			D_METHOD("_on_async_search_completed", "path"), &VoxelAStarGrid3D::_b_on_async_search_completed);
+			D_METHOD("_on_async_search_completed", "path"), &VoxelAStarGrid3D::_b_on_async_search_completed
+	);
 
 	ADD_SIGNAL(MethodInfo(
-			"async_search_completed", PropertyInfo(Variant::ARRAY, "path", PROPERTY_HINT_ARRAY_TYPE, "Vector3i")));
+			"async_search_completed", PropertyInfo(Variant::ARRAY, "path", PROPERTY_HINT_ARRAY_TYPE, "Vector3i")
+	));
 }
 
 } // namespace zylann::voxel

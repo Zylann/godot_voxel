@@ -1,12 +1,18 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="VoxelGraphFunction" inherits="Resource" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
-		Graph for generating or processing voxels.
+		Graph for generating or processing series of 3D values.
 	</brief_description>
 	<description>
-		Contains a graph that can be used to generate voxel data (when used as main function of a generator), or to be re-used into other graphs (like a sub-graph).
-		Currently this class only stores a graph, it cannot run actual processing on its own. To generate voxels with it, see [VoxelGeneratorGraph].
-		Note: node types are identified with the enum [enum VoxelGraphFunction.NodeTypeID]. This enum shouldn't be used in persistent contexts (such as save files) as its values may change between versions.
+		Contains a graph that can be used to process series of values, such as voxel positions (when used as main function of a generator), or to be re-used into other graphs (like a sub-graph).
+		Currently this class only stores a graph, it cannot run actual processing on its own. It is usually embedded into another resource which then makes use of the graph in a specific way. 
+		To generate voxels with it, see [VoxelGeneratorGraph].
+		Nodes can be connected together from their outputs to the inputs of next nodes. Unconnected inputs can have default values or default implicit connections.
+		Nodes can also have "parameters" which are constants setup per node.
+		Nodes come in 3 main families: inputs (only have outputs), outputs (only have inputs), and others (which have both inputs and output to do some calculation).
+		Node types are identified with the enum [enum VoxelGraphFunction.NodeTypeID]. This enum shouldn't be used in persistent contexts (such as save files) as its values may change between versions.
+		Graphs can only process 32-bit floating point values.
+		Description of node types is present in the graph editor node dialog, or at [url]https://voxel-tools.readthedocs.io/en/latest/graph_nodes[/url].
 	</description>
 	<tutorials>
 	</tutorials>
@@ -68,6 +74,19 @@
 		<method name="get_connections" qualifiers="const">
 			<return type="Array" />
 			<description>
+				Gets an array describing all connections between nodes.
+				The array has the following format:
+				[codeblock]
+				[
+					{
+						"src_node_id": int,
+						"src_port_index": int,
+						"dst_node_id": int,
+						"dst_port_index": int
+					},
+					...
+				]
+				[/codeblock]
 			</description>
 		</method>
 		<method name="get_node_default_input" qualifiers="const">
@@ -101,6 +120,7 @@
 			<return type="PackedInt32Array" />
 			<description>
 				Get a list of IDs of all the nodes in the graph.
+				Note: the order in which IDs are returned is not guaranteed to be the same after nodes are added or removed.
 			</description>
 		</method>
 		<method name="get_node_name" qualifiers="const">
@@ -115,6 +135,7 @@
 			<param index="0" name="node_id" type="int" />
 			<param index="1" name="param_index" type="int" />
 			<description>
+				Get a parameter of a node. The parameter index corresponds to the position that parameter comes in when seen in the editor.
 			</description>
 		</method>
 		<method name="get_node_type_count" qualifiers="const">
@@ -168,7 +189,7 @@
 			<description>
 				Copies nodes into another graph, and connections between them only.
 				Resources in node parameters will be duplicated if they don't have a file path.
-				If [code]node_ids[/code] is provided with non-zero size, defines the IDs of copied nodes. Otherwise, they are generated.
+				If [code]node_ids[/code] is provided with non-zero size, defines the IDs copied nodes will have in the destination graph, in the same order as [method get_node_ids] from the source graph. The array must have the same size as the number of copied nodes and IDs must not already exist in the destination graph. If the array is empty, they will be generated instead.
 			</description>
 		</method>
 		<method name="remove_connection">
@@ -194,7 +215,7 @@
 			<param index="1" name="names" type="PackedStringArray" />
 			<description>
 				Configures inputs for an Expression node. [code]names[/code] is the list of input names used in the expression.
-				[code]value[/code] must be a [code]float[/code] for now.
+				If you create an Expression node from code, you should call this method afterwards.
 			</description>
 		</method>
 		<method name="set_node_default_input">
@@ -203,6 +224,7 @@
 			<param index="1" name="input_index" type="int" />
 			<param index="2" name="value" type="Variant" />
 			<description>
+				Sets the value an input of a node will have when it is left unconnected.
 			</description>
 		</method>
 		<method name="set_node_default_inputs_autoconnect">
@@ -211,7 +233,7 @@
 			<param index="1" name="enabled" type="bool" />
 			<description>
 				Sets wether a node input with no inbound connection will automatically create a default connection when the graph is compiled.
-				This is only available on specific nodes. On other nodes, it has no effect.
+				This is only available on specific nodes (for example, 2D or 3D noise defaults to XYZ inputs). On other nodes, it has no effect.
 			</description>
 		</method>
 		<method name="set_node_gui_position">

@@ -134,12 +134,12 @@ void test_voxel_stream_sqlite_coordinate_format(const VoxelStreamSQLite::Coordin
 	const int radius = 10000;
 	// TODO Generate clusters/lines instead, to match what saves look like in practice?
 	for (unsigned int i = 0; i < blocks.size(); ++i) {
-		BlockInfo &bi = blocks[i];
 		for (int attempt = 0; attempt < 10; ++attempt) {
+			const uint8_t lod_index = rng.rand() % constants::MAX_LOD;
 			const BlockInfo bi{ math::wrap(
 										Vector3i(rng.rand(), rng.rand(), rng.rand()), Vector3iUtil::create(2 * radius)
 								) - Vector3iUtil::create(radius),
-								rng.rand() % constants::MAX_LOD,
+								lod_index,
 								i };
 			if (!BlockInfo::contains_location(blocks, bi.position, bi.lod_index)) {
 				blocks[i] = bi;

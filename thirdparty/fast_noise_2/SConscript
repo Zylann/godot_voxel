@@ -52,10 +52,18 @@ fn2_sources_arm = [
 env_fn2 = env_voxel.Clone()
 # In case we need common options for FastNoise2 we can add them here
 
-if env.msvc:
+# Note: when compiling with clang-cl on Windows, `env.msvc` is still True because clang-cl behaves like an MSVC 
+# frontend. However, Clang is more picky and generates more warnings, so we use Clang options anyways.
+if env.msvc and not env["use_llvm"]:
+    # Avoid a compiler bug in VS 2022 (doesn't occur in VS 2019).
+    # Check for existence because it was added in Godot 4.4 and currently we also support 4.3
+    # https://github.com/Zylann/godot/commit/807904d9515e9d2aaf16f6260945a6632689f1b9
+    if '/permissive-' in env_fn2['CCFLAGS']:
+        env_fn2['CCFLAGS'].remove('/permissive-')
     # In some places, integral constants are multiplied but cause overflow (ex: Simplex.inl(432) in 0.10.0-alpha).
     # This is usually expected by the devs though.
     env_fn2.Append(CXXFLAGS=["/wd4307"])
+
 else:
     # We compile with `-Wall`, but FastNoise2 does not, so a lot of pedantic things show up treated as errors
     env_fn2.Append(CXXFLAGS=["-Wno-parentheses"])
@@ -68,8 +76,8 @@ else:
     # env_fn2.Append(CXXFLAGS=["-Wno-shadow"])
     # if '-Wshadow' in env_fn2['CXXFLAGS']:
     #     env_fn2['CXXFLAGS'].remove('-Wshadow')
-    env_fn2.disable_warnings()
 
+env_fn2.disable_warnings()
 env_fn2_scalar = env_fn2.Clone()
 env_fn2_sse2 = env_fn2.Clone()
 env_fn2_sse3 = env_fn2.Clone()
@@ -81,7 +89,10 @@ env_fn2_avx512 = env_fn2.Clone()
 env_fn2_arm = env_fn2.Clone()
 # TODO NEON?
 
-if env.msvc:
+# Note: when compiling with clang-cl on Windows, `env.msvc` is still True because clang-cl behaves like an MSVC 
+# frontend. However, Clang is more picky about architecture, so we have to specify each option, which MSVC doesnt have.
+# Since Clang still allows to pass `-`style arguments, might as well use the non-MSVC path...
+if env.msvc and not env["use_llvm"]:
     if env["arch"] == "x86_32":
         # MSVC/64 warns:
         # ignoring unknown option "/arch:SSE2" as 64 bit already has SSE2 built in
@@ -95,7 +106,7 @@ if env.msvc:
     env_fn2_avx2.Append(CCFLAGS=["/arch:AVX2"])
     env_fn2_avx512.Append(CCFLAGS=["/arch:AVX512"])
 
-else: # Clang, GCC, AppleClang
+else: # Clang, GCC, AppleClang, Clang-Cl
     # TODO The Cmake build script still has a big `if(MSVC)` in that section.
     # what does it mean?
 
