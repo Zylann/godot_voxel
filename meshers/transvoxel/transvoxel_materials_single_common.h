@@ -11,7 +11,7 @@ struct WeightedIndex {
 
 	// Higher weight comes first, otherwise lower index comes first
 	static inline bool compare_higher_weight(const WeightedIndex &a, const WeightedIndex &b) {
-		return a.weight > b.weight || a.index < b.index;
+		return a.weight > b.weight || (a.weight == b.weight && a.index < b.index);
 	}
 };
 
