@@ -311,14 +311,14 @@ inline void sort(T &a, T &b, T &c, T &d) {
 }
 
 template <typename TArray, typename TLess>
-inline void sort2_array(TArray array, TLess less) {
+inline void sort2_array(TArray &array, TLess less) {
 	if (less(array[1], array[0])) {
 		std::swap(array[1], array[0]);
 	}
 }
 
 template <typename TArray, typename TLess>
-inline void sort3_array(TArray array, TLess less) {
+inline void sort3_array(TArray &array, TLess less) {
 	if (less(array[1], array[0])) {
 		std::swap(array[1], array[0]);
 	}
