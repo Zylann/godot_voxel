@@ -26,7 +26,9 @@ enum TexturingMode {
 	// and are respectively encoded in UV.x and UV.y.
 	TEXTURES_BLEND_4_OVER_16,
 	// Each voxel has only one material index, and up to 4 can blend in shader
-	TEXTURES_SINGLE_S4
+	TEXTURES_SINGLE_S4,
+	// Each voxel has only one material index, and up to 2 can blend in shader
+	TEXTURES_SINGLE_S2
 };
 
 struct LodAttrib {
@@ -63,14 +65,21 @@ struct MeshArrays {
 	StdVector<Vector3f> vertices;
 	StdVector<Vector3f> normals;
 	StdVector<LodAttrib> lod_data;
-	StdVector<Vector2f> texturing_data; // TextureAttrib
+
+	// Not really floats, only aligned to 32-bit. Actual layout depends on texturing mode
+	// TODO Maybe use directly the right struct and reinterpret at the end? This has been float only because Godot only
+	// lets us pass it as float
+	StdVector<float> texturing_data_1f32;
+	StdVector<Vector2f> texturing_data_2f32;
+
 	StdVector<int32_t> indices;
 
 	void clear() {
 		vertices.clear();
 		normals.clear();
 		lod_data.clear();
-		texturing_data.clear();
+		texturing_data_1f32.clear();
+		texturing_data_2f32.clear();
 		indices.clear();
 	}
 

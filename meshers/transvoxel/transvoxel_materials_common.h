@@ -9,7 +9,7 @@ inline uint32_t pack_bytes(const FixedArray<uint8_t, 4> &a) {
 	return (a[0] | (a[1] << 8) | (a[2] << 16) | (a[3] << 24));
 }
 
-inline void add_texture_data(
+inline void add_4i8_4w8_texture_data(
 		StdVector<Vector2f> &uv,
 		const uint32_t packed_indices,
 		const FixedArray<uint8_t, 4> weights

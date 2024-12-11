@@ -248,7 +248,7 @@ struct Processor {
 		for (unsigned int i = 0; i < MAX_TEXTURE_BLENDS; ++i) {
 			weights[i] = static_cast<uint8_t>(math::clamp(Math::lerp(weights0[i], weights1[i], alpha), 0.f, 255.f));
 		}
-		add_texture_data(output_mesh_material_data, cell_textures.packed_indices, weights);
+		add_4i8_4w8_texture_data(output_mesh_material_data, cell_textures.packed_indices, weights);
 	}
 };
 

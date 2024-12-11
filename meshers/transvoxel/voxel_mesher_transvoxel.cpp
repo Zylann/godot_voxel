@@ -95,7 +95,7 @@ void fill_surface_arrays(Array &arrays, const transvoxel::MeshArrays &src) {
 	PackedVector3Array vertices;
 	PackedVector3Array normals;
 	PackedFloat32Array lod_data; // 4*float32
-	PackedFloat32Array texturing_data; // 2*4*uint8 as 2*float32
+	PackedFloat32Array texturing_data; // 2*4*uint8 as 2*float32, or 3*uint8 as 1*float32
 	PackedInt32Array indices;
 
 	copy_to(vertices, src.vertices);
@@ -114,12 +114,18 @@ void fill_surface_arrays(Array &arrays, const transvoxel::MeshArrays &src) {
 		copy_to(normals, src.normals);
 		arrays[Mesh::ARRAY_NORMAL] = normals;
 	}
-	if (src.texturing_data.size() != 0) {
-		// raw_copy_to(texturing_data, src.texturing_data);
-		texturing_data.resize(src.texturing_data.size() * 2);
-		memcpy(texturing_data.ptrw(), src.texturing_data.data(), texturing_data.size() * sizeof(float));
+
+	if (src.texturing_data_1f32.size() != 0) {
+		texturing_data.resize(src.texturing_data_1f32.size());
+		memcpy(texturing_data.ptrw(), src.texturing_data_1f32.data(), texturing_data.size() * sizeof(float));
+		arrays[Mesh::ARRAY_CUSTOM1] = texturing_data;
+
+	} else if (src.texturing_data_2f32.size() != 0) {
+		texturing_data.resize(src.texturing_data_2f32.size() * 2);
+		memcpy(texturing_data.ptrw(), src.texturing_data_2f32.data(), texturing_data.size() * sizeof(float));
 		arrays[Mesh::ARRAY_CUSTOM1] = texturing_data;
 	}
+
 	arrays[Mesh::ARRAY_CUSTOM0] = lod_data;
 	arrays[Mesh::ARRAY_INDEX] = indices;
 }
@@ -129,7 +135,7 @@ void remap_vertex_array(
 		const StdVector<T> &src_data,
 		StdVector<T> &dst_data,
 		const StdVector<unsigned int> &remap_indices,
-		unsigned int unique_vertex_count
+		const unsigned int unique_vertex_count
 ) {
 	if (src_data.size() == 0) {
 		dst_data.clear();
@@ -200,7 +206,8 @@ void simplify(
 	remap_vertex_array(src_mesh.vertices, dst_mesh.vertices, remap_indices, unique_vertex_count);
 	remap_vertex_array(src_mesh.normals, dst_mesh.normals, remap_indices, unique_vertex_count);
 	remap_vertex_array(src_mesh.lod_data, dst_mesh.lod_data, remap_indices, unique_vertex_count);
-	remap_vertex_array(src_mesh.texturing_data, dst_mesh.texturing_data, remap_indices, unique_vertex_count);
+	remap_vertex_array(src_mesh.texturing_data_1f32, dst_mesh.texturing_data_1f32, remap_indices, unique_vertex_count);
+	remap_vertex_array(src_mesh.texturing_data_2f32, dst_mesh.texturing_data_2f32, remap_indices, unique_vertex_count);
 
 	dst_mesh.indices.resize(lod_indices.size());
 	// TODO Not sure if arguments are correct
@@ -315,11 +322,24 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 	// print_line(String("VoxelMesherTransvoxel spent {0} us").format(varray(time_spent)));
 
 	output.primitive_type = Mesh::PRIMITIVE_TRIANGLES;
-	output.mesh_flags = //
-			(RenderingServer::ARRAY_CUSTOM_RGBA_FLOAT << Mesh::ARRAY_FORMAT_CUSTOM0_SHIFT);
 
-	if (_texture_mode == TEXTURES_BLEND_4_OVER_16 || _texture_mode == TEXTURES_SINGLE_S4) {
-		output.mesh_flags |= (RenderingServer::ARRAY_CUSTOM_RG_FLOAT << Mesh::ARRAY_FORMAT_CUSTOM1_SHIFT);
+	// Transvoxel transitions data
+	output.mesh_flags = (RenderingServer::ARRAY_CUSTOM_RGBA_FLOAT << Mesh::ARRAY_FORMAT_CUSTOM0_SHIFT);
+
+	// Texture data
+	switch (_texture_mode) {
+		case TEXTURES_NONE:
+			break;
+		case TEXTURES_BLEND_4_OVER_16:
+		case TEXTURES_SINGLE_S4:
+			output.mesh_flags |= (RenderingServer::ARRAY_CUSTOM_RG_FLOAT << Mesh::ARRAY_FORMAT_CUSTOM1_SHIFT);
+			break;
+		case TEXTURES_SINGLE_S2:
+			output.mesh_flags |= (RenderingServer::ARRAY_CUSTOM_R_FLOAT << Mesh::ARRAY_FORMAT_CUSTOM1_SHIFT);
+			break;
+		default:
+			ZN_PRINT_ERROR("Unhandled texture mode");
+			break;
 	}
 }
 
@@ -506,6 +526,7 @@ void VoxelMesherTransvoxel::_bind_methods() {
 	// TODO Rename MIXEL
 	BIND_ENUM_CONSTANT(TEXTURES_BLEND_4_OVER_16);
 	BIND_ENUM_CONSTANT(TEXTURES_SINGLE_S4);
+	BIND_ENUM_CONSTANT(TEXTURES_SINGLE_S2);
 }
 
 } // namespace zylann::voxel

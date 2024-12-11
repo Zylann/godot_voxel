@@ -7,6 +7,7 @@
 #include "../../util/profiling.h"
 #include "transvoxel_materials_mixel4.h"
 #include "transvoxel_materials_null.h"
+#include "transvoxel_materials_single_s2.h"
 #include "transvoxel_materials_single_s4.h"
 #include "transvoxel_tables.cpp"
 
@@ -1296,7 +1297,7 @@ DefaultTextureIndicesData build_regular_mesh(
 					materials::mixel4::Processor<8>(
 							voxel_material_indices,
 							voxel_material_weights,
-							output.texturing_data,
+							output.texturing_data_2f32,
 							textures_ignore_air_voxels
 					),
 					lod_index,
@@ -1319,7 +1320,28 @@ DefaultTextureIndicesData build_regular_mesh(
 			build_regular_mesh_dispatch_sd(
 					voxels,
 					sdf_channel,
-					materials::single::s4::Processor<8>(voxel_material_indices.to_span(), output.texturing_data),
+					materials::single::s4::Processor<8>(voxel_material_indices.to_span(), output.texturing_data_2f32),
+					lod_index,
+					cache,
+					output,
+					cell_infos,
+					edge_clamp_margin
+			);
+		} break;
+
+		case TEXTURES_SINGLE_S2: {
+			const materials::single::VoxelMaterialIndices voxel_material_indices =
+					materials::single::get_material_indices_from_vb(
+							voxels, VoxelBuffer::CHANNEL_INDICES, get_tls_u8_conversion_buffer()
+					);
+			if (voxel_material_indices.is_uniform) {
+				default_texture_indices.indices[0] = voxel_material_indices.uniform_value;
+				default_texture_indices.use = true;
+			}
+			build_regular_mesh_dispatch_sd(
+					voxels,
+					sdf_channel,
+					materials::single::s2::Processor<8>(voxel_material_indices.to_span(), output.texturing_data_1f32),
 					lod_index,
 					cache,
 					output,
@@ -1463,7 +1485,7 @@ void build_transition_mesh(
 					voxels,
 					sdf_channel,
 					materials::mixel4::Processor<13>(
-							indices_data, weights_data, output.texturing_data, textures_ignore_air_voxels
+							indices_data, weights_data, output.texturing_data_2f32, textures_ignore_air_voxels
 					),
 					direction,
 					lod_index,
@@ -1486,7 +1508,29 @@ void build_transition_mesh(
 			build_transition_mesh_dispatch_sd(
 					voxels,
 					sdf_channel,
-					materials::single::s4::Processor<13>(voxel_material_indices.to_span(), output.texturing_data),
+					materials::single::s4::Processor<13>(voxel_material_indices.to_span(), output.texturing_data_2f32),
+					direction,
+					lod_index,
+					cache,
+					output,
+					edge_clamp_margin
+			);
+		} break;
+
+		case TEXTURES_SINGLE_S2: {
+			materials::single::VoxelMaterialIndices voxel_material_indices;
+			if (default_texture_indices_data.use) {
+				voxel_material_indices.is_uniform = true;
+				voxel_material_indices.uniform_value = default_texture_indices_data.indices[0];
+			} else {
+				voxel_material_indices = materials::single::get_material_indices_from_vb(
+						voxels, VoxelBuffer::CHANNEL_INDICES, get_tls_u8_conversion_buffer()
+				);
+			}
+			build_transition_mesh_dispatch_sd(
+					voxels,
+					sdf_channel,
+					materials::single::s2::Processor<13>(voxel_material_indices.to_span(), output.texturing_data_1f32),
 					direction,
 					lod_index,
 					cache,
