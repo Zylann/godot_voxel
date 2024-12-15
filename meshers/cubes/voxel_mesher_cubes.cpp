@@ -1014,9 +1014,9 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 				PackedVector3Array normals;
 				PackedInt32Array indices;
 
-				copy_to(positions, arrays.positions);
-				copy_to(normals, arrays.normals);
-				copy_to(indices, arrays.indices);
+				copy_to(positions, to_span_const(arrays.positions));
+				copy_to(normals, to_span_const(arrays.normals));
+				copy_to(indices, to_span_const(arrays.indices));
 
 				mesh_arrays[Mesh::ARRAY_VERTEX] = positions;
 				mesh_arrays[Mesh::ARRAY_NORMAL] = normals;
@@ -1024,12 +1024,12 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 
 				if (arrays.colors.size() > 0) {
 					PackedColorArray colors;
-					copy_to(colors, arrays.colors);
+					copy_to(colors, to_span_const(arrays.colors));
 					mesh_arrays[Mesh::ARRAY_COLOR] = colors;
 				}
 				if (arrays.uvs.size() > 0) {
 					PackedVector2Array uvs;
-					copy_to(uvs, arrays.uvs);
+					copy_to(uvs, to_span_const(arrays.uvs));
 					mesh_arrays[Mesh::ARRAY_TEX_UV] = uvs;
 				}
 			}

@@ -17,21 +17,18 @@
 namespace zylann::godot {
 
 // Specialized copy functions for vectors because they use `real_t`, which can be either `float` or `double`
-void copy_to(PackedVector3Array &dst, const StdVector<Vector3f> &src);
-void copy_to(PackedVector2Array &dst, const StdVector<Vector2f> &src);
+void copy_to(PackedVector3Array &dst, const Span<const Vector3f> src);
+void copy_to(PackedVector2Array &dst, const Span<const Vector2f> src);
 
 // Copy functions for matching types.
 // Can't have code using template Vector if we want to support compiling both as module and extension.
 // So the following are defined for every case instead of a template.
-void copy_to(PackedVector3Array &dst, const StdVector<Vector3> &src);
 void copy_to(PackedVector3Array &dst, Span<const Vector3> src);
-void copy_to(PackedInt32Array &dst, const StdVector<int32_t> &src);
 void copy_to(PackedInt32Array &dst, Span<const int32_t> src);
-void copy_to(PackedColorArray &dst, const StdVector<Color> &src);
 void copy_to(PackedColorArray &dst, Span<const Color> src);
-void copy_to(PackedFloat32Array &dst, const StdVector<float> &src);
 void copy_to(PackedFloat32Array &dst, Span<const float> src);
 void copy_to(PackedByteArray &dst, Span<const uint8_t> src);
+
 void copy_to(Span<uint8_t> dst, const PackedByteArray &src);
 void copy_to(Span<float> dst, const PackedFloat32Array &src);
 
