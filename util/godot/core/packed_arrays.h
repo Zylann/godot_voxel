@@ -2,7 +2,6 @@
 #define ZN_GODOT_PACKED_ARRAYS_H
 
 #include "../../containers/span.h"
-#include "../../containers/std_vector.h"
 #include "../../math/vector2f.h"
 #include "../../math/vector3f.h"
 #include "variant.h"
@@ -48,17 +47,6 @@ inline void copy_bytes_to(PackedByteArray &dst, T src) {
 	ZN_ASSERT(dst_w != nullptr);
 	memcpy(dst_w, &src, sizeof(T));
 }
-
-// TODO Can't have code using template Vector if we want to support compiling both as module and extension
-#ifdef ZN_GODOT
-template <typename T>
-void raw_copy_to(Vector<T> &to, const StdVector<T> &from) {
-	to.resize(from.size());
-	// resize can fail in case allocation was not possible
-	ERR_FAIL_COND(from.size() != static_cast<size_t>(to.size()));
-	memcpy(to.ptrw(), from.data(), from.size() * sizeof(T));
-}
-#endif
 
 #ifdef TOOLS_ENABLED
 Array to_array(const PackedStringArray &src);
