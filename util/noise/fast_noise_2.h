@@ -2,6 +2,7 @@
 #define VOXEL_FAST_NOISE_2_H
 
 #include "../containers/span.h"
+#include "../godot/classes/noise.h"
 #include "../math/interval.h"
 #include "FastNoise/FastNoise.h"
 #include <core/io/resource.h>
@@ -11,8 +12,8 @@ class Image;
 namespace zylann {
 
 // Can't call it FastNoise? because FastNoise is a namespace already
-class FastNoise2 : public Resource {
-	GDCLASS(FastNoise2, Resource)
+class FastNoise2 : public ZN_Noise {
+	GDCLASS(FastNoise2, ZN_Noise)
 public:
 	static const int MAX_OCTAVES = 32;
 	// This minimum size exists to fix an issue with SIMD operations, which need to use more than one element.
@@ -176,6 +177,82 @@ public:
 	void generate_image(Ref<Image> image, bool tileable) const;
 
 	math::Interval get_estimated_output_range() const;
+
+protected:
+	real_t _zn_get_noise_1d(real_t p_x) const override;
+	real_t _zn_get_noise_2d(Vector2 p_v) const override;
+	real_t _zn_get_noise_3d(Vector3 p_v) const override;
+
+#if defined(ZN_GODOT)
+	Ref<Image> get_image(
+			int p_width,
+			int p_height,
+			bool p_invert = false,
+			bool p_in_3d_space = false,
+			bool p_normalize = true
+	) const override;
+
+	TypedArray<Image> get_image_3d(
+			int p_width,
+			int p_height,
+			int p_depth,
+			bool p_invert = false,
+			bool p_normalize = true
+	) const override;
+
+	Ref<Image> get_seamless_image(
+			int p_width,
+			int p_height,
+			bool p_invert = false,
+			bool p_in_3d_space = false,
+			real_t p_blend_skirt = 0.1,
+			bool p_normalize = true
+	) const override;
+
+	// TypedArray<Image> get_seamless_image_3d(
+	// 		int p_width,
+	// 		int p_height,
+	// 		int p_depth,
+	// 		bool p_invert = false,
+	// 		real_t p_blend_skirt = 0.1,
+	// 		bool p_normalize = true
+	// ) const override;
+
+#elif defined(ZN_GODOT_EXTENSION)
+	Ref<Image> _get_image(
+			int p_width,
+			int p_height,
+			bool p_invert = false,
+			bool p_in_3d_space = false,
+			bool p_normalize = true
+	) const override;
+
+	TypedArray<Image> _get_image_3d(
+			int p_width,
+			int p_height,
+			int p_depth,
+			bool p_invert = false,
+			bool p_normalize = true
+	) const override;
+
+	Ref<Image> _get_seamless_image(
+			int p_width,
+			int p_height,
+			bool p_invert = false,
+			bool p_in_3d_space = false,
+			real_t p_blend_skirt = 0.1,
+			bool p_normalize = true
+	) const override;
+
+	// TypedArray<Image> _get_seamless_image_3d(
+	// 		int p_width,
+	// 		int p_height,
+	// 		int p_depth,
+	// 		bool p_invert = false,
+	// 		real_t p_blend_skirt = 0.1,
+	// 		bool p_normalize = true
+	// ) const override;
+#endif
 
 private:
 	// Non-static method for scripts because Godot4 does not support binding static methods (it's only

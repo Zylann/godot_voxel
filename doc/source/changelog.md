@@ -12,6 +12,7 @@ Semver is not yet in place, so each version can have breaking changes, although 
 
 Primarily developped with Godot 4.3.
 
+- Noises (`ZN_FastNoiseLite`, `FastNoise2`, `SpotNoise`) now inherit from `Noise` in Godot 4.4 so they can be used in more places.
 - `VoxelBlockyModel`: Added option to turn off "LOD skirts" when used with `VoxelLodTerrain`, which may be useful with transparent models
 - `VoxelBlockyModelCube`: Added support for mesh rotation like `VoxelBlockyMesh` (prior to that, rotation buttons in the editor only swapped tiles around)
 - `VoxelInstanceGenerator`: Added `OnePerTriangle` emission mode

@@ -86,6 +86,7 @@ def get_sources(env, is_editor_build, include_tests):
         "util/godot/classes/mesh.cpp",
         "util/godot/classes/multimesh.cpp",
         "util/godot/classes/node.cpp",
+        "util/godot/classes/noise.cpp",
         "util/godot/classes/object.cpp",
         "util/godot/classes/project_settings.cpp",
         "util/godot/classes/rendering_device.cpp",

@@ -546,6 +546,7 @@ void VoxelInstanceGenerator::generate_transforms(
 	// Legacy noise (noise graph is more versatile, but this remains for compatibility)
 	if (noise.is_valid()) {
 		noise_cache.resize(vertex_cache.size());
+		// TODO Fastpath for our custom noises
 
 		switch (_noise_dimension) {
 			case DIMENSION_2D: {

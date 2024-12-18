@@ -130,6 +130,10 @@ void register_noise_nodes(Span<NodeType> types) {
 			const Runtime::Buffer &y = ctx.get_input(1);
 			Runtime::Buffer &out = ctx.get_output(0);
 			const Params p = ctx.get_params<Params>();
+			// TODO Fastpath for our custom noises, so separate nodes are no longer necessary?
+			// There is overhead in using the generic Godot interface, it goes through virtual functions, maybe even
+			// GDExtension API bridge. It is always better if inlining is possible (or having an API that can take
+			// series)
 			for (uint32_t i = 0; i < out.size; ++i) {
 				out.data[i] = p.noise->get_noise_2d(x.data[i], y.data[i]);
 			}
@@ -149,23 +153,45 @@ void register_noise_nodes(Span<NodeType> types) {
 				ctx.make_error(String(ZN_TTR("{0} instance is null")).format(varray(Noise::get_class_static())));
 				return;
 			}
-			Ref<FastNoiseLite> fnl = noise;
-			if (fnl.is_null()) {
-				ctx.make_error(String(ZN_TTR("Shader generation with {0} is not supported."))
-									   .format(varray(noise->get_class())));
+
+			Ref<FastNoiseLite> godot_fnl = noise;
+			if (godot_fnl.is_valid()) {
+				if (godot_fnl->is_domain_warp_enabled()) {
+					// TODO Support domain warp shader generation with Godot's implementation of FastNoiseLite
+					ctx.make_error(
+							String(ZN_TTR("Shader generation from {0} with domain warp is not supported. Use {1}."))
+									.format(varray(noise->get_class(), ZN_FastNoiseLiteGradient::get_class_static()))
+					);
+					return;
+				}
+				ctx.require_lib_code("vg_fnl", g_fast_noise_lite_shader);
+				add_fast_noise_lite_state_config(ctx, **godot_fnl);
+				ctx.add_format(
+						"{} = fnlGetNoise2D(state, {}, {});\n",
+						ctx.get_output_name(0),
+						ctx.get_input_name(0),
+						ctx.get_input_name(1)
+				);
 				return;
 			}
-			if (fnl->is_domain_warp_enabled()) {
-				// TODO Support domain warp shader generation with Godot's implementation of FastNoiseLite
-				ctx.make_error(
-						String(ZN_TTR("Shader generation from {0} with domain warp is not supported. Use {1}."))
-								.format(varray(noise->get_class(), ZN_FastNoiseLiteGradient::get_class_static())));
+
+			Ref<ZN_FastNoiseLite> zn_fnl = noise;
+			if (zn_fnl.is_valid()) {
+				ctx.require_lib_code("vg_fnl", g_fast_noise_lite_shader);
+				add_fast_noise_lite_state_config(ctx, **zn_fnl);
+				ctx.add_format(
+						"{} = fnlGetNoise2D(state, {}, {});\n",
+						ctx.get_output_name(0),
+						ctx.get_input_name(0),
+						ctx.get_input_name(1)
+				);
 				return;
 			}
-			ctx.require_lib_code("vg_fnl", g_fast_noise_lite_shader);
-			add_fast_noise_lite_state_config(ctx, **fnl);
-			ctx.add_format("{} = fnlGetNoise2D(state, {}, {});\n", ctx.get_output_name(0), ctx.get_input_name(0),
-					ctx.get_input_name(1));
+
+			ctx.make_error(
+					String(ZN_TTR("Shader generation with {0} is not supported.")).format(varray(noise->get_class()))
+			);
+			return;
 		};
 	}
 	{
@@ -204,6 +230,7 @@ void register_noise_nodes(Span<NodeType> types) {
 			const Runtime::Buffer &z = ctx.get_input(2);
 			Runtime::Buffer &out = ctx.get_output(0);
 			const Params p = ctx.get_params<Params>();
+			// TODO Fastpath for our custom noises, so separate nodes are no longer necessary?
 			for (uint32_t i = 0; i < out.size; ++i) {
 				out.data[i] = p.noise->get_noise_3d(x.data[i], y.data[i], z.data[i]);
 			}

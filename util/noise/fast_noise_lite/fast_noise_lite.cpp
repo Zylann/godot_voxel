@@ -226,6 +226,18 @@ void ZN_FastNoiseLite::_on_warp_noise_changed() {
 	emit_changed();
 }
 
+real_t ZN_FastNoiseLite::_zn_get_noise_1d(real_t p_x) const {
+	return get_noise_2d_inline(p_x, 0.f);
+}
+
+real_t ZN_FastNoiseLite::_zn_get_noise_2d(Vector2 p_v) const {
+	return get_noise_2d_inline(p_v.x, p_v.y);
+}
+
+real_t ZN_FastNoiseLite::_zn_get_noise_3d(Vector3 p_v) const {
+	return get_noise_3d_inline(p_v.x, p_v.y, p_v.z);
+}
+
 void ZN_FastNoiseLite::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_noise_type", "type"), &ZN_FastNoiseLite::set_noise_type);
 	ClassDB::bind_method(D_METHOD("get_noise_type"), &ZN_FastNoiseLite::get_noise_type);
@@ -277,12 +289,6 @@ void ZN_FastNoiseLite::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("set_rotation_type_3d", "type"), &ZN_FastNoiseLite::set_rotation_type_3d);
 	ClassDB::bind_method(D_METHOD("get_rotation_type_3d"), &ZN_FastNoiseLite::get_rotation_type_3d);
-
-	ClassDB::bind_method(D_METHOD("get_noise_2d", "x", "y"), &ZN_FastNoiseLite::_b_get_noise_2d);
-	ClassDB::bind_method(D_METHOD("get_noise_3d", "x", "y", "z"), &ZN_FastNoiseLite::_b_get_noise_3d);
-
-	ClassDB::bind_method(D_METHOD("get_noise_2dv", "position"), &ZN_FastNoiseLite::_b_get_noise_2dv);
-	ClassDB::bind_method(D_METHOD("get_noise_3dv", "position"), &ZN_FastNoiseLite::_b_get_noise_3dv);
 
 	ADD_PROPERTY(
 			PropertyInfo(

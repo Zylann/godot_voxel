@@ -207,6 +207,8 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		open_log_file();
 #endif
 
+		ClassDB::register_class<ZN_Noise>();
+
 		// TODO Enhancement: can I prevent users from instancing `VoxelEngine`?
 		// This class is used as a singleton so it's not really abstract.
 		// Should I use `register_abstract_class` anyways?

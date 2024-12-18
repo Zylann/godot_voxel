@@ -1,6 +1,7 @@
 #ifndef ZYLANN_FAST_NOISE_LITE_H
 #define ZYLANN_FAST_NOISE_LITE_H
 
+#include "../../godot/classes/noise.h"
 #include "fast_noise_lite_gradient.h"
 
 namespace zylann {
@@ -11,10 +12,6 @@ namespace zylann {
 //
 // - get_noise* methods are not inline. That means there is a potential performance loss when calling it many times
 //  (basically all the time in this module).
-//
-// - get_noise* methods are not `const`. Means any person creating a Noise implementation can mutate internal state,
-//   which is bad for multithreaded usage. IMO noise should not have state, and if it does, it must be explicit and not
-//   change "lazily". Devs aren't sure yet if they should change that.
 //
 // - `real_t` is used everywhere, instead of just coordinates. That means builds with `float=64` might be slower,
 //   especially in cases where such precision isn't necessary *for the use case of noise generation*.
@@ -30,9 +27,10 @@ namespace zylann {
 //   `VoxelGeneratorGraph`.
 //
 // - Does not use GDVirtual, so it can only be extended by modules, and cannot be extended with GDExtensions
+//   TODO See https://github.com/godotengine/godot/pull/100443
 //
-class ZN_FastNoiseLite : public Resource {
-	GDCLASS(ZN_FastNoiseLite, Resource)
+class ZN_FastNoiseLite : public ZN_Noise {
+	GDCLASS(ZN_FastNoiseLite, ZN_Noise)
 
 	typedef ::fast_noise_lite::FastNoiseLite _FastNoise;
 
@@ -126,14 +124,14 @@ public:
 
 	// Queries
 
-	inline float get_noise_2d(real_t x, real_t y) const {
+	inline float get_noise_2d_inline(real_t x, real_t y) const {
 		if (_warp_noise.is_valid()) {
 			_warp_noise->warp_2d(x, y);
 		}
 		return _fn.GetNoise(x, y);
 	}
 
-	inline float get_noise_3d(real_t x, real_t y, real_t z) const {
+	inline float get_noise_3d_inline(real_t x, real_t y, real_t z) const {
 		if (_warp_noise.is_valid()) {
 			_warp_noise->warp_3d(x, y, z);
 		}
@@ -149,24 +147,15 @@ public:
 		return _fn;
 	}
 
+protected:
+	real_t _zn_get_noise_1d(real_t p_x) const override;
+	real_t _zn_get_noise_2d(Vector2 p_v) const override;
+	real_t _zn_get_noise_3d(Vector3 p_v) const override;
+
 private:
 	static void _bind_methods();
 
 	void _on_warp_noise_changed();
-
-	float _b_get_noise_2d(real_t x, real_t y) {
-		return get_noise_2d(x, y);
-	}
-	float _b_get_noise_3d(real_t x, real_t y, real_t z) {
-		return get_noise_3d(x, y, z);
-	}
-
-	float _b_get_noise_2dv(Vector2 p) {
-		return get_noise_2d(p.x, p.y);
-	}
-	float _b_get_noise_3dv(Vector3 p) {
-		return get_noise_3d(p.x, p.y, p.z);
-	}
 
 	::fast_noise_lite::FastNoiseLite _fn;
 

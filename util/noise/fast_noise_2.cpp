@@ -559,6 +559,173 @@ String FastNoise2::_b_get_simd_level_name(SIMDLevel level) {
 	return get_simd_level_name(level);
 }
 
+real_t FastNoise2::_zn_get_noise_1d(real_t p_x) const {
+	return get_noise_2d_single(Vector2(p_x, 0.0));
+}
+
+real_t FastNoise2::_zn_get_noise_2d(Vector2 p_v) const {
+	return get_noise_2d_single(p_v);
+}
+
+real_t FastNoise2::_zn_get_noise_3d(Vector3 p_v) const {
+	return get_noise_3d_single(p_v);
+}
+
+float get_sum(Span<const float> values) {
+	float sum = 0.f;
+	for (const float v : values) {
+		sum += v;
+	}
+	return sum;
+}
+
+void normalize(Span<float> values) {
+	const float sum = get_sum(values);
+	if (sum > 0.0001f) {
+		const float inv_sum = 1.f / sum;
+		for (float &v : values) {
+			v *= inv_sum;
+		}
+	}
+}
+
+PackedByteArray f32_snorm_to_u8_packed_byte_array(Span<const float> src) {
+	PackedByteArray bytes;
+	bytes.resize(src.size());
+	Span<uint8_t> bytes_s(bytes.ptrw(), bytes.size());
+	for (size_t i = 0; i < src.size(); ++i) {
+		const float n = src[i];
+		bytes_s[i] = math::clamp(static_cast<int>((n * 0.5f + 0.5f) * 255.f), 0, 255);
+	}
+	return bytes;
+}
+
+#if defined(ZN_GODOT)
+Ref<Image> FastNoise2::get_image(
+#elif defined(ZN_GODOT_EXTENSION)
+Ref<Image> FastNoise2::_get_image(
+#endif
+		int p_width,
+		int p_height,
+		bool p_invert,
+		bool p_in_3d_space,
+		bool p_normalize
+) const {
+	ZN_ASSERT_RETURN_V(p_width >= 0, Ref<Image>());
+	ZN_ASSERT_RETURN_V(p_height >= 0, Ref<Image>());
+
+	StdVector<float> noise_buffer;
+	noise_buffer.resize(p_width * p_height);
+
+	if (p_in_3d_space) {
+		get_noise_3d_grid(Vector3(), Vector3i(p_width, p_height, 1), to_span(noise_buffer));
+	} else {
+		get_noise_2d_grid(Vector2(), Vector2i(p_width, p_height), to_span(noise_buffer));
+	}
+
+	if (p_invert) {
+		for (float &v : noise_buffer) {
+			v = 1.f - v;
+		}
+	}
+
+	if (p_normalize) {
+		normalize(to_span(noise_buffer));
+	}
+
+	const PackedByteArray image_bytes = f32_snorm_to_u8_packed_byte_array(to_span(noise_buffer));
+
+	const Ref<Image> image = Image::create_from_data(p_width, p_height, false, Image::FORMAT_L8, image_bytes);
+
+	return image;
+}
+
+#if defined(ZN_GODOT)
+TypedArray<Image> FastNoise2::get_image_3d(
+#elif defined(ZN_GODOT_EXTENSION)
+TypedArray<Image> FastNoise2::_get_image_3d(
+#endif
+		int p_width,
+		int p_height,
+		int p_depth,
+		bool p_invert,
+		bool p_normalize
+) const {
+	ZN_ASSERT_RETURN_V(p_width >= 0, TypedArray<Image>());
+	ZN_ASSERT_RETURN_V(p_height >= 0, TypedArray<Image>());
+	ZN_ASSERT_RETURN_V(p_depth >= 0, TypedArray<Image>());
+
+	StdVector<float> noise_buffer;
+	noise_buffer.resize(p_width * p_height * p_depth);
+
+	get_noise_3d_grid(Vector3(), Vector3i(p_width, p_height, p_depth), to_span(noise_buffer));
+
+	if (p_invert) {
+		for (float &v : noise_buffer) {
+			v = 1.f - v;
+		}
+	}
+
+	if (p_normalize) {
+		normalize(to_span(noise_buffer));
+	}
+
+	TypedArray<Image> images;
+	images.resize(p_height);
+
+	const unsigned int deck_size = p_width * p_height;
+
+	for (int z = 0; z < p_depth; ++z) {
+		const Span<const float> deck = to_span(noise_buffer).sub(z * deck_size, deck_size);
+		const PackedByteArray image_bytes = f32_snorm_to_u8_packed_byte_array(deck);
+		const Ref<Image> image = Image::create_from_data(p_width, p_height, false, Image::FORMAT_L8, image_bytes);
+		images[z] = image;
+	}
+
+	return images;
+}
+
+#if defined(ZN_GODOT)
+Ref<Image> FastNoise2::get_seamless_image(
+#elif defined(ZN_GODOT_EXTENSION)
+Ref<Image> FastNoise2::_get_seamless_image(
+#endif
+		int p_width,
+		int p_height,
+		bool p_invert,
+		bool p_in_3d_space,
+		real_t p_blend_skirt,
+		bool p_normalize
+) const {
+	ZN_ASSERT_RETURN_V(p_width >= 0, Ref<Image>());
+	ZN_ASSERT_RETURN_V(p_height >= 0, Ref<Image>());
+
+	StdVector<float> noise_buffer;
+	noise_buffer.resize(p_width * p_height);
+
+	if (p_in_3d_space) {
+		ZN_PRINT_ERROR("Not supported");
+	} else {
+		get_noise_2d_grid_tileable(Vector2i(p_width, p_height), to_span(noise_buffer));
+	}
+
+	if (p_invert) {
+		for (float &v : noise_buffer) {
+			v = 1.f - v;
+		}
+	}
+
+	if (p_normalize) {
+		normalize(to_span(noise_buffer));
+	}
+
+	const PackedByteArray image_bytes = f32_snorm_to_u8_packed_byte_array(to_span(noise_buffer));
+
+	const Ref<Image> image = Image::create_from_data(p_width, p_height, false, Image::FORMAT_L8, image_bytes);
+
+	return image;
+}
+
 void FastNoise2::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_noise_type", "type"), &FastNoise2::set_noise_type);
 	ClassDB::bind_method(D_METHOD("get_noise_type"), &FastNoise2::get_noise_type);
@@ -638,6 +805,7 @@ void FastNoise2::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_noise_2d_single", "pos"), &FastNoise2::get_noise_2d_single);
 	ClassDB::bind_method(D_METHOD("get_noise_3d_single", "pos"), &FastNoise2::get_noise_3d_single);
 
+	// TODO Rename `get_image_3d_simd`, or have Godot expose get_image* functions as virtual
 	ClassDB::bind_method(D_METHOD("generate_image", "image", "tileable"), &FastNoise2::generate_image);
 
 	ClassDB::bind_method(D_METHOD("get_simd_level_name", "level"), &FastNoise2::_b_get_simd_level_name);

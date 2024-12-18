@@ -1,6 +1,5 @@
 #include "spot_noise_gd.h"
 #include "../math/conv.h"
-#include "spot_noise.h"
 
 namespace zylann {
 
@@ -55,22 +54,6 @@ void ZN_SpotNoise::set_jitter(float jitter) {
 	emit_changed();
 }
 
-float ZN_SpotNoise::get_noise_2d(real_t x, real_t y) const {
-	return SpotNoise::spot_noise_2d(Vector2f(x, y), _cell_size, _spot_radius, _jitter, _seed);
-}
-
-float ZN_SpotNoise::get_noise_3d(real_t x, real_t y, real_t z) const {
-	return SpotNoise::spot_noise_3d(Vector3f(x, y, z), _cell_size, _spot_radius, _jitter, _seed);
-}
-
-float ZN_SpotNoise::get_noise_2dv(Vector2 pos) const {
-	return SpotNoise::spot_noise_2d(Vector2f(pos.x, pos.y), _cell_size, _spot_radius, _jitter, _seed);
-}
-
-float ZN_SpotNoise::get_noise_3dv(Vector3 pos) const {
-	return SpotNoise::spot_noise_3d(Vector3f(pos.x, pos.y, pos.z), _cell_size, _spot_radius, _jitter, _seed);
-}
-
 PackedVector2Array ZN_SpotNoise::get_spot_positions_in_area_2d(Rect2 rect) const {
 	PackedVector2Array positions;
 	const Rect2 norm_rect(rect.position / _cell_size, rect.size / _cell_size);
@@ -107,6 +90,18 @@ PackedVector3Array ZN_SpotNoise::get_spot_positions_in_area_3d(AABB aabb) const 
 	return positions;
 }
 
+real_t ZN_SpotNoise::_zn_get_noise_1d(real_t p_x) const {
+	return get_noise_2d_inline(Vector2f(p_x, 0));
+}
+
+real_t ZN_SpotNoise::_zn_get_noise_2d(Vector2 p_v) const {
+	return get_noise_2d_inline(Vector2f(p_v.x, p_v.y));
+}
+
+real_t ZN_SpotNoise::_zn_get_noise_3d(Vector3 p_v) const {
+	return get_noise_3d_inline(Vector3f(p_v.x, p_v.y, p_v.z));
+}
+
 void ZN_SpotNoise::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_seed", "seed"), &ZN_SpotNoise::set_seed);
 	ClassDB::bind_method(D_METHOD("get_seed"), &ZN_SpotNoise::get_seed);
@@ -119,12 +114,6 @@ void ZN_SpotNoise::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("set_jitter", "jitter"), &ZN_SpotNoise::set_jitter);
 	ClassDB::bind_method(D_METHOD("get_jitter"), &ZN_SpotNoise::get_jitter);
-
-	ClassDB::bind_method(D_METHOD("get_noise_2d", "x", "y"), &ZN_SpotNoise::get_noise_2d);
-	ClassDB::bind_method(D_METHOD("get_noise_3d", "x", "y", "z"), &ZN_SpotNoise::get_noise_3d);
-
-	ClassDB::bind_method(D_METHOD("get_noise_2dv", "pos"), &ZN_SpotNoise::get_noise_2dv);
-	ClassDB::bind_method(D_METHOD("get_noise_3dv", "pos"), &ZN_SpotNoise::get_noise_3dv);
 
 	ClassDB::bind_method(
 			D_METHOD("get_spot_positions_in_area_2d", "rect"), &ZN_SpotNoise::get_spot_positions_in_area_2d
