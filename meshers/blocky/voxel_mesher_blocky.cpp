@@ -1713,11 +1713,11 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 				PackedColorArray colors;
 				PackedInt32Array indices;
 
-				copy_to(positions, arrays.positions);
-				copy_to(uvs, arrays.uvs);
-				copy_to(normals, arrays.normals);
-				copy_to(colors, arrays.colors);
-				copy_to(indices, arrays.indices);
+				copy_to(positions, to_span_const(arrays.positions));
+				copy_to(uvs, to_span_const(arrays.uvs));
+				copy_to(normals, to_span_const(arrays.normals));
+				copy_to(colors, to_span_const(arrays.colors));
+				copy_to(indices, to_span_const(arrays.indices));
 
 				mesh_arrays[Mesh::ARRAY_VERTEX] = positions;
 				mesh_arrays[Mesh::ARRAY_TEX_UV] = uvs;
@@ -1727,7 +1727,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 
 				if (arrays.tangents.size() > 0) {
 					PackedFloat32Array tangents;
-					copy_to(tangents, arrays.tangents);
+					copy_to(tangents, to_span_const(arrays.tangents));
 					mesh_arrays[Mesh::ARRAY_TANGENT] = tangents;
 				}
 			}
@@ -1774,8 +1774,8 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 				PackedVector3Array vertices;
 				PackedInt32Array indices;
 
-				copy_to(vertices, occluder_arrays.vertices);
-				copy_to(indices, occluder_arrays.indices);
+				copy_to(vertices, to_span_const(occluder_arrays.vertices));
+				copy_to(indices, to_span_const(occluder_arrays.indices));
 
 				mesh_arrays[Mesh::ARRAY_VERTEX] = vertices;
 				mesh_arrays[Mesh::ARRAY_INDEX] = indices;

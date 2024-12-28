@@ -243,7 +243,7 @@
 			Collision layer used by generated colliders. Check Godot documentation for more information.
 		</member>
 		<member name="collision_lod_count" type="int" setter="set_collision_lod_count" getter="get_collision_lod_count" default="0">
-			How many LOD levels are set to generate colliders, starting from LOD 0.
+			How many LOD levels are set to generate colliders, starting from LOD 0. Setting this property to 0 means all LODs have collision.
 		</member>
 		<member name="collision_margin" type="float" setter="set_collision_margin" getter="get_collision_margin" default="0.04">
 			Collision margin used by generated colliders. Note that it may depend on which physics engine is used under the hood, as some don't use margins.
