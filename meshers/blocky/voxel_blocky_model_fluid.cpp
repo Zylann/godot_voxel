@@ -36,7 +36,7 @@ Ref<VoxelBlockyFluid> VoxelBlockyModelFluid::get_fluid() const {
 }
 
 void VoxelBlockyModelFluid::set_level(const int level) {
-	const int checked_level = math::clamp(level, 0, MAX_LEVELS - 1);
+	const unsigned int checked_level = static_cast<unsigned int>(math::clamp(level, 0, MAX_LEVELS - 1));
 	if (checked_level == _level) {
 		return;
 	}
