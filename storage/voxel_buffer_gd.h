@@ -1,6 +1,7 @@
 #ifndef VOXEL_BUFFER_GD_H
 #define VOXEL_BUFFER_GD_H
 
+#include "../util/godot/classes/image.h"
 #include "../util/godot/classes/ref_counted.h"
 #include "../util/godot/core/array.h"
 #include "../util/godot/core/typed_array.h"
@@ -10,7 +11,9 @@
 #include <cstdint>
 #include <memory>
 
-ZN_GODOT_FORWARD_DECLARE(class Image)
+// Can't forward-declare because we use Image::Format
+// ZN_GODOT_FORWARD_DECLARE(class Image)
+ZN_GODOT_FORWARD_DECLARE(class ImageTexture3D)
 
 namespace zylann::voxel {
 
@@ -159,6 +162,12 @@ public:
 	static float get_sdf_quantization_scale(Depth d);
 
 	Allocator get_allocator() const;
+
+	PackedByteArray get_channel_as_byte_array(const ChannelId channel) const;
+	void set_channel_from_byte_array(const ChannelId channel, const PackedByteArray &pba);
+
+	Ref<ImageTexture3D> create_3d_texture_from_sdf_zxy(const Image::Format output_format) const;
+	void update_3d_texture_from_sdf_zxy(Ref<ImageTexture3D> texture) const;
 
 	// Operations
 

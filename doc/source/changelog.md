@@ -14,6 +14,9 @@ Primarily developped with Godot 4.3.
 
 - `VoxelBlockyModel`: Added option to turn off "LOD skirts" when used with `VoxelLodTerrain`, which may be useful with transparent models
 - `VoxelBlockyModelCube`: Added support for mesh rotation like `VoxelBlockyMesh` (prior to that, rotation buttons in the editor only swapped tiles around)
+- `VoxelBuffer`:
+    - Added functions to create/update a `Texture3D` from the SDF channel
+    - Added functions to get/set a whole channel as a raw `PackedByteArray`
 - `VoxelInstanceGenerator`: Added `OnePerTriangle` emission mode
 - `VoxelToolLodTerrain`: Implemented raycast when the mesher is `VoxelMesherBlocky` or `VoxelMesherCubes`
 - `VoxelInstanceGenerator`: Added ability to filter spawning by voxel texture indices, when using `VoxelMesherTransvoxel` with `texturing_mode` set to `4-blend over 16 textures`

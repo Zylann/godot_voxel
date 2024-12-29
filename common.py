@@ -83,6 +83,7 @@ def get_sources(env, is_editor_build, include_tests):
         "util/godot/classes/geometry_2d.cpp",
         "util/godot/classes/geometry_instance_3d.cpp",
         "util/godot/classes/input_event_key.cpp",
+        "util/godot/classes/image_texture_3d.cpp",
         "util/godot/classes/mesh.cpp",
         "util/godot/classes/multimesh.cpp",
         "util/godot/classes/node.cpp",

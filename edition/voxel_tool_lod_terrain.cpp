@@ -219,6 +219,7 @@ void VoxelToolLodTerrain::do_sphere_async(Vector3 center, float radius) {
 }
 
 void VoxelToolLodTerrain::copy(Vector3i pos, VoxelBuffer &dst, uint8_t channels_mask) const {
+	ZN_PROFILE_SCOPE();
 	ERR_FAIL_COND(_terrain == nullptr);
 	if (channels_mask == 0) {
 		channels_mask = (1 << _channel);

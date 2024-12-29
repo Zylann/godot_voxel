@@ -435,9 +435,13 @@ public:
 		return Vector3iUtil::get_volume_u64(_size);
 	}
 
+	// Gets a slice aliasing the channel's data
 	bool get_channel_as_bytes(unsigned int channel_index, Span<uint8_t> &slice);
+
+	// Gets a read-only slice aliasing the channel's data
 	bool get_channel_as_bytes_read_only(unsigned int channel_index, Span<const uint8_t> &slice) const;
 
+	// Gets a slice aliasing the channel's data, reinterpreted to a specific type
 	template <typename T>
 	bool get_channel_data(unsigned int channel_index, Span<T> &dst) {
 		Span<uint8_t> dst8;
@@ -446,6 +450,7 @@ public:
 		return true;
 	}
 
+	// Gets a read-only slice aliasing the channel's data, reinterpreted to a specific type
 	template <typename T>
 	bool get_channel_data_read_only(unsigned int channel_index, Span<const T> &dst) const {
 		Span<const uint8_t> dst8;
@@ -453,6 +458,10 @@ public:
 		dst = dst8.reinterpret_cast_to<const T>();
 		return true;
 	}
+
+	// Overwrites contents of a channel with raw data. This skips default initialization of the channel, so it
+	// can be a little bit faster than using `decompress_channel`. The input data must have the right size.
+	void set_channel_from_bytes(const unsigned int channel_index, Span<const uint8_t> src);
 
 	void downscale_to(VoxelBuffer &dst, Vector3i src_min, Vector3i src_max, Vector3i dst_min) const;
 
