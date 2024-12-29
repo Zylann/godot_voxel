@@ -19,6 +19,7 @@ struct MaterialIndexer;
 // Minecraft-style fluid common configuration.
 // Fluids are a bit special compared to regular models. Rendering them with precalculated models would require way too
 // many of them. So instead, they are procedurally generated during meshing.
+// They only require separate models to represent their level, or other states such as falling.
 class VoxelBlockyFluid : public Resource {
 	GDCLASS(VoxelBlockyFluid, Resource)
 public:

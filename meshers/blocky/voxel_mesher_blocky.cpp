@@ -221,6 +221,7 @@ void generate_fluid_model(
 	static constexpr unsigned int surface_index = 0;
 
 	// We re-use the same memory per thread for each meshed fluid voxel
+	// TODO Candidate for TempAllocator
 	auto &fluid_sides = get_tls_fluid_sides_surfaces();
 	auto &fluid_top_surface = get_tls_fluid_top();
 
