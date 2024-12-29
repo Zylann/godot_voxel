@@ -132,6 +132,7 @@ void run_voxel_tests() {
 	VOXEL_TEST(test_voxel_stream_sqlite_coordinate_format);
 	VOXEL_TEST(test_sdf_hemisphere);
 	VOXEL_TEST(test_fnl_range);
+	VOXEL_TEST(test_voxel_buffer_set_channel_bytes);
 
 	print_line("------------ Voxel tests end -------------");
 }
