@@ -4,7 +4,7 @@
 #if defined(ZN_GODOT)
 #include <scene/resources/image_texture.h>
 #elif defined(ZN_GODOT_EXTENSION)
-#include <godot_cpp/classes/image_texture_3d.hpp>
+#include <godot_cpp/classes/image_texture3d.hpp>
 using namespace godot;
 #endif
 
