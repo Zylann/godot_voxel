@@ -548,8 +548,8 @@ void generate_blocky_mesh(
 				// min and max are chosen such that you can visit 1 neighbor away from the current voxel without size
 				// check
 
-				const int voxel_index = y + x * row_size + z * deck_size;
-				const int voxel_id = type_buffer[voxel_index];
+				const unsigned int voxel_index = y + x * row_size + z * deck_size;
+				const unsigned int voxel_id = type_buffer[voxel_index];
 
 				// TODO Don't assume air is 0?
 				if (voxel_id == VoxelBlockyModel::AIR_ID || !library.has_model(voxel_id)) {
