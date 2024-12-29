@@ -184,6 +184,8 @@ void VoxelBlockyModelFluid::_bind_methods() {
 			"get_fluid"
 	);
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "level"), "set_level", "get_level");
+
+	BIND_CONSTANT(MAX_LEVELS);
 }
 
 } // namespace zylann::voxel
