@@ -119,7 +119,10 @@ bool has_duplicate(Span<const T> items) {
 // Tests if POD items in an array are all the same.
 // Better tailored for more than hundred items that have power-of-two size.
 template <typename Item_T>
-inline bool is_uniform(const Item_T *p_data, size_t item_count) {
+inline bool is_uniform(const Item_T *p_data, const size_t item_count) {
+	// Testing uniformity of an empty buffer has no meaningful answer
+	ZN_ASSERT_RETURN_V(item_count > 0, false);
+
 	const Item_T v0 = p_data[0];
 
 	// typedef size_t Bucket_T;
