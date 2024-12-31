@@ -178,8 +178,7 @@ void generate_fluid_model(
 		const VoxelBlockyLibraryBase::BakedData &library,
 		Span<const VoxelBlockyModel::Surface> &out_model_surfaces,
 		const FixedArray<FixedArray<VoxelBlockyModel::SideSurface, VoxelBlockyModel::MAX_SURFACES>, Cube::SIDE_COUNT> *
-				&out_model_sides_surfaces,
-		uint8_t &out_model_surface_count
+				&out_model_sides_surfaces
 ) {
 	const uint32_t top_voxel_id = type_buffer[voxel_index + y_jump_size];
 
@@ -385,9 +384,6 @@ void generate_fluid_model(
 		}
 	}
 
-	// Override model data with procedural data
-	out_model_surface_count = 1;
-
 	if (fluid_top_covered) {
 		// Expected to be empty, but also provides material ID. Not great tho
 		out_model_surfaces = to_span(voxel.model.surfaces);
@@ -411,18 +407,8 @@ void generate_preview_fluid_model(
 	fill(id_buffer, VoxelBlockyModel::AIR_ID);
 	const int center_loc = Vector3iUtil::get_zxy_index(Vector3i(1, 1, 1), Vector3i(3, 3, 3));
 	id_buffer[center_loc] = model_id;
-	uint8_t unused_surface_count;
 	generate_fluid_model<uint16_t>(
-			model,
-			to_span(id_buffer),
-			center_loc,
-			1,
-			3,
-			3 * 3,
-			library,
-			out_model_surfaces,
-			out_model_sides_surfaces,
-			unused_surface_count
+			model, to_span(id_buffer), center_loc, 1, 3, 3 * 3, library, out_model_surfaces, out_model_sides_surfaces
 	);
 }
 

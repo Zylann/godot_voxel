@@ -165,9 +165,9 @@ void generate_blocky_mesh(
 							deck_size,
 							library,
 							model_surfaces,
-							model_sides_surfaces,
-							model_surface_count
+							model_sides_surfaces
 					);
+					model_surface_count = 1;
 				}
 
 				// Sides
