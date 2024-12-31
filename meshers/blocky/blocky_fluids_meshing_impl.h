@@ -168,13 +168,14 @@ inline void transpose_quad_triangles(Span<int32_t> indices) {
 }
 
 template <typename TModelID>
-void generate_fluid_model(
+bool generate_fluid_model(
 		const VoxelBlockyModel::BakedData &voxel,
 		const Span<const TModelID> type_buffer,
 		const int voxel_index,
 		const int y_jump_size,
 		const int x_jump_size,
 		const int z_jump_size,
+		const uint32_t visible_sides_mask,
 		const VoxelBlockyLibraryBase::BakedData &library,
 		Span<const VoxelBlockyModel::Surface> &out_model_surfaces,
 		const FixedArray<FixedArray<VoxelBlockyModel::SideSurface, VoxelBlockyModel::MAX_SURFACES>, Cube::SIDE_COUNT> *
@@ -187,6 +188,12 @@ void generate_fluid_model(
 	if (library.has_model(top_voxel_id)) {
 		const VoxelBlockyModel::BakedData &top_model = library.models[top_voxel_id];
 		if (top_model.fluid_index == voxel.fluid_index) {
+			// The top side is covered.
+			if (visible_sides_mask == 0) {
+				// Fast-path in cases all sides are culled (typically inside large water bodies such as
+				// oceans)
+				return false;
+			}
 			fluid_top_covered = true;
 		}
 	}
@@ -392,6 +399,8 @@ void generate_fluid_model(
 	}
 
 	out_model_sides_surfaces = &fluid_sides;
+
+	return true;
 }
 
 void generate_preview_fluid_model(
@@ -408,7 +417,16 @@ void generate_preview_fluid_model(
 	const int center_loc = Vector3iUtil::get_zxy_index(Vector3i(1, 1, 1), Vector3i(3, 3, 3));
 	id_buffer[center_loc] = model_id;
 	generate_fluid_model<uint16_t>(
-			model, to_span(id_buffer), center_loc, 1, 3, 3 * 3, library, out_model_surfaces, out_model_sides_surfaces
+			model,
+			to_span(id_buffer),
+			center_loc,
+			1,
+			3,
+			3 * 3,
+			0b111111,
+			library,
+			out_model_surfaces,
+			out_model_sides_surfaces
 	);
 }
 

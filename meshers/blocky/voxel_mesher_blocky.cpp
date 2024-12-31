@@ -144,42 +144,13 @@ void generate_blocky_mesh(
 				const VoxelBlockyModel::BakedData &voxel = library.models[voxel_id];
 				const VoxelBlockyModel::BakedData::Model &model = voxel.model;
 
-				uint8_t model_surface_count = model.surface_count;
-
-				Span<const VoxelBlockyModel::Surface> model_surfaces = to_span(model.surfaces);
-
-				const FixedArray<
-						FixedArray<VoxelBlockyModel::SideSurface, VoxelBlockyModel::MAX_SURFACES>,
-						Cube::SIDE_COUNT> *model_sides_surfaces = &model.sides_surfaces;
-
-				// Hybrid approach: extract cube faces and decimate those that aren't visible,
-				// and still allow voxels to have geometry that is not a cube.
-
-				if (voxel.fluid_index != VoxelBlockyModel::NULL_FLUID_INDEX) {
-					blocky::generate_fluid_model(
-							voxel,
-							type_buffer,
-							voxel_index,
-							1,
-							row_size,
-							deck_size,
-							library,
-							model_surfaces,
-							model_sides_surfaces
-					);
-					model_surface_count = 1;
-				}
-
-				// Sides
+				// Calculate visibility of sides
+				uint32_t visible_sides_mask = 0;
 				for (unsigned int side = 0; side < Cube::SIDE_COUNT; ++side) {
 					if ((model.empty_sides_mask & (1 << side)) != 0) {
 						// This side is empty
 						continue;
 					}
-
-					// By default we render the whole side if we consider it visible
-					const FixedArray<VoxelBlockyModel::SideSurface, VoxelBlockyModel::MAX_SURFACES> *side_surfaces =
-							&((*model_sides_surfaces)[side]);
 
 					const uint32_t neighbor_voxel_id = type_buffer[voxel_index + side_neighbor_lut[side]];
 
@@ -192,27 +163,77 @@ void generate_blocky_mesh(
 								// Completely occluded
 								continue;
 							}
+						}
+					}
 
-							// Might be only partially visible
-							if (voxel.cutout_sides_enabled) {
-								const std::unordered_map<
-										uint32_t,
-										FixedArray<VoxelBlockyModel::SideSurface, VoxelBlockyModel::MAX_SURFACES>>
-										&cutout_side_surfaces_by_neighbor_shape = model.cutout_side_surfaces[side];
+					visible_sides_mask |= (1 << side);
+				}
 
-								const unsigned int neighbor_shape_id =
-										other_vt.model.side_pattern_indices[Cube::g_opposite_side[side]];
+				uint8_t model_surface_count = model.surface_count;
 
-								// That's a hashmap lookup on a hot path. Cutting out sides like this should be used
-								// sparsely if possible.
-								// Unfortunately, use cases include certain water styles, which means oceans...
-								// Eventually we should provide another approach for these
-								auto it = cutout_side_surfaces_by_neighbor_shape.find(neighbor_shape_id);
+				Span<const VoxelBlockyModel::Surface> model_surfaces = to_span(model.surfaces);
 
-								if (it != cutout_side_surfaces_by_neighbor_shape.end()) {
-									// Use pre-cut side instead
-									side_surfaces = &it->second;
-								}
+				const FixedArray<
+						FixedArray<VoxelBlockyModel::SideSurface, VoxelBlockyModel::MAX_SURFACES>,
+						Cube::SIDE_COUNT> *model_sides_surfaces = &model.sides_surfaces;
+
+				// Hybrid approach: extract cube faces and decimate those that aren't visible,
+				// and still allow voxels to have geometry that is not a cube.
+
+				if (voxel.fluid_index != VoxelBlockyModel::NULL_FLUID_INDEX) {
+					if (!blocky::generate_fluid_model(
+								voxel,
+								type_buffer,
+								voxel_index,
+								1,
+								row_size,
+								deck_size,
+								visible_sides_mask,
+								library,
+								model_surfaces,
+								model_sides_surfaces
+						)) {
+						continue;
+					}
+					model_surface_count = 1;
+				}
+
+				// Sides
+				for (unsigned int side = 0; side < Cube::SIDE_COUNT; ++side) {
+					if ((visible_sides_mask & (1 << side)) == 0) {
+						// This side is culled
+						continue;
+					}
+
+					// By default we render the whole side if we consider it visible
+					const FixedArray<VoxelBlockyModel::SideSurface, VoxelBlockyModel::MAX_SURFACES> *side_surfaces =
+							&((*model_sides_surfaces)[side]);
+
+					// Might be only partially visible
+					if (voxel.cutout_sides_enabled) {
+						const uint32_t neighbor_voxel_id = type_buffer[voxel_index + side_neighbor_lut[side]];
+
+						// Invalid voxels are treated like air
+						if (neighbor_voxel_id < library.models.size()) {
+							const VoxelBlockyModel::BakedData &other_vt = library.models[neighbor_voxel_id];
+
+							const std::unordered_map<
+									uint32_t,
+									FixedArray<VoxelBlockyModel::SideSurface, VoxelBlockyModel::MAX_SURFACES>>
+									&cutout_side_surfaces_by_neighbor_shape = model.cutout_side_surfaces[side];
+
+							const unsigned int neighbor_shape_id =
+									other_vt.model.side_pattern_indices[Cube::g_opposite_side[side]];
+
+							// That's a hashmap lookup on a hot path. Cutting out sides like this should be used
+							// sparsely if possible.
+							// Unfortunately, use cases include certain water styles, which means oceans...
+							// Eventually we should provide another approach for these
+							auto it = cutout_side_surfaces_by_neighbor_shape.find(neighbor_shape_id);
+
+							if (it != cutout_side_surfaces_by_neighbor_shape.end()) {
+								// Use pre-cut side instead
+								side_surfaces = &it->second;
 							}
 						}
 					}
