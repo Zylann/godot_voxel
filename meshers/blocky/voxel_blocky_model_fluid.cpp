@@ -4,10 +4,10 @@
 #include "../../constants/voxel_string_names.h"
 #include "../../util/containers/container_funcs.h"
 #include "../../util/godot/core/array.h"
+#include "blocky_fluids.h"
 #include "blocky_material_indexer.h"
 #include "blocky_model_baking_context.h"
 #include "voxel_blocky_library_base.h"
-#include "voxel_mesher_blocky.h"
 
 namespace zylann::voxel {
 
@@ -78,7 +78,7 @@ Ref<Mesh> VoxelBlockyModelFluid::get_preview_mesh() const {
 	const FixedArray<FixedArray<VoxelBlockyModel::SideSurface, VoxelBlockyModel::MAX_SURFACES>, Cube::SIDE_COUNT>
 			*model_sides_surfaces = nullptr;
 
-	generate_preview_fluid_model(library.models[1], 1, library, model_surfaces, model_sides_surfaces);
+	blocky::generate_preview_fluid_model(library.models[1], 1, library, model_surfaces, model_sides_surfaces);
 	ZN_ASSERT_RETURN_V(model_sides_surfaces != nullptr, Ref<Mesh>());
 
 	Ref<Mesh> mesh =
