@@ -90,14 +90,14 @@ Ref<Mesh> VoxelBlockyModelFluid::get_preview_mesh() const {
 	return mesh;
 }
 
-namespace {
+namespace blocky {
 
 void bake_fluid_model(
 		const VoxelBlockyModelFluid &fluid_model,
-		blocky::BakedModel &baked_model,
+		BakedModel &baked_model,
 		StdVector<Ref<VoxelBlockyFluid>> &indexed_fluids,
-		StdVector<blocky::BakedFluid> &baked_fluids,
-		blocky::MaterialIndexer &materials
+		StdVector<BakedFluid> &baked_fluids,
+		MaterialIndexer &materials
 ) {
 	Ref<VoxelBlockyFluid> fluid = fluid_model.get_fluid();
 
@@ -127,7 +127,7 @@ void bake_fluid_model(
 		baked_fluids.resize(fluid_index + 1);
 	}
 
-	blocky::BakedFluid &baked_fluid = baked_fluids[fluid_index];
+	BakedFluid &baked_fluid = baked_fluids[fluid_index];
 
 	// TODO Allow more than one model with the same level?
 	const unsigned int level = fluid_model.get_level();
@@ -149,10 +149,10 @@ void bake_fluid_model(
 	baked_model.model.surfaces[0].material_id = materials.get_or_create_index(fluid->get_material());
 }
 
-} // namespace
+} // namespace blocky
 
 void VoxelBlockyModelFluid::bake(blocky::ModelBakingContext &ctx) const {
-	bake_fluid_model(*this, ctx.model, ctx.indexed_fluids, ctx.baked_fluids, ctx.material_indexer);
+	blocky::bake_fluid_model(*this, ctx.model, ctx.indexed_fluids, ctx.baked_fluids, ctx.material_indexer);
 }
 
 void VoxelBlockyModelFluid::_on_fluid_changed() {

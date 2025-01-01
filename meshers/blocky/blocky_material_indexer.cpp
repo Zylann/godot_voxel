@@ -1,7 +1,7 @@
 #include "blocky_material_indexer.h"
 #include "../../util/godot/classes/material.h"
 #include "../../util/string/format.h"
-#include "voxel_blocky_library_base.h"
+#include "blocky_baked_library.h"
 
 namespace zylann::voxel::blocky {
 
@@ -13,11 +13,11 @@ unsigned int MaterialIndexer::get_or_create_index(const Ref<Material> &p_materia
 		}
 	}
 #ifdef TOOLS_ENABLED
-	if (materials.size() == VoxelBlockyLibraryBase::MAX_MATERIALS) {
+	if (materials.size() == MAX_MATERIALS) {
 		ZN_PRINT_ERROR(
 				format("Maximum material count reached ({}), try reduce your number of materials by re-using "
 					   "them or using atlases.",
-					   VoxelBlockyLibraryBase::MAX_MATERIALS)
+					   MAX_MATERIALS)
 		);
 	}
 #endif

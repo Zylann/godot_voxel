@@ -73,7 +73,11 @@ protected:
 	StdVector<Ref<Material>> _indexed_materials;
 };
 
+namespace blocky {
+
 void generate_side_culling_matrix(blocky::BakedLibrary &baked_data);
+
+} // namespace blocky
 
 } // namespace zylann::voxel
 

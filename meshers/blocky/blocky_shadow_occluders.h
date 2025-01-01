@@ -20,7 +20,7 @@ void generate_shadow_occluders(
 		const Span<const uint8_t> id_buffer_raw,
 		const VoxelBuffer::Depth depth,
 		const Vector3i block_size,
-		const blocky::BakedLibrary &baked_data,
+		const BakedLibrary &baked_data,
 		const uint8_t enabled_mask
 );
 

@@ -10,12 +10,12 @@ namespace blocky {
 struct MaterialIndexer;
 
 struct ModelBakingContext {
-	blocky::BakedModel &model;
+	BakedModel &model;
 	// const uint16_t model_index;
 	const bool tangents_enabled;
 	MaterialIndexer &material_indexer;
 	StdVector<Ref<VoxelBlockyFluid>> &indexed_fluids;
-	StdVector<blocky::BakedFluid> &baked_fluids;
+	StdVector<BakedFluid> &baked_fluids;
 };
 
 } // namespace blocky

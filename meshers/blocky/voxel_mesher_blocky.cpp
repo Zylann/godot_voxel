@@ -19,12 +19,11 @@ using namespace zylann::godot;
 
 namespace zylann::voxel {
 
-// Utility functions
-namespace {
+namespace blocky {
 
-inline bool contributes_to_ao(const blocky::BakedLibrary &lib, uint32_t voxel_id) {
+inline bool contributes_to_ao(const BakedLibrary &lib, uint32_t voxel_id) {
 	if (voxel_id < lib.models.size()) {
-		const blocky::BakedModel &t = lib.models[voxel_id];
+		const BakedModel &t = lib.models[voxel_id];
 		return t.contributes_to_ao;
 	}
 	return true;
@@ -35,15 +34,13 @@ StdVector<int> &get_tls_index_offsets() {
 	return tls_index_offsets;
 }
 
-} // namespace
-
 template <typename Type_T>
-void generate_blocky_mesh(
+void generate_mesh(
 		StdVector<VoxelMesherBlocky::Arrays> &out_arrays_per_material,
 		VoxelMesher::Output::CollisionSurface *collision_surface,
 		const Span<const Type_T> type_buffer,
 		const Vector3i block_size,
-		const blocky::BakedLibrary &library,
+		const BakedLibrary &library,
 		const bool bake_occlusion,
 		const float baked_occlusion_darkness
 ) {
@@ -139,12 +136,12 @@ void generate_blocky_mesh(
 				const unsigned int voxel_id = type_buffer[voxel_index];
 
 				// TODO Don't assume air is 0?
-				if (voxel_id == blocky::AIR_ID || !library.has_model(voxel_id)) {
+				if (voxel_id == AIR_ID || !library.has_model(voxel_id)) {
 					continue;
 				}
 
-				const blocky::BakedModel &voxel = library.models[voxel_id];
-				const blocky::BakedModel::Model &model = voxel.model;
+				const BakedModel &voxel = library.models[voxel_id];
+				const BakedModel::Model &model = voxel.model;
 
 				// Calculate visibility of sides
 				uint32_t visible_sides_mask = 0;
@@ -158,7 +155,7 @@ void generate_blocky_mesh(
 
 					// Invalid voxels are treated like air
 					if (neighbor_voxel_id < library.models.size()) {
-						const blocky::BakedModel &other_vt = library.models[neighbor_voxel_id];
+						const BakedModel &other_vt = library.models[neighbor_voxel_id];
 						if (!is_face_visible_regardless_of_shape(voxel, other_vt)) {
 							// Visibility depends on the shape
 							if (!is_face_visible_according_to_shape(library, voxel, other_vt, side)) {
@@ -173,16 +170,16 @@ void generate_blocky_mesh(
 
 				uint8_t model_surface_count = model.surface_count;
 
-				Span<const blocky::BakedModel::Surface> model_surfaces = to_span(model.surfaces);
+				Span<const BakedModel::Surface> model_surfaces = to_span(model.surfaces);
 
-				const FixedArray<FixedArray<blocky::BakedModel::SideSurface, blocky::MAX_SURFACES>, Cube::SIDE_COUNT>
+				const FixedArray<FixedArray<BakedModel::SideSurface, MAX_SURFACES>, Cube::SIDE_COUNT>
 						*model_sides_surfaces = &model.sides_surfaces;
 
 				// Hybrid approach: extract cube faces and decimate those that aren't visible,
 				// and still allow voxels to have geometry that is not a cube.
 
-				if (voxel.fluid_index != blocky::NULL_FLUID_INDEX) {
-					if (!blocky::generate_fluid_model(
+				if (voxel.fluid_index != NULL_FLUID_INDEX) {
+					if (!generate_fluid_model(
 								voxel,
 								type_buffer,
 								voxel_index,
@@ -207,7 +204,7 @@ void generate_blocky_mesh(
 					}
 
 					// By default we render the whole side if we consider it visible
-					const FixedArray<blocky::BakedModel::SideSurface, blocky::MAX_SURFACES> *side_surfaces =
+					const FixedArray<BakedModel::SideSurface, MAX_SURFACES> *side_surfaces =
 							&((*model_sides_surfaces)[side]);
 
 					// Might be only partially visible
@@ -216,11 +213,9 @@ void generate_blocky_mesh(
 
 						// Invalid voxels are treated like air
 						if (neighbor_voxel_id < library.models.size()) {
-							const blocky::BakedModel &other_vt = library.models[neighbor_voxel_id];
+							const BakedModel &other_vt = library.models[neighbor_voxel_id];
 
-							const std::unordered_map<
-									uint32_t,
-									FixedArray<blocky::BakedModel::SideSurface, blocky::MAX_SURFACES>>
+							const std::unordered_map<uint32_t, FixedArray<BakedModel::SideSurface, MAX_SURFACES>>
 									&cutout_side_surfaces_by_neighbor_shape = model.cutout_side_surfaces[side];
 
 							const unsigned int neighbor_shape_id =
@@ -279,14 +274,14 @@ void generate_blocky_mesh(
 
 					// TODO Move this into a function
 					for (unsigned int surface_index = 0; surface_index < model_surface_count; ++surface_index) {
-						const blocky::BakedModel::Surface &surface = model_surfaces[surface_index];
+						const BakedModel::Surface &surface = model_surfaces[surface_index];
 
 						VoxelMesherBlocky::Arrays &arrays = out_arrays_per_material[surface.material_id];
 
 						ZN_ASSERT(surface.material_id >= 0 && surface.material_id < index_offsets.size());
 						int &index_offset = index_offsets[surface.material_id];
 
-						const blocky::BakedModel::SideSurface &side_surface = (*side_surfaces)[surface_index];
+						const BakedModel::SideSurface &side_surface = (*side_surfaces)[surface_index];
 
 						const StdVector<Vector3f> &side_positions = side_surface.positions;
 						const unsigned int vertex_count = side_surface.positions.size();
@@ -414,7 +409,7 @@ void generate_blocky_mesh(
 
 				// Inside
 				for (unsigned int surface_index = 0; surface_index < model_surface_count; ++surface_index) {
-					const blocky::BakedModel::Surface &surface = model_surfaces[surface_index];
+					const BakedModel::Surface &surface = model_surfaces[surface_index];
 					if (surface.positions.size() == 0) {
 						continue;
 					}
@@ -487,6 +482,8 @@ bool is_empty(const StdVector<VoxelMesherBlocky::Arrays> &arrays_per_material) {
 	}
 	return true;
 }
+
+} // namespace blocky
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -638,7 +635,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 
 		switch (channel_depth) {
 			case VoxelBuffer::DEPTH_8_BIT:
-				generate_blocky_mesh(
+				blocky::generate_mesh(
 						arrays_per_material,
 						collision_surface,
 						raw_channel,
@@ -654,7 +651,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 
 			case VoxelBuffer::DEPTH_16_BIT: {
 				Span<const uint16_t> model_ids = raw_channel.reinterpret_cast_to<const uint16_t>();
-				generate_blocky_mesh(
+				blocky::generate_mesh(
 						arrays_per_material,
 						collision_surface,
 						model_ids,
@@ -736,7 +733,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 		// }
 	}
 
-	if (params.shadow_occluders_mask != 0 && !is_empty(arrays_per_material)) {
+	if (params.shadow_occluders_mask != 0 && !blocky::is_empty(arrays_per_material)) {
 		// TODO Candidate for temp allocator (maybe even stack allocator in this case?)
 		blocky::OccluderArrays occluder_arrays;
 

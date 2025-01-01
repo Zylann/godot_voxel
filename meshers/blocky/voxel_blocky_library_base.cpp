@@ -227,8 +227,12 @@ void to_3d(Span<const Vector2f> src, Span<Vector3f> dst, unsigned int side) {
 	}
 }
 
+} // namespace
+
+namespace blocky {
+
 void get_side_geometry_2d_all_surfaces(
-		const blocky::BakedModel::Model &model,
+		const BakedModel::Model &model,
 		int side,
 		StdVector<Vector2f> &out_vertices,
 		StdVector<int32_t> &out_indices
@@ -236,10 +240,10 @@ void get_side_geometry_2d_all_surfaces(
 	unsigned int vertex_count = 0;
 	unsigned int index_count = 0;
 
-	const FixedArray<blocky::BakedModel::SideSurface, blocky::MAX_SURFACES> &side_surfaces = model.sides_surfaces[side];
+	const FixedArray<BakedModel::SideSurface, MAX_SURFACES> &side_surfaces = model.sides_surfaces[side];
 
 	for (unsigned int surface_index = 0; surface_index < model.surface_count; ++surface_index) {
-		const blocky::BakedModel::SideSurface &side_surface = side_surfaces[surface_index];
+		const BakedModel::SideSurface &side_surface = side_surfaces[surface_index];
 		vertex_count += side_surface.positions.size();
 		index_count += side_surface.indices.size();
 	}
@@ -251,7 +255,7 @@ void get_side_geometry_2d_all_surfaces(
 	unsigned int index_start = 0;
 
 	for (unsigned int surface_index = 0; surface_index < model.surface_count; ++surface_index) {
-		const blocky::BakedModel::SideSurface &side_surface = side_surfaces[surface_index];
+		const BakedModel::SideSurface &side_surface = side_surfaces[surface_index];
 
 		Span<const Vector3f> src_vertices = to_span(side_surface.positions);
 		Span<const int32_t> src_indices = to_span(side_surface.indices);
@@ -269,6 +273,10 @@ void get_side_geometry_2d_all_surfaces(
 		index_start += side_surface.indices.size();
 	}
 }
+
+} // namespace blocky
+
+namespace {
 
 void quads_to_triangles(Span<const Box2f> quads, StdVector<Vector2f> &vertices) {
 	vertices.reserve(quads.size() * 6);
@@ -299,10 +307,10 @@ int find_approx(Span<const Vector2f> vertices, const Vector2f p_v) {
 	return -1;
 }
 
-void index_triangles( //
-		Span<const Vector2f> src_vertices, //
-		StdVector<Vector2f> &dst_vertices, //
-		StdVector<int32_t> &dst_indices //
+void index_triangles(
+		Span<const Vector2f> src_vertices,
+		StdVector<Vector2f> &dst_vertices,
+		StdVector<int32_t> &dst_indices
 ) {
 	for (const Vector2f srcv : src_vertices) {
 		int dsti = find_approx(to_span(dst_vertices), srcv);
@@ -406,11 +414,15 @@ void interpolate_attributes_assume_no_seams(
 	}
 }
 
+} // namespace
+
+namespace blocky {
+
 void generate_cutout_side_surface(
-		const blocky::BakedModel::SideSurface &side_surface,
+		const BakedModel::SideSurface &side_surface,
 		unsigned int side,
 		Box2f other_quad,
-		blocky::BakedModel::SideSurface &cut_side_surface
+		BakedModel::SideSurface &cut_side_surface
 ) {
 	// Arguably, some of this could be done once up front.
 	// Not done currently because what we really want here is a full-blown mesh boolean operation. The quad stuff is
@@ -477,7 +489,7 @@ void generate_cutout_side_surface(
 	cut_side_surface.tangents = std::move(cut_tangents);
 }
 
-void generate_model_cutout_sides(blocky::BakedModel &model_data, uint16_t model_id, blocky::BakedLibrary &lib) {
+void generate_model_cutout_sides(BakedModel &model_data, const uint16_t model_id, BakedLibrary &lib) {
 	// Iterating other models instead of the shape matrix because there is often a limited subset of models we have
 	// to compute cutouts with. Typically, this is used with transparent neighbors that cull our own faces
 	for (uint16_t other_model_id = 0; other_model_id < lib.models.size(); ++other_model_id) {
@@ -485,7 +497,7 @@ void generate_model_cutout_sides(blocky::BakedModel &model_data, uint16_t model_
 			continue;
 		}
 
-		blocky::BakedModel &other_model_data = lib.models[other_model_id];
+		BakedModel &other_model_data = lib.models[other_model_id];
 
 		if (!other_model_data.culls_neighbors) {
 			continue;
@@ -502,8 +514,8 @@ void generate_model_cutout_sides(blocky::BakedModel &model_data, uint16_t model_
 
 			// The face is partially or totally visible, depending on the neighbor's shape. Compute its cutout?
 
-			blocky::BakedModel::Model &model = model_data.model;
-			const blocky::BakedModel::Model &other_model = other_model_data.model;
+			BakedModel::Model &model = model_data.model;
+			const BakedModel::Model &other_model = other_model_data.model;
 
 			const uint16_t other_side = Cube::g_opposite_side[side];
 
@@ -526,13 +538,12 @@ void generate_model_cutout_sides(blocky::BakedModel &model_data, uint16_t model_
 
 			const uint32_t other_side_shape_id = other_model.side_pattern_indices[other_side];
 
-			FixedArray<blocky::BakedModel::SideSurface, blocky::MAX_SURFACES> cut_surfaces;
+			FixedArray<BakedModel::SideSurface, MAX_SURFACES> cut_surfaces;
 
-			const FixedArray<blocky::BakedModel::SideSurface, blocky::MAX_SURFACES> &side_surfaces =
-					model.sides_surfaces[side];
+			const FixedArray<BakedModel::SideSurface, MAX_SURFACES> &side_surfaces = model.sides_surfaces[side];
 
 			for (unsigned int surface_index = 0; surface_index < model.surface_count; ++surface_index) {
-				const blocky::BakedModel::SideSurface &side_surface = side_surfaces[surface_index];
+				const BakedModel::SideSurface &side_surface = side_surfaces[surface_index];
 				generate_cutout_side_surface(side_surface, side, other_quad, cut_surfaces[surface_index]);
 			}
 
@@ -546,11 +557,11 @@ void generate_model_cutout_sides(blocky::BakedModel &model_data, uint16_t model_
 	}
 }
 
-void generate_library_cutout_sides(blocky::BakedLibrary &lib) {
+void generate_library_cutout_sides(BakedLibrary &lib) {
 	ZN_PROFILE_SCOPE();
 
 	for (uint16_t model_id = 0; model_id < lib.models.size(); ++model_id) {
-		blocky::BakedModel &model_data = lib.models[model_id];
+		BakedModel &model_data = lib.models[model_id];
 
 		if (!model_data.cutout_sides_enabled) {
 			continue;
@@ -560,7 +571,7 @@ void generate_library_cutout_sides(blocky::BakedLibrary &lib) {
 	}
 }
 
-} // namespace
+} // namespace blocky
 
 template <typename F>
 void rasterize_triangle_barycentric(Vector2f a, Vector2f b, Vector2f c, F output_func) {
@@ -592,11 +603,11 @@ namespace {
 static const unsigned int RASTER_SIZE = 32;
 } // namespace
 
-void rasterize_side( //
-		const Span<const Vector3f> vertices, //
-		const Span<const int> indices, //
-		const unsigned int side, //
-		std::bitset<RASTER_SIZE * RASTER_SIZE> &bitmap //
+void rasterize_side(
+		const Span<const Vector3f> vertices,
+		const Span<const int> indices,
+		const unsigned int side,
+		std::bitset<RASTER_SIZE * RASTER_SIZE> &bitmap
 ) {
 	ZN_ASSERT_RETURN((indices.size() % 3) == 0);
 
@@ -649,21 +660,23 @@ void rasterize_side( //
 	}
 }
 
+namespace blocky {
+
 void rasterize_side_all_surfaces(
-		const blocky::BakedModel &model_data,
+		const BakedModel &model_data,
 		const unsigned int side_index,
 		std::bitset<RASTER_SIZE * RASTER_SIZE> &bitmap
 ) {
-	const FixedArray<blocky::BakedModel::SideSurface, blocky::MAX_SURFACES> &side_surfaces =
+	const FixedArray<BakedModel::SideSurface, MAX_SURFACES> &side_surfaces =
 			model_data.model.sides_surfaces[side_index];
 	// For each surface (they are all combined for simplicity, though it is also a limitation)
 	for (unsigned int surface_index = 0; surface_index < model_data.model.surface_count; ++surface_index) {
-		const blocky::BakedModel::SideSurface &side = side_surfaces[surface_index];
+		const BakedModel::SideSurface &side = side_surfaces[surface_index];
 		rasterize_side(to_span(side.positions), to_span(side.indices), side_index, bitmap);
 	}
 }
 
-void generate_side_culling_matrix(blocky::BakedLibrary &baked_data) {
+void generate_side_culling_matrix(BakedLibrary &baked_data) {
 	ZN_PROFILE_SCOPE();
 	// When two blocky voxels are next to each other, they share a side.
 	// Geometry of either side can be culled away if covered by the other,
@@ -688,7 +701,7 @@ void generate_side_culling_matrix(blocky::BakedLibrary &baked_data) {
 
 	// Gather patterns for each model
 	for (uint16_t type_id = 0; type_id < baked_data.models.size(); ++type_id) {
-		blocky::BakedModel &model_data = baked_data.models[type_id];
+		BakedModel &model_data = baked_data.models[type_id];
 		model_data.contributes_to_ao = true;
 
 		// For each side
@@ -840,5 +853,7 @@ void generate_side_culling_matrix(blocky::BakedLibrary &baked_data) {
 	}
 	print_line("");*/
 }
+
+} // namespace blocky
 
 } // namespace zylann::voxel

@@ -6,12 +6,11 @@
 namespace zylann::voxel::blocky {
 
 void generate_preview_fluid_model(
-		const blocky::BakedModel &model,
+		const BakedModel &model,
 		const uint16_t model_id,
-		const blocky::BakedLibrary &library,
-		Span<const blocky::BakedModel::Surface> &out_model_surfaces,
-		const FixedArray<FixedArray<blocky::BakedModel::SideSurface, blocky::MAX_SURFACES>, Cube::SIDE_COUNT> *
-				&out_model_sides_surfaces
+		const BakedLibrary &library,
+		Span<const BakedModel::Surface> &out_model_surfaces,
+		const FixedArray<FixedArray<BakedModel::SideSurface, MAX_SURFACES>, Cube::SIDE_COUNT> *&out_model_sides_surfaces
 );
 
 } // namespace zylann::voxel::blocky

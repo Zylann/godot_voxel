@@ -208,14 +208,18 @@ bool validate_indices(Span<const int> indices, int vertex_count) {
 	return true;
 }
 
+} // namespace
+
+namespace blocky {
+
 void bake_mesh_geometry(
-		Span<const Array> surfaces,
-		Span<const Ref<Material>> materials,
-		blocky::BakedModel &baked_data,
-		bool bake_tangents,
-		blocky::MaterialIndexer &material_indexer,
-		unsigned int ortho_rotation,
-		float side_vertex_tolerance
+		const Span<const Array> surfaces,
+		const Span<const Ref<Material>> materials,
+		BakedModel &baked_data,
+		const bool bake_tangents,
+		MaterialIndexer &material_indexer,
+		const unsigned int ortho_rotation,
+		const float side_vertex_tolerance
 ) {
 	baked_data.model.surface_count = surfaces.size();
 
@@ -347,9 +351,9 @@ void bake_mesh_geometry(
 
 		// Separate triangles belonging to faces of the cube
 
-		blocky::BakedModel::Model &model = baked_data.model;
+		BakedModel::Model &model = baked_data.model;
 
-		blocky::BakedModel::Surface &surface = model.surfaces[surface_index];
+		BakedModel::Surface &surface = model.surfaces[surface_index];
 		Ref<Material> material = materials[surface_index];
 		// Note, an empty material counts as "The default material".
 		surface.material_id = material_indexer.get_or_create_index(material);
@@ -369,7 +373,7 @@ void bake_mesh_geometry(
 				)) {
 				// That triangle is on the face
 
-				blocky::BakedModel::SideSurface &side_surface = model.sides_surfaces[side][surface_index];
+				BakedModel::SideSurface &side_surface = model.sides_surfaces[side][surface_index];
 
 				int next_side_index = side_surface.positions.size();
 
@@ -443,9 +447,9 @@ void bake_mesh_geometry(
 
 void bake_mesh_geometry(
 		const VoxelBlockyModelMesh &config,
-		blocky::BakedModel &baked_data,
+		BakedModel &baked_data,
 		const bool bake_tangents,
-		blocky::MaterialIndexer &material_indexer,
+		MaterialIndexer &material_indexer,
 		const float side_vertex_tolerance,
 		const bool side_cutout_enabled
 ) {
@@ -461,13 +465,13 @@ void bake_mesh_geometry(
 	// TODO Merge surfaces if they are found to have the same material (but still print a warning if their material is
 	// different or is null)
 	const uint32_t src_surface_count = mesh->get_surface_count();
-	if (mesh->get_surface_count() > int(VoxelBlockyModel::MAX_SURFACES)) {
-		ZN_PRINT_WARNING(format(
-				"Mesh has more than {} surfaces, extra surfaces will not be baked.", VoxelBlockyModel::MAX_SURFACES
-		));
+	if (mesh->get_surface_count() > int(blocky::MAX_SURFACES)) {
+		ZN_PRINT_WARNING(
+				format("Mesh has more than {} surfaces, extra surfaces will not be baked.", blocky::MAX_SURFACES)
+		);
 	}
 
-	const unsigned int surface_count = math::min(src_surface_count, VoxelBlockyModel::MAX_SURFACES);
+	const unsigned int surface_count = math::min(src_surface_count, blocky::MAX_SURFACES);
 
 	StdVector<Ref<Material>> materials;
 	StdVector<Array> surfaces;
@@ -488,14 +492,14 @@ void bake_mesh_geometry(
 	);
 }
 
-} // namespace
+} // namespace blocky
 
 void VoxelBlockyModelMesh::bake(blocky::ModelBakingContext &ctx) const {
 	blocky::BakedModel &baked_data = ctx.model;
 	blocky::MaterialIndexer &materials = ctx.material_indexer;
 
 	baked_data.clear();
-	bake_mesh_geometry(
+	blocky::bake_mesh_geometry(
 			*this, baked_data, ctx.tangents_enabled, materials, _side_vertex_tolerance, _side_cutout_enabled
 	);
 	VoxelBlockyModel::bake(ctx);
