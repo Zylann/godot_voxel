@@ -13,6 +13,10 @@
 
 namespace zylann::voxel {
 
+namespace blocky {
+struct ModelBakingContext;
+}
+
 // TODO Add preview in inspector showing collision boxes
 
 // Visuals and collisions corresponding to a specific voxel value/state, for use with `VoxelMesherBlocky`.
@@ -24,61 +28,55 @@ public:
 	// Convention to mean "nothing".
 	// Don't assign a non-empty model at this index.
 	static const uint16_t AIR_ID = 0;
+	static const uint8_t NULL_FLUID_INDEX = 255;
+	static constexpr uint32_t MAX_SURFACES = 2;
+
+	struct SideSurface {
+		StdVector<Vector3f> positions;
+		StdVector<Vector2f> uvs;
+		StdVector<int> indices;
+		StdVector<float> tangents;
+		// Normals aren't stored because they are assumed to be the same for the whole side
+
+		void clear() {
+			positions.clear();
+			uvs.clear();
+			indices.clear();
+			tangents.clear();
+		}
+	};
+
+	struct Surface {
+		// Inside part of the model.
+		StdVector<Vector3f> positions;
+		StdVector<Vector3f> normals;
+		StdVector<Vector2f> uvs;
+		StdVector<int> indices;
+		StdVector<float> tangents;
+
+		uint32_t material_id = 0;
+		bool collision_enabled = true;
+
+		void clear() {
+			positions.clear();
+			normals.clear();
+			uvs.clear();
+			indices.clear();
+			tangents.clear();
+		}
+	};
 
 	// Plain data strictly used by the mesher.
 	// It becomes distinct because it's going to be used in a multithread environment,
 	// while the configuration that produced the data can be changed by the user at any time.
 	// Also, it is lighter than Godot resources.
 	struct BakedData {
-		struct SideSurface {
-			StdVector<Vector3f> positions;
-			StdVector<Vector2f> uvs;
-			StdVector<int> indices;
-			StdVector<float> tangents;
-			// Normals aren't stored because they are assumed to be the same for the whole side
-
-			void clear() {
-				positions.clear();
-				uvs.clear();
-				indices.clear();
-				tangents.clear();
-			}
-		};
-
-		struct Surface {
-			// Inside part of the model.
-			StdVector<Vector3f> positions;
-			StdVector<Vector3f> normals;
-			StdVector<Vector2f> uvs;
-			StdVector<int> indices;
-			StdVector<float> tangents;
-			// Model sides:
-			// They are separated because this way we can occlude them easily.
-			// Due to these defining cube side triangles, normals are known already.
-			FixedArray<SideSurface, Cube::SIDE_COUNT> sides;
-
-			uint32_t material_id = 0;
-			bool collision_enabled = true;
-
-			void clear() {
-				positions.clear();
-				normals.clear();
-				uvs.clear();
-				indices.clear();
-				tangents.clear();
-
-				for (SideSurface &side : sides) {
-					side.clear();
-				}
-			}
-		};
-
 		struct Model {
-			static constexpr uint32_t MAX_SURFACES = 2;
-
 			// A model can have up to 2 materials.
 			// If more is needed or profiling tells better, we could change it to a vector?
 			FixedArray<Surface, MAX_SURFACES> surfaces;
+			// Model sides: they are separated because this way we can occlude them easily.
+			FixedArray<FixedArray<SideSurface, MAX_SURFACES>, Cube::SIDE_COUNT> sides_surfaces;
 			unsigned int surface_count = 0;
 			// Cached information to check this case early.
 			// Bits are indexed with the Cube::Side enum.
@@ -95,9 +93,21 @@ public:
 			// which this is needed could make use of different approaches such as procedural generation of the
 			// geometry.
 
+			// [side][neighbor_shape_id] => pre-cut SideSurfaces
+			// Surface to attempt using when a side passes the visibility test and cutout is enabled.
+			// If the SideSurface from this container is empty or not found, fallback on full surface
+			FixedArray<std::unordered_map<uint32_t, FixedArray<SideSurface, MAX_SURFACES>>, Cube::SIDE_COUNT>
+					cutout_side_surfaces;
+			// TODO ^ Make it UniquePtr? That array takes space for what is essentially a niche feature
+
 			void clear() {
-				for (unsigned int i = 0; i < surfaces.size(); ++i) {
-					surfaces[i].clear();
+				for (Surface &surface : surfaces) {
+					surface.clear();
+				}
+				for (FixedArray<SideSurface, MAX_SURFACES> &side_surfaces : sides_surfaces) {
+					for (SideSurface &side_surface : side_surfaces) {
+						side_surface.clear();
+					}
 				}
 			}
 		};
@@ -107,9 +117,12 @@ public:
 		uint8_t transparency_index;
 		bool culls_neighbors;
 		bool contributes_to_ao;
-		bool empty;
+		bool empty = true;
 		bool is_random_tickable;
 		bool is_transparent;
+		bool cutout_sides_enabled = false;
+		uint8_t fluid_index = NULL_FLUID_INDEX;
+		uint8_t fluid_level;
 		bool lod_skirts;
 
 		uint32_t box_collision_mask;
@@ -169,6 +182,10 @@ public:
 	void set_random_tickable(bool rt);
 	bool is_random_tickable() const;
 
+#ifdef TOOLS_ENABLED
+	virtual void get_configuration_warnings(PackedStringArray &out_warnings) const;
+#endif
+
 	void set_mesh_ortho_rotation_index(int i);
 	int get_mesh_ortho_rotation_index() const;
 
@@ -180,13 +197,7 @@ public:
 
 	virtual bool is_empty() const;
 
-	struct MaterialIndexer {
-		StdVector<Ref<Material>> &materials;
-
-		unsigned int get_or_create_index(const Ref<Material> &p_material);
-	};
-
-	virtual void bake(BakedData &baked_data, bool bake_tangents, MaterialIndexer &materials) const;
+	virtual void bake(blocky::ModelBakingContext &ctx) const;
 
 	Span<const AABB> get_collision_aabbs() const {
 		return to_span(_collision_aabbs);
@@ -216,6 +227,13 @@ public:
 
 	static Ref<Mesh> make_mesh_from_baked_data(const BakedData &baked_data, bool tangents_enabled);
 
+	static Ref<Mesh> make_mesh_from_baked_data(
+			Span<const Surface> inner_surfaces,
+			Span<const FixedArray<SideSurface, MAX_SURFACES>> sides_surfaces,
+			const Color model_color,
+			const bool tangents_enabled
+	);
+
 protected:
 	bool _set(const StringName &p_name, const Variant &p_value);
 	bool _get(const StringName &p_name, Variant &r_ret) const;
@@ -242,7 +260,7 @@ private:
 		bool collision_enabled = true;
 	};
 
-	FixedArray<SurfaceParams, BakedData::Model::MAX_SURFACES> _surface_params;
+	FixedArray<SurfaceParams, MAX_SURFACES> _surface_params;
 
 protected:
 	unsigned int _surface_count = 0;
@@ -267,6 +285,15 @@ private:
 
 	LegacyProperties _legacy_properties;
 };
+
+inline bool is_empty(const FixedArray<VoxelBlockyModel::SideSurface, VoxelBlockyModel::MAX_SURFACES> &surfaces) {
+	for (const VoxelBlockyModel::SideSurface &surface : surfaces) {
+		if (surface.indices.size() > 0) {
+			return false;
+		}
+	}
+	return true;
+}
 
 } // namespace zylann::voxel
 

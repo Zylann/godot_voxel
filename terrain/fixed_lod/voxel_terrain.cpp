@@ -2415,9 +2415,7 @@ void VoxelTerrain::_bind_methods() {
 					Variant::OBJECT,
 					"material_override",
 					PROPERTY_HINT_RESOURCE_TYPE,
-					String("{0},{1}").format(
-							varray(BaseMaterial3D::get_class_static(), ShaderMaterial::get_class_static())
-					)
+					zylann::godot::MATERIAL_3D_PROPERTY_HINT_STRING
 			),
 			"set_material_override",
 			"get_material_override"

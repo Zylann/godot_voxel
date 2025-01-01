@@ -11,6 +11,8 @@
 #include "../../util/math/conv.h"
 #include "../../util/math/ortho_basis.h"
 #include "../../util/string/format.h"
+#include "blocky_material_indexer.h"
+#include "blocky_model_baking_context.h"
 #include "voxel_blocky_library.h"
 #include "voxel_blocky_model_empty.h"
 
@@ -211,7 +213,7 @@ void bake_mesh_geometry(
 		Span<const Ref<Material>> materials,
 		VoxelBlockyModel::BakedData &baked_data,
 		bool bake_tangents,
-		VoxelBlockyModel::MaterialIndexer &material_indexer,
+		blocky::MaterialIndexer &material_indexer,
 		unsigned int ortho_rotation,
 		float side_vertex_tolerance
 ) {
@@ -347,7 +349,7 @@ void bake_mesh_geometry(
 
 		VoxelBlockyModel::BakedData::Model &model = baked_data.model;
 
-		VoxelBlockyModel::BakedData::Surface &surface = model.surfaces[surface_index];
+		VoxelBlockyModel::Surface &surface = model.surfaces[surface_index];
 		Ref<Material> material = materials[surface_index];
 		// Note, an empty material counts as "The default material".
 		surface.material_id = material_indexer.get_or_create_index(material);
@@ -367,7 +369,7 @@ void bake_mesh_geometry(
 				)) {
 				// That triangle is on the face
 
-				VoxelBlockyModel::BakedData::SideSurface &side_surface = surface.sides[side];
+				VoxelBlockyModel::SideSurface &side_surface = model.sides_surfaces[side][surface_index];
 
 				int next_side_index = side_surface.positions.size();
 
@@ -443,10 +445,13 @@ void bake_mesh_geometry(
 		const VoxelBlockyModelMesh &config,
 		VoxelBlockyModel::BakedData &baked_data,
 		const bool bake_tangents,
-		VoxelBlockyModel::MaterialIndexer &material_indexer,
-		const float side_vertex_tolerance
+		blocky::MaterialIndexer &material_indexer,
+		const float side_vertex_tolerance,
+		const bool side_cutout_enabled
 ) {
 	Ref<Mesh> mesh = config.get_mesh();
+
+	baked_data.cutout_sides_enabled = side_cutout_enabled;
 
 	if (mesh.is_null()) {
 		baked_data.empty = true;
@@ -456,14 +461,13 @@ void bake_mesh_geometry(
 	// TODO Merge surfaces if they are found to have the same material (but still print a warning if their material is
 	// different or is null)
 	const uint32_t src_surface_count = mesh->get_surface_count();
-	if (src_surface_count > VoxelBlockyModel::BakedData::Model::MAX_SURFACES) {
-		ZN_PRINT_WARNING(
-				format("Mesh has more than {} surfaces, extra surfaces will not be baked.",
-					   VoxelBlockyModel::BakedData::Model::MAX_SURFACES)
-		);
+	if (mesh->get_surface_count() > int(VoxelBlockyModel::MAX_SURFACES)) {
+		ZN_PRINT_WARNING(format(
+				"Mesh has more than {} surfaces, extra surfaces will not be baked.", VoxelBlockyModel::MAX_SURFACES
+		));
 	}
 
-	const unsigned int surface_count = math::min(src_surface_count, VoxelBlockyModel::BakedData::Model::MAX_SURFACES);
+	const unsigned int surface_count = math::min(src_surface_count, VoxelBlockyModel::MAX_SURFACES);
 
 	StdVector<Ref<Material>> materials;
 	StdVector<Array> surfaces;
@@ -486,10 +490,15 @@ void bake_mesh_geometry(
 
 } // namespace
 
-void VoxelBlockyModelMesh::bake(BakedData &baked_data, bool bake_tangents, MaterialIndexer &materials) const {
+void VoxelBlockyModelMesh::bake(blocky::ModelBakingContext &ctx) const {
+	VoxelBlockyModel::BakedData &baked_data = ctx.model;
+	blocky::MaterialIndexer &materials = ctx.material_indexer;
+
 	baked_data.clear();
-	bake_mesh_geometry(*this, baked_data, bake_tangents, materials, _side_vertex_tolerance);
-	VoxelBlockyModel::bake(baked_data, bake_tangents, materials);
+	bake_mesh_geometry(
+			*this, baked_data, ctx.tangents_enabled, materials, _side_vertex_tolerance, _side_cutout_enabled
+	);
+	VoxelBlockyModel::bake(ctx);
 }
 
 bool VoxelBlockyModelMesh::is_empty() const {
@@ -508,15 +517,15 @@ Ref<Mesh> VoxelBlockyModelMesh::get_preview_mesh() const {
 	VoxelBlockyModel::BakedData baked_data;
 	baked_data.color = get_color();
 	StdVector<Ref<Material>> materials;
-	MaterialIndexer material_indexer{ materials };
-	bake_mesh_geometry(*this, baked_data, bake_tangents, material_indexer, _side_vertex_tolerance);
+	blocky::MaterialIndexer material_indexer{ materials };
+	bake_mesh_geometry(*this, baked_data, bake_tangents, material_indexer, _side_vertex_tolerance, false);
 
 	Ref<Mesh> mesh = make_mesh_from_baked_data(baked_data, bake_tangents);
 
 	// In case of earlier failure, it's possible there are no materials at all.
 	if (materials.size() > 0) {
 		for (unsigned int surface_index = 0; surface_index < baked_data.model.surface_count; ++surface_index) {
-			const BakedData::Surface &surface = baked_data.model.surfaces[surface_index];
+			const Surface &surface = baked_data.model.surfaces[surface_index];
 			Ref<Material> material = materials[surface.material_id];
 			Ref<Material> material_override = get_material_override(surface_index);
 			if (material_override.is_valid()) {
@@ -537,6 +546,14 @@ float VoxelBlockyModelMesh::get_side_vertex_tolerance() const {
 	return _side_vertex_tolerance;
 }
 
+void VoxelBlockyModelMesh::set_side_cutout_enabled(bool enabled) {
+	_side_cutout_enabled = enabled;
+}
+
+bool VoxelBlockyModelMesh::is_side_cutout_enabled() const {
+	return _side_cutout_enabled;
+}
+
 void VoxelBlockyModelMesh::_bind_methods() {
 	using Self = VoxelBlockyModelMesh;
 
@@ -545,6 +562,11 @@ void VoxelBlockyModelMesh::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("set_side_vertex_tolerance", "tolerance"), &Self::set_side_vertex_tolerance);
 	ClassDB::bind_method(D_METHOD("get_side_vertex_tolerance"), &Self::get_side_vertex_tolerance);
+
+	ClassDB::bind_method(
+			D_METHOD("set_side_cutout_enabled", "enabled"), &VoxelBlockyModelMesh::set_side_cutout_enabled
+	);
+	ClassDB::bind_method(D_METHOD("is_side_cutout_enabled"), &VoxelBlockyModelMesh::is_side_cutout_enabled);
 
 	ADD_PROPERTY(
 			PropertyInfo(Variant::OBJECT, "mesh", PROPERTY_HINT_RESOURCE_TYPE, Mesh::get_class_static()),
@@ -560,6 +582,9 @@ void VoxelBlockyModelMesh::_bind_methods() {
 			PropertyInfo(Variant::FLOAT, "side_vertex_tolerance", PROPERTY_HINT_RANGE, "0,1,0.0001"),
 			"set_side_vertex_tolerance",
 			"get_side_vertex_tolerance"
+	);
+	ADD_PROPERTY(
+			PropertyInfo(Variant::FLOAT, "side_cutout_enabled"), "set_side_cutout_enabled", "is_side_cutout_enabled"
 	);
 }
 

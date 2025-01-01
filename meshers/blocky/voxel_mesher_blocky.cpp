@@ -6,9 +6,12 @@
 #include "../../util/godot/core/packed_arrays.h"
 #include "../../util/macros.h"
 #include "../../util/math/conv.h"
+#include "../../util/math/funcs.h"
 // TODO GDX: String has no `operator+=`
+#include "../../util/containers/container_funcs.h"
 #include "../../util/godot/core/string.h"
 #include "../../util/profiling.h"
+#include "blocky_fluids_meshing_impl.h"
 
 using namespace zylann::godot;
 
@@ -16,35 +19,6 @@ namespace zylann::voxel {
 
 // Utility functions
 namespace {
-const int g_opposite_side[6] = {
-	Cube::SIDE_NEGATIVE_X, //
-	Cube::SIDE_POSITIVE_X, //
-	Cube::SIDE_POSITIVE_Y, //
-	Cube::SIDE_NEGATIVE_Y, //
-	Cube::SIDE_POSITIVE_Z, //
-	Cube::SIDE_NEGATIVE_Z //
-};
-
-inline bool is_face_visible(
-		const VoxelBlockyLibraryBase::BakedData &lib,
-		const VoxelBlockyModel::BakedData &vt,
-		uint32_t other_voxel_id,
-		int side
-) {
-	if (other_voxel_id < lib.models.size()) {
-		const VoxelBlockyModel::BakedData &other_vt = lib.models[other_voxel_id];
-		// TODO Maybe we could get rid of `empty` here and instead set `culls_neighbors` to false during baking
-		if (other_vt.empty || (other_vt.transparency_index > vt.transparency_index) || !other_vt.culls_neighbors) {
-			return true;
-		} else {
-			const unsigned int ai = vt.model.side_pattern_indices[side];
-			const unsigned int bi = other_vt.model.side_pattern_indices[g_opposite_side[side]];
-			// Patterns are not the same, and B does not occlude A
-			return (ai != bi) && !lib.get_side_pattern_occlusion(bi, ai);
-		}
-	}
-	return true;
-}
 
 inline bool contributes_to_ao(const VoxelBlockyLibraryBase::BakedData &lib, uint32_t voxel_id) {
 	if (voxel_id < lib.models.size()) {
@@ -62,14 +36,14 @@ StdVector<int> &get_tls_index_offsets() {
 } // namespace
 
 template <typename Type_T>
-void generate_blocky_mesh( //
-		StdVector<VoxelMesherBlocky::Arrays> &out_arrays_per_material, //
-		VoxelMesher::Output::CollisionSurface *collision_surface, //
-		const Span<const Type_T> type_buffer, //
-		const Vector3i block_size, //
-		const VoxelBlockyLibraryBase::BakedData &library, //
-		bool bake_occlusion, //
-		float baked_occlusion_darkness //
+void generate_blocky_mesh(
+		StdVector<VoxelMesherBlocky::Arrays> &out_arrays_per_material,
+		VoxelMesher::Output::CollisionSurface *collision_surface,
+		const Span<const Type_T> type_buffer,
+		const Vector3i block_size,
+		const VoxelBlockyLibraryBase::BakedData &library,
+		const bool bake_occlusion,
+		const float baked_occlusion_darkness
 ) {
 	// TODO Optimization: not sure if this mandates a template function. There is so much more happening in this
 	// function other than reading voxels, although reading is on the hottest path. It needs to be profiled. If
@@ -159,9 +133,10 @@ void generate_blocky_mesh( //
 				// min and max are chosen such that you can visit 1 neighbor away from the current voxel without size
 				// check
 
-				const int voxel_index = y + x * row_size + z * deck_size;
-				const int voxel_id = type_buffer[voxel_index];
+				const unsigned int voxel_index = y + x * row_size + z * deck_size;
+				const unsigned int voxel_id = type_buffer[voxel_index];
 
+				// TODO Don't assume air is 0?
 				if (voxel_id == VoxelBlockyModel::AIR_ID || !library.has_model(voxel_id)) {
 					continue;
 				}
@@ -169,10 +144,8 @@ void generate_blocky_mesh( //
 				const VoxelBlockyModel::BakedData &voxel = library.models[voxel_id];
 				const VoxelBlockyModel::BakedData::Model &model = voxel.model;
 
-				// Hybrid approach: extract cube faces and decimate those that aren't visible,
-				// and still allow voxels to have geometry that is not a cube.
-
-				// Sides
+				// Calculate visibility of sides
+				uint32_t visible_sides_mask = 0;
 				for (unsigned int side = 0; side < Cube::SIDE_COUNT; ++side) {
 					if ((model.empty_sides_mask & (1 << side)) != 0) {
 						// This side is empty
@@ -181,13 +154,93 @@ void generate_blocky_mesh( //
 
 					const uint32_t neighbor_voxel_id = type_buffer[voxel_index + side_neighbor_lut[side]];
 
-					if (!is_face_visible(library, voxel, neighbor_voxel_id, side)) {
+					// Invalid voxels are treated like air
+					if (neighbor_voxel_id < library.models.size()) {
+						const VoxelBlockyModel::BakedData &other_vt = library.models[neighbor_voxel_id];
+						if (!is_face_visible_regardless_of_shape(voxel, other_vt)) {
+							// Visibility depends on the shape
+							if (!is_face_visible_according_to_shape(library, voxel, other_vt, side)) {
+								// Completely occluded
+								continue;
+							}
+						}
+					}
+
+					visible_sides_mask |= (1 << side);
+				}
+
+				uint8_t model_surface_count = model.surface_count;
+
+				Span<const VoxelBlockyModel::Surface> model_surfaces = to_span(model.surfaces);
+
+				const FixedArray<
+						FixedArray<VoxelBlockyModel::SideSurface, VoxelBlockyModel::MAX_SURFACES>,
+						Cube::SIDE_COUNT> *model_sides_surfaces = &model.sides_surfaces;
+
+				// Hybrid approach: extract cube faces and decimate those that aren't visible,
+				// and still allow voxels to have geometry that is not a cube.
+
+				if (voxel.fluid_index != VoxelBlockyModel::NULL_FLUID_INDEX) {
+					if (!blocky::generate_fluid_model(
+								voxel,
+								type_buffer,
+								voxel_index,
+								1,
+								row_size,
+								deck_size,
+								visible_sides_mask,
+								library,
+								model_surfaces,
+								model_sides_surfaces
+						)) {
 						continue;
+					}
+					model_surface_count = 1;
+				}
+
+				// Sides
+				for (unsigned int side = 0; side < Cube::SIDE_COUNT; ++side) {
+					if ((visible_sides_mask & (1 << side)) == 0) {
+						// This side is culled
+						continue;
+					}
+
+					// By default we render the whole side if we consider it visible
+					const FixedArray<VoxelBlockyModel::SideSurface, VoxelBlockyModel::MAX_SURFACES> *side_surfaces =
+							&((*model_sides_surfaces)[side]);
+
+					// Might be only partially visible
+					if (voxel.cutout_sides_enabled) {
+						const uint32_t neighbor_voxel_id = type_buffer[voxel_index + side_neighbor_lut[side]];
+
+						// Invalid voxels are treated like air
+						if (neighbor_voxel_id < library.models.size()) {
+							const VoxelBlockyModel::BakedData &other_vt = library.models[neighbor_voxel_id];
+
+							const std::unordered_map<
+									uint32_t,
+									FixedArray<VoxelBlockyModel::SideSurface, VoxelBlockyModel::MAX_SURFACES>>
+									&cutout_side_surfaces_by_neighbor_shape = model.cutout_side_surfaces[side];
+
+							const unsigned int neighbor_shape_id =
+									other_vt.model.side_pattern_indices[Cube::g_opposite_side[side]];
+
+							// That's a hashmap lookup on a hot path. Cutting out sides like this should be used
+							// sparsely if possible.
+							// Unfortunately, use cases include certain water styles, which means oceans...
+							// Eventually we should provide another approach for these
+							auto it = cutout_side_surfaces_by_neighbor_shape.find(neighbor_shape_id);
+
+							if (it != cutout_side_surfaces_by_neighbor_shape.end()) {
+								// Use pre-cut side instead
+								side_surfaces = &it->second;
+							}
+						}
 					}
 
 					// The face is visible
 
-					int shaded_corner[8] = { 0 };
+					int8_t shaded_corner[8] = { 0 };
 
 					if (bake_occlusion) {
 						// Combinatory solution for
@@ -223,15 +276,16 @@ void generate_blocky_mesh( //
 					// Subtracting 1 because the data is padded
 					const Vector3f pos(x - 1, y - 1, z - 1);
 
-					for (unsigned int surface_index = 0; surface_index < model.surface_count; ++surface_index) {
-						const VoxelBlockyModel::BakedData::Surface &surface = model.surfaces[surface_index];
+					// TODO Move this into a function
+					for (unsigned int surface_index = 0; surface_index < model_surface_count; ++surface_index) {
+						const VoxelBlockyModel::Surface &surface = model_surfaces[surface_index];
 
 						VoxelMesherBlocky::Arrays &arrays = out_arrays_per_material[surface.material_id];
 
 						ZN_ASSERT(surface.material_id >= 0 && surface.material_id < index_offsets.size());
 						int &index_offset = index_offsets[surface.material_id];
 
-						const VoxelBlockyModel::BakedData::SideSurface &side_surface = surface.sides[side];
+						const VoxelBlockyModel::SideSurface &side_surface = (*side_surfaces)[surface_index];
 
 						const StdVector<Vector3f> &side_positions = side_surface.positions;
 						const unsigned int vertex_count = side_surface.positions.size();
@@ -290,7 +344,7 @@ void generate_blocky_mesh( //
 									float shade = 0;
 									for (unsigned int j = 0; j < 4; ++j) {
 										unsigned int corner = Cube::g_side_corners[side][j];
-										if (shaded_corner[corner]) {
+										if (shaded_corner[corner] != 0) {
 											float s = baked_occlusion_darkness *
 													static_cast<float>(shaded_corner[corner]);
 											// float k = 1.f - Cube::g_corner_position[corner].distance_to(v);
@@ -358,8 +412,8 @@ void generate_blocky_mesh( //
 				}
 
 				// Inside
-				for (unsigned int surface_index = 0; surface_index < model.surface_count; ++surface_index) {
-					const VoxelBlockyModel::BakedData::Surface &surface = model.surfaces[surface_index];
+				for (unsigned int surface_index = 0; surface_index < model_surface_count; ++surface_index) {
+					const VoxelBlockyModel::Surface &surface = model_surfaces[surface_index];
 					if (surface.positions.size() == 0) {
 						continue;
 					}
@@ -930,9 +984,9 @@ void append_side_skirts(
 
 			const Vector3f pos = side_to_block_coordinates(Vector3f(x - pad, y - pad, z - (side_sign + 1)), side);
 
-			const VoxelBlockyModel::BakedData &voxel = library.models[nv4];
+			const VoxelBlockyModel::BakedData &voxel_baked_data = library.models[nv4];
 
-			if (!voxel.lod_skirts) {
+			if (!voxel_baked_data.lod_skirts) {
 				// A typical issue is making an ocean:
 				// - Skirts will show up behind the water surface so it's not a good solution in that case.
 				// - If sea level does not line up at different LODs, then there will be LOD "cracks" anyways. I don't
@@ -946,14 +1000,17 @@ void append_side_skirts(
 				continue;
 			}
 
-			const VoxelBlockyModel::BakedData::Model &model = voxel.model;
+			const VoxelBlockyModel::BakedData::Model &model = voxel_baked_data.model;
+
+			const FixedArray<VoxelBlockyModel::SideSurface, VoxelBlockyModel::MAX_SURFACES> &side_surfaces =
+					model.sides_surfaces[side];
 
 			for (unsigned int surface_index = 0; surface_index < model.surface_count; ++surface_index) {
-				const VoxelBlockyModel::BakedData::Surface &surface = model.surfaces[surface_index];
-				const VoxelBlockyModel::BakedData::SideSurface &side_surface = surface.sides[side];
-				const unsigned int vertex_count = side_surface.positions.size();
-
+				const VoxelBlockyModel::Surface &surface = model.surfaces[surface_index];
 				VoxelMesherBlocky::Arrays &arrays = out_arrays_per_material[surface.material_id];
+
+				const VoxelBlockyModel::SideSurface &side_surface = side_surfaces[side];
+				const unsigned int vertex_count = side_surface.positions.size();
 
 				// TODO The following code is pretty much the same as the main meshing function.
 				// We should put it in common once blocky mesher features are merged (blocky fluids, shadows occluders).
@@ -998,10 +1055,8 @@ void append_side_skirts(
 					const int append_index = arrays.colors.size();
 					arrays.colors.resize(arrays.colors.size() + vertex_count);
 					Color *w = arrays.colors.data() + append_index;
-					const Color modulate_color = voxel.color;
-
 					for (unsigned int i = 0; i < vertex_count; ++i) {
-						w[i] = modulate_color;
+						w[i] = voxel_baked_data.color;
 					}
 				}
 

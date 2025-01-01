@@ -1149,9 +1149,11 @@ Vector3 VoxelLodTerrain::get_local_viewer_pos() const {
 	Vector3 pos = _update_data->state.lods[0].last_viewer_data_block_pos << get_data_block_size_pow2();
 
 	// TODO Support for multiple viewers, this is a placeholder implementation
-	VoxelEngine::get_singleton().for_each_viewer([&pos](ViewerID id, const VoxelEngine::Viewer &viewer) {
-		pos = viewer.world_position;
-	});
+	VoxelEngine::get_singleton().for_each_viewer( //
+			[&pos](ViewerID id, const VoxelEngine::Viewer &viewer) { //
+				pos = viewer.world_position;
+			}
+	);
 
 	const Transform3D world_to_local = get_global_transform().affine_inverse();
 	pos = world_to_local.xform(pos);
@@ -1770,6 +1772,10 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 	// Building collision shapes in threads efficiently is not supported.
 	ZN_PROFILE_SCOPE();
 
+	// TODO This spams in the editor upon opening a project, when more than one scene was open with a terrain.
+	// I suspect this is because one scene opens, then another opens and takes precedence. This causes the first scene
+	// to be removed from the scene tree, yet it already has started loading so all mesh update results come up too
+	// late...
 	ERR_FAIL_COND(!is_inside_tree());
 
 	CRASH_COND(_update_data == nullptr);
@@ -2057,6 +2063,7 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 
 	// This is done regardless in case a MeshInstance or collision body is created, because it will then set its
 	// position
+	// TODO Godot prevents this from working when outside of the scene tree!
 	block->set_parent_transform(get_global_transform());
 
 	if (ob.detail_textures != nullptr && visual_expected) {
@@ -3788,9 +3795,7 @@ void VoxelLodTerrain::_bind_methods() {
 					Variant::OBJECT,
 					"material",
 					PROPERTY_HINT_RESOURCE_TYPE,
-					String("{0},{1}").format(
-							varray(BaseMaterial3D::get_class_static(), ShaderMaterial::get_class_static())
-					)
+					zylann::godot::MATERIAL_3D_PROPERTY_HINT_STRING
 			),
 			"set_material",
 			"get_material"

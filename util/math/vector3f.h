@@ -58,6 +58,10 @@ inline bool is_normalized(const Vector3f &v) {
 	return Math::is_equal_approx(length_squared(v), 1, float(UNIT_EPSILON));
 }
 
+inline bool is_equal_approx(const Vector3f a, const Vector3f b) {
+	return Math::is_equal_approx(a.x, b.x) && Math::is_equal_approx(a.y, b.y) && Math::is_equal_approx(a.z, b.z);
+}
+
 } // namespace math
 
 StdStringStream &operator<<(StdStringStream &ss, const Vector3f &v);

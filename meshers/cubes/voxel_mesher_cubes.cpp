@@ -4,6 +4,7 @@
 #include "../../util/godot/classes/base_material_3d.h"
 #include "../../util/godot/classes/geometry_2d.h"
 #include "../../util/godot/classes/image.h"
+#include "../../util/godot/classes/material.h"
 #include "../../util/godot/classes/shader_material.h"
 #include "../../util/godot/core/packed_arrays.h"
 #include "../../util/godot/core/string.h"
@@ -1272,16 +1273,23 @@ void VoxelMesherCubes::_bind_methods() {
 			"get_palette"
 	);
 
-	const String material_hint =
-			String(BaseMaterial3D::get_class_static()) + "," + String(ShaderMaterial::get_class_static());
-
 	ADD_PROPERTY(
-			PropertyInfo(Variant::OBJECT, "opaque_material", PROPERTY_HINT_RESOURCE_TYPE, material_hint),
+			PropertyInfo(
+					Variant::OBJECT,
+					"opaque_material",
+					PROPERTY_HINT_RESOURCE_TYPE,
+					zylann::godot::MATERIAL_3D_PROPERTY_HINT_STRING
+			),
 			"_set_opaque_material",
 			"_get_opaque_material"
 	);
 	ADD_PROPERTY(
-			PropertyInfo(Variant::OBJECT, "transparent_material", PROPERTY_HINT_RESOURCE_TYPE, material_hint),
+			PropertyInfo(
+					Variant::OBJECT,
+					"transparent_material",
+					PROPERTY_HINT_RESOURCE_TYPE,
+					zylann::godot::MATERIAL_3D_PROPERTY_HINT_STRING
+			),
 			"_set_transparent_material",
 			"_get_transparent_material"
 	);
