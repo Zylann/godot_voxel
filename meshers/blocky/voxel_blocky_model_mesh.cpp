@@ -211,7 +211,7 @@ bool validate_indices(Span<const int> indices, int vertex_count) {
 void bake_mesh_geometry(
 		Span<const Array> surfaces,
 		Span<const Ref<Material>> materials,
-		VoxelBlockyModel::BakedData &baked_data,
+		blocky::BakedModel &baked_data,
 		bool bake_tangents,
 		blocky::MaterialIndexer &material_indexer,
 		unsigned int ortho_rotation,
@@ -347,9 +347,9 @@ void bake_mesh_geometry(
 
 		// Separate triangles belonging to faces of the cube
 
-		VoxelBlockyModel::BakedData::Model &model = baked_data.model;
+		blocky::BakedModel::Model &model = baked_data.model;
 
-		VoxelBlockyModel::Surface &surface = model.surfaces[surface_index];
+		blocky::BakedModel::Surface &surface = model.surfaces[surface_index];
 		Ref<Material> material = materials[surface_index];
 		// Note, an empty material counts as "The default material".
 		surface.material_id = material_indexer.get_or_create_index(material);
@@ -369,7 +369,7 @@ void bake_mesh_geometry(
 				)) {
 				// That triangle is on the face
 
-				VoxelBlockyModel::SideSurface &side_surface = model.sides_surfaces[side][surface_index];
+				blocky::BakedModel::SideSurface &side_surface = model.sides_surfaces[side][surface_index];
 
 				int next_side_index = side_surface.positions.size();
 
@@ -443,7 +443,7 @@ void bake_mesh_geometry(
 
 void bake_mesh_geometry(
 		const VoxelBlockyModelMesh &config,
-		VoxelBlockyModel::BakedData &baked_data,
+		blocky::BakedModel &baked_data,
 		const bool bake_tangents,
 		blocky::MaterialIndexer &material_indexer,
 		const float side_vertex_tolerance,
@@ -491,7 +491,7 @@ void bake_mesh_geometry(
 } // namespace
 
 void VoxelBlockyModelMesh::bake(blocky::ModelBakingContext &ctx) const {
-	VoxelBlockyModel::BakedData &baked_data = ctx.model;
+	blocky::BakedModel &baked_data = ctx.model;
 	blocky::MaterialIndexer &materials = ctx.material_indexer;
 
 	baked_data.clear();
@@ -514,7 +514,7 @@ bool VoxelBlockyModelMesh::is_empty() const {
 
 Ref<Mesh> VoxelBlockyModelMesh::get_preview_mesh() const {
 	const float bake_tangents = false;
-	VoxelBlockyModel::BakedData baked_data;
+	blocky::BakedModel baked_data;
 	baked_data.color = get_color();
 	StdVector<Ref<Material>> materials;
 	blocky::MaterialIndexer material_indexer{ materials };
@@ -525,7 +525,7 @@ Ref<Mesh> VoxelBlockyModelMesh::get_preview_mesh() const {
 	// In case of earlier failure, it's possible there are no materials at all.
 	if (materials.size() > 0) {
 		for (unsigned int surface_index = 0; surface_index < baked_data.model.surface_count; ++surface_index) {
-			const Surface &surface = baked_data.model.surfaces[surface_index];
+			const blocky::BakedModel::Surface &surface = baked_data.model.surfaces[surface_index];
 			Ref<Material> material = materials[surface.material_id];
 			Ref<Material> material_override = get_material_override(surface_index);
 			if (material_override.is_valid()) {

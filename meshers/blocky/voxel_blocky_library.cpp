@@ -69,7 +69,7 @@ void VoxelBlockyLibrary::bake() {
 	_baked_data.models.resize(_voxel_models.size());
 	for (uint16_t model_index = 0; model_index < _voxel_models.size(); ++model_index) {
 		Ref<VoxelBlockyModel> config = _voxel_models[model_index];
-		VoxelBlockyModel::BakedData &baked_model = _baked_data.models[model_index];
+		blocky::BakedModel &baked_model = _baked_data.models[model_index];
 
 		if (config.is_valid()) {
 			blocky::ModelBakingContext context{
@@ -84,7 +84,7 @@ void VoxelBlockyLibrary::bake() {
 
 	for (unsigned int fluid_index = 0; fluid_index < indexed_fluids.size(); ++fluid_index) {
 		const VoxelBlockyFluid &fluid = **indexed_fluids[fluid_index];
-		VoxelBlockyFluid::BakedData &baked_fluid = _baked_data.fluids[fluid_index];
+		blocky::BakedFluid &baked_fluid = _baked_data.fluids[fluid_index];
 		fluid.bake(baked_fluid, materials);
 	}
 

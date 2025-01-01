@@ -22,9 +22,9 @@ namespace zylann::voxel {
 // Utility functions
 namespace {
 
-inline bool contributes_to_ao(const VoxelBlockyLibraryBase::BakedData &lib, uint32_t voxel_id) {
+inline bool contributes_to_ao(const blocky::BakedLibrary &lib, uint32_t voxel_id) {
 	if (voxel_id < lib.models.size()) {
-		const VoxelBlockyModel::BakedData &t = lib.models[voxel_id];
+		const blocky::BakedModel &t = lib.models[voxel_id];
 		return t.contributes_to_ao;
 	}
 	return true;
@@ -43,7 +43,7 @@ void generate_blocky_mesh(
 		VoxelMesher::Output::CollisionSurface *collision_surface,
 		const Span<const Type_T> type_buffer,
 		const Vector3i block_size,
-		const VoxelBlockyLibraryBase::BakedData &library,
+		const blocky::BakedLibrary &library,
 		const bool bake_occlusion,
 		const float baked_occlusion_darkness
 ) {
@@ -139,12 +139,12 @@ void generate_blocky_mesh(
 				const unsigned int voxel_id = type_buffer[voxel_index];
 
 				// TODO Don't assume air is 0?
-				if (voxel_id == VoxelBlockyModel::AIR_ID || !library.has_model(voxel_id)) {
+				if (voxel_id == blocky::AIR_ID || !library.has_model(voxel_id)) {
 					continue;
 				}
 
-				const VoxelBlockyModel::BakedData &voxel = library.models[voxel_id];
-				const VoxelBlockyModel::BakedData::Model &model = voxel.model;
+				const blocky::BakedModel &voxel = library.models[voxel_id];
+				const blocky::BakedModel::Model &model = voxel.model;
 
 				// Calculate visibility of sides
 				uint32_t visible_sides_mask = 0;
@@ -158,7 +158,7 @@ void generate_blocky_mesh(
 
 					// Invalid voxels are treated like air
 					if (neighbor_voxel_id < library.models.size()) {
-						const VoxelBlockyModel::BakedData &other_vt = library.models[neighbor_voxel_id];
+						const blocky::BakedModel &other_vt = library.models[neighbor_voxel_id];
 						if (!is_face_visible_regardless_of_shape(voxel, other_vt)) {
 							// Visibility depends on the shape
 							if (!is_face_visible_according_to_shape(library, voxel, other_vt, side)) {
@@ -173,16 +173,15 @@ void generate_blocky_mesh(
 
 				uint8_t model_surface_count = model.surface_count;
 
-				Span<const VoxelBlockyModel::Surface> model_surfaces = to_span(model.surfaces);
+				Span<const blocky::BakedModel::Surface> model_surfaces = to_span(model.surfaces);
 
-				const FixedArray<
-						FixedArray<VoxelBlockyModel::SideSurface, VoxelBlockyModel::MAX_SURFACES>,
-						Cube::SIDE_COUNT> *model_sides_surfaces = &model.sides_surfaces;
+				const FixedArray<FixedArray<blocky::BakedModel::SideSurface, blocky::MAX_SURFACES>, Cube::SIDE_COUNT>
+						*model_sides_surfaces = &model.sides_surfaces;
 
 				// Hybrid approach: extract cube faces and decimate those that aren't visible,
 				// and still allow voxels to have geometry that is not a cube.
 
-				if (voxel.fluid_index != VoxelBlockyModel::NULL_FLUID_INDEX) {
+				if (voxel.fluid_index != blocky::NULL_FLUID_INDEX) {
 					if (!blocky::generate_fluid_model(
 								voxel,
 								type_buffer,
@@ -208,7 +207,7 @@ void generate_blocky_mesh(
 					}
 
 					// By default we render the whole side if we consider it visible
-					const FixedArray<VoxelBlockyModel::SideSurface, VoxelBlockyModel::MAX_SURFACES> *side_surfaces =
+					const FixedArray<blocky::BakedModel::SideSurface, blocky::MAX_SURFACES> *side_surfaces =
 							&((*model_sides_surfaces)[side]);
 
 					// Might be only partially visible
@@ -217,11 +216,11 @@ void generate_blocky_mesh(
 
 						// Invalid voxels are treated like air
 						if (neighbor_voxel_id < library.models.size()) {
-							const VoxelBlockyModel::BakedData &other_vt = library.models[neighbor_voxel_id];
+							const blocky::BakedModel &other_vt = library.models[neighbor_voxel_id];
 
 							const std::unordered_map<
 									uint32_t,
-									FixedArray<VoxelBlockyModel::SideSurface, VoxelBlockyModel::MAX_SURFACES>>
+									FixedArray<blocky::BakedModel::SideSurface, blocky::MAX_SURFACES>>
 									&cutout_side_surfaces_by_neighbor_shape = model.cutout_side_surfaces[side];
 
 							const unsigned int neighbor_shape_id =
@@ -280,14 +279,14 @@ void generate_blocky_mesh(
 
 					// TODO Move this into a function
 					for (unsigned int surface_index = 0; surface_index < model_surface_count; ++surface_index) {
-						const VoxelBlockyModel::Surface &surface = model_surfaces[surface_index];
+						const blocky::BakedModel::Surface &surface = model_surfaces[surface_index];
 
 						VoxelMesherBlocky::Arrays &arrays = out_arrays_per_material[surface.material_id];
 
 						ZN_ASSERT(surface.material_id >= 0 && surface.material_id < index_offsets.size());
 						int &index_offset = index_offsets[surface.material_id];
 
-						const VoxelBlockyModel::SideSurface &side_surface = (*side_surfaces)[surface_index];
+						const blocky::BakedModel::SideSurface &side_surface = (*side_surfaces)[surface_index];
 
 						const StdVector<Vector3f> &side_positions = side_surface.positions;
 						const unsigned int vertex_count = side_surface.positions.size();
@@ -415,7 +414,7 @@ void generate_blocky_mesh(
 
 				// Inside
 				for (unsigned int surface_index = 0; surface_index < model_surface_count; ++surface_index) {
-					const VoxelBlockyModel::Surface &surface = model_surfaces[surface_index];
+					const blocky::BakedModel::Surface &surface = model_surfaces[surface_index];
 					if (surface.positions.size() == 0) {
 						continue;
 					}
@@ -629,7 +628,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 	{
 		// We can only access baked data. Only this data is made for multithreaded access.
 		RWLockRead lock(params.library->get_baked_data_rw_lock());
-		const VoxelBlockyLibraryBase::BakedData &library_baked_data = params.library->get_baked_data();
+		const blocky::BakedLibrary &library_baked_data = params.library->get_baked_data();
 
 		material_count = library_baked_data.indexed_materials_count;
 
@@ -742,7 +741,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 		blocky::OccluderArrays occluder_arrays;
 
 		RWLockRead lock(params.library->get_baked_data_rw_lock());
-		const VoxelBlockyLibraryBase::BakedData &library_baked_data = params.library->get_baked_data();
+		const blocky::BakedLibrary &library_baked_data = params.library->get_baked_data();
 
 		blocky::generate_shadow_occluders(
 				occluder_arrays,
@@ -837,7 +836,7 @@ void VoxelMesherBlocky::get_configuration_warnings(PackedStringArray &out_warnin
 		return;
 	}
 
-	const VoxelBlockyLibraryBase::BakedData &baked_data = library->get_baked_data();
+	const blocky::BakedLibrary &baked_data = library->get_baked_data();
 	RWLockRead rlock(library->get_baked_data_rw_lock());
 
 	if (baked_data.models.size() == 0) {

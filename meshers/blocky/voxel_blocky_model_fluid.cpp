@@ -60,7 +60,7 @@ Ref<Mesh> VoxelBlockyModelFluid::get_preview_mesh() const {
 	StdVector<Ref<Material>> materials;
 	blocky::MaterialIndexer material_indexer{ materials };
 
-	VoxelBlockyLibraryBase::BakedData library;
+	blocky::BakedLibrary library;
 	library.models.resize(2);
 
 	const bool tangents_enabled = false;
@@ -74,8 +74,8 @@ Ref<Mesh> VoxelBlockyModelFluid::get_preview_mesh() const {
 	library.fluids.resize(1);
 	_fluid->bake(library.fluids[0], material_indexer);
 
-	Span<const VoxelBlockyModel::Surface> model_surfaces;
-	const FixedArray<FixedArray<VoxelBlockyModel::SideSurface, VoxelBlockyModel::MAX_SURFACES>, Cube::SIDE_COUNT>
+	Span<const blocky::BakedModel::Surface> model_surfaces;
+	const FixedArray<FixedArray<blocky::BakedModel::SideSurface, blocky::MAX_SURFACES>, Cube::SIDE_COUNT>
 			*model_sides_surfaces = nullptr;
 
 	blocky::generate_preview_fluid_model(library.models[1], 1, library, model_surfaces, model_sides_surfaces);
@@ -94,9 +94,9 @@ namespace {
 
 void bake_fluid_model(
 		const VoxelBlockyModelFluid &fluid_model,
-		VoxelBlockyModel::BakedData &baked_model,
+		blocky::BakedModel &baked_model,
 		StdVector<Ref<VoxelBlockyFluid>> &indexed_fluids,
-		StdVector<VoxelBlockyFluid::BakedData> &baked_fluids,
+		StdVector<blocky::BakedFluid> &baked_fluids,
 		blocky::MaterialIndexer &materials
 ) {
 	Ref<VoxelBlockyFluid> fluid = fluid_model.get_fluid();
@@ -127,7 +127,7 @@ void bake_fluid_model(
 		baked_fluids.resize(fluid_index + 1);
 	}
 
-	VoxelBlockyFluid::BakedData &baked_fluid = baked_fluids[fluid_index];
+	blocky::BakedFluid &baked_fluid = baked_fluids[fluid_index];
 
 	// TODO Allow more than one model with the same level?
 	const unsigned int level = fluid_model.get_level();

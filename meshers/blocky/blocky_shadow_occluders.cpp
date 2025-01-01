@@ -1,4 +1,6 @@
 #include "blocky_shadow_occluders.h"
+#include "../../util/math/conv.h"
+#include "voxel_mesher_blocky.h"
 
 namespace zylann::voxel::blocky {
 
@@ -175,7 +177,7 @@ void generate_occluders_geometry(
 template <typename TModelID>
 void classify_chunk_occlusion_from_voxels(
 		Span<const TModelID> id_buffer,
-		const VoxelBlockyLibraryBase::BakedData &baked_data,
+		const blocky::BakedLibrary &baked_data,
 		const Vector3i block_size,
 		const Vector3i min,
 		const Vector3i max,
@@ -191,15 +193,15 @@ void classify_chunk_occlusion_from_voxels(
 		static inline bool is_fully_occluded(
 				const TModelID v0,
 				const TModelID v1,
-				const VoxelBlockyLibraryBase::BakedData &baked_data,
+				const blocky::BakedLibrary &baked_data,
 				const uint8_t side0_mask,
 				const uint8_t side1_mask
 		) {
 			if (v0 >= baked_data.models.size() || v1 >= baked_data.models.size()) {
 				return false;
 			}
-			const VoxelBlockyModel::BakedData &b0 = baked_data.models[v0];
-			const VoxelBlockyModel::BakedData &b1 = baked_data.models[v1];
+			const blocky::BakedModel &b0 = baked_data.models[v0];
+			const blocky::BakedModel &b1 = baked_data.models[v1];
 			if (b0.empty || b1.empty) {
 				return false;
 			}
@@ -222,7 +224,7 @@ void classify_chunk_occlusion_from_voxels(
 				Span<const TModelID> id_buffer,
 				const Vector3i block_size,
 				const int sign,
-				const VoxelBlockyLibraryBase::BakedData &baked_data
+				const blocky::BakedLibrary &baked_data
 		) {
 			const Cube::SideAxis side0 = sign < 0 ? Cube::SIDE_NEGATIVE_X : Cube::SIDE_POSITIVE_X;
 			const Cube::SideAxis side1 = sign < 0 ? Cube::SIDE_POSITIVE_X : Cube::SIDE_NEGATIVE_X;
@@ -252,7 +254,7 @@ void classify_chunk_occlusion_from_voxels(
 				Span<const TModelID> id_buffer,
 				const Vector3i block_size,
 				const int sign,
-				const VoxelBlockyLibraryBase::BakedData &baked_data
+				const blocky::BakedLibrary &baked_data
 		) {
 			const Cube::SideAxis side0 = sign < 0 ? Cube::SIDE_NEGATIVE_Y : Cube::SIDE_POSITIVE_Y;
 			const Cube::SideAxis side1 = sign < 0 ? Cube::SIDE_POSITIVE_Y : Cube::SIDE_NEGATIVE_Y;
@@ -282,7 +284,7 @@ void classify_chunk_occlusion_from_voxels(
 				Span<const TModelID> id_buffer,
 				const Vector3i block_size,
 				const int sign,
-				const VoxelBlockyLibraryBase::BakedData &baked_data
+				const blocky::BakedLibrary &baked_data
 		) {
 			const Cube::SideAxis side0 = sign < 0 ? Cube::SIDE_NEGATIVE_Z : Cube::SIDE_POSITIVE_Z;
 			const Cube::SideAxis side1 = sign < 0 ? Cube::SIDE_POSITIVE_Z : Cube::SIDE_NEGATIVE_Z;
@@ -329,7 +331,7 @@ void generate_shadow_occluders(
 		const Span<const uint8_t> id_buffer_raw,
 		const VoxelBuffer::Depth depth,
 		const Vector3i block_size,
-		const VoxelBlockyLibraryBase::BakedData &baked_data,
+		const blocky::BakedLibrary &baked_data,
 		const uint8_t enabled_mask
 ) {
 	ZN_PROFILE_SCOPE();

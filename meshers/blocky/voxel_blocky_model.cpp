@@ -221,7 +221,7 @@ void VoxelBlockyModel::bake(blocky::ModelBakingContext &ctx) const {
 	// TODO That's a bit iffy, design something better?
 	// The following logic must run after derived classes, should not be called directly
 
-	VoxelBlockyModel::BakedData &baked_data = ctx.model;
+	blocky::BakedModel &baked_data = ctx.model;
 	blocky::MaterialIndexer &materials = ctx.material_indexer;
 
 	// baked_data.contributes_to_ao is set by the side culling phase
@@ -233,7 +233,7 @@ void VoxelBlockyModel::bake(blocky::ModelBakingContext &ctx) const {
 	baked_data.box_collision_aabbs = _collision_aabbs;
 	baked_data.lod_skirts = _lod_skirts;
 
-	BakedData::Model &model = baked_data.model;
+	blocky::BakedModel::Model &model = baked_data.model;
 
 	// Note: mesh rotation is not implemented here, it is done in derived classes.
 
@@ -251,7 +251,7 @@ void VoxelBlockyModel::bake(blocky::ModelBakingContext &ctx) const {
 		if (surface_index < _surface_count) {
 			const SurfaceParams &surface_params = _surface_params[surface_index];
 
-			Surface &surface = model.surfaces[surface_index];
+			blocky::BakedModel::Surface &surface = model.surfaces[surface_index];
 
 			if (surface_params.material_override.is_valid()) {
 				const unsigned int material_index = materials.get_or_create_index(surface_params.material_override);
@@ -349,7 +349,10 @@ Ref<Mesh> VoxelBlockyModel::get_preview_mesh() const {
 	return Ref<Mesh>();
 }
 
-Ref<Mesh> VoxelBlockyModel::make_mesh_from_baked_data(const BakedData &baked_data, const bool tangents_enabled) {
+Ref<Mesh> VoxelBlockyModel::make_mesh_from_baked_data(
+		const blocky::BakedModel &baked_data,
+		const bool tangents_enabled
+) {
 	return make_mesh_from_baked_data(
 			to_span(baked_data.model.surfaces),
 			to_span(baked_data.model.sides_surfaces),
@@ -359,8 +362,8 @@ Ref<Mesh> VoxelBlockyModel::make_mesh_from_baked_data(const BakedData &baked_dat
 }
 
 Ref<Mesh> VoxelBlockyModel::make_mesh_from_baked_data(
-		Span<const Surface> inner_surfaces,
-		Span<const FixedArray<SideSurface, MAX_SURFACES>> sides_surfaces,
+		Span<const blocky::BakedModel::Surface> inner_surfaces,
+		Span<const FixedArray<blocky::BakedModel::SideSurface, blocky::MAX_SURFACES>> sides_surfaces,
 		const Color model_color,
 		const bool tangents_enabled
 ) {
@@ -368,13 +371,13 @@ Ref<Mesh> VoxelBlockyModel::make_mesh_from_baked_data(
 	mesh.instantiate();
 
 	for (unsigned int surface_index = 0; surface_index < inner_surfaces.size(); ++surface_index) {
-		const Surface &surface = inner_surfaces[surface_index];
+		const blocky::BakedModel::Surface &surface = inner_surfaces[surface_index];
 
 		// Get vertex and index count in the surface
 		unsigned int vertex_count = surface.positions.size();
 		unsigned int index_count = surface.indices.size();
-		for (const FixedArray<SideSurface, MAX_SURFACES> &side_surfaces : sides_surfaces) {
-			const SideSurface &side_surface = side_surfaces[surface_index];
+		for (const FixedArray<blocky::BakedModel::SideSurface, blocky::MAX_SURFACES> &side_surfaces : sides_surfaces) {
+			const blocky::BakedModel::SideSurface &side_surface = side_surfaces[surface_index];
 			vertex_count += side_surface.positions.size();
 			index_count += side_surface.indices.size();
 		}
@@ -438,7 +441,7 @@ Ref<Mesh> VoxelBlockyModel::make_mesh_from_baked_data(
 		}
 
 		for (unsigned int side = 0; side < sides_surfaces.size(); ++side) {
-			const SideSurface &side_surface = sides_surfaces[side][surface_index];
+			const blocky::BakedModel::SideSurface &side_surface = sides_surfaces[side][surface_index];
 			Span<const Vector3f> side_positions = to_span(side_surface.positions);
 			Span<const Vector2f> side_uvs = to_span(side_surface.uvs);
 			Span<const int> side_indices = to_span(side_surface.indices);

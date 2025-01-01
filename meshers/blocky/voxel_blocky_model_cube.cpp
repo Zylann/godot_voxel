@@ -146,12 +146,12 @@ void make_cube_side_tangents(StdVector<float> &tangents, const unsigned int side
 namespace {
 
 void make_cube_sides_vertices_tangents(
-		Span<FixedArray<VoxelBlockyModel::SideSurface, 2>> sides_surfaces,
+		Span<FixedArray<blocky::BakedModel::SideSurface, blocky::MAX_SURFACES>> sides_surfaces,
 		const float height,
 		const bool bake_tangents
 ) {
 	for (unsigned int side = 0; side < Cube::SIDE_COUNT; ++side) {
-		VoxelBlockyModel::SideSurface &side_surface = sides_surfaces[side][0];
+		blocky::BakedModel::SideSurface &side_surface = sides_surfaces[side][0];
 		make_cube_side_vertices(side_surface.positions, side, height);
 		make_cube_side_indices(side_surface.indices, side);
 		if (bake_tangents) {
@@ -172,18 +172,18 @@ void add(Span<Vector3f> vecs, Vector3f a) {
 }
 
 void rotate_ortho(
-		FixedArray<FixedArray<VoxelBlockyModel::SideSurface, VoxelBlockyModel::MAX_SURFACES>, Cube::SIDE_COUNT>
+		FixedArray<FixedArray<blocky::BakedModel::SideSurface, VoxelBlockyModel::MAX_SURFACES>, Cube::SIDE_COUNT>
 				&sides_surfaces,
 		const unsigned int ortho_rotation_index
 ) {
 	const math::OrthoBasis ortho_basis = math::get_ortho_basis_from_index(ortho_rotation_index);
 	const Basis3f basis(to_vec3f(ortho_basis.x), to_vec3f(ortho_basis.y), to_vec3f(ortho_basis.z));
 
-	FixedArray<FixedArray<VoxelBlockyModel::SideSurface, VoxelBlockyModel::MAX_SURFACES>, Cube::SIDE_COUNT>
+	FixedArray<FixedArray<blocky::BakedModel::SideSurface, VoxelBlockyModel::MAX_SURFACES>, Cube::SIDE_COUNT>
 			rotated_sides_surfaces;
 
 	for (unsigned int side = 0; side < Cube::SIDE_COUNT; ++side) {
-		FixedArray<VoxelBlockyModel::SideSurface, VoxelBlockyModel::MAX_SURFACES> &surfaces = sides_surfaces[side];
+		FixedArray<blocky::BakedModel::SideSurface, VoxelBlockyModel::MAX_SURFACES> &surfaces = sides_surfaces[side];
 
 		FixedArray<Vector3f, 4> normals;
 		for (Vector3f &n : normals) {
@@ -191,7 +191,7 @@ void rotate_ortho(
 		}
 
 		unsigned int surface_index = 0;
-		for (VoxelBlockyModel::SideSurface &surface : surfaces) {
+		for (blocky::BakedModel::SideSurface &surface : surfaces) {
 			// Move mesh to origin for easier rotation, since the baked mesh spans 0..1 instead of -0.5..0.5
 			add(to_span(surface.positions), Vector3f(-0.5));
 			rotate_mesh_arrays(to_span(surface.positions), to_span(normals), to_span(surface.tangents), basis);
@@ -208,7 +208,7 @@ void rotate_ortho(
 
 void bake_cube_geometry(
 		const VoxelBlockyModelCube &config,
-		VoxelBlockyModel::BakedData &baked_data,
+		blocky::BakedModel &baked_data,
 		Vector2i p_atlas_size,
 		blocky::MaterialIndexer &material_indexer,
 		bool bake_tangents
@@ -217,7 +217,7 @@ void bake_cube_geometry(
 
 	baked_data.model.surface_count = 1;
 
-	VoxelBlockyModel::Surface &surface = baked_data.model.surfaces[0];
+	blocky::BakedModel::Surface &surface = baked_data.model.surfaces[0];
 	// The only way to specify materials in this model is via "material overrides", since there is no base mesh.
 	// Even if none are specified, we should at least index the "empty" material.
 	surface.material_id = material_indexer.get_or_create_index(config.get_material_override(0));
@@ -249,7 +249,7 @@ void bake_cube_geometry(
 	const Vector2f s = Vector2f(1.0f) / atlas_size;
 
 	for (unsigned int side = 0; side < Cube::SIDE_COUNT; ++side) {
-		VoxelBlockyModel::SideSurface &side_surface = baked_data.model.sides_surfaces[side][0];
+		blocky::BakedModel::SideSurface &side_surface = baked_data.model.sides_surfaces[side][0];
 		StdVector<Vector2f> &uvs = side_surface.uvs;
 		uvs.resize(4);
 
@@ -270,7 +270,7 @@ void bake_cube_geometry(
 } // namespace
 
 void VoxelBlockyModelCube::bake(blocky::ModelBakingContext &ctx) const {
-	VoxelBlockyModel::BakedData &baked_data = ctx.model;
+	blocky::BakedModel &baked_data = ctx.model;
 
 	baked_data.clear();
 
@@ -285,7 +285,7 @@ bool VoxelBlockyModelCube::is_empty() const {
 Ref<Mesh> VoxelBlockyModelCube::get_preview_mesh() const {
 	const bool bake_tangents = false;
 
-	VoxelBlockyModel::BakedData baked_data;
+	blocky::BakedModel baked_data;
 	baked_data.color = get_color();
 	StdVector<Ref<Material>> materials;
 	blocky::MaterialIndexer material_indexer{ materials };

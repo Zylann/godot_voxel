@@ -1,17 +1,16 @@
 #ifndef VOXEL_BLOCKY_FLUIDS_H
 #define VOXEL_BLOCKY_FLUIDS_H
 
-#include "voxel_blocky_library.h"
-#include "voxel_blocky_model.h"
+#include "blocky_baked_library.h"
 
 namespace zylann::voxel::blocky {
 
 void generate_preview_fluid_model(
-		const VoxelBlockyModel::BakedData &model,
+		const blocky::BakedModel &model,
 		const uint16_t model_id,
-		const VoxelBlockyLibraryBase::BakedData &library,
-		Span<const VoxelBlockyModel::Surface> &out_model_surfaces,
-		const FixedArray<FixedArray<VoxelBlockyModel::SideSurface, VoxelBlockyModel::MAX_SURFACES>, Cube::SIDE_COUNT> *
+		const blocky::BakedLibrary &library,
+		Span<const blocky::BakedModel::Surface> &out_model_surfaces,
+		const FixedArray<FixedArray<blocky::BakedModel::SideSurface, blocky::MAX_SURFACES>, Cube::SIDE_COUNT> *
 				&out_model_sides_surfaces
 );
 

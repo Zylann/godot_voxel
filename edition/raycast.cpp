@@ -170,7 +170,7 @@ Ref<VoxelRaycastResult> raycast_blocky(
 ) {
 	struct RaycastPredicateBlocky {
 		const VoxelData &data;
-		const VoxelBlockyLibraryBase::BakedData &baked_data;
+		const blocky::BakedLibrary &baked_data;
 		const uint32_t collision_mask;
 		const Vector3 p_from;
 		const Vector3 p_to;
@@ -184,7 +184,7 @@ Ref<VoxelRaycastResult> raycast_blocky(
 				return false;
 			}
 
-			const VoxelBlockyModel::BakedData &model = baked_data.models[v];
+			const blocky::BakedModel &model = baked_data.models[v];
 			if ((model.box_collision_mask & collision_mask) == 0) {
 				return false;
 			}

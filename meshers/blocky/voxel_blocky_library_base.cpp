@@ -6,6 +6,7 @@
 #include "../../util/math/vector4f.h"
 #include "../../util/profiling.h"
 // #include "../../util/string/format.h" // DEBUG
+#include "voxel_blocky_model.h"
 #include "voxel_mesher_blocky.h"
 #include <bitset>
 
@@ -227,7 +228,7 @@ void to_3d(Span<const Vector2f> src, Span<Vector3f> dst, unsigned int side) {
 }
 
 void get_side_geometry_2d_all_surfaces(
-		const VoxelBlockyModel::BakedData::Model &model,
+		const blocky::BakedModel::Model &model,
 		int side,
 		StdVector<Vector2f> &out_vertices,
 		StdVector<int32_t> &out_indices
@@ -235,11 +236,10 @@ void get_side_geometry_2d_all_surfaces(
 	unsigned int vertex_count = 0;
 	unsigned int index_count = 0;
 
-	const FixedArray<VoxelBlockyModel::SideSurface, VoxelBlockyModel::MAX_SURFACES> &side_surfaces =
-			model.sides_surfaces[side];
+	const FixedArray<blocky::BakedModel::SideSurface, blocky::MAX_SURFACES> &side_surfaces = model.sides_surfaces[side];
 
 	for (unsigned int surface_index = 0; surface_index < model.surface_count; ++surface_index) {
-		const VoxelBlockyModel::SideSurface &side_surface = side_surfaces[surface_index];
+		const blocky::BakedModel::SideSurface &side_surface = side_surfaces[surface_index];
 		vertex_count += side_surface.positions.size();
 		index_count += side_surface.indices.size();
 	}
@@ -251,7 +251,7 @@ void get_side_geometry_2d_all_surfaces(
 	unsigned int index_start = 0;
 
 	for (unsigned int surface_index = 0; surface_index < model.surface_count; ++surface_index) {
-		const VoxelBlockyModel::SideSurface &side_surface = side_surfaces[surface_index];
+		const blocky::BakedModel::SideSurface &side_surface = side_surfaces[surface_index];
 
 		Span<const Vector3f> src_vertices = to_span(side_surface.positions);
 		Span<const int32_t> src_indices = to_span(side_surface.indices);
@@ -407,10 +407,10 @@ void interpolate_attributes_assume_no_seams(
 }
 
 void generate_cutout_side_surface(
-		const VoxelBlockyModel::SideSurface &side_surface,
+		const blocky::BakedModel::SideSurface &side_surface,
 		unsigned int side,
 		Box2f other_quad,
-		VoxelBlockyModel::SideSurface &cut_side_surface
+		blocky::BakedModel::SideSurface &cut_side_surface
 ) {
 	// Arguably, some of this could be done once up front.
 	// Not done currently because what we really want here is a full-blown mesh boolean operation. The quad stuff is
@@ -477,11 +477,7 @@ void generate_cutout_side_surface(
 	cut_side_surface.tangents = std::move(cut_tangents);
 }
 
-void generate_model_cutout_sides(
-		VoxelBlockyModel::BakedData &model_data,
-		uint16_t model_id,
-		VoxelBlockyLibraryBase::BakedData &lib
-) {
+void generate_model_cutout_sides(blocky::BakedModel &model_data, uint16_t model_id, blocky::BakedLibrary &lib) {
 	// Iterating other models instead of the shape matrix because there is often a limited subset of models we have
 	// to compute cutouts with. Typically, this is used with transparent neighbors that cull our own faces
 	for (uint16_t other_model_id = 0; other_model_id < lib.models.size(); ++other_model_id) {
@@ -489,7 +485,7 @@ void generate_model_cutout_sides(
 			continue;
 		}
 
-		VoxelBlockyModel::BakedData &other_model_data = lib.models[other_model_id];
+		blocky::BakedModel &other_model_data = lib.models[other_model_id];
 
 		if (!other_model_data.culls_neighbors) {
 			continue;
@@ -506,8 +502,8 @@ void generate_model_cutout_sides(
 
 			// The face is partially or totally visible, depending on the neighbor's shape. Compute its cutout?
 
-			VoxelBlockyModel::BakedData::Model &model = model_data.model;
-			const VoxelBlockyModel::BakedData::Model &other_model = other_model_data.model;
+			blocky::BakedModel::Model &model = model_data.model;
+			const blocky::BakedModel::Model &other_model = other_model_data.model;
 
 			const uint16_t other_side = Cube::g_opposite_side[side];
 
@@ -530,13 +526,13 @@ void generate_model_cutout_sides(
 
 			const uint32_t other_side_shape_id = other_model.side_pattern_indices[other_side];
 
-			FixedArray<VoxelBlockyModel::SideSurface, VoxelBlockyModel::MAX_SURFACES> cut_surfaces;
+			FixedArray<blocky::BakedModel::SideSurface, blocky::MAX_SURFACES> cut_surfaces;
 
-			const FixedArray<VoxelBlockyModel::SideSurface, VoxelBlockyModel::MAX_SURFACES> &side_surfaces =
+			const FixedArray<blocky::BakedModel::SideSurface, blocky::MAX_SURFACES> &side_surfaces =
 					model.sides_surfaces[side];
 
 			for (unsigned int surface_index = 0; surface_index < model.surface_count; ++surface_index) {
-				const VoxelBlockyModel::SideSurface &side_surface = side_surfaces[surface_index];
+				const blocky::BakedModel::SideSurface &side_surface = side_surfaces[surface_index];
 				generate_cutout_side_surface(side_surface, side, other_quad, cut_surfaces[surface_index]);
 			}
 
@@ -550,11 +546,11 @@ void generate_model_cutout_sides(
 	}
 }
 
-void generate_library_cutout_sides(VoxelBlockyLibraryBase::BakedData &lib) {
+void generate_library_cutout_sides(blocky::BakedLibrary &lib) {
 	ZN_PROFILE_SCOPE();
 
 	for (uint16_t model_id = 0; model_id < lib.models.size(); ++model_id) {
-		VoxelBlockyModel::BakedData &model_data = lib.models[model_id];
+		blocky::BakedModel &model_data = lib.models[model_id];
 
 		if (!model_data.cutout_sides_enabled) {
 			continue;
@@ -653,21 +649,21 @@ void rasterize_side( //
 	}
 }
 
-void rasterize_side_all_surfaces( //
-		const VoxelBlockyModel::BakedData &model_data, //
-		const unsigned int side_index, //
-		std::bitset<RASTER_SIZE * RASTER_SIZE> &bitmap //
+void rasterize_side_all_surfaces(
+		const blocky::BakedModel &model_data,
+		const unsigned int side_index,
+		std::bitset<RASTER_SIZE * RASTER_SIZE> &bitmap
 ) {
-	const FixedArray<VoxelBlockyModel::SideSurface, VoxelBlockyModel::MAX_SURFACES> &side_surfaces =
+	const FixedArray<blocky::BakedModel::SideSurface, blocky::MAX_SURFACES> &side_surfaces =
 			model_data.model.sides_surfaces[side_index];
 	// For each surface (they are all combined for simplicity, though it is also a limitation)
 	for (unsigned int surface_index = 0; surface_index < model_data.model.surface_count; ++surface_index) {
-		const VoxelBlockyModel::SideSurface &side = side_surfaces[surface_index];
+		const blocky::BakedModel::SideSurface &side = side_surfaces[surface_index];
 		rasterize_side(to_span(side.positions), to_span(side.indices), side_index, bitmap);
 	}
 }
 
-void generate_side_culling_matrix(VoxelBlockyLibraryBase::BakedData &baked_data) {
+void generate_side_culling_matrix(blocky::BakedLibrary &baked_data) {
 	ZN_PROFILE_SCOPE();
 	// When two blocky voxels are next to each other, they share a side.
 	// Geometry of either side can be culled away if covered by the other,
@@ -692,7 +688,7 @@ void generate_side_culling_matrix(VoxelBlockyLibraryBase::BakedData &baked_data)
 
 	// Gather patterns for each model
 	for (uint16_t type_id = 0; type_id < baked_data.models.size(); ++type_id) {
-		VoxelBlockyModel::BakedData &model_data = baked_data.models[type_id];
+		blocky::BakedModel &model_data = baked_data.models[type_id];
 		model_data.contributes_to_ao = true;
 
 		// For each side

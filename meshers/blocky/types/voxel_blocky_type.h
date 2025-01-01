@@ -64,13 +64,13 @@ public:
 	Ref<VoxelBlockyModel> get_variant(const VariantKey &key) const;
 
 	void bake(
-			StdVector<VoxelBlockyModel::BakedData> &out_models,
+			StdVector<blocky::BakedModel> &out_models,
 			StdVector<VariantKey> &out_keys,
 			blocky::MaterialIndexer &material_indexer,
 			const VariantKey *specific_key,
 			bool bake_tangents,
 			StdVector<Ref<VoxelBlockyFluid>> &indexed_fluids,
-			StdVector<VoxelBlockyFluid::BakedData> &baked_fluids
+			StdVector<blocky::BakedFluid> &baked_fluids
 	) const;
 
 #ifdef TOOLS_ENABLED

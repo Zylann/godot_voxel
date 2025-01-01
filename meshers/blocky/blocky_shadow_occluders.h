@@ -6,8 +6,7 @@
 #include "../../util/math/vector3f.h"
 #include "../../util/math/vector3i.h"
 #include "../../util/profiling.h"
-#include "voxel_blocky_library_base.h"
-#include "voxel_mesher_blocky.h"
+#include "blocky_baked_library.h"
 
 namespace zylann::voxel::blocky {
 
@@ -21,7 +20,7 @@ void generate_shadow_occluders(
 		const Span<const uint8_t> id_buffer_raw,
 		const VoxelBuffer::Depth depth,
 		const Vector3i block_size,
-		const VoxelBlockyLibraryBase::BakedData &baked_data,
+		const blocky::BakedLibrary &baked_data,
 		const uint8_t enabled_mask
 );
 

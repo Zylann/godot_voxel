@@ -10,6 +10,7 @@
 #include "../../util/math/ortho_basis.h"
 #include "../../util/math/vector2f.h"
 #include "../../util/math/vector3f.h"
+#include "blocky_baked_library.h"
 
 namespace zylann::voxel {
 
@@ -30,109 +31,6 @@ public:
 	static const uint16_t AIR_ID = 0;
 	static const uint8_t NULL_FLUID_INDEX = 255;
 	static constexpr uint32_t MAX_SURFACES = 2;
-
-	struct SideSurface {
-		StdVector<Vector3f> positions;
-		StdVector<Vector2f> uvs;
-		StdVector<int> indices;
-		StdVector<float> tangents;
-		// Normals aren't stored because they are assumed to be the same for the whole side
-
-		void clear() {
-			positions.clear();
-			uvs.clear();
-			indices.clear();
-			tangents.clear();
-		}
-	};
-
-	struct Surface {
-		// Inside part of the model.
-		StdVector<Vector3f> positions;
-		StdVector<Vector3f> normals;
-		StdVector<Vector2f> uvs;
-		StdVector<int> indices;
-		StdVector<float> tangents;
-
-		uint32_t material_id = 0;
-		bool collision_enabled = true;
-
-		void clear() {
-			positions.clear();
-			normals.clear();
-			uvs.clear();
-			indices.clear();
-			tangents.clear();
-		}
-	};
-
-	// Plain data strictly used by the mesher.
-	// It becomes distinct because it's going to be used in a multithread environment,
-	// while the configuration that produced the data can be changed by the user at any time.
-	// Also, it is lighter than Godot resources.
-	struct BakedData {
-		struct Model {
-			// A model can have up to 2 materials.
-			// If more is needed or profiling tells better, we could change it to a vector?
-			FixedArray<Surface, MAX_SURFACES> surfaces;
-			// Model sides: they are separated because this way we can occlude them easily.
-			FixedArray<FixedArray<SideSurface, MAX_SURFACES>, Cube::SIDE_COUNT> sides_surfaces;
-			unsigned int surface_count = 0;
-			// Cached information to check this case early.
-			// Bits are indexed with the Cube::Side enum.
-			uint8_t empty_sides_mask = 0;
-			uint8_t full_sides_mask = 0;
-
-			// Tells what is the "shape" of each side in order to cull them quickly when in contact with neighbors.
-			// Side patterns are still determined based on a combination of all surfaces.
-			FixedArray<uint32_t, Cube::SIDE_COUNT> side_pattern_indices;
-			// Side culling is all or nothing.
-			// If we want to support partial culling with baked models (needed if you do fluids with "staircase"
-			// models), we would need another lookup table that given two side patterns, outputs alternate geometry data
-			// that is pre-cut. This would require a lot more data and precomputations though, and the cases in
-			// which this is needed could make use of different approaches such as procedural generation of the
-			// geometry.
-
-			// [side][neighbor_shape_id] => pre-cut SideSurfaces
-			// Surface to attempt using when a side passes the visibility test and cutout is enabled.
-			// If the SideSurface from this container is empty or not found, fallback on full surface
-			FixedArray<std::unordered_map<uint32_t, FixedArray<SideSurface, MAX_SURFACES>>, Cube::SIDE_COUNT>
-					cutout_side_surfaces;
-			// TODO ^ Make it UniquePtr? That array takes space for what is essentially a niche feature
-
-			void clear() {
-				for (Surface &surface : surfaces) {
-					surface.clear();
-				}
-				for (FixedArray<SideSurface, MAX_SURFACES> &side_surfaces : sides_surfaces) {
-					for (SideSurface &side_surface : side_surfaces) {
-						side_surface.clear();
-					}
-				}
-			}
-		};
-
-		Model model;
-		Color color;
-		uint8_t transparency_index;
-		bool culls_neighbors;
-		bool contributes_to_ao;
-		bool empty = true;
-		bool is_random_tickable;
-		bool is_transparent;
-		bool cutout_sides_enabled = false;
-		uint8_t fluid_index = NULL_FLUID_INDEX;
-		uint8_t fluid_level;
-		bool lod_skirts;
-
-		uint32_t box_collision_mask;
-		StdVector<AABB> box_collision_aabbs;
-
-		inline void clear() {
-			model.clear();
-			empty = true;
-		}
-	};
 
 	VoxelBlockyModel();
 
@@ -225,11 +123,11 @@ public:
 	void rotate_90(math::Axis axis, bool clockwise);
 	void rotate_ortho(math::OrthoBasis ortho_basis);
 
-	static Ref<Mesh> make_mesh_from_baked_data(const BakedData &baked_data, bool tangents_enabled);
+	static Ref<Mesh> make_mesh_from_baked_data(const blocky::BakedModel &baked_data, bool tangents_enabled);
 
 	static Ref<Mesh> make_mesh_from_baked_data(
-			Span<const Surface> inner_surfaces,
-			Span<const FixedArray<SideSurface, MAX_SURFACES>> sides_surfaces,
+			Span<const blocky::BakedModel::Surface> inner_surfaces,
+			Span<const FixedArray<blocky::BakedModel::SideSurface, MAX_SURFACES>> sides_surfaces,
 			const Color model_color,
 			const bool tangents_enabled
 	);
@@ -286,8 +184,8 @@ private:
 	LegacyProperties _legacy_properties;
 };
 
-inline bool is_empty(const FixedArray<VoxelBlockyModel::SideSurface, VoxelBlockyModel::MAX_SURFACES> &surfaces) {
-	for (const VoxelBlockyModel::SideSurface &surface : surfaces) {
+inline bool is_empty(const FixedArray<blocky::BakedModel::SideSurface, blocky::MAX_SURFACES> &surfaces) {
+	for (const blocky::BakedModel::SideSurface &surface : surfaces) {
 		if (surface.indices.size() > 0) {
 			return false;
 		}

@@ -3,6 +3,7 @@
 
 #include "../../util/containers/std_vector.h"
 #include "voxel_blocky_library_base.h"
+#include "voxel_blocky_model.h"
 
 namespace zylann::voxel {
 

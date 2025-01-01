@@ -55,7 +55,7 @@ void append_side_skirts(
 		const int size_x,
 		const int size_y,
 		const VoxelBlockyModel::Side side,
-		const VoxelBlockyLibraryBase::BakedData &library,
+		const blocky::BakedLibrary &library,
 		StdVector<VoxelMesherBlocky::Arrays> &out_arrays_per_material
 ) {
 	constexpr TModelID AIR = 0;
@@ -102,7 +102,7 @@ void append_side_skirts(
 
 			const Vector3f pos = side_to_block_coordinates(Vector3f(x - pad, y - pad, z - (side_sign + 1)), side);
 
-			const VoxelBlockyModel::BakedData &voxel_baked_data = library.models[nv4];
+			const blocky::BakedModel &voxel_baked_data = library.models[nv4];
 
 			if (!voxel_baked_data.lod_skirts) {
 				// A typical issue is making an ocean:
@@ -118,16 +118,16 @@ void append_side_skirts(
 				continue;
 			}
 
-			const VoxelBlockyModel::BakedData::Model &model = voxel_baked_data.model;
+			const blocky::BakedModel::Model &model = voxel_baked_data.model;
 
-			const FixedArray<VoxelBlockyModel::SideSurface, VoxelBlockyModel::MAX_SURFACES> &side_surfaces =
+			const FixedArray<blocky::BakedModel::SideSurface, blocky::MAX_SURFACES> &side_surfaces =
 					model.sides_surfaces[side];
 
 			for (unsigned int surface_index = 0; surface_index < model.surface_count; ++surface_index) {
-				const VoxelBlockyModel::Surface &surface = model.surfaces[surface_index];
+				const blocky::BakedModel::Surface &surface = model.surfaces[surface_index];
 				VoxelMesherBlocky::Arrays &arrays = out_arrays_per_material[surface.material_id];
 
-				const VoxelBlockyModel::SideSurface &side_surface = side_surfaces[side];
+				const blocky::BakedModel::SideSurface &side_surface = side_surfaces[side];
 				const unsigned int vertex_count = side_surface.positions.size();
 
 				// TODO The following code is pretty much the same as the main meshing function.
@@ -197,7 +197,7 @@ void append_skirts(
 		Span<const TModelID> buffer,
 		const Vector3i size,
 		StdVector<VoxelMesherBlocky::Arrays> &out_arrays_per_material,
-		const VoxelBlockyLibraryBase::BakedData &library
+		const blocky::BakedLibrary &library
 ) {
 	ZN_PROFILE_SCOPE();
 

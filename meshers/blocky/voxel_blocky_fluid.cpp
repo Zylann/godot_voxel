@@ -29,11 +29,7 @@ bool VoxelBlockyFluid::get_dip_when_flowing_down() const {
 
 namespace {
 
-void bake_fluid(
-		const VoxelBlockyFluid &fluid,
-		VoxelBlockyFluid::BakedData &baked_fluid,
-		blocky::MaterialIndexer &materials
-) {
+void bake_fluid(const VoxelBlockyFluid &fluid, blocky::BakedFluid &baked_fluid, blocky::MaterialIndexer &materials) {
 	// for (const uint16_t model_index : baked_fluid.level_model_indices) {
 	// 	if (model_index == VoxelBlockyModel::AIR_ID) {
 	// 		ZN_PRINT_ERROR("Fluid is missing some levels");
@@ -51,7 +47,7 @@ void bake_fluid(
 
 	// TODO This part shouldn't be necessary? it's the same for every fluid
 	for (unsigned int side_index = 0; side_index < Cube::SIDE_COUNT; ++side_index) {
-		VoxelBlockyFluid::Surface &surface = baked_fluid.side_surfaces[side_index];
+		blocky::BakedFluid::Surface &surface = baked_fluid.side_surfaces[side_index];
 		make_cube_side_vertices(surface.positions, side_index, 1.f);
 		// make_cube_side_tangents(ss.tangents, side_index);
 		make_cube_side_indices(surface.indices, side_index);
@@ -60,7 +56,7 @@ void bake_fluid(
 
 } // namespace
 
-void VoxelBlockyFluid::bake(VoxelBlockyFluid::BakedData &baked_fluid, blocky::MaterialIndexer &materials) const {
+void VoxelBlockyFluid::bake(blocky::BakedFluid &baked_fluid, blocky::MaterialIndexer &materials) const {
 	bake_fluid(*this, baked_fluid, materials);
 }
 

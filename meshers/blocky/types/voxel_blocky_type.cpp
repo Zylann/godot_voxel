@@ -317,13 +317,13 @@ math::OrthoBasis get_baking_rotation_ortho_basis(
 } // namespace
 
 void VoxelBlockyType::bake(
-		StdVector<VoxelBlockyModel::BakedData> &out_models,
+		StdVector<blocky::BakedModel> &out_models,
 		StdVector<VariantKey> &out_keys,
 		blocky::MaterialIndexer &material_indexer,
 		const VariantKey *specific_key,
 		bool bake_tangents,
 		StdVector<Ref<VoxelBlockyFluid>> &indexed_fluids,
-		StdVector<VoxelBlockyFluid::BakedData> &baked_fluids
+		StdVector<blocky::BakedFluid> &baked_fluids
 ) const {
 	ZN_PROFILE_SCOPE();
 
@@ -355,10 +355,10 @@ void VoxelBlockyType::bake(
 
 	unsigned int first_model_index = out_models.size();
 	out_models.resize(out_models.size() + keys.size());
-	Span<VoxelBlockyModel::BakedData> baked_models(&out_models[first_model_index], keys.size());
+	Span<blocky::BakedModel> baked_models(&out_models[first_model_index], keys.size());
 
 	for (unsigned int variant_index = 0; variant_index < baked_models.size(); ++variant_index) {
-		VoxelBlockyModel::BakedData &baked_model = baked_models[variant_index];
+		blocky::BakedModel &baked_model = baked_models[variant_index];
 		const VariantKey &key = keys[variant_index];
 
 		Ref<VoxelBlockyModel> model = get_variant(key);
@@ -423,7 +423,7 @@ void VoxelBlockyType::bake(
 	}
 
 	if (_base_model.is_valid()) {
-		for (VoxelBlockyModel::BakedData &baked_model : baked_models) {
+		for (blocky::BakedModel &baked_model : baked_models) {
 			baked_model.color *= _base_model->get_color();
 			baked_model.transparency_index = _base_model->get_transparency_index();
 			baked_model.box_collision_mask |= _base_model->get_collision_mask();
@@ -503,7 +503,7 @@ void VoxelBlockyType::get_configuration_warnings(PackedStringArray &out_warnings
 #endif
 
 Ref<Mesh> VoxelBlockyType::get_preview_mesh(const VariantKey &key) const {
-	StdVector<VoxelBlockyModel::BakedData> baked_models;
+	StdVector<blocky::BakedModel> baked_models;
 	StdVector<Ref<Material>> materials;
 	blocky::MaterialIndexer material_indexer{ materials };
 	StdVector<VariantKey> keys;
@@ -511,12 +511,12 @@ Ref<Mesh> VoxelBlockyType::get_preview_mesh(const VariantKey &key) const {
 	// Assuming tangents are needed, which might not always be the case, but we won't waste much for just a preview
 	const bool require_tangents = true;
 	StdVector<Ref<VoxelBlockyFluid>> indexed_fluids;
-	StdVector<VoxelBlockyFluid::BakedData> baked_fluids;
+	StdVector<blocky::BakedFluid> baked_fluids;
 
 	bake(baked_models, keys, material_indexer, &key, require_tangents, indexed_fluids, baked_fluids);
 
 	ZN_ASSERT_RETURN_V(baked_models.size() == 1, Ref<Mesh>());
-	const VoxelBlockyModel::BakedData &baked_model = baked_models[0];
+	const blocky::BakedModel &baked_model = baked_models[0];
 	Ref<Mesh> mesh = VoxelBlockyModel::make_mesh_from_baked_data(baked_model, require_tangents);
 
 	for (unsigned int surface_index = 0; surface_index < baked_model.model.surface_count; ++surface_index) {

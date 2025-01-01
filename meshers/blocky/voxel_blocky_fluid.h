@@ -6,6 +6,7 @@
 #include "../../util/containers/std_vector.h"
 #include "../../util/godot/classes/resource.h"
 #include "../../util/math/vector3f.h"
+#include "blocky_baked_library.h"
 #include <cstdint>
 
 ZN_GODOT_FORWARD_DECLARE(class Material);
@@ -40,32 +41,6 @@ public:
 		FLOW_STATE_COUNT
 	};
 
-	struct Surface {
-		StdVector<Vector3f> positions;
-		StdVector<int> indices;
-		StdVector<float> tangents;
-		// Normals aren't stored because they are assumed to be the same for the whole side
-
-		void clear() {
-			positions.clear();
-			indices.clear();
-			tangents.clear();
-		}
-	};
-
-	struct BakedData {
-		static constexpr float TOP_HEIGHT = 0.9375f;
-		static constexpr float BOTTOM_HEIGHT = 0.0625f;
-
-		FixedArray<Surface, Cube::SIDE_COUNT> side_surfaces;
-
-		// StdVector<uint16_t> level_model_indices;
-		uint32_t material_id = 0;
-		uint8_t max_level = 1;
-		bool dip_when_flowing_down = false;
-		// uint32_t box_collision_mask = 0;
-	};
-
 	VoxelBlockyFluid();
 
 	void set_material(Ref<Material> material);
@@ -74,7 +49,7 @@ public:
 	void set_dip_when_flowing_down(bool enable);
 	bool get_dip_when_flowing_down() const;
 
-	void bake(BakedData &baked_fluid, blocky::MaterialIndexer &materials) const;
+	void bake(blocky::BakedFluid &baked_fluid, blocky::MaterialIndexer &materials) const;
 
 private:
 	static void _bind_methods();
