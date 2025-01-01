@@ -1772,6 +1772,10 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 	// Building collision shapes in threads efficiently is not supported.
 	ZN_PROFILE_SCOPE();
 
+	// TODO This spams in the editor upon opening a project, when more than one scene was open with a terrain.
+	// I suspect this is because one scene opens, then another opens and takes precedence. This causes the first scene
+	// to be removed from the scene tree, yet it already has started loading so all mesh update results come up too
+	// late...
 	ERR_FAIL_COND(!is_inside_tree());
 
 	CRASH_COND(_update_data == nullptr);
@@ -2059,6 +2063,7 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 
 	// This is done regardless in case a MeshInstance or collision body is created, because it will then set its
 	// position
+	// TODO Godot prevents this from working when outside of the scene tree!
 	block->set_parent_transform(get_global_transform());
 
 	if (ob.detail_textures != nullptr && visual_expected) {
