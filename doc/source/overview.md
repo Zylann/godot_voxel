@@ -83,7 +83,6 @@ There are several ways to produce polygons from voxel data, and the engine provi
 - [VoxelMesherCubes](api/VoxelMesherCubes.md): the color of voxels is used to produce colored cubes. This is the simplest way to polygonize voxels.
 - [VoxelMesherBlocky](api/VoxelMesherBlocky.md): the type of voxels is used to batch together meshes corresponding to that type. This can also use cubes, but any shape will do if custom meshes are provided. This is a similar technique as the one used in Minecraft, and has a wide range of options.
 - [VoxelMesherTransvoxel](api/VoxelMesherTransvoxel.md): instead of making cubes, this one uses the SDF value to produce a smooth surface, based on the [Transvoxel](https://transvoxel.org/) algorithm. It can also produce transition meshes, which is useful to stitch together two meshes of different level of detail.
-- [VoxelMesherDMC](api/VoxelMesherDMC.md): variant using dual marching cubes to produce a smooth surface, [as explained in these articles](https://www.volume-gfx.com/volume-rendering/). However this implementation is no longer maintained.
 
 
 Putting it together with nodes
