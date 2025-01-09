@@ -71,6 +71,14 @@ inline Vector2i min(const Vector2i a, const Vector2i b) {
 	return Vector2i(min(a.x, b.x), min(a.y, b.y));
 }
 
+inline Vector2i max(const Vector2i a, const Vector2i b) {
+	return Vector2i(max(a.x, b.x), max(a.y, b.y));
+}
+
+inline Vector2i clamp(const Vector2i v, const Vector2i minv, const Vector2i maxv) {
+	return Vector2i(clamp(v.x, minv.x, maxv.x), clamp(v.y, minv.y, maxv.y));
+}
+
 } // namespace math
 
 StdStringStream &operator<<(StdStringStream &ss, const Vector2i &v);

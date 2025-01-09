@@ -4,10 +4,12 @@
 #include "../../constants/voxel_string_names.h"
 #include "../../util/containers/container_funcs.h"
 #include "../../util/godot/core/array.h"
+#include "blocky_atlas_indexer.h"
 #include "blocky_fluids.h"
 #include "blocky_material_indexer.h"
 #include "blocky_model_baking_context.h"
 #include "voxel_blocky_library_base.h"
+#include "voxel_blocky_texture_atlas.h"
 
 namespace zylann::voxel {
 
@@ -66,8 +68,15 @@ Ref<Mesh> VoxelBlockyModelFluid::get_preview_mesh() const {
 	const bool tangents_enabled = false;
 
 	StdVector<Ref<VoxelBlockyFluid>> indexed_fluids;
+	blocky::AtlasIndexer atlas_indexer(library.tiles);
+
 	blocky::ModelBakingContext model_baking_context{
-		library.models[1], tangents_enabled, material_indexer, indexed_fluids, library.fluids
+		library.models[1], //
+		tangents_enabled, //
+		material_indexer, //
+		indexed_fluids, //
+		library.fluids, //
+		atlas_indexer //
 	};
 	bake(model_baking_context);
 

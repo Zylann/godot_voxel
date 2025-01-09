@@ -99,6 +99,10 @@ extern const Vector3i g_ordered_moore_area_3d[MOORE_AREA_3D_COUNT];
 
 Cube::Side dir_to_side(Vector3i d);
 
+inline uint32_t side_to_axis(uint32_t side) {
+	return side >> 1;
+}
+
 } // namespace zylann::voxel::Cube
 
 #endif // CUBE_TABLES_H

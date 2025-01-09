@@ -11,6 +11,7 @@
 #include "../../util/containers/container_funcs.h"
 #include "../../util/godot/core/string.h"
 #include "../../util/profiling.h"
+#include "blocky_connected_textures.h"
 #include "blocky_fluids_meshing_impl.h"
 #include "blocky_lod_skirts.h"
 #include "blocky_shadow_occluders.h"
@@ -40,6 +41,7 @@ void generate_mesh(
 		VoxelMesher::Output::CollisionSurface *collision_surface,
 		const Span<const Type_T> type_buffer,
 		const Vector3i block_size,
+		const Vector3i block_world_origin,
 		const BakedLibrary &library,
 		const bool bake_occlusion,
 		const float baked_occlusion_darkness
@@ -122,6 +124,17 @@ void generate_mesh(
 
 	corner_neighbor_lut[Cube::CORNER_TOP_FRONT_LEFT] = side_neighbor_lut[Cube::SIDE_TOP] +
 			side_neighbor_lut[Cube::SIDE_FRONT] + side_neighbor_lut[Cube::SIDE_LEFT];
+
+	std::array<std::array<uint32_t, 2>, 3> tile_jumps_per_side_axis;
+	// X axis
+	tile_jumps_per_side_axis[0][0] = deck_size;
+	tile_jumps_per_side_axis[0][1] = 1;
+	// Y axis
+	tile_jumps_per_side_axis[1][0] = row_size;
+	tile_jumps_per_side_axis[1][1] = deck_size;
+	// Z axis
+	tile_jumps_per_side_axis[2][0] = row_size;
+	tile_jumps_per_side_axis[2][1] = 1;
 
 	// uint64_t time_prep = Time::get_singleton()->get_ticks_usec() - time_before;
 	// time_before = Time::get_singleton()->get_ticks_usec();
@@ -207,7 +220,84 @@ void generate_mesh(
 					const FixedArray<BakedModel::SideSurface, MAX_SURFACES> *side_surfaces =
 							&((*model_sides_surfaces)[side]);
 
+					const uint16_t tile_index = model.side_tiles[side];
+					if (tile_index != std::numeric_limits<uint16_t>::max()) {
+						// Note: tiles we handle here are expected to be non-single.
+						// Single tiles may bake into regular surfaces.
+
+						// Tile orientation:
+						// - -X, +X, -Z, +Z sides: Y up, X right
+						// - +Y side: Y is -Z, X is +X
+						// - -Y side: Y is -Z, X is +X
+
+						const BakedModel::SideSurface &src_surface = (*side_surfaces)[0];
+
+						// TODO Candidate for temp allocator
+						static thread_local FixedArray<BakedModel::SideSurface, MAX_SURFACES> tls_tile_surfaces;
+						BakedModel::SideSurface &dst_surface = tls_tile_surfaces[0];
+						dst_surface.indices = src_surface.indices;
+						dst_surface.positions = src_surface.positions;
+						dst_surface.tangents = src_surface.tangents;
+						dst_surface.uvs = src_surface.uvs;
+
+						side_surfaces = &tls_tile_surfaces;
+						model_surface_count = 1;
+
+						const BakedLibrary::Tile &tile = library.tiles[tile_index];
+						Vector2i ltpos;
+
+						switch (tile.type) {
+							case TILE_SINGLE:
+								// Not expected
+								break;
+
+							case TILE_BLOB9: {
+								const uint32_t axis = Cube::side_to_axis(side);
+								const uint32_t tile_jump_x = tile_jumps_per_side_axis[axis][0];
+								const uint32_t tile_jump_y = tile_jumps_per_side_axis[axis][1];
+								const uint32_t connection_mask = fetch_connection_mask(
+										type_buffer, voxel_id, voxel_index, tile_jump_x, tile_jump_y
+								);
+								const uint32_t case_index = get_case_index_from_connection_mask(connection_mask);
+								ltpos.x = case_index % BLOB9_DEFAULT_LAYOUT_SIZE_X;
+								ltpos.y = case_index / BLOB9_DEFAULT_LAYOUT_SIZE_X;
+							} break;
+
+							case TILE_RANDOM: {
+								uint32_t h = zylann::hash_djb2_one_32(x);
+								h = zylann::hash_djb2_one_32(y, h);
+								h = zylann::hash_djb2_one_32(z, h);
+								ltpos.x = h % tile.group_size_x;
+								ltpos.y = h / tile.group_size_y;
+								// TODO Random rotation? Not sure if I want to support this in the end.
+								// That would also only work well with square tiles.
+							} break;
+
+							case TILE_EXTENDED: {
+								ltpos.x = (block_world_origin.x + x) % tile.group_size_x;
+								ltpos.y = (block_world_origin.y + y) / tile.group_size_y;
+							} break;
+
+							default:
+#ifdef DEV_ENABLED
+								ZN_CRASH_MSG("Unhandled tile type");
+#endif
+								break;
+						}
+
+						// Source UVs are expected to match the first tile. We then offset to the selected tile.
+						// We could assume UVs are always the same (a full square), which could save memory, but that
+						// would prevent support for faces of different sizes or cropped tiles. Maybe that could be
+						// improved.
+						// However, we don't really support rotation here.
+						const Vector2f uv_offset = to_vec2f(ltpos) * tile.atlas_uv_step;
+						for (Vector2f &uv : dst_surface.uvs) {
+							uv += uv_offset;
+						}
+					}
+
 					// Might be only partially visible
+					// NOTE: Tiles don't support this. We don't expect this to be true for them.
 					if (voxel.cutout_sides_enabled) {
 						const uint32_t neighbor_voxel_id = type_buffer[voxel_index + side_neighbor_lut[side]];
 
@@ -640,6 +730,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 						collision_surface,
 						raw_channel,
 						block_size,
+						input.origin_in_voxels,
 						library_baked_data,
 						params.bake_occlusion,
 						baked_occlusion_darkness
@@ -656,6 +747,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 						collision_surface,
 						model_ids,
 						block_size,
+						input.origin_in_voxels,
 						library_baked_data,
 						params.bake_occlusion,
 						baked_occlusion_darkness

@@ -2,6 +2,7 @@
 #define VOXEL_BLOCKY_MODEL_CUBE_H
 
 #include "voxel_blocky_model.h"
+#include "voxel_blocky_texture_atlas.h"
 
 namespace zylann::voxel {
 
@@ -20,11 +21,17 @@ public:
 
 	void set_tile(VoxelBlockyModel::Side side, Vector2i pos);
 
+	void set_atlas_tile_id(VoxelBlockyModel::Side side, int tile_id);
+	int get_atlas_tile_id(VoxelBlockyModel::Side side) const;
+
 	void set_height(float h);
 	float get_height() const;
 
 	void set_atlas_size_in_tiles(Vector2i s);
 	Vector2i get_atlas_size_in_tiles() const;
+
+	void set_atlas(Ref<VoxelBlockyTextureAtlas> atlas);
+	Ref<VoxelBlockyTextureAtlas> get_atlas() const;
 
 	void bake(blocky::ModelBakingContext &ctx) const override;
 	bool is_empty() const override;
@@ -41,7 +48,11 @@ private:
 
 	static void _bind_methods();
 
+	Ref<VoxelBlockyTextureAtlas> _atlas;
+
+	// TODO `tiles` is now a legacy name, should be `manual_tile_positions`
 	FixedArray<Vector2i, Cube::SIDE_COUNT> _tiles;
+	FixedArray<int, Cube::SIDE_COUNT> _atlas_tiles;
 	float _height = 1.f;
 
 	Vector2i _atlas_size_in_tiles;

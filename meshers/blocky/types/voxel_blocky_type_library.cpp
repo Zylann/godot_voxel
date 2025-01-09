@@ -9,6 +9,7 @@
 #include "../../../util/godot/core/typed_array.h"
 #include "../../../util/profiling.h"
 #include "../../../util/string/format.h"
+#include "../blocky_atlas_indexer.h"
 #include "../blocky_material_indexer.h"
 #include "../voxel_blocky_model_cube.h"
 
@@ -55,6 +56,7 @@ void VoxelBlockyTypeLibrary::bake() {
 	StdVector<VoxelBlockyType::VariantKey> keys;
 	blocky::MaterialIndexer material_indexer{ _indexed_materials };
 	StdVector<Ref<VoxelBlockyFluid>> indexed_fluids;
+	blocky::AtlasIndexer atlas_indexer(_baked_data.tiles);
 
 	_baked_data.models.resize(_id_map.size());
 
@@ -63,7 +65,14 @@ void VoxelBlockyTypeLibrary::bake() {
 		ZN_ASSERT_CONTINUE_MSG(type.is_valid(), format("{} at index {} is null", ZN_CLASS_NAME_C(VoxelBlockyType), i));
 
 		type->bake(
-				baked_models, keys, material_indexer, nullptr, get_bake_tangents(), indexed_fluids, _baked_data.fluids
+				baked_models,
+				keys,
+				material_indexer,
+				nullptr,
+				get_bake_tangents(),
+				indexed_fluids,
+				_baked_data.fluids,
+				atlas_indexer
 		);
 
 		VoxelID id;

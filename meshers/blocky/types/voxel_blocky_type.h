@@ -9,6 +9,12 @@
 
 namespace zylann::voxel {
 
+namespace blocky {
+struct AtlasIndexer;
+}
+
+class VoxelBlockyTextureAtlas;
+
 // High-level representation of a "type" of voxel for use with `VoxelMesherBlocky` and `VoxelBlockyTypeLibrary`.
 // One type can represent multiple possible values in voxel data, corresponding to states of that type (such as
 // rotation, connections, on/off etc).
@@ -70,7 +76,8 @@ public:
 			const VariantKey *specific_key,
 			bool bake_tangents,
 			StdVector<Ref<VoxelBlockyFluid>> &indexed_fluids,
-			StdVector<blocky::BakedFluid> &baked_fluids
+			StdVector<blocky::BakedFluid> &baked_fluids,
+			blocky::AtlasIndexer &atlas_indexer
 	) const;
 
 #ifdef TOOLS_ENABLED

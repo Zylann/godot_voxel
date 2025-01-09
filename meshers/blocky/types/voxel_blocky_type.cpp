@@ -6,6 +6,7 @@
 #include "../../../util/godot/core/array.h"
 #include "../../../util/godot/core/string.h"
 #include "../../../util/godot/core/typed_array.h"
+#include "../voxel_blocky_texture_atlas.h"
 #ifdef ZN_GODOT_EXTENSION
 // For `MAKE_RESOURCE_TYPE_HINT`
 #include "../../../util/godot/classes/object.h"
@@ -13,6 +14,7 @@
 #include "../../../util/math/ortho_basis.h"
 #include "../../../util/profiling.h"
 #include "../../../util/string/format.h"
+#include "../blocky_atlas_indexer.h"
 #include "../blocky_material_indexer.h"
 #include "../blocky_model_baking_context.h"
 #include "../voxel_blocky_library_base.h"
@@ -323,7 +325,8 @@ void VoxelBlockyType::bake(
 		const VariantKey *specific_key,
 		bool bake_tangents,
 		StdVector<Ref<VoxelBlockyFluid>> &indexed_fluids,
-		StdVector<blocky::BakedFluid> &baked_fluids
+		StdVector<blocky::BakedFluid> &baked_fluids,
+		blocky::AtlasIndexer &atlas_indexer
 ) const {
 	ZN_PROFILE_SCOPE();
 
@@ -366,7 +369,12 @@ void VoxelBlockyType::bake(
 		// Note, model indices are not known at this stage. They will be known later when we update the ID map.
 
 		blocky::ModelBakingContext model_baking_context{
-			baked_model, bake_tangents, material_indexer, indexed_fluids, baked_fluids
+			baked_model, //
+			bake_tangents, //
+			material_indexer, //
+			indexed_fluids, //
+			baked_fluids, //
+			atlas_indexer //
 		};
 
 		if (model.is_valid()) {
@@ -512,8 +520,10 @@ Ref<Mesh> VoxelBlockyType::get_preview_mesh(const VariantKey &key) const {
 	const bool require_tangents = true;
 	StdVector<Ref<VoxelBlockyFluid>> indexed_fluids;
 	StdVector<blocky::BakedFluid> baked_fluids;
+	StdVector<blocky::BakedLibrary::Tile> tiles;
+	blocky::AtlasIndexer atlas_indexer(tiles);
 
-	bake(baked_models, keys, material_indexer, &key, require_tangents, indexed_fluids, baked_fluids);
+	bake(baked_models, keys, material_indexer, &key, require_tangents, indexed_fluids, baked_fluids, atlas_indexer);
 
 	ZN_ASSERT_RETURN_V(baked_models.size() == 1, Ref<Mesh>());
 	const blocky::BakedModel &baked_model = baked_models[0];

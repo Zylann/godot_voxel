@@ -465,14 +465,14 @@ void generate_cutout_side_surface(
 		cut_tangents.resize(cut_vertices_2d.size() * 4);
 	}
 	// Recover vertex attributes by interpolating over the original geometry
-	interpolate_attributes_assume_no_seams( //
-			to_span(vertices_2d), //
-			to_span(side_surface.indices), //
-			to_span(side_surface.uvs), //
-			to_span(side_surface.tangents), //
-			to_span(cut_vertices_2d), //
-			to_span(cut_uvs), //
-			to_span(cut_tangents) //
+	interpolate_attributes_assume_no_seams(
+			to_span(vertices_2d),
+			to_span(side_surface.indices),
+			to_span(side_surface.uvs),
+			to_span(side_surface.tangents),
+			to_span(cut_vertices_2d),
+			to_span(cut_uvs),
+			to_span(cut_tangents)
 	);
 
 	if (side == Cube::SIDE_NEGATIVE_X || side == Cube::SIDE_NEGATIVE_Y || side == Cube::SIDE_POSITIVE_Z) {

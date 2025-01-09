@@ -2,12 +2,14 @@
 #define VOXEL_BLOCKY_MODEL_BAKING_CONTEXT_H
 
 #include "../../util/containers/std_vector.h"
+#include "blocky_baked_library.h"
 #include "voxel_blocky_fluid.h"
 
 namespace zylann::voxel {
 namespace blocky {
 
 struct MaterialIndexer;
+struct AtlasIndexer;
 
 struct ModelBakingContext {
 	BakedModel &model;
@@ -16,6 +18,7 @@ struct ModelBakingContext {
 	MaterialIndexer &material_indexer;
 	StdVector<Ref<VoxelBlockyFluid>> &indexed_fluids;
 	StdVector<BakedFluid> &baked_fluids;
+	AtlasIndexer &atlas_indexer;
 };
 
 } // namespace blocky

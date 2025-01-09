@@ -12,6 +12,7 @@
 #include "../../util/math/funcs.h"
 #include "../../util/profiling.h"
 #include "../../util/string/format.h"
+#include "blocky_atlas_indexer.h"
 #include "blocky_material_indexer.h"
 #include "blocky_model_baking_context.h"
 #include "voxel_blocky_model_cube.h"
@@ -65,6 +66,8 @@ void VoxelBlockyLibrary::bake() {
 	blocky::MaterialIndexer materials{ _indexed_materials };
 
 	StdVector<Ref<VoxelBlockyFluid>> indexed_fluids;
+	StdVector<Ref<VoxelBlockyTextureAtlas>> atlases;
+	blocky::AtlasIndexer atlas_indexer(_baked_data.tiles);
 
 	_baked_data.models.resize(_voxel_models.size());
 	for (uint16_t model_index = 0; model_index < _voxel_models.size(); ++model_index) {
@@ -73,7 +76,12 @@ void VoxelBlockyLibrary::bake() {
 
 		if (config.is_valid()) {
 			blocky::ModelBakingContext context{
-				baked_model, _bake_tangents, materials, indexed_fluids, _baked_data.fluids
+				baked_model, //
+				_bake_tangents, //
+				materials, //
+				indexed_fluids, //
+				_baked_data.fluids, //
+				atlas_indexer //
 			};
 			config->bake(context);
 

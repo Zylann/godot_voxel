@@ -31,6 +31,7 @@
 #include "meshers/blocky/voxel_blocky_model_empty.h"
 #include "meshers/blocky/voxel_blocky_model_fluid.h"
 #include "meshers/blocky/voxel_blocky_model_mesh.h"
+#include "meshers/blocky/voxel_blocky_texture_atlas.h"
 #include "meshers/blocky/voxel_mesher_blocky.h"
 #include "meshers/cubes/voxel_mesher_cubes.h"
 #include "meshers/transvoxel/voxel_mesher_transvoxel.h"
@@ -62,6 +63,7 @@
 #include "terrain/voxel_save_completion_tracker.h"
 #include "terrain/voxel_viewer.h"
 #include "util/godot/check_ref_ownership.h"
+#include "util/godot/pan_zoom_container.h"
 #include "util/macros.h"
 #include "util/noise/fast_noise_lite/fast_noise_lite.h"
 #include "util/noise/fast_noise_lite/fast_noise_lite_gradient.h"
@@ -91,6 +93,7 @@
 #ifdef TOOLS_ENABLED
 
 #include "editor/blocky_library/voxel_blocky_library_editor_plugin.h"
+#include "editor/blocky_texture_atlas/voxel_blocky_texture_atlas_editor_plugin.h"
 #include "editor/fast_noise_lite/fast_noise_lite_editor_plugin.h"
 #include "editor/graph/graph_nodes_doc_tool.h"
 #include "editor/graph/voxel_graph_editor_node_preview.h"
@@ -106,6 +109,13 @@
 #include "editor/terrain/voxel_terrain_editor_plugin.h"
 #include "editor/vox/vox_editor_plugin.h"
 #include "util/godot/classes/os.h"
+#include "util/godot/inspector/inspector.h"
+#include "util/godot/inspector/inspector_property.h"
+#include "util/godot/inspector/inspector_property_bool.h"
+#include "util/godot/inspector/inspector_property_enum.h"
+#include "util/godot/inspector/inspector_property_string.h"
+#include "util/godot/inspector/inspector_property_unhandled.h"
+#include "util/godot/inspector/inspector_property_vector2i.h"
 
 #ifdef VOXEL_ENABLE_FAST_NOISE_2
 #include "editor/fast_noise_2/fast_noise_2_editor_plugin.h"
@@ -123,6 +133,9 @@
 #include "editor/blocky_library/types/voxel_blocky_type_viewer.h"
 #include "editor/blocky_library/voxel_blocky_model_editor_inspector_plugin.h"
 #include "editor/blocky_library/voxel_blocky_model_viewer.h"
+#include "editor/blocky_library/voxel_blocky_tile_editor_property.h"
+#include "editor/blocky_library/voxel_blocky_tile_selection_inspector_plugin.h"
+#include "editor/blocky_texture_atlas/voxel_blocky_texture_atlas_editor.h"
 #include "editor/fast_noise_lite/fast_noise_lite_editor_inspector_plugin.h"
 #include "editor/fast_noise_lite/fast_noise_lite_viewer.h"
 #include "editor/graph/editor_property_text_change_on_submit.h"
@@ -220,6 +233,7 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		// classes
 		ClassDB::register_class<VoxelBlockyModel>();
 
+		ClassDB::register_class<VoxelBlockyTextureAtlas>();
 		ClassDB::register_class<VoxelBlockyModelCube>();
 		ClassDB::register_class<VoxelBlockyModelMesh>();
 		ClassDB::register_class<VoxelBlockyModelEmpty>();
@@ -407,6 +421,14 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_internal_class<ZN_EditorPropertyAABBMinMax>();
 		ClassDB::register_internal_class<ZN_EditorPropertyTextChangeOnSubmit>();
 		ClassDB::register_internal_class<ZN_ControlSizer>();
+		ClassDB::register_internal_class<ZN_PanZoomContainer>();
+		ClassDB::register_internal_class<ZN_Inspector>();
+		ClassDB::register_internal_class<ZN_InspectorProperty>();
+		ClassDB::register_internal_class<ZN_InspectorPropertyBool>();
+		ClassDB::register_internal_class<ZN_InspectorPropertyVector2i>();
+		ClassDB::register_internal_class<ZN_InspectorPropertyEnum>();
+		ClassDB::register_internal_class<ZN_InspectorPropertyString>();
+		ClassDB::register_internal_class<ZN_InspectorPropertyUnhandled>();
 
 		ClassDB::register_internal_class<ZN_FastNoiseLiteEditorPlugin>();
 		ClassDB::register_internal_class<ZN_FastNoiseLiteEditorInspectorPlugin>();
@@ -431,6 +453,10 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_internal_class<VoxelBlockyTypeLibraryEditorInspectorPlugin>();
 		ClassDB::register_internal_class<VoxelBlockyTypeAttributeCombinationSelector>();
 		ClassDB::register_internal_class<VoxelBlockyTypeVariantListEditor>();
+		ClassDB::register_internal_class<VoxelBlockyTextureAtlasEditor>();
+		ClassDB::register_internal_class<VoxelBlockyTextureAtlasEditorPlugin>();
+		ClassDB::register_internal_class<VoxelBlockyTileSelectionInspectorPlugin>();
+		ClassDB::register_internal_class<VoxelBlockyTileEditorProperty>();
 
 		ClassDB::register_internal_class<magica::VoxelVoxEditorPlugin>();
 		ClassDB::register_internal_class<magica::VoxelVoxMeshImporter>();
@@ -476,6 +502,7 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		EditorPlugins::add_by_type<VoxelInstancerEditorPlugin>();
 		EditorPlugins::add_by_type<VoxelMeshSDFEditorPlugin>();
 		EditorPlugins::add_by_type<VoxelBlockyLibraryEditorPlugin>();
+		EditorPlugins::add_by_type<VoxelBlockyTextureAtlasEditorPlugin>();
 		EditorPlugins::add_by_type<VoxelGeneratorMultipassEditorPlugin>();
 #ifdef VOXEL_ENABLE_FAST_NOISE_2
 		EditorPlugins::add_by_type<FastNoise2EditorPlugin>();
