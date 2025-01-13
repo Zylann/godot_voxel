@@ -40,6 +40,18 @@ public:
 		MAX_CHANNELS = zylann::voxel::VoxelBuffer::MAX_CHANNELS,
 	};
 
+	enum ChannelMask {
+		CHANNEL_TYPE_BIT = 1 << CHANNEL_TYPE,
+		CHANNEL_SDF_BIT = 1 << CHANNEL_SDF,
+		CHANNEL_COLOR_BIT = 1 << CHANNEL_COLOR,
+		CHANNEL_INDICES_BIT = 1 << CHANNEL_INDICES,
+		CHANNEL_WEIGHTS_BIT = 1 << CHANNEL_WEIGHTS,
+		CHANNEL_DATA5_BIT = 1 << CHANNEL_DATA5,
+		CHANNEL_DATA6_BIT = 1 << CHANNEL_DATA6,
+		CHANNEL_DATA7_BIT = 1 << CHANNEL_DATA7,
+		ALL_CHANNELS_MASK = (1 << MAX_CHANNELS) - 1,
+	};
+
 	// TODO use C++17 inline to initialize right here...
 	static const char *CHANNEL_ID_HINT_STRING;
 
@@ -233,6 +245,7 @@ private:
 } // namespace zylann::voxel
 
 VARIANT_ENUM_CAST(zylann::voxel::godot::VoxelBuffer::ChannelId)
+VARIANT_ENUM_CAST(zylann::voxel::godot::VoxelBuffer::ChannelMask)
 VARIANT_ENUM_CAST(zylann::voxel::godot::VoxelBuffer::Depth)
 VARIANT_ENUM_CAST(zylann::voxel::godot::VoxelBuffer::Compression)
 VARIANT_ENUM_CAST(zylann::voxel::godot::VoxelBuffer::Allocator)
