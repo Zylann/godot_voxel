@@ -43,6 +43,7 @@ Primarily developped with Godot 4.3.
         - Fixed crash when assigning an empty image to the `Image` node
     - `VoxelMesherTransvoxel`: revert texturing logic that attempted to prevent air voxels from contributing, but was lowering quality. It is now optional as an experimental property.
     - `VoxelStreamSQLite`: Fixed "empty size" errors when loading areas with edited `VoxelInstancer` data
+    - `VoxelVoxLoader`: Fixed loading `.vox` files saved with versions of MagicaVoxel following 0.99.7
     - `.vox` scene importer: disabled threaded import to workaround the editor freezing when saving meshes
 
 - Breaking changes

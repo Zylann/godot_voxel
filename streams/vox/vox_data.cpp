@@ -217,7 +217,12 @@ Error Data::_load_from_file(String fpath) {
 	ERR_FAIL_COND_V(strcmp(magic, "VOX ") != 0, ERR_PARSE_ERROR);
 
 	const uint32_t version = f.get_32();
-	ERR_FAIL_COND_V(version != 150, ERR_PARSE_ERROR);
+	// <2025/01/22>: at this time, the spec repo from ephtracy only indicates version 150. 200 was added at some point,
+	// supposedly adding new extensions, but I could not find a clue in the spec indicating that they were added at
+	// version 200 (the string "200" appears nowhere in the repo). For now, since there was no change to extensions our
+	// loader support, we just allow that version without other difference.
+	// See https://github.com/ephtracy/ephtracy.github.io/issues/264
+	ERR_FAIL_COND_V(version != 150 && version != 200, ERR_PARSE_ERROR);
 
 	const size_t file_length = f.get_length();
 
