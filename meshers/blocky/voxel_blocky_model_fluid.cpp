@@ -130,7 +130,7 @@ void bake_fluid_model(
 	BakedFluid &baked_fluid = baked_fluids[fluid_index];
 
 	// TODO Allow more than one model with the same level?
-	const unsigned int level = fluid_model.get_level();
+	const int level = fluid_model.get_level();
 	ZN_ASSERT(level >= 0 && level < VoxelBlockyModelFluid::MAX_LEVELS);
 	baked_model.fluid_level = level;
 	baked_fluid.max_level = math::max(static_cast<uint8_t>(level), baked_fluid.max_level);
