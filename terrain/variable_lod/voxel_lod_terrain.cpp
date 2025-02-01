@@ -1750,7 +1750,7 @@ inline void set_block_collision_shape(
 		const SceneTree *scene_tree = terrain.get_tree();
 #if DEBUG_ENABLED
 		if (shape.is_valid()) {
-			const Color debug_color = scene_tree->get_debug_collisions_color();
+			const Color debug_color = zylann::godot::get_shape_3d_default_color(*scene_tree);
 			zylann::godot::set_shape_3d_debug_color(**shape, debug_color);
 		}
 #endif

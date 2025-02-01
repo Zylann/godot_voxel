@@ -1969,7 +1969,7 @@ void VoxelTerrain::apply_mesh_update(const VoxelEngine::BlockMeshOutput &ob) {
 			const SceneTree *scene_tree = get_tree();
 #if DEBUG_ENABLED
 			if (collision_shape.is_valid()) {
-				const Color debug_color = scene_tree->get_debug_collisions_color();
+				const Color debug_color = zylann::godot::get_shape_3d_default_color(*scene_tree);
 				zylann::godot::set_shape_3d_debug_color(**collision_shape, debug_color);
 			}
 #endif
