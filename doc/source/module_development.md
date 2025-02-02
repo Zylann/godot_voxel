@@ -155,16 +155,16 @@ For the most part, use `clang-format` and follow most of Godot conventions.
 - Globals prefixed with `g_`
 - Statics prefixed with `s_`
 - Thread-locals prefixed with `tls_`
-- Parameters prefixed with `p_`, but not really enforced so far. Matters for big functions.
+- Parameters prefixed with `p_` in case of ambiguity, recommended for large functions.
 - Private and protected fields prefixed with `_`
-- Some private functions start with `_`, either to mimic Godot API, or if it's a re-used function that performs no checks
-- Signal handler functions are prefixed with `_on_` and should never be called manually
-- Enums prefixed by their name. Example: `enum Type { TYPE_ONE, TYPE_TWO }`
+- Generally functions shouldn't start with `_`, except for API reasons or another special rule.
+- Signal handler functions are prefixed with `on_` and should preferably not be called manually
+- Enums preferably prefixed by their name. Example: `enum Type { TYPE_ONE, TYPE_TWO }`. Mandatory for enums exposed to Godot.
 - Open braces at the end of line, close them next line
 - Never omit braces
 - Space between binary operators and control flow: `if (a + b == 42)`
 - Indent with tabs
-- Private wrapper functions can be used to adapt to the script API and are prefixed with `_b_`.
+- Private wrapper functions can be used to adapt to the Godot script API and are prefixed with `_b_`.
 - Use Clang-format to automate most of these rules (there should be a file included at the root of the C++ project)
 - Prefer comments with `//` only
 - Some virtual functions from wrapper classes are prefixed with `_zn_` to encapsulate signature differences when compiling as a module or as a GDExtension.
@@ -190,15 +190,14 @@ For the most part, use `clang-format` and follow most of Godot conventions.
 - Avoid using macros to define logic or constants. Prefer `static const`, `constexpr` and `inline` functions.
 - Prefer adding `const` to variables that won't change after being initialized
 - Don't exploit booleanization when an explicit alternative exists. Example: use `if (a == nullptr)` instead of `if (!a)`
-- If possible, avoid plain arrays like `int a[42]`. Debuggers don't catch overruns on them. Prefer using wrappers such as `FixedArray` and `Span`.
+- If possible, avoid plain arrays like `int a[42]`. Debuggers don't catch overruns on them. Prefer using wrappers such as `std::array`, `FixedArray` and `Span`.
 - Use `uint32_t`, `uint16_t`, `uint8_t` in case integer size matters.
 - If possible, use forward declarations in headers instead of including files
-- `#include` what you use, don't assume a header transitively includes things. This has been broadly ignored for a while, but new code may follow it. `util/godot` micro-headers are an exception.
+- `#include` what you use, don't assume a header transitively includes things. This has been broadly ignored for a while, but new code should attempt to follow it. `util/godot` micro-headers are an exception.
 - Don't do `using namespace` in headers (Except with `godot::`, but that's only to help supporting GDExtension using the same codebase, since Godot core does not have this namespace).
-- `mutable` must ONLY be used for thread synchronization primitives. Do not use it with "cache data" to make getters `const`, as it can be misleading in multi-threaded context.
+- `mutable` must ONLY be used for thread synchronization primitives. Do not use it with "cache data" to make getters `const`, as it can be misleading in a multi-threaded context.
 - Use `ZN_NEW` and `ZN_DELETE` instead of `new` and `delete` on types that don't derive from Godot `Object`. This is intented for code that may be independent from Godot, yet be tracked in Godot's default allocator when used.
 - Use `ZN_ALLOC` and `ZN_FREE` instead of `malloc` and `free`. This is intented for code that may be independent from Godot, yet be tracked in Godot's default allocator when used.
-- Prefer anonymous namespaces instead of `static` for internal functions that only appear within `.cpp` files.
 - When using standard library containers, prefer aliases from `util/containers/` such as `StdVector`. These are using Godot's allocation functions so memory will be tracked.
 
 ### Error handling

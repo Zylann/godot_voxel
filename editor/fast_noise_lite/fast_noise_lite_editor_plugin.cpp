@@ -12,10 +12,8 @@ ZN_FastNoiseLiteEditorPlugin::ZN_FastNoiseLiteEditorPlugin() {
 	add_inspector_plugin(plugin);
 }
 
-#ifdef ZN_GODOT
-String ZN_FastNoiseLiteEditorPlugin::get_name() const {
+String ZN_FastNoiseLiteEditorPlugin::_zn_get_plugin_name() const {
 	return ZN_FastNoiseLite::get_class_static();
 }
-#endif
 
 } // namespace zylann

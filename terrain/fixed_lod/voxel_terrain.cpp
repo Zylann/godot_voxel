@@ -1969,8 +1969,8 @@ void VoxelTerrain::apply_mesh_update(const VoxelEngine::BlockMeshOutput &ob) {
 			const SceneTree *scene_tree = get_tree();
 #if DEBUG_ENABLED
 			if (collision_shape.is_valid()) {
-				const Color debug_color = scene_tree->get_debug_collisions_color();
-				collision_shape->set_debug_color(debug_color);
+				const Color debug_color = zylann::godot::get_shape_3d_default_color(*scene_tree);
+				zylann::godot::set_shape_3d_debug_color(**collision_shape, debug_color);
 			}
 #endif
 			debug_collisions = scene_tree->is_debugging_collisions_hint();
@@ -2415,9 +2415,7 @@ void VoxelTerrain::_bind_methods() {
 					Variant::OBJECT,
 					"material_override",
 					PROPERTY_HINT_RESOURCE_TYPE,
-					String("{0},{1}").format(
-							varray(BaseMaterial3D::get_class_static(), ShaderMaterial::get_class_static())
-					)
+					zylann::godot::MATERIAL_3D_PROPERTY_HINT_STRING
 			),
 			"set_material_override",
 			"get_material_override"

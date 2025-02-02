@@ -1,13 +1,15 @@
 #include "concave_polygon_shape_3d.h"
 #include "../../math/conv.h"
 #include "../../profiling.h"
+#include "../core/packed_arrays.h"
 #include "collision_shape_3d.h"
 #include "mesh.h"
 
 namespace zylann::godot {
 
-Ref<ConcavePolygonShape3D> create_concave_polygon_shape(Span<const Array> surfaces) {
-	// Faster version of Mesh::create_trimesh_shape()
+Ref<ConcavePolygonShape3D> create_concave_polygon_shape(const Span<const Array> surfaces) {
+	// Faster version of Mesh::create_trimesh_shape(), because `create_trimesh_shape` creates a Trimesh internally along
+	// the way, which is super slow
 	// See https://github.com/Zylann/godot_voxel/issues/54
 
 	ZN_PROFILE_SCOPE();
@@ -79,22 +81,14 @@ Ref<ConcavePolygonShape3D> create_concave_polygon_shape(Span<const Array> surfac
 	return shape;
 }
 
-Ref<ConcavePolygonShape3D> create_concave_polygon_shape(Span<const Vector3f> positions, Span<const int> indices) {
+PackedVector3Array deindex_mesh_to_packed_vector3_array(
+		const Span<const Vector3f> positions,
+		const Span<const int> indices
+) {
 	ZN_PROFILE_SCOPE();
 
 	PackedVector3Array face_points;
-
-	if (indices.size() < 3) {
-		return Ref<ConcavePolygonShape3D>();
-	}
-
 	face_points.resize(indices.size());
-
-	ERR_FAIL_COND_V(positions.size() < 3, Ref<ConcavePolygonShape3D>());
-	ERR_FAIL_COND_V(indices.size() < 3, Ref<ConcavePolygonShape3D>());
-	ERR_FAIL_COND_V(indices.size() % 3 != 0, Ref<ConcavePolygonShape3D>());
-
-	// Deindex mesh
 	{
 		Vector3 *w = face_points.ptrw();
 		for (unsigned int ii = 0; ii < indices.size(); ++ii) {
@@ -102,6 +96,44 @@ Ref<ConcavePolygonShape3D> create_concave_polygon_shape(Span<const Vector3f> pos
 			w[ii] = to_vec3(positions[index]);
 		}
 	}
+	return face_points;
+}
+
+PackedVector3Array deindex_mesh_to_packed_vector3_array(
+		const Span<const Vector3> vertices,
+		const Span<const int32_t> indices
+) {
+	ZN_PROFILE_SCOPE();
+
+	PackedVector3Array face_points;
+	face_points.resize(indices.size());
+
+	{
+		Span<Vector3> dst(face_points.ptrw(), face_points.size());
+		for (unsigned int ii = 0; ii < indices.size(); ++ii) {
+			const int index = indices[ii];
+			dst[ii] = vertices[index];
+		}
+	}
+
+	return face_points;
+}
+
+Ref<ConcavePolygonShape3D> create_concave_polygon_shape(
+		const Span<const Vector3f> positions,
+		const Span<const int> indices
+) {
+	ZN_PROFILE_SCOPE();
+
+	if (indices.size() < 3) {
+		return Ref<ConcavePolygonShape3D>();
+	}
+
+	ERR_FAIL_COND_V(positions.size() < 3, Ref<ConcavePolygonShape3D>());
+	ERR_FAIL_COND_V(indices.size() < 3, Ref<ConcavePolygonShape3D>());
+	ERR_FAIL_COND_V(indices.size() % 3 != 0, Ref<ConcavePolygonShape3D>());
+
+	const PackedVector3Array face_points = deindex_mesh_to_packed_vector3_array(positions, indices);
 
 	Ref<ConcavePolygonShape3D> shape;
 	{
@@ -113,7 +145,11 @@ Ref<ConcavePolygonShape3D> create_concave_polygon_shape(Span<const Vector3f> pos
 }
 
 // This variant may use a lower index count so a subset of the mesh is used to create the collision shape.
-Ref<ConcavePolygonShape3D> create_concave_polygon_shape(const Array surface_arrays, unsigned int index_count) {
+Ref<ConcavePolygonShape3D> create_concave_polygon_shape(
+		const Array &surface_arrays,
+		const unsigned int vertex_count,
+		const unsigned int index_count
+) {
 	ZN_PROFILE_SCOPE();
 
 	Ref<ConcavePolygonShape3D> shape;
@@ -124,30 +160,24 @@ Ref<ConcavePolygonShape3D> create_concave_polygon_shape(const Array surface_arra
 	}
 	ZN_ASSERT(surface_arrays.size() == Mesh::ARRAY_MAX);
 
-	PackedInt32Array indices = surface_arrays[Mesh::ARRAY_INDEX];
+	const PackedInt32Array indices = surface_arrays[Mesh::ARRAY_INDEX];
 	ERR_FAIL_COND_V(index_count > static_cast<unsigned int>(indices.size()), shape);
 	if (indices.size() < 3) {
 		// Empty
 		return shape;
 	}
 
-	PackedVector3Array positions = surface_arrays[Mesh::ARRAY_VERTEX];
+	const PackedVector3Array positions = surface_arrays[Mesh::ARRAY_VERTEX];
+	ERR_FAIL_COND_V(vertex_count > static_cast<unsigned int>(positions.size()), shape);
 
 	ERR_FAIL_COND_V(positions.size() < 3, shape);
 	ERR_FAIL_COND_V(indices.size() < 3, shape);
 	ERR_FAIL_COND_V(indices.size() % 3 != 0, shape);
 
-	PackedVector3Array face_points;
-	face_points.resize(indices.size());
-
-	// Deindex mesh
-	{
-		Vector3 *w = face_points.ptrw();
-		for (unsigned int ii = 0; ii < index_count; ++ii) {
-			const int index = indices[ii];
-			w[ii] = positions[index];
-		}
-	}
+	const PackedVector3Array face_points = deindex_mesh_to_packed_vector3_array(
+			to_span(positions).sub(0, vertex_count), //
+			to_span(indices).sub(0, index_count)
+	);
 
 	{
 		ZN_PROFILE_SCOPE_NAMED("Godot shape");

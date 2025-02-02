@@ -80,6 +80,17 @@
 				Clears the buffer and gives it the specified size.
 			</description>
 		</method>
+		<method name="create_3d_texture_from_sdf_zxy" qualifiers="const">
+			<return type="ImageTexture3D" />
+			<param index="0" name="output_format" type="int" enum="Image.Format" />
+			<description>
+				Creates a 3D texture from the SDF channel.
+				If [code]output_format[/code] is a 8-bit pixel format, the texture will contain normalized signed distances, where 0.5 is the isolevel, 0 is the furthest away under surface, and 1 is the furthest away above surface.
+				Only 16-bit SDF channel is supported.
+				Only [constant Image.FORMAT_R8] and [constant Image.FORMAT_L8] output formats are suported.
+				Note: when sampling this texture in a shader, you need to swizzle 3D coordinates with [code].yxz[/code]. This is how voxels are internally stored, and this function does not change this convention.
+			</description>
+		</method>
 		<method name="debug_print_sdf_y_slices" qualifiers="const">
 			<return type="Image[]" />
 			<param index="0" name="scale" type="float" default="1.0" />
@@ -171,6 +182,14 @@
 			<return type="Variant" />
 			<description>
 				Gets metadata associated to this [VoxelBuffer].
+			</description>
+		</method>
+		<method name="get_channel_as_byte_array" qualifiers="const">
+			<return type="PackedByteArray" />
+			<param index="0" name="channel_index" type="int" enum="VoxelBuffer.ChannelId" />
+			<description>
+				Gets voxel data from a channel as uncompressed raw bytes. Check [enum VoxelBuffer.Depth] for information about the data format.
+				Note: if the channel is compressed, it will be decompressed on the fly into the returned array. If you want a different behavior in this case, check [method get_channel_compression] before calling this method.
 			</description>
 		</method>
 		<method name="get_channel_compression" qualifiers="const">
@@ -316,6 +335,14 @@
 				Changes the bit depth of a given channel. This controls the range of values a channel can hold. See [enum VoxelBuffer.Depth] for more information.
 			</description>
 		</method>
+		<method name="set_channel_from_byte_array">
+			<return type="void" />
+			<param index="0" name="channel_index" type="int" enum="VoxelBuffer.ChannelId" />
+			<param index="1" name="data" type="PackedByteArray" />
+			<description>
+				Overwrites the contents of a channel from raw voxel data. Check [enum VoxelBuffer.Depth] for information about the expected data format.
+			</description>
+		</method>
 		<method name="set_voxel">
 			<return type="void" />
 			<param index="0" name="value" type="int" />
@@ -353,6 +380,13 @@
 			<param index="1" name="pos" type="Vector3i" />
 			<param index="2" name="channel" type="int" default="0" />
 			<description>
+			</description>
+		</method>
+		<method name="update_3d_texture_from_sdf_zxy" qualifiers="const">
+			<return type="void" />
+			<param index="0" name="existing_texture" type="ImageTexture3D" />
+			<description>
+				Updates an existing 3D texture from the SDF channel. See [method create_3d_texture_from_sdf_zxy] for more information.
 			</description>
 		</method>
 	</methods>

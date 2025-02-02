@@ -8,6 +8,7 @@
 #endif
 
 #include "../../containers/span.h"
+#include <vector>
 
 namespace zylann::godot {
 
@@ -68,6 +69,20 @@ inline TypedArray<T> to_typed_array(Span<const Ref<T>> src) {
 	copy_to(array, src);
 	return array;
 }
+
+#if defined(ZN_GODOT)
+
+template <typename T>
+Vector<Ref<T>> to_ref_vector(const TypedArray<T> &typed_array) {
+	Vector<Ref<T>> refs;
+	refs.resize(typed_array.size());
+	for (int i = 0; i < typed_array.size(); ++i) {
+		refs.write[i] = typed_array[i];
+	}
+	return refs;
+}
+
+#endif
 
 } // namespace zylann::godot
 

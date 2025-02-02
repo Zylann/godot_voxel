@@ -122,6 +122,7 @@ Exporting
 This module supports all platforms Godot supports, on which threads are available.
 
 Some features might not always be available:
+
 - SIMD noise with FastNoise2 0.10 can only benefit from an x86 CPU and falls back to scalar otherwise, which is slower
 - GPU features require support for compute shaders (Forward+ renderer)
 - Threads might not work on all browsers with the web export

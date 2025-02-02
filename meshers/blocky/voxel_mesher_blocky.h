@@ -114,6 +114,45 @@ private:
 	static Cache &get_tls_cache();
 };
 
+namespace blocky {
+
+inline bool is_face_visible_regardless_of_shape(const BakedModel &vt, const BakedModel &other_vt) {
+	// TODO Maybe we could get rid of `empty` here and instead set `culls_neighbors` to false during baking
+	return other_vt.empty || (other_vt.transparency_index > vt.transparency_index) || !other_vt.culls_neighbors;
+}
+
+// Does not account for other factors
+inline bool is_face_visible_according_to_shape(
+		const BakedLibrary &lib,
+		const BakedModel &vt,
+		const BakedModel &other_vt,
+		const int side
+) {
+	const unsigned int ai = vt.model.side_pattern_indices[side];
+	const unsigned int bi = other_vt.model.side_pattern_indices[Cube::g_opposite_side[side]];
+	// Patterns are not the same, and B does not occlude A
+	return (ai != bi) && !lib.get_side_pattern_occlusion(bi, ai);
+}
+
+inline bool is_face_visible(
+		const BakedLibrary &lib,
+		const BakedModel &vt,
+		const uint32_t other_voxel_id,
+		const int side
+) {
+	if (other_voxel_id < lib.models.size()) {
+		const BakedModel &other_vt = lib.models[other_voxel_id];
+		if (is_face_visible_regardless_of_shape(vt, other_vt)) {
+			return true;
+		} else {
+			return is_face_visible_according_to_shape(lib, vt, other_vt, side);
+		}
+	}
+	return true;
+}
+
+} // namespace blocky
+
 } // namespace zylann::voxel
 
 VARIANT_ENUM_CAST(zylann::voxel::VoxelMesherBlocky::Side)

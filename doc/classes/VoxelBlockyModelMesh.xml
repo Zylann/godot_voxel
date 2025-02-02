@@ -16,6 +16,9 @@
 			Orthogonal rotation applied to the mesh when baking. Values are taken from the same convention as [GridMap] tiles.
 			([GridMap] provides a conversion method from [Basis], unfortunately it is not a static method so it requires a [GridMap] instance to exist. A helper method could be added in the future if requested)
 		</member>
+		<member name="side_cutout_enabled" type="bool" is_experimental="true" setter="set_side_cutout_enabled" getter="is_side_cutout_enabled" default="false">
+			When a neighbor voxel partially covers a side of this voxel, the occluded geometry of the side will be cut away. This only works if the shape of both sides is a rectangle. Note, enabling this option can actually produce more triangles than when it is enabled.
+		</member>
 		<member name="side_vertex_tolerance" type="float" setter="set_side_vertex_tolerance" getter="get_side_vertex_tolerance" default="0.001">
 			Margin below which triangles located near one of the 6 sides of the voxel will be considered on that side. Sides get culled or not by comparing between triangles of neighbor sides.
 		</member>

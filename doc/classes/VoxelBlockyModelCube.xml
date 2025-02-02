@@ -30,5 +30,7 @@
 		<member name="collision_aabbs" type="AABB[]" setter="set_collision_aabbs" getter="get_collision_aabbs" overrides="VoxelBlockyModel" default="[AABB(0, 0, 0, 1, 1, 1)]" />
 		<member name="height" type="float" setter="set_height" getter="get_height" default="1.0">
 		</member>
+		<member name="mesh_ortho_rotation_index" type="int" setter="set_mesh_ortho_rotation_index" getter="get_mesh_ortho_rotation_index" default="0">
+		</member>
 	</members>
 </class>

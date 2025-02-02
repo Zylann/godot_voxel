@@ -334,6 +334,7 @@ void VoxelData::copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsigned int cha
 						// across multiple chunks, so we don't have to check for every intersecting chunk
 						return;
 					}
+					ZN_PROFILE_SCOPE_NAMED("Generate");
 					VoxelGenerator::VoxelQueryData q{ voxels, pos, 0 };
 					gctx2->generator.generate_block(q);
 					gctx2->modifiers.apply(voxels, AABB(pos, voxels.get_size()));

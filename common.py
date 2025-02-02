@@ -83,6 +83,8 @@ def get_sources(env, is_editor_build, include_tests):
         "util/godot/classes/geometry_2d.cpp",
         "util/godot/classes/geometry_instance_3d.cpp",
         "util/godot/classes/input_event_key.cpp",
+        "util/godot/classes/image_texture_3d.cpp",
+        "util/godot/classes/material.cpp",
         "util/godot/classes/mesh.cpp",
         "util/godot/classes/multimesh.cpp",
         "util/godot/classes/node.cpp",
@@ -137,7 +139,8 @@ def get_sources(env, is_editor_build, include_tests):
             "util/godot/classes/editor_property.cpp",
             "util/godot/classes/editor_settings.cpp",
             "util/godot/classes/graph_edit.cpp", # Not editor-only, but only used in editor for now
-            "util/godot/classes/graph_node.cpp" # Not editor-only, but only used in editor for now
+            "util/godot/classes/graph_node.cpp", # Not editor-only, but only used in editor for now
+            "util/godot/classes/shape_3d.cpp" # Not editor-only, but only used in editor for now
         ]
 
     if include_tests:

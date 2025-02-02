@@ -384,4 +384,50 @@ void test_voxel_buffer_paste_masked() {
 	ZN_TEST_ASSERT(dst.equals(expected));
 }
 
+void test_voxel_buffer_set_channel_bytes() {
+	// Set 8-bit non-empty data
+	{
+		Ref<godot::VoxelBuffer> vb;
+		vb.instantiate();
+		vb->create(3, 4, 5);
+		const godot::VoxelBuffer::ChannelId channel = godot::VoxelBuffer::CHANNEL_TYPE;
+		vb->set_channel_depth(channel, godot::VoxelBuffer::DEPTH_8_BIT);
+
+		const uint64_t volume = Vector3iUtil::get_volume_u64(vb->get_size());
+
+		PackedByteArray bytes;
+		bytes.resize(volume);
+		Span<uint8_t> bytes_s(bytes.ptrw(), bytes.size());
+		for (unsigned int i = 0; i < bytes_s.size(); ++i) {
+			bytes_s[0] = i;
+		}
+
+		vb->set_channel_from_byte_array(channel, bytes);
+
+		{
+			Vector3i pos;
+			unsigned int i = 0;
+			for (pos.z = 0; pos.z < vb->get_size().z; ++pos.z) {
+				for (pos.x = 0; pos.x < vb->get_size().x; ++pos.x) {
+					for (pos.y = 0; pos.y < vb->get_size().y; ++pos.y) {
+						const int v = vb->get_voxel(pos.x, pos.y, pos.z, channel);
+						const int expected_v = bytes[i];
+						ZN_TEST_ASSERT(v == expected_v);
+						++i;
+					}
+				}
+			}
+		}
+	}
+	// Set empty
+	// Might error, but should not crash
+	{
+		Ref<godot::VoxelBuffer> vb;
+		vb.instantiate();
+
+		const godot::VoxelBuffer::ChannelId channel = godot::VoxelBuffer::CHANNEL_TYPE;
+		vb->set_channel_from_byte_array(channel, PackedByteArray());
+	}
+}
+
 } // namespace zylann::voxel::tests

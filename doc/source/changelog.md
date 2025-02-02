@@ -14,15 +14,22 @@ Primarily developped with Godot 4.3.
 
 - `VoxelBlockyModel`: Added option to turn off "LOD skirts" when used with `VoxelLodTerrain`, which may be useful with transparent models
 - `VoxelBlockyModelCube`: Added support for mesh rotation like `VoxelBlockyMesh` (prior to that, rotation buttons in the editor only swapped tiles around)
-- `VoxelEngine`: Added the `tasks.gpu` entry to the dictionary returned by `get_stats`, which may be useful for loading screens (notably asynchronous compiling of compute shaders, which can delay generation if GPU is enabled)
+- `VoxelEngine`: Added the `tasks.gpu` entry to the dictionary returned by `get_stats`, which is useful for loading screens (notably asynchronous compiling of compute shaders, which can delay generation if GPU features are enabled)
+- `VoxelBuffer`:
+    - Added functions to create/update a `Texture3D` from the SDF channel
+    - Added functions to get/set a whole channel as a raw `PackedByteArray`
 - `VoxelInstanceGenerator`: Added `OnePerTriangle` emission mode
+- `VoxelTool`: `raycast` also returns a `normal` based on voxel data (it may be different from a physics raycast in some cases)
 - `VoxelToolLodTerrain`: Implemented raycast when the mesher is `VoxelMesherBlocky` or `VoxelMesherCubes`
 - `VoxelInstanceGenerator`: Added ability to filter spawning by voxel texture indices, when using `VoxelMesherTransvoxel` with `texturing_mode` set to `4-blend over 16 textures`
+- `VoxelMesherBlocky`: Added basic support for fluid models
 
 - Fixes
     - Fixed potential deadlock when using detail rendering and various editing features (thanks to lenesxy, issue #693)
     - `VoxelInstanceLibrary`: Editor: reworked the way items are exposed as a Blender-style list. Now removing an item while the library is open as a sub-inspector is no longer problematic
-    - `VoxelInstancer`: Fixed persistent instances reloading with wrong positions (in the air, underground...) when mesh block size is set to 32
+    - `VoxelInstancer`: 
+        - Fixed persistent instances reloading with wrong positions (in the air, underground...) when mesh block size is set to 32
+        - Editor: fixed `!is_inside_world()` errors when editing a `VoxelBlockyLibrary` after deleting a `VoxelInstancer` that was using it
     - `VoxelLodTerrain`:
         - Fixed potential crash when when using the Clipbox streaming system with threaded update (thanks to lenesxy, issue #692)
         - Fixed blocks were saved with incorrect LOD index when they get unloaded using Clipbox, leading to holes and mismatched terrain (#691)
@@ -38,6 +45,8 @@ Primarily developped with Godot 4.3.
         - Fixed crash when assigning an empty image to the `Image` node
     - `VoxelMesherTransvoxel`: revert texturing logic that attempted to prevent air voxels from contributing, but was lowering quality. It is now optional as an experimental property.
     - `VoxelStreamSQLite`: Fixed "empty size" errors when loading areas with edited `VoxelInstancer` data
+    - `VoxelTool`: `raycast`: when using blocky voxels, the returned `distance_along_ray` now accounts for non-cube voxels 
+    - `VoxelVoxLoader`: Fixed loading `.vox` files saved with versions of MagicaVoxel following 0.99.7
     - `.vox` scene importer: disabled threaded import to workaround the editor freezing when saving meshes
 
 - Breaking changes

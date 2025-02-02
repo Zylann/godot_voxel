@@ -45,7 +45,8 @@ Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(
 			p_dir,
 			p_max_distance,
 			p_collision_mask,
-			0
+			0,
+			_raycast_normal_enabled
 	);
 }
 
