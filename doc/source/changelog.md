@@ -14,7 +14,7 @@ Primarily developped with Godot 4.3.
 
 - `VoxelBlockyModel`: Added option to turn off "LOD skirts" when used with `VoxelLodTerrain`, which may be useful with transparent models
 - `VoxelBlockyModelCube`: Added support for mesh rotation like `VoxelBlockyMesh` (prior to that, rotation buttons in the editor only swapped tiles around)
-- `VoxelEngine`: Added the `tasks.gpu` entry to the dictionary returned by `get_stats`, which is useful for loading screens (notably asynchronous compiling of compute shaders, which can delay generation if GPU features are enabled)
+- `VoxelEngine`: Added the `tasks.gpu` entry to the dictionary returned by `get_stats`, which is useful for loading screens when GPU features are used (notably asynchronous compiling of compute shaders, which can delay generation)
 - `VoxelBuffer`:
     - Added functions to create/update a `Texture3D` from the SDF channel
     - Added functions to get/set a whole channel as a raw `PackedByteArray`
