@@ -5,6 +5,7 @@
 #include "../util/godot/classes/ref_counted.h"
 #include "../util/godot/core/array.h"
 #include "../util/godot/core/typed_array.h"
+#include "../util/godot/core/typed_dictionary.h"
 #include "../util/macros.h"
 #include "../util/math/vector3i.h"
 #include "voxel_buffer.h"
@@ -199,6 +200,18 @@ public:
 			const int value_if_less,
 			const int value_if_more,
 			const VoxelBuffer::ChannelId dst_channel
+	);
+
+	// Counting
+
+	int64_t count_sdf_lower_than_value(float isolevel);
+	int64_t count_not_equal_to_value(VoxelBuffer::ChannelId channel, int value);
+	int64_t count_not_equal_to_buffer(VoxelBuffer::ChannelId channel, Ref<VoxelBuffer> other);
+	int64_t count_equal_to_value(VoxelBuffer::ChannelId channel, int value);
+	zylann::godot::DictionaryIntInt count_values(VoxelBuffer::ChannelId channel);
+	zylann::godot::DictionaryIntInt count_values_u8_with_sdf_lower_than(
+			VoxelBuffer::ChannelId channel,
+			const float isolevel
 	);
 
 	// Metadata

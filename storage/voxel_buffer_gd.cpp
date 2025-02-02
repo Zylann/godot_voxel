@@ -4,9 +4,11 @@
 #include "../util/godot/classes/image.h"
 #include "../util/godot/classes/image_texture_3d.h"
 #include "../util/godot/core/packed_arrays.h"
+#include "../util/godot/core/typed_dictionary_util.h"
 #include "../util/math/color.h"
 #include "../util/memory/memory.h"
 #include "../util/string/format.h"
+#include "counting.h"
 #include "metadata/voxel_metadata_variant.h"
 
 namespace zylann::voxel {
@@ -741,6 +743,62 @@ void VoxelBuffer::set_channel_from_byte_array(const ChannelId channel, const Pac
 	_buffer->set_channel_from_bytes(channel, to_span(pba));
 }
 
+int64_t VoxelBuffer::count_sdf_lower_than_value(float isolevel) {
+	return zylann::voxel::count_sdf_lower_than_value(*_buffer, zylann::voxel::VoxelBuffer::CHANNEL_SDF, isolevel);
+}
+
+int64_t VoxelBuffer::count_not_equal_to_value(VoxelBuffer::ChannelId channel, int value) {
+	ZN_ASSERT_RETURN_V(channel >= 0 && channel < MAX_CHANNELS, 0);
+	return zylann::voxel::count_not_equal_to_value(
+			*_buffer, static_cast<zylann::voxel::VoxelBuffer::ChannelId>(channel), value
+	);
+}
+
+int64_t VoxelBuffer::count_not_equal_to_buffer(VoxelBuffer::ChannelId channel, Ref<VoxelBuffer> other) {
+	ZN_ASSERT_RETURN_V(channel >= 0 && channel < MAX_CHANNELS, 0);
+	ZN_ASSERT_RETURN_V(other.is_valid(), 0);
+	return zylann::voxel::count_not_equal_to_buffer(
+			*_buffer, static_cast<zylann::voxel::VoxelBuffer::ChannelId>(channel), other->get_buffer()
+	);
+}
+
+int64_t VoxelBuffer::count_equal_to_value(VoxelBuffer::ChannelId channel, int value) {
+	ZN_ASSERT_RETURN_V(channel >= 0 && channel < MAX_CHANNELS, 0);
+	return zylann::voxel::count_equal_to_value(
+			*_buffer, static_cast<zylann::voxel::VoxelBuffer::ChannelId>(channel), value
+	);
+}
+
+zylann::godot::DictionaryIntInt VoxelBuffer::count_values(VoxelBuffer::ChannelId channel) {
+	ZN_ASSERT_RETURN_V(channel >= 0 && channel < MAX_CHANNELS, zylann::godot::DictionaryIntInt());
+	StdUnorderedMap<uint32_t, uint32_t> counts =
+			zylann::voxel::count_values(*_buffer, static_cast<zylann::voxel::VoxelBuffer::ChannelId>(channel));
+	return zylann::godot::to_typed_dictionary(counts);
+}
+
+zylann::godot::DictionaryIntInt VoxelBuffer::count_values_u8_with_sdf_lower_than(
+		VoxelBuffer::ChannelId channel,
+		const float isolevel
+) {
+	ZN_ASSERT_RETURN_V(channel >= 0 && channel < MAX_CHANNELS, zylann::godot::DictionaryIntInt());
+	std::array<uint32_t, 256> counts;
+	zylann::voxel::count_values_u8_with_sdf_lower_than(
+			*_buffer,
+			zylann::voxel::VoxelBuffer::CHANNEL_SDF,
+			static_cast<zylann::voxel::VoxelBuffer::ChannelId>(channel),
+			isolevel,
+			counts
+	);
+	zylann::godot::DictionaryIntInt dict;
+	for (unsigned int i = 0; i < counts.size(); ++i) {
+		const uint32_t count = counts[i];
+		if (count > 0) {
+			dict[i] = count;
+		}
+	}
+	return dict;
+}
+
 Ref<Image> VoxelBuffer::debug_print_sdf_to_image_top_down() {
 	return debug_print_sdf_to_image_top_down(*_buffer);
 }
@@ -887,6 +945,20 @@ void VoxelBuffer::_bind_methods() {
 					"dst_channel"
 			),
 			&VoxelBuffer::op_select_less_src_f_dst_i_values
+	);
+
+	ClassDB::bind_method(D_METHOD("count_equal_to_value", "channel", "value"), &VoxelBuffer::count_equal_to_value);
+	ClassDB::bind_method(
+			D_METHOD("count_not_equal_to_value", "channel", "value"), &VoxelBuffer::count_not_equal_to_value
+	);
+	ClassDB::bind_method(
+			D_METHOD("count_not_equal_to_buffer", "channel", "cmp_buffer"), &VoxelBuffer::count_not_equal_to_buffer
+	);
+	ClassDB::bind_method(D_METHOD("count_sdf_lower_than_value", "isolevel"), &VoxelBuffer::count_sdf_lower_than_value);
+	ClassDB::bind_method(D_METHOD("count_values"), &VoxelBuffer::count_values);
+	ClassDB::bind_method(
+			D_METHOD("count_values_u8_with_sdf_lower_than", "isolevel"),
+			&VoxelBuffer::count_values_u8_with_sdf_lower_than
 	);
 
 	ClassDB::bind_method(D_METHOD("get_block_metadata"), &VoxelBuffer::get_block_metadata);
