@@ -2,6 +2,7 @@
 #define VOXEL_COMPUTE_SHADER_RESOURCE_H
 
 #include "../../util/containers/span.h"
+#include "../../util/godot/classes/ref_counted.h"
 #include "../../util/godot/core/packed_byte_array.h"
 #include "../../util/godot/core/rid.h"
 #include "../../util/macros.h"

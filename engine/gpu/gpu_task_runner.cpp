@@ -1,6 +1,7 @@
 #include "gpu_task_runner.h"
 #include "../../util/dstack.h"
 #include "../../util/errors.h"
+#include "../../util/godot/classes/rd_sampler_state.h"
 #include "../../util/godot/classes/rendering_device.h"
 #include "../../util/godot/classes/rendering_server.h"
 #include "../../util/math/funcs.h"
