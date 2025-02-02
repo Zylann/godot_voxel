@@ -82,9 +82,8 @@ Vector3f get_interpolated_raw_sdf_gradient_4x4x4_p111_t(const VoxelBuffer &vb, c
 	ZN_ASSERT(vb.get_size() == block_size);
 
 	Span<const TSd> sd_data;
-	ZN_ASSERT(vb.get_channel_data_read_only(VoxelBuffer::CHANNEL_SDF, sd_data));
-
 	const VoxelBuffer::ChannelId channel = VoxelBuffer::CHANNEL_SDF;
+	ZN_ASSERT(vb.get_channel_data_read_only(channel, sd_data));
 
 	const Vector3i jump(block_size.y, 1, block_size.y * block_size.x);
 	const Vector3i p000(1, 1, 1);
