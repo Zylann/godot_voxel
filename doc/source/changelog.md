@@ -18,6 +18,7 @@ Primarily developped with Godot 4.3.
     - Added functions to create/update a `Texture3D` from the SDF channel
     - Added functions to get/set a whole channel as a raw `PackedByteArray`
 - `VoxelInstanceGenerator`: Added `OnePerTriangle` emission mode
+- `VoxelTool`: `raycast` also returns a `normal` based on voxel data (it may be different from a physics raycast in some cases)
 - `VoxelToolLodTerrain`: Implemented raycast when the mesher is `VoxelMesherBlocky` or `VoxelMesherCubes`
 - `VoxelInstanceGenerator`: Added ability to filter spawning by voxel texture indices, when using `VoxelMesherTransvoxel` with `texturing_mode` set to `4-blend over 16 textures`
 - `VoxelMesherBlocky`: Added basic support for fluid models
@@ -43,6 +44,7 @@ Primarily developped with Godot 4.3.
         - Fixed crash when assigning an empty image to the `Image` node
     - `VoxelMesherTransvoxel`: revert texturing logic that attempted to prevent air voxels from contributing, but was lowering quality. It is now optional as an experimental property.
     - `VoxelStreamSQLite`: Fixed "empty size" errors when loading areas with edited `VoxelInstancer` data
+    - `VoxelTool`: `raycast`: when using blocky voxels, the returned `distance_along_ray` now accounts for non-cube voxels 
     - `VoxelVoxLoader`: Fixed loading `.vox` files saved with versions of MagicaVoxel following 0.99.7
     - `.vox` scene importer: disabled threaded import to workaround the editor freezing when saving meshes
 

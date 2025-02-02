@@ -20,6 +20,7 @@
 #include "voxel/test_edition_funcs.h"
 #include "voxel/test_mesh_sdf.h"
 #include "voxel/test_octree.h"
+#include "voxel/test_raycast.h"
 #include "voxel/test_region_file.h"
 #include "voxel/test_storage_funcs.h"
 #include "voxel/test_stream_sqlite.h"
@@ -133,6 +134,8 @@ void run_voxel_tests() {
 	VOXEL_TEST(test_sdf_hemisphere);
 	VOXEL_TEST(test_fnl_range);
 	VOXEL_TEST(test_voxel_buffer_set_channel_bytes);
+	VOXEL_TEST(test_raycast_sdf);
+	VOXEL_TEST(test_raycast_blocky);
 
 	print_line("------------ Voxel tests end -------------");
 }

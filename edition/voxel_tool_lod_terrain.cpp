@@ -44,7 +44,8 @@ Ref<VoxelRaycastResult> VoxelToolLodTerrain::raycast(
 			dir,
 			max_distance,
 			collision_mask,
-			_raycast_binary_search_iterations
+			_raycast_binary_search_iterations,
+			_raycast_normal_enabled
 	);
 }
 

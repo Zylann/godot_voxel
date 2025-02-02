@@ -91,6 +91,10 @@ Ref<VoxelRaycastResult> VoxelTool::raycast(Vector3 pos, Vector3 dir, float max_d
 	// See derived classes for implementations
 }
 
+void VoxelTool::set_raycast_normal_enabled(bool enabled) {
+	_raycast_normal_enabled = enabled;
+}
+
 uint64_t VoxelTool::get_voxel(Vector3i pos) const {
 	return _get_voxel(pos);
 }
@@ -576,6 +580,8 @@ void VoxelTool::_bind_methods() {
 			DEFVAL(10.0),
 			DEFVAL(0xffffffff)
 	);
+
+	ClassDB::bind_method(D_METHOD("set_raycast_normal_enabled", "enabled"), &VoxelTool::set_raycast_normal_enabled);
 
 	ClassDB::bind_method(D_METHOD("is_area_editable", "box"), &VoxelTool::_b_is_area_editable);
 
