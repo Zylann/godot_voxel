@@ -5,7 +5,7 @@
 
 namespace zylann::godot {
 
-#ifdef TOOLS_ENABLED
+#ifdef DEBUG_ENABLED
 
 Color get_shape_3d_default_color(const SceneTree &scene_tree) {
 #if defined(ZN_GODOT)
