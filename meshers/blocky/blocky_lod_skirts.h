@@ -126,7 +126,7 @@ void append_side_skirts(
 				const BakedModel::Surface &surface = model.surfaces[surface_index];
 				VoxelMesherBlocky::Arrays &arrays = out_arrays_per_material[surface.material_id];
 
-				const BakedModel::SideSurface &side_surface = side_surfaces[side];
+				const BakedModel::SideSurface &side_surface = side_surfaces[surface_index];
 				const unsigned int vertex_count = side_surface.positions.size();
 
 				// TODO The following code is pretty much the same as the main meshing function.
