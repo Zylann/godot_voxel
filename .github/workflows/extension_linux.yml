@@ -74,6 +74,7 @@ jobs:
         run: |
           python -c "import sys; print(sys.version)"
           python --version
+          python -m pip install scons
           scons --version
 
       # We should always be explicit with our flags usage here since it's gonna be sure to always set those flags.
