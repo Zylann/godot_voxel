@@ -53,7 +53,7 @@ jobs:
         id: linux-gdextension-cache
         uses: actions/cache@v4
         with:
-          path: /.scons_cache/
+          path: ${{github.workspace}}/.scons_cache/
           key: ${{github.job}}-${{matrix.target}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
           restore-keys: |
             ${{github.job}}-${{matrix.target}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
@@ -81,7 +81,7 @@ jobs:
       # Note: if we need to use `custom_api_file`, remember the path should be relative to where godot-cpp is
       - name: Compilation
         env:
-          SCONS_CACHE: /.scons_cache/
+          SCONS_CACHE: ${{github.workspace}}/.scons_cache/
         run: |
           scons platform=linux target=${{matrix.target}} dev_build=${{matrix.dev_build}}
           cd project/addons/zylann.voxel/bin
