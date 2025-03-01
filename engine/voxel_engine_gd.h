@@ -43,6 +43,9 @@ public:
 private:
 	void _on_rendering_server_frame_post_draw();
 
+	bool _b_get_threaded_graphics_resource_building_enabled() const;
+	// void _b_set_threaded_graphics_resource_building_enabled(bool enabled);
+
 	static void _bind_methods();
 
 #ifdef TOOLS_ENABLED

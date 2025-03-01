@@ -182,11 +182,32 @@ Vector3 VoxelEngine::get_editor_camera_direction() const {
 
 #endif
 
+bool VoxelEngine::_b_get_threaded_graphics_resource_building_enabled() const {
+	const zylann::voxel::VoxelEngine &ve = zylann::voxel::VoxelEngine::get_singleton();
+	return ve.is_threaded_graphics_resource_building_enabled();
+}
+
+// This is normally automatic. This method is mainly to allow overriding it just in case.
+// void VoxelEngine::_b_set_threaded_graphics_resource_building_enabled(bool enabled) {
+// 	zylann::voxel::VoxelEngine &ve = zylann::voxel::VoxelEngine::get_singleton();
+// 	ve.set_threaded_graphics_resource_building_enabled(enabled);
+// }
+
 void VoxelEngine::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_version_major"), &VoxelEngine::get_version_major);
 	ClassDB::bind_method(D_METHOD("get_version_minor"), &VoxelEngine::get_version_minor);
 	ClassDB::bind_method(D_METHOD("get_version_patch"), &VoxelEngine::get_version_patch);
 	ClassDB::bind_method(D_METHOD("get_stats"), &VoxelEngine::get_stats);
+
+	ClassDB::bind_method(
+			D_METHOD("get_threaded_graphics_resource_building_enabled"),
+			&VoxelEngine::_b_get_threaded_graphics_resource_building_enabled
+	);
+
+	// ClassDB::bind_method(
+	// 		D_METHOD("set_threaded_graphics_resource_building_enabled", "enabled"),
+	// 		&VoxelEngine::_b_set_threaded_graphics_resource_building_enabled
+	// );
 }
 
 } // namespace zylann::voxel::godot

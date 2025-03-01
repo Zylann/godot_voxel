@@ -190,6 +190,7 @@ public:
 
 	// This should be fast and safe to access from multiple threads.
 	bool is_threaded_graphics_resource_building_enabled() const;
+	// void set_threaded_graphics_resource_building_enabled(bool enabled);
 
 	void push_main_thread_progressive_task(IProgressiveTask *task);
 

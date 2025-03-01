@@ -5,6 +5,8 @@
 #include "../streams/load_all_blocks_data_task.h"
 #include "../streams/load_block_data_task.h"
 #include "../streams/save_block_data_task.h"
+#include "../util/godot/classes/os.h"
+#include "../util/godot/classes/project_settings.h"
 #include "../util/godot/classes/rd_sampler_state.h"
 #include "../util/godot/classes/rendering_device.h"
 #include "../util/godot/classes/rendering_server.h"
@@ -82,23 +84,43 @@ VoxelEngine::~VoxelEngine() {
 	_gpu_task_runner.stop();
 }
 
-void VoxelEngine::try_initialize_gpu_features() {
-#ifdef ZN_GODOT
-	// RenderingServer can be null with `tests=yes`.
-	// TODO There is no hook to integrate modules to Godot's test framework, update this when it gets improved
-	RenderingServer *rs = RenderingServer::get_singleton();
-	if (rs != nullptr) {
-		// TODO Enhancement: threaded graphics resource building should be initialized better.
-		// Pick this from the current renderer + user option (at time of writing, Godot 4 has only one
-		// renderer and has not figured out how such option would be exposed). Could use
-		// `can_create_resources_async` but this is internal. AFAIK `is_low_end` will be `true` only for OpenGL
-		// backends, which are the only ones not supporting async resource creation.
-		_threaded_graphics_resource_building_enabled = (rs->is_low_end() == false);
+static bool auto_detect_threaded_graphics_resource_building_support() {
+	const ProjectSettings *project = ProjectSettings::get_singleton();
+	ZN_ASSERT_RETURN_V(project != nullptr, false);
+
+	const zylann::godot::RenderThreadModel rendering_thread_model = zylann::godot::get_render_thread_model(*project);
+	const zylann::godot::RenderMethod rendering_method = zylann::godot::get_current_rendering_method();
+	const zylann::godot::RenderDriverName driver = zylann ::godot::get_current_rendering_driver();
+
+	if (!zylann::godot::is_render_thread_model_safe(rendering_thread_model)) {
+		return false;
 	}
-#elif defined(ZN_GODOT_EXTENSION)
-	// TODO GDX: `RenderingServer::is_low_end` is not defined, so we can't determine if threaded resource creation is
-	// available!
-#endif
+
+	switch (rendering_method) {
+		case zylann::godot::RENDER_METHOD_GL_COMPATIBILITY:
+			return false;
+		case zylann::godot::RENDER_METHOD_UNKNOWN:
+			return false;
+		default:
+			break;
+	}
+
+	switch (driver) {
+		case zylann::godot::RENDER_DRIVER_OPENGL3:
+		case zylann::godot::RENDER_DRIVER_OPENGL3_ANGLE:
+		case zylann::godot::RENDER_DRIVER_OPENGL3_ES:
+		case zylann::godot::RENDER_DRIVER_UNKNOWN:
+			return false;
+		default:
+			return true;
+	}
+}
+
+void VoxelEngine::try_initialize_gpu_features() {
+	_threaded_graphics_resource_building_enabled = auto_detect_threaded_graphics_resource_building_support();
+	ZN_PRINT_VERBOSE(format(
+			"Auto-detected threaded graphics resource building: {}", _threaded_graphics_resource_building_enabled
+	));
 
 	if (_gpu_task_runner.is_running() == false) {
 		_gpu_task_runner.start();
@@ -233,6 +255,10 @@ void VoxelEngine::set_main_thread_time_budget_usec(unsigned int usec) {
 bool VoxelEngine::is_threaded_graphics_resource_building_enabled() const {
 	return _threaded_graphics_resource_building_enabled;
 }
+
+// void VoxelEngine::set_threaded_graphics_resource_building_enabled(bool enabled) {
+// 	_threaded_graphics_resource_building_enabled = enabled;
+// }
 
 void VoxelEngine::push_async_task(zylann::IThreadedTask *task) {
 	_general_thread_pool.enqueue(task, false);

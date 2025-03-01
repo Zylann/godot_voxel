@@ -26,6 +26,7 @@ GPUTaskRunner::~GPUTaskRunner() {
 
 void GPUTaskRunner::start() {
 	ZN_ASSERT(!_running);
+	ZN_PRINT_VERBOSE("Starting GPUTaskRunner");
 	_running = true;
 	_thread.start(
 			[](void *p_userdata) {
