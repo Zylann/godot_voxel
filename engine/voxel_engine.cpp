@@ -83,6 +83,7 @@ VoxelEngine::~VoxelEngine() {
 }
 
 void VoxelEngine::try_initialize_gpu_features() {
+#ifdef ZN_GODOT
 	// RenderingServer can be null with `tests=yes`.
 	// TODO There is no hook to integrate modules to Godot's test framework, update this when it gets improved
 	RenderingServer *rs = RenderingServer::get_singleton();
@@ -94,6 +95,10 @@ void VoxelEngine::try_initialize_gpu_features() {
 		// backends, which are the only ones not supporting async resource creation.
 		_threaded_graphics_resource_building_enabled = (rs->is_low_end() == false);
 	}
+#elif defined(ZN_GODOT_EXTENSION)
+	// TODO GDX: `RenderingServer::is_low_end` is not defined, so we can't determine if threaded resource creation is
+	// available!
+#endif
 
 	if (_gpu_task_runner.is_running() == false) {
 		_gpu_task_runner.start();
