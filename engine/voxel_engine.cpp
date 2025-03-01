@@ -68,15 +68,6 @@ VoxelEngine::VoxelEngine(Config config) {
 	ZN_PRINT_VERBOSE(format("Size of SaveBlockDataTask: {}", sizeof(SaveBlockDataTask)));
 	ZN_PRINT_VERBOSE(format("Size of MeshBlockTask: {}", sizeof(MeshBlockTask)));
 
-	if (RenderingServer::get_singleton() == nullptr) {
-		// Sadly, that happens. This is a problem in GDExtension...
-		ZN_PRINT_ERROR("RenderingServer singleton is null when creating VoxelEngine!");
-		// RenderingServer can also be null with `tests=yes`.
-		// TODO There is no hook to integrate modules to Godot's test framework, update this when it gets improved
-	} else {
-		_gpu_task_runner.start();
-	}
-
 	set_main_thread_time_budget_usec(config.main_thread_budget_usec);
 }
 
@@ -89,6 +80,24 @@ VoxelEngine::~VoxelEngine() {
 	wait_and_clear_all_tasks(true);
 
 	_gpu_task_runner.stop();
+}
+
+void VoxelEngine::try_initialize_gpu_features() {
+	// RenderingServer can be null with `tests=yes`.
+	// TODO There is no hook to integrate modules to Godot's test framework, update this when it gets improved
+	RenderingServer *rs = RenderingServer::get_singleton();
+	if (rs != nullptr) {
+		// TODO Enhancement: threaded graphics resource building should be initialized better.
+		// Pick this from the current renderer + user option (at time of writing, Godot 4 has only one
+		// renderer and has not figured out how such option would be exposed). Could use
+		// `can_create_resources_async` but this is internal. AFAIK `is_low_end` will be `true` only for OpenGL
+		// backends, which are the only ones not supporting async resource creation.
+		_threaded_graphics_resource_building_enabled = (rs->is_low_end() == false);
+	}
+
+	if (_gpu_task_runner.is_running() == false) {
+		_gpu_task_runner.start();
+	}
 }
 
 void VoxelEngine::wait_and_clear_all_tasks(bool warn) {
@@ -214,10 +223,6 @@ int VoxelEngine::get_main_thread_time_budget_usec() const {
 
 void VoxelEngine::set_main_thread_time_budget_usec(unsigned int usec) {
 	_main_thread_time_budget_usec = usec;
-}
-
-void VoxelEngine::set_threaded_graphics_resource_building_enabled(bool enable) {
-	_threaded_graphics_resource_building_enabled = enable;
 }
 
 bool VoxelEngine::is_threaded_graphics_resource_building_enabled() const {

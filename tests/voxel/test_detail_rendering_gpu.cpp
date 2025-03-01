@@ -12,6 +12,12 @@
 namespace zylann::voxel::tests {
 
 void test_normalmap_render_gpu() {
+#ifdef ZN_GODOT_EXTENSION
+	// https://github.com/godotengine/godot-cpp/issues/1180
+	ZN_PRINT_ERROR("This test might not work in GDExtension builds at the moment.");
+#endif
+	VoxelEngine::get_singleton().try_initialize_gpu_features();
+
 	Ref<VoxelGeneratorGraph> generator;
 	generator.instantiate();
 	{

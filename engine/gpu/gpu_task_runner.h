@@ -80,6 +80,7 @@ public:
 	void push(IGPUTask *task);
 	unsigned int get_pending_task_count() const;
 	bool has_rendering_device() const;
+	bool is_running() const;
 
 private:
 	void thread_func();

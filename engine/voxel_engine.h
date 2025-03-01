@@ -144,6 +144,12 @@ public:
 	static void create_singleton(Config config);
 	static void destroy_singleton();
 
+	// This is a separate initialization step due to GDExtension limitations.
+	// It must be called when RenderingServer singleton is available (which is not the case with GDExtension during
+	// class registrations, contrary to modules).
+	// See https://github.com/godotengine/godot-cpp/issues/1180
+	void try_initialize_gpu_features();
+
 	VolumeID add_volume(VolumeCallbacks callbacks);
 	VolumeCallbacks get_volume_callbacks(VolumeID volume_id) const;
 
@@ -182,10 +188,6 @@ public:
 	int get_main_thread_time_budget_usec() const;
 	void set_main_thread_time_budget_usec(unsigned int usec);
 
-	// Allows/disallows building Mesh and Texture resources from inside threads.
-	// Depends on Godot's efficiency at doing so, and which renderer is used.
-	// For example, the OpenGL renderer does not support this well, but the Vulkan one should.
-	void set_threaded_graphics_resource_building_enabled(bool enable);
 	// This should be fast and safe to access from multiple threads.
 	bool is_threaded_graphics_resource_building_enabled() const;
 
@@ -319,6 +321,9 @@ private:
 
 	FileLocker _file_locker;
 
+	// Caches whether building Mesh and Texture resources is allowed from inside threads.
+	// Depends on Godot's efficiency at doing so, and which renderer is used.
+	// For example, the OpenGL renderer does not support this well, but the Vulkan one should.
 	bool _threaded_graphics_resource_building_enabled = false;
 
 	GPUTaskRunner _gpu_task_runner;

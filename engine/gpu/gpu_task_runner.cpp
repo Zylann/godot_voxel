@@ -46,6 +46,10 @@ void GPUTaskRunner::stop() {
 	_thread.wait_to_finish();
 }
 
+bool GPUTaskRunner::is_running() const {
+	return _running;
+}
+
 void GPUTaskRunner::push(IGPUTask *task) {
 	ZN_ASSERT_RETURN(task != nullptr);
 	MutexLock mlock(_mutex);
