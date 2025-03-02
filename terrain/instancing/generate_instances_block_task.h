@@ -1,6 +1,7 @@
 #ifndef ZN_VOXEL_GENERATE_INSTANCES_BLOCK_TASK_H
 #define ZN_VOXEL_GENERATE_INSTANCES_BLOCK_TASK_H
 
+#include "../../generators/voxel_generator.h"
 #include "../../util/containers/std_vector.h"
 #include "../../util/godot/core/array.h"
 #include "../../util/tasks/threaded_task.h"
@@ -24,6 +25,7 @@ public:
 	float mesh_block_size;
 	Array surface_arrays;
 	Ref<VoxelInstanceGenerator> generator;
+	Ref<VoxelGenerator> voxel_generator;
 	// Can be pre-populated by edited transforms
 	StdVector<Transform3f> transforms;
 	std::shared_ptr<InstancerTaskOutputQueue> output_queue;

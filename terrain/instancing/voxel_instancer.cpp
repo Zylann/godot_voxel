@@ -759,6 +759,8 @@ void VoxelInstancer::regenerate_layer(uint16_t layer_id, bool regenerate_blocks)
 		}
 	};
 
+	Ref<VoxelGenerator> voxel_generator = _parent->get_generator();
+
 	// Update existing blocks
 	for (size_t block_index = 0; block_index < _blocks.size(); ++block_index) {
 		Block &block = *_blocks[block_index];
@@ -815,7 +817,8 @@ void VoxelInstancer::regenerate_layer(uint16_t layer_id, bool regenerate_blocks)
 				surface_arrays,
 				_up_mode,
 				octant_mask,
-				lod_block_size
+				lod_block_size,
+				voxel_generator
 		);
 
 		if (render_to_data_factor == 2 && octant_mask != 0xff) {
@@ -1427,6 +1430,7 @@ void VoxelInstancer::create_render_blocks(Vector3i render_grid_position, int lod
 	ZN_ASSERT_RETURN(_library.is_valid());
 	ZN_ASSERT_RETURN(_parent != nullptr);
 	Ref<VoxelStream> stream = _parent->get_stream();
+	Ref<VoxelGenerator> generator = _parent->get_generator();
 
 	const unsigned int render_block_size = 1 << _parent_mesh_block_size_po2;
 	const unsigned int data_block_size = 1 << _parent_data_block_size_po2;
@@ -1447,17 +1451,18 @@ void VoxelInstancer::create_render_blocks(Vector3i render_grid_position, int lod
 		create_block(layer, layer_id, render_grid_position, true);
 	}
 
-	LoadInstanceChunkTask *task = ZN_NEW(LoadInstanceChunkTask( //
-			_loading_results, //
-			stream, //
-			lod.quick_reload_cache, //
-			_library, //
-			surface_arrays, //
-			render_grid_position, //
-			lod_index, //
-			render_block_size, //
-			data_block_size, //
-			_up_mode //
+	LoadInstanceChunkTask *task = ZN_NEW(LoadInstanceChunkTask(
+			_loading_results,
+			stream,
+			generator,
+			lod.quick_reload_cache,
+			_library,
+			surface_arrays,
+			render_grid_position,
+			lod_index,
+			render_block_size,
+			data_block_size,
+			_up_mode
 	));
 
 	VoxelEngine::get_singleton().push_async_io_task(task);

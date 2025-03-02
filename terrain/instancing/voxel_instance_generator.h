@@ -14,6 +14,8 @@
 
 namespace zylann::voxel {
 
+class VoxelGenerator;
+
 // TODO This may have to be moved to the meshing thread some day
 
 // Decides where to spawn instances on top of a voxel surface.
@@ -62,7 +64,8 @@ public:
 			// Bits set to zero will cause all instances in the corresponding octant to not be generated.
 			uint8_t octant_mask,
 			// This is block size in world space, not relative to LOD index
-			float block_size
+			float block_size,
+			Ref<VoxelGenerator> voxel_generator
 	);
 
 	void set_density(float d);
@@ -130,6 +133,15 @@ public:
 	void set_voxel_material_filter_mask(const uint32_t mask);
 	uint32_t get_voxel_material_filter_mask() const;
 
+	void set_affine_from_generator_sdf_enabled(bool enabled);
+	bool get_affine_from_generator_sdf_enabled() const;
+
+	void set_affine_from_generator_sdf_search_distance(float new_distance);
+	float get_affine_from_generator_sdf_search_distance() const;
+
+	void set_affine_from_generator_sdf_sample_count(int new_sample_count);
+	int get_affine_from_generator_sdf_sample_count() const;
+
 	static inline int get_octant_index(const Vector3f pos, float half_block_size) {
 		return get_octant_index(pos.x > half_block_size, pos.y > half_block_size, pos.z > half_block_size);
 	}
@@ -172,6 +184,13 @@ private:
 	float _noise_on_scale = 0.f;
 	bool _voxel_material_filter_enabled = false;
 	uint32_t _voxel_material_filter_mask = 1;
+
+	struct AffineFromGeneratorSDFSettings {
+		bool enabled = false;
+		uint8_t sample_count = 2;
+		float search_distance = 1.f;
+	};
+	AffineFromGeneratorSDFSettings _gen_sdf_affining_settings;
 
 	// TODO Protect noise and noise graph members from multithreaded access
 

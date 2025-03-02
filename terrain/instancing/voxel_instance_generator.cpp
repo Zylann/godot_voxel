@@ -1,14 +1,18 @@
 #include "voxel_instance_generator.h"
 #include "../../constants/voxel_string_names.h"
+#include "../../generators/voxel_generator.h"
+#include "../../storage/voxel_buffer.h"
 #include "../../util/containers/container_funcs.h"
 #include "../../util/godot/classes/array_mesh.h"
 #include "../../util/godot/classes/engine.h"
 #include "../../util/godot/core/array.h"
 #include "../../util/godot/core/packed_arrays.h"
 #include "../../util/godot/core/random_pcg.h"
+#include "../../util/godot/core/string.h"
 #include "../../util/math/conv.h"
 #include "../../util/math/triangle.h"
 #include "../../util/profiling.h"
+#include "../../util/string/format.h"
 
 #if defined(_MSC_VER)
 #pragma warning(disable : 4701) // Potentially uninitialized local variable used.
@@ -23,6 +27,165 @@ const float MAX_DENSITY = 10.f;
 // We expose a slider going below max density as it should not often be needed, but we allow greater if really necessary
 const char *DENSITY_HINT_STRING = "0.0, 1.0, 0.01, or_greater";
 
+static const unsigned int GEN_SDF_SAMPLE_COUNT_MIN = 2;
+static const unsigned int GEN_SDF_SAMPLE_COUNT_MAX = 16;
+
+// Repositions points by sampling SDF from the voxel generator, and putting them closer to a position where
+// the SDF crosses zero.
+// Side-effects:
+// - Points might appear buried or floating compared to their low-resolution mesh when seen from far away
+// - Generator queries can incur a significant performance cost
+// - Instance distribution may become less even in some cases
+void affine_surface_points_from_generator_sdf(
+		// Point positions relative to `positions_origin`, assumed to already be close to the surface
+		Span<Vector3f> positions,
+		// Normals along which points will be moved
+		Span<const Vector3f> normals,
+		const Vector3 positions_origin,
+		// TODO Need to investigate whether generate_series can be made const
+		VoxelGenerator &generator,
+		// Distance to search below and above points along normals.
+		// It should be relatively small, otherwise points could get teleported away from their expected location.
+		const float search_distance,
+		// How many samples are taken from the generator per point. Must be >= 2.
+		const unsigned int sample_count,
+		// Precalculated bounds within which input points are located. Does not have to be exact. Used for optimizing
+		// generator queries.
+		const Vector3f chunk_min_pos,
+		const Vector3f chunk_max_pos
+) {
+	ZN_PROFILE_SCOPE();
+
+	if (!generator.supports_series_generation()) {
+		ZN_PRINT_ERROR_ONCE(
+				format("Can't affine instance positions from generator SDF, {} doesn't support series generation.",
+					   generator.get_class())
+		);
+		return;
+	}
+
+	ZN_ASSERT_RETURN(sample_count >= GEN_SDF_SAMPLE_COUNT_MIN);
+	ZN_ASSERT_RETURN_MSG(sample_count <= GEN_SDF_SAMPLE_COUNT_MAX, "Sample count is too high");
+
+	// TODO Candidates for temp allocator
+	StdVector<float> x_buffer;
+	StdVector<float> y_buffer;
+	StdVector<float> z_buffer;
+	StdVector<float> sd_buffer;
+
+	const Vector3f positions_origin_f = to_vec3f(positions_origin);
+
+	const float distance_between_samples = 2.f * search_distance / (sample_count - 1);
+
+	{
+		ZN_PROFILE_SCOPE_NAMED("Buffer preparation");
+
+		const unsigned int buffer_len = positions.size() * sample_count;
+
+		x_buffer.resize(buffer_len);
+		y_buffer.resize(buffer_len);
+		z_buffer.resize(buffer_len);
+		sd_buffer.resize(buffer_len);
+
+		const float sample_count_inv_den = 1.f / static_cast<float>(sample_count - 1);
+
+		for (unsigned int i = 0; i < positions.size(); ++i) {
+			const unsigned int k0 = i * sample_count;
+			const Vector3f mid_pos_world = positions[i] + positions_origin_f;
+			const Vector3f normal = normals[i];
+
+			const Vector3f min_pos = mid_pos_world - search_distance * normal;
+			const Vector3f max_pos = mid_pos_world + search_distance * normal;
+
+			for (unsigned int j = 0; j < sample_count; ++j) {
+				const unsigned int k = k0 + j;
+
+				// Goes from 0 to 1 included
+				const float t = static_cast<float>(j) * sample_count_inv_den;
+
+				const Vector3f pos = math::lerp(min_pos, max_pos, t);
+
+				x_buffer[k] = pos.x;
+				y_buffer[k] = pos.y;
+				z_buffer[k] = pos.z;
+			}
+		}
+	}
+
+	generator.generate_series(
+			to_span(x_buffer),
+			to_span(y_buffer),
+			to_span(z_buffer),
+			VoxelBuffer::CHANNEL_SDF,
+			to_span(sd_buffer),
+			chunk_min_pos,
+			chunk_max_pos
+	);
+
+	// int debug_hits = 0;
+	// int debug_misses = 0;
+
+	for (unsigned int i = 0; i < positions.size(); ++i) {
+		Span<const float> sd_samples = to_span_from_position_and_size(sd_buffer, i * sample_count, sample_count);
+
+		bool s0 = sd_samples[0] >= 0.f;
+		int zero_cross_index = -1;
+
+		// Find two samples where the sign becomes positive
+		for (unsigned int j = 1; j < sd_samples.size(); ++j) {
+			const float sd = sd_samples[j];
+			const bool s1 = sd >= 0.f;
+			if (s0 != s1 && sd > 0.f) {
+				zero_cross_index = j;
+				break;
+			}
+		}
+
+		if (zero_cross_index != -1) {
+			// Found surface nearby
+			const unsigned int i0 = zero_cross_index - 1;
+			const unsigned int i1 = zero_cross_index;
+			// Estimate where zero is between the two samples
+			const float sd0 = sd_samples[i0];
+			const float sd1 = sd_samples[i1];
+			const float dsd = sd1 - sd0;
+			float zc_alpha;
+			if (Math::is_zero_approx(dsd)) {
+				zc_alpha = 0.5f;
+			} else {
+				zc_alpha = -sd0 / dsd;
+			}
+			// Compute offset
+			const float offset_distance_from_min = distance_between_samples * (static_cast<float>(i0) + zc_alpha);
+			positions[i] = positions[i] + (offset_distance_from_min - search_distance) * normals[i];
+
+			// ++debug_hits;
+			//
+		} else {
+			// The instance is either buried, floating beyond the search distance, or spawned in a gap so small that
+			// samples were not precise enough to find it.
+			// Fallback to the smallest sample to approach it.
+			float min_sd = sd_samples[0];
+			unsigned int min_index = 0;
+			for (unsigned int j = 1; j < sd_samples.size(); ++j) {
+				const float sd = sd_samples[j];
+				if (Math::abs(sd) < min_sd) {
+					min_sd = sd;
+					min_index = j;
+				}
+			}
+
+			const float offset_distance_from_min = distance_between_samples * static_cast<float>(min_index);
+			positions[i] = positions[i] + (offset_distance_from_min - search_distance) * normals[i];
+
+			// ++debug_misses;
+			// TODO Consider removing it?
+		}
+	}
+
+	// ZN_PRINT_VERBOSE(format("Gen SDF Affining hits {} misses {}", debug_hits, debug_misses));
+}
+
 } // namespace
 
 void VoxelInstanceGenerator::generate_transforms(
@@ -35,7 +198,8 @@ void VoxelInstanceGenerator::generate_transforms(
 		Array surface_arrays,
 		UpMode up_mode,
 		uint8_t octant_mask,
-		float block_size
+		float block_size,
+		Ref<VoxelGenerator> voxel_generator
 ) {
 	ZN_PROFILE_SCOPE();
 
@@ -606,6 +770,23 @@ void VoxelInstanceGenerator::generate_transforms(
 		}
 	}
 
+	// Affine from generator SDF
+	if (_gen_sdf_affining_settings.enabled && voxel_generator.is_valid()) {
+		const Vector3f min_pos = to_vec3f(mesh_block_origin_d);
+		const Vector3f max_pos = min_pos + Vector3f(block_size);
+
+		affine_surface_points_from_generator_sdf(
+				to_span(vertex_cache),
+				to_span(normal_cache),
+				mesh_block_origin_d,
+				**voxel_generator,
+				_gen_sdf_affining_settings.search_distance,
+				_gen_sdf_affining_settings.sample_count,
+				min_pos,
+				max_pos
+		);
+	}
+
 	const float vertical_alignment = _vertical_alignment;
 	const float scale_min = _min_scale;
 	const float scale_range = _max_scale - _min_scale;
@@ -1094,6 +1275,45 @@ uint32_t VoxelInstanceGenerator::get_voxel_material_filter_mask() const {
 	return _voxel_material_filter_mask;
 }
 
+void VoxelInstanceGenerator::set_affine_from_generator_sdf_enabled(bool enabled) {
+	if (_gen_sdf_affining_settings.enabled == enabled) {
+		return;
+	}
+	_gen_sdf_affining_settings.enabled = enabled;
+	emit_changed();
+}
+
+bool VoxelInstanceGenerator::get_affine_from_generator_sdf_enabled() const {
+	return _gen_sdf_affining_settings.enabled;
+}
+
+void VoxelInstanceGenerator::set_affine_from_generator_sdf_search_distance(float new_distance) {
+	const float checked_distance = math::max(new_distance, 0.f);
+	if (checked_distance == _gen_sdf_affining_settings.search_distance) {
+		return;
+	}
+	_gen_sdf_affining_settings.search_distance = checked_distance;
+	emit_changed();
+}
+
+float VoxelInstanceGenerator::get_affine_from_generator_sdf_search_distance() const {
+	return _gen_sdf_affining_settings.search_distance;
+}
+
+void VoxelInstanceGenerator::set_affine_from_generator_sdf_sample_count(int new_sample_count) {
+	const uint8_t checked_sample_count =
+			zylann::math::clamp<int>(new_sample_count, GEN_SDF_SAMPLE_COUNT_MIN, GEN_SDF_SAMPLE_COUNT_MAX);
+	if (checked_sample_count == _gen_sdf_affining_settings.sample_count) {
+		return;
+	}
+	_gen_sdf_affining_settings.sample_count = checked_sample_count;
+	emit_changed();
+}
+
+int VoxelInstanceGenerator::get_affine_from_generator_sdf_sample_count() const {
+	return _gen_sdf_affining_settings.sample_count;
+}
+
 PackedInt32Array VoxelInstanceGenerator::_b_get_voxel_material_filter_array() const {
 	const unsigned int bit_count = sizeof(_voxel_material_filter_mask) * 8;
 	PackedInt32Array array;
@@ -1142,7 +1362,7 @@ void VoxelInstanceGenerator::get_configuration_warnings(PackedStringArray &warni
 
 	if (noise_graph.is_valid()) {
 		// Graph compiles?
-		godot::get_resource_configuration_warnings(**noise_graph, warnings, []() { return "noise_graph: "; });
+		zylann::godot::get_resource_configuration_warnings(**noise_graph, warnings, []() { return "noise_graph: "; });
 
 		// Check I/Os
 		const int expected_input_count = (_noise_dimension == DIMENSION_2D ? 2 : 3);
@@ -1275,6 +1495,30 @@ void VoxelInstanceGenerator::_bind_methods() {
 	);
 	ClassDB::bind_method(D_METHOD("get_voxel_texture_filter_array"), &Self::_b_get_voxel_material_filter_array);
 
+	ClassDB::bind_method(
+			D_METHOD("set_affine_from_generator_sdf_enabled", "enabled"), &Self::set_affine_from_generator_sdf_enabled
+	);
+	ClassDB::bind_method(
+			D_METHOD("get_affine_from_generator_sdf_enabled"), &Self::get_affine_from_generator_sdf_enabled
+	);
+
+	ClassDB::bind_method(
+			D_METHOD("set_affine_from_generator_sdf_search_distance", "d"),
+			&Self::set_affine_from_generator_sdf_search_distance
+	);
+	ClassDB::bind_method(
+			D_METHOD("get_affine_from_generator_sdf_search_distance"),
+			&Self::get_affine_from_generator_sdf_search_distance
+	);
+
+	ClassDB::bind_method(
+			D_METHOD("set_affine_from_generator_sdf_sample_count", "enabled"),
+			&Self::set_affine_from_generator_sdf_sample_count
+	);
+	ClassDB::bind_method(
+			D_METHOD("get_affine_from_generator_sdf_sample_count"), &Self::get_affine_from_generator_sdf_sample_count
+	);
+
 	ADD_GROUP("Emission", "");
 
 	ADD_PROPERTY(
@@ -1392,6 +1636,26 @@ void VoxelInstanceGenerator::_bind_methods() {
 			PropertyInfo(Variant::PACKED_INT32_ARRAY, "voxel_texture_filter_array"),
 			"set_voxel_texture_filter_array",
 			"get_voxel_texture_filter_array"
+	);
+
+	ADD_GROUP("Affine From Gen SDF", "affine_from_generator_sdf_");
+
+	ADD_PROPERTY(
+			PropertyInfo(Variant::BOOL, "affine_from_generator_sdf_enabled"),
+			"set_affine_from_generator_sdf_enabled",
+			"get_affine_from_generator_sdf_enabled"
+	);
+
+	ADD_PROPERTY(
+			PropertyInfo(Variant::FLOAT, "affine_from_generator_sdf_search_distance"),
+			"set_affine_from_generator_sdf_search_distance",
+			"get_affine_from_generator_sdf_search_distance"
+	);
+
+	ADD_PROPERTY(
+			PropertyInfo(Variant::INT, "affine_from_generator_sdf_sample_count", PROPERTY_HINT_RANGE, "2,16"),
+			"set_affine_from_generator_sdf_sample_count",
+			"get_affine_from_generator_sdf_sample_count"
 	);
 
 	BIND_ENUM_CONSTANT(EMIT_FROM_VERTICES);

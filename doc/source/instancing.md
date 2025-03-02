@@ -32,7 +32,7 @@ Items created this way come with a default setup, so you should be able to see s
 
 ### Block LOD
 
-The range at which items spawn is based on the LOD system of the voxel terrain itself. This is configured in the `lod_index` property of [VoxelInstanceLibraryItem](api/VoxelInstanceLibraryItem.md). For example, choosing `0` will make the item spawn at the closest range, and fade quickly in the distance. Higher indexes will spawn on a larger range, so will also start to appear earlier as the player gets closer. Instances spawn in the same "blocks" as the ground.
+The range at which items spawn is based on the LOD system of the voxel terrain itself, either on high-resolution chunks, or low-resolution ones. This is configured in the `lod_index` property of [VoxelInstanceLibraryItem](api/VoxelInstanceLibraryItem.md). For example, choosing `0` will make the item spawn on chunks of LOD0 at closest range, and fade quickly in the distance. Higher indexes will spawn on bigger chunks covering a larger range. 
 
 ![Screenshot showing the effect of lod_index on the range of instances](images/instances_lod_index.webp)
 
@@ -40,20 +40,48 @@ Usually landscapes may be composed of multiple layers so that the closer you get
 
 ![Screenshot of landscape using layers of instances](images/landscape_with_instances.webp)
 
-There is a balance to consider when choosing the appropriate `lod_index`: currently, larger indexes are *much more imprecise*, because they work on top of a lower-resolution mesh. When getting closer, it's possible that such instances are seen floating above ground, or sinking into it. This mostly happens in areas with sharp changes such as ridges, crevices or caves:
-
-![Screemshot of misaligned instances](images/misaligned_instances.webp)
-
-To combat this, you can adjust the `offset_along_normal` parameter in the `generator` associated to the item. This depends on the asset, so designing them such that they can have part of their bottom sunk into the ground can give some margin of error.
-
-Sometimes it might not be enough, so this problem still has to be worked out in the future. Possible approaches include:
-
-- Querying the world generator to approximate the surface without using the mesh (not suitable if the ground was edited)
-- Gradually snap the instances somehow as higher-resolution data becomes available
-- Load edited voxels for the entire world at once so they can be queried even from far distance (takes more memory)
-
 !!! note
     When making grass or other items, it may be a good idea to fade meshes based on distance from the camera using a custom shader, so they won't disappear abruptly. Using a ground texture of similar colors also helps to make it blend.
+
+### Placement precision
+
+There is a balance to consider when choosing the appropriate `lod_index`: currently, larger indexes are *much more imprecise*, because they work on top of a lower-resolution mesh. This allows to generate instances much quicker at larger distances, without having to calculate full-precision LODs.
+
+The downside is, as getting closer and terrain calculates higher-resolution LODs, it's possible that such instances are seen floating above ground, or sinking into it. This mostly happens in areas with sharp changes such as ridges, crevices or caves:
+
+![Screenshot of misaligned instances](images/misaligned_instances.webp)
+
+#### Offset along normal
+
+A first option to adjust placement, is to adjust the `offset_along_normal` parameter in the `generator` associated to the item. This depends on the asset, so designing them such that they can have part of their bottom sunk into the ground can give some margin of error.
+
+#### Affining from generator SDF
+
+Another option is to enable `affine_from_generator_sdf_enabled`, at the cost of slower instance generation. This is preferably used when `lod_index` > 0, as LOD0 already has maximum precision.
+
+Without affining:
+
+![Screenshot of instances spawned from LOD2 an viewed at LOD0, without affining. Many are not properly on ground](images/instance_gen_sdf_affining_off.webp)
+
+With affining:
+
+![Screenshot of instances spawned from LOD2 an viewed at LOD0, with affining on, resulting in better positionning](images/instance_gen_sdf_affining_on.webp)
+
+This option queries the `VoxelGenerator` at floating point positions to approximate where the surface is, assuming the mesh-based position was a good starting point.
+The generator can only return SDF values, which roughly tells how "close" each 3D point is from the surface. With at least 2 nearby samples or more, we can interpolate to snap positions closer to that surface.
+
+Limitations:
+
+- Requires a generator that supports series generation (i.e query arbitrary floating point positions to get voxel data from, instead of voxel chunks). At time of writing, only `VoxelGeneratorGraph` supports this.
+- Doesn't work if the terrain is modified: if a player comes back to the edited area and instances have to re-generate on top, estimations from the generator will not account for edited areas. To workaround this, instances could be set as `persistent`, so editing terrain marks them as modified and saves their positions onwards instead of re-generating.
+- Tends to "bury" or "float" instances far away when their low-resolution mesh is active, since they get moved closer to the high-resolution one. This should however not be as noticeable as before, when that was happening at close range.
+
+
+#### Research
+
+More options may be researched in the future in case the current workarounds aren't enough:
+
+- Gradually snap instances as higher-resolution meshes become available. Requires fast mesh raycast, if possible doable from threads (that unfortunately excludes Godot physics).
 
 
 ### Mesh LOD

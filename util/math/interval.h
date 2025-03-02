@@ -17,7 +17,12 @@ void check_range_once(double min, double max);
 // For interval arithmetic
 template <typename T>
 struct IntervalT {
-	static_assert(std::is_floating_point<T>::value);
+	// TODO I want this struct to only be used with floats, but `static_assert` messes up overload resolution of math
+	// functions. For example, calling `clamp<int>(int, int, int)` triggers the `static_assert` because the compiler
+	// tries to match `clamp<int>(Interval<int>, Interval<int>, Interval<int>)`, and instead of getting skipped,
+	// compilation halts with an error. Any better option?
+	//
+	// static_assert(std::is_floating_point<T>::value);
 
 	// Both inclusive
 	T min;

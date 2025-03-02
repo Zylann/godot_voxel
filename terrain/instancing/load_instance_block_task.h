@@ -1,6 +1,7 @@
 #ifndef VOXEL_LOAD_INSTANCE_BLOCK_TASK_H
 #define VOXEL_LOAD_INSTANCE_BLOCK_TASK_H
 
+#include "../../generators/voxel_generator.h"
 #include "../../streams/voxel_stream.h"
 #include "../../util/godot/core/array.h"
 #include "../../util/math/vector3i.h"
@@ -18,17 +19,18 @@ struct InstancerQuickReloadingCache;
 // Loads all instances of all layers of a specific LOD in a specific chunk
 class LoadInstanceChunkTask : public IThreadedTask {
 public:
-	LoadInstanceChunkTask( //
-			std::shared_ptr<InstancerTaskOutputQueue> output_queue, //
-			Ref<VoxelStream> stream, //
+	LoadInstanceChunkTask(
+			std::shared_ptr<InstancerTaskOutputQueue> output_queue,
+			Ref<VoxelStream> stream,
+			Ref<VoxelGenerator> voxel_generator,
 			std::shared_ptr<InstancerQuickReloadingCache> quick_reload_cache,
-			Ref<VoxelInstanceLibrary> library, //
-			Array mesh_arrays, //
-			Vector3i grid_position, //
-			uint8_t lod_index, //
-			uint8_t instance_block_size, //
-			uint8_t data_block_size, //
-			UpMode up_mode //
+			Ref<VoxelInstanceLibrary> library,
+			Array mesh_arrays,
+			Vector3i grid_position,
+			uint8_t lod_index,
+			uint8_t instance_block_size,
+			uint8_t data_block_size,
+			UpMode up_mode
 	);
 
 	const char *get_debug_name() const override {
@@ -40,6 +42,7 @@ public:
 private:
 	std::shared_ptr<InstancerTaskOutputQueue> _output_queue;
 	Ref<VoxelStream> _stream;
+	Ref<VoxelGenerator> _voxel_generator;
 	std::shared_ptr<InstancerQuickReloadingCache> _quick_reload_cache;
 	Ref<VoxelInstanceLibrary> _library;
 	Array _mesh_arrays;

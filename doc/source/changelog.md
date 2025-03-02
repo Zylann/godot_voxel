@@ -7,6 +7,12 @@ At the moment, this module doesn't have a distinct release schedule, so this cha
 
 Semver is not yet in place, so each version can have breaking changes, although it shouldn't happen often across minor versions.
 
+1.5 - ongoing development - `master`
+-----------------------------------------
+
+- `VoxelInstanceGenerator`: Added an option to affine positions based on the voxel generator SDF (only available with `VoxelGeneratorGraph`).
+
+
 1.4 - ongoing development - `master`
 --------------------------------------
 
