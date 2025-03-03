@@ -57,6 +57,12 @@ jobs:
         run: |
           cp LICENSE.md project/addons/zylann.voxel
 
+      # Setup GDExtension file
+      - name: "Setup GDExtension file"
+        run: |
+          cd project/addons/zylann.voxel
+          mv voxel.gdextension-release voxel.gdextension
+
       # Remove unwanted files because upload-artifacts cannot filter files that go in the archive.
       # The goal is to get an archive that can be decompressed at the root of a Godot project, 
       # and have only necessary files go in matching directories. This is how the asset library works (otherwise the
