@@ -1,0 +1,75 @@
+
+# Generates a GDExtension release package of the plugin.
+
+name: Make GDExtension release package
+on:
+  workflow_dispatch:
+
+
+jobs:
+  build_linux:
+    uses: Zylann/godot_voxel/.github/workflows/extension_linux.yaml@master
+
+  build_windows:
+    uses: Zylann/godot_fast_noise_2/.github/workflows/windows.yaml@master
+
+  dist:
+    runs-on: ubuntu-22.04
+    needs: [build_linux, build_windows]
+
+    steps:
+      # Clone our repo
+      - uses: actions/checkout@v4
+
+      # Get builds
+      # Downloads all artifacts
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: libvoxel.*
+          path: project/addons/zylann.voxel/bin
+
+      # Fix downloaded builds:
+      # download-artifact does not just download the file we want:
+      # it also creates a folder of the same name, and then puts the contents in it.
+      # See https://github.com/actions/download-artifact/issues/141
+      - name: "Fix downloaded artifacts"
+        run: |
+          cd project/addons/zylann.fastnoise2/bin
+
+          mv libvoxel.linux.editor.x86_64.so temp
+          mv temp/libvoxel.linux.editor.x86_64.so libvoxel.linux.editor.x86_64.so
+          rm -d temp
+
+          mv libvoxel.linux.template_release.x86_64.so temp
+          mv temp/libvoxel.linux.template_release.x86_64.so libvoxel.linux.template_release.x86_64.so
+          rm -d temp
+
+          mv libvoxel.windows.editor.x86_64.dll temp
+          mv temp/libvoxel.windows.editor.x86_64.dll libvoxel.windows.editor.x86_64.dll
+          rm -d temp
+
+          mv libvoxel.windows.template_release.x86_64.dll temp
+          mv temp/libvoxel.windows.template_release.x86_64.dll libvoxel.windows.template_release.x86_64.dll
+          rm -d temp
+
+      # Copy license
+      - name: "Copy license"
+        run: |
+          cp LICENSE.md project/addons/zylann.voxel
+
+      # Remove unwanted files because upload-artifacts cannot filter files that go in the archive.
+      # The goal is to get an archive that can be decompressed at the root of a Godot project, 
+      # and have only necessary files go in matching directories. This is how the asset library works (otherwise the
+      # user has to remember to manually choose the right path to the addons/ folder)
+      - name: "Filter files"
+        # Delete all files in `project/` except the `addons` folder
+        run: |
+          cd project
+          find -maxdepth 1 -type f -delete
+          ls -l
+
+      # Make package
+      - uses: actions/upload-artifact@v4
+        with:
+          name: GodotVoxelExtension
+          path: project
