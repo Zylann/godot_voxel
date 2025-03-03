@@ -51,7 +51,7 @@ jobs:
       # Upload cache on completion and check it out now
       # Editing this is pretty dangerous for Windows since it can break and needs to be properly tested with a fresh cache.
       - name: Load .scons_cache directory
-        id: windows-editor-cache
+        id: windows-gdextension-cache
         #uses: ${{matrix.cache_action}}
         uses: actions/cache@v4
         with:
