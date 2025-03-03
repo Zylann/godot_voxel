@@ -14,7 +14,7 @@ concurrency:
 env:
   GODOT_BASE_BRANCH: "4.4-stable"
   SCONS_CACHE_MSVC_CONFIG: true
-  SCONS_CACHE_LIMIT: 4096
+  SCONS_CACHE_LIMIT_GB: 4
 
 jobs:
   windows:
@@ -116,14 +116,19 @@ jobs:
           python modules/voxel/misc/instrument.py -d . -c modules/voxel/misc/instruments.json
 
       # Compile with explicit flags.
-      # `PYTHONIOENCODING` was needed due to certain characters the Godot build system might print (such as '∞'), 
-      # otherwise it makes the job fail with an encoding error.
+      #
+      # TODO `PYTHONIOENCODING` is not working!
+      # It would be needed due to certain characters the Godot build system might print (such as '∞',
+      # when `cache_limit` is not specified), otherwise it makes the job fail with an encoding error.
+      # Currently we specify it, but the issue remain unsolved if it shows up again.
+      # See https://github.com/godotengine/godot/issues/103520
+      #
       # TODO Enhancement: we'd like to use `warnings=extra` with MSVC but Godot doesn't compile yet with that level of warnings.
       # See https://github.com/godotengine/godot/issues/66537
       - name: Compilation
         run: |
           set PYTHONIOENCODING=utf-8
-          scons verbose=yes warnings=all werror=yes platform=windows tests=no target=${{matrix.target}} dev_build=no precision=${{matrix.precision}} tracy=${{matrix.tracy}} production=yes "cache_path=${{github.workspace}}/.scons_cache/"
+          scons verbose=yes warnings=all werror=yes platform=windows tests=no target=${{matrix.target}} dev_build=no precision=${{matrix.precision}} tracy=${{matrix.tracy}} production=yes "cache_path=${{github.workspace}}/.scons_cache/" cache_limit=${{env.SCONS_CACHE_LIMIT_GB}}
 
       - name: "Rename executable"
         if: ${{ matrix.tracy == 'yes' }}
