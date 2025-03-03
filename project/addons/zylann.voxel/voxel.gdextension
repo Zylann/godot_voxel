@@ -1,7 +1,7 @@
 [configuration]
 
 entry_symbol = "voxel_library_init"
-compatibility_minimum = 4.1
+compatibility_minimum = 4.4
 
 [libraries]
 
