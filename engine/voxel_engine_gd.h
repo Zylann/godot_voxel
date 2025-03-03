@@ -40,6 +40,10 @@ public:
 	Vector3 get_editor_camera_direction() const;
 #endif
 
+#ifdef VOXEL_TESTS
+	void run_tests();
+#endif
+
 private:
 	void _on_rendering_server_frame_post_draw();
 

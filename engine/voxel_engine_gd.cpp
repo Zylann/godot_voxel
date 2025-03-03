@@ -10,6 +10,10 @@
 #include "../util/tasks/godot/threaded_task_gd.h"
 #include "voxel_engine.h"
 
+#ifdef VOXEL_TESTS
+#include "../tests/tests.h"
+#endif
+
 using namespace zylann::godot;
 
 namespace zylann::voxel::godot {
@@ -182,6 +186,14 @@ Vector3 VoxelEngine::get_editor_camera_direction() const {
 
 #endif
 
+#ifdef VOXEL_TESTS
+
+void VoxelEngine::run_tests() {
+	zylann::voxel::tests::run_voxel_tests();
+}
+
+#endif
+
 bool VoxelEngine::_b_get_threaded_graphics_resource_building_enabled() const {
 	const zylann::voxel::VoxelEngine &ve = zylann::voxel::VoxelEngine::get_singleton();
 	return ve.is_threaded_graphics_resource_building_enabled();
@@ -203,6 +215,10 @@ void VoxelEngine::_bind_methods() {
 			D_METHOD("get_threaded_graphics_resource_building_enabled"),
 			&VoxelEngine::_b_get_threaded_graphics_resource_building_enabled
 	);
+
+#ifdef VOXEL_TESTS
+	ClassDB::bind_method(D_METHOD("run_tests"), &VoxelEngine::run_tests);
+#endif
 
 	// ClassDB::bind_method(
 	// 		D_METHOD("set_threaded_graphics_resource_building_enabled", "enabled"),
