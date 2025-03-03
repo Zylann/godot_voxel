@@ -10,7 +10,7 @@ Semver is not yet in place, so each version can have breaking changes, although 
 1.5 - ongoing development - `master`
 -----------------------------------------
 
-- `VoxelInstanceGenerator`: Added an option to affine positions based on the voxel generator SDF (only available with `VoxelGeneratorGraph`).
+- `VoxelInstanceGenerator`: Added an option to snap instances based on the voxel generator SDF (only available with `VoxelGeneratorGraph`).
 
 
 1.4 - ongoing development - `master`

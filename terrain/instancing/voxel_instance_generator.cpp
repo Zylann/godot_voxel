@@ -36,7 +36,7 @@ static const unsigned int GEN_SDF_SAMPLE_COUNT_MAX = 16;
 // - Points might appear buried or floating compared to their low-resolution mesh when seen from far away
 // - Generator queries can incur a significant performance cost
 // - Instance distribution may become less even in some cases
-void affine_surface_points_from_generator_sdf(
+void snap_surface_points_from_generator_sdf(
 		// Point positions relative to `positions_origin`, assumed to already be close to the surface
 		Span<Vector3f> positions,
 		// Normals along which points will be moved
@@ -58,7 +58,7 @@ void affine_surface_points_from_generator_sdf(
 
 	if (!generator.supports_series_generation()) {
 		ZN_PRINT_ERROR_ONCE(
-				format("Can't affine instance positions from generator SDF, {} doesn't support series generation.",
+				format("Can't snap instance positions from generator SDF, {} doesn't support series generation.",
 					   generator.get_class())
 		);
 		return;
@@ -183,7 +183,7 @@ void affine_surface_points_from_generator_sdf(
 		}
 	}
 
-	// ZN_PRINT_VERBOSE(format("Gen SDF Affining hits {} misses {}", debug_hits, debug_misses));
+	// ZN_PRINT_VERBOSE(format("Gen SDF snap hits {} misses {}", debug_hits, debug_misses));
 }
 
 } // namespace
@@ -770,18 +770,18 @@ void VoxelInstanceGenerator::generate_transforms(
 		}
 	}
 
-	// Affine from generator SDF
-	if (_gen_sdf_affining_settings.enabled && voxel_generator.is_valid()) {
+	// snap from generator SDF
+	if (_gen_sdf_snap_settings.enabled && voxel_generator.is_valid()) {
 		const Vector3f min_pos = to_vec3f(mesh_block_origin_d);
 		const Vector3f max_pos = min_pos + Vector3f(block_size);
 
-		affine_surface_points_from_generator_sdf(
+		snap_surface_points_from_generator_sdf(
 				to_span(vertex_cache),
 				to_span(normal_cache),
 				mesh_block_origin_d,
 				**voxel_generator,
-				_gen_sdf_affining_settings.search_distance,
-				_gen_sdf_affining_settings.sample_count,
+				_gen_sdf_snap_settings.search_distance,
+				_gen_sdf_snap_settings.sample_count,
 				min_pos,
 				max_pos
 		);
@@ -1275,43 +1275,43 @@ uint32_t VoxelInstanceGenerator::get_voxel_material_filter_mask() const {
 	return _voxel_material_filter_mask;
 }
 
-void VoxelInstanceGenerator::set_affine_from_generator_sdf_enabled(bool enabled) {
-	if (_gen_sdf_affining_settings.enabled == enabled) {
+void VoxelInstanceGenerator::set_snap_from_generator_sdf_enabled(bool enabled) {
+	if (_gen_sdf_snap_settings.enabled == enabled) {
 		return;
 	}
-	_gen_sdf_affining_settings.enabled = enabled;
+	_gen_sdf_snap_settings.enabled = enabled;
 	emit_changed();
 }
 
-bool VoxelInstanceGenerator::get_affine_from_generator_sdf_enabled() const {
-	return _gen_sdf_affining_settings.enabled;
+bool VoxelInstanceGenerator::get_snap_from_generator_sdf_enabled() const {
+	return _gen_sdf_snap_settings.enabled;
 }
 
-void VoxelInstanceGenerator::set_affine_from_generator_sdf_search_distance(float new_distance) {
+void VoxelInstanceGenerator::set_snap_from_generator_sdf_search_distance(float new_distance) {
 	const float checked_distance = math::max(new_distance, 0.f);
-	if (checked_distance == _gen_sdf_affining_settings.search_distance) {
+	if (checked_distance == _gen_sdf_snap_settings.search_distance) {
 		return;
 	}
-	_gen_sdf_affining_settings.search_distance = checked_distance;
+	_gen_sdf_snap_settings.search_distance = checked_distance;
 	emit_changed();
 }
 
-float VoxelInstanceGenerator::get_affine_from_generator_sdf_search_distance() const {
-	return _gen_sdf_affining_settings.search_distance;
+float VoxelInstanceGenerator::get_snap_from_generator_sdf_search_distance() const {
+	return _gen_sdf_snap_settings.search_distance;
 }
 
-void VoxelInstanceGenerator::set_affine_from_generator_sdf_sample_count(int new_sample_count) {
+void VoxelInstanceGenerator::set_snap_from_generator_sdf_sample_count(int new_sample_count) {
 	const uint8_t checked_sample_count =
 			zylann::math::clamp<int>(new_sample_count, GEN_SDF_SAMPLE_COUNT_MIN, GEN_SDF_SAMPLE_COUNT_MAX);
-	if (checked_sample_count == _gen_sdf_affining_settings.sample_count) {
+	if (checked_sample_count == _gen_sdf_snap_settings.sample_count) {
 		return;
 	}
-	_gen_sdf_affining_settings.sample_count = checked_sample_count;
+	_gen_sdf_snap_settings.sample_count = checked_sample_count;
 	emit_changed();
 }
 
-int VoxelInstanceGenerator::get_affine_from_generator_sdf_sample_count() const {
-	return _gen_sdf_affining_settings.sample_count;
+int VoxelInstanceGenerator::get_snap_from_generator_sdf_sample_count() const {
+	return _gen_sdf_snap_settings.sample_count;
 }
 
 PackedInt32Array VoxelInstanceGenerator::_b_get_voxel_material_filter_array() const {
@@ -1496,27 +1496,24 @@ void VoxelInstanceGenerator::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_voxel_texture_filter_array"), &Self::_b_get_voxel_material_filter_array);
 
 	ClassDB::bind_method(
-			D_METHOD("set_affine_from_generator_sdf_enabled", "enabled"), &Self::set_affine_from_generator_sdf_enabled
+			D_METHOD("set_snap_from_generator_sdf_enabled", "enabled"), &Self::set_snap_from_generator_sdf_enabled
+	);
+	ClassDB::bind_method(D_METHOD("get_snap_from_generator_sdf_enabled"), &Self::get_snap_from_generator_sdf_enabled);
+
+	ClassDB::bind_method(
+			D_METHOD("set_snap_from_generator_sdf_search_distance", "d"),
+			&Self::set_snap_from_generator_sdf_search_distance
 	);
 	ClassDB::bind_method(
-			D_METHOD("get_affine_from_generator_sdf_enabled"), &Self::get_affine_from_generator_sdf_enabled
+			D_METHOD("get_snap_from_generator_sdf_search_distance"), &Self::get_snap_from_generator_sdf_search_distance
 	);
 
 	ClassDB::bind_method(
-			D_METHOD("set_affine_from_generator_sdf_search_distance", "d"),
-			&Self::set_affine_from_generator_sdf_search_distance
+			D_METHOD("set_snap_from_generator_sdf_sample_count", "enabled"),
+			&Self::set_snap_from_generator_sdf_sample_count
 	);
 	ClassDB::bind_method(
-			D_METHOD("get_affine_from_generator_sdf_search_distance"),
-			&Self::get_affine_from_generator_sdf_search_distance
-	);
-
-	ClassDB::bind_method(
-			D_METHOD("set_affine_from_generator_sdf_sample_count", "enabled"),
-			&Self::set_affine_from_generator_sdf_sample_count
-	);
-	ClassDB::bind_method(
-			D_METHOD("get_affine_from_generator_sdf_sample_count"), &Self::get_affine_from_generator_sdf_sample_count
+			D_METHOD("get_snap_from_generator_sdf_sample_count"), &Self::get_snap_from_generator_sdf_sample_count
 	);
 
 	ADD_GROUP("Emission", "");
@@ -1638,24 +1635,24 @@ void VoxelInstanceGenerator::_bind_methods() {
 			"get_voxel_texture_filter_array"
 	);
 
-	ADD_GROUP("Affine From Gen SDF", "affine_from_generator_sdf_");
+	ADD_GROUP("Snap to generator SDF", "snap_from_generator_sdf_");
 
 	ADD_PROPERTY(
-			PropertyInfo(Variant::BOOL, "affine_from_generator_sdf_enabled"),
-			"set_affine_from_generator_sdf_enabled",
-			"get_affine_from_generator_sdf_enabled"
+			PropertyInfo(Variant::BOOL, "snap_from_generator_sdf_enabled"),
+			"set_snap_from_generator_sdf_enabled",
+			"get_snap_from_generator_sdf_enabled"
 	);
 
 	ADD_PROPERTY(
-			PropertyInfo(Variant::FLOAT, "affine_from_generator_sdf_search_distance"),
-			"set_affine_from_generator_sdf_search_distance",
-			"get_affine_from_generator_sdf_search_distance"
+			PropertyInfo(Variant::FLOAT, "snap_from_generator_sdf_search_distance"),
+			"set_snap_from_generator_sdf_search_distance",
+			"get_snap_from_generator_sdf_search_distance"
 	);
 
 	ADD_PROPERTY(
-			PropertyInfo(Variant::INT, "affine_from_generator_sdf_sample_count", PROPERTY_HINT_RANGE, "2,16"),
-			"set_affine_from_generator_sdf_sample_count",
-			"get_affine_from_generator_sdf_sample_count"
+			PropertyInfo(Variant::INT, "snap_from_generator_sdf_sample_count", PROPERTY_HINT_RANGE, "2,16"),
+			"set_snap_from_generator_sdf_sample_count",
+			"get_snap_from_generator_sdf_sample_count"
 	);
 
 	BIND_ENUM_CONSTANT(EMIT_FROM_VERTICES);

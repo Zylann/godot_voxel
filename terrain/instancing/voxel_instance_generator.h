@@ -133,14 +133,14 @@ public:
 	void set_voxel_material_filter_mask(const uint32_t mask);
 	uint32_t get_voxel_material_filter_mask() const;
 
-	void set_affine_from_generator_sdf_enabled(bool enabled);
-	bool get_affine_from_generator_sdf_enabled() const;
+	void set_snap_from_generator_sdf_enabled(bool enabled);
+	bool get_snap_from_generator_sdf_enabled() const;
 
-	void set_affine_from_generator_sdf_search_distance(float new_distance);
-	float get_affine_from_generator_sdf_search_distance() const;
+	void set_snap_from_generator_sdf_search_distance(float new_distance);
+	float get_snap_from_generator_sdf_search_distance() const;
 
-	void set_affine_from_generator_sdf_sample_count(int new_sample_count);
-	int get_affine_from_generator_sdf_sample_count() const;
+	void set_snap_from_generator_sdf_sample_count(int new_sample_count);
+	int get_snap_from_generator_sdf_sample_count() const;
 
 	static inline int get_octant_index(const Vector3f pos, float half_block_size) {
 		return get_octant_index(pos.x > half_block_size, pos.y > half_block_size, pos.z > half_block_size);
@@ -185,12 +185,12 @@ private:
 	bool _voxel_material_filter_enabled = false;
 	uint32_t _voxel_material_filter_mask = 1;
 
-	struct AffineFromGeneratorSDFSettings {
+	struct GeneratorSDFSnapSettings {
 		bool enabled = false;
 		uint8_t sample_count = 2;
 		float search_distance = 1.f;
 	};
-	AffineFromGeneratorSDFSettings _gen_sdf_affining_settings;
+	GeneratorSDFSnapSettings _gen_sdf_snap_settings;
 
 	// TODO Protect noise and noise graph members from multithreaded access
 

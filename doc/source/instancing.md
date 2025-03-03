@@ -55,20 +55,20 @@ The downside is, as getting closer and terrain calculates higher-resolution LODs
 
 A first option to adjust placement, is to adjust the `offset_along_normal` parameter in the `generator` associated to the item. This depends on the asset, so designing them such that they can have part of their bottom sunk into the ground can give some margin of error.
 
-#### Affining from generator SDF
+#### Snapping from generator SDF
 
-Another option is to enable `affine_from_generator_sdf_enabled`, at the cost of slower instance generation. This is preferably used when `lod_index` > 0, as LOD0 already has maximum precision.
+Another option is to enable `snap_from_generator_sdf_enabled`, at the cost of slower instance generation. This is preferably used when `lod_index` > 0, as LOD0 already has maximum precision.
 
-Without affining:
+Without snapping:
 
-![Screenshot of instances spawned from LOD2 an viewed at LOD0, without affining. Many are not properly on ground](images/instance_gen_sdf_affining_off.webp)
+![Screenshot of instances spawned from LOD2 an viewed at LOD0, without snapping. Many are not properly on ground](images/instance_gen_sdf_affining_off.webp)
 
-With affining:
+With snapping:
 
-![Screenshot of instances spawned from LOD2 an viewed at LOD0, with affining on, resulting in better positionning](images/instance_gen_sdf_affining_on.webp)
+![Screenshot of instances spawned from LOD2 an viewed at LOD0, with snapping on, resulting in better positionning](images/instance_gen_sdf_affining_on.webp)
 
 This option queries the `VoxelGenerator` at floating point positions to approximate where the surface is, assuming the mesh-based position was a good starting point.
-The generator can only return SDF values, which roughly tells how "close" each 3D point is from the surface. With at least 2 nearby samples or more, we can interpolate to snap positions closer to that surface.
+The generator can only return SDF values, which roughly tells how "close" each 3D point is from the surface. With at least 2 nearby samples or more, we can interpolate to snap positions closer to that surface. So this is not an accurate snapping, but it can improve positionning significantly.
 
 Limitations:
 
