@@ -7,10 +7,10 @@ At the moment, this module doesn't have a distinct release schedule, so this cha
 
 Semver is not yet in place, so each version can have breaking changes, although it shouldn't happen often across minor versions.
 
-1.4 - ongoing development - `master`
---------------------------------------
+1.4 - 03/03/2025 - tag `v1.4`
+------------------------------
 
-Primarily developped with Godot 4.3.
+Primarily developped with Godot 4.4.
 
 - `VoxelBlockyModel`: Added option to turn off "LOD skirts" when used with `VoxelLodTerrain`, which may be useful with transparent models
 - `VoxelBlockyModelCube`: Added support for mesh rotation like `VoxelBlockyMesh` (prior to that, rotation buttons in the editor only swapped tiles around)
