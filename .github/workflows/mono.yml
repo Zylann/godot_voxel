@@ -17,7 +17,7 @@ env:
 jobs:
 
   mono-glue:
-    runs-on: "ubuntu-20.04"
+    runs-on: "ubuntu-22.04"
     name: Generate Mono Glue
 
     steps:
@@ -98,7 +98,7 @@ jobs:
             modules/mono/glue/GodotSharp/GodotSharpEditor/Generated/
 
   linux-editor-mono:
-    runs-on: "ubuntu-20.04"
+    runs-on: "ubuntu-22.04"
     name: Linux Editor w/ Mono
     needs: mono-glue
 
