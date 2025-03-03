@@ -73,7 +73,7 @@ jobs:
       # Upload cache on completion and check it out now
       # Editing this is pretty dangerous for Windows since it can break and needs to be properly tested with a fresh cache.
       - name: Load .scons_cache directory
-        id: windows-cache
+        id: windows-cache-2
         #uses: ${{matrix.cache_action}}
         uses: actions/cache@v4
         with:
@@ -115,11 +115,14 @@ jobs:
         run:
           python modules/voxel/misc/instrument.py -d . -c modules/voxel/misc/instruments.json
 
-      # We should always be explicit with our flags usage here since it's gonna be sure to always set those flags
+      # Compile with explicit flags.
+      # `PYTHONIOENCODING` was needed due to certain characters the Godot build system might print (such as '∞'), 
+      # otherwise it makes the job fail with an encoding error.
       # TODO Enhancement: we'd like to use `warnings=extra` with MSVC but Godot doesn't compile yet with that level of warnings.
       # See https://github.com/godotengine/godot/issues/66537
       - name: Compilation
         run: |
+          set PYTHONIOENCODING=utf-8
           scons verbose=yes warnings=all werror=yes platform=windows tests=no target=${{matrix.target}} dev_build=no precision=${{matrix.precision}} tracy=${{matrix.tracy}} production=yes "cache_path=${{github.workspace}}/.scons_cache/"
 
       - name: "Rename executable"

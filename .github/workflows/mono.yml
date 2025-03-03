@@ -247,11 +247,14 @@ jobs:
         run: |
           python ./modules/mono/build_scripts/build_assemblies.py --godot-output-dir=./bin
 
-      # We should always be explicit with our flags usage here since it's gonna be sure to always set those flags
+      # Compile with explicit flags.
+      # `PYTHONIOENCODING` was needed due to certain characters the Godot build system might print (such as '∞'), 
+      # otherwise it makes the job fail with an encoding error.
       - name: Compilation
         env:
           SCONS_CACHE_MSVC_CONFIG: true
         run: |
+          set PYTHONIOENCODING=utf8
           scons verbose=yes warnings=all werror=yes platform=windows tests=no target=editor dev_build=no debug_symbols=no module_mono_enabled=yes mono_glue=yes copy_mono_root=yes mono_static=yes "cache_path=${{github.workspace}}/.scons_cache/"
 
       # TODO Enhancement: Run tests? Such tests are able to run from Godot 4.0 only
