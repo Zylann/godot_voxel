@@ -34,7 +34,7 @@ jobs:
       # See https://github.com/actions/download-artifact/issues/141
       - name: "Fix downloaded artifacts"
         run: |
-          cd project/addons/zylann.fastnoise2/bin
+          cd project/addons/zylann.voxel/bin
 
           mv libvoxel.linux.editor.x86_64.so temp
           mv temp/libvoxel.linux.editor.x86_64.so libvoxel.linux.editor.x86_64.so
