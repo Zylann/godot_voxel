@@ -77,7 +77,7 @@ jobs:
         #uses: ${{matrix.cache_action}}
         uses: actions/cache@v4
         with:
-          path: /.scons_cache/
+          path: ${{github.workspace}}/.scons_cache/
           key: ${{matrix.executable_name}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
           restore-keys: |
             ${{matrix.executable_name}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
@@ -119,10 +119,8 @@ jobs:
       # TODO Enhancement: we'd like to use `warnings=extra` with MSVC but Godot doesn't compile yet with that level of warnings.
       # See https://github.com/godotengine/godot/issues/66537
       - name: Compilation
-        env:
-          SCONS_CACHE: /.scons_cache/
         run: |
-          scons verbose=yes warnings=all werror=yes platform=windows tests=no target=${{matrix.target}} dev_build=no precision=${{matrix.precision}} tracy=${{matrix.tracy}} production=yes
+          scons verbose=yes warnings=all werror=yes platform=windows tests=no target=${{matrix.target}} dev_build=no precision=${{matrix.precision}} tracy=${{matrix.tracy}} production=yes "cache_path=${{github.workspace}}/.scons_cache/"
 
       - name: "Rename executable"
         if: ${{ matrix.tracy == 'yes' }}

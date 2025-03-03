@@ -185,10 +185,14 @@ jobs:
       # We should always be explicit with our flags usage here since it's gonna be sure to always set those flags
       - name: Compilation
         env:
+          # `SCONS_CACHE` became deprecated since 
+          # https://github.com/godotengine/godot/commit/0e4a4e3c4d602691ce1b4fc6a721c5c637ead57f
+          # However since we are also building versions preceding that change, 
+          # we have to keep it in addition to the new parameter
           SCONS_CACHE: ${{github.workspace}}/.scons_cache/
         run: |
           PATH=${GITHUB_WORKSPACE}/x86_64-godot-linux-gnu_sdk-buildroot/bin:$PATH
-          scons verbose=yes warnings=${{matrix.warnings}} werror=${{matrix.werror}} platform=linuxbsd tests=no dev_build=no target=${{matrix.target}} production=${{matrix.production}} precision=${{matrix.precision}}
+          scons verbose=yes warnings=${{matrix.warnings}} werror=${{matrix.werror}} platform=linuxbsd tests=no dev_build=no target=${{matrix.target}} production=${{matrix.production}} precision=${{matrix.precision}} "cache_path=${{github.workspace}}/.scons_cache/"
 
       # Make build available
       - uses: actions/upload-artifact@v4

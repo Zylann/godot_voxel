@@ -80,10 +80,8 @@ jobs:
 
       # We should always be explicit with our flags usage here since it's gonna be sure to always set those flags
       - name: Compilation
-        env:
-          SCONS_CACHE: ${{github.workspace}}/.scons_cache/
         run: |
-          scons arch=${{matrix.arch}} verbose=yes warnings=extra werror=yes platform=macos tests=no target=${{matrix.target}} dev_build=no production=yes
+          scons arch=${{matrix.arch}} verbose=yes warnings=extra werror=yes platform=macos tests=no target=${{matrix.target}} dev_build=no production=yes "cache_path=${{github.workspace}}/.scons_cache/"
           
       # Make build available
       - uses: actions/upload-artifact@v4
