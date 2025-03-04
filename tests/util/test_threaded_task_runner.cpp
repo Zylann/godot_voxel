@@ -10,7 +10,7 @@
 #include "../../util/string/format.h"
 #include "../../util/string/std_stringstream.h"
 #include "../../util/tasks/threaded_task_runner.h"
-#include "../testing.h"
+#include "../../util/testing/test_macros.h"
 
 // #define VOXEL_TEST_TASK_POSTPONING_DUMP_EVENTS
 #ifdef VOXEL_TEST_TASK_POSTPONING_DUMP_EVENTS

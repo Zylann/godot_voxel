@@ -147,7 +147,9 @@ def get_sources(env, is_editor_build, include_tests):
         sources += [
             "tests/*.cpp",
             "tests/util/*.cpp",
-            "tests/voxel/*.cpp"
+            "tests/voxel/*.cpp",
+
+            "util/testing/*.cpp"
         ]
 
     def process_glob_paths(p_sources):

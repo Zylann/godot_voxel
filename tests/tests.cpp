@@ -1,6 +1,6 @@
 #include "tests.h"
 #include "../util/profiling.h"
-#include "testing.h"
+#include "../util/testing/test_options.h"
 
 #include "util/test_box3i.h"
 #include "util/test_container_funcs.h"
@@ -37,13 +37,12 @@
 namespace zylann::voxel::tests {
 
 #define VOXEL_TEST(fname)                                                                                              \
-	{                                                                                                                  \
-		print_line("Running " #fname);                                                                                 \
+	if (options.can_run_print(#fname)) {                                                                               \
 		ZN_PROFILE_SCOPE_NAMED(#fname);                                                                                \
 		fname();                                                                                                       \
 	}
 
-void run_voxel_tests() {
+void run_voxel_tests(const testing::TestOptions &options) {
 	print_line("------------ Voxel tests begin -------------");
 
 	using namespace zylann::tests;

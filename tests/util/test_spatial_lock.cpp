@@ -6,8 +6,8 @@
 #include "../../util/profiling.h"
 #include "../../util/string/format.h"
 #include "../../util/tasks/threaded_task_runner.h"
+#include "../../util/testing/test_macros.h"
 #include "../../util/thread/spatial_lock_3d.h"
-#include "../testing.h"
 
 // #define VOXEL_TEST_TASK_POSTPONING_DUMP_EVENTS
 #ifdef VOXEL_TEST_TASK_POSTPONING_DUMP_EVENTS

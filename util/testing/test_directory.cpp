@@ -1,7 +1,6 @@
-#include "testing.h"
-
-#include <core/io/dir_access.h>
-#include <core/io/file_access.h>
+#include "test_directory.h"
+#include "../godot/classes/directory.h"
+#include "../godot/classes/file_access.h"
 
 namespace zylann::testing {
 

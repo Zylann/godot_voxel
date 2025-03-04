@@ -15,7 +15,7 @@
 #include "../../util/noise/fast_noise_lite/fast_noise_lite.h"
 #include "../../util/string/format.h"
 #include "../../util/string/std_string.h"
-#include "../testing.h"
+#include "../../util/testing/test_macros.h"
 #include "test_util.h"
 #include <sstream>
 

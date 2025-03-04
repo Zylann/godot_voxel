@@ -1,7 +1,7 @@
 #include "test_container_funcs.h"
 #include "../../util/containers/container_funcs.h"
 #include "../../util/containers/std_vector.h"
-#include "../testing.h"
+#include "../../util/testing/test_macros.h"
 
 namespace zylann::tests {
 
@@ -29,7 +29,8 @@ void test_unordered_remove_if() {
 
 		ZN_TEST_ASSERT(vec.size() == 3);
 		ZN_TEST_ASSERT(
-				L::count(vec, 0) == 0 && L::count(vec, 1) == 1 && L::count(vec, 2) == 1 && L::count(vec, 3) == 1);
+				L::count(vec, 0) == 0 && L::count(vec, 1) == 1 && L::count(vec, 2) == 1 && L::count(vec, 3) == 1
+		);
 	}
 	// Remove one in middle
 	{
@@ -43,7 +44,8 @@ void test_unordered_remove_if() {
 
 		ZN_TEST_ASSERT(vec.size() == 3);
 		ZN_TEST_ASSERT(
-				L::count(vec, 0) == 1 && L::count(vec, 1) == 1 && L::count(vec, 2) == 0 && L::count(vec, 3) == 1);
+				L::count(vec, 0) == 1 && L::count(vec, 1) == 1 && L::count(vec, 2) == 0 && L::count(vec, 3) == 1
+		);
 	}
 	// Remove one at end
 	{
@@ -57,7 +59,8 @@ void test_unordered_remove_if() {
 
 		ZN_TEST_ASSERT(vec.size() == 3);
 		ZN_TEST_ASSERT(
-				L::count(vec, 0) == 1 && L::count(vec, 1) == 1 && L::count(vec, 2) == 1 && L::count(vec, 3) == 0);
+				L::count(vec, 0) == 1 && L::count(vec, 1) == 1 && L::count(vec, 2) == 1 && L::count(vec, 3) == 0
+		);
 	}
 	// Remove multiple
 	{
@@ -71,7 +74,8 @@ void test_unordered_remove_if() {
 
 		ZN_TEST_ASSERT(vec.size() == 2);
 		ZN_TEST_ASSERT(
-				L::count(vec, 0) == 1 && L::count(vec, 1) == 0 && L::count(vec, 2) == 0 && L::count(vec, 3) == 1);
+				L::count(vec, 0) == 1 && L::count(vec, 1) == 0 && L::count(vec, 2) == 0 && L::count(vec, 3) == 1
+		);
 	}
 	// Remove last
 	{

@@ -5,7 +5,7 @@
 #include "../../meshers/blocky/voxel_blocky_model_empty.h"
 #include "../../meshers/blocky/voxel_mesher_blocky.h"
 #include "../../storage/voxel_data.h"
-#include "../testing.h"
+#include "../../util/testing/test_macros.h"
 
 namespace zylann::voxel::tests {
 

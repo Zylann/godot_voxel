@@ -12,6 +12,7 @@
 
 #ifdef VOXEL_TESTS
 #include "../tests/tests.h"
+#include "../util/testing/test_options.h"
 #endif
 
 using namespace zylann::godot;
@@ -188,8 +189,9 @@ Vector3 VoxelEngine::get_editor_camera_direction() const {
 
 #ifdef VOXEL_TESTS
 
-void VoxelEngine::run_tests() {
-	zylann::voxel::tests::run_voxel_tests();
+void VoxelEngine::run_tests(Dictionary options_dict) {
+	zylann::testing::TestOptions options(options_dict);
+	zylann::voxel::tests::run_voxel_tests(options);
 }
 
 #endif
@@ -217,7 +219,7 @@ void VoxelEngine::_bind_methods() {
 	);
 
 #ifdef VOXEL_TESTS
-	ClassDB::bind_method(D_METHOD("run_tests"), &VoxelEngine::run_tests);
+	ClassDB::bind_method(D_METHOD("run_tests", "options"), &VoxelEngine::run_tests);
 #endif
 
 	// ClassDB::bind_method(

@@ -3,8 +3,10 @@
 #include "../../storage/metadata/voxel_metadata_variant.h"
 #include "../../storage/voxel_buffer_gd.h"
 #include "../../streams/voxel_block_serializer.h"
+#include "../../util/io/log.h"
+#include "../../util/string/std_string.h"
 #include "../../util/string/std_stringstream.h"
-#include "../testing.h"
+#include "../../util/testing/test_macros.h"
 #include <sstream>
 
 namespace zylann::voxel::tests {

@@ -41,7 +41,7 @@ public:
 #endif
 
 #ifdef VOXEL_TESTS
-	void run_tests();
+	void run_tests(Dictionary options_dict);
 #endif
 
 private:
