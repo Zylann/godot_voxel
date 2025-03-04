@@ -4,6 +4,7 @@
 #include "../../constants/cube_tables.h"
 #include "../../util/containers/dynamic_bitset.h"
 #include "../../util/containers/fixed_array.h"
+#include "../../util/containers/std_unordered_map.h"
 #include "../../util/containers/std_vector.h"
 #include "../../util/godot/core/aabb.h"
 #include "../../util/math/color.h"
@@ -98,7 +99,7 @@ struct BakedModel {
 		// [side][neighbor_shape_id] => pre-cut SideSurfaces
 		// Surface to attempt using when a side passes the visibility test and cutout is enabled.
 		// If the SideSurface from this container is empty or not found, fallback on full surface
-		FixedArray<std::unordered_map<uint32_t, FixedArray<SideSurface, MAX_SURFACES>>, Cube::SIDE_COUNT>
+		FixedArray<StdUnorderedMap<uint32_t, FixedArray<SideSurface, MAX_SURFACES>>, Cube::SIDE_COUNT>
 				cutout_side_surfaces;
 		// TODO ^ Make it UniquePtr? That array takes space for what is essentially a niche feature
 
