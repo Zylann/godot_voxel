@@ -44,6 +44,12 @@
 			</description>
 		</method>
 	</methods>
+	<members>
+		<member name="_data" type="Array" setter="_set_data" getter="_get_data" default="[0]">
+		</member>
+		<member name="_selected_item" type="VoxelInstanceLibraryItem" setter="_set_selected_item" getter="_get_selected_item">
+		</member>
+	</members>
 	<constants>
 		<constant name="MAX_ID" value="65535">
 		</constant>

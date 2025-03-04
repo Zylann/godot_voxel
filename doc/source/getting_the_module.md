@@ -85,7 +85,7 @@ If you cloned Godot and Voxel Tools, you can use git to update your local code.
 	Since you are pulling from two projects developped by different people, it's probable that on occasion your build won't compile, your project won't open, or your Voxel Tools won't work properly or even crash Godot. To minimize downtime, save your successful builds. Move them out of the build folder and rename them with the version number (e.g. godot-3.2+ee5ba3e.exe). This way, you can continue to use previously working builds until the Godot or Voxel developers fix whatever is broken. It is generally desired by all that code published to repositories will at least build, but stuff happens.
 
 
-C# suppport
+C# support
 --------------
 
 ### Module
@@ -111,8 +111,21 @@ You may turn off those checks in Project Settings: `voxel/ownership_checks`
 The module can also compile as a GDExtension library, which doesn't require to build Godot. However, C# support of extensions implemented in C++ is not well defined at the moment.
 
 
-Export templates
+Exporting
 -------------------
+
+!!! note 
+	You will need this section if you want to export your game into an executable.
+
+### Supported platforms
+
+This module supports all platforms Godot supports, on which threads are available.
+
+Some features might not always be available:
+
+- SIMD noise with FastNoise2 0.10 can only benefit from an x86 CPU and falls back to scalar otherwise, which is slower
+- GPU features require support for compute shaders (Forward+ renderer)
+- Threads might not work on all browsers with the web export
 
 ### Getting a template
 
@@ -120,9 +133,9 @@ In Godot Engine, exporting your game as an executable for a target platform requ
 
 If you only download the Godot Editor with the module, it will allow you to develop and test your game, but if you export without any other setup, Godot will attempt to use a vanilla template, which won't have the module. Therefore, it will fail to open some scenes.
 
-As mentionned in earlier sections, there are currently no "official" builds of this module, but you can get template builds at the same place as [latest development versions](#development-builds). Template builds are those with `template` in their name.
+As mentionned in earlier sections, you can get pre-built templates for some platforms and configurations.
 
-If there is no template available for your platform, you may build it yourself. This is the same as building Godot with the module, only with different options. See the [Godot Documentation](https://docs.godotengine.org/en/latest/development/compiling/index.html) for more details, under the "building export templates" category of the platform you target.
+If there is no pre-built template available for your platform, you may build it yourself. This is the same as building Godot with the module, only with different options. See the [Godot Documentation](https://docs.godotengine.org/en/latest/development/compiling/index.html) for more details, under the "building export templates" category of the platform you target.
 
 ### Using a template
 

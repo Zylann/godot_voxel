@@ -137,7 +137,8 @@ VoxelDataBlock *VoxelDataMap::set_block_buffer(Vector3i bpos, std::shared_ptr<Vo
 	} else {
 		ZN_PROFILE_MESSAGE("Redundant data block");
 		ZN_PRINT_VERBOSE(format(
-				"Discarded block {} lod {}, there was already data and overwriting is not enabled", bpos, _lod_index));
+				"Discarded block {} lod {}, there was already data and overwriting is not enabled", bpos, _lod_index
+		));
 	}
 
 	return block;
@@ -164,7 +165,8 @@ VoxelDataBlock *VoxelDataMap::set_empty_block(Vector3i bpos, bool overwrite) {
 	} else {
 		ZN_PROFILE_MESSAGE("Redundant data block");
 		ZN_PRINT_VERBOSE(format(
-				"Discarded block {} lod {}, there was already data and overwriting is not enabled", bpos, _lod_index));
+				"Discarded block {} lod {}, there was already data and overwriting is not enabled", bpos, _lod_index
+		));
 	}
 
 	return block;
@@ -185,11 +187,16 @@ bool VoxelDataMap::is_block_surrounded(Vector3i pos) const {
 	return true;
 }
 
-void VoxelDataMap::copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsigned int channels_mask, void *callback_data,
-		void (*gen_func)(void *, VoxelBuffer &, Vector3i)) const {
+void VoxelDataMap::copy(
+		Vector3i min_pos,
+		VoxelBuffer &dst_buffer,
+		unsigned int channels_mask,
+		void *callback_data,
+		void (*gen_func)(void *, VoxelBuffer &, Vector3i)
+) const {
 	// TODO Reimplement using `copy_from_chunked_storage`?
 
-	ZN_ASSERT_RETURN_MSG(Vector3iUtil::get_volume(dst_buffer.get_size()) > 0, "The area to copy is empty");
+	ZN_ASSERT_RETURN_MSG(Vector3iUtil::get_volume_u64(dst_buffer.get_size()) > 0, "The area to copy is empty");
 	const Vector3i max_pos = min_pos + dst_buffer.get_size();
 
 	const Vector3i min_block_pos = voxel_to_block(min_pos);
@@ -213,7 +220,8 @@ void VoxelDataMap::copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsigned int 
 						dst_buffer.set_channel_depth(channel, src_buffer.get_channel_depth(channel));
 						// Note: copy_from takes care of clamping the area if it's on an edge
 						dst_buffer.copy_channel_from(
-								src_buffer, min_pos - src_block_origin, src_buffer.get_size(), Vector3i(), channel);
+								src_buffer, min_pos - src_block_origin, src_buffer.get_size(), Vector3i(), channel
+						);
 					}
 
 				} else if (gen_func != nullptr) {
@@ -227,15 +235,20 @@ void VoxelDataMap::copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsigned int 
 
 					for (const uint8_t channel : channels) {
 						dst_buffer.copy_channel_from(
-								temp, Vector3i(), temp.get_size(), box.position - min_pos, channel);
+								temp, Vector3i(), temp.get_size(), box.position - min_pos, channel
+						);
 					}
 
 				} else {
 					for (const uint8_t channel : channels) {
 						// For now, inexistent blocks default to hardcoded defaults, corresponding to "empty space".
 						// If we want to change this, we may have to add an API for that.
-						dst_buffer.fill_area(VoxelBuffer::get_default_value_static(channel), src_block_origin - min_pos,
-								src_block_origin - min_pos + block_size_v, channel);
+						dst_buffer.fill_area(
+								VoxelBuffer::get_default_value_static(channel),
+								src_block_origin - min_pos,
+								src_block_origin - min_pos + block_size_v,
+								channel
+						);
 					}
 				}
 			}
@@ -244,7 +257,11 @@ void VoxelDataMap::copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsigned int 
 }
 
 void VoxelDataMap::paste(
-		Vector3i min_pos, const VoxelBuffer &src_buffer, unsigned int channels_mask, bool create_new_blocks) {
+		Vector3i min_pos,
+		const VoxelBuffer &src_buffer,
+		unsigned int channels_mask,
+		bool create_new_blocks
+) {
 	paste_masked(min_pos, src_buffer, channels_mask, false, 0, 0, false, 0, Span<const int32_t>(), create_new_blocks);
 }
 
@@ -308,7 +325,8 @@ void VoxelDataMap::paste_masked( //
 				if (use_src_mask) {
 					if (use_dst_mask) {
 						if (dst_writable_values.size() == 1) {
-							zylann::voxel::paste_src_masked_dst_writable_value(to_span(channel_indices),
+							zylann::voxel::paste_src_masked_dst_writable_value(
+									to_span(channel_indices),
 									src_buffer, //
 									src_mask_channel, //
 									src_mask_value, //
@@ -320,7 +338,8 @@ void VoxelDataMap::paste_masked( //
 							);
 
 						} else {
-							zylann::voxel::paste_src_masked_dst_writable_bitarray(to_span(channel_indices),
+							zylann::voxel::paste_src_masked_dst_writable_bitarray(
+									to_span(channel_indices),
 									src_buffer, //
 									src_mask_channel, //
 									src_mask_value, //
@@ -333,7 +352,8 @@ void VoxelDataMap::paste_masked( //
 						}
 
 					} else {
-						zylann::voxel::paste_src_masked(to_span(channel_indices),
+						zylann::voxel::paste_src_masked(
+								to_span(channel_indices),
 								src_buffer, //
 								src_mask_channel, //
 								src_mask_value, //

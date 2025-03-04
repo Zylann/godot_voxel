@@ -17,7 +17,7 @@ void test_voxel_mesher_cubes() {
 	mesher.instantiate();
 	mesher->set_color_mode(VoxelMesherCubes::COLOR_RAW);
 
-	VoxelMesher::Input input{ vb, nullptr, nullptr, Vector3i(), 0, false };
+	VoxelMesher::Input input{ vb, nullptr, Vector3i(), 0, false };
 	VoxelMesher::Output output;
 	mesher->build(output, input);
 

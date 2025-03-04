@@ -99,11 +99,8 @@ void GenerateBlockTask::run_gpu_task(zylann::ThreadedTaskContext &ctx) {
 		const AABB aabb_voxels(to_vec3(origin_in_voxels), to_vec3(resolution << _lod_index));
 		StdVector<VoxelModifier::ShaderData> modifiers_shader_data;
 		const VoxelModifierStack &modifiers = _data->get_modifiers();
-		modifiers.apply_for_gpu_rendering(modifiers_shader_data, aabb_voxels, VoxelModifier::ShaderData::TYPE_BLOCK);
-		for (const VoxelModifier::ShaderData &d : modifiers_shader_data) {
-			gpu_task->modifiers.push_back(GenerateBlockGPUTask::ModifierData{
-					d.shader_rids[VoxelModifier::ShaderData::TYPE_BLOCK], d.params });
-		}
+		modifiers.apply_for_gpu_rendering(modifiers_shader_data, aabb_voxels);
+		gpu_task->modifiers = std::move(modifiers_shader_data);
 	}
 
 	ctx.status = ThreadedTaskContext::STATUS_TAKEN_OUT;

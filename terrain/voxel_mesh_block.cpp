@@ -48,8 +48,12 @@ void VoxelMeshBlock::set_render_layers_mask(int mask) {
 	}
 }
 
-void VoxelMeshBlock::set_mesh(Ref<Mesh> mesh, GeometryInstance3D::GIMode gi_mode,
-		RenderingServer::ShadowCastingSetting shadow_setting, int render_layers_mask) {
+void VoxelMeshBlock::set_mesh(
+		Ref<Mesh> mesh,
+		GeometryInstance3D::GIMode gi_mode,
+		RenderingServer::ShadowCastingSetting shadow_setting,
+		int render_layers_mask
+) {
 	// TODO Don't add mesh instance to the world if it's not visible.
 	// I suspect Godot is trying to include invisible mesh instances into the culling process,
 	// which is killing performance when LOD is used (i.e many meshes are in pool but hidden)
@@ -139,7 +143,7 @@ void VoxelMeshBlock::set_parent_transform(const Transform3D &parent_transform) {
 	}
 }
 
-void VoxelMeshBlock::set_collision_shape(Ref<Shape3D> shape, bool debug_collision, Node3D *node, float margin) {
+void VoxelMeshBlock::set_collision_shape(Ref<Shape3D> shape, bool debug_collision, const Node3D *node, float margin) {
 	ERR_FAIL_COND(node == nullptr);
 	ERR_FAIL_COND_MSG(node->get_world_3d() != _world, "Physics body and attached node must be from the same world");
 
@@ -211,7 +215,9 @@ bool VoxelMeshBlock::is_collision_enabled() const {
 }
 
 Ref<ConcavePolygonShape3D> make_collision_shape_from_mesher_output(
-		const VoxelMesher::Output &mesher_output, const VoxelMesher &mesher) {
+		const VoxelMesher::Output &mesher_output,
+		const VoxelMesher &mesher
+) {
 	using namespace zylann::godot;
 
 	Ref<ConcavePolygonShape3D> shape;
@@ -221,27 +227,41 @@ Ref<ConcavePolygonShape3D> make_collision_shape_from_mesher_output(
 			// Use a sub-region of the render mesh
 			if (mesher_output.surfaces.size() > 0) {
 				shape = create_concave_polygon_shape(
-						mesher_output.surfaces[0].arrays, mesher_output.collision_surface.submesh_index_end);
+						mesher_output.surfaces[0].arrays,
+						mesher_output.collision_surface.submesh_vertex_end,
+						mesher_output.collision_surface.submesh_index_end
+				);
 			}
 
 		} else {
 			// Use specialized collision mesh
-			shape = create_concave_polygon_shape(to_span(mesher_output.collision_surface.positions),
-					to_span(mesher_output.collision_surface.indices));
+			shape = create_concave_polygon_shape(
+					to_span(mesher_output.collision_surface.positions), to_span(mesher_output.collision_surface.indices)
+			);
 		}
 
 	} else {
 		// Use render mesh
-		static thread_local StdVector<Array> tls_render_surfaces;
-		ZN_ASSERT(tls_render_surfaces.size() == 0);
+		static const unsigned int MAX_STACK_SURFACES = 8;
 
-		for (unsigned int i = 0; i < mesher_output.surfaces.size(); ++i) {
-			tls_render_surfaces.push_back(mesher_output.surfaces[i].arrays);
+		if (mesher_output.surfaces.size() <= MAX_STACK_SURFACES) {
+			// Use stack
+			std::array<Array, MAX_STACK_SURFACES> render_surfaces_s;
+			for (unsigned int i = 0; i < mesher_output.surfaces.size(); ++i) {
+				render_surfaces_s[i] = mesher_output.surfaces[i].arrays;
+			}
+			Span<const Array> render_surfaces(render_surfaces_s.data(), mesher_output.surfaces.size());
+			shape = create_concave_polygon_shape(render_surfaces);
+
+		} else {
+			// Use heap
+			StdVector<Array> render_surfaces_h;
+			render_surfaces_h.reserve(mesher_output.surfaces.size());
+			for (const VoxelMesher::Output::Surface &surface : mesher_output.surfaces) {
+				render_surfaces_h.push_back(surface.arrays);
+			}
+			shape = create_concave_polygon_shape(to_span(render_surfaces_h));
 		}
-
-		shape = create_concave_polygon_shape(to_span(tls_render_surfaces));
-
-		tls_render_surfaces.clear();
 	}
 
 	return shape;

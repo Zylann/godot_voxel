@@ -2,10 +2,11 @@
 #include "../constants/voxel_constants.h"
 #include "../generators/generate_block_task.h"
 #include "../meshers/mesh_block_task.h"
-#include "../shaders/shaders.h"
 #include "../streams/load_all_blocks_data_task.h"
 #include "../streams/load_block_data_task.h"
 #include "../streams/save_block_data_task.h"
+#include "../util/godot/classes/os.h"
+#include "../util/godot/classes/project_settings.h"
 #include "../util/godot/classes/rd_sampler_state.h"
 #include "../util/godot/classes/rendering_device.h"
 #include "../util/godot/classes/rendering_server.h"
@@ -27,8 +28,6 @@ VoxelEngine &VoxelEngine::get_singleton() {
 void VoxelEngine::create_singleton(Config config) {
 	ZN_ASSERT_MSG(g_voxel_engine == nullptr, "Creating singleton twice");
 	g_voxel_engine = ZN_NEW(VoxelEngine(config));
-	// Do separately because it involves accessing `g_voxel_engine`
-	g_voxel_engine->load_shaders();
 }
 
 void VoxelEngine::destroy_singleton() {
@@ -71,69 +70,7 @@ VoxelEngine::VoxelEngine(Config config) {
 	ZN_PRINT_VERBOSE(format("Size of SaveBlockDataTask: {}", sizeof(SaveBlockDataTask)));
 	ZN_PRINT_VERBOSE(format("Size of MeshBlockTask: {}", sizeof(MeshBlockTask)));
 
-	if (RenderingServer::get_singleton() != nullptr) {
-		_rendering_device = RenderingServer::get_singleton()->create_local_rendering_device();
-	} else {
-		// Sadly, that happens. This is a problem in GDExtension...
-		ZN_PRINT_ERROR("RenderingServer singleton is null when creating VoxelEngine!");
-		// RenderingServer can also be null with `tests=yes`.
-		// TODO There is no hook to integrate modules to Godot's test framework, update this when it gets improved
-	}
-
-	if (_rendering_device != nullptr) {
-		Ref<RDSamplerState> sampler_state;
-		sampler_state.instantiate();
-		// Using samplers for their interpolation features.
-		// Otherwise I don't feel like there is a point in using one IMO.
-		sampler_state->set_mag_filter(RenderingDevice::SAMPLER_FILTER_LINEAR);
-		sampler_state->set_min_filter(RenderingDevice::SAMPLER_FILTER_LINEAR);
-		_filtering_sampler_rid = zylann::godot::sampler_create(*_rendering_device, **sampler_state);
-
-		_gpu_storage_buffer_pool.set_rendering_device(_rendering_device);
-
-		_gpu_task_runner.start(_rendering_device, &_gpu_storage_buffer_pool);
-
-	} else {
-		ZN_PRINT_VERBOSE("Could not create local RenderingDevice, GPU functionality won't be supported.");
-	}
-
 	set_main_thread_time_budget_usec(config.main_thread_budget_usec);
-}
-
-void VoxelEngine::load_shaders() {
-	ZN_PROFILE_SCOPE();
-
-	if (_rendering_device != nullptr) {
-		ZN_PRINT_VERBOSE("Loading VoxelEngine shaders");
-
-		_dilate_normalmap_shader.load_from_glsl(g_dilate_normalmap_shader, "zylann.voxel.dilate_normalmap");
-		_detail_gather_hits_shader.load_from_glsl(g_detail_gather_hits_shader, "zylann.voxel.detail_gather_hits");
-		_detail_normalmap_shader.load_from_glsl(g_detail_normalmap_shader, "zylann.voxel.detail_normalmap_shader");
-
-		_detail_modifier_sphere_shader.load_from_glsl(
-				String(g_detail_modifier_shader_template_0) + String(g_modifier_sphere_shader_snippet) +
-						String(g_detail_modifier_shader_template_1),
-				"zylann.voxel.detail_modifier_sphere_shader"
-		);
-
-		_detail_modifier_mesh_shader.load_from_glsl(
-				String(g_detail_modifier_shader_template_0) + String(g_modifier_mesh_shader_snippet) +
-						String(g_detail_modifier_shader_template_1),
-				"zylann.voxel.detail_modifier_mesh_shader"
-		);
-
-		_block_modifier_sphere_shader.load_from_glsl(
-				String(g_block_modifier_shader_template_0) + String(g_modifier_sphere_shader_snippet) +
-						String(g_block_modifier_shader_template_1),
-				"zylann.voxel.block_modifier_sphere_shader"
-		);
-
-		_block_modifier_mesh_shader.load_from_glsl(
-				String(g_block_modifier_shader_template_0) + String(g_modifier_mesh_shader_snippet) +
-						String(g_block_modifier_shader_template_1),
-				"zylann.voxel.block_modifier_mesh_shader"
-		);
-	}
 }
 
 VoxelEngine::~VoxelEngine() {
@@ -145,29 +82,48 @@ VoxelEngine::~VoxelEngine() {
 	wait_and_clear_all_tasks(true);
 
 	_gpu_task_runner.stop();
+}
 
-	if (_rendering_device != nullptr) {
-		// Free these explicitly because we are going to free the RenderingDevice, too.
-		_dilate_normalmap_shader.clear();
-		_detail_gather_hits_shader.clear();
-		_detail_normalmap_shader.clear();
-		_detail_modifier_sphere_shader.clear();
-		_detail_modifier_mesh_shader.clear();
-		_block_modifier_sphere_shader.clear();
-		_block_modifier_mesh_shader.clear();
+static bool auto_detect_threaded_graphics_resource_building_support() {
+	const ProjectSettings *project = ProjectSettings::get_singleton();
+	ZN_ASSERT_RETURN_V(project != nullptr, false);
 
-		zylann::godot::free_rendering_device_rid(*_rendering_device, _filtering_sampler_rid);
-		_filtering_sampler_rid = RID();
+	const zylann::godot::RenderThreadModel rendering_thread_model = zylann::godot::get_render_thread_model(*project);
+	const zylann::godot::RenderMethod rendering_method = zylann::godot::get_current_rendering_method();
+	const zylann::godot::RenderDriverName driver = zylann ::godot::get_current_rendering_driver();
 
-		if (is_verbose_output_enabled()) {
-			_gpu_storage_buffer_pool.debug_print();
-		}
+	if (!zylann::godot::is_render_thread_model_safe(rendering_thread_model)) {
+		return false;
+	}
 
-		_gpu_storage_buffer_pool.clear();
-		_gpu_storage_buffer_pool.set_rendering_device(nullptr);
+	switch (rendering_method) {
+		case zylann::godot::RENDER_METHOD_GL_COMPATIBILITY:
+			return false;
+		case zylann::godot::RENDER_METHOD_UNKNOWN:
+			return false;
+		default:
+			break;
+	}
 
-		memdelete(_rendering_device);
-		_rendering_device = nullptr;
+	switch (driver) {
+		case zylann::godot::RENDER_DRIVER_OPENGL3:
+		case zylann::godot::RENDER_DRIVER_OPENGL3_ANGLE:
+		case zylann::godot::RENDER_DRIVER_OPENGL3_ES:
+		case zylann::godot::RENDER_DRIVER_UNKNOWN:
+			return false;
+		default:
+			return true;
+	}
+}
+
+void VoxelEngine::try_initialize_gpu_features() {
+	_threaded_graphics_resource_building_enabled = auto_detect_threaded_graphics_resource_building_support();
+	ZN_PRINT_VERBOSE(format(
+			"Auto-detected threaded graphics resource building: {}", _threaded_graphics_resource_building_enabled
+	));
+
+	if (_gpu_task_runner.is_running() == false) {
+		_gpu_task_runner.start();
 	}
 }
 
@@ -296,13 +252,13 @@ void VoxelEngine::set_main_thread_time_budget_usec(unsigned int usec) {
 	_main_thread_time_budget_usec = usec;
 }
 
-void VoxelEngine::set_threaded_graphics_resource_building_enabled(bool enable) {
-	_threaded_graphics_resource_building_enabled = enable;
-}
-
 bool VoxelEngine::is_threaded_graphics_resource_building_enabled() const {
 	return _threaded_graphics_resource_building_enabled;
 }
+
+// void VoxelEngine::set_threaded_graphics_resource_building_enabled(bool enabled) {
+// 	_threaded_graphics_resource_building_enabled = enabled;
+// }
 
 void VoxelEngine::push_async_task(zylann::IThreadedTask *task) {
 	_general_thread_pool.enqueue(task, false);
@@ -323,6 +279,10 @@ void VoxelEngine::push_async_io_tasks(Span<zylann::IThreadedTask *> tasks) {
 
 void VoxelEngine::push_gpu_task(IGPUTask *task) {
 	_gpu_task_runner.push(task);
+}
+
+uint32_t VoxelEngine::get_pending_gpu_tasks_count() const {
+	return _gpu_task_runner.get_pending_task_count();
 }
 
 void VoxelEngine::process() {
@@ -427,6 +387,7 @@ VoxelEngine::Stats VoxelEngine::get_stats() const {
 	s.meshing_tasks = MeshBlockTask::debug_get_running_count();
 	s.streaming_tasks = LoadBlockDataTask::debug_get_running_count() + SaveBlockDataTask::debug_get_running_count();
 	s.main_thread_tasks = _time_spread_task_runner.get_pending_count() + _progressive_task_runner.get_pending_count();
+	s.gpu_tasks = _gpu_task_runner.get_pending_task_count();
 	return s;
 }
 

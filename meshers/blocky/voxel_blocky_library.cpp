@@ -9,11 +9,18 @@
 #include "../../util/godot/core/string.h"
 #include "../../util/io/log.h"
 #include "../../util/math/conv.h"
+#include "../../util/math/funcs.h"
 #include "../../util/profiling.h"
 #include "../../util/string/format.h"
+#include "blocky_material_indexer.h"
+#include "blocky_model_baking_context.h"
 #include "voxel_blocky_model_cube.h"
 #include "voxel_blocky_model_empty.h"
+#include "voxel_blocky_model_fluid.h"
 #include "voxel_blocky_model_mesh.h"
+#ifdef TOOLS_ENABLED
+#include "../../util/godot/classes/resource.h"
+#endif
 
 #include <bitset>
 
@@ -30,6 +37,7 @@ void VoxelBlockyLibrary::clear() {
 void VoxelBlockyLibrary::load_default() {
 	clear();
 
+	// TODO Why not empty?
 	Ref<VoxelBlockyModelMesh> air;
 	air.instantiate();
 	air->set_name("air");
@@ -54,16 +62,30 @@ void VoxelBlockyLibrary::bake() {
 	// This is the only place we modify the data.
 
 	_indexed_materials.clear();
-	VoxelBlockyModel::MaterialIndexer materials{ _indexed_materials };
+	blocky::MaterialIndexer materials{ _indexed_materials };
+
+	StdVector<Ref<VoxelBlockyFluid>> indexed_fluids;
 
 	_baked_data.models.resize(_voxel_models.size());
-	for (size_t i = 0; i < _voxel_models.size(); ++i) {
-		Ref<VoxelBlockyModel> config = _voxel_models[i];
+	for (uint16_t model_index = 0; model_index < _voxel_models.size(); ++model_index) {
+		Ref<VoxelBlockyModel> config = _voxel_models[model_index];
+		blocky::BakedModel &baked_model = _baked_data.models[model_index];
+
 		if (config.is_valid()) {
-			config->bake(_baked_data.models[i], _bake_tangents, materials);
+			blocky::ModelBakingContext context{
+				baked_model, _bake_tangents, materials, indexed_fluids, _baked_data.fluids
+			};
+			config->bake(context);
+
 		} else {
-			_baked_data.models[i].clear();
+			baked_model.clear();
 		}
+	}
+
+	for (unsigned int fluid_index = 0; fluid_index < indexed_fluids.size(); ++fluid_index) {
+		const VoxelBlockyFluid &fluid = **indexed_fluids[fluid_index];
+		blocky::BakedFluid &baked_fluid = _baked_data.fluids[fluid_index];
+		fluid.bake(baked_fluid, materials);
 	}
 
 	_baked_data.indexed_materials_count = _indexed_materials.size();
@@ -89,6 +111,7 @@ int VoxelBlockyLibrary::get_model_index_from_resource_name(String resource_name)
 }
 
 int VoxelBlockyLibrary::add_model(Ref<VoxelBlockyModel> model) {
+	ZN_ASSERT_RETURN_V_MSG(_voxel_models.size() < MAX_MODELS, -1, "Reached maximum supported amount of models");
 	const int index = _voxel_models.size();
 	_voxel_models.push_back(model);
 	_needs_baking = true;
@@ -105,6 +128,8 @@ bool VoxelBlockyLibrary::_set(const StringName &p_name, const Variant &p_value) 
 	String property_name(p_name);
 	if (property_name.begins_with("voxels/")) {
 		unsigned int idx = property_name.get_slicec('/', 1).to_int();
+		ZN_ASSERT_RETURN_V(idx < MAX_MODELS, false);
+
 		Ref<VoxelBlockyModel> legacy_model = p_value;
 
 		if (legacy_model.is_valid()) {
@@ -190,6 +215,16 @@ void VoxelBlockyLibrary::get_configuration_warnings(PackedStringArray &out_warni
 		out_warnings.append(String(ZN_TTR("The {0} has null model entries: {1}"))
 									.format(varray(VoxelBlockyLibrary::get_class_static(), indices_str)));
 	}
+
+	for (unsigned int i = 0; i < _voxel_models.size() && !has_solid_model; ++i) {
+		Ref<VoxelBlockyModel> model = _voxel_models[i];
+		if (model.is_null()) {
+			continue;
+		}
+		zylann::godot::get_resource_configuration_warnings(**model, out_warnings, [i]() {
+			return String("Model {0}: ").format(varray(i));
+		});
+	}
 }
 
 #endif
@@ -209,17 +244,20 @@ TypedArray<VoxelBlockyModel> VoxelBlockyLibrary::_b_get_models() const {
 }
 
 void VoxelBlockyLibrary::_b_set_models(TypedArray<VoxelBlockyModel> models) {
-	const size_t prev_size = _voxel_models.size();
-	_voxel_models.resize(models.size());
-	for (int i = 0; i < models.size(); ++i) {
+	unsigned int count = models.size();
+	if (count > MAX_MODELS) {
+		ZN_PRINT_ERROR(
+				format("Setting more than {} is not supported (received {}). Extra models will not be added.",
+					   MAX_MODELS,
+					   models.size())
+		);
+		count = MAX_MODELS;
+	}
+	_voxel_models.resize(count);
+	for (unsigned int i = 0; i < count; ++i) {
 		_voxel_models[i] = models[i];
 	}
-	_needs_baking = (_voxel_models.size() != prev_size);
-}
-
-int VoxelBlockyLibrary::_b_deprecated_get_voxel_index_from_name(String p_name) const {
-	WARN_DEPRECATED_MSG("Use `get_model_index_from_resource_name` instead.");
-	return get_model_index_from_resource_name(p_name);
+	_needs_baking = true;
 }
 
 void VoxelBlockyLibrary::_bind_methods() {
@@ -232,11 +270,6 @@ void VoxelBlockyLibrary::_bind_methods() {
 	ClassDB::bind_method(
 			D_METHOD("get_model_index_from_resource_name", "name"),
 			&VoxelBlockyLibrary::get_model_index_from_resource_name
-	);
-
-	// Legacy
-	ClassDB::bind_method(
-			D_METHOD("get_voxel_index_from_name", "name"), &VoxelBlockyLibrary::_b_deprecated_get_voxel_index_from_name
 	);
 
 	ADD_PROPERTY(

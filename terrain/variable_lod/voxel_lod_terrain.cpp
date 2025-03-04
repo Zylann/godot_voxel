@@ -17,6 +17,7 @@
 #include "../../util/godot/classes/engine.h"
 #include "../../util/godot/classes/mesh_instance_3d.h"
 #include "../../util/godot/classes/node.h"
+#include "../../util/godot/classes/packed_scene.h"
 #include "../../util/godot/classes/resource_saver.h"
 #include "../../util/godot/classes/scene_tree.h"
 #include "../../util/godot/classes/script.h"
@@ -262,15 +263,7 @@ void VoxelLodTerrain::set_material(Ref<Material> p_material) {
 					// No visuals loaded (collision only?)
 					return;
 				}
-				block.set_shader_material(Ref<ShaderMaterial>());
-
-				Ref<Mesh> mesh = block.get_mesh();
-				if (mesh.is_valid()) {
-					const int surface_count = mesh->get_surface_count();
-					for (int surface_index = 0; surface_index < surface_count; ++surface_index) {
-						mesh->surface_set_material(surface_index, p_material);
-					}
-				}
+				block.set_material_override(p_material);
 			});
 		}
 	}
@@ -1156,9 +1149,11 @@ Vector3 VoxelLodTerrain::get_local_viewer_pos() const {
 	Vector3 pos = _update_data->state.lods[0].last_viewer_data_block_pos << get_data_block_size_pow2();
 
 	// TODO Support for multiple viewers, this is a placeholder implementation
-	VoxelEngine::get_singleton().for_each_viewer([&pos](ViewerID id, const VoxelEngine::Viewer &viewer) {
-		pos = viewer.world_position;
-	});
+	VoxelEngine::get_singleton().for_each_viewer( //
+			[&pos](ViewerID id, const VoxelEngine::Viewer &viewer) { //
+				pos = viewer.world_position;
+			}
+	);
 
 	const Transform3D world_to_local = get_global_transform().affine_inverse();
 	pos = world_to_local.xform(pos);
@@ -1232,7 +1227,7 @@ void VoxelLodTerrain::process(float delta) {
 			VoxelLodTerrainUpdateData &update_data = *_update_data;
 			update_data.viewers.clear();
 			VoxelEngine::get_singleton().for_each_viewer(
-					[&update_data](ViewerID id, const VoxelEngine::Viewer &viewer) {
+					[&update_data](ViewerID id, const VoxelEngine::Viewer &viewer) { //
 						update_data.viewers.push_back({ id, viewer });
 					}
 			);
@@ -1682,7 +1677,11 @@ void VoxelLodTerrain::apply_data_block_response(VoxelEngine::BlockDataOutput &ob
 		}
 		if (!was_loading) {
 			// That block was not requested, or is no longer needed. drop it...
-			ZN_PRINT_VERBOSE(format("Ignoring block {} lod {}, it was not in loading blocks", ob.position, ob.lod_index)
+			ZN_PRINT_VERBOSE(
+					format("Ignoring block {} lod {}, it was not in loading blocks (terrain {})",
+						   ob.position,
+						   static_cast<int>(ob.lod_index),
+						   this)
 			);
 			++_stats.dropped_block_loads;
 			return;
@@ -1740,6 +1739,32 @@ void VoxelLodTerrain::apply_data_block_response(VoxelEngine::BlockDataOutput &ob
 	// }
 }
 
+inline void set_block_collision_shape(
+		const VoxelLodTerrain &terrain,
+		VoxelMeshBlockVLT &block,
+		Ref<Shape3D> shape,
+		const uint64_t now
+) {
+	bool debug_collisions = false;
+	if (terrain.is_inside_tree()) {
+		const SceneTree *scene_tree = terrain.get_tree();
+#if DEBUG_ENABLED
+		if (shape.is_valid()) {
+			const Color debug_color = zylann::godot::get_shape_3d_default_color(*scene_tree);
+			zylann::godot::set_shape_3d_debug_color(**shape, debug_color);
+		}
+#endif
+		debug_collisions = scene_tree->is_debugging_collisions_hint();
+	}
+
+	block.set_collision_shape(shape, debug_collisions, &terrain, terrain.get_collision_margin());
+
+	block.set_collision_layer(terrain.get_collision_layer());
+	block.set_collision_mask(terrain.get_collision_mask());
+	block.last_collider_update_time = now;
+	block.deferred_collider_data.reset();
+}
+
 void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 	// The following is done on the main thread because Godot doesn't really support everything done here.
 	// Building meshes can be done in the threaded task when using Vulkan, but not OpenGL.
@@ -1747,6 +1772,10 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 	// Building collision shapes in threads efficiently is not supported.
 	ZN_PROFILE_SCOPE();
 
+	// TODO This spams in the editor upon opening a project, when more than one scene was open with a terrain.
+	// I suspect this is because one scene opens, then another opens and takes precedence. This causes the first scene
+	// to be removed from the scene tree, yet it already has started loading so all mesh update results come up too
+	// late...
 	ERR_FAIL_COND(!is_inside_tree());
 
 	CRASH_COND(_update_data == nullptr);
@@ -1831,22 +1860,33 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 	VoxelMesher::Output &mesh_data = ob.surfaces;
 
 	Ref<ArrayMesh> mesh;
+	Ref<ArrayMesh> shadow_occluder_mesh;
 	if (ob.visual_was_required && visual_expected) {
+		// TODO Candidate for temp allocator
+		StdVector<uint16_t> material_indices;
 		if (ob.has_mesh_resource) {
 			// The mesh was already built as part of the threaded task
 			mesh = ob.mesh;
+			shadow_occluder_mesh = ob.shadow_occluder_mesh;
 			// It can be empty
-			if (mesh.is_valid()) {
-				const unsigned int surface_count = mesh->get_surface_count();
-				for (unsigned int surface_index = 0; surface_index < surface_count; ++surface_index) {
-					mesh->surface_set_material(surface_index, _material);
-				}
-			}
+			material_indices = std::move(ob.mesh_material_indices);
 		} else {
 			// Can't build meshes in threads, do it here
 			mesh = build_mesh(
-					to_span_const(mesh_data.surfaces), mesh_data.primitive_type, mesh_data.mesh_flags, _material
+					to_span_const(ob.surfaces.surfaces),
+					mesh_data.primitive_type,
+					mesh_data.mesh_flags,
+					material_indices
 			);
+			shadow_occluder_mesh = build_mesh(ob.surfaces.shadow_occluder);
+		}
+		if (mesh.is_valid()) {
+			const unsigned int surface_count = mesh->get_surface_count();
+			for (unsigned int surface_index = 0; surface_index < surface_count; ++surface_index) {
+				const unsigned int material_index = material_indices[surface_index];
+				Ref<Material> material = _mesher->get_material_by_index(material_index);
+				mesh->surface_set_material(surface_index, material);
+			}
 		}
 	}
 
@@ -1898,6 +1938,8 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 #endif
 
 	if (ob.visual_was_required && visual_expected) {
+		bool assign_material_after_mesh = false;
+
 		// We consider a block having a "rendering" mesh as having loaded visuals.
 		if (!block->has_mesh()) {
 			// Setup visuals
@@ -1934,17 +1976,38 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 				// Set individual shader material, because each block can have dynamic parameters,
 				// used to smooth seams without re-uploading meshes and allow to implement LOD fading
 				block->set_shader_material(sm);
+
+			} else if (_material.is_valid()) {
+				assign_material_after_mesh = true;
 			}
 
 			block->set_transition_mask(transition_mask);
 		}
 
+#ifdef TOOLS_ENABLED
+		const RenderingServer::ShadowCastingSetting shadow_occluder_mode = _debug_draw_shadow_occluders
+				? RenderingServer::SHADOW_CASTING_SETTING_ON
+				: RenderingServer::SHADOW_CASTING_SETTING_SHADOWS_ONLY;
+#endif
+
 		block->set_mesh(
 				mesh,
 				get_gi_mode(),
 				RenderingServer::ShadowCastingSetting(get_shadow_casting()),
-				get_render_layers_mask()
+				get_render_layers_mask(),
+				shadow_occluder_mesh
+#ifdef TOOLS_ENABLED
+				,
+				shadow_occluder_mode
+#endif
 		);
+
+		if (assign_material_after_mesh) {
+			// Do this after assigning the mesh when not using a ShaderMaterial.
+			// This is because we don't create a per-chunk material in this case, and so chunks don't hold it, so
+			// calling that before creating the mesh instance would not work.
+			block->set_material_override(_material);
+		}
 	}
 
 	// TODO Remove this eventually, we no longer use separate transition mesh instances
@@ -1986,14 +2049,8 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 			static_cast<int>(now - block->last_collider_update_time) > _collision_update_delay) {
 			ZN_ASSERT(_mesher.is_valid());
 			Ref<Shape3D> collision_shape = make_collision_shape_from_mesher_output(ob.surfaces, **_mesher);
-			const bool debug_collisions = is_inside_tree() ? get_tree()->is_debugging_collisions_hint() : false;
-			block->set_collision_shape(collision_shape, debug_collisions, this, _collision_margin);
-
-			block->set_collision_layer(_collision_layer);
-			block->set_collision_mask(_collision_mask);
+			set_block_collision_shape(*this, *block, collision_shape, now);
 			block->set_collision_enabled(collision_active);
-			block->last_collider_update_time = now;
-			block->deferred_collider_data.reset();
 
 		} else {
 			if (block->deferred_collider_data == nullptr) {
@@ -2006,6 +2063,7 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 
 	// This is done regardless in case a MeshInstance or collision body is created, because it will then set its
 	// position
+	// TODO Godot prevents this from working when outside of the scene tree!
 	block->set_parent_transform(get_global_transform());
 
 	if (ob.detail_textures != nullptr && visual_expected) {
@@ -2239,13 +2297,7 @@ void VoxelLodTerrain::process_deferred_collision_updates(uint32_t timeout_msec) 
 							make_collision_shape_from_mesher_output(*block->deferred_collider_data, **_mesher);
 				}
 
-				block->set_collision_shape(
-						collision_shape, get_tree()->is_debugging_collisions_hint(), this, _collision_margin
-				);
-				block->set_collision_layer(_collision_layer);
-				block->set_collision_mask(_collision_mask);
-				block->last_collider_update_time = now;
-				block->deferred_collider_data.reset();
+				set_block_collision_shape(*this, *block, collision_shape, now);
 
 				unordered_remove(deferred_collision_updates, i);
 				--i;
@@ -2758,6 +2810,11 @@ void VoxelLodTerrain::get_configuration_warnings(PackedStringArray &warnings) co
 			warnings.append(String("`use_gpu_generation` is enabled, but {0} does not support running on the GPU.")
 									.format(varray(generator->get_class())));
 		}
+		if (!VoxelEngine::get_singleton().has_rendering_device()) {
+			warnings.append(String("`use_gpu_generation` is enabled, but the selected renderer does not support the "
+								   "RenderingDevice API ({0}).")
+									.format(varray(ZN_CLASS_NAME_C(VoxelLodTerrain), get_current_rendering_method())));
+		}
 	}
 
 	if (mesher.is_valid()) {
@@ -3141,6 +3198,30 @@ void VoxelLodTerrain::debug_set_draw_flags(uint32_t mask) {
 }
 #endif
 
+void VoxelLodTerrain::debug_set_draw_shadow_occluders(bool enable) {
+#ifdef TOOLS_ENABLED
+	if (enable == _debug_draw_shadow_occluders) {
+		return;
+	}
+	_debug_draw_shadow_occluders = enable;
+	const RenderingServer::ShadowCastingSetting mode =
+			enable ? RenderingServer::SHADOW_CASTING_SETTING_ON : RenderingServer::SHADOW_CASTING_SETTING_SHADOWS_ONLY;
+	for (VoxelMeshMap<VoxelMeshBlockVLT> &mesh_map : _mesh_maps_per_lod) {
+		mesh_map.for_each_block([mode](VoxelMeshBlockVLT &block) { //
+			block.set_shadow_occluder_mode(mode);
+		});
+	}
+#endif
+}
+
+bool VoxelLodTerrain::debug_get_draw_shadow_occluders() const {
+#ifdef TOOLS_ENABLED
+	return _debug_draw_shadow_occluders;
+#else
+	return false;
+#endif
+}
+
 #ifdef TOOLS_ENABLED
 
 void VoxelLodTerrain::update_gizmos() {
@@ -3410,7 +3491,7 @@ Array VoxelLodTerrain::_b_debug_print_sdf_top_down(Vector3i center, Vector3i ext
 	for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
 		const Box3i world_box = Box3i::from_center_extents(center >> lod_index, extents >> lod_index);
 
-		if (Vector3iUtil::get_volume(world_box.size) == 0) {
+		if (Vector3iUtil::get_volume_u64(world_box.size) == 0) {
 			continue;
 		}
 
@@ -3665,6 +3746,11 @@ void VoxelLodTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("debug_set_draw_flag", "flag_index", "enabled"), &Self::debug_set_draw_flag);
 	ClassDB::bind_method(D_METHOD("debug_get_draw_flag", "flag_index"), &Self::debug_get_draw_flag);
 
+	ClassDB::bind_method(
+			D_METHOD("debug_set_draw_shadow_occluders", "enabled"), &Self::debug_set_draw_shadow_occluders
+	);
+	ClassDB::bind_method(D_METHOD("debug_get_draw_shadow_occluders"), &Self::debug_get_draw_shadow_occluders);
+
 	// ClassDB::bind_method(D_METHOD("_on_stream_params_changed"), &Self::_on_stream_params_changed);
 
 	BIND_ENUM_CONSTANT(PROCESS_CALLBACK_IDLE);
@@ -3709,9 +3795,7 @@ void VoxelLodTerrain::_bind_methods() {
 					Variant::OBJECT,
 					"material",
 					PROPERTY_HINT_RESOURCE_TYPE,
-					String("{0},{1}").format(
-							varray(BaseMaterial3D::get_class_static(), ShaderMaterial::get_class_static())
-					)
+					zylann::godot::MATERIAL_3D_PROPERTY_HINT_STRING
 			),
 			"set_material",
 			"get_material"
@@ -3827,6 +3911,12 @@ void VoxelLodTerrain::_bind_methods() {
 	ADD_DEBUG_DRAW_FLAG("debug_draw_viewer_clipboxes", DEBUG_DRAW_VIEWER_CLIPBOXES);
 	ADD_DEBUG_DRAW_FLAG("debug_draw_loaded_visual_and_collision_blocks", DEBUG_DRAW_LOADED_VISUAL_AND_COLLISION_BLOCKS);
 	ADD_DEBUG_DRAW_FLAG("debug_draw_active_visual_and_collision_blocks", DEBUG_DRAW_ACTIVE_VISUAL_AND_COLLISION_BLOCKS);
+
+	ADD_PROPERTY(
+			PropertyInfo(Variant::BOOL, "debug_draw_shadow_occluders", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR),
+			"debug_set_draw_shadow_occluders",
+			"debug_get_draw_shadow_occluders"
+	);
 }
 
 } // namespace zylann::voxel

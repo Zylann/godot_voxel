@@ -307,7 +307,7 @@ bool try_query_edited_blocks(
 	{
 		const Box3i voxel_box = Box3i::from_min_max(query_min_pos_i, query_max_pos_i);
 		const Vector3i block_box_size = voxel_box.size >> constants::DEFAULT_BLOCK_SIZE_PO2;
-		const int64_t block_volume = Vector3iUtil::get_volume(block_box_size);
+		const int64_t block_volume = Vector3iUtil::get_volume_u64(block_box_size);
 		// TODO Don't hardcode block size (even though for now I have no plan to make it configurable)
 		if (block_volume > math::cubed(MAX_EDITED_BLOCKS_ACROSS)) {
 			// Box too big for quick sparse readings, won't handle edits. Fallback on generator.
@@ -699,7 +699,7 @@ void compute_detail_texture_data(
 Ref<Image> store_lookup_to_image(const StdVector<DetailTextureData::Tile> &tiles, Vector3i block_size) {
 	ZN_PROFILE_SCOPE();
 
-	const unsigned int sqri = get_square_grid_size_from_item_count(Vector3iUtil::get_volume(block_size));
+	const unsigned int sqri = get_square_grid_size_from_item_count(Vector3iUtil::get_volume_u64(block_size));
 
 	PackedByteArray bytes;
 	{

@@ -150,13 +150,34 @@ Generators are invoked from multiple threads. Make sure your code is thread-safe
 
 If your generator uses resources or exports parameters that you want to change while it might be running, you should make sure they are read-only or copied per thread, so if the resource is modified from outside or another thread it won't disrupt the generator.
 
-You can use `Mutex` to enforce single-thread access to variables, but use it with caution because otherwise you could end up limiting performance to one thread (while the other waits for the lock to be released). Using Read-Write locks and thread-locals are good options, unfortunately the Godot script API does not provide this.
-
-Careful about lazy-initialization, it can cause crashes if two threads run it at the same time. `Curve` is one of the resources doing that: if you call `interpolate_baked()` and it wasn't baked yet, it will be baked at the very last moment. Here is an example of working around this:
+You can use `Mutex` to enforce single-thread access to variables that can be modified:
 
 ```gdscript
-extends VoxelGeneratorScript
+var _dictionary := {}
+var _dictionary_mutex := Mutex.new()
 
+func _generate_block(...):
+    # ...
+
+    _dictionary_mutex.lock()
+
+    var x := 0
+    if not _dictionary.has(key):
+        _dictionary[key] = x
+    else:
+        x = _dictionary[key]
+    
+    _dictionary_mutex.unlock()
+
+    # ...
+```
+
+However, mutexes must be used with a lot of care: if they are locked a lot of times or remain locked for too long, you could end up limiting performance to one thread (while the other waits for the lock to be released). If you use more than one and lock them in different orders, that can also lead to [deadlocks](https://en.wikipedia.org/wiki/Deadlock).
+Using Read-Write locks and thread-locals are good options depending on the situation, unfortunately the Godot script API does not provide this.
+
+Careful about lazy-initialization, it can cause crashes if two threads run it at the same time. `Curve` is one of the resources doing that: if you call `interpolate_baked()` and it wasn't baked yet, it will be baked at the very last moment. That involves modifying internal states which might overlap with other threads doing the same thing. Here is an example of working around this:
+
+```gdscript
 const MountainsCurve : Curve = preload("moutains_curve.tres")
 
 # This is called when the generator is created
@@ -166,35 +187,6 @@ func _init():
 
 # ...
 ```
-
-A similar story occurs with `Image`. It needs to be locked before you can access pixels, but calling `lock()` and `unlock()` itself is not thread-safe. One approach to solve this is to `lock()` the image in `_init()` and leave it locked for the whole lifetime of the generator. This assumes of course that the image is never accessed from outside:
-
-```gdscript
-extends VoxelGeneratorScript
-
-var image : Image
-
-# This is called when the generator is created
-func _init():
-    image = Image.new()
-    image.load("some_heightmap.png")
-    image.lock()
-
-func generate_block(buffer : VoxelBuffer, origin : Vector3i, lod : int) -> void:
-    # ... use image.get_pixel() freely ...
-    # ... but DO NOT use image.set_pixel() ...
-
-func _notification(what: int):
-    if what == NOTIFICATION_PREDELETE:
-        # Called when the script is destroyed.
-        # I don't know if it's really required, but unlock for correctness.
-        image.unlock()
-
-# ...
-```
-
-Image.lock() won't be required anymore in Godot 4.
-
 
 
 Custom stream

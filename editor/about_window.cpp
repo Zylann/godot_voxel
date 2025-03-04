@@ -221,6 +221,7 @@ VoxelAboutWindow::VoxelAboutWindow() {
 						"[b]Gold supporters:[/b]\n"
 						"Aaron Franke (aaronfranke)\n"
 						"Bewildering\n"
+						"Eerrikki\n"
 						"\n"
 						"[b]Silver supporters:[/b]\n"
 						"TheConceptBoy\n"
@@ -238,6 +239,7 @@ VoxelAboutWindow::VoxelAboutWindow() {
 						"gumby-cmyk\n"
 						"Joshua Woods (jpw1991)\n"
 						"jjoshpoland (Josh)\n"
+						"jbbieber1127 (John Bieber)\n"
 						"\n"
 						"[b]Supporters:[/b]\n"
 						"rcorre (Ryan Roden-Corrent)\n"
@@ -253,7 +255,8 @@ VoxelAboutWindow::VoxelAboutWindow() {
 						"SummitCollie\n"
 						"nulshift\n"
 						"ddel-rio (Daniel del Río Román)\n"
-						"Cyberphinx";
+						"Cyberphinx\n"
+						"Mia (Tigxette)";
 	{
 		Dictionary d;
 

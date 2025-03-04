@@ -41,7 +41,7 @@ VoxelLodTerrain
 
 This node creates blocks in an octree around the viewer, such that closest blocks are smaller and have a higher level of detail, and blocks far away are much bigger with lower level of detail. This allows to have a much larger view distance while using fewer resources.
 
-Blocky meshers currently don't support it. Only smooth meshers work.
+Smooth meshers have better support for LOD than blocky.
 
 TODO More info
 

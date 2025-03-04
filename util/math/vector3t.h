@@ -23,13 +23,13 @@ struct Vector3T {
 		T coords[3];
 	};
 
-	Vector3T() : x(0), y(0), z(0) {}
+	inline Vector3T() : x(0), y(0), z(0) {}
 
 	// It is recommended to use `explicit` because otherwise it would open the door to plenty of implicit conversions
 	// which would make many cases ambiguous.
-	explicit Vector3T(T p_v) : x(p_v), y(p_v), z(p_v) {}
+	inline explicit Vector3T(T p_v) : x(p_v), y(p_v), z(p_v) {}
 
-	Vector3T(T p_x, T p_y, T p_z) : x(p_x), y(p_y), z(p_z) {}
+	inline Vector3T(T p_x, T p_y, T p_z) : x(p_x), y(p_y), z(p_z) {}
 
 	inline const T &operator[](const unsigned int p_axis) const {
 #ifdef DEBUG_ENABLED
@@ -132,6 +132,26 @@ struct Vector3T {
 		}
 		return x < p_v.x;
 	}
+
+	// Swizzling
+
+	// This one only exists for cosmetic reasons so we can write code that lines up. It should be simplified by the
+	// compiler.
+	inline Vector3T<T> xyz() const {
+		return Vector3T<T>(x, y, z);
+	}
+
+	inline Vector3T<T> zyx() const {
+		return Vector3T<T>(z, y, x);
+	}
+
+	inline Vector3T<T> zxy() const {
+		return Vector3T<T>(z, x, y);
+	}
+
+	inline Vector3T<T> yzx() const {
+		return Vector3T<T>(y, z, x);
+	}
 };
 
 template <typename T>
@@ -163,7 +183,7 @@ inline T length_squared(const Vector3T<T> v) {
 
 template <typename T>
 inline T length(const Vector3T<T> &v) {
-	return Math::sqrt(length_squared(v));
+	return math::sqrt(length_squared(v));
 }
 
 template <typename T>
@@ -173,7 +193,7 @@ inline T distance_squared(const Vector3T<T> &a, const Vector3T<T> &b) {
 
 template <typename T>
 inline T distance(const Vector3T<T> &a, const Vector3T<T> &b) {
-	return Math::sqrt(distance_squared(a, b));
+	return math::sqrt(distance_squared(a, b));
 }
 
 template <typename T>

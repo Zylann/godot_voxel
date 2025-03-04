@@ -42,6 +42,7 @@ public:
 		// Only used if `has_mesh_resource` is true (usually when meshes are allowed to be build in threads). Otherwise,
 		// mesh data will be in `surfaces` and has to be built on the main thread.
 		Ref<Mesh> mesh;
+		Ref<Mesh> shadow_occluder_mesh;
 		// Remaps Mesh surface indices to Mesher material indices. Only used if `has_mesh_resource` is true.
 		// TODO Optimize: candidate for small vector optimization. A big majority of meshes will have a handful of
 		// surfaces, which would fit here without allocating.
@@ -143,6 +144,12 @@ public:
 	static void create_singleton(Config config);
 	static void destroy_singleton();
 
+	// This is a separate initialization step due to GDExtension limitations.
+	// It must be called when RenderingServer singleton is available (which is not the case with GDExtension during
+	// class registrations, contrary to modules).
+	// See https://github.com/godotengine/godot-cpp/issues/1180
+	void try_initialize_gpu_features();
+
 	VolumeID add_volume(VolumeCallbacks callbacks);
 	VolumeCallbacks get_volume_callbacks(VolumeID volume_id) const;
 
@@ -181,12 +188,9 @@ public:
 	int get_main_thread_time_budget_usec() const;
 	void set_main_thread_time_budget_usec(unsigned int usec);
 
-	// Allows/disallows building Mesh and Texture resources from inside threads.
-	// Depends on Godot's efficiency at doing so, and which renderer is used.
-	// For example, the OpenGL renderer does not support this well, but the Vulkan one should.
-	void set_threaded_graphics_resource_building_enabled(bool enable);
 	// This should be fast and safe to access from multiple threads.
 	bool is_threaded_graphics_resource_building_enabled() const;
+	// void set_threaded_graphics_resource_building_enabled(bool enabled);
 
 	void push_main_thread_progressive_task(IProgressiveTask *task);
 
@@ -199,6 +203,21 @@ public:
 	// Thread-safe.
 	void push_async_io_tasks(Span<IThreadedTask *> tasks);
 	void push_gpu_task(IGPUTask *task);
+
+	template <typename F>
+	void push_gpu_task_f(F f) {
+		struct Task : public IGPUTask {
+			F f;
+			Task(F pf) : f(pf) {}
+			void prepare(GPUTaskContext &ctx) override {
+				f(ctx);
+			}
+			void collect(GPUTaskContext &ctx) override {}
+		};
+		push_gpu_task(ZN_NEW(Task(f)));
+	}
+
+	uint32_t get_pending_gpu_tasks_count() const;
 
 	void process();
 	void wait_and_clear_all_tasks(bool warn);
@@ -227,50 +246,19 @@ public:
 		int streaming_tasks;
 		int meshing_tasks;
 		int main_thread_tasks;
+		int gpu_tasks;
 	};
 
 	Stats get_stats() const;
 
 	bool has_rendering_device() const {
-		return _rendering_device != nullptr;
+		return _gpu_task_runner.has_rendering_device();
 	}
 
-	RenderingDevice &get_rendering_device() const {
-		ZN_ASSERT(_rendering_device != nullptr);
-		return *_rendering_device;
-	}
-
-	const ComputeShader &get_dilate_normalmap_compute_shader() const {
-		return _dilate_normalmap_shader;
-	}
-
-	const ComputeShader &get_detail_gather_hits_compute_shader() const {
-		return _detail_gather_hits_shader;
-	}
-
-	const ComputeShader &get_detail_normalmap_compute_shader() const {
-		return _detail_normalmap_shader;
-	}
-
-	const ComputeShader &get_detail_modifier_sphere_shader() const {
-		return _detail_modifier_sphere_shader;
-	}
-
-	const ComputeShader &get_detail_modifier_mesh_shader() const {
-		return _detail_modifier_mesh_shader;
-	}
-
-	const ComputeShader &get_block_modifier_sphere_shader() const {
-		return _block_modifier_sphere_shader;
-	}
-
-	const ComputeShader &get_block_modifier_mesh_shader() const {
-		return _block_modifier_mesh_shader;
-	}
-
-	RID get_filtering_sampler() const {
-		return _filtering_sampler_rid;
-	}
+	// RenderingDevice &get_rendering_device() const {
+	// 	ZN_ASSERT(_rendering_device != nullptr);
+	// 	return *_rendering_device;
+	// }
 
 	// TODO Should be private, but can't because `memdelete<T>` would be unable to call it otherwise...
 	~VoxelEngine();
@@ -298,8 +286,6 @@ public:
 
 private:
 	VoxelEngine(Config config);
-
-	void load_shaders();
 
 	// Since we are going to send data to tasks running in multiple threads, a few strategies are in place:
 	//
@@ -336,25 +322,12 @@ private:
 
 	FileLocker _file_locker;
 
+	// Caches whether building Mesh and Texture resources is allowed from inside threads.
+	// Depends on Godot's efficiency at doing so, and which renderer is used.
+	// For example, the OpenGL renderer does not support this well, but the Vulkan one should.
 	bool _threaded_graphics_resource_building_enabled = false;
 
-	// Rendering device used for compute shaders. May not be available depending on the chosen renderer.
-	RenderingDevice *_rendering_device = nullptr;
-	RID _filtering_sampler_rid;
-	// TODO Can `RenderingDevice` be used on multiple threads? There is no documentation.
-	// So I'll assume I can't...
-	Mutex _rendering_device_mutex;
 	GPUTaskRunner _gpu_task_runner;
-	GPUStorageBufferPool _gpu_storage_buffer_pool;
-
-	// TODO I don't know yet where to store these resource, at some point we may find a more dedicated place
-	ComputeShader _dilate_normalmap_shader;
-	ComputeShader _detail_gather_hits_shader;
-	ComputeShader _detail_normalmap_shader;
-	ComputeShader _detail_modifier_sphere_shader;
-	ComputeShader _detail_modifier_mesh_shader;
-	ComputeShader _block_modifier_sphere_shader;
-	ComputeShader _block_modifier_mesh_shader;
 
 	// There can be multiple types of generation tasks, so we count them with a common counter.
 	std::atomic_int _debug_generate_block_task_count = { 0 };

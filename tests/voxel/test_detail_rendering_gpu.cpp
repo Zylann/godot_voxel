@@ -1,15 +1,23 @@
 #include "../../engine/detail_rendering/render_detail_texture_gpu_task.h"
 #include "../../engine/detail_rendering/render_detail_texture_task.h"
+#include "../../engine/gpu/gpu_task_runner.h"
 #include "../../engine/voxel_engine.h"
 #include "../../generators/graph/voxel_generator_graph.h"
 #include "../../meshers/mesh_block_task.h"
 #include "../../meshers/transvoxel/transvoxel_cell_iterator.h"
 #include "../../meshers/transvoxel/voxel_mesher_transvoxel.h"
+#include "../../util/godot/classes/time.h"
 #include "../testing.h"
 
 namespace zylann::voxel::tests {
 
 void test_normalmap_render_gpu() {
+#ifdef ZN_GODOT_EXTENSION
+	// https://github.com/godotengine/godot-cpp/issues/1180
+	ZN_PRINT_ERROR("This test might not work in GDExtension builds at the moment.");
+#endif
+	VoxelEngine::get_singleton().try_initialize_gpu_features();
+
 	Ref<VoxelGeneratorGraph> generator;
 	generator.instantiate();
 	{
@@ -64,8 +72,7 @@ void test_normalmap_render_gpu() {
 	const uint8_t lod_index = 0;
 	generator->generate_block(VoxelGenerator::VoxelQueryData{ voxels, origin_in_voxels, 0 });
 
-	const VoxelMesher::Input mesher_input = { voxels, generator.ptr(), nullptr, origin_in_voxels, lod_index, false,
-		false, true };
+	const VoxelMesher::Input mesher_input{ voxels, generator.ptr(), origin_in_voxels, lod_index, false, false, true };
 	VoxelMesher::Output mesher_output;
 	mesher->build(mesher_output, mesher_input);
 
@@ -101,43 +108,94 @@ void test_normalmap_render_gpu() {
 	nm_task.mesh_block_position = Vector3i();
 	nm_task.output_textures = detail_textures;
 	nm_task.detail_texture_settings = detail_texture_settings;
-	nm_task.priority_dependency;
+	// We don't use priority here because we call the task directly instead of scheduling it into a runner
+	// nm_task.priority_dependency;
 	nm_task.use_gpu = true;
-	RenderDetailTextureGPUTask *gpu_task = nm_task.make_gpu_task();
 
-	RenderingDevice &rd = VoxelEngine::get_singleton().get_rendering_device();
+	PackedByteArray atlas_texture_data;
+	Vector2i atlas_texture_size;
+	{
+		RenderDetailTextureGPUTask *gpu_task = nm_task.make_gpu_task();
+		atlas_texture_size.x = gpu_task->texture_width;
+		atlas_texture_size.y = gpu_task->texture_height;
+
+		gpu_task->testing_output = &atlas_texture_data;
+
+		VoxelEngine::get_singleton().push_gpu_task(gpu_task);
+
+		const uint64_t time_before = Time::get_singleton()->get_ticks_usec();
+		while (VoxelEngine::get_singleton().get_pending_gpu_tasks_count() > 0) {
+			Thread::sleep_usec(1000);
+
+			// Check if the task times out
+			const uint64_t timeout_seconds = 10;
+			const uint64_t now = Time::get_singleton()->get_ticks_usec();
+			const uint64_t time_elapsed_microseconds = now - time_before;
+			ZN_TEST_ASSERT(time_elapsed_microseconds < timeout_seconds * 1'000'000);
+		}
+	}
+
+	/*
+	RenderingServer *rs = RenderingServer::get_singleton();
+	ZN_ASSERT(rs != nullptr);
+	RenderingDevice *rd = rs->create_local_rendering_device();
+	ZN_ASSERT(rd != nullptr);
+
 	GPUStorageBufferPool storage_buffer_pool;
-	storage_buffer_pool.set_rendering_device(&rd);
+	storage_buffer_pool.set_rendering_device(rd);
 
-	GPUTaskContext gpu_task_context{ rd, storage_buffer_pool };
+	BaseGPUResources base_resources;
+	base_resources.load(*rd);
+
+	GPUTaskContext gpu_task_context(*rd, storage_buffer_pool, base_resources);
 	gpu_task->prepare(gpu_task_context);
 
-	rd.submit();
-	rd.sync();
+	rd->submit();
+	rd->sync();
 
-	const PackedByteArray atlas_texture_data = gpu_task->collect_texture_and_cleanup(rd, storage_buffer_pool);
+	PackedByteArray atlas_texture_data = gpu_task->collect_texture_and_cleanup(*rd, storage_buffer_pool);
+
+	base_resources.clear(*rd);
+	storage_buffer_pool.clear();
+	memdelete(rd);
+	*/
 
 	Ref<Image> gpu_atlas_image = Image::create_from_data(
-			gpu_task->texture_width, gpu_task->texture_height, false, Image::FORMAT_RGBA8, atlas_texture_data);
+			atlas_texture_size.x, atlas_texture_size.y, false, Image::FORMAT_RGBA8, atlas_texture_data
+	);
 	ERR_FAIL_COND(gpu_atlas_image.is_null());
 	gpu_atlas_image->convert(Image::FORMAT_RGB8);
 
-	ZN_DELETE(gpu_task);
+	// ZN_DELETE(gpu_task);
 
 	// Make a comparison with the CPU version
 
 	nm_task.cell_iterator->rewind();
 	DetailTextureData detail_textures_data;
 
-	compute_detail_texture_data(*nm_task.cell_iterator, to_span(nm_task.mesh_vertices), to_span(nm_task.mesh_normals),
-			to_span(nm_task.mesh_indices), detail_textures_data, detail_texture_settings.tile_resolution_min,
-			**generator, nm_task.voxel_data.get(), origin_in_voxels, mesher_input.voxels.get_size(), lod_index,
+	compute_detail_texture_data(
+			*nm_task.cell_iterator,
+			to_span(nm_task.mesh_vertices),
+			to_span(nm_task.mesh_normals),
+			to_span(nm_task.mesh_indices),
+			detail_textures_data,
+			detail_texture_settings.tile_resolution_min,
+			**generator,
+			nm_task.voxel_data.get(),
+			origin_in_voxels,
+			mesher_input.voxels.get_size(),
+			lod_index,
 			detail_texture_settings.octahedral_encoding_enabled,
-			math::deg_to_rad(float(detail_texture_settings.max_deviation_degrees)), false);
+			math::deg_to_rad(float(detail_texture_settings.max_deviation_degrees)),
+			false
+	);
 
-	DetailImages images =
-			store_normalmap_data_to_images(detail_textures_data, detail_texture_settings.tile_resolution_min,
-					nm_task.mesh_block_size, detail_texture_settings.octahedral_encoding_enabled);
+	DetailImages images = store_normalmap_data_to_images(
+			detail_textures_data,
+			detail_texture_settings.tile_resolution_min,
+			nm_task.mesh_block_size,
+			detail_texture_settings.octahedral_encoding_enabled
+	);
 	ZN_ASSERT(images.atlas.is_valid());
 	Ref<Image> cpu_atlas_image = images.atlas;
 
@@ -153,8 +211,10 @@ void test_normalmap_render_gpu() {
 				for (int x = 0; x < size.x; ++x) {
 					const Color c1 = im1.get_pixel(x, y);
 					const Color c2 = im2.get_pixel(x, y);
-					const float d = Math::sqrt(math::squared(c1.r - c2.r) + math::squared(c1.g - c2.g) +
-							math::squared(c1.b - c2.b) + math::squared(c1.a - c2.a));
+					const float d = Math::sqrt(
+							math::squared(c1.r - c2.r) + math::squared(c1.g - c2.g) + math::squared(c1.b - c2.b) +
+							math::squared(c1.a - c2.a)
+					);
 					dsum += d;
 					++counted_pixels;
 				}
@@ -162,8 +222,6 @@ void test_normalmap_render_gpu() {
 			return dsum / float(counted_pixels);
 		}
 	};
-
-	storage_buffer_pool.clear();
 
 	// Debug dumps
 	// gpu_atlas_image->save_png("test_gpu_normalmap.png");

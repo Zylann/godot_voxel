@@ -4,6 +4,7 @@
 #include "../../util/godot/classes/base_material_3d.h"
 #include "../../util/godot/classes/geometry_2d.h"
 #include "../../util/godot/classes/image.h"
+#include "../../util/godot/classes/material.h"
 #include "../../util/godot/classes/shader_material.h"
 #include "../../util/godot/core/packed_arrays.h"
 #include "../../util/godot/core/string.h"
@@ -76,7 +77,7 @@ inline uint8_t get_alpha_index(Color8 c) {
 template <typename Voxel_T, typename Color_F>
 void build_voxel_mesh_as_simple_cubes(
 		FixedArray<VoxelMesherCubes::Arrays, VoxelMesherCubes::MATERIAL_COUNT> &out_arrays_per_material,
-		const Span<Voxel_T> voxel_buffer,
+		const Span<const Voxel_T> voxel_buffer,
 		const Vector3i block_size,
 		Color_F color_func
 ) {
@@ -212,7 +213,7 @@ void build_voxel_mesh_as_simple_cubes(
 template <typename Voxel_T, typename Color_F>
 void build_voxel_mesh_as_greedy_cubes(
 		FixedArray<VoxelMesherCubes::Arrays, VoxelMesherCubes::MATERIAL_COUNT> &out_arrays_per_material,
-		const Span<Voxel_T> voxel_buffer,
+		const Span<const Voxel_T> voxel_buffer,
 		const Vector3i block_size,
 		StdVector<uint8_t> &mask_memory_pool,
 		Color_F color_func
@@ -775,8 +776,8 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 		return;
 	}
 
-	Span<uint8_t> raw_channel;
-	if (!voxels.get_channel_raw(channel, raw_channel)) {
+	Span<const uint8_t> raw_channel;
+	if (!voxels.get_channel_as_bytes_read_only(channel, raw_channel)) {
 		// Case supposedly handled before...
 		ERR_PRINT("Something wrong happened");
 		return;
@@ -817,7 +818,7 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 					if (params.greedy_meshing) {
 						build_voxel_mesh_as_greedy_cubes(
 								cache.arrays_per_material,
-								raw_channel.reinterpret_cast_to<uint16_t>(),
+								raw_channel.reinterpret_cast_to<const uint16_t>(),
 								block_size,
 								cache.mask_memory_pool,
 								Color8::from_u16
@@ -825,7 +826,7 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 					} else {
 						build_voxel_mesh_as_simple_cubes(
 								cache.arrays_per_material,
-								raw_channel.reinterpret_cast_to<uint16_t>(),
+								raw_channel.reinterpret_cast_to<const uint16_t>(),
 								block_size,
 								Color8::from_u16
 						);
@@ -836,7 +837,7 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 					if (params.greedy_meshing) {
 						build_voxel_mesh_as_greedy_cubes(
 								cache.arrays_per_material,
-								raw_channel.reinterpret_cast_to<uint32_t>(),
+								raw_channel.reinterpret_cast_to<const uint32_t>(),
 								block_size,
 								cache.mask_memory_pool,
 								Color8::from_u32
@@ -844,7 +845,7 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 					} else {
 						build_voxel_mesh_as_simple_cubes(
 								cache.arrays_per_material,
-								raw_channel.reinterpret_cast_to<uint32_t>(),
+								raw_channel.reinterpret_cast_to<const uint32_t>(),
 								block_size,
 								Color8::from_u32
 						);
@@ -905,7 +906,7 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 					if (params.greedy_meshing) {
 						build_voxel_mesh_as_greedy_cubes(
 								cache.arrays_per_material,
-								raw_channel.reinterpret_cast_to<uint16_t>(),
+								raw_channel.reinterpret_cast_to<const uint16_t>(),
 								block_size,
 								cache.mask_memory_pool,
 								get_color_from_palette
@@ -913,7 +914,7 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 					} else {
 						build_voxel_mesh_as_simple_cubes(
 								cache.arrays_per_material,
-								raw_channel.reinterpret_cast_to<uint16_t>(),
+								raw_channel.reinterpret_cast_to<const uint16_t>(),
 								block_size,
 								get_color_from_palette
 						);
@@ -959,7 +960,7 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 					if (params.greedy_meshing) {
 						build_voxel_mesh_as_greedy_cubes(
 								cache.arrays_per_material,
-								raw_channel.reinterpret_cast_to<uint16_t>(),
+								raw_channel.reinterpret_cast_to<const uint16_t>(),
 								block_size,
 								cache.mask_memory_pool,
 								get_index_from_palette
@@ -967,7 +968,7 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 					} else {
 						build_voxel_mesh_as_simple_cubes(
 								cache.arrays_per_material,
-								raw_channel.reinterpret_cast_to<uint16_t>(),
+								raw_channel.reinterpret_cast_to<const uint16_t>(),
 								block_size,
 								get_index_from_palette
 						);
@@ -1014,9 +1015,9 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 				PackedVector3Array normals;
 				PackedInt32Array indices;
 
-				copy_to(positions, arrays.positions);
-				copy_to(normals, arrays.normals);
-				copy_to(indices, arrays.indices);
+				copy_to(positions, to_span_const(arrays.positions));
+				copy_to(normals, to_span_const(arrays.normals));
+				copy_to(indices, to_span_const(arrays.indices));
 
 				mesh_arrays[Mesh::ARRAY_VERTEX] = positions;
 				mesh_arrays[Mesh::ARRAY_NORMAL] = normals;
@@ -1024,12 +1025,12 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 
 				if (arrays.colors.size() > 0) {
 					PackedColorArray colors;
-					copy_to(colors, arrays.colors);
+					copy_to(colors, to_span_const(arrays.colors));
 					mesh_arrays[Mesh::ARRAY_COLOR] = colors;
 				}
 				if (arrays.uvs.size() > 0) {
 					PackedVector2Array uvs;
-					copy_to(uvs, arrays.uvs);
+					copy_to(uvs, to_span_const(arrays.uvs));
 					mesh_arrays[Mesh::ARRAY_TEX_UV] = uvs;
 				}
 			}
@@ -1126,6 +1127,10 @@ Ref<Material> VoxelMesherCubes::get_material_by_index(unsigned int i) const {
 	return _materials[i];
 }
 
+unsigned int VoxelMesherCubes::get_material_index_count() const {
+	return _materials.size();
+}
+
 void VoxelMesherCubes::_b_set_opaque_material(Ref<Material> material) {
 	set_material_by_index(MATERIAL_OPAQUE, material);
 }
@@ -1185,7 +1190,7 @@ Ref<Mesh> VoxelMesherCubes::generate_mesh_from_image(Ref<Image> image, float vox
 	Ref<VoxelMesherCubes> mesher;
 	mesher.instantiate();
 	VoxelMesher::Output output;
-	VoxelMesher::Input input = { voxels, nullptr, nullptr, Vector3i(), 0, false };
+	VoxelMesher::Input input{ voxels, nullptr, Vector3i(), 0, false };
 	mesher->build(output, input);
 
 	if (output.surfaces.size() == 0) {
@@ -1268,16 +1273,23 @@ void VoxelMesherCubes::_bind_methods() {
 			"get_palette"
 	);
 
-	const String material_hint =
-			String(BaseMaterial3D::get_class_static()) + "," + String(ShaderMaterial::get_class_static());
-
 	ADD_PROPERTY(
-			PropertyInfo(Variant::OBJECT, "opaque_material", PROPERTY_HINT_RESOURCE_TYPE, material_hint),
+			PropertyInfo(
+					Variant::OBJECT,
+					"opaque_material",
+					PROPERTY_HINT_RESOURCE_TYPE,
+					zylann::godot::MATERIAL_3D_PROPERTY_HINT_STRING
+			),
 			"_set_opaque_material",
 			"_get_opaque_material"
 	);
 	ADD_PROPERTY(
-			PropertyInfo(Variant::OBJECT, "transparent_material", PROPERTY_HINT_RESOURCE_TYPE, material_hint),
+			PropertyInfo(
+					Variant::OBJECT,
+					"transparent_material",
+					PROPERTY_HINT_RESOURCE_TYPE,
+					zylann::godot::MATERIAL_3D_PROPERTY_HINT_STRING
+			),
 			"_set_transparent_material",
 			"_get_transparent_material"
 	);

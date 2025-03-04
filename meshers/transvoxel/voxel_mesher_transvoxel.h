@@ -36,6 +36,9 @@ public:
 	void set_texturing_mode(TexturingMode mode);
 	TexturingMode get_texturing_mode() const;
 
+	void set_textures_ignore_air_voxels(const bool enable);
+	bool get_textures_ignore_air_voxels() const;
+
 	void set_mesh_optimization_enabled(bool enabled);
 	bool is_mesh_optimization_enabled() const;
 
@@ -45,11 +48,11 @@ public:
 	void set_mesh_optimization_target_ratio(float ratio);
 	float get_mesh_optimization_target_ratio() const;
 
-	void set_deep_sampling_enabled(bool enable);
-	bool is_deep_sampling_enabled() const;
-
 	void set_transitions_enabled(bool enable);
 	bool get_transitions_enabled() const;
+
+	void set_edge_clamp_margin(float margin);
+	float get_edge_clamp_margin() const;
 
 	Ref<ShaderMaterial> get_default_lod_material() const override;
 
@@ -88,12 +91,15 @@ private:
 
 	MeshOptimizationParams _mesh_optimization_params;
 
-	// If enabled, when meshing low-level-of-detail blocks, Transvoxel will attempt to access higher detail voxel data
-	// by querying the generator and edits. This can result in better quality meshes, but is also more expensive
-	// because voxel data shared between threads will have to be accessed randomly over denser data sets.
-	bool _deep_sampling_enabled = false;
+	// When a marching cube cell is computed, vertices may be placed anywhere on edges of the cell, including very close
+	// to corners. This can lead to very thin or small triangles, which can be a problem notably for collision. this
+	// margin is the minimum distance from corners, below which vertices will be clamped to it. Increasing this value
+	// reduces quality of the mesh.
+	float _edge_clamp_margin = 0.02f;
 
 	bool _transitions_enabled = true;
+
+	bool _textures_ignore_air_voxels = false;
 };
 
 } // namespace zylann::voxel

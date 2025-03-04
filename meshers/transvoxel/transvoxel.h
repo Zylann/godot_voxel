@@ -76,8 +76,14 @@ struct MeshArrays {
 		indices.clear();
 	}
 
-	int add_vertex(Vector3f primary, Vector3f normal, uint8_t cell_border_mask, uint8_t vertex_border_mask,
-			uint8_t transition, Vector3f secondary) {
+	int add_vertex(
+			const Vector3f primary,
+			const Vector3f normal,
+			const uint8_t cell_border_mask,
+			const uint8_t vertex_border_mask,
+			const uint8_t transition,
+			const Vector3f secondary
+	) {
 		int vi = vertices.size();
 		vertices.push_back(primary);
 		normals.push_back(normal);
@@ -88,12 +94,12 @@ struct MeshArrays {
 
 struct ReuseCell {
 	FixedArray<int, 4> vertices;
-	unsigned int packed_texture_indices = 0;
+	uint32_t packed_texture_indices = 0;
 };
 
 struct ReuseTransitionCell {
 	FixedArray<int, 12> vertices;
-	unsigned int packed_texture_indices = 0;
+	uint32_t packed_texture_indices = 0;
 };
 
 class Cache {
@@ -143,14 +149,9 @@ private:
 // This is only to re-use some data computed for regular mesh into transition meshes
 struct DefaultTextureIndicesData {
 	FixedArray<uint8_t, 4> indices;
-	uint32_t packed_indices;
-	bool use;
-};
-
-class IDeepSDFSampler {
-public:
-	virtual ~IDeepSDFSampler() {}
-	virtual float get_single(const Vector3i position_in_voxels, uint32_t lod_index) const = 0;
+	uint32_t packed_indices = 0;
+	// TODO Use an optional?
+	bool use = false;
 };
 
 struct CellInfo {
@@ -158,13 +159,30 @@ struct CellInfo {
 	uint32_t triangle_count;
 };
 
-DefaultTextureIndicesData build_regular_mesh(const VoxelBuffer &voxels, unsigned int sdf_channel, uint32_t lod_index,
-		TexturingMode texturing_mode, Cache &cache, MeshArrays &output, const IDeepSDFSampler *deep_sdf_sampler,
-		StdVector<CellInfo> *cell_infos);
+DefaultTextureIndicesData build_regular_mesh(
+		const VoxelBuffer &voxels,
+		const unsigned int sdf_channel,
+		const uint32_t lod_index,
+		const TexturingMode texturing_mode,
+		Cache &cache,
+		MeshArrays &output,
+		StdVector<CellInfo> *cell_infos,
+		const float edge_clamp_margin,
+		const bool textures_ignore_air_voxels
+);
 
-void build_transition_mesh(const VoxelBuffer &voxels, unsigned int sdf_channel, int direction, uint32_t lod_index,
-		TexturingMode texturing_mode, Cache &cache, MeshArrays &output,
-		DefaultTextureIndicesData default_texture_indices_data);
+void build_transition_mesh(
+		const VoxelBuffer &voxels,
+		const unsigned int sdf_channel,
+		const int direction,
+		const uint32_t lod_index,
+		const TexturingMode texturing_mode,
+		Cache &cache,
+		MeshArrays &output,
+		DefaultTextureIndicesData default_texture_indices_data,
+		const float edge_clamp_margin,
+		const bool textures_ignore_air_voxels
+);
 
 } // namespace zylann::voxel::transvoxel
 

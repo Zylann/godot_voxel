@@ -1,7 +1,7 @@
 name: 🐧 Linux Builds
 on:
   push:
-    branches: [ master, github_actions, "1.2" ]
+    branches: [ master ]
   pull_request:
     branches: [ master ]
 
@@ -11,11 +11,11 @@ concurrency:
 
 # Global Cache Settings
 env:
-  SCONS_CACHE_LIMIT: 4096
+  SCONS_CACHE_LIMIT_GB: 4
 
 jobs:
   linux:
-    runs-on: "ubuntu-20.04"
+    runs-on: "ubuntu-22.04"
     name: ${{matrix.name}}
 
     strategy:
@@ -33,6 +33,7 @@ jobs:
             # To fix this we would have to cherry-pick 41890ff9c3028d3b05d993f8f7ec42c346824304 to the 4.0 branch.
             # There might be other issues cropping up, since there doesn't seem to be an official CI checking this.
             warnings: all
+            werror: yes
 
           - name: 4.1 Editor
             precision: single
@@ -41,7 +42,35 @@ jobs:
             executable_name: godot.linuxbsd.editor.x86_64
             godot_base_branch: "4.1"
             warnings: extra
-          
+            werror: yes
+
+          - name: 4.2 Editor
+            precision: single
+            target: editor
+            production: no
+            executable_name: godot.linuxbsd.editor.x86_64
+            godot_base_branch: "4.2"
+            warnings: extra
+            # TODO Had to turn off warning as errors, even though it worked in the past.
+            # Downgrading warnings to `all` or `moderate` did not fix it.
+            # Something in Godot 4.2, or in the version of GCC in the buildroot, has changed causing this to happen:
+            # drivers/gles3/storage/texture_storage.cpp:1513:31: error: 'void* memset(void*, int, size_t)' 
+            #     specified bound between 18446744065119617024 and 18446744073709551612 exceeds maximum object size 
+            #     [-Werror=stringop-overflow=]
+            #     memset(v_offsets, 0, sizeof(int) * base_size);
+            #     ~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            # Looking at the code, I could not find what's wrong.
+            werror: no
+
+          - name: 4.3 Editor
+            precision: single
+            target: editor
+            production: no
+            executable_name: godot.linuxbsd.editor.x86_64
+            godot_base_branch: "4.3"
+            warnings: extra
+            werror: yes
+
           - name: master Editor
             precision: single
             target: editor
@@ -49,32 +78,36 @@ jobs:
             executable_name: godot.linuxbsd.editor.x86_64
             godot_base_branch: "master"
             warnings: extra
+            werror: yes
 
           # --- Builds with artifacts ---
 
-          - name: 4.2 Editor
+          - name: 4.4 Editor
             precision: single
             target: editor
             production: yes
             executable_name: godot.linuxbsd.editor.x86_64
-            godot_base_branch: "4.2.2-stable"
+            godot_base_branch: "4.4-stable"
             warnings: extra
+            werror: yes
 
-          - name: 4.2 Template
+          - name: 4.4 Template
             precision: single
             target: template_release
             production: yes
             executable_name: godot.linuxbsd.template_release.x86_64
-            godot_base_branch: "4.2.2-stable"
+            godot_base_branch: "4.4-stable"
             warnings: extra
+            werror: yes
 
-          - name: 4.2 Editor Float64
+          - name: 4.4 Editor Float64
             precision: double
             target: editor
             production: yes
             executable_name: godot.linuxbsd.editor.double.x86_64
-            godot_base_branch: "4.2.2-stable"
+            godot_base_branch: "4.4-stable"
             warnings: extra
+            werror: yes
 
     steps:
       # Clone Godot
@@ -97,7 +130,7 @@ jobs:
       #      the working directory for all following steps.
       - name: Setup buildroot
         run: |
-          wget https://download.tuxfamily.org/godotengine/toolchains/linux/x86_64-godot-linux-gnu_sdk-buildroot.tar.bz2
+          wget https://github.com/godotengine/buildroot/releases/download/godot-2023.08.x-4/x86_64-godot-linux-gnu_sdk-buildroot.tar.bz2
           tar -xjf x86_64-godot-linux-gnu_sdk-buildroot.tar.bz2
           cd x86_64-godot-linux-gnu_sdk-buildroot
           ./relocate-sdk.sh
@@ -152,10 +185,17 @@ jobs:
       # We should always be explicit with our flags usage here since it's gonna be sure to always set those flags
       - name: Compilation
         env:
+          # `SCONS_CACHE` and `SCONS_CACHE_LIMIT` became deprecated since 
+          # https://github.com/godotengine/godot/commit/0e4a4e3c4d602691ce1b4fc6a721c5c637ead57f
+          # However since we are also building versions preceding that change, 
+          # we have to keep them in addition to the new parameters
           SCONS_CACHE: ${{github.workspace}}/.scons_cache/
+          # The new way uses a different unit.
+          # I wish I could do `SCONS_CACHE_LIMIT_GB * 1024` but it isn't documented as an available operator
+          SCONS_CACHE_LIMIT: 4096
         run: |
           PATH=${GITHUB_WORKSPACE}/x86_64-godot-linux-gnu_sdk-buildroot/bin:$PATH
-          scons verbose=yes warnings=${{matrix.warnings}} werror=yes platform=linuxbsd tests=no dev_build=no target=${{matrix.target}} production=${{matrix.production}} precision=${{matrix.precision}}
+          scons verbose=yes warnings=${{matrix.warnings}} werror=${{matrix.werror}} platform=linuxbsd tests=no dev_build=no target=${{matrix.target}} production=${{matrix.production}} precision=${{matrix.precision}} "cache_path=${{github.workspace}}/.scons_cache/" cache_limit=${{env.SCONS_CACHE_LIMIT_GB}}
 
       # Make build available
       - uses: actions/upload-artifact@v4

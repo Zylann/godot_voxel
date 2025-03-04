@@ -6,7 +6,9 @@
 	<description>
 		This can be used to find paths between two voxel positions on blocky terrain.
 		It is tuned for agents 2 voxels tall and 1 voxel wide, which must stand on solid voxels and can jump 1 voxel high.
-		Search radius may also be limited (50 voxels and above starts to be relatively expensive).
+		No navmesh is required, it uses voxels directly with no baking. However, search radius is limited by an area (50 voxels and above starts to be relatively expensive).
+		At the moment, this pathfinder only considers voxels with ID 0 to be air, and the rest is considered solid.
+		Note: "positions" in this class are expected to be in voxels. If your terrain is offset or if voxels are smaller or bigger than world units, you may have to convert coordinates.
 	</description>
 	<tutorials>
 	</tutorials>
@@ -14,6 +16,7 @@
 		<method name="debug_get_visited_positions" qualifiers="const">
 			<return type="Vector3i[]" />
 			<description>
+				Gets the list of voxel positions that were visited by the last pathfinding request (relates to how A* works under the hood). This is for debugging.
 			</description>
 		</method>
 		<method name="find_path">
@@ -21,6 +24,11 @@
 			<param index="0" name="from_position" type="Vector3i" />
 			<param index="1" name="to_position" type="Vector3i" />
 			<description>
+				Calculates a path starting from a voxel position to a target voxel position. 
+				Those positions should be air voxels just above ground with enough room for agents to fit in. 
+				The returned path will be a series of contiguous voxel positions to walk through in order to get to the destination. 
+				If no path is found, or if either start or destination position is outside of the search area, an empty array will be returned.
+				You may also use [method set_region] to specify the search area.
 			</description>
 		</method>
 		<method name="find_path_async">
@@ -28,28 +36,35 @@
 			<param index="0" name="from_position" type="Vector3i" />
 			<param index="1" name="to_position" type="Vector3i" />
 			<description>
+				Same as [method find_path], but performs the calculation on a separate thread. The result will be emitted with the [signal async_search_completed] signal.
+				Only one asynchronous search can be active at a given time. Use [method is_running_async] to check this.
 			</description>
 		</method>
 		<method name="get_region">
 			<return type="AABB" />
 			<description>
+				Gets the maximum region limit that will be considered for pathfinding, in voxels.
 			</description>
 		</method>
 		<method name="is_running_async" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Returns true if a path is currently being calculated asynchronously. See [method find_path_async].
 			</description>
 		</method>
 		<method name="set_region">
 			<return type="void" />
 			<param index="0" name="box" type="AABB" />
 			<description>
+				Sets the maximum region limit that will be considered for pathfinding, in voxels. You should usually set this before calling [method find_path].
+				The larger the region, the more expensive the search can get. Keep in mind voxel volumes scale cubically, so don't use this on large areas (for example 50 voxels is quite big).
 			</description>
 		</method>
 		<method name="set_terrain">
 			<return type="void" />
 			<param index="0" name="terrain" type="VoxelTerrain" />
 			<description>
+				Sets the terrain that will be used to do searches in.
 			</description>
 		</method>
 	</methods>
@@ -57,6 +72,7 @@
 		<signal name="async_search_completed">
 			<param index="0" name="path" type="Vector3i[]" />
 			<description>
+				Emitted when searches triggered with [method find_path_async] are complete.
 			</description>
 		</signal>
 	</signals>

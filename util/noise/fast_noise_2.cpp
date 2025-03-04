@@ -1,4 +1,5 @@
 #include "fast_noise_2.h"
+#include "../containers/fixed_array.h"
 #include "../containers/std_vector.h"
 #include "../math/funcs.h"
 #include "../math/vector3.h"
@@ -9,6 +10,8 @@ namespace zylann {
 FastNoise2::FastNoise2() {
 	// Setup default
 	update_generator();
+	// https://github.com/Auburn/FastNoise2/issues/136
+	_generator->GetSIMDLevel();
 }
 
 void FastNoise2::set_encoded_node_tree(String data) {

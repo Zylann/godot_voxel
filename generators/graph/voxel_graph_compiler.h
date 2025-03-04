@@ -28,15 +28,23 @@ struct GraphRemappingInfo {
 
 // Pre-processes the graph and applies some optimizations before doing the main compilation pass.
 // This can involve some nodes getting removed or replaced with new ones.
-CompilationResult expand_graph(const ProgramGraph &graph, ProgramGraph &expanded_graph,
-		Span<const VoxelGraphFunction::Port> input_defs, StdVector<uint32_t> *input_node_ids, const NodeTypeDB &type_db,
-		GraphRemappingInfo *remap_info);
+CompilationResult expand_graph(
+		const ProgramGraph &graph,
+		ProgramGraph &expanded_graph,
+		Span<const VoxelGraphFunction::Port> input_defs,
+		StdVector<uint32_t> *input_node_ids,
+		const NodeTypeDB &type_db,
+		GraphRemappingInfo *remap_info
+);
 
 // Functions usable by node implementations during the compilation stage
 class CompileContext {
 public:
-	CompileContext(/*const ProgramGraph::Node &node,*/ StdVector<uint16_t> &program,
-			StdVector<Runtime::HeapResource> &heap_resources, StdVector<Variant> &params) :
+	CompileContext(
+			/*const ProgramGraph::Node &node,*/ StdVector<uint16_t> &program,
+			StdVector<Runtime::HeapResource> &heap_resources,
+			StdVector<Variant> &params
+	) :
 			/*_node(node),*/ _program(program), _heap_resources(heap_resources), _params(params) {}
 
 	Variant get_param(size_t i) const {

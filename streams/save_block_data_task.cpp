@@ -13,9 +13,15 @@ namespace {
 std::atomic_int g_debug_save_block_tasks_count = { 0 };
 }
 
-SaveBlockDataTask::SaveBlockDataTask(VolumeID p_volume_id, Vector3i p_block_pos, uint8_t p_lod,
-		std::shared_ptr<VoxelBuffer> p_voxels, std::shared_ptr<StreamingDependency> p_stream_dependency,
-		std::shared_ptr<AsyncDependencyTracker> p_tracker, bool flush_on_last_tracked_task) :
+SaveBlockDataTask::SaveBlockDataTask(
+		VolumeID p_volume_id,
+		Vector3i p_block_pos,
+		uint8_t p_lod,
+		std::shared_ptr<VoxelBuffer> p_voxels,
+		std::shared_ptr<StreamingDependency> p_stream_dependency,
+		std::shared_ptr<AsyncDependencyTracker> p_tracker,
+		bool flush_on_last_tracked_task
+) :
 		_voxels(p_voxels),
 		_position(p_block_pos),
 		_volume_id(p_volume_id),
@@ -29,9 +35,15 @@ SaveBlockDataTask::SaveBlockDataTask(VolumeID p_volume_id, Vector3i p_block_pos,
 	++g_debug_save_block_tasks_count;
 }
 
-SaveBlockDataTask::SaveBlockDataTask(VolumeID p_volume_id, Vector3i p_block_pos, uint8_t p_lod,
-		UniquePtr<InstanceBlockData> p_instances, std::shared_ptr<StreamingDependency> p_stream_dependency,
-		std::shared_ptr<AsyncDependencyTracker> p_tracker, bool flush_on_last_tracked_task) :
+SaveBlockDataTask::SaveBlockDataTask(
+		VolumeID p_volume_id,
+		Vector3i p_block_pos,
+		uint8_t p_lod,
+		UniquePtr<InstanceBlockData> p_instances,
+		std::shared_ptr<StreamingDependency> p_stream_dependency,
+		std::shared_ptr<AsyncDependencyTracker> p_tracker,
+		bool flush_on_last_tracked_task
+) :
 		_instances(std::move(p_instances)),
 		_position(p_block_pos),
 		_volume_id(p_volume_id),
@@ -86,10 +98,13 @@ void SaveBlockDataTask::run(zylann::ThreadedTaskContext &ctx) {
 		// On the other hand, if we want to represent the fact that "everything was deleted here",
 		// this should not be null.
 
-		ZN_PRINT_VERBOSE(format("Saving instance block {} lod {} with data {}", _position, _lod, _instances.get()));
+		ZN_PRINT_VERBOSE(format(
+				"Saving instance block {} lod {} with data {}", _position, static_cast<int>(_lod), _instances.get()
+		));
 
-		VoxelStream::InstancesQueryData instances_query{ std::move(_instances), _position, _lod,
-			VoxelStream::RESULT_ERROR };
+		VoxelStream::InstancesQueryData instances_query{
+			std::move(_instances), _position, _lod, VoxelStream::RESULT_ERROR
+		};
 		stream->save_instance_blocks(Span<VoxelStream::InstancesQueryData>(&instances_query, 1));
 	}
 

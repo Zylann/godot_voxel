@@ -66,11 +66,11 @@ void print_line(const FwdConstStdString &s) {
 	print_line(s.s.c_str());
 }
 
-void print_warning(const char *warning, const char *func, const char *file, int line) {
+void print_warning(const char *message, const char *func, const char *file, int line) {
 #if defined(ZN_GODOT)
-	_err_print_error(func, file, line, warning, false, ERR_HANDLER_WARNING);
+	_err_print_error(func, file, line, message, false, ERR_HANDLER_WARNING);
 #elif defined(ZN_GODOT_EXTENSION)
-	_err_print_error(func, file, line, warning, true);
+	::godot::_err_print_error(func, file, line, message, false, true);
 #endif
 }
 

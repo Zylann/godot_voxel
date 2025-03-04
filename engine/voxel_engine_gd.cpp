@@ -10,6 +10,10 @@
 #include "../util/tasks/godot/threaded_task_gd.h"
 #include "voxel_engine.h"
 
+#ifdef VOXEL_TESTS
+#include "../tests/tests.h"
+#endif
+
 using namespace zylann::godot;
 
 namespace zylann::voxel::godot {
@@ -122,6 +126,7 @@ Dictionary to_dict(const zylann::voxel::VoxelEngine::Stats &stats) {
 	tasks["generation"] = stats.generation_tasks;
 	tasks["meshing"] = stats.meshing_tasks;
 	tasks["main_thread"] = stats.main_thread_tasks;
+	tasks["gpu"] = stats.gpu_tasks;
 
 	// This part is additional for scripts because VoxelMemoryPool is not exposed
 	Dictionary mem;
@@ -181,11 +186,44 @@ Vector3 VoxelEngine::get_editor_camera_direction() const {
 
 #endif
 
+#ifdef VOXEL_TESTS
+
+void VoxelEngine::run_tests() {
+	zylann::voxel::tests::run_voxel_tests();
+}
+
+#endif
+
+bool VoxelEngine::_b_get_threaded_graphics_resource_building_enabled() const {
+	const zylann::voxel::VoxelEngine &ve = zylann::voxel::VoxelEngine::get_singleton();
+	return ve.is_threaded_graphics_resource_building_enabled();
+}
+
+// This is normally automatic. This method is mainly to allow overriding it just in case.
+// void VoxelEngine::_b_set_threaded_graphics_resource_building_enabled(bool enabled) {
+// 	zylann::voxel::VoxelEngine &ve = zylann::voxel::VoxelEngine::get_singleton();
+// 	ve.set_threaded_graphics_resource_building_enabled(enabled);
+// }
+
 void VoxelEngine::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_version_major"), &VoxelEngine::get_version_major);
 	ClassDB::bind_method(D_METHOD("get_version_minor"), &VoxelEngine::get_version_minor);
 	ClassDB::bind_method(D_METHOD("get_version_patch"), &VoxelEngine::get_version_patch);
 	ClassDB::bind_method(D_METHOD("get_stats"), &VoxelEngine::get_stats);
+
+	ClassDB::bind_method(
+			D_METHOD("get_threaded_graphics_resource_building_enabled"),
+			&VoxelEngine::_b_get_threaded_graphics_resource_building_enabled
+	);
+
+#ifdef VOXEL_TESTS
+	ClassDB::bind_method(D_METHOD("run_tests"), &VoxelEngine::run_tests);
+#endif
+
+	// ClassDB::bind_method(
+	// 		D_METHOD("set_threaded_graphics_resource_building_enabled", "enabled"),
+	// 		&VoxelEngine::_b_set_threaded_graphics_resource_building_enabled
+	// );
 }
 
 } // namespace zylann::voxel::godot

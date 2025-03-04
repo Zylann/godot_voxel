@@ -13,17 +13,21 @@
 			<param index="0" name="voxel_buffer" type="VoxelBuffer" />
 			<param index="1" name="direction" type="int" />
 			<description>
+				Generates only the part of the mesh that Transvoxel uses to connect surfaces with different level of detail. This method is mainly for testing purposes.
 			</description>
 		</method>
 	</methods>
 	<members>
-		<member name="deep_sampling_enabled" type="bool" setter="set_deep_sampling_enabled" getter="is_deep_sampling_enabled" default="false">
+		<member name="edge_clamp_margin" type="float" setter="set_edge_clamp_margin" getter="get_edge_clamp_margin" default="0.02">
+			When a marching cube cell is computed, vertices may be placed anywhere on edges of the cell, including very close to corners. This can lead to very thin or small triangles, which can be a problem notably for some physics engines. this margin is the minimum distance from corners, below which vertices will be clamped to it. Increasing this value might reduce quality of the mesh introducing small ridges. This property cannot be lower than 0 (in which case no clamping occurs), and cannot be higher than 0.5 (in which case no interpolation occurs as vertices always get placed in the middle of edges).
 		</member>
 		<member name="mesh_optimization_enabled" type="bool" setter="set_mesh_optimization_enabled" getter="is_mesh_optimization_enabled" default="false">
 		</member>
 		<member name="mesh_optimization_error_threshold" type="float" setter="set_mesh_optimization_error_threshold" getter="get_mesh_optimization_error_threshold" default="0.005">
 		</member>
 		<member name="mesh_optimization_target_ratio" type="float" setter="set_mesh_optimization_target_ratio" getter="get_mesh_optimization_target_ratio" default="0.0">
+		</member>
+		<member name="textures_ignore_air_voxels" type="bool" setter="set_textures_ignore_air_voxels" getter="get_textures_ignore_air_voxels" default="false">
 		</member>
 		<member name="texturing_mode" type="int" setter="set_texturing_mode" getter="get_texturing_mode" enum="VoxelMesherTransvoxel.TexturingMode" default="0">
 		</member>
@@ -32,8 +36,13 @@
 	</members>
 	<constants>
 		<constant name="TEXTURES_NONE" value="0" enum="TexturingMode">
+			Disables texturing information. This mode is the fastest if you can use a shader to apply textures procedurally.
 		</constant>
 		<constant name="TEXTURES_BLEND_4_OVER_16" value="1" enum="TexturingMode">
+			Adds texturing information as 4 texture indices and 4 weights, encoded in [code]CUSTOM1.xy[/code] in Godot fragment shaders, where x and y contain 4 packed 8-bit values.
+			Expects voxels to have 4 4-bit indices packed in 16-bit values in [constant VoxelBuffer.CHANNEL_INDICES], and 4 4-bit weights in [constant VoxelBuffer.CHANNEL_WEIGHTS].
+			In cases where more than 4 textures cross each other in a 2x2x2 voxel area, triangles in that area will only use the 4 indices with the highest weights.
+			A custom shader is required to render this, usually with texture arrays to index textures easily.
 		</constant>
 	</constants>
 </class>

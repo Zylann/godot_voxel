@@ -67,6 +67,10 @@ inline int chebyshev_distance(const Vector2i &a, const Vector2i &b) {
 	return math::max(Math::abs(a.x - b.x), Math::abs(a.y - b.y));
 }
 
+inline Vector2i min(const Vector2i a, const Vector2i b) {
+	return Vector2i(min(a.x, b.x), min(a.y, b.y));
+}
+
 } // namespace math
 
 StdStringStream &operator<<(StdStringStream &ss, const Vector2i &v);

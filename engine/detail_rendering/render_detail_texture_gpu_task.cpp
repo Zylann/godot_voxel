@@ -28,7 +28,7 @@ void RenderDetailTextureGPUTask::prepare(GPUTaskContext &ctx) {
 	ERR_FAIL_COND(cell_triangles.size() == 0);
 
 	ERR_FAIL_COND(shader == nullptr);
-	ERR_FAIL_COND(!shader->is_valid());
+	ERR_FAIL_COND(!shader->get_rid().is_valid());
 
 	RenderingDevice &rd = ctx.rendering_device;
 	GPUStorageBufferPool &storage_buffer_pool = ctx.storage_buffer_pool;
@@ -257,7 +257,7 @@ void RenderDetailTextureGPUTask::prepare(GPUTaskContext &ctx) {
 	// Pipelines
 	// Not sure what a pipeline is required for in compute shaders, it seems to be required "just because"
 
-	const RID gather_hits_shader_rid = VoxelEngine::get_singleton().get_detail_gather_hits_compute_shader().get_rid();
+	const RID gather_hits_shader_rid = ctx.base_resources.detail_gather_hits_shader.rid;
 	ERR_FAIL_COND(!gather_hits_shader_rid.is_valid());
 	// TODO Perhaps we could cache this pipeline?
 	_gather_hits_pipeline_rid = rd.compute_pipeline_create(gather_hits_shader_rid);
@@ -267,21 +267,21 @@ void RenderDetailTextureGPUTask::prepare(GPUTaskContext &ctx) {
 	_detail_generator_pipeline_rid = rd.compute_pipeline_create(shader_rid);
 	ERR_FAIL_COND(!_detail_generator_pipeline_rid.is_valid());
 
-	for (const ModifierData &modifier : modifiers) {
-		ERR_FAIL_COND(!modifier.shader_rid.is_valid());
-		const RID rid = rd.compute_pipeline_create(modifier.shader_rid);
+	for (const VoxelModifier::ShaderData &modifier : modifiers) {
+		const RID modifier_shader_rid = VoxelModifier::get_detail_shader(ctx.base_resources, modifier.modifier_type);
+		ERR_FAIL_COND(!modifier_shader_rid.is_valid());
+		const RID rid = rd.compute_pipeline_create(modifier_shader_rid);
 		ERR_FAIL_COND(!rid.is_valid());
 		_detail_modifier_pipelines.push_back(rid);
 	}
 
-	const RID detail_normalmap_shader_rid =
-			VoxelEngine::get_singleton().get_detail_normalmap_compute_shader().get_rid();
+	const RID detail_normalmap_shader_rid = ctx.base_resources.detail_normalmap_shader.rid;
 	ERR_FAIL_COND(!detail_normalmap_shader_rid.is_valid());
 	// TODO Perhaps we could cache this pipeline?
 	_detail_normalmap_pipeline_rid = rd.compute_pipeline_create(detail_normalmap_shader_rid);
 	ERR_FAIL_COND(!_detail_normalmap_pipeline_rid.is_valid());
 
-	const RID dilation_shader_rid = VoxelEngine::get_singleton().get_dilate_normalmap_compute_shader().get_rid();
+	const RID dilation_shader_rid = ctx.base_resources.dilate_normalmap_shader.rid;
 	ERR_FAIL_COND(!dilation_shader_rid.is_valid());
 	// TODO Perhaps we could cache this pipeline?
 	_normalmap_dilation_pipeline_rid = rd.compute_pipeline_create(dilation_shader_rid);
@@ -344,7 +344,9 @@ void RenderDetailTextureGPUTask::prepare(GPUTaskContext &ctx) {
 
 		// Extra params
 		if (shader_params != nullptr && shader_params->params.size() > 0) {
-			add_uniform_params(shader_params->params, detail_generator_uniforms);
+			add_uniform_params(
+					shader_params->params, detail_generator_uniforms, ctx.base_resources.filtering_sampler_rid
+			);
 		}
 
 		const RID detail_generator_uniform_set = uniform_set_create(rd, detail_generator_uniforms, shader_rid, 0);
@@ -368,8 +370,10 @@ void RenderDetailTextureGPUTask::prepare(GPUTaskContext &ctx) {
 	// Apply modifiers
 
 	for (unsigned int modifier_index = 0; modifier_index < modifiers.size(); ++modifier_index) {
-		const ModifierData &modifier_data = modifiers[modifier_index];
-		ZN_ASSERT_CONTINUE(modifier_data.shader_rid.is_valid());
+		const VoxelModifier::ShaderData &modifier_data = modifiers[modifier_index];
+		const RID modifier_shader_rid =
+				VoxelModifier::get_detail_shader(ctx.base_resources, modifier_data.modifier_type);
+		ZN_ASSERT_CONTINUE(modifier_shader_rid.is_valid());
 
 		hit_positions_uniform->set_binding(0);
 		generator_params_uniform->set_binding(1);
@@ -391,11 +395,13 @@ void RenderDetailTextureGPUTask::prepare(GPUTaskContext &ctx) {
 
 		// Extra params
 		if (modifier_data.params != nullptr) {
-			add_uniform_params(modifier_data.params->params, detail_modifier_uniforms);
+			add_uniform_params(
+					modifier_data.params->params, detail_modifier_uniforms, ctx.base_resources.filtering_sampler_rid
+			);
 		}
 
 		const RID detail_modifier_uniform_set =
-				uniform_set_create(rd, detail_modifier_uniforms, modifier_data.shader_rid, 0);
+				uniform_set_create(rd, detail_modifier_uniforms, modifier_shader_rid, 0);
 
 		const RID pipeline_rid = _detail_modifier_pipelines[modifier_index];
 		rd.compute_list_bind_compute_pipeline(compute_list_id, pipeline_rid);
@@ -573,6 +579,13 @@ void RenderDetailTextureGPUTask::collect(GPUTaskContext &ctx) {
 	ZN_DSTACK();
 
 	PackedByteArray texture_data = collect_texture_and_cleanup(ctx.rendering_device, ctx.storage_buffer_pool);
+
+#if DEBUG_ENABLED
+	if (testing_output != nullptr) {
+		*testing_output = texture_data;
+		return;
+	}
+#endif
 
 	{
 		StdVector<DetailTextureData::Tile> tile_data2;

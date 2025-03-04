@@ -4,13 +4,17 @@
 #include "../../util/godot/classes/array_mesh.h"
 #include "../../util/godot/classes/object.h"
 #include "../../util/godot/classes/point_mesh.h"
+#include "../../util/godot/classes/surface_tool.h"
 #include "../../util/godot/core/array.h"
 #include "../../util/godot/core/packed_arrays.h"
 #include "../../util/godot/core/string.h"
 #include "../../util/math/conv.h"
 #include "../../util/math/ortho_basis.h"
 #include "../../util/string/format.h"
+#include "blocky_material_indexer.h"
+#include "blocky_model_baking_context.h"
 #include "voxel_blocky_library.h"
+#include "voxel_blocky_model_empty.h"
 
 namespace zylann::voxel {
 
@@ -18,9 +22,7 @@ void VoxelBlockyModelMesh::set_mesh(Ref<Mesh> mesh) {
 	{
 		Ref<PointMesh> point_mesh = mesh;
 		if (point_mesh.is_valid()) {
-			ZN_PRINT_ERROR(
-					format("PointMesh is not supported by {}.", godot::get_class_name_str<VoxelBlockyModelMesh>())
-			);
+			ZN_PRINT_ERROR(format("PointMesh is not supported by {}.", ZN_CLASS_NAME_C(VoxelBlockyModelMesh)));
 			return;
 		}
 	}
@@ -93,31 +95,22 @@ void add(PackedVector3Array &vectors, Vector3 rhs) {
 	add(Span<Vector3>(vectors.ptrw(), vectors.size()), rhs);
 }
 
-void rotate_mesh_arrays(
-		PackedVector3Array &vertices,
-		PackedVector3Array &normals,
-		PackedFloat32Array tangents,
-		const Basis &basis
-) {
-	Span<Vector3> vertices_w(vertices.ptrw(), vertices.size());
-	Span<Vector3> normals_w(normals.ptrw(), normals.size());
-	Span<float> tangents_w(tangents.ptrw(), tangents.size());
-
-	mul(vertices_w, basis);
+void rotate_mesh_arrays(Span<Vector3> vertices, Span<Vector3> normals, Span<float> &tangents, const Basis &basis) {
+	mul(vertices, basis);
 
 	if (tangents.size() == 0) {
-		mul(normals_w, basis);
+		mul(normals, basis);
 
 	} else {
-		const unsigned int tangent_count = tangents_w.size() / 4;
-		ZN_ASSERT_RETURN(int(tangent_count) == normals.size());
+		const unsigned int tangent_count = tangents.size() / 4;
+		ZN_ASSERT_RETURN(tangent_count == normals.size());
 
 		for (unsigned int ti = 0; ti < tangent_count; ++ti) {
 			const unsigned int i0 = ti * 4;
 
-			Vector3 normal = normals_w[ti];
-			Vector3 tangent(tangents_w[i0], tangents_w[i0 + 1], tangents_w[i0 + 2]);
-			Vector3 bitangent(normal.cross(tangent) * tangents_w[i0 + 3]);
+			Vector3 normal = normals[ti];
+			Vector3 tangent(tangents[i0], tangents[i0 + 1], tangents[i0 + 2]);
+			Vector3 bitangent(normal.cross(tangent) * tangents[i0 + 3]);
 
 			normal = basis.xform(normal);
 			tangent = basis.xform(tangent);
@@ -125,20 +118,76 @@ void rotate_mesh_arrays(
 
 			const float bitangent_s = math::sign_nonzero(bitangent.dot(normal.cross(tangent)));
 
-			normals_w[ti] = normal;
+			normals[ti] = normal;
 
-			tangents_w[i0] = tangent.x;
-			tangents_w[i0 + 1] = tangent.y;
-			tangents_w[i0 + 2] = tangent.z;
-			tangents_w[i0 + 3] = bitangent_s;
+			tangents[i0] = tangent.x;
+			tangents[i0 + 1] = tangent.y;
+			tangents[i0 + 2] = tangent.z;
+			tangents[i0 + 3] = bitangent_s;
 		}
 	}
+}
+
+void mul(Span<Vector3f> vectors, const Basis3f &basis) {
+	for (Vector3f &v : vectors) {
+		v = basis.xform(v);
+	}
+}
+
+} // namespace
+
+void rotate_mesh_arrays(Span<Vector3f> vertices, Span<Vector3f> normals, Span<float> tangents, const Basis3f &basis) {
+	mul(vertices, basis);
+
+	if (tangents.size() == 0) {
+		mul(normals, basis);
+
+	} else {
+		const unsigned int tangent_count = tangents.size() / 4;
+		ZN_ASSERT_RETURN(tangent_count == normals.size());
+
+		for (unsigned int ti = 0; ti < tangent_count; ++ti) {
+			const unsigned int i0 = ti * 4;
+
+			Vector3f normal = normals[ti];
+			Vector3f tangent(tangents[i0], tangents[i0 + 1], tangents[i0 + 2]);
+			Vector3f bitangent(math::cross(normal, tangent) * tangents[i0 + 3]);
+
+			normal = basis.xform(normal);
+			tangent = basis.xform(tangent);
+			bitangent = basis.xform(bitangent);
+
+			const float bitangent_s = math::sign_nonzero(math::dot(bitangent, math::cross(normal, tangent)));
+
+			normals[ti] = normal;
+
+			tangents[i0] = tangent.x;
+			tangents[i0 + 1] = tangent.y;
+			tangents[i0 + 2] = tangent.z;
+			tangents[i0 + 3] = bitangent_s;
+		}
+	}
+}
+
+namespace {
+
+void rotate_mesh_arrays(
+		PackedVector3Array &vertices,
+		PackedVector3Array &normals,
+		PackedFloat32Array &tangents,
+		const Basis &basis
+) {
+	Span<Vector3> vertices_w(vertices.ptrw(), vertices.size());
+	Span<Vector3> normals_w(normals.ptrw(), normals.size());
+	Span<float> tangents_w(tangents.ptrw(), tangents.size());
+
+	rotate_mesh_arrays(vertices_w, normals_w, tangents_w, basis);
 }
 
 void rotate_mesh_arrays_ortho(
 		PackedVector3Array &vertices,
 		PackedVector3Array &normals,
-		PackedFloat32Array tangents,
+		PackedFloat32Array &tangents,
 		unsigned int ortho_basis_index
 ) {
 	const math::OrthoBasis ortho_basis = math::get_ortho_basis_from_index(ortho_basis_index);
@@ -159,14 +208,18 @@ bool validate_indices(Span<const int> indices, int vertex_count) {
 	return true;
 }
 
+} // namespace
+
+namespace blocky {
+
 void bake_mesh_geometry(
-		Span<const Array> surfaces,
-		Span<const Ref<Material>> materials,
-		VoxelBlockyModel::BakedData &baked_data,
-		bool bake_tangents,
-		VoxelBlockyModel::MaterialIndexer &material_indexer,
-		unsigned int ortho_rotation,
-		float side_vertex_tolerance
+		const Span<const Array> surfaces,
+		const Span<const Ref<Material>> materials,
+		BakedModel &baked_data,
+		const bool bake_tangents,
+		MaterialIndexer &material_indexer,
+		const unsigned int ortho_rotation,
+		const float side_vertex_tolerance
 ) {
 	baked_data.model.surface_count = surfaces.size();
 
@@ -176,15 +229,34 @@ void bake_mesh_geometry(
 		ERR_CONTINUE(arrays.size() == 0);
 
 		PackedInt32Array indices = arrays[Mesh::ARRAY_INDEX];
-		ERR_CONTINUE_MSG(indices.size() == 0, "Mesh surface is empty or is missing an index buffer.");
-		ERR_CONTINUE_MSG(
-				indices.size() % 3 != 0,
-				String("Mesh surface has an invalid number of indices. "
-					   "Expected multiple of 3 (for triangles), found {0}")
-						.format(varray(indices.size()))
+		PackedVector3Array positions = arrays[Mesh::ARRAY_VERTEX];
+		if (indices.size() == 0) {
+			if (positions.size() == 0) {
+				ZN_PRINT_ERROR(
+						format("Mesh surface {} is empty (no vertices, no index buffer). If you want an empty "
+							   "model, use {}.",
+							   surface_index,
+							   ZN_CLASS_NAME_C(VoxelBlockyModelEmpty))
+				);
+				continue;
+			} else {
+				ZN_PRINT_ERROR(
+						format("Mesh surface {} is missing an index buffer. Indexed meshes are expected. If you're "
+							   "generating the mesh with {}, you may use the {}() method.",
+							   surface_index,
+							   ZN_CLASS_NAME_C(SurfaceTool),
+							   ZN_METHOD_NAME_C(SurfaceTool, index))
+				);
+				continue;
+			}
+		}
+		ZN_ASSERT_CONTINUE_MSG(
+				(indices.size() % 3) == 0,
+				format("Mesh surface has an invalid number of indices. "
+					   "Expected multiple of 3 (for triangles), found {}",
+					   indices.size())
 		);
 
-		PackedVector3Array positions = arrays[Mesh::ARRAY_VERTEX];
 		PackedVector3Array normals = arrays[Mesh::ARRAY_NORMAL];
 		PackedVector2Array uvs = arrays[Mesh::ARRAY_TEX_UV];
 		PackedFloat32Array tangents = arrays[Mesh::ARRAY_TANGENT];
@@ -256,7 +328,7 @@ void bake_mesh_geometry(
 						format("Voxel model is missing tangents and UVs. The model won't be "
 							   "baked. You should consider providing a mesh with tangents, or at least UVs and "
 							   "normals, or turn off tangents baking in {}.",
-							   godot::get_class_name_str<VoxelBlockyLibrary>())
+							   ZN_CLASS_NAME_C(VoxelBlockyLibrary))
 				);
 				continue;
 			}
@@ -264,7 +336,7 @@ void bake_mesh_geometry(
 					format("Voxel model does not have tangents. They will be generated."
 						   "You should consider providing a mesh with tangents, or at least UVs and normals, "
 						   "or turn off tangents baking in {}.",
-						   godot::get_class_name_str<VoxelBlockyLibrary>())
+						   ZN_CLASS_NAME_C(VoxelBlockyLibrary))
 			);
 
 			tangents = generate_tangents_from_uvs(positions, normals, uvs, indices);
@@ -279,9 +351,9 @@ void bake_mesh_geometry(
 
 		// Separate triangles belonging to faces of the cube
 
-		VoxelBlockyModel::BakedData::Model &model = baked_data.model;
+		BakedModel::Model &model = baked_data.model;
 
-		VoxelBlockyModel::BakedData::Surface &surface = model.surfaces[surface_index];
+		BakedModel::Surface &surface = model.surfaces[surface_index];
 		Ref<Material> material = materials[surface_index];
 		// Note, an empty material counts as "The default material".
 		surface.material_id = material_indexer.get_or_create_index(material);
@@ -301,7 +373,7 @@ void bake_mesh_geometry(
 				)) {
 				// That triangle is on the face
 
-				VoxelBlockyModel::BakedData::SideSurface &side_surface = surface.sides[side];
+				BakedModel::SideSurface &side_surface = model.sides_surfaces[side][surface_index];
 
 				int next_side_index = side_surface.positions.size();
 
@@ -370,17 +442,20 @@ void bake_mesh_geometry(
 				}
 			}
 		}
-	} // namespace zylann::voxel
+	}
 }
 
 void bake_mesh_geometry(
 		const VoxelBlockyModelMesh &config,
-		VoxelBlockyModel::BakedData &baked_data,
-		bool bake_tangents,
-		VoxelBlockyModel::MaterialIndexer &material_indexer,
-		float side_vertex_tolerance
+		BakedModel &baked_data,
+		const bool bake_tangents,
+		MaterialIndexer &material_indexer,
+		const float side_vertex_tolerance,
+		const bool side_cutout_enabled
 ) {
 	Ref<Mesh> mesh = config.get_mesh();
+
+	baked_data.cutout_sides_enabled = side_cutout_enabled;
 
 	if (mesh.is_null()) {
 		baked_data.empty = true;
@@ -389,15 +464,14 @@ void bake_mesh_geometry(
 
 	// TODO Merge surfaces if they are found to have the same material (but still print a warning if their material is
 	// different or is null)
-	if (mesh->get_surface_count() > int(VoxelBlockyModel::BakedData::Model::MAX_SURFACES)) {
+	const uint32_t src_surface_count = mesh->get_surface_count();
+	if (mesh->get_surface_count() > int(blocky::MAX_SURFACES)) {
 		ZN_PRINT_WARNING(
-				format("Mesh has more than {} surfaces, extra surfaces will not be baked.",
-					   VoxelBlockyModel::BakedData::Model::MAX_SURFACES)
+				format("Mesh has more than {} surfaces, extra surfaces will not be baked.", blocky::MAX_SURFACES)
 		);
 	}
 
-	const unsigned int surface_count =
-			math::min(uint32_t(mesh->get_surface_count()), VoxelBlockyModel::BakedData::Model::MAX_SURFACES);
+	const unsigned int surface_count = math::min(src_surface_count, blocky::MAX_SURFACES);
 
 	StdVector<Ref<Material>> materials;
 	StdVector<Array> surfaces;
@@ -418,12 +492,17 @@ void bake_mesh_geometry(
 	);
 }
 
-} // namespace
+} // namespace blocky
 
-void VoxelBlockyModelMesh::bake(BakedData &baked_data, bool bake_tangents, MaterialIndexer &materials) const {
+void VoxelBlockyModelMesh::bake(blocky::ModelBakingContext &ctx) const {
+	blocky::BakedModel &baked_data = ctx.model;
+	blocky::MaterialIndexer &materials = ctx.material_indexer;
+
 	baked_data.clear();
-	bake_mesh_geometry(*this, baked_data, bake_tangents, materials, _side_vertex_tolerance);
-	VoxelBlockyModel::bake(baked_data, bake_tangents, materials);
+	blocky::bake_mesh_geometry(
+			*this, baked_data, ctx.tangents_enabled, materials, _side_vertex_tolerance, _side_cutout_enabled
+	);
+	VoxelBlockyModel::bake(ctx);
 }
 
 bool VoxelBlockyModelMesh::is_empty() const {
@@ -437,31 +516,20 @@ bool VoxelBlockyModelMesh::is_empty() const {
 	return false;
 }
 
-void VoxelBlockyModelMesh::set_mesh_ortho_rotation_index(int i) {
-	ZN_ASSERT_RETURN(i >= 0 && i < math::ORTHOGONAL_BASIS_COUNT);
-	if (i != int(_mesh_ortho_rotation)) {
-		_mesh_ortho_rotation = i;
-	}
-}
-
-int VoxelBlockyModelMesh::get_mesh_ortho_rotation_index() const {
-	return _mesh_ortho_rotation;
-}
-
 Ref<Mesh> VoxelBlockyModelMesh::get_preview_mesh() const {
 	const float bake_tangents = false;
-	VoxelBlockyModel::BakedData baked_data;
+	blocky::BakedModel baked_data;
 	baked_data.color = get_color();
 	StdVector<Ref<Material>> materials;
-	MaterialIndexer material_indexer{ materials };
-	bake_mesh_geometry(*this, baked_data, bake_tangents, material_indexer, _side_vertex_tolerance);
+	blocky::MaterialIndexer material_indexer{ materials };
+	bake_mesh_geometry(*this, baked_data, bake_tangents, material_indexer, _side_vertex_tolerance, false);
 
 	Ref<Mesh> mesh = make_mesh_from_baked_data(baked_data, bake_tangents);
 
 	// In case of earlier failure, it's possible there are no materials at all.
 	if (materials.size() > 0) {
 		for (unsigned int surface_index = 0; surface_index < baked_data.model.surface_count; ++surface_index) {
-			const BakedData::Surface &surface = baked_data.model.surfaces[surface_index];
+			const blocky::BakedModel::Surface &surface = baked_data.model.surfaces[surface_index];
 			Ref<Material> material = materials[surface.material_id];
 			Ref<Material> material_override = get_material_override(surface_index);
 			if (material_override.is_valid()) {
@@ -474,26 +542,6 @@ Ref<Mesh> VoxelBlockyModelMesh::get_preview_mesh() const {
 	return mesh;
 }
 
-void VoxelBlockyModelMesh::rotate_90(math::Axis axis, bool clockwise) {
-	math::OrthoBasis ortho_basis = math::get_ortho_basis_from_index(_mesh_ortho_rotation);
-	ortho_basis.rotate_90(axis, clockwise);
-	_mesh_ortho_rotation = math::get_index_from_ortho_basis(ortho_basis);
-
-	rotate_collision_boxes_90(axis, clockwise);
-
-	emit_changed();
-}
-
-void VoxelBlockyModelMesh::rotate_ortho(math::OrthoBasis p_ortho_basis) {
-	math::OrthoBasis ortho_basis = math::get_ortho_basis_from_index(_mesh_ortho_rotation);
-	ortho_basis = p_ortho_basis * ortho_basis;
-	_mesh_ortho_rotation = math::get_index_from_ortho_basis(ortho_basis);
-
-	rotate_collision_boxes_ortho(p_ortho_basis);
-
-	emit_changed();
-}
-
 void VoxelBlockyModelMesh::set_side_vertex_tolerance(float tolerance) {
 	_side_vertex_tolerance = math::max(tolerance, 0.f);
 }
@@ -502,21 +550,27 @@ float VoxelBlockyModelMesh::get_side_vertex_tolerance() const {
 	return _side_vertex_tolerance;
 }
 
+void VoxelBlockyModelMesh::set_side_cutout_enabled(bool enabled) {
+	_side_cutout_enabled = enabled;
+}
+
+bool VoxelBlockyModelMesh::is_side_cutout_enabled() const {
+	return _side_cutout_enabled;
+}
+
 void VoxelBlockyModelMesh::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("set_mesh", "mesh"), &VoxelBlockyModelMesh::set_mesh);
-	ClassDB::bind_method(D_METHOD("get_mesh"), &VoxelBlockyModelMesh::get_mesh);
+	using Self = VoxelBlockyModelMesh;
+
+	ClassDB::bind_method(D_METHOD("set_mesh", "mesh"), &Self::set_mesh);
+	ClassDB::bind_method(D_METHOD("get_mesh"), &Self::get_mesh);
+
+	ClassDB::bind_method(D_METHOD("set_side_vertex_tolerance", "tolerance"), &Self::set_side_vertex_tolerance);
+	ClassDB::bind_method(D_METHOD("get_side_vertex_tolerance"), &Self::get_side_vertex_tolerance);
 
 	ClassDB::bind_method(
-			D_METHOD("set_mesh_ortho_rotation_index", "i"), &VoxelBlockyModelMesh::set_mesh_ortho_rotation_index
+			D_METHOD("set_side_cutout_enabled", "enabled"), &VoxelBlockyModelMesh::set_side_cutout_enabled
 	);
-	ClassDB::bind_method(
-			D_METHOD("get_mesh_ortho_rotation_index"), &VoxelBlockyModelMesh::get_mesh_ortho_rotation_index
-	);
-
-	ClassDB::bind_method(
-			D_METHOD("set_side_vertex_tolerance", "tolerance"), &VoxelBlockyModelMesh::set_side_vertex_tolerance
-	);
-	ClassDB::bind_method(D_METHOD("get_side_vertex_tolerance"), &VoxelBlockyModelMesh::get_side_vertex_tolerance);
+	ClassDB::bind_method(D_METHOD("is_side_cutout_enabled"), &VoxelBlockyModelMesh::is_side_cutout_enabled);
 
 	ADD_PROPERTY(
 			PropertyInfo(Variant::OBJECT, "mesh", PROPERTY_HINT_RESOURCE_TYPE, Mesh::get_class_static()),
@@ -532,6 +586,9 @@ void VoxelBlockyModelMesh::_bind_methods() {
 			PropertyInfo(Variant::FLOAT, "side_vertex_tolerance", PROPERTY_HINT_RANGE, "0,1,0.0001"),
 			"set_side_vertex_tolerance",
 			"get_side_vertex_tolerance"
+	);
+	ADD_PROPERTY(
+			PropertyInfo(Variant::FLOAT, "side_cutout_enabled"), "set_side_cutout_enabled", "is_side_cutout_enabled"
 	);
 }
 

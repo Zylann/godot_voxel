@@ -1,6 +1,7 @@
 #ifndef VOXEL_BUFFER_GD_H
 #define VOXEL_BUFFER_GD_H
 
+#include "../util/godot/classes/image.h"
 #include "../util/godot/classes/ref_counted.h"
 #include "../util/godot/core/array.h"
 #include "../util/godot/core/typed_array.h"
@@ -10,7 +11,9 @@
 #include <cstdint>
 #include <memory>
 
-ZN_GODOT_FORWARD_DECLARE(class Image)
+// Can't forward-declare because we use Image::Format
+// ZN_GODOT_FORWARD_DECLARE(class Image)
+ZN_GODOT_FORWARD_DECLARE(class ImageTexture3D)
 
 namespace zylann::voxel {
 
@@ -35,6 +38,18 @@ public:
 		CHANNEL_DATA6 = zylann::voxel::VoxelBuffer::CHANNEL_DATA6,
 		CHANNEL_DATA7 = zylann::voxel::VoxelBuffer::CHANNEL_DATA7,
 		MAX_CHANNELS = zylann::voxel::VoxelBuffer::MAX_CHANNELS,
+	};
+
+	enum ChannelMask {
+		CHANNEL_TYPE_BIT = 1 << CHANNEL_TYPE,
+		CHANNEL_SDF_BIT = 1 << CHANNEL_SDF,
+		CHANNEL_COLOR_BIT = 1 << CHANNEL_COLOR,
+		CHANNEL_INDICES_BIT = 1 << CHANNEL_INDICES,
+		CHANNEL_WEIGHTS_BIT = 1 << CHANNEL_WEIGHTS,
+		CHANNEL_DATA5_BIT = 1 << CHANNEL_DATA5,
+		CHANNEL_DATA6_BIT = 1 << CHANNEL_DATA6,
+		CHANNEL_DATA7_BIT = 1 << CHANNEL_DATA7,
+		ALL_CHANNELS_MASK = (1 << MAX_CHANNELS) - 1,
 	};
 
 	// TODO use C++17 inline to initialize right here...
@@ -120,7 +135,12 @@ public:
 
 	void copy_channel_from(Ref<VoxelBuffer> other, unsigned int channel);
 	void copy_channel_from_area(
-			Ref<VoxelBuffer> other, Vector3i src_min, Vector3i src_max, Vector3i dst_min, unsigned int channel);
+			Ref<VoxelBuffer> other,
+			Vector3i src_min,
+			Vector3i src_max,
+			Vector3i dst_min,
+			unsigned int channel
+	);
 
 	void fill(uint64_t defval, int channel_index = 0);
 	void fill_f(real_t value, int channel = 0);
@@ -135,6 +155,7 @@ public:
 
 	void compress_uniform_channels();
 	Compression get_channel_compression(int channel_index) const;
+	void decompress_channel(int channel_index);
 
 	void downscale_to(Ref<VoxelBuffer> dst, Vector3i src_min, Vector3i src_max, Vector3i dst_min) const;
 
@@ -154,6 +175,32 @@ public:
 
 	Allocator get_allocator() const;
 
+	PackedByteArray get_channel_as_byte_array(const ChannelId channel) const;
+	void set_channel_from_byte_array(const ChannelId channel, const PackedByteArray &pba);
+
+	Ref<ImageTexture3D> create_3d_texture_from_sdf_zxy(const Image::Format output_format) const;
+	void update_3d_texture_from_sdf_zxy(Ref<ImageTexture3D> texture) const;
+
+	// Operations
+
+	void op_add_buffer_f(Ref<VoxelBuffer> other, VoxelBuffer::ChannelId channel);
+	void op_sub_buffer_f(Ref<VoxelBuffer> other, VoxelBuffer::ChannelId channel);
+	void op_mul_buffer_f(Ref<VoxelBuffer> other, VoxelBuffer::ChannelId channel);
+	void op_mul_value_f(float scale, VoxelBuffer::ChannelId channel);
+	void op_min_buffer_f(Ref<VoxelBuffer> other, VoxelBuffer::ChannelId channel);
+	void op_max_buffer_f(Ref<VoxelBuffer> other, VoxelBuffer::ChannelId channel);
+
+	// Checks if float/SDF values from a channel of the source buffer are lower than a threshold, and sets an integer
+	// value into the destination buffer depending on the result of that comparison.
+	void op_select_less_src_f_dst_i_values(
+			Ref<VoxelBuffer> src_ref,
+			const VoxelBuffer::ChannelId src_channel,
+			const float threshold,
+			const int value_if_less,
+			const int value_if_more,
+			const VoxelBuffer::ChannelId dst_channel
+	);
+
 	// Metadata
 
 	Variant get_block_metadata() const;
@@ -165,7 +212,11 @@ public:
 	void for_each_voxel_metadata(const Callable &callback) const;
 	void for_each_voxel_metadata_in_area(const Callable &callback, Vector3i min_pos, Vector3i max_pos);
 	void copy_voxel_metadata_in_area(
-			Ref<VoxelBuffer> src_buffer, Vector3i src_min_pos, Vector3i src_max_pos, Vector3i dst_pos);
+			Ref<VoxelBuffer> src_buffer,
+			Vector3i src_min_pos,
+			Vector3i src_max_pos,
+			Vector3i dst_pos
+	);
 
 	void clear_voxel_metadata();
 	void clear_voxel_metadata_in_area(Vector3i min_pos, Vector3i max_pos);
@@ -180,8 +231,6 @@ public:
 	static Ref<Image> debug_print_sdf_z_slice(const zylann::voxel::VoxelBuffer &buffer, float scale, int z);
 
 private:
-	void _b_deprecated_optimize();
-
 	// In GDExtension, `create` is defined by `GDCLASS`, preventing anyone from binding a `create` function directly
 	void _b_create(int x, int y, int z) {
 		create(x, y, z);
@@ -196,6 +245,7 @@ private:
 } // namespace zylann::voxel
 
 VARIANT_ENUM_CAST(zylann::voxel::godot::VoxelBuffer::ChannelId)
+VARIANT_ENUM_CAST(zylann::voxel::godot::VoxelBuffer::ChannelMask)
 VARIANT_ENUM_CAST(zylann::voxel::godot::VoxelBuffer::Depth)
 VARIANT_ENUM_CAST(zylann::voxel::godot::VoxelBuffer::Compression)
 VARIANT_ENUM_CAST(zylann::voxel::godot::VoxelBuffer::Allocator)

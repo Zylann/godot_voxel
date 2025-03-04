@@ -125,7 +125,7 @@ static inline float get_shaped_noise(OpenSimplexNoise &noise, float x, float y, 
 }
 */
 
-VoxelGenerator::Result VoxelGeneratorNoise::generate_block(VoxelGenerator::VoxelQueryData &input) {
+VoxelGenerator::Result VoxelGeneratorNoise::generate_block(VoxelGenerator::VoxelQueryData input) {
 	Parameters params;
 	{
 		RWLockRead rlock(_parameters_lock);

@@ -7,7 +7,7 @@ namespace zylann::voxel {
 
 VoxelGeneratorScript::VoxelGeneratorScript() {}
 
-VoxelGenerator::Result VoxelGeneratorScript::generate_block(VoxelGenerator::VoxelQueryData &input) {
+VoxelGenerator::Result VoxelGeneratorScript::generate_block(VoxelGenerator::VoxelQueryData input) {
 	Result result;
 
 	// Create a temporary wrapper so Godot can pass it to scripts

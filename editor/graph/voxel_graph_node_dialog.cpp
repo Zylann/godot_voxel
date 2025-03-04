@@ -21,6 +21,12 @@
 #include "../../util/godot/editor_scale.h"
 #include "graph_nodes_doc_data.h"
 
+#ifdef ZN_GODOT
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR >= 4
+#include <editor/editor_node.h>
+#endif
+#endif
+
 namespace zylann::voxel {
 
 namespace {
@@ -143,7 +149,8 @@ VoxelGraphNodeDialog::VoxelGraphNodeDialog() {
 	description_label->set_custom_minimum_size(Size2(0, 70 * editor_scale));
 	description_label->set_use_bbcode(true);
 	description_label->connect(
-			"meta_clicked", callable_mp(this, &VoxelGraphNodeDialog::_on_description_label_meta_clicked));
+			"meta_clicked", callable_mp(this, &VoxelGraphNodeDialog::_on_description_label_meta_clicked)
+	);
 	vsplit_container->add_child(description_label);
 	_description_label = description_label;
 
@@ -159,16 +166,20 @@ VoxelGraphNodeDialog::VoxelGraphNodeDialog() {
 	_function_file_dialog->add_filter("*.tres", ZN_TTR("Text Resource"));
 	_function_file_dialog->add_filter("*.res", ZN_TTR("Binary Resource"));
 	_function_file_dialog->connect(
-			"file_selected", callable_mp(this, &VoxelGraphNodeDialog::_on_function_file_dialog_file_selected));
+			"file_selected", callable_mp(this, &VoxelGraphNodeDialog::_on_function_file_dialog_file_selected)
+	);
 	add_child(_function_file_dialog);
 
 	// TODO Replace QuickOpen with listing of project functions directly in the dialog
 	// TODO GDX: EditorQuickOpen is not exposed to extensions
 #ifdef ZN_GODOT
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR <= 3
 	_function_quick_open_dialog = memnew(EditorQuickOpen);
 	_function_quick_open_dialog->connect(
-			"quick_open", callable_mp(this, &VoxelGraphNodeDialog::_on_function_quick_open_dialog_quick_open));
+			"quick_open", callable_mp(this, &VoxelGraphNodeDialog::_on_function_quick_open_dialog_quick_open)
+	);
 	add_child(_function_quick_open_dialog);
+#endif
 #endif
 
 	// In this editor, categories come from the documentation and may be unrelated to internal node categories.
@@ -251,8 +262,9 @@ void VoxelGraphNodeDialog::popup_at_screen_position(Vector2 screen_pos) {
 	// Seems we also have to do this after showing the window because Godot is unable to update its size
 	// without making it visible first...
 	// TODO Shouldn't we check for screen size instead of window?
-	const Rect2 window_rect = Rect2(
-			DisplayServer::get_singleton()->window_get_position(), DisplayServer::get_singleton()->window_get_size());
+	const Rect2 window_rect =
+			Rect2(DisplayServer::get_singleton()->window_get_position(),
+				  DisplayServer::get_singleton()->window_get_size());
 	const Rect2 dialog_rect = Rect2(dialog.get_position(), get_size());
 	const Vector2 difference = (dialog_rect.get_end() - window_rect.get_end()).max(Vector2());
 	dialog.set_position(dialog.get_position() - difference);
@@ -369,8 +381,17 @@ void VoxelGraphNodeDialog::_on_tree_item_activated() {
 
 	} else if (id == ID_FUNCTION_QUICK_OPEN) {
 #ifdef ZN_GODOT
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR <= 3
 		// Quick open function nodes
-		_function_quick_open_dialog->popup_dialog(godot::get_class_name_str<pg::VoxelGraphFunction>());
+		_function_quick_open_dialog->popup_dialog(pg::VoxelGraphFunction::get_class_static());
+#else
+		Vector<StringName> base_types;
+		base_types.append(pg::VoxelGraphFunction::get_class_static());
+		EditorQuickOpenDialog *quick_open_dialog = EditorNode::get_singleton()->get_quick_open_dialog();
+		quick_open_dialog->popup_dialog(
+				base_types, callable_mp(this, &VoxelGraphNodeDialog::on_function_quick_open_dialog_item_selected)
+		);
+#endif
 #endif
 
 	} else {
@@ -418,9 +439,18 @@ void VoxelGraphNodeDialog::_on_function_file_dialog_file_selected(String fpath) 
 	hide();
 }
 
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR <= 3
 void VoxelGraphNodeDialog::_on_function_quick_open_dialog_quick_open() {
 #ifdef ZN_GODOT
 	String fpath = _function_quick_open_dialog->get_selected();
+	on_function_quick_open_dialog_item_selected(fpath);
+#endif
+}
+
+#endif
+
+void VoxelGraphNodeDialog::on_function_quick_open_dialog_item_selected(String fpath) {
+#ifdef ZN_GODOT
 	if (fpath.is_empty()) {
 		return;
 	}

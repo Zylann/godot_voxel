@@ -3,6 +3,7 @@
 
 #include "../../util/containers/std_vector.h"
 #include "voxel_blocky_library_base.h"
+#include "voxel_blocky_model.h"
 
 namespace zylann::voxel {
 
@@ -53,8 +54,6 @@ private:
 
 	TypedArray<VoxelBlockyModel> _b_get_models() const;
 	void _b_set_models(TypedArray<VoxelBlockyModel> models);
-
-	int _b_deprecated_get_voxel_index_from_name(String p_name) const;
 
 	bool _set(const StringName &p_name, const Variant &p_value);
 

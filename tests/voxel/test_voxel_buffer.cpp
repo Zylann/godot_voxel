@@ -51,7 +51,7 @@ public:
 		return true;
 	}
 
-	virtual ICustomVoxelMetadata *duplicate() {
+	ICustomVoxelMetadata *duplicate() override {
 		CustomMetadataTest *d = ZN_NEW(CustomMetadataTest);
 		*d = *this;
 		return d;
@@ -265,6 +265,7 @@ void test_voxel_buffer_paste_masked() {
 	VoxelBuffer src(VoxelBuffer::ALLOCATOR_DEFAULT);
 	VoxelBuffer dst(VoxelBuffer::ALLOCATOR_DEFAULT);
 
+	// clang-format off
 	const uint8_t src_values[] = {
 		0, 0, 0, 0, 0, //
 		0, 1, 0, 0, 0, //
@@ -281,6 +282,7 @@ void test_voxel_buffer_paste_masked() {
 		0, 0, 0, 0, 0, //
 		0, 1, 1, 1, 0, //
 	};
+	// clang-format on
 
 	// const uint8_t src_values_pretransformed[] = {
 	// 	0, 0, 0, 0, //
@@ -302,6 +304,7 @@ void test_voxel_buffer_paste_masked() {
 	// 	1, 1, 1, 0, //
 	// };
 
+	// clang-format off
 	const uint8_t dst_values[] = {
 		3, 3, 3, 3, //
 		3, 3, 3, 3, //
@@ -322,11 +325,13 @@ void test_voxel_buffer_paste_masked() {
 		3, 3, 3, 3, //
 		//
 	};
+	// clang-format on
 
 	const Vector3i paste_dst_pos(-1, 0, 1);
 	const uint8_t src_mask_value = 0;
 	const uint8_t dst_mask_value = 3;
 
+	// clang-format off
 	const uint8_t expected_values[] = {
 		3, 3, 3, 3, //
 		3, 3, 3, 3, //
@@ -347,6 +352,7 @@ void test_voxel_buffer_paste_masked() {
 		1, 1, 1, 3, //
 		//
 	};
+	// clang-format on
 
 	const uint8_t copied_channel_index = 0;
 	const uint8_t src_mask_channel_index = 0;
@@ -355,16 +361,16 @@ void test_voxel_buffer_paste_masked() {
 	load_from_array_literal(src, copied_channel_index, src_values, Vector3i(5, 3, 4));
 	load_from_array_literal(dst, copied_channel_index, dst_values, Vector3i(4, 3, 5));
 
-	paste_src_masked_dst_writable_value( //
-			to_single_element_span(copied_channel_index), //
-			src, //
-			src_mask_channel_index, //
-			src_mask_value, //
-			dst, //
-			paste_dst_pos, //
-			dst_mask_channel_index, //
-			dst_mask_value, //
-			true //
+	paste_src_masked_dst_writable_value(
+			to_single_element_span(copied_channel_index),
+			src,
+			src_mask_channel_index,
+			src_mask_value,
+			dst,
+			paste_dst_pos,
+			dst_mask_channel_index,
+			dst_mask_value,
+			true
 	);
 
 	VoxelBuffer expected(VoxelBuffer::ALLOCATOR_DEFAULT);
@@ -376,6 +382,52 @@ void test_voxel_buffer_paste_masked() {
 	}
 
 	ZN_TEST_ASSERT(dst.equals(expected));
+}
+
+void test_voxel_buffer_set_channel_bytes() {
+	// Set 8-bit non-empty data
+	{
+		Ref<godot::VoxelBuffer> vb;
+		vb.instantiate();
+		vb->create(3, 4, 5);
+		const godot::VoxelBuffer::ChannelId channel = godot::VoxelBuffer::CHANNEL_TYPE;
+		vb->set_channel_depth(channel, godot::VoxelBuffer::DEPTH_8_BIT);
+
+		const uint64_t volume = Vector3iUtil::get_volume_u64(vb->get_size());
+
+		PackedByteArray bytes;
+		bytes.resize(volume);
+		Span<uint8_t> bytes_s(bytes.ptrw(), bytes.size());
+		for (unsigned int i = 0; i < bytes_s.size(); ++i) {
+			bytes_s[0] = i;
+		}
+
+		vb->set_channel_from_byte_array(channel, bytes);
+
+		{
+			Vector3i pos;
+			unsigned int i = 0;
+			for (pos.z = 0; pos.z < vb->get_size().z; ++pos.z) {
+				for (pos.x = 0; pos.x < vb->get_size().x; ++pos.x) {
+					for (pos.y = 0; pos.y < vb->get_size().y; ++pos.y) {
+						const int v = vb->get_voxel(pos.x, pos.y, pos.z, channel);
+						const int expected_v = bytes[i];
+						ZN_TEST_ASSERT(v == expected_v);
+						++i;
+					}
+				}
+			}
+		}
+	}
+	// Set empty
+	// Might error, but should not crash
+	{
+		Ref<godot::VoxelBuffer> vb;
+		vb.instantiate();
+
+		const godot::VoxelBuffer::ChannelId channel = godot::VoxelBuffer::CHANNEL_TYPE;
+		vb->set_channel_from_byte_array(channel, PackedByteArray());
+	}
 }
 
 } // namespace zylann::voxel::tests

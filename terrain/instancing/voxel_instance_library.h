@@ -2,28 +2,26 @@
 #define VOXEL_INSTANCE_MODEL_LIBRARY_H
 
 #include "../../constants/voxel_constants.h"
+#include "../../util/containers/fixed_array.h"
 #include "../../util/containers/std_map.h"
 #include "../../util/containers/std_vector.h"
 #include "../../util/godot/classes/resource.h"
 #include "../../util/godot/core/string.h"
 #include "../../util/godot/core/string_name.h"
 #include "../../util/thread/mutex.h"
-#include "voxel_instance_library_item.h"
+#include "instance_library_item_listener.h"
 
 namespace zylann::voxel {
 
+class VoxelInstanceLibraryItem;
+class VoxelInstanceGenerator;
+
 // Contains a list of items that can be used by VoxelInstancer, associated with a unique ID
-class VoxelInstanceLibrary : public Resource, public VoxelInstanceLibraryItem::IListener {
+class VoxelInstanceLibrary : public Resource, public IInstanceLibraryItemListener {
 	GDCLASS(VoxelInstanceLibrary, Resource)
 
 public:
 	static const int MAX_ID = 0xffff;
-
-	class IListener {
-	public:
-		virtual ~IListener() {}
-		virtual void on_library_item_changed(int id, VoxelInstanceLibraryItem::ChangeType change) = 0;
-	};
 
 	~VoxelInstanceLibrary();
 
@@ -48,11 +46,22 @@ public:
 		}
 	}
 
-	void add_listener(IListener *listener);
-	void remove_listener(IListener *listener);
+	template <typename F>
+	void for_each_item(F f) const {
+		for (auto it = _items.begin(); it != _items.end(); ++it) {
+			ZN_ASSERT(it->second.is_valid());
+			f(it->first, **it->second);
+		}
+	}
+
+	void add_listener(IInstanceLibraryItemListener *listener);
+	void remove_listener(IInstanceLibraryItemListener *listener);
 
 #ifdef TOOLS_ENABLED
 	void get_configuration_warnings(PackedStringArray &warnings) const;
+
+	void set_selected_item_id(int id);
+	int get_selected_item_id() const;
 #endif
 
 	struct PackedItem {
@@ -73,9 +82,17 @@ protected:
 	bool _get(const StringName &p_name, Variant &r_ret) const;
 	void _get_property_list(List<PropertyInfo> *p_list) const;
 
+	Array _b_get_data() const;
+	void _b_set_data(Array data);
+
+#ifdef TOOLS_ENABLED
+	Ref<VoxelInstanceLibraryItem> _b_get_selected_item() const;
+	void _b_set_selected_item(Ref<VoxelInstanceLibraryItem> item);
+#endif
+
 private:
-	void on_library_item_changed(int id, VoxelInstanceLibraryItem::ChangeType change) override;
-	void notify_listeners(int item_id, VoxelInstanceLibraryItem::ChangeType change);
+	void on_library_item_changed(int id, IInstanceLibraryItemListener::ChangeType change) override;
+	void notify_listeners(int item_id, IInstanceLibraryItemListener::ChangeType change);
 
 	static void _bind_methods();
 
@@ -83,7 +100,7 @@ private:
 	// Using a map keeps items ordered, so the last item has highest ID
 	StdMap<int, Ref<VoxelInstanceLibraryItem>> _items;
 
-	StdVector<IListener *> _listeners;
+	StdVector<IInstanceLibraryItemListener *> _listeners;
 
 	struct PackedItems {
 		struct Lod {
@@ -96,6 +113,10 @@ private:
 
 	// Packed representation of items for use in procedural generation tasks
 	PackedItems _packed_items;
+
+#ifdef TOOLS_ENABLED
+	int _selected_item_id = -1;
+#endif
 };
 
 } // namespace zylann::voxel

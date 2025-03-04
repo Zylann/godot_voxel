@@ -10,7 +10,7 @@ typedef Vector<String> PackedStringArray;
 
 #elif defined(ZN_GODOT_EXTENSION)
 #include "../macros.h"
-ZN_GODOT_FORWARD_DECLARE(PackedStringArray);
+ZN_GODOT_FORWARD_DECLARE(class PackedStringArray);
 
 #endif
 

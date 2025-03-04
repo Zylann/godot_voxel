@@ -229,6 +229,9 @@ public:
 	void debug_set_draw_flag(DebugDrawFlag flag_index, bool enabled);
 	bool debug_get_draw_flag(DebugDrawFlag flag_index) const;
 
+	void debug_set_draw_shadow_occluders(bool enable);
+	bool debug_get_draw_shadow_occluders() const;
+
 #ifdef TOOLS_ENABLED
 	void debug_set_draw_flags(uint32_t mask);
 #endif
@@ -418,6 +421,7 @@ private:
 #ifdef TOOLS_ENABLED
 	bool _debug_draw_enabled = false;
 	uint8_t _edited_blocks_gizmos_lod_index = 0;
+	bool _debug_draw_shadow_occluders = false;
 	uint16_t _debug_draw_flags = 0;
 
 	zylann::godot::DebugRenderer _debug_renderer;

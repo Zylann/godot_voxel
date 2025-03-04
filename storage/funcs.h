@@ -34,21 +34,49 @@ inline void clip_copy_region_coord(int &src_min, int &src_max, const int src_siz
 // Clips coordinates that may be used to copy a sub-region of a 3D container into another 3D container.
 // The result can have zero or negative size, so it must be checked before proceeding.
 inline void clip_copy_region(
-		Vector3i &src_min, Vector3i &src_max, const Vector3i &src_size, Vector3i &dst_min, const Vector3i &dst_size) {
+		Vector3i &src_min,
+		Vector3i &src_max,
+		const Vector3i &src_size,
+		Vector3i &dst_min,
+		const Vector3i &dst_size
+) {
 	clip_copy_region_coord(src_min.x, src_max.x, src_size.x, dst_min.x, dst_size.x);
 	clip_copy_region_coord(src_min.y, src_max.y, src_size.y, dst_min.y, dst_size.y);
 	clip_copy_region_coord(src_min.z, src_max.z, src_size.z, dst_min.z, dst_size.z);
 }
 
-void copy_3d_region_zxy(Span<uint8_t> dst, Vector3i dst_size, Vector3i dst_min, Span<const uint8_t> src,
-		Vector3i src_size, Vector3i src_min, Vector3i src_max, size_t item_size);
+void copy_3d_region_zxy(
+		Span<uint8_t> dst,
+		Vector3i dst_size,
+		Vector3i dst_min,
+		Span<const uint8_t> src,
+		Vector3i src_size,
+		Vector3i src_min,
+		Vector3i src_max,
+		size_t item_size
+);
 
 template <typename T>
-inline void copy_3d_region_zxy(Span<T> dst, Vector3i dst_size, Vector3i dst_min, Span<const T> src, Vector3i src_size,
-		Vector3i src_min, Vector3i src_max) {
+inline void copy_3d_region_zxy(
+		Span<T> dst,
+		Vector3i dst_size,
+		Vector3i dst_min,
+		Span<const T> src,
+		Vector3i src_size,
+		Vector3i src_min,
+		Vector3i src_max
+) {
 	// The `template` keyword before method name is required when compiling with GCC
-	copy_3d_region_zxy(dst.template reinterpret_cast_to<uint8_t>(), dst_size, dst_min,
-			src.template reinterpret_cast_to<const uint8_t>(), src_size, src_min, src_max, sizeof(T));
+	copy_3d_region_zxy(
+			dst.template reinterpret_cast_to<uint8_t>(),
+			dst_size,
+			dst_min,
+			src.template reinterpret_cast_to<const uint8_t>(),
+			src_size,
+			src_min,
+			src_max,
+			sizeof(T)
+	);
 }
 
 template <typename T>
@@ -68,7 +96,7 @@ void fill_3d_region_zxy(Span<T> dst, Vector3i dst_size, Vector3i dst_min, Vector
 	}
 
 #ifdef DEBUG_ENABLED
-	ZN_ASSERT_RETURN(Vector3iUtil::get_volume(area_size) <= dst.size());
+	ZN_ASSERT_RETURN(Vector3iUtil::get_volume_u64(area_size) <= dst.size());
 #endif
 
 	if (area_size == dst_size) {
@@ -172,8 +200,8 @@ Vector3i transform_3d_array_zxy(Span<const T> src_grid, Span<T> dst_grid, Vector
 	ZN_ASSERT_RETURN_V(Vector3iUtil::is_unit_vector(basis.x), src_size);
 	ZN_ASSERT_RETURN_V(Vector3iUtil::is_unit_vector(basis.y), src_size);
 	ZN_ASSERT_RETURN_V(Vector3iUtil::is_unit_vector(basis.z), src_size);
-	ZN_ASSERT_RETURN_V(src_grid.size() == static_cast<size_t>(Vector3iUtil::get_volume(src_size)), src_size);
-	ZN_ASSERT_RETURN_V(dst_grid.size() == static_cast<size_t>(Vector3iUtil::get_volume(src_size)), src_size);
+	ZN_ASSERT_RETURN_V(src_grid.size() == Vector3iUtil::get_volume_u64(src_size), src_size);
+	ZN_ASSERT_RETURN_V(dst_grid.size() == Vector3iUtil::get_volume_u64(src_size), src_size);
 
 	const int xa = basis.x.x != 0 ? 0 : basis.x.y != 0 ? 1 : 2;
 	const int ya = basis.y.x != 0 ? 0 : basis.y.y != 0 ? 1 : 2;

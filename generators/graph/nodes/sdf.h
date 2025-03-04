@@ -56,9 +56,9 @@ void register_sdf_nodes(Span<NodeType> types) {
 			const Runtime::Buffer &z = ctx.get_input(2);
 			const Params p = ctx.get_params<Params>();
 			Runtime::Buffer &out = ctx.get_output(0);
-			const Vector3 size(p.size_x, p.size_y, p.size_z);
+			const Vector3f size(p.size_x, p.size_y, p.size_z);
 			for (uint32_t i = 0; i < out.size; ++i) {
-				out.data[i] = math::sdf_box(Vector3(x.data[i], y.data[i], z.data[i]), size);
+				out.data[i] = math::sdf_box(Vector3f(x.data[i], y.data[i], z.data[i]), size);
 			}
 		};
 		t.range_analysis_func = [](Runtime::RangeAnalysisContext &ctx) {
@@ -72,14 +72,23 @@ void register_sdf_nodes(Span<NodeType> types) {
 			ctx.set_output(0, math::sdf_box(x, y, z, sx, sy, sz));
 		};
 		t.shader_gen_func = [](ShaderGenContext &ctx) {
-			ctx.require_lib_code("sdf_box",
+			ctx.require_lib_code(
+					"sdf_box",
 					"float vg_sdf_box(vec3 p, vec3 b) {\n"
 					"	vec3 q = abs(p) - b;\n"
 					"	return length(max(q, 0.0)) + min(max(q.x, max(q.y, q.z)), 0.0);\n"
-					"}\n");
-			ctx.add_format("{} = vg_sdf_box(vec3({}, {}, {}), vec3({}, {}, {}));\n", ctx.get_output_name(0),
-					ctx.get_input_name(0), ctx.get_input_name(1), ctx.get_input_name(2), float(ctx.get_param(0)),
-					float(ctx.get_param(1)), float(ctx.get_param(2)));
+					"}\n"
+			);
+			ctx.add_format(
+					"{} = vg_sdf_box(vec3({}, {}, {}), vec3({}, {}, {}));\n",
+					ctx.get_output_name(0),
+					ctx.get_input_name(0),
+					ctx.get_input_name(1),
+					ctx.get_input_name(2),
+					float(ctx.get_param(0)),
+					float(ctx.get_param(1)),
+					float(ctx.get_param(2))
+			);
 		};
 	}
 	{
@@ -118,8 +127,14 @@ void register_sdf_nodes(Span<NodeType> types) {
 			ctx.set_output(0, get_length(x, y, z) - r);
 		};
 		t.shader_gen_func = [](ShaderGenContext &ctx) {
-			ctx.add_format("{} = length(vec3({}, {}, {})) - {};\n", ctx.get_output_name(0), ctx.get_input_name(0),
-					ctx.get_input_name(1), ctx.get_input_name(2), float(ctx.get_param(0)));
+			ctx.add_format(
+					"{} = length(vec3({}, {}, {})) - {};\n",
+					ctx.get_output_name(0),
+					ctx.get_input_name(0),
+					ctx.get_input_name(1),
+					ctx.get_input_name(2),
+					float(ctx.get_param(0))
+			);
 		};
 	}
 	{
@@ -162,14 +177,22 @@ void register_sdf_nodes(Span<NodeType> types) {
 			ctx.set_output(0, math::sdf_torus(x, y, z, r1, r2));
 		};
 		t.shader_gen_func = [](ShaderGenContext &ctx) {
-			ctx.require_lib_code("sdf_torus",
+			ctx.require_lib_code(
+					"sdf_torus",
 					"float vg_sdf_torus(vec3 p, vec2 t) {\n"
 					"	vec2 q = vec2(length(p.xz) - t.x, p.y);\n"
 					"	return length(q) - t.y;\n"
-					"}\n");
-			ctx.add_format("{} = vg_sdf_torus(vec3({}, {}, {}), vec2({}, {}));\n", ctx.get_output_name(0),
-					ctx.get_input_name(0), ctx.get_input_name(1), ctx.get_input_name(2), float(ctx.get_param(0)),
-					float(ctx.get_param(1)));
+					"}\n"
+			);
+			ctx.add_format(
+					"{} = vg_sdf_torus(vec3({}, {}, {}), vec2({}, {}));\n",
+					ctx.get_output_name(0),
+					ctx.get_input_name(0),
+					ctx.get_input_name(1),
+					ctx.get_input_name(2),
+					float(ctx.get_param(0)),
+					float(ctx.get_param(1))
+			);
 		};
 	}
 	{
@@ -221,8 +244,11 @@ void register_sdf_nodes(Span<NodeType> types) {
 			const Params params = ctx.get_params<Params>();
 
 			if (params.smoothness > 0.0001f) {
+				// TODO Ideally we should be consistent in which kind of floats we use.
+				// Right now we should use `float` everywhere, eventually allowing to choose even if Godot is compiled
+				// with doubles, as not everything actually needs to be double
 				const math::SdfAffectingArguments args =
-						math::sdf_polynomial_smooth_union_side(a, b, params.smoothness);
+						math::sdf_polynomial_smooth_union_side<real_t>(a, b, params.smoothness);
 				switch (args) {
 					case math::SDF_ONLY_A:
 						ctx.ignore_input(1);
@@ -236,7 +262,7 @@ void register_sdf_nodes(Span<NodeType> types) {
 						CRASH_NOW();
 						break;
 				}
-				ctx.set_output(0, math::sdf_smooth_union(a, b, params.smoothness));
+				ctx.set_output(0, math::sdf_smooth_union<real_t>(a, b, params.smoothness));
 
 			} else {
 				const math::SdfAffectingArguments args = math::sdf_union_side(a, b);
@@ -257,13 +283,20 @@ void register_sdf_nodes(Span<NodeType> types) {
 			}
 		};
 		t.shader_gen_func = [](ShaderGenContext &ctx) {
-			ctx.require_lib_code("sdf_smooth_union",
+			ctx.require_lib_code(
+					"sdf_smooth_union",
 					"float vg_sdf_smooth_union(float a, float b, float s) {\n"
 					"	float h = clamp(0.5 + 0.5 * (b - a) / s, 0.0, 1.0);\n"
 					"	return mix(b, a, h) - s * h * (1.0 - h);\n"
-					"}\n");
-			ctx.add_format("{} = vg_sdf_smooth_union({}, {}, {});\n", ctx.get_output_name(0), ctx.get_input_name(0),
-					ctx.get_input_name(1), float(ctx.get_param(0)));
+					"}\n"
+			);
+			ctx.add_format(
+					"{} = vg_sdf_smooth_union({}, {}, {});\n",
+					ctx.get_output_name(0),
+					ctx.get_input_name(0),
+					ctx.get_input_name(1),
+					float(ctx.get_param(0))
+			);
 		};
 	}
 	{
@@ -316,7 +349,7 @@ void register_sdf_nodes(Span<NodeType> types) {
 
 			if (params.smoothness > 0.0001f) {
 				const math::SdfAffectingArguments args =
-						math::sdf_polynomial_smooth_subtract_side(a, b, params.smoothness);
+						math::sdf_polynomial_smooth_subtract_side<real_t>(a, b, params.smoothness);
 				switch (args) {
 					case math::SDF_ONLY_A:
 						ctx.ignore_input(1);
@@ -330,7 +363,7 @@ void register_sdf_nodes(Span<NodeType> types) {
 						CRASH_NOW();
 						break;
 				}
-				ctx.set_output(0, math::sdf_smooth_subtract(a, b, params.smoothness));
+				ctx.set_output(0, math::sdf_smooth_subtract<real_t>(a, b, params.smoothness));
 
 			} else {
 				const math::SdfAffectingArguments args = math::sdf_subtract_side(a, b);
@@ -351,13 +384,20 @@ void register_sdf_nodes(Span<NodeType> types) {
 			}
 		};
 		t.shader_gen_func = [](ShaderGenContext &ctx) {
-			ctx.require_lib_code("sdf_smooth_subtract",
+			ctx.require_lib_code(
+					"sdf_smooth_subtract",
 					"float vg_sdf_smooth_subtract(float b, float a, float s) {\n"
 					"	float h = clamp(0.5 - 0.5 * (b + a) / s, 0.0, 1.0);\n"
 					"	return mix(b, -a, h) + s * h * (1.0 - h);\n"
-					"}\n");
-			ctx.add_format("{} = vg_sdf_smooth_subtract({}, {}, {});\n", ctx.get_output_name(0), ctx.get_input_name(0),
-					ctx.get_input_name(1), float(ctx.get_param(0)));
+					"}\n"
+			);
+			ctx.add_format(
+					"{} = vg_sdf_smooth_subtract({}, {}, {});\n",
+					ctx.get_output_name(0),
+					ctx.get_input_name(0),
+					ctx.get_input_name(1),
+					float(ctx.get_param(0))
+			);
 		};
 	}
 	{

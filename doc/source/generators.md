@@ -72,7 +72,7 @@ Basic generators may often not be suited to make a whole game from, but you don'
 
 Voxel graphs allow to represent a 3D density by connecting operation nodes together. It takes 3D coordinates (X, Y, Z), and computes the value of every voxel from them. For example it can do a simple 2D or 3D noise, which can be scaled, deformed, masked using other noises, curves or even images.
 
-A big inspiration of this approach comes again from sculpting of signed-distance-fields (every voxel stores the distance to the nearest surface), which is why the main output node may be an `SdfOutput`. A bunch of nodes are meant to work on SDF as well. However, it is not strictly necessary to respect perfect distances, as long as the result looks correct for a game, so most of the time it's easier to work with approximations.
+An inspiration of this approach comes again from sculpting of signed-distance-fields (every voxel stores the distance to the nearest surface), which is why the main output node is usually an `SdfOutput`. A bunch of nodes are meant to work on SDF as well. However, it is not strictly necessary to respect perfect distances, as long as the result looks correct for a game, so most of the time it's easier to work with approximations.
 
 !!! note
     Voxel graphs are half-way between programming 3D shaders and procedural design. It has similar speed to C++ generators but has only basic instructions, so there are some maths involved. This might get eased a bit in the future when more high-level nodes are added.
@@ -208,6 +208,14 @@ With a sphere, gradients are quite regular, which is usually best. But when usin
 
 Noise is a lot more inconsistent. However, most of the time, this isn't a big deal. It depends on what operations you do with the terrain.
 If the "speed" of gradients varies too sharply, especially near the surface, it can be the cause of precision loss or blockyness in generated meshes. It can also be a problem when approximating the surface solely from SDF voxels or using sphere tracing. 
+
+### Scripting
+
+Graph generators can be modified from a script using the [VoxelGraphFunction](api/VoxelGraphFunction.md) API. This is useful for example if you design a base graph, and want to randomize noise seeds or adjust some constants. `VoxelGeneratorGraph` contains an instance of it as their "main" function. You can access the graph by calling `get_main_function()` on the generator.
+
+Nodes are identified by an ID, so you should give a name to nodes that you want to access so you can get their ID with `find_node_by_name`.
+
+Example in the Solar System demo: [https://github.com/Zylann/solar_system_demo/blob/1ec891db22b41a842d48ca0c0b1c4c7c9157f6bc/solar_system/solar_system_setup.gd#L306](https://github.com/Zylann/solar_system_demo/blob/1ec891db22b41a842d48ca0c0b1c4c7c9157f6bc/solar_system/solar_system_setup.gd#L306)
 
 
 Custom generator

@@ -21,7 +21,7 @@ void ShaderGenContext::require_lib_code(const char *lib_name, const char **code)
 	_code_gen.require_lib_code(lib_name, code);
 }
 
-StdString ShaderGenContext::add_uniform(ComputeShaderResource &&res) {
+StdString ShaderGenContext::add_uniform(std::shared_ptr<ComputeShaderResource> res) {
 	StdString name = format("u_vg_resource_{}", _uniforms.size());
 	_uniforms.push_back(ShaderParameter());
 	ShaderParameter &sp = _uniforms.back();
@@ -32,9 +32,14 @@ StdString ShaderGenContext::add_uniform(ComputeShaderResource &&res) {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-CompilationResult generate_shader(const ProgramGraph &p_graph, Span<const VoxelGraphFunction::Port> input_defs,
-		FwdMutableStdString source_code, StdVector<ShaderParameter> &shader_params, StdVector<ShaderOutput> &outputs,
-		Span<const VoxelGraphFunction::NodeTypeID> restricted_outputs) {
+CompilationResult generate_shader(
+		const ProgramGraph &p_graph,
+		Span<const VoxelGraphFunction::Port> input_defs,
+		FwdMutableStdString source_code,
+		StdVector<ShaderParameter> &shader_params,
+		StdVector<ShaderOutput> &outputs,
+		Span<const VoxelGraphFunction::NodeTypeID> restricted_outputs
+) {
 	ZN_PROFILE_SCOPE();
 
 	const NodeTypeDB &type_db = NodeTypeDB::get_singleton();
@@ -75,7 +80,7 @@ CompilationResult generate_shader(const ProgramGraph &p_graph, Span<const VoxelG
 	// 	return type.debug_only;
 	// });
 
-	expanded_graph.find_dependencies(terminal_nodes, order);
+	expanded_graph.find_dependencies(to_span(terminal_nodes), order);
 
 	StdStringStream main_ss;
 	StdStringStream lib_ss;
@@ -102,8 +107,8 @@ CompilationResult generate_shader(const ProgramGraph &p_graph, Span<const VoxelG
 					outputs.push_back(ShaderOutput{ ShaderOutput::TYPE_TYPE });
 					break;
 				default:
-					ZN_PRINT_WARNING(
-							format("Output type {} is not supported yet in shader generator.", node_type.name));
+					ZN_PRINT_WARNING(format("Output type {} is not supported yet in shader generator.", node_type.name)
+					);
 					break;
 			}
 		}
@@ -236,8 +241,13 @@ CompilationResult generate_shader(const ProgramGraph &p_graph, Span<const VoxelG
 		codegen.add("{\n");
 		codegen.indent();
 
-		ShaderGenContext ctx(node.params, to_span(input_names, node.inputs.size()),
-				to_span(output_names, node.outputs.size()), codegen, shader_params);
+		ShaderGenContext ctx(
+				node.params,
+				to_span(input_names, node.inputs.size()),
+				to_span(output_names, node.outputs.size()),
+				codegen,
+				shader_params
+		);
 		node_type.shader_gen_func(ctx);
 
 		if (ctx.has_error()) {

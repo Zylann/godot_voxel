@@ -113,10 +113,17 @@ public:
 	// If `create_new_blocks` is true, blocks will be created if not found in the area.
 	void paste(Vector3i min_pos, const VoxelBuffer &src_buffer, unsigned int channels_mask, bool create_new_blocks);
 
-	void paste_masked(Vector3i min_pos, const VoxelBuffer &src_buffer, unsigned int channels_mask, uint8_t mask_channel,
-			uint64_t mask_value, bool create_new_blocks);
+	void paste_masked(
+			Vector3i min_pos,
+			const VoxelBuffer &src_buffer,
+			unsigned int channels_mask,
+			uint8_t mask_channel,
+			uint64_t mask_value,
+			bool create_new_blocks
+	);
 
-	void paste_masked_writable_list(Vector3i min_pos, //
+	void paste_masked_writable_list(
+			Vector3i min_pos, //
 			const VoxelBuffer &src_buffer, //
 			unsigned int channels_mask, //
 			uint8_t src_mask_channel, //
@@ -261,7 +268,10 @@ public:
 	// code. It doesn't check this because the code using this function already does it (a bit more efficiently,
 	// but still).
 	void get_missing_blocks(
-			Span<const Vector3i> block_positions, unsigned int lod_index, StdVector<Vector3i> &out_missing) const;
+			Span<const Vector3i> block_positions,
+			unsigned int lod_index,
+			StdVector<Vector3i> &out_missing
+	) const;
 
 	// Gets missing blocks out of the given area in block coordinates.
 	// If the area intersects the outside of the bounds, it will be clipped.
@@ -272,7 +282,10 @@ public:
 	// Blocks found will be placed at an index computed as if the array was a flat grid (ZXY).
 	// Entries without voxel data will be left to null.
 	void get_blocks_with_voxel_data(
-			Box3i p_blocks_box, unsigned int lod_index, Span<std::shared_ptr<VoxelBuffer>> out_blocks) const;
+			Box3i p_blocks_box,
+			unsigned int lod_index,
+			Span<std::shared_ptr<VoxelBuffer>> out_blocks
+	) const;
 
 	// Gets blocks with voxels at the given LOD and indexes them in a grid. This will query every location
 	// intersecting the box at the specified LOD, so if the area is large, you may want to do a broad check first.
@@ -301,20 +314,28 @@ public:
 	// Returns positions where blocks were loaded, and where they were missing.
 	// Shallow copies of found blocks are returned (voxel data is referenced).
 	// Should only be used if refcounting is used, may fail otherwise.
-	void view_area(Box3i blocks_box, unsigned int lod_index, StdVector<Vector3i> *missing_blocks,
-			StdVector<Vector3i> *found_blocks_positions, StdVector<VoxelDataBlock> *found_blocks);
+	void view_area(
+			Box3i blocks_box,
+			unsigned int lod_index,
+			StdVector<Vector3i> *missing_blocks,
+			StdVector<Vector3i> *found_blocks_positions,
+			StdVector<VoxelDataBlock> *found_blocks
+	);
 
 	// Decreases the reference count of loaded blocks in the area. Blocks reaching zero will be unloaded.
 	// Returns positions where blocks were unloaded, and where they were missing.
 	// If `to_save` is not null and some unloaded blocks contained modifications, their data will be returned too.
 	// Should only be used if refcounting is used, may fail otherwise.
-	void unview_area(Box3i blocks_box, unsigned int lod_index,
+	void unview_area(
+			Box3i blocks_box,
+			unsigned int lod_index,
 			// Blocks that actually got removed (some areas can have no block)
 			StdVector<Vector3i> *removed_blocks,
 			// Missing blocks are used in case the caller has a collection of loading blocks, so it can cancel them
 			StdVector<Vector3i> *missing_blocks,
 			// Blocks to save are those that had unsaved modifications
-			StdVector<BlockToSave> *to_save);
+			StdVector<BlockToSave> *to_save
+	);
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Metadata queries.
@@ -340,17 +361,27 @@ private:
 		// This lock should be locked in write mode only when the map gets modified (adding or removing blocks).
 		// Otherwise it may be locked in read mode.
 		// It is possible to unlock it after we are done querying the map.
-		RWLock map_lock;
+		mutable RWLock map_lock;
 		// This should be used when reading or writing voxels/metadata in blocks. It uses block coordinates as
 		// spatial unit.
 		mutable SpatialLock3D spatial_lock;
 	};
 
-	static void pre_generate_box(Box3i voxel_box, Span<Lod> lods, unsigned int data_block_size, bool streaming,
-			unsigned int lod_count, Ref<VoxelGenerator> generator, VoxelModifierStack &modifiers);
+	static void pre_generate_box(
+			Box3i voxel_box,
+			Span<Lod> lods,
+			unsigned int data_block_size,
+			bool streaming,
+			unsigned int lod_count,
+			Ref<VoxelGenerator> generator,
+			VoxelModifierStack &modifiers
+	);
 
 	static inline std::shared_ptr<VoxelBuffer> try_get_voxel_buffer_with_lock(
-			const Lod &data_lod, Vector3i block_pos, bool &out_generate) {
+			const Lod &data_lod,
+			Vector3i block_pos,
+			bool &out_generate
+	) {
 		RWLockRead rlock(data_lod.map_lock);
 		const VoxelDataBlock *block = data_lod.map.get_block(block_pos);
 		if (block == nullptr) {

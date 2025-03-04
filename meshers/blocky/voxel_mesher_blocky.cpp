@@ -6,48 +6,24 @@
 #include "../../util/godot/core/packed_arrays.h"
 #include "../../util/macros.h"
 #include "../../util/math/conv.h"
+#include "../../util/math/funcs.h"
 // TODO GDX: String has no `operator+=`
+#include "../../util/containers/container_funcs.h"
 #include "../../util/godot/core/string.h"
+#include "../../util/profiling.h"
+#include "blocky_fluids_meshing_impl.h"
+#include "blocky_lod_skirts.h"
+#include "blocky_shadow_occluders.h"
 
 using namespace zylann::godot;
 
 namespace zylann::voxel {
 
-// Utility functions
-namespace {
-const int g_opposite_side[6] = {
-	Cube::SIDE_NEGATIVE_X, //
-	Cube::SIDE_POSITIVE_X, //
-	Cube::SIDE_POSITIVE_Y, //
-	Cube::SIDE_NEGATIVE_Y, //
-	Cube::SIDE_POSITIVE_Z, //
-	Cube::SIDE_NEGATIVE_Z //
-};
+namespace blocky {
 
-inline bool is_face_visible(
-		const VoxelBlockyLibraryBase::BakedData &lib,
-		const VoxelBlockyModel::BakedData &vt,
-		uint32_t other_voxel_id,
-		int side
-) {
-	if (other_voxel_id < lib.models.size()) {
-		const VoxelBlockyModel::BakedData &other_vt = lib.models[other_voxel_id];
-		// TODO Maybe we could get rid of `empty` here and instead set `culls_neighbors` to false during baking
-		if (other_vt.empty || (other_vt.transparency_index > vt.transparency_index) || !other_vt.culls_neighbors) {
-			return true;
-		} else {
-			const unsigned int ai = vt.model.side_pattern_indices[side];
-			const unsigned int bi = other_vt.model.side_pattern_indices[g_opposite_side[side]];
-			// Patterns are not the same, and B does not occlude A
-			return (ai != bi) && !lib.get_side_pattern_occlusion(bi, ai);
-		}
-	}
-	return true;
-}
-
-inline bool contributes_to_ao(const VoxelBlockyLibraryBase::BakedData &lib, uint32_t voxel_id) {
+inline bool contributes_to_ao(const BakedLibrary &lib, uint32_t voxel_id) {
 	if (voxel_id < lib.models.size()) {
-		const VoxelBlockyModel::BakedData &t = lib.models[voxel_id];
+		const BakedModel &t = lib.models[voxel_id];
 		return t.contributes_to_ao;
 	}
 	return true;
@@ -58,17 +34,15 @@ StdVector<int> &get_tls_index_offsets() {
 	return tls_index_offsets;
 }
 
-} // namespace
-
 template <typename Type_T>
-void generate_blocky_mesh( //
-		StdVector<VoxelMesherBlocky::Arrays> &out_arrays_per_material, //
-		VoxelMesher::Output::CollisionSurface *collision_surface, //
-		const Span<const Type_T> type_buffer, //
-		const Vector3i block_size, //
-		const VoxelBlockyLibraryBase::BakedData &library, //
-		bool bake_occlusion, //
-		float baked_occlusion_darkness //
+void generate_mesh(
+		StdVector<VoxelMesherBlocky::Arrays> &out_arrays_per_material,
+		VoxelMesher::Output::CollisionSurface *collision_surface,
+		const Span<const Type_T> type_buffer,
+		const Vector3i block_size,
+		const BakedLibrary &library,
+		const bool bake_occlusion,
+		const float baked_occlusion_darkness
 ) {
 	// TODO Optimization: not sure if this mandates a template function. There is so much more happening in this
 	// function other than reading voxels, although reading is on the hottest path. It needs to be profiled. If
@@ -158,20 +132,19 @@ void generate_blocky_mesh( //
 				// min and max are chosen such that you can visit 1 neighbor away from the current voxel without size
 				// check
 
-				const int voxel_index = y + x * row_size + z * deck_size;
-				const int voxel_id = type_buffer[voxel_index];
+				const unsigned int voxel_index = y + x * row_size + z * deck_size;
+				const unsigned int voxel_id = type_buffer[voxel_index];
 
-				if (voxel_id == VoxelBlockyModel::AIR_ID || !library.has_model(voxel_id)) {
+				// TODO Don't assume air is 0?
+				if (voxel_id == AIR_ID || !library.has_model(voxel_id)) {
 					continue;
 				}
 
-				const VoxelBlockyModel::BakedData &voxel = library.models[voxel_id];
-				const VoxelBlockyModel::BakedData::Model &model = voxel.model;
+				const BakedModel &voxel = library.models[voxel_id];
+				const BakedModel::Model &model = voxel.model;
 
-				// Hybrid approach: extract cube faces and decimate those that aren't visible,
-				// and still allow voxels to have geometry that is not a cube.
-
-				// Sides
+				// Calculate visibility of sides
+				uint32_t visible_sides_mask = 0;
 				for (unsigned int side = 0; side < Cube::SIDE_COUNT; ++side) {
 					if ((model.empty_sides_mask & (1 << side)) != 0) {
 						// This side is empty
@@ -180,13 +153,90 @@ void generate_blocky_mesh( //
 
 					const uint32_t neighbor_voxel_id = type_buffer[voxel_index + side_neighbor_lut[side]];
 
-					if (!is_face_visible(library, voxel, neighbor_voxel_id, side)) {
+					// Invalid voxels are treated like air
+					if (neighbor_voxel_id < library.models.size()) {
+						const BakedModel &other_vt = library.models[neighbor_voxel_id];
+						if (!is_face_visible_regardless_of_shape(voxel, other_vt)) {
+							// Visibility depends on the shape
+							if (!is_face_visible_according_to_shape(library, voxel, other_vt, side)) {
+								// Completely occluded
+								continue;
+							}
+						}
+					}
+
+					visible_sides_mask |= (1 << side);
+				}
+
+				uint8_t model_surface_count = model.surface_count;
+
+				Span<const BakedModel::Surface> model_surfaces = to_span(model.surfaces);
+
+				const FixedArray<FixedArray<BakedModel::SideSurface, MAX_SURFACES>, Cube::SIDE_COUNT>
+						*model_sides_surfaces = &model.sides_surfaces;
+
+				// Hybrid approach: extract cube faces and decimate those that aren't visible,
+				// and still allow voxels to have geometry that is not a cube.
+
+				if (voxel.fluid_index != NULL_FLUID_INDEX) {
+					if (!generate_fluid_model(
+								voxel,
+								type_buffer,
+								voxel_index,
+								1,
+								row_size,
+								deck_size,
+								visible_sides_mask,
+								library,
+								model_surfaces,
+								model_sides_surfaces
+						)) {
 						continue;
+					}
+					model_surface_count = 1;
+				}
+
+				// Sides
+				for (unsigned int side = 0; side < Cube::SIDE_COUNT; ++side) {
+					if ((visible_sides_mask & (1 << side)) == 0) {
+						// This side is culled
+						continue;
+					}
+
+					// By default we render the whole side if we consider it visible
+					const FixedArray<BakedModel::SideSurface, MAX_SURFACES> *side_surfaces =
+							&((*model_sides_surfaces)[side]);
+
+					// Might be only partially visible
+					if (voxel.cutout_sides_enabled) {
+						const uint32_t neighbor_voxel_id = type_buffer[voxel_index + side_neighbor_lut[side]];
+
+						// Invalid voxels are treated like air
+						if (neighbor_voxel_id < library.models.size()) {
+							const BakedModel &other_vt = library.models[neighbor_voxel_id];
+
+							const std::unordered_map<uint32_t, FixedArray<BakedModel::SideSurface, MAX_SURFACES>>
+									&cutout_side_surfaces_by_neighbor_shape = model.cutout_side_surfaces[side];
+
+							const unsigned int neighbor_shape_id =
+									other_vt.model.side_pattern_indices[Cube::g_opposite_side[side]];
+
+							// That's a hashmap lookup on a hot path. Cutting out sides like this should be used
+							// sparsely if possible.
+							// Unfortunately, use cases include certain water styles, which means oceans...
+							// Eventually we should provide another approach for these
+							auto it = cutout_side_surfaces_by_neighbor_shape.find(neighbor_shape_id);
+
+							if (it != cutout_side_surfaces_by_neighbor_shape.end()) {
+								// Use pre-cut side instead
+								side_surfaces = &it->second;
+							}
+						}
 					}
 
 					// The face is visible
 
-					int shaded_corner[8] = { 0 };
+					int8_t shaded_corner[8] = { 0 };
 
 					if (bake_occlusion) {
 						// Combinatory solution for
@@ -222,15 +272,16 @@ void generate_blocky_mesh( //
 					// Subtracting 1 because the data is padded
 					const Vector3f pos(x - 1, y - 1, z - 1);
 
-					for (unsigned int surface_index = 0; surface_index < model.surface_count; ++surface_index) {
-						const VoxelBlockyModel::BakedData::Surface &surface = model.surfaces[surface_index];
+					// TODO Move this into a function
+					for (unsigned int surface_index = 0; surface_index < model_surface_count; ++surface_index) {
+						const BakedModel::Surface &surface = model_surfaces[surface_index];
 
 						VoxelMesherBlocky::Arrays &arrays = out_arrays_per_material[surface.material_id];
 
 						ZN_ASSERT(surface.material_id >= 0 && surface.material_id < index_offsets.size());
 						int &index_offset = index_offsets[surface.material_id];
 
-						const VoxelBlockyModel::BakedData::SideSurface &side_surface = surface.sides[side];
+						const BakedModel::SideSurface &side_surface = (*side_surfaces)[surface_index];
 
 						const StdVector<Vector3f> &side_positions = side_surface.positions;
 						const unsigned int vertex_count = side_surface.positions.size();
@@ -289,7 +340,7 @@ void generate_blocky_mesh( //
 									float shade = 0;
 									for (unsigned int j = 0; j < 4; ++j) {
 										unsigned int corner = Cube::g_side_corners[side][j];
-										if (shaded_corner[corner]) {
+										if (shaded_corner[corner] != 0) {
 											float s = baked_occlusion_darkness *
 													static_cast<float>(shaded_corner[corner]);
 											// float k = 1.f - Cube::g_corner_position[corner].distance_to(v);
@@ -357,8 +408,8 @@ void generate_blocky_mesh( //
 				}
 
 				// Inside
-				for (unsigned int surface_index = 0; surface_index < model.surface_count; ++surface_index) {
-					const VoxelBlockyModel::BakedData::Surface &surface = model.surfaces[surface_index];
+				for (unsigned int surface_index = 0; surface_index < model_surface_count; ++surface_index) {
+					const BakedModel::Surface &surface = model_surfaces[surface_index];
 					if (surface.positions.size() == 0) {
 						continue;
 					}
@@ -423,6 +474,17 @@ void generate_blocky_mesh( //
 	}
 }
 
+bool is_empty(const StdVector<VoxelMesherBlocky::Arrays> &arrays_per_material) {
+	for (const VoxelMesherBlocky::Arrays &arrays : arrays_per_material) {
+		if (arrays.indices.size() > 0) {
+			return false;
+		}
+	}
+	return true;
+}
+
+} // namespace blocky
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 VoxelMesherBlocky::VoxelMesherBlocky() {
@@ -466,6 +528,25 @@ bool VoxelMesherBlocky::get_occlusion_enabled() const {
 	return _parameters.bake_occlusion;
 }
 
+void VoxelMesherBlocky::set_shadow_occluder_side(Side side, bool enabled) {
+	RWLockWrite wlock(_parameters_lock);
+	if (enabled) {
+		_parameters.shadow_occluders_mask |= (1 << side);
+	} else {
+		_parameters.shadow_occluders_mask &= ~(1 << side);
+	}
+}
+
+bool VoxelMesherBlocky::get_shadow_occluder_side(Side side) const {
+	RWLockRead rlock(_parameters_lock);
+	return (_parameters.shadow_occluders_mask & (1 << side)) != 0;
+}
+
+uint8_t VoxelMesherBlocky::get_shadow_occluder_mask() const {
+	RWLockRead rlock(_parameters_lock);
+	return _parameters.shadow_occluders_mask;
+}
+
 void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::Input &input) {
 	const VoxelBuffer::ChannelId channel = VoxelBuffer::CHANNEL_TYPE;
 	Parameters params;
@@ -503,11 +584,6 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 	// => Could be implemented in a separate class?
 
 	const VoxelBuffer &voxels = input.voxels;
-#ifdef TOOLS_ENABLED
-	if (input.lod_index != 0) {
-		WARN_PRINT("VoxelMesherBlocky received lod != 0, it is not supported");
-	}
-#endif
 
 	// Iterate 3D padded data to extract voxel faces.
 	// This is the most intensive job in this class, so all required data should be as fit as possible.
@@ -531,7 +607,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 	}
 
 	Span<const uint8_t> raw_channel;
-	if (!voxels.get_channel_raw_read_only(channel, raw_channel)) {
+	if (!voxels.get_channel_as_bytes_read_only(channel, raw_channel)) {
 		// Case supposedly handled before...
 		ERR_PRINT("Something wrong happened");
 		return;
@@ -549,7 +625,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 	{
 		// We can only access baked data. Only this data is made for multithreaded access.
 		RWLockRead lock(params.library->get_baked_data_rw_lock());
-		const VoxelBlockyLibraryBase::BakedData &library_baked_data = params.library->get_baked_data();
+		const blocky::BakedLibrary &library_baked_data = params.library->get_baked_data();
 
 		material_count = library_baked_data.indexed_materials_count;
 
@@ -559,32 +635,54 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 
 		switch (channel_depth) {
 			case VoxelBuffer::DEPTH_8_BIT:
-				generate_blocky_mesh( //
-						arrays_per_material, //
-						collision_surface, //
-						raw_channel, //
-						block_size, //
-						library_baked_data, //
-						params.bake_occlusion, //
-						baked_occlusion_darkness //
+				blocky::generate_mesh(
+						arrays_per_material,
+						collision_surface,
+						raw_channel,
+						block_size,
+						library_baked_data,
+						params.bake_occlusion,
+						baked_occlusion_darkness
 				);
+				if (input.lod_index > 0) {
+					blocky::append_skirts(raw_channel, block_size, arrays_per_material, library_baked_data);
+				}
 				break;
 
-			case VoxelBuffer::DEPTH_16_BIT:
-				generate_blocky_mesh( //
-						arrays_per_material, //
-						collision_surface, //
-						raw_channel.reinterpret_cast_to<const uint16_t>(), //
-						block_size, //
-						library_baked_data, //
-						params.bake_occlusion, //
-						baked_occlusion_darkness //
+			case VoxelBuffer::DEPTH_16_BIT: {
+				Span<const uint16_t> model_ids = raw_channel.reinterpret_cast_to<const uint16_t>();
+				blocky::generate_mesh(
+						arrays_per_material,
+						collision_surface,
+						model_ids,
+						block_size,
+						library_baked_data,
+						params.bake_occlusion,
+						baked_occlusion_darkness
 				);
-				break;
+				if (input.lod_index > 0) {
+					blocky::append_skirts(model_ids, block_size, arrays_per_material, library_baked_data);
+				}
+			} break;
 
 			default:
 				ERR_PRINT("Unsupported voxel depth");
 				return;
+		}
+	}
+
+	if (input.lod_index > 0) {
+		// Might not look good, but at least it's something
+		const float lod_scale = 1 << input.lod_index;
+		for (Arrays &arrays : arrays_per_material) {
+			for (Vector3f &p : arrays.positions) {
+				p = p * lod_scale;
+			}
+		}
+		if (collision_surface != nullptr) {
+			for (Vector3f &p : collision_surface->positions) {
+				p = p * lod_scale;
+			}
 		}
 	}
 
@@ -605,11 +703,11 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 				PackedColorArray colors;
 				PackedInt32Array indices;
 
-				copy_to(positions, arrays.positions);
-				copy_to(uvs, arrays.uvs);
-				copy_to(normals, arrays.normals);
-				copy_to(colors, arrays.colors);
-				copy_to(indices, arrays.indices);
+				copy_to(positions, to_span_const(arrays.positions));
+				copy_to(uvs, to_span_const(arrays.uvs));
+				copy_to(normals, to_span_const(arrays.normals));
+				copy_to(colors, to_span_const(arrays.colors));
+				copy_to(indices, to_span_const(arrays.indices));
 
 				mesh_arrays[Mesh::ARRAY_VERTEX] = positions;
 				mesh_arrays[Mesh::ARRAY_TEX_UV] = uvs;
@@ -619,7 +717,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 
 				if (arrays.tangents.size() > 0) {
 					PackedFloat32Array tangents;
-					copy_to(tangents, arrays.tangents);
+					copy_to(tangents, to_span_const(arrays.tangents));
 					mesh_arrays[Mesh::ARRAY_TANGENT] = tangents;
 				}
 			}
@@ -633,6 +731,52 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 		// 	// Empty
 		// 	output.surfaces.push_back(Output::Surface());
 		// }
+	}
+
+	if (params.shadow_occluders_mask != 0 && !blocky::is_empty(arrays_per_material)) {
+		// TODO Candidate for temp allocator (maybe even stack allocator in this case?)
+		blocky::OccluderArrays occluder_arrays;
+
+		RWLockRead lock(params.library->get_baked_data_rw_lock());
+		const blocky::BakedLibrary &library_baked_data = params.library->get_baked_data();
+
+		blocky::generate_shadow_occluders(
+				occluder_arrays,
+				raw_channel,
+				channel_depth,
+				block_size,
+				library_baked_data,
+				params.shadow_occluders_mask
+		);
+
+		if (input.lod_index > 0) {
+			const float lod_scale = 1 << input.lod_index;
+			for (Vector3f &p : occluder_arrays.vertices) {
+				p *= lod_scale;
+			}
+		}
+
+		if (occluder_arrays.indices.size() > 0) {
+			Array mesh_arrays;
+			mesh_arrays.resize(Mesh::ARRAY_MAX);
+
+			{
+				PackedVector3Array vertices;
+				PackedInt32Array indices;
+
+				copy_to(vertices, to_span_const(occluder_arrays.vertices));
+				copy_to(indices, to_span_const(occluder_arrays.indices));
+
+				mesh_arrays[Mesh::ARRAY_VERTEX] = vertices;
+				mesh_arrays[Mesh::ARRAY_INDEX] = indices;
+			}
+
+			output.shadow_occluder = mesh_arrays;
+			// output.surfaces.push_back(Output::Surface());
+			// Output::Surface &surface = output.surfaces.back();
+			// surface.arrays = mesh_arrays;
+			// surface.material_index = 0;
+		}
 	}
 
 	output.primitive_type = Mesh::PRIMITIVE_TRIANGLES;
@@ -667,6 +811,14 @@ Ref<Material> VoxelMesherBlocky::get_material_by_index(unsigned int index) const
 	return lib->get_material_by_index(index);
 }
 
+unsigned int VoxelMesherBlocky::get_material_index_count() const {
+	Ref<VoxelBlockyLibraryBase> lib = get_library();
+	if (lib.is_null()) {
+		return 0;
+	}
+	return lib->get_material_index_count();
+}
+
 #ifdef TOOLS_ENABLED
 
 void VoxelMesherBlocky::get_configuration_warnings(PackedStringArray &out_warnings) const {
@@ -681,7 +833,7 @@ void VoxelMesherBlocky::get_configuration_warnings(PackedStringArray &out_warnin
 		return;
 	}
 
-	const VoxelBlockyLibraryBase::BakedData &baked_data = library->get_baked_data();
+	const blocky::BakedLibrary &baked_data = library->get_baked_data();
 	RWLockRead rlock(library->get_baked_data_rw_lock());
 
 	if (baked_data.models.size() == 0) {
@@ -705,6 +857,11 @@ void VoxelMesherBlocky::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_occlusion_darkness", "value"), &VoxelMesherBlocky::set_occlusion_darkness);
 	ClassDB::bind_method(D_METHOD("get_occlusion_darkness"), &VoxelMesherBlocky::get_occlusion_darkness);
 
+	ClassDB::bind_method(
+			D_METHOD("set_shadow_occluder_side", "side", "enabled"), &VoxelMesherBlocky::set_shadow_occluder_side
+	);
+	ClassDB::bind_method(D_METHOD("get_shadow_occluder_side", "side"), &VoxelMesherBlocky::get_shadow_occluder_side);
+
 	ADD_PROPERTY(
 			PropertyInfo(
 					Variant::OBJECT,
@@ -725,6 +882,25 @@ void VoxelMesherBlocky::_bind_methods() {
 			"set_occlusion_darkness",
 			"get_occlusion_darkness"
 	);
+
+	ADD_GROUP("Shadow Occluders", "shadow_occluder_");
+
+#define ADD_SHADOW_OCCLUDER_PROPERTY(m_name, m_flag)                                                                   \
+	ADD_PROPERTYI(PropertyInfo(Variant::BOOL, m_name), "set_shadow_occluder_side", "get_shadow_occluder_side", m_flag);
+
+	ADD_SHADOW_OCCLUDER_PROPERTY("shadow_occluder_negative_x", SIDE_NEGATIVE_X);
+	ADD_SHADOW_OCCLUDER_PROPERTY("shadow_occluder_positive_x", SIDE_POSITIVE_X);
+	ADD_SHADOW_OCCLUDER_PROPERTY("shadow_occluder_negative_y", SIDE_NEGATIVE_Y);
+	ADD_SHADOW_OCCLUDER_PROPERTY("shadow_occluder_positive_y", SIDE_POSITIVE_Y);
+	ADD_SHADOW_OCCLUDER_PROPERTY("shadow_occluder_negative_z", SIDE_NEGATIVE_Z);
+	ADD_SHADOW_OCCLUDER_PROPERTY("shadow_occluder_positive_z", SIDE_POSITIVE_Z);
+
+	BIND_ENUM_CONSTANT(SIDE_NEGATIVE_X);
+	BIND_ENUM_CONSTANT(SIDE_POSITIVE_X);
+	BIND_ENUM_CONSTANT(SIDE_NEGATIVE_Y);
+	BIND_ENUM_CONSTANT(SIDE_POSITIVE_Y);
+	BIND_ENUM_CONSTANT(SIDE_NEGATIVE_Z);
+	BIND_ENUM_CONSTANT(SIDE_POSITIVE_Z);
 }
 
 } // namespace zylann::voxel

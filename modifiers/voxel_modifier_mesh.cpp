@@ -17,7 +17,7 @@ void VoxelModifierMesh::set_mesh_sdf(Ref<VoxelMeshSDF> mesh_sdf) {
 
 void VoxelModifierMesh::set_isolevel(float isolevel) {
 	RWLockWrite wlock(_rwlock);
-	if (isolevel == isolevel) {
+	if (_isolevel == isolevel) {
 		return;
 	}
 	_isolevel = isolevel;
@@ -52,7 +52,7 @@ void VoxelModifierMesh::apply(VoxelModifierContext ctx) const {
 	const Transform3D buffer_to_world = model_to_world * buffer_to_model;
 
 	Span<const float> buffer_sdf;
-	ZN_ASSERT_RETURN(buffer.get_channel_data(VoxelBuffer::CHANNEL_SDF, buffer_sdf));
+	ZN_ASSERT_RETURN(buffer.get_channel_data_read_only(VoxelBuffer::CHANNEL_SDF, buffer_sdf));
 	const float smoothness = get_smoothness();
 
 	ops::SdfBufferShape shape;
@@ -119,25 +119,22 @@ void VoxelModifierMesh::get_shader_data(ShaderData &out_shader_data) {
 		zylann::godot::copy_bytes_to(pba, mesh_params);
 
 		if (_shader_data->params.size() < 3) {
-			std::shared_ptr<ComputeShaderResource> params_res = make_shared_instance<ComputeShaderResource>();
-			params_res->create_storage_buffer(pba);
+			std::shared_ptr<ComputeShaderResource> params_res =
+					ComputeShaderResourceFactory::create_storage_buffer(pba);
 			_shader_data->params.push_back(ComputeShaderParameter{ 5, params_res });
 
 			std::shared_ptr<ComputeShaderResource> buffer_res = _mesh_sdf->get_gpu_resource();
 			_shader_data->params.push_back(ComputeShaderParameter{ 6, buffer_res });
 
 		} else if (_shader_data_need_update) {
-			_shader_data->params[1].resource->update_storage_buffer(pba);
+			ComputeShaderResource::update_storage_buffer(_shader_data->params[1].resource, pba);
 			_shader_data->params[2].resource = _mesh_sdf->get_gpu_resource();
 		}
 
 		_shader_data_need_update = false;
 	}
 
-	out_shader_data.shader_rids[ShaderData::TYPE_DETAIL] =
-			VoxelEngine::get_singleton().get_detail_modifier_sphere_shader().get_rid();
-	out_shader_data.shader_rids[ShaderData::TYPE_BLOCK] =
-			VoxelEngine::get_singleton().get_block_modifier_sphere_shader().get_rid();
+	out_shader_data.modifier_type = get_type();
 	out_shader_data.params = _shader_data;
 }
 

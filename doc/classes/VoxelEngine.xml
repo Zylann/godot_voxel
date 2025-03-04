@@ -27,7 +27,8 @@
 						"streaming": int,
 						"meshing": int,
 						"generation": int,
-						"main_thread": int
+						"main_thread": int,
+						"gpu": int
 					},
 					"memory_pools": {
 						"voxel_used": int,

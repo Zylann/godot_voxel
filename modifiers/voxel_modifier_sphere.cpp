@@ -1,13 +1,14 @@
 #include "voxel_modifier_sphere.h"
 #include "../engine/voxel_engine.h"
 #include "../util/godot/core/packed_arrays.h"
+#include "../util/math/conv.h"
 #include "../util/math/sdf.h"
 #include "../util/memory/memory.h"
 #include "../util/profiling.h"
 
 namespace zylann::voxel {
 
-void VoxelModifierSphere::set_radius(real_t radius) {
+void VoxelModifierSphere::set_radius(float radius) {
 	RWLockWrite wlock(_rwlock);
 	if (radius == _radius) {
 		return;
@@ -17,7 +18,7 @@ void VoxelModifierSphere::set_radius(real_t radius) {
 	update_aabb();
 }
 
-real_t VoxelModifierSphere::get_radius() const {
+float VoxelModifierSphere::get_radius() const {
 	return _radius;
 }
 
@@ -31,7 +32,7 @@ void VoxelModifierSphere::apply(VoxelModifierContext ctx) const {
 	ZN_PROFILE_SCOPE();
 	RWLockRead rlock(_rwlock);
 	const float smoothness = get_smoothness();
-	const Vector3 center = get_transform().origin;
+	const Vector3f center = to_vec3f(get_transform().origin);
 	const float sdf_scale = 1.0f;
 
 	// TODO Support transform scale
@@ -72,22 +73,18 @@ void VoxelModifierSphere::get_shader_data(ShaderData &out_shader_data) {
 		zylann::godot::copy_bytes_to(pba, sphere_params);
 
 		if (_shader_data->params.size() < 2) {
-			std::shared_ptr<ComputeShaderResource> res = make_shared_instance<ComputeShaderResource>();
-			res->create_storage_buffer(pba);
+			std::shared_ptr<ComputeShaderResource> res = ComputeShaderResourceFactory::create_storage_buffer(pba);
 			_shader_data->params.push_back(ComputeShaderParameter{ 5, res });
 
 		} else if (_shader_data_need_update) {
 			ZN_ASSERT(_shader_data->params.size() == 2);
-			_shader_data->params[1].resource->update_storage_buffer(pba);
+			ComputeShaderResource::update_storage_buffer(_shader_data->params[1].resource, pba);
 		}
 
 		_shader_data_need_update = false;
 	}
 
-	out_shader_data.shader_rids[ShaderData::TYPE_DETAIL] =
-			VoxelEngine::get_singleton().get_detail_modifier_sphere_shader().get_rid();
-	out_shader_data.shader_rids[ShaderData::TYPE_BLOCK] =
-			VoxelEngine::get_singleton().get_block_modifier_sphere_shader().get_rid();
+	out_shader_data.modifier_type = get_type();
 	out_shader_data.params = _shader_data;
 }
 

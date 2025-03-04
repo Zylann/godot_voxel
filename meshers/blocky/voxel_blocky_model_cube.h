@@ -26,13 +26,13 @@ public:
 	void set_atlas_size_in_tiles(Vector2i s);
 	Vector2i get_atlas_size_in_tiles() const;
 
-	void bake(BakedData &baked_data, bool bake_tangents, MaterialIndexer &materials) const override;
+	void bake(blocky::ModelBakingContext &ctx) const override;
 	bool is_empty() const override;
 
 	Ref<Mesh> get_preview_mesh() const override;
 
-	void rotate_90(math::Axis axis, bool clockwise) override;
-	void rotate_ortho(math::OrthoBasis ortho_basis) override;
+	void rotate_tiles_90(const math::Axis axis, const bool clockwise);
+	void rotate_tiles_ortho(const math::OrthoBasis ortho_basis);
 
 private:
 	bool _set(const StringName &p_name, const Variant &p_value);
@@ -45,7 +45,13 @@ private:
 	float _height = 1.f;
 
 	Vector2i _atlas_size_in_tiles;
+
+	uint8_t _mesh_ortho_rotation = 0;
 };
+
+void make_cube_side_vertices(StdVector<Vector3f> &positions, const unsigned int side_index, const float height);
+void make_cube_side_indices(StdVector<int> &indices, const unsigned int side_index);
+void make_cube_side_tangents(StdVector<float> &tangents, const unsigned int side_index);
 
 } // namespace zylann::voxel
 

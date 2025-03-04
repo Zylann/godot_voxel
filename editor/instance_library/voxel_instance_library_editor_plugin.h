@@ -16,43 +16,25 @@ namespace zylann::voxel {
 class VoxelInstanceLibraryEditorPlugin : public zylann::godot::ZN_EditorPlugin {
 	GDCLASS(VoxelInstanceLibraryEditorPlugin, zylann::godot::ZN_EditorPlugin)
 public:
-#ifdef ZN_GODOT
-	virtual String get_name() const override {
-		return "VoxelInstanceLibrary";
-	}
-#endif
-
 	VoxelInstanceLibraryEditorPlugin();
 
-	void _on_add_item_button_pressed(int id);
-	void _on_remove_item_button_pressed();
+	// Because this is protected in the base class when compiling as a module
+	EditorUndoRedoManager &get_undo_redo2();
 
 protected:
 	bool _zn_handles(const Object *p_object) const override;
 	void _zn_edit(Object *p_object) override;
 
+	String _zn_get_plugin_name() const override {
+		return "VoxelInstanceLibrary";
+	}
+
 private:
 	void init();
 	void _notification(int p_what);
 
-	int try_get_selected_item_id();
-	void add_scene_item(String fpath);
-
-	void _on_remove_item_confirmed();
-	void _on_open_scene_dialog_file_selected(String fpath);
-
-	void _on_button_pressed(int id);
-
 	static void _bind_methods();
 
-	ConfirmationDialog *_confirmation_dialog = nullptr;
-	AcceptDialog *_info_dialog = nullptr;
-	int _item_id_to_remove = -1;
-	int _item_id_to_update = -1;
-	EditorFileDialog *_open_scene_dialog;
-	int _last_used_button;
-
-	Ref<VoxelInstanceLibrary> _library;
 	Ref<VoxelInstanceLibraryInspectorPlugin> _inspector_plugin;
 };
 

@@ -4,8 +4,16 @@
 
 namespace zylann::voxel {
 
-void copy_3d_region_zxy(Span<uint8_t> dst, Vector3i dst_size, Vector3i dst_min, Span<const uint8_t> src,
-		Vector3i src_size, Vector3i src_min, Vector3i src_max, size_t item_size) {
+void copy_3d_region_zxy(
+		Span<uint8_t> dst,
+		Vector3i dst_size,
+		Vector3i dst_min,
+		Span<const uint8_t> src,
+		Vector3i src_size,
+		Vector3i src_min,
+		Vector3i src_max,
+		size_t item_size
+) {
 	//
 	Vector3iUtil::sort_min_max(src_min, src_max);
 	clip_copy_region(src_min, src_max, src_size, dst_min, dst_size);
@@ -19,13 +27,14 @@ void copy_3d_region_zxy(Span<uint8_t> dst, Vector3i dst_size, Vector3i dst_min, 
 	if (src.data() == dst.data()) {
 		ZN_ASSERT_RETURN_MSG(
 				!Box3i::from_min_max(src_min, src_max).intersects(Box3i::from_min_max(dst_min, dst_min + area_size)),
-				"Copy across the same buffer to an overlapping area is not supported");
+				"Copy across the same buffer to an overlapping area is not supported"
+		);
 	} else if (src.overlaps(dst)) {
 		ZN_PRINT_ERROR("Different overlapping spans are not allowed");
 		return;
 	}
-	ZN_ASSERT_RETURN(Vector3iUtil::get_volume(area_size) * item_size <= dst.size());
-	ZN_ASSERT_RETURN(Vector3iUtil::get_volume(area_size) * item_size <= src.size());
+	ZN_ASSERT_RETURN(Vector3iUtil::get_volume_u64(area_size) * item_size <= dst.size());
+	ZN_ASSERT_RETURN(Vector3iUtil::get_volume_u64(area_size) * item_size <= src.size());
 #endif
 
 	if (area_size == src_size && area_size == dst_size) {

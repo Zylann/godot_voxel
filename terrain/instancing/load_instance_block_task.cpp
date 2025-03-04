@@ -8,22 +8,22 @@
 #include "../../util/math/conv.h"
 #include "../../util/profiling.h"
 #include "generate_instances_block_task.h"
-#include "voxel_instancer_quick_reloading_cache.h"
+#include "instancer_quick_reloading_cache.h"
 
 namespace zylann::voxel {
 
 LoadInstanceChunkTask::LoadInstanceChunkTask( //
-		std::shared_ptr<VoxelInstancerTaskOutputQueue> output_queue, //
+		std::shared_ptr<InstancerTaskOutputQueue> output_queue, //
 		Ref<VoxelStream> stream, //
-		std::shared_ptr<VoxelInstancerQuickReloadingCache> quick_reload_cache,
+		std::shared_ptr<InstancerQuickReloadingCache> quick_reload_cache,
 		Ref<VoxelInstanceLibrary> library, //
 		Array mesh_arrays, //
 		Vector3i grid_position, //
 		uint8_t lod_index, //
 		uint8_t instance_block_size, //
 		uint8_t data_block_size, //
-		uint8_t up_mode //
-		) :
+		UpMode up_mode //
+) :
 		//
 		_output_queue(output_queue), //
 		_stream(stream), //
@@ -125,6 +125,7 @@ void LoadInstanceChunkTask::run(ThreadedTaskContext &ctx) {
 		}
 
 		const Vector3i data_min_block_pos = _render_grid_position * data_factor;
+		const int data_block_size_at_lod = static_cast<int>(_data_block_size) << _lod_index;
 
 		// For each octant (will be only 1 if data chunks are the same size as render chunks, otherwise 8)
 		// Populate layers from what we found in stream
@@ -151,9 +152,11 @@ void LoadInstanceChunkTask::run(ThreadedTaskContext &ctx) {
 				for (const InstanceBlockData::LayerData &loaded_layer_data : query.data->layers) {
 					const int layer_id = loaded_layer_data.id;
 					size_t layer_index;
+
 					// Not using a hashmap here, this array is usually small
-					if (!find(to_span_const(layers), layer_index,
-								[layer_id](const Layer &layer) { return layer.id == layer_id; })) {
+					if (!find(to_span_const(layers), layer_index, [layer_id](const Layer &layer) {
+							return layer.id == layer_id;
+						})) {
 						layer_index = layers.size();
 						Layer layer;
 						layer.id = layer_id;
@@ -176,11 +179,11 @@ void LoadInstanceChunkTask::run(ThreadedTaskContext &ctx) {
 						layer.transforms.push_back(id.transform);
 					}
 
-					if (data_factor != 1) {
+					if (data_factor == 2) {
 						// Data blocks store instances relative to a smaller grid than render blocks.
 						// So we need to adjust their relative position.
 						const Vector3f rel =
-								to_vec3f((query.position_in_blocks - data_min_block_pos) * _data_block_size);
+								to_vec3f((query.position_in_blocks - data_min_block_pos) * data_block_size_at_lod);
 						ZN_ASSERT(dst_index0 <= layer.transforms.size());
 						for (auto it = layer.transforms.begin() + dst_index0; it != layer.transforms.end(); ++it) {
 							it->origin += rel;
@@ -207,8 +210,9 @@ void LoadInstanceChunkTask::run(ThreadedTaskContext &ctx) {
 					size_t layer_index;
 					// Not using a hashmap here, this array is usually small
 					const int layer_id = item.id;
-					if (!find(to_span_const(layers), layer_index,
-								[layer_id](const Layer &layer) { return layer.id == layer_id; })) {
+					if (!find(to_span_const(layers), layer_index, [layer_id](const Layer &layer) {
+							return layer.id == layer_id;
+						})) {
 						layer_index = layers.size();
 						layers.push_back(Layer());
 					}
@@ -251,7 +255,7 @@ void LoadInstanceChunkTask::run(ThreadedTaskContext &ctx) {
 
 	// Post results
 	for (Layer &layer : layers) {
-		VoxelInstanceLoadingTaskOutput o;
+		InstanceLoadingTaskOutput o;
 		o.layer_id = layer.id;
 		// Will normally be full
 		o.edited_mask = layer.edited_mask;

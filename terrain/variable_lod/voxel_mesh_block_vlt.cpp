@@ -49,12 +49,41 @@ VoxelMeshBlockVLT::~VoxelMeshBlockVLT() {
 	}
 }
 
-void VoxelMeshBlockVLT::set_mesh(Ref<Mesh> mesh, GeometryInstance3D::GIMode gi_mode,
-		RenderingServer::ShadowCastingSetting shadow_casting, int render_layers_mask) {
+void VoxelMeshBlockVLT::set_mesh(
+		Ref<Mesh> mesh,
+		GeometryInstance3D::GIMode gi_mode,
+		RenderingServer::ShadowCastingSetting shadow_casting,
+		int render_layers_mask,
+		Ref<Mesh> shadow_occluder_mesh
+#ifdef TOOLS_ENABLED
+		,
+		RenderingServer::ShadowCastingSetting shadow_occluder_mode
+#endif
+) {
 	// TODO Don't add mesh instance to the world if it's not visible.
 	// I suspect Godot is trying to include invisible mesh instances into the culling process,
 	// which is killing performance when LOD is used (i.e many meshes are in pool but hidden)
 	// This needs investigation.
+
+	if (shadow_occluder_mesh.is_null()) {
+		if (_shadow_occluder.is_valid()) {
+			_shadow_occluder.destroy();
+		}
+	} else {
+		if (!_shadow_occluder.is_valid()) {
+			_shadow_occluder.create();
+			_shadow_occluder.set_render_layers_mask(render_layers_mask);
+#ifdef TOOLS_ENABLED
+			_shadow_occluder.set_cast_shadows_setting(shadow_occluder_mode);
+#else
+			_shadow_occluder.set_cast_shadows_setting(RenderingServer::SHADOW_CASTING_SETTING_SHADOWS_ONLY);
+#endif
+			// TODO Should we hide it if shadow casting is off?
+			// TBH it would be even better for the user to simply turn these off in the mesher...
+			set_mesh_instance_visible(_shadow_occluder, _visible && _parent_visible);
+		}
+		_shadow_occluder.set_mesh(shadow_occluder_mesh);
+	}
 
 	if (mesh.is_valid()) {
 		if (!_mesh_instance.is_valid()) {
@@ -95,6 +124,10 @@ void VoxelMeshBlockVLT::drop_visuals() {
 	}
 	FreeMeshTask::try_add_and_destroy(_mesh_instance);
 
+	if (_shadow_occluder.is_valid()) {
+		_shadow_occluder.destroy();
+	}
+
 	for (unsigned int i = 0; i < _transition_mesh_instances.size(); ++i) {
 		DirectMeshInstance &tmi = _transition_mesh_instances[i];
 		if (tmi.is_valid()) {
@@ -122,6 +155,7 @@ void VoxelMeshBlockVLT::set_gi_mode(GeometryInstance3D::GIMode mode) {
 
 void VoxelMeshBlockVLT::set_shadow_casting(RenderingServer::ShadowCastingSetting mode) {
 	VoxelMeshBlock::set_shadow_casting(mode);
+
 	for (unsigned int i = 0; i < _transition_mesh_instances.size(); ++i) {
 		DirectMeshInstance &mi = _transition_mesh_instances[i];
 		if (mi.is_valid()) {
@@ -140,8 +174,13 @@ void VoxelMeshBlockVLT::set_render_layers_mask(int mask) {
 	}
 }
 
-void VoxelMeshBlockVLT::set_transition_mesh(Ref<Mesh> mesh, unsigned int side, GeometryInstance3D::GIMode gi_mode,
-		RenderingServer::ShadowCastingSetting shadow_casting, int render_layers_mask) {
+void VoxelMeshBlockVLT::set_transition_mesh(
+		Ref<Mesh> mesh,
+		unsigned int side,
+		GeometryInstance3D::GIMode gi_mode,
+		RenderingServer::ShadowCastingSetting shadow_casting,
+		int render_layers_mask
+) {
 	DirectMeshInstance &mesh_instance = _transition_mesh_instances[side];
 
 	if (mesh.is_valid()) {
@@ -194,6 +233,11 @@ void VoxelMeshBlockVLT::set_visible(bool visible) {
 
 void VoxelMeshBlockVLT::_set_visible(bool visible) {
 	VoxelMeshBlock::_set_visible(visible);
+
+	if (_shadow_occluder.is_valid()) {
+		set_mesh_instance_visible(_shadow_occluder, visible);
+	}
+
 	for (unsigned int dir = 0; dir < _transition_mesh_instances.size(); ++dir) {
 		DirectMeshInstance &mi = _transition_mesh_instances[dir];
 		if (mi.is_valid()) {
@@ -205,22 +249,37 @@ void VoxelMeshBlockVLT::_set_visible(bool visible) {
 void VoxelMeshBlockVLT::set_shader_material(Ref<ShaderMaterial> material) {
 	_shader_material = material;
 
-	if (_mesh_instance.is_valid()) {
-		_mesh_instance.set_material_override(_shader_material);
-
-		for (int dir = 0; dir < Cube::SIDE_COUNT; ++dir) {
-			DirectMeshInstance &mi = _transition_mesh_instances[dir];
-			if (mi.is_valid()) {
-				mi.set_material_override(_shader_material);
-			}
-		}
-	}
+	set_material_override_internal(material);
 
 	if (_shader_material.is_valid()) {
 		const Transform3D local_transform(Basis(), _position_in_voxels);
 		const VoxelStringNames &sn = VoxelStringNames::get_singleton();
 		_shader_material->set_shader_parameter(sn.u_block_local_transform, local_transform);
 		_shader_material->set_shader_parameter(sn.u_voxel_virtual_texture_offset_scale, Vector4(0, 0, 0, 1));
+	}
+}
+
+void VoxelMeshBlockVLT::set_material_override(Ref<Material> material) {
+#ifdef DEBUG_ENABLED
+	Ref<ShaderMaterial> sm = material;
+	if (sm.is_valid()) {
+		ZN_PRINT_ERROR("Internal bug: should use set_shader_material instead of set_material_override");
+	}
+#endif
+	_shader_material = Ref<ShaderMaterial>();
+	set_material_override_internal(material);
+}
+
+void VoxelMeshBlockVLT::set_material_override_internal(Ref<Material> material) {
+	if (_mesh_instance.is_valid()) {
+		_mesh_instance.set_material_override(material);
+
+		for (int dir = 0; dir < Cube::SIDE_COUNT; ++dir) {
+			DirectMeshInstance &mi = _transition_mesh_instances[dir];
+			if (mi.is_valid()) {
+				mi.set_material_override(material);
+			}
+		}
 	}
 }
 
@@ -292,6 +351,10 @@ void VoxelMeshBlockVLT::set_parent_transform(const Transform3D &parent_transform
 					mi.set_transform(world_transform);
 				}
 			}
+		}
+
+		if (_shadow_occluder.is_valid()) {
+			_shadow_occluder.set_transform(world_transform);
 		}
 
 		if (_static_body.is_valid()) {
@@ -381,8 +444,12 @@ bool is_mesh_empty(Span<const VoxelMesher::Output::Surface> surfaces) {
 	return true;
 }
 
-Ref<ArrayMesh> build_mesh(Span<const VoxelMesher::Output::Surface> surfaces, Mesh::PrimitiveType primitive, int flags,
-		Ref<Material> material) {
+Ref<ArrayMesh> build_mesh(
+		Span<const VoxelMesher::Output::Surface> surfaces,
+		Mesh::PrimitiveType primitive,
+		int flags,
+		Ref<Material> material
+) {
 	ZN_PROFILE_SCOPE();
 	Ref<ArrayMesh> mesh;
 

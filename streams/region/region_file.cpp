@@ -38,10 +38,10 @@ bool RegionFormat::validate() const {
 	for (unsigned int i = 0; i < channel_depths.size(); ++i) {
 		bytes_per_block += VoxelBuffer::get_depth_bit_count(channel_depths[i]) / 8;
 	}
-	bytes_per_block *= Vector3iUtil::get_volume(Vector3iUtil::create(1 << block_size_po2));
+	bytes_per_block *= Vector3iUtil::get_volume_u64(Vector3iUtil::create(1 << block_size_po2));
 	const size_t sectors_per_block = (bytes_per_block - 1) / sector_size + 1;
 	ERR_FAIL_COND_V(sectors_per_block > RegionBlockInfo::MAX_SECTOR_COUNT, false);
-	const size_t max_potential_sectors = Vector3iUtil::get_volume(region_size) * sectors_per_block;
+	const size_t max_potential_sectors = Vector3iUtil::get_volume_u64(region_size) * sectors_per_block;
 	ERR_FAIL_COND_V(max_potential_sectors > RegionBlockInfo::MAX_SECTOR_INDEX, false);
 
 	return true;
@@ -61,11 +61,15 @@ uint32_t get_header_size_v3(const RegionFormat &format) {
 	// Which file offset blocks data is starting
 	// magic + version + blockinfos
 	return MAGIC_AND_VERSION_SIZE + FIXED_HEADER_DATA_SIZE + (format.has_palette ? PALETTE_SIZE_IN_BYTES : 0) +
-			Vector3iUtil::get_volume(format.region_size) * sizeof(RegionBlockInfo);
+			Vector3iUtil::get_volume_u64(format.region_size) * sizeof(RegionBlockInfo);
 }
 
 bool save_header(
-		FileAccess &f, uint8_t version, const RegionFormat &format, const StdVector<RegionBlockInfo> &block_infos) {
+		FileAccess &f,
+		uint8_t version,
+		const RegionFormat &format,
+		const StdVector<RegionBlockInfo> &block_infos
+) {
 	// `f` could be anywhere in the file, we seek to ensure we start at the beginning
 	f.seek(0);
 
@@ -98,9 +102,12 @@ bool save_header(
 	}
 
 	// TODO Deal with endianness, this should be little-endian
-	zylann::godot::store_buffer(f,
-			Span<const uint8_t>(reinterpret_cast<const uint8_t *>(block_infos.data()),
-					block_infos.size() * sizeof(RegionBlockInfo)));
+	zylann::godot::store_buffer(
+			f,
+			Span<const uint8_t>(
+					reinterpret_cast<const uint8_t *>(block_infos.data()), block_infos.size() * sizeof(RegionBlockInfo)
+			)
+	);
 
 #ifdef DEBUG_ENABLED
 	const size_t blocks_begin_offset = f.get_position();
@@ -111,14 +118,19 @@ bool save_header(
 }
 
 bool load_header(
-		FileAccess &f, uint8_t &out_version, RegionFormat &out_format, StdVector<RegionBlockInfo> &out_block_infos) {
+		FileAccess &f,
+		uint8_t &out_version,
+		RegionFormat &out_format,
+		StdVector<RegionBlockInfo> &out_block_infos
+) {
 	ERR_FAIL_COND_V(f.get_position() != 0, false);
 	ERR_FAIL_COND_V(f.get_length() < MAGIC_AND_VERSION_SIZE, false);
 
 	FixedArray<char, 5> magic;
 	fill(magic, '\0');
 	ERR_FAIL_COND_V(
-			zylann::godot::get_buffer(f, Span<uint8_t>(reinterpret_cast<uint8_t *>(magic.data()), 4)) != 4, false);
+			zylann::godot::get_buffer(f, Span<uint8_t>(reinterpret_cast<uint8_t *>(magic.data()), 4)) != 4, false
+	);
 	ERR_FAIL_COND_V(strcmp(magic.data(), FORMAT_REGION_MAGIC) != 0, false);
 
 	const uint8_t version = f.get_8();
@@ -160,7 +172,7 @@ bool load_header(
 	}
 
 	out_version = version;
-	out_block_infos.resize(Vector3iUtil::get_volume(out_format.region_size));
+	out_block_infos.resize(Vector3iUtil::get_volume_u64(out_format.region_size));
 
 	// TODO Deal with endianness
 	const size_t blocks_len = out_block_infos.size() * sizeof(RegionBlockInfo);
@@ -250,10 +262,13 @@ Error RegionFile::open(const String &fpath, bool create_if_not_found) {
 		}
 	}
 
-	std::sort(blocks_sorted_by_offset.begin(), blocks_sorted_by_offset.end(),
+	std::sort(
+			blocks_sorted_by_offset.begin(),
+			blocks_sorted_by_offset.end(),
 			[](const BlockInfoAndIndex &a, const BlockInfoAndIndex &b) {
 				return a.b.get_sector_index() < b.b.get_sector_index();
-			});
+			}
+	);
 
 	CRASH_COND(_sectors.size() != 0);
 	for (unsigned int i = 0; i < blocks_sorted_by_offset.size(); ++i) {
@@ -308,7 +323,7 @@ bool RegionFile::set_format(const RegionFormat &format) {
 
 	// This will be the format used to create the next file if not found on open()
 	_header.format = format;
-	_header.blocks.resize(Vector3iUtil::get_volume(format.region_size));
+	_header.blocks.resize(Vector3iUtil::get_volume_u64(format.region_size));
 
 	return true;
 }
@@ -353,8 +368,11 @@ Error RegionFile::load_block(Vector3i position, VoxelBuffer &out_block) {
 	unsigned int block_data_size = f.get_32();
 	CRASH_COND(f.eof_reached());
 
-	ERR_FAIL_COND_V_MSG(!BlockSerializer::decompress_and_deserialize(f, block_data_size, out_block), ERR_PARSE_ERROR,
-			String("Failed to read block {0}").format(varray(position)));
+	ERR_FAIL_COND_V_MSG(
+			!BlockSerializer::decompress_and_deserialize(f, block_data_size, out_block),
+			ERR_PARSE_ERROR,
+			String("Failed to read block {0}").format(varray(position))
+	);
 
 	return OK;
 }
@@ -391,9 +409,11 @@ Error RegionFile::save_block(Vector3i position, VoxelBuffer &block) {
 		zylann::godot::store_buffer(f, to_span(res.data));
 
 		const unsigned int end_pos = f.get_position();
-		CRASH_COND_MSG(written_size != (end_pos - block_offset),
+		CRASH_COND_MSG(
+				written_size != (end_pos - block_offset),
 				String("written_size: {0}, block_offset: {1}, end_pos: {2}")
-						.format(varray(written_size, block_offset, end_pos)));
+						.format(varray(written_size, block_offset, end_pos))
+		);
 		pad_to_sector_size(f);
 
 		block_info.set_sector_index((block_offset - _blocks_begin_offset) / _header.format.sector_size);
@@ -538,8 +558,10 @@ void RegionFile::remove_sectors_from_block(Vector3i block_pos, unsigned int p_se
 	// but FileAccess doesn't have any function to do that... so can't rely on EOF either
 
 	// Erase sectors from cache
-	_sectors.erase(_sectors.begin() + (block_info.get_sector_index() + block_info.get_sector_count() - p_sector_count),
-			_sectors.begin() + (block_info.get_sector_index() + block_info.get_sector_count()));
+	_sectors.erase(
+			_sectors.begin() + (block_info.get_sector_index() + block_info.get_sector_count() - p_sector_count),
+			_sectors.begin() + (block_info.get_sector_index() + block_info.get_sector_count())
+	);
 
 	const unsigned int old_sector_index = block_info.get_sector_index();
 
@@ -581,7 +603,7 @@ bool RegionFile::migrate_from_v2_to_v3(FileAccess &f, RegionFormat &format) {
 
 	// Which file offset blocks data is starting
 	// magic + version + blockinfos
-	const unsigned int old_header_size = Vector3iUtil::get_volume(format.region_size) * sizeof(uint32_t);
+	const unsigned int old_header_size = Vector3iUtil::get_volume_u64(format.region_size) * sizeof(uint32_t);
 
 	const unsigned int new_header_size = get_header_size_v3(format) - MAGIC_AND_VERSION_SIZE;
 	ERR_FAIL_COND_V_MSG(new_header_size < old_header_size, false, "New version is supposed to have larger header");
@@ -676,7 +698,8 @@ void RegionFile::debug_check() {
 		const unsigned int block_begin = _blocks_begin_offset + sector_index * _header.format.sector_size;
 		if (block_begin >= file_len) {
 			ZN_PRINT_ERROR(format(
-					"LUT {} {}: offset {} is larger than file size {}", lut_index, position, block_begin, file_len));
+					"LUT {} {}: offset {} is larger than file size {}", lut_index, position, block_begin, file_len
+			));
 			continue;
 		}
 		f.seek(block_begin);
@@ -684,8 +707,14 @@ void RegionFile::debug_check() {
 		const size_t pos = f.get_position();
 		const size_t remaining_size = file_len - pos;
 		if (block_data_size > remaining_size) {
-			ZN_PRINT_ERROR(format("LUT {} {}: block size {} at offset {} is larger than remaining size {}", lut_index,
-					position, block_data_size, block_begin, remaining_size));
+			ZN_PRINT_ERROR(
+					format("LUT {} {}: block size {} at offset {} is larger than remaining size {}",
+						   lut_index,
+						   position,
+						   block_data_size,
+						   block_begin,
+						   remaining_size)
+			);
 		}
 	}
 }

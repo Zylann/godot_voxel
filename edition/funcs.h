@@ -6,10 +6,15 @@
 #include "../storage/voxel_data_grid.h"
 #include "../util/containers/dynamic_bitset.h"
 #include "../util/containers/fixed_array.h"
+#include "../util/godot/macros.h"
+#include "../util/math/box3f.h"
 #include "../util/math/conv.h"
 #include "../util/math/sdf.h"
 #include "../util/math/transform_3d.h"
 #include "../util/profiling.h"
+
+ZN_GODOT_FORWARD_DECLARE(class Callable);
+ZN_GODOT_FORWARD_DECLARE(class RandomPCG);
 
 namespace zylann::voxel {
 
@@ -36,7 +41,8 @@ inline float interpolate_trilinear(Span<const float> grid, const Vector3i res, c
 	const unsigned int i111 = i110 + n001;
 
 	return math::interpolate_trilinear(
-			grid[i000], grid[i100], grid[i101], grid[i001], grid[i010], grid[i110], grid[i111], grid[i011], pf);
+			grid[i000], grid[i100], grid[i101], grid[i001], grid[i010], grid[i110], grid[i111], grid[i011], pf
+	);
 }
 
 template <typename Volume_F>
@@ -56,34 +62,34 @@ float get_sdf_interpolated(const Volume_F &f, Vector3 pos) {
 }
 
 // Standalone helper function to copy voxels from any 3D chunked container
-void copy_from_chunked_storage( //
-		VoxelBuffer &dst_buffer, //
-		Vector3i min_pos, //
-		unsigned int block_size_po2, //
-		uint32_t channels_mask, //
-		const VoxelBuffer *(*get_block_func)(void *, Vector3i), //
-		void *get_block_func_ctx //
+void copy_from_chunked_storage(
+		VoxelBuffer &dst_buffer,
+		Vector3i min_pos,
+		unsigned int block_size_po2,
+		uint32_t channels_mask,
+		const VoxelBuffer *(*get_block_func)(void *, Vector3i),
+		void *get_block_func_ctx
 );
 
 // Standalone helper function to paste voxels to any 3D chunked container
-void paste_to_chunked_storage( //
-		const VoxelBuffer &src_buffer, //
-		Vector3i min_pos, //
-		unsigned int block_size_po2, //
-		unsigned int channels_mask, //
-		bool use_mask, //
-		uint8_t mask_channel, //
-		uint64_t mask_value, //
-		VoxelBuffer *(*get_block_func)(void *, Vector3i), //
-		void *get_block_func_ctx //
+void paste_to_chunked_storage(
+		const VoxelBuffer &src_buffer,
+		Vector3i min_pos,
+		unsigned int block_size_po2,
+		unsigned int channels_mask,
+		bool use_mask,
+		uint8_t mask_channel,
+		uint64_t mask_value,
+		VoxelBuffer *(*get_block_func)(void *, Vector3i),
+		void *get_block_func_ctx
 );
 
 template <typename FGetBlock, typename FPaste>
-void paste_to_chunked_storage_tp( //
-		const VoxelBuffer &src_buffer, //
-		Vector3i min_pos, //
-		unsigned int block_size_po2, //
-		unsigned int channels_mask, //
+void paste_to_chunked_storage_tp(
+		const VoxelBuffer &src_buffer,
+		Vector3i min_pos,
+		unsigned int block_size_po2,
+		unsigned int channels_mask,
 		FGetBlock get_block_func, // (position) -> VoxelBuffer*
 		FPaste paste_func // (channels, src_buffer, dst_buffer, dst_base_pos) -> void
 ) {
@@ -139,16 +145,16 @@ struct SrcMasked_DstWritableValue {
 	const uint64_t dst_mask_value;
 
 	void operator()(Span<const uint8_t> channels, const VoxelBuffer &src, VoxelBuffer &dst, Vector3i dst_base_pos) {
-		paste_src_masked_dst_writable_value( //
-				channels, //
-				src, //
-				src_mask_channel, //
-				src_mask_value, //
-				dst, //
-				dst_base_pos, //
-				dst_mask_channel, //
-				dst_mask_value, //
-				true //
+		paste_src_masked_dst_writable_value(
+				channels,
+				src,
+				src_mask_channel,
+				src_mask_value,
+				dst,
+				dst_base_pos,
+				dst_mask_channel,
+				dst_mask_value,
+				true
 		);
 	}
 };
@@ -160,16 +166,8 @@ struct SrcMasked_DstWritableBitArray {
 	const DynamicBitset &bitarray;
 
 	void operator()(Span<const uint8_t> channels, const VoxelBuffer &src, VoxelBuffer &dst, Vector3i dst_base_pos) {
-		paste_src_masked_dst_writable_bitarray( //
-				channels, //
-				src, //
-				src_mask_channel, //
-				src_mask_value, //
-				dst, //
-				dst_base_pos, //
-				dst_mask_channel, //
-				bitarray, //
-				true //
+		paste_src_masked_dst_writable_bitarray(
+				channels, src, src_mask_channel, src_mask_value, dst, dst_base_pos, dst_mask_channel, bitarray, true
 		);
 	}
 };
@@ -179,38 +177,72 @@ struct SrcMasked_DstWritableBitArray {
 bool indices_to_bitarray_u16(Span<const int32_t> indices, DynamicBitset &bitarray);
 
 template <typename FGetBlock>
-void paste_to_chunked_storage_masked_writable_list( //
-		const VoxelBuffer &src, //
-		Vector3i min_pos, //
-		uint8_t block_size_po2, //
-		uint8_t channels_mask, //
+void paste_to_chunked_storage_masked_writable_list(
+		const VoxelBuffer &src,
+		Vector3i min_pos,
+		uint8_t block_size_po2,
+		uint8_t channels_mask,
 		FGetBlock get_block_func, // (position) -> VoxelBuffer*
-		uint8_t src_mask_channel, //
-		uint64_t src_mask_value, //
-		uint8_t dst_mask_channel, //
-		Span<const int32_t> dst_writable_values //
+		uint8_t src_mask_channel,
+		uint64_t src_mask_value,
+		uint8_t dst_mask_channel,
+		Span<const int32_t> dst_writable_values
 ) {
 	using namespace paste_functors;
 
 	if (dst_writable_values.size() == 1) {
 		const uint64_t dst_mask_value = dst_writable_values[0];
-		paste_to_chunked_storage_tp(src, min_pos, block_size_po2, channels_mask, //
-				get_block_func, //
-				SrcMasked_DstWritableValue{ src_mask_channel, dst_mask_channel, src_mask_value, dst_mask_value } //
+		paste_to_chunked_storage_tp(
+				src,
+				min_pos,
+				block_size_po2,
+				channels_mask,
+				get_block_func,
+				SrcMasked_DstWritableValue{ src_mask_channel, dst_mask_channel, src_mask_value, dst_mask_value }
 		);
 
 	} else {
 		// TODO Candidate for TempAllocator
 		DynamicBitset bitarray;
 		indices_to_bitarray_u16(dst_writable_values, bitarray);
-		paste_to_chunked_storage_tp(src, min_pos, block_size_po2, channels_mask, //
-				get_block_func, //
-				SrcMasked_DstWritableBitArray{ src_mask_channel, dst_mask_channel, src_mask_value, bitarray } //
+		paste_to_chunked_storage_tp(
+				src,
+				min_pos,
+				block_size_po2,
+				channels_mask,
+				get_block_func,
+				SrcMasked_DstWritableBitArray{ src_mask_channel, dst_mask_channel, src_mask_value, bitarray }
 		);
 	}
 }
 
 AABB get_path_aabb(Span<const Vector3> positions, Span<const float> radii);
+
+class VoxelData;
+class VoxelBlockyLibraryBase;
+
+// For easier unit testing (the regular one needs a terrain setup etc, harder to test atm)
+// The `_static` suffix is because it otherwise conflicts with the non-static method when registering the class
+void run_blocky_random_tick(
+		VoxelData &data,
+		Box3i voxel_box,
+		const VoxelBlockyLibraryBase &lib,
+		RandomPCG &random,
+		int voxel_count,
+		int batch_count,
+		void *callback_data,
+		bool (*callback)(void *, Vector3i, int64_t)
+);
+
+void run_blocky_random_tick(
+		VoxelData &data,
+		AABB voxel_box_f,
+		const VoxelBlockyLibraryBase &lib,
+		RandomPCG &random,
+		int voxel_count,
+		int batch_count,
+		const Callable &callback
+);
 
 } // namespace zylann::voxel
 
@@ -227,29 +259,31 @@ struct SdfOperation16bit {
 	Op op;
 	Shape shape;
 	inline int16_t operator()(Vector3i pos, int16_t sdf) const {
-		return snorm_to_s16(op(s16_to_snorm(sdf) * constants::QUANTIZED_SDF_16_BITS_SCALE_INV, shape(Vector3(pos))) *
-				constants::QUANTIZED_SDF_16_BITS_SCALE);
+		return snorm_to_s16(
+				op(s16_to_snorm(sdf) * constants::QUANTIZED_SDF_16_BITS_SCALE_INV, shape(to_vec3f(pos))) *
+				constants::QUANTIZED_SDF_16_BITS_SCALE
+		);
 	}
 };
 
 struct SdfUnion {
-	real_t strength;
-	inline real_t operator()(real_t a, real_t b) const {
-		return Math::lerp(a, math::sdf_union(a, b), strength);
+	float strength;
+	inline float operator()(float a, float b) const {
+		return math::lerp(a, math::sdf_union(a, b), strength);
 	}
 };
 
 struct SdfSubtract {
-	real_t strength;
-	inline real_t operator()(real_t a, real_t b) const {
-		return Math::lerp(a, math::sdf_subtract(a, b), strength);
+	float strength;
+	inline float operator()(float a, float b) const {
+		return math::lerp(a, math::sdf_subtract(a, b), strength);
 	}
 };
 
 struct SdfSet {
-	real_t strength;
-	inline real_t operator()(real_t a, real_t b) const {
-		return Math::lerp(a, b, strength);
+	float strength;
+	inline float operator()(float a, float b) const {
+		return math::lerp(a, b, strength);
 	}
 };
 
@@ -258,14 +292,15 @@ struct BlockySetOperation {
 	Shape_T shape;
 	Value_T value;
 	inline Value_T operator()(Vector3i pos, Value_T src) const {
-		return shape.is_inside(Vector3(pos)) ? value : src;
+		return shape.is_inside(to_vec3f(pos)) ? value : src;
 	}
 };
 
-inline Box3i get_sdf_sphere_box(Vector3 center, real_t radius) {
+inline Box3i get_sdf_sphere_box(Vector3f center, float radius) {
 	return Box3i::from_min_max( //
-			math::floor_to_int(center - Vector3(radius, radius, radius)),
-			math::ceil_to_int(center + Vector3(radius, radius, radius)))
+				   math::floor_to_int(center - Vector3f(radius, radius, radius)),
+				   math::ceil_to_int(center + Vector3f(radius, radius, radius))
+	)
 			// That padding is for SDF to have some margin
 			// TODO Don't add padding from here, it must be done at higher level, where we know the type of operation
 			.padded(2);
@@ -274,18 +309,18 @@ inline Box3i get_sdf_sphere_box(Vector3 center, real_t radius) {
 // Shapes
 
 struct SdfSphere {
-	Vector3 center;
-	real_t radius;
-	real_t sdf_scale;
+	Vector3f center;
+	float radius;
+	float sdf_scale;
 
 	// TODO Rename get_signed_distance?
-	inline real_t operator()(Vector3 pos) const {
+	inline float operator()(Vector3f pos) const {
 		return sdf_scale * math::sdf_sphere(pos, center, radius);
 	}
 
-	inline bool is_inside(Vector3 pos) const {
+	inline bool is_inside(Vector3f pos) const {
 		// Faster than the true SDF, we avoid a square root
-		return center.distance_squared_to(pos) < radius * radius;
+		return math::distance_squared(center, pos) < radius * radius;
 	}
 
 	// TODO Seems unused?
@@ -299,21 +334,23 @@ struct SdfSphere {
 };
 
 struct SdfHemisphere {
-	Vector3 center;
-	Vector3 flat_direction;
-	real_t plane_d;
-	real_t radius;
-	real_t sdf_scale;
-	real_t smoothness;
+	Vector3f center;
+	Vector3f flat_direction;
+	float plane_d;
+	float radius;
+	float sdf_scale;
+	float smoothness;
 
-	inline real_t operator()(Vector3 pos) const {
+	inline float operator()(Vector3f pos) const {
 		return sdf_scale *
-				math::sdf_smooth_subtract( //
+				math::sdf_smooth_subtract(
 						math::sdf_sphere(pos, center, radius), //
-						math::sdf_plane(pos, flat_direction, plane_d), smoothness);
+						math::sdf_plane(pos, -flat_direction, plane_d),
+						smoothness
+				);
 	}
 
-	inline bool is_inside(Vector3 pos) const {
+	inline bool is_inside(Vector3f pos) const {
 		return (*this)(pos) < 0;
 	}
 
@@ -329,15 +366,16 @@ struct SdfHemisphere {
 struct SdfBufferShape {
 	Span<const float> buffer;
 	Vector3i buffer_size;
+	// TODO Use Transform3f and perform the operation in local space, better than using doubles considering SIMD
 	Transform3D world_to_buffer;
 	float isolevel;
 	float sdf_scale;
 
-	inline real_t operator()(const Vector3 &wpos) const {
+	inline real_t operator()(const Vector3f &wpos) const {
 		// Transform terrain-space position to buffer-space
-		const Vector3f lpos = to_vec3f(world_to_buffer.xform(wpos));
+		const Vector3f lpos = to_vec3f(world_to_buffer.xform(to_vec3(wpos)));
 		if (lpos.x < 0 || lpos.y < 0 || lpos.z < 0 || lpos.x >= buffer_size.x || lpos.y >= buffer_size.y ||
-				lpos.z >= buffer_size.z) {
+			lpos.z >= buffer_size.z) {
 			// Outside the buffer
 			return constants::SDF_FAR_OUTSIDE;
 		}
@@ -352,21 +390,23 @@ struct SdfBufferShape {
 };
 
 struct SdfAxisAlignedBox {
-	Vector3 center;
-	Vector3 half_size;
-	real_t sdf_scale;
+	Vector3f center;
+	Vector3f half_size;
+	float sdf_scale;
 
-	inline real_t operator()(Vector3 pos) const {
+	inline float operator()(Vector3f pos) const {
 		return sdf_scale * math::sdf_box(pos - center, half_size);
 	}
 
-	inline bool is_inside(Vector3 pos) const {
-		return AABB(center - half_size, 2 * half_size).has_point(pos);
+	inline bool is_inside(Vector3f pos) const {
+		return Box3f::from_center_half_size(center, half_size).contains(pos);
 	}
 
 	inline Box3i get_box() {
 		return Box3i::from_min_max( //
-				math::floor_to_int(center - half_size), math::ceil_to_int(center + half_size))
+					   math::floor_to_int(center - half_size),
+					   math::ceil_to_int(center + half_size)
+		)
 				// That padding is for SDF to have some margin
 				// TODO Don't add padding from here, it must be done at higher level, where we know the type of
 				// operation
@@ -374,17 +414,17 @@ struct SdfAxisAlignedBox {
 	}
 };
 
-Box3i get_round_cone_int_bounds(Vector3 p0, Vector3 p1, float r0, float r1);
+Box3i get_round_cone_int_bounds(Vector3f p0, Vector3f p1, float r0, float r1);
 
 struct SdfRoundCone {
-	math::SdfRoundConePrecalc cone;
-	real_t sdf_scale;
+	math::SdfRoundConePrecalc<float> cone;
+	float sdf_scale;
 
-	inline real_t operator()(Vector3 pos) const {
+	inline float operator()(Vector3f pos) const {
 		return sdf_scale * cone(pos);
 	}
 
-	inline bool is_inside(Vector3 pos) const {
+	inline bool is_inside(Vector3f pos) const {
 		return cone(pos) < 0.f;
 	}
 
@@ -401,12 +441,12 @@ struct TextureParams {
 
 // Optimized for spheres
 struct TextureBlendSphereOp {
-	Vector3 center;
+	Vector3f center;
 	float radius;
 	float radius_squared;
 	TextureParams tp;
 
-	TextureBlendSphereOp(Vector3 p_center, float p_radius, TextureParams p_tp) {
+	TextureBlendSphereOp(Vector3f p_center, float p_radius, TextureParams p_tp) {
 		center = p_center;
 		radius = p_radius;
 		radius_squared = p_radius * p_radius;
@@ -414,10 +454,10 @@ struct TextureBlendSphereOp {
 	}
 
 	inline void operator()(Vector3i pos, uint16_t &indices, uint16_t &weights) const {
-		const float distance_squared = Vector3(pos).distance_squared_to(center);
+		const float distance_squared = math::distance_squared(to_vec3f(pos), center);
 		// Avoiding square root on the hot path
 		if (distance_squared < radius_squared) {
-			const float distance_from_radius = radius - Math::sqrt(distance_squared);
+			const float distance_from_radius = radius - math::sqrt(distance_squared);
 			const float target_weight =
 					tp.opacity * math::clamp(tp.sharpness * (distance_from_radius / radius), 0.f, 1.f);
 			blend_texture_packed_u16(tp.index, target_weight, indices, weights);
@@ -431,7 +471,7 @@ struct TextureBlendOp {
 	TextureParams texture_params;
 
 	inline void operator()(Vector3i pos, uint16_t &indices, uint16_t &weights) const {
-		const float sd = shape(pos);
+		const float sd = shape(to_vec3f(pos));
 		if (sd <= 0) {
 			// TODO We don't know the full size of the shape so sharpness may be adjusted
 			const float target_weight = texture_params.opacity * math::clamp(-sd * texture_params.sharpness, 0.f, 1.f);
@@ -512,8 +552,12 @@ struct DoSphere {
 				} break;
 
 				case MODE_TEXTURE_PAINT: {
-					blocks.write_box_2(box, VoxelBuffer::CHANNEL_INDICES, VoxelBuffer::CHANNEL_WEIGHTS,
-							TextureBlendSphereOp(shape.center, shape.radius, texture_params));
+					blocks.write_box_2(
+							box,
+							VoxelBuffer::CHANNEL_INDICES,
+							VoxelBuffer::CHANNEL_WEIGHTS,
+							TextureBlendSphereOp(shape.center, shape.radius, texture_params)
+					);
 				} break;
 
 				default:
@@ -530,13 +574,14 @@ struct DoSphere {
 };
 
 template <typename TBlockAccess, typename FBlockAction>
-void process_chunked_storage(Box3i voxel_box,
-		// VoxelBuffer *get_block(Vector3i bpos)
-		// unsigned int get_block_size_po2()
+void process_chunked_storage(
+		Box3i voxel_box,
+		// { VoxelBuffer *get_block(Vector3i bpos)
+		//   unsigned int get_block_size_po2() }
 		TBlockAccess block_access,
 		// void(VoxelBuffer &vb, Box3i local_box, Vector3i origin)
-		FBlockAction op_func) {
-	//
+		FBlockAction op_func
+) {
 	const Vector3i max_pos = voxel_box.position + voxel_box.size;
 
 	const unsigned int block_size_po2 = block_access.get_block_size_po2();
@@ -565,24 +610,37 @@ void process_chunked_storage(Box3i voxel_box,
 template <typename TBlockAccess, typename FOp>
 inline void write_box_in_chunked_storage_1_channel(
 		// D process(D src, Vector3i position)
-		const FOp &op, TBlockAccess &block_access, Box3i box, VoxelBuffer::ChannelId channel_id) {
-	//
+		const FOp &op,
+		TBlockAccess &block_access,
+		Box3i box,
+		VoxelBuffer::ChannelId channel_id
+) {
 	process_chunked_storage(
-			box, block_access, [&op, channel_id](VoxelBuffer &vb, const Box3i local_box, Vector3i origin) {
+			box,
+			block_access,
+			[&op, channel_id](VoxelBuffer &vb, const Box3i local_box, Vector3i origin) {
 				vb.write_box(local_box, channel_id, op, origin);
-			});
+			}
+	);
 }
 
 template <typename TBlockAccess, typename FOp>
 inline void write_box_in_chunked_storage_2_channels(
 		// D process(D src, Vector3i position)
-		const FOp &op, TBlockAccess &block_access, Box3i box, VoxelBuffer::ChannelId channel0_id,
-		VoxelBuffer::ChannelId channel1_id) {
+		const FOp &op,
+		TBlockAccess &block_access,
+		Box3i box,
+		VoxelBuffer::ChannelId channel0_id,
+		VoxelBuffer::ChannelId channel1_id
+) {
 	//
-	process_chunked_storage(box, block_access,
+	process_chunked_storage(
+			box,
+			block_access,
 			[&op, channel0_id, channel1_id](VoxelBuffer &vb, const Box3i local_box, Vector3i origin) {
 				vb.write_box_2_template<FOp, uint16_t, uint16_t>(local_box, channel0_id, channel1_id, op, origin);
-			});
+			}
+	);
 }
 
 struct VoxelDataGridAccess {
@@ -641,7 +699,8 @@ struct DoShapeChunked {
 					op.shape = shape;
 					op.texture_params = texture_params;
 					write_box_in_chunked_storage_2_channels(
-							op, block_access, box, VoxelBuffer::CHANNEL_INDICES, VoxelBuffer::CHANNEL_WEIGHTS);
+							op, block_access, box, VoxelBuffer::CHANNEL_INDICES, VoxelBuffer::CHANNEL_WEIGHTS
+					);
 				} break;
 
 				default:
@@ -704,7 +763,8 @@ struct DoShapeSingleBuffer {
 					op.shape = shape;
 					op.texture_params = texture_params;
 					buffer->write_box_2_template<TextureBlendOp<TShape>, uint16_t, uint16_t>(
-							box, VoxelBuffer::CHANNEL_INDICES, VoxelBuffer::CHANNEL_WEIGHTS, op, Vector3i());
+							box, VoxelBuffer::CHANNEL_INDICES, VoxelBuffer::CHANNEL_WEIGHTS, op, Vector3i()
+					);
 				} break;
 
 				default:

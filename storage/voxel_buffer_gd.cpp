@@ -2,10 +2,297 @@
 #include "../edition/voxel_tool_buffer.h"
 #include "../util/dstack.h"
 #include "../util/godot/classes/image.h"
+#include "../util/godot/classes/image_texture_3d.h"
+#include "../util/godot/core/packed_arrays.h"
 #include "../util/math/color.h"
 #include "../util/memory/memory.h"
 #include "../util/string/format.h"
 #include "metadata/voxel_metadata_variant.h"
+
+namespace zylann::voxel {
+
+template <typename F>
+void op_buffer_value_f(
+		VoxelBuffer &dst,
+		const float b,
+		VoxelBuffer::ChannelId channel,
+		F f // (float a, float b) -> float
+) {
+	if (dst.get_channel_compression(channel) == VoxelBuffer::COMPRESSION_UNIFORM) {
+		const float a = dst.get_voxel_f(0, 0, 0, channel);
+		dst.fill_f(f(a, b), channel);
+		return;
+	}
+
+	switch (dst.get_channel_depth(channel)) {
+		case VoxelBuffer::DEPTH_8_BIT: {
+			Span<int8_t> dst_data;
+			ZN_ASSERT(dst.get_channel_data(channel, dst_data));
+			for (int8_t &d : dst_data) {
+				const float a = s8_to_snorm(d) * constants::QUANTIZED_SDF_8_BITS_SCALE_INV;
+				d = snorm_to_s8(f(a, b) * constants::QUANTIZED_SDF_8_BITS_SCALE);
+			}
+		} break;
+
+		case VoxelBuffer::DEPTH_16_BIT: {
+			Span<int16_t> dst_data;
+			ZN_ASSERT(dst.get_channel_data(channel, dst_data));
+			for (int16_t &d : dst_data) {
+				const float a = s16_to_snorm(d) * constants::QUANTIZED_SDF_16_BITS_SCALE_INV;
+				d = snorm_to_s16(f(a, b) * constants::QUANTIZED_SDF_16_BITS_SCALE);
+			}
+		} break;
+
+		case VoxelBuffer::DEPTH_32_BIT: {
+			Span<float> dst_data;
+			ZN_ASSERT(dst.get_channel_data(channel, dst_data));
+			for (float &d : dst_data) {
+				d = f(d, b);
+			}
+		} break;
+
+		case VoxelBuffer::DEPTH_64_BIT:
+			ZN_PRINT_ERROR("Unsupported depth for operation");
+			break;
+
+		default:
+			ZN_CRASH();
+			break;
+	}
+}
+
+template <typename F>
+void op_buffer_buffer_f(
+		VoxelBuffer &dst,
+		const VoxelBuffer &src,
+		VoxelBuffer::ChannelId channel,
+		F f // (float a, float b) -> float
+) {
+	if (src.get_channel_compression(channel) == zylann::voxel::VoxelBuffer::COMPRESSION_UNIFORM) {
+		const float value = src.get_voxel_f(0, 0, 0, channel);
+		op_buffer_value_f(dst, value, channel, f);
+		return;
+	}
+
+	if (dst.get_channel_compression(channel) == zylann::voxel::VoxelBuffer::COMPRESSION_UNIFORM) {
+		dst.decompress_channel(channel);
+	}
+
+	switch (src.get_channel_depth(channel)) {
+		case VoxelBuffer::DEPTH_8_BIT: {
+			Span<const int8_t> src_data;
+			Span<int8_t> dst_data;
+			ZN_ASSERT(src.get_channel_data_read_only(channel, src_data));
+			ZN_ASSERT(dst.get_channel_data(channel, dst_data));
+			for (unsigned int i = 0; i < src_data.size(); ++i) {
+				const float a = s8_to_snorm(dst_data[i]) * constants::QUANTIZED_SDF_8_BITS_SCALE_INV;
+				const float b = s8_to_snorm(src_data[i]) * constants::QUANTIZED_SDF_8_BITS_SCALE_INV;
+				dst_data[i] = snorm_to_s8(f(a, b) * constants::QUANTIZED_SDF_8_BITS_SCALE);
+			}
+		} break;
+
+		case VoxelBuffer::DEPTH_16_BIT: {
+			Span<const int16_t> src_data;
+			Span<int16_t> dst_data;
+			ZN_ASSERT(src.get_channel_data_read_only(channel, src_data));
+			ZN_ASSERT(dst.get_channel_data(channel, dst_data));
+			for (unsigned int i = 0; i < src_data.size(); ++i) {
+				const float a = s16_to_snorm(dst_data[i]) * constants::QUANTIZED_SDF_16_BITS_SCALE_INV;
+				const float b = s16_to_snorm(src_data[i]) * constants::QUANTIZED_SDF_16_BITS_SCALE_INV;
+				dst_data[i] = snorm_to_s16(f(a, b) * constants::QUANTIZED_SDF_16_BITS_SCALE);
+			}
+		} break;
+
+		case VoxelBuffer::DEPTH_32_BIT: {
+			Span<const float> src_data;
+			Span<float> dst_data;
+			ZN_ASSERT(src.get_channel_data_read_only(channel, src_data));
+			ZN_ASSERT(dst.get_channel_data(channel, dst_data));
+			for (unsigned int i = 0; i < src_data.size(); ++i) {
+				dst_data[i] = f(dst_data[i], src_data[i]);
+			}
+		} break;
+
+		case VoxelBuffer::DEPTH_64_BIT:
+			ZN_PRINT_ERROR("Non-implemented depth for operation");
+			break;
+
+		default:
+			ZN_CRASH();
+			break;
+	}
+}
+
+// Converts the SDF channel into a 3D texture. If the output format is R8 or L8, pixels will contain a normalized
+// distance field (so in shader, 0.5 will be the isolevel instead of 0, and values will go from 0 to 1). Note: in
+// shader, you should use the `yxz` swizzle to sample pixels of that texture, because this is how voxels are stored and
+// this function does not convert the coordinate system.
+TypedArray<Image> sdf_to_3d_texture_data_zxy(const VoxelBuffer &vb, const Image::Format output_format) {
+	ZN_PROFILE_SCOPE();
+
+	const VoxelBuffer::ChannelId channel = zylann::voxel::VoxelBuffer::CHANNEL_SDF;
+	const VoxelBuffer::Depth depth = vb.get_channel_depth(channel);
+	const uint64_t xy_area = vb.get_size().x * vb.get_size().y;
+	const VoxelBuffer::Compression channel_compression = vb.get_channel_compression(channel);
+
+	// TODO An array of images is going to waste resources... Godot should really have an Image3D class, or just allow
+	// to pass raw data... `Image` is more than 400 Kb, which is more than a single slice of 8-bit pixels in a 16x16x16
+	// chunk!
+	TypedArray<Image> images;
+	images.resize(vb.get_size().z);
+
+	// TODO Is it possible for a shader to specify that a 8-bit depth texture should be sampled as inorm8 and not
+	// unorm8? Because if not, we have to do extra work to convert every voxel here.
+	// That's why for now we have to do these conversions
+	struct L {
+		static inline uint8_t s8_to_u8(const int8_t i) {
+			return static_cast<uint8_t>(static_cast<int16_t>(i) + 128);
+		}
+
+		static inline uint8_t s16_to_u8(const int16_t i) {
+			return static_cast<uint16_t>((static_cast<int32_t>(i) + 32768) >> 8);
+		}
+	};
+
+	// Not all combinations are supported. For now we only implement those we need.
+	switch (depth) {
+		case VoxelBuffer::DEPTH_8_BIT:
+			ZN_PRINT_ERROR("Channel depth not supported.");
+			return TypedArray<Image>();
+
+		case VoxelBuffer::DEPTH_16_BIT: {
+			switch (output_format) {
+				case Image::FORMAT_R8:
+				case Image::FORMAT_L8: {
+					// Get fixed-point signed normalized 16-bit SDF to fixed-point unsigned normalized 8-bit SDF.
+					// Sampling this in shader may need something like `(texture(t, pos).r * 2.0 - 1.0) * scale`
+
+					if (channel_compression == VoxelBuffer::COMPRESSION_UNIFORM) {
+						const int16_t sd_s16 = vb.get_voxel(Vector3i(0, 0, 0), channel);
+						const uint8_t sd_u8 = L::s16_to_u8(sd_s16);
+
+						for (int z = 0; z < vb.get_size().z; ++z) {
+							PackedByteArray pba;
+							pba.resize(xy_area);
+							pba.fill(sd_u8);
+							Ref<Image> image = Image::create_from_data(
+									vb.get_size().y, vb.get_size().x, false, output_format, pba
+							);
+							images[z] = image;
+						}
+					} else {
+						Span<const int16_t> data;
+						ZN_ASSERT_RETURN_V(vb.get_channel_data_read_only(channel, data), TypedArray<Image>());
+
+						for (int z = 0; z < vb.get_size().z; ++z) {
+							PackedByteArray pba;
+							pba.resize(xy_area);
+							Span<uint8_t> pba_s(pba.ptrw(), pba.size());
+
+							Span<const int16_t> data_slice = data.sub(z * xy_area, xy_area);
+
+							for (unsigned int i = 0; i < xy_area; ++i) {
+								pba_s[i] = L::s16_to_u8(data_slice[i]);
+							}
+
+							Ref<Image> image = Image::create_from_data(
+									vb.get_size().y, vb.get_size().x, false, output_format, pba
+							);
+							images[z] = image;
+						}
+					}
+				} break;
+
+				default:
+					ZN_PRINT_ERROR("Image format not supported.");
+					return TypedArray<Image>();
+			}
+
+		} break;
+
+		case VoxelBuffer::DEPTH_32_BIT: {
+			ZN_PRINT_ERROR("Channel depth not supported.");
+			return TypedArray<Image>();
+		} break;
+
+		default:
+			ZN_PRINT_ERROR("Channel depth not supported.");
+			return TypedArray<Image>();
+	}
+
+	return images;
+}
+
+Ref<ImageTexture3D> create_3d_texture_from_sdf_zxy(const VoxelBuffer &vb, const Image::Format output_format) {
+	TypedArray<Image> images = sdf_to_3d_texture_data_zxy(vb, output_format);
+	Ref<ImageTexture3D> texture = zylann::godot::create_image_texture_3d(output_format, vb.get_size(), false, images);
+	return texture;
+}
+
+void update_3d_texture_from_sdf_zxy(const VoxelBuffer &vb, ImageTexture3D &texture) {
+	TypedArray<Image> images = sdf_to_3d_texture_data_zxy(vb, texture.get_format());
+	// Format and size must match
+	zylann::godot::update_image_texture_3d(texture, images);
+}
+
+PackedByteArray get_channel_as_byte_array(const VoxelBuffer &vb, const VoxelBuffer::ChannelId channel) {
+	ZN_ASSERT_RETURN_V(channel >= 0 && channel < VoxelBuffer::MAX_CHANNELS, PackedByteArray());
+
+	const Vector3i res = vb.get_size();
+	const uint64_t volume = Vector3iUtil::get_volume_u64(res);
+	const VoxelBuffer::Compression compression = vb.get_channel_compression(channel);
+	const VoxelBuffer::Depth depth = vb.get_channel_depth(channel);
+
+	PackedByteArray pba;
+
+	switch (compression) {
+		case VoxelBuffer::COMPRESSION_UNIFORM: {
+			// Decompress... can't just decompress the VoxelBuffer directly with existing methods, because it is const,
+			// and would waste intermediary memory.
+			// If this behavior is not desired, the caller must check compression first.
+			switch (depth) {
+				case VoxelBuffer::DEPTH_8_BIT: {
+					pba.resize(volume);
+					const uint8_t v = vb.get_voxel(Vector3i(0, 0, 0), channel);
+					pba.fill(v);
+				} break;
+
+				case VoxelBuffer::DEPTH_16_BIT: {
+					pba.resize(volume * sizeof(uint16_t));
+					const uint16_t v = vb.get_voxel(Vector3i(0, 0, 0), channel);
+					Span<uint16_t> pba_s = Span<uint8_t>(pba.ptrw(), pba.size()).reinterpret_cast_to<uint16_t>();
+					pba_s.fill(v);
+				} break;
+
+				case VoxelBuffer::DEPTH_32_BIT: {
+					pba.resize(volume * sizeof(uint32_t));
+					const uint32_t v = vb.get_voxel(Vector3i(0, 0, 0), channel);
+					Span<uint32_t> pba_s = Span<uint8_t>(pba.ptrw(), pba.size()).reinterpret_cast_to<uint32_t>();
+					pba_s.fill(v);
+				} break;
+
+				default:
+					ZN_PRINT_ERROR("Unhandled channel depth");
+					break;
+			}
+		} break;
+
+		case VoxelBuffer::COMPRESSION_NONE: {
+			Span<const uint8_t> src;
+			ZN_ASSERT_RETURN_V(vb.get_channel_as_bytes_read_only(channel, src), pba);
+			Span<uint8_t> pba_s(pba.ptrw(), volume);
+			src.copy_to(pba_s);
+		} break;
+
+		default:
+			ZN_PRINT_ERROR("Unhandled compression");
+			break;
+	}
+
+	return pba;
+}
+
+} // namespace zylann::voxel
 
 namespace zylann::voxel::godot {
 
@@ -111,6 +398,11 @@ VoxelBuffer::Compression VoxelBuffer::get_channel_compression(int channel_index)
 	return VoxelBuffer::Compression(_buffer->get_channel_compression(channel_index));
 }
 
+void VoxelBuffer::decompress_channel(int channel_index) {
+	ERR_FAIL_INDEX(channel_index, MAX_CHANNELS);
+	return _buffer->decompress_channel(channel_index);
+}
+
 void VoxelBuffer::downscale_to(Ref<VoxelBuffer> dst, Vector3i src_min, Vector3i src_max, Vector3i dst_min) const {
 	ZN_DSTACK();
 	ERR_FAIL_COND(dst.is_null());
@@ -158,7 +450,7 @@ void VoxelBuffer::remap_values(unsigned int channel_index, PackedInt32Array map)
 	switch (depth) {
 		case zylann::voxel::VoxelBuffer::DEPTH_8_BIT: {
 			Span<uint8_t> values;
-			ZN_ASSERT_RETURN(_buffer->get_channel_raw(channel_index, values));
+			ZN_ASSERT_RETURN(_buffer->get_channel_as_bytes(channel_index, values));
 			for (uint8_t &v : values) {
 				if (v < map_r.size()) {
 					v = map_r[v];
@@ -184,6 +476,146 @@ void VoxelBuffer::remap_values(unsigned int channel_index, PackedInt32Array map)
 
 VoxelBuffer::Allocator VoxelBuffer::get_allocator() const {
 	return static_cast<VoxelBuffer::Allocator>(_buffer->get_allocator());
+}
+
+void VoxelBuffer::op_add_buffer_f(Ref<VoxelBuffer> other, VoxelBuffer::ChannelId channel) {
+	ZN_ASSERT_RETURN(other.is_valid());
+	ZN_ASSERT_RETURN(channel >= 0 && channel < VoxelBuffer::MAX_CHANNELS);
+	ZN_ASSERT_RETURN(get_channel_depth(channel) == other->get_channel_depth(channel));
+	ZN_ASSERT_RETURN(get_size() == other->get_size());
+	op_buffer_buffer_f(
+			*_buffer,
+			other->get_buffer(),
+			static_cast<zylann::voxel::VoxelBuffer::ChannelId>(channel),
+			[](float a, float b) { return a + b; }
+	);
+}
+
+void VoxelBuffer::op_sub_buffer_f(Ref<VoxelBuffer> other, VoxelBuffer::ChannelId channel) {
+	ZN_ASSERT_RETURN(other.is_valid());
+	ZN_ASSERT_RETURN(channel >= 0 && channel < VoxelBuffer::MAX_CHANNELS);
+	ZN_ASSERT_RETURN(get_channel_depth(channel) == other->get_channel_depth(channel));
+	ZN_ASSERT_RETURN(get_size() == other->get_size());
+	op_buffer_buffer_f(
+			*_buffer,
+			other->get_buffer(),
+			static_cast<zylann::voxel::VoxelBuffer::ChannelId>(channel),
+			[](float a, float b) { return a - b; }
+	);
+}
+
+void VoxelBuffer::op_mul_buffer_f(Ref<VoxelBuffer> other, VoxelBuffer::ChannelId channel) {
+	ZN_ASSERT_RETURN(other.is_valid());
+	ZN_ASSERT_RETURN(channel >= 0 && channel < VoxelBuffer::MAX_CHANNELS);
+	ZN_ASSERT_RETURN(get_channel_depth(channel) == other->get_channel_depth(channel));
+	ZN_ASSERT_RETURN(get_size() == other->get_size());
+	op_buffer_buffer_f(
+			*_buffer,
+			other->get_buffer(),
+			static_cast<zylann::voxel::VoxelBuffer::ChannelId>(channel),
+			[](float a, float b) { return a * b; }
+	);
+}
+
+void VoxelBuffer::op_mul_value_f(float scale, VoxelBuffer::ChannelId channel) {
+	ZN_ASSERT_RETURN(channel >= 0 && channel < VoxelBuffer::MAX_CHANNELS);
+	op_buffer_value_f(
+			*_buffer,
+			scale,
+			static_cast<zylann::voxel::VoxelBuffer::ChannelId>(channel),
+			[](float a, float b) { return a * b; }
+	);
+}
+
+void VoxelBuffer::op_min_buffer_f(Ref<VoxelBuffer> other, VoxelBuffer::ChannelId channel) {
+	ZN_ASSERT_RETURN(other.is_valid());
+	ZN_ASSERT_RETURN(channel >= 0 && channel < VoxelBuffer::MAX_CHANNELS);
+	ZN_ASSERT_RETURN(get_channel_depth(channel) == other->get_channel_depth(channel));
+	ZN_ASSERT_RETURN(get_size() == other->get_size());
+	op_buffer_buffer_f(
+			*_buffer,
+			other->get_buffer(),
+			static_cast<zylann::voxel::VoxelBuffer::ChannelId>(channel),
+			[](float a, float b) { return math::min(a, b); }
+	);
+}
+
+void VoxelBuffer::op_max_buffer_f(Ref<VoxelBuffer> other, VoxelBuffer::ChannelId channel) {
+	ZN_ASSERT_RETURN(other.is_valid());
+	ZN_ASSERT_RETURN(channel >= 0 && channel < VoxelBuffer::MAX_CHANNELS);
+	ZN_ASSERT_RETURN(get_channel_depth(channel) == other->get_channel_depth(channel));
+	ZN_ASSERT_RETURN(get_size() == other->get_size());
+	op_buffer_buffer_f(
+			*_buffer,
+			other->get_buffer(),
+			static_cast<zylann::voxel::VoxelBuffer::ChannelId>(channel),
+			[](float a, float b) { return math::max(a, b); }
+	);
+}
+
+template <typename TIn, typename TOut>
+inline TOut select_less(TIn src, TIn threshold, TOut value_if_less, TOut value_if_more) {
+	return src < threshold ? value_if_less : value_if_more;
+}
+
+void VoxelBuffer::op_select_less_src_f_dst_i_values(
+		Ref<VoxelBuffer> src_ref,
+		const VoxelBuffer::ChannelId src_channel,
+		const float threshold,
+		const int value_if_less,
+		const int value_if_more,
+		const VoxelBuffer::ChannelId dst_channel
+) {
+	ZN_ASSERT_RETURN(src_ref.is_valid());
+	ZN_ASSERT_RETURN(src_channel >= 0 && src_channel < VoxelBuffer::MAX_CHANNELS);
+	ZN_ASSERT_RETURN(dst_channel >= 0 && dst_channel < VoxelBuffer::MAX_CHANNELS);
+	ZN_ASSERT_RETURN(get_size() == src_ref->get_size());
+
+	const zylann::voxel::VoxelBuffer &src = src_ref->get_buffer();
+	zylann::voxel::VoxelBuffer &dst = *_buffer;
+
+	// Optimizable, but a bit too many combinations of formats than it's worth.
+	// If necessary, only optimize common formats.
+
+	if (src.get_channel_depth(src_channel) == zylann::voxel::VoxelBuffer::DEPTH_32_BIT &&
+		dst.get_channel_depth(dst_channel) == zylann::voxel::VoxelBuffer::DEPTH_16_BIT) {
+		//
+		const uint16_t value_if_less_16 = math::clamp(value_if_less, 0, 65535);
+		const uint16_t value_if_more_16 = math::clamp(value_if_more, 0, 65535);
+
+		if (src.get_channel_compression(src_channel) == zylann::voxel::VoxelBuffer::COMPRESSION_UNIFORM) {
+			const float src_v = src.get_voxel_f(0, 0, 0, src_channel);
+			const int16_t dst_v = select_less(src_v, threshold, value_if_less, value_if_more);
+			dst.fill(dst_v, dst_channel);
+
+		} else {
+			dst.decompress_channel(dst_channel);
+
+			Span<const float> src_data;
+			src.get_channel_data_read_only(src_channel, src_data);
+
+			Span<uint16_t> dst_data;
+			dst.get_channel_data(dst_channel, dst_data);
+
+			for (unsigned int i = 0; i < src_data.size(); ++i) {
+				dst_data[i] = select_less(src_data[i], threshold, value_if_less_16, value_if_more_16);
+			}
+		}
+
+	} else {
+		// Generic, slower version
+		Vector3i pos;
+		const Vector3i size = get_size();
+		for (pos.z = 0; pos.z < size.z; ++pos.z) {
+			for (pos.x = 0; pos.x < size.x; ++pos.x) {
+				for (pos.y = 0; pos.y < size.y; ++pos.y) {
+					const float sd = src.get_voxel_f(pos, src_channel);
+					const int16_t dst_v = select_less(sd, threshold, value_if_less, value_if_more);
+					dst.set_voxel(dst_v, pos, dst_channel);
+				}
+			}
+		}
+	}
 }
 
 Variant VoxelBuffer::get_block_metadata() const {
@@ -289,6 +721,26 @@ void VoxelBuffer::clear_voxel_metadata() {
 	_buffer->clear_voxel_metadata();
 }
 
+Ref<ImageTexture3D> VoxelBuffer::create_3d_texture_from_sdf_zxy(const Image::Format output_format) const {
+	return zylann::voxel::create_3d_texture_from_sdf_zxy(*_buffer, output_format);
+}
+
+void VoxelBuffer::update_3d_texture_from_sdf_zxy(Ref<ImageTexture3D> texture) const {
+	ZN_ASSERT_RETURN(texture.is_valid());
+	return zylann::voxel::update_3d_texture_from_sdf_zxy(*_buffer, **texture);
+}
+
+PackedByteArray VoxelBuffer::get_channel_as_byte_array(const ChannelId channel) const {
+	return zylann::voxel::get_channel_as_byte_array(
+			*_buffer, static_cast<zylann::voxel::VoxelBuffer::ChannelId>(channel)
+	);
+}
+
+void VoxelBuffer::set_channel_from_byte_array(const ChannelId channel, const PackedByteArray &pba) {
+	ZN_ASSERT_RETURN(channel >= 0 && channel < MAX_CHANNELS);
+	_buffer->set_channel_from_bytes(channel, to_span(pba));
+}
+
 Ref<Image> VoxelBuffer::debug_print_sdf_to_image_top_down() {
 	return debug_print_sdf_to_image_top_down(*_buffer);
 }
@@ -380,11 +832,6 @@ TypedArray<Image> VoxelBuffer::debug_print_sdf_y_slices(float scale) const {
 	return images;
 }
 
-void VoxelBuffer::_b_deprecated_optimize() {
-	ERR_PRINT_ONCE("VoxelBuffer.optimize() is deprecated. Use compress_uniform_channels() instead.");
-	compress_uniform_channels();
-}
-
 void VoxelBuffer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("create", "sx", "sy", "sz"), &VoxelBuffer::_b_create);
 
@@ -417,10 +864,30 @@ void VoxelBuffer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("downscale_to", "dst", "src_min", "src_max", "dst_min"), &VoxelBuffer::downscale_to);
 
 	ClassDB::bind_method(D_METHOD("is_uniform", "channel"), &VoxelBuffer::is_uniform);
-	ClassDB::bind_method(D_METHOD("optimize"), &VoxelBuffer::_b_deprecated_optimize);
 	ClassDB::bind_method(D_METHOD("compress_uniform_channels"), &VoxelBuffer::compress_uniform_channels);
 	ClassDB::bind_method(D_METHOD("get_channel_compression", "channel"), &VoxelBuffer::get_channel_compression);
+	ClassDB::bind_method(D_METHOD("decompress_channel", "channel"), &VoxelBuffer::decompress_channel);
+
 	ClassDB::bind_method(D_METHOD("remap_values", "channel", "map"), &VoxelBuffer::remap_values);
+
+	ClassDB::bind_method(D_METHOD("op_add_buffer_f", "other", "channel"), &VoxelBuffer::op_add_buffer_f);
+	ClassDB::bind_method(D_METHOD("op_sub_buffer_f", "other", "channel"), &VoxelBuffer::op_sub_buffer_f);
+	ClassDB::bind_method(D_METHOD("op_mul_buffer_f", "other", "channel"), &VoxelBuffer::op_mul_buffer_f);
+	ClassDB::bind_method(D_METHOD("op_mul_value_f", "other", "channel"), &VoxelBuffer::op_mul_value_f);
+	ClassDB::bind_method(D_METHOD("op_min_buffer_f", "other", "channel"), &VoxelBuffer::op_min_buffer_f);
+	ClassDB::bind_method(D_METHOD("op_max_buffer_f", "other", "channel"), &VoxelBuffer::op_max_buffer_f);
+	ClassDB::bind_method(
+			D_METHOD(
+					"op_select_less_src_f_dst_i_values",
+					"src",
+					"src_channel",
+					"threshold",
+					"value_if_less",
+					"value_if_more",
+					"dst_channel"
+			),
+			&VoxelBuffer::op_select_less_src_f_dst_i_values
+	);
 
 	ClassDB::bind_method(D_METHOD("get_block_metadata"), &VoxelBuffer::get_block_metadata);
 	ClassDB::bind_method(D_METHOD("set_block_metadata", "meta"), &VoxelBuffer::set_block_metadata);
@@ -440,6 +907,18 @@ void VoxelBuffer::_bind_methods() {
 			&VoxelBuffer::copy_voxel_metadata_in_area
 	);
 	ClassDB::bind_method(
+			D_METHOD("create_3d_texture_from_sdf_zxy", "output_format"), &VoxelBuffer::create_3d_texture_from_sdf_zxy
+	);
+	ClassDB::bind_method(
+			D_METHOD("update_3d_texture_from_sdf_zxy", "existing_texture"), &VoxelBuffer::update_3d_texture_from_sdf_zxy
+	);
+	ClassDB::bind_method(
+			D_METHOD("get_channel_as_byte_array", "channel_index"), &VoxelBuffer::get_channel_as_byte_array
+	);
+	ClassDB::bind_method(
+			D_METHOD("set_channel_from_byte_array", "channel_index", "data"), &VoxelBuffer::set_channel_from_byte_array
+	);
+	ClassDB::bind_method(
 			D_METHOD("debug_print_sdf_y_slices", "scale"), &VoxelBuffer::debug_print_sdf_y_slices, DEFVAL(1.0)
 	);
 
@@ -452,6 +931,16 @@ void VoxelBuffer::_bind_methods() {
 	BIND_ENUM_CONSTANT(CHANNEL_DATA6);
 	BIND_ENUM_CONSTANT(CHANNEL_DATA7);
 	BIND_ENUM_CONSTANT(MAX_CHANNELS);
+
+	BIND_ENUM_CONSTANT(CHANNEL_TYPE_BIT);
+	BIND_ENUM_CONSTANT(CHANNEL_SDF_BIT);
+	BIND_ENUM_CONSTANT(CHANNEL_COLOR_BIT);
+	BIND_ENUM_CONSTANT(CHANNEL_INDICES_BIT);
+	BIND_ENUM_CONSTANT(CHANNEL_WEIGHTS_BIT);
+	BIND_ENUM_CONSTANT(CHANNEL_DATA5_BIT);
+	BIND_ENUM_CONSTANT(CHANNEL_DATA6_BIT);
+	BIND_ENUM_CONSTANT(CHANNEL_DATA7_BIT);
+	BIND_ENUM_CONSTANT(ALL_CHANNELS_MASK);
 
 	BIND_ENUM_CONSTANT(DEPTH_8_BIT);
 	BIND_ENUM_CONSTANT(DEPTH_16_BIT);

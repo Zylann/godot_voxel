@@ -25,13 +25,14 @@
 #include "meshers/blocky/types/voxel_blocky_attribute_direction.h"
 #include "meshers/blocky/types/voxel_blocky_attribute_rotation.h"
 #include "meshers/blocky/types/voxel_blocky_type_library.h"
+#include "meshers/blocky/voxel_blocky_fluid.h"
 #include "meshers/blocky/voxel_blocky_library.h"
 #include "meshers/blocky/voxel_blocky_model_cube.h"
 #include "meshers/blocky/voxel_blocky_model_empty.h"
+#include "meshers/blocky/voxel_blocky_model_fluid.h"
 #include "meshers/blocky/voxel_blocky_model_mesh.h"
 #include "meshers/blocky/voxel_mesher_blocky.h"
 #include "meshers/cubes/voxel_mesher_cubes.h"
-#include "meshers/dmc/voxel_mesher_dmc.h"
 #include "meshers/transvoxel/voxel_mesher_transvoxel.h"
 #include "modifiers/godot/voxel_modifier_gd.h"
 #include "modifiers/godot/voxel_modifier_mesh_gd.h"
@@ -50,6 +51,8 @@
 #include "terrain/fixed_lod/voxel_terrain.h"
 #include "terrain/fixed_lod/voxel_terrain_multiplayer_synchronizer.h"
 #include "terrain/instancing/voxel_instance_component.h"
+#include "terrain/instancing/voxel_instance_library.h"
+#include "terrain/instancing/voxel_instance_library_multimesh_item.h"
 #include "terrain/instancing/voxel_instance_library_scene_item.h"
 #include "terrain/instancing/voxel_instancer.h"
 #include "terrain/instancing/voxel_instancer_rigidbody.h"
@@ -92,7 +95,9 @@
 #include "editor/graph/graph_nodes_doc_tool.h"
 #include "editor/graph/voxel_graph_editor_node_preview.h"
 #include "editor/graph/voxel_graph_editor_plugin.h"
+#include "editor/instance_library/control_sizer.h"
 #include "editor/instance_library/voxel_instance_library_editor_plugin.h"
+#include "editor/instance_library/voxel_instance_library_list_editor.h"
 #include "editor/instance_library/voxel_instance_library_multimesh_item_editor_plugin.h"
 #include "editor/instancer/voxel_instancer_editor_plugin.h"
 #include "editor/mesh_sdf/voxel_mesh_sdf_editor_plugin.h"
@@ -218,6 +223,8 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_class<VoxelBlockyModelCube>();
 		ClassDB::register_class<VoxelBlockyModelMesh>();
 		ClassDB::register_class<VoxelBlockyModelEmpty>();
+		ClassDB::register_class<VoxelBlockyModelFluid>();
+		ClassDB::register_class<VoxelBlockyFluid>();
 		ClassDB::register_abstract_class<VoxelBlockyLibraryBase>();
 		ClassDB::register_class<VoxelBlockyLibrary>();
 		ClassDB::register_abstract_class<VoxelBlockyAttribute>();
@@ -300,7 +307,6 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_abstract_class<VoxelMesher>();
 		ClassDB::register_class<VoxelMesherBlocky>();
 		ClassDB::register_class<VoxelMesherTransvoxel>();
-		ClassDB::register_class<VoxelMesherDMC>();
 		ClassDB::register_class<VoxelMesherCubes>();
 
 #ifdef ZN_GODOT_EXTENSION
@@ -344,23 +350,6 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		CheckRefCountDoesNotChange::set_enabled(config.ownership_checks);
 #endif
 		VoxelEngine::create_singleton(config.inner);
-#if defined(ZN_GODOT)
-		// RenderingServer can be null with `tests=yes`.
-		// TODO There is no hook to integrate modules to Godot's test framework, update this when it gets improved
-		if (RenderingServer::get_singleton() != nullptr) {
-			// TODO Enhancement: threaded graphics resource building should be initialized better.
-			// Pick this from the current renderer + user option (at time of writing, Godot 4 has only one
-			// renderer and has not figured out how such option would be exposed). Could use
-			// `can_create_resources_async` but this is internal. AFAIK `is_low_end` will be `true` only for OpenGL
-			// backends, which are the only ones not supporting async resource creation.
-			VoxelEngine::get_singleton().set_threaded_graphics_resource_building_enabled(
-					RenderingServer::get_singleton()->is_low_end() == false
-			);
-		}
-#else
-		// TODO GDX: RenderingServer::is_low_end() is not exposed, can't tell if we can generate graphics resources in
-		// different threads
-#endif
 
 		zylann::voxel::godot::VoxelEngine::create_singleton();
 		zylann::godot::add_singleton("VoxelEngine", zylann::voxel::godot::VoxelEngine::get_singleton());
@@ -399,6 +388,8 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_internal_class<ZN_Axes3DControl>();
 		ClassDB::register_internal_class<ZN_ModelViewer>();
 		ClassDB::register_internal_class<ZN_EditorPropertyAABBMinMax>();
+		ClassDB::register_internal_class<ZN_EditorPropertyTextChangeOnSubmit>();
+		ClassDB::register_internal_class<ZN_ControlSizer>();
 
 		ClassDB::register_internal_class<ZN_FastNoiseLiteEditorPlugin>();
 		ClassDB::register_internal_class<ZN_FastNoiseLiteEditorInspectorPlugin>();
@@ -435,12 +426,12 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_internal_class<VoxelInstanceLibraryInspectorPlugin>();
 		ClassDB::register_internal_class<VoxelInstanceLibraryMultiMeshItemEditorPlugin>();
 		ClassDB::register_internal_class<VoxelInstanceLibraryMultiMeshItemInspectorPlugin>();
+		ClassDB::register_internal_class<VoxelInstanceLibraryListEditor>();
 
 		ClassDB::register_internal_class<VoxelMeshSDFViewer>();
 		ClassDB::register_internal_class<VoxelMeshSDFEditorPlugin>();
 		ClassDB::register_internal_class<VoxelMeshSDFInspectorPlugin>();
 
-		ClassDB::register_internal_class<ZN_EditorPropertyTextChangeOnSubmit>();
 		ClassDB::register_internal_class<VoxelGraphEditorInspectorPlugin>();
 		ClassDB::register_internal_class<VoxelGraphFunctionInspectorPlugin>();
 		ClassDB::register_internal_class<VoxelGraphEditorNodePreview>();

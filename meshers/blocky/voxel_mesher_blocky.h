@@ -30,6 +30,20 @@ public:
 	void set_occlusion_enabled(bool enable);
 	bool get_occlusion_enabled() const;
 
+	enum Side {
+		SIDE_NEGATIVE_X = 0,
+		SIDE_POSITIVE_X,
+		SIDE_NEGATIVE_Y,
+		SIDE_POSITIVE_Y,
+		SIDE_NEGATIVE_Z,
+		SIDE_POSITIVE_Z,
+		SIDE_COUNT
+	};
+
+	void set_shadow_occluder_side(Side side, bool enabled);
+	bool get_shadow_occluder_side(Side side) const;
+	uint8_t get_shadow_occluder_mask() const;
+
 	void build(VoxelMesher::Output &output, const VoxelMesher::Input &input) override;
 
 	// TODO GDX: Resource::duplicate() cannot be overriden (while it can in modules).
@@ -43,10 +57,11 @@ public:
 	int get_used_channels_mask() const override;
 
 	bool supports_lod() const override {
-		return false;
+		return true;
 	}
 
 	Ref<Material> get_material_by_index(unsigned int index) const override;
+	unsigned int get_material_index_count() const override;
 
 	// Using std::vector because they make this mesher twice as fast than Godot Vectors.
 	// See why: https://github.com/godotengine/godot/issues/24731
@@ -83,6 +98,7 @@ private:
 	struct Parameters {
 		float baked_occlusion_darkness = 0.8;
 		bool bake_occlusion = true;
+		uint8_t shadow_occluders_mask = 0;
 		Ref<VoxelBlockyLibraryBase> library;
 	};
 
@@ -98,6 +114,47 @@ private:
 	static Cache &get_tls_cache();
 };
 
+namespace blocky {
+
+inline bool is_face_visible_regardless_of_shape(const BakedModel &vt, const BakedModel &other_vt) {
+	// TODO Maybe we could get rid of `empty` here and instead set `culls_neighbors` to false during baking
+	return other_vt.empty || (other_vt.transparency_index > vt.transparency_index) || !other_vt.culls_neighbors;
+}
+
+// Does not account for other factors
+inline bool is_face_visible_according_to_shape(
+		const BakedLibrary &lib,
+		const BakedModel &vt,
+		const BakedModel &other_vt,
+		const int side
+) {
+	const unsigned int ai = vt.model.side_pattern_indices[side];
+	const unsigned int bi = other_vt.model.side_pattern_indices[Cube::g_opposite_side[side]];
+	// Patterns are not the same, and B does not occlude A
+	return (ai != bi) && !lib.get_side_pattern_occlusion(bi, ai);
+}
+
+inline bool is_face_visible(
+		const BakedLibrary &lib,
+		const BakedModel &vt,
+		const uint32_t other_voxel_id,
+		const int side
+) {
+	if (other_voxel_id < lib.models.size()) {
+		const BakedModel &other_vt = lib.models[other_voxel_id];
+		if (is_face_visible_regardless_of_shape(vt, other_vt)) {
+			return true;
+		} else {
+			return is_face_visible_according_to_shape(lib, vt, other_vt, side);
+		}
+	}
+	return true;
+}
+
+} // namespace blocky
+
 } // namespace zylann::voxel
+
+VARIANT_ENUM_CAST(zylann::voxel::VoxelMesherBlocky::Side)
 
 #endif // VOXEL_MESHER_BLOCKY_H

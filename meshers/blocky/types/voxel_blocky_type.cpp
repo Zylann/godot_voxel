@@ -13,6 +13,8 @@
 #include "../../../util/math/ortho_basis.h"
 #include "../../../util/profiling.h"
 #include "../../../util/string/format.h"
+#include "../blocky_material_indexer.h"
+#include "../blocky_model_baking_context.h"
 #include "../voxel_blocky_library_base.h"
 
 namespace zylann::voxel {
@@ -280,7 +282,9 @@ namespace {
 // (which could be identity, most of the time). So we essentially need to obtain the transformation that goes from the
 // default rotation to others.
 math::OrthoBasis get_baking_rotation_ortho_basis(
-		Ref<VoxelBlockyAttribute> rotation_attribute, unsigned int rotation_attribute_value) {
+		Ref<VoxelBlockyAttribute> rotation_attribute,
+		unsigned int rotation_attribute_value
+) {
 	const unsigned int default_value = rotation_attribute->get_default_value();
 
 	const unsigned int src_basis_index = rotation_attribute->get_ortho_rotation_index_from_value(default_value);
@@ -312,8 +316,15 @@ math::OrthoBasis get_baking_rotation_ortho_basis(
 
 } // namespace
 
-void VoxelBlockyType::bake(StdVector<VoxelBlockyModel::BakedData> &out_models, StdVector<VariantKey> &out_keys,
-		VoxelBlockyModel::MaterialIndexer &material_indexer, const VariantKey *specific_key, bool bake_tangents) const {
+void VoxelBlockyType::bake(
+		StdVector<blocky::BakedModel> &out_models,
+		StdVector<VariantKey> &out_keys,
+		blocky::MaterialIndexer &material_indexer,
+		const VariantKey *specific_key,
+		bool bake_tangents,
+		StdVector<Ref<VoxelBlockyFluid>> &indexed_fluids,
+		StdVector<blocky::BakedFluid> &baked_fluids
+) const {
 	ZN_PROFILE_SCOPE();
 
 	// Don't print warnings when used for previewing. It's ok to have momentarily invalid setups when the user is
@@ -344,24 +355,31 @@ void VoxelBlockyType::bake(StdVector<VoxelBlockyModel::BakedData> &out_models, S
 
 	unsigned int first_model_index = out_models.size();
 	out_models.resize(out_models.size() + keys.size());
-	Span<VoxelBlockyModel::BakedData> baked_models(&out_models[first_model_index], keys.size());
+	Span<blocky::BakedModel> baked_models(&out_models[first_model_index], keys.size());
 
 	for (unsigned int variant_index = 0; variant_index < baked_models.size(); ++variant_index) {
-		VoxelBlockyModel::BakedData &baked_model = baked_models[variant_index];
+		blocky::BakedModel &baked_model = baked_models[variant_index];
 		const VariantKey &key = keys[variant_index];
 
 		Ref<VoxelBlockyModel> model = get_variant(key);
 
+		// Note, model indices are not known at this stage. They will be known later when we update the ID map.
+
+		blocky::ModelBakingContext model_baking_context{
+			baked_model, bake_tangents, material_indexer, indexed_fluids, baked_fluids
+		};
+
 		if (model.is_valid()) {
 			// Variant specified explicitely, just use it
-			model->bake(baked_model, bake_tangents, material_indexer);
+			model->bake(model_baking_context);
 
 		} else if (_automatic_rotations && rotation_attribute.is_valid()) {
 			// Not specified, but the type has a rotation attribute.
 			// Assume rotation. Rotate from default.
 
 			ZN_ASSERT_CONTINUE_MSG(
-					key.attribute_names[rotation_attribute_index] == rotation_attribute->get_attribute_name(), "Bug?");
+					key.attribute_names[rotation_attribute_index] == rotation_attribute->get_attribute_name(), "Bug?"
+			);
 
 			// Pick reference model:
 			// The model with default rotation must have been assigned.
@@ -374,9 +392,9 @@ void VoxelBlockyType::bake(StdVector<VoxelBlockyModel::BakedData> &out_models, S
 					if (print_warnings) {
 						// If base model is null... variant will be empty. Should be a configuration warning. If empty
 						// is really desired, VoxelBlockyModelEmpty should be used.
-						WARN_PRINT(String(
-								"No model found for rotation variant ({0}) when baking {1} with name {2}. The model "
-								"will be empty.")
+						WARN_PRINT(String("No model found for rotation variant ({0}) when baking {1} with name {2}. "
+										  "The model "
+										  "will be empty.")
 										   .format(varray(ref_key.to_string(), get_class(), get_unique_name())));
 					}
 					continue;
@@ -389,22 +407,23 @@ void VoxelBlockyType::bake(StdVector<VoxelBlockyModel::BakedData> &out_models, S
 					get_baking_rotation_ortho_basis(rotation_attribute, key.attribute_values[rotation_attribute_index]);
 			Ref<VoxelBlockyModel> temp_model = ref_model->duplicate();
 			temp_model->rotate_ortho(trans_basis);
-			temp_model->bake(baked_model, bake_tangents, material_indexer);
+			temp_model->bake(model_baking_context);
 
 		} else {
 			// No variant specified, use base model.
 			if (_base_model.is_valid()) {
-				_base_model->bake(baked_model, bake_tangents, material_indexer);
+				_base_model->bake(model_baking_context);
 			} else if (print_warnings) {
 				WARN_PRINT(
 						String("No model found for variant {0} when baking {1} with name {2}. The model will be empty.")
-								.format(varray(key.to_string(), get_class(), get_unique_name())));
+								.format(varray(key.to_string(), get_class(), get_unique_name()))
+				);
 			}
 		}
 	}
 
 	if (_base_model.is_valid()) {
-		for (VoxelBlockyModel::BakedData &baked_model : baked_models) {
+		for (blocky::BakedModel &baked_model : baked_models) {
 			baked_model.color *= _base_model->get_color();
 			baked_model.transparency_index = _base_model->get_transparency_index();
 			baked_model.box_collision_mask |= _base_model->get_collision_mask();
@@ -416,7 +435,10 @@ void VoxelBlockyType::bake(StdVector<VoxelBlockyModel::BakedData> &out_models, S
 }
 
 bool try_get_attribute_index_from_name(
-		const StdVector<Ref<VoxelBlockyAttribute>> &attributes, const StringName &name, unsigned int &out_index) {
+		const StdVector<Ref<VoxelBlockyAttribute>> &attributes,
+		const StringName &name,
+		unsigned int &out_index
+) {
 	for (unsigned int i = 0; i < attributes.size(); ++i) {
 		const Ref<VoxelBlockyAttribute> &attrib = attributes[i];
 		if (attrib.is_valid() && attrib->get_attribute_name() == name) {
@@ -447,7 +469,8 @@ void VoxelBlockyType::get_configuration_warnings(PackedStringArray &out_warnings
 		if (attrib.is_null()) {
 			out_warnings.push_back(
 					String("{0} with name `{1}` has null attributes, consider removing them from the list")
-							.format(varray(get_class(), get_unique_name())));
+							.format(varray(get_class(), get_unique_name()))
+			);
 			break;
 		}
 	}
@@ -471,8 +494,8 @@ void VoxelBlockyType::get_configuration_warnings(PackedStringArray &out_warnings
 		}
 	}
 
-	if (unspecified_keys_count > 0) {
-		out_warnings.push_back(String("{0} with name '{1}' has {2} unspecified variants.")
+	if (unspecified_keys_count > 0 && _base_model.is_null()) {
+		out_warnings.push_back(String("{0} with name '{1}' has {2} unspecified variants and no base model.")
 									   .format(varray(get_class(), get_unique_name(), unspecified_keys_count)));
 	}
 }
@@ -480,18 +503,20 @@ void VoxelBlockyType::get_configuration_warnings(PackedStringArray &out_warnings
 #endif
 
 Ref<Mesh> VoxelBlockyType::get_preview_mesh(const VariantKey &key) const {
-	StdVector<VoxelBlockyModel::BakedData> baked_models;
+	StdVector<blocky::BakedModel> baked_models;
 	StdVector<Ref<Material>> materials;
-	VoxelBlockyModel::MaterialIndexer material_indexer{ materials };
+	blocky::MaterialIndexer material_indexer{ materials };
 	StdVector<VariantKey> keys;
 
 	// Assuming tangents are needed, which might not always be the case, but we won't waste much for just a preview
 	const bool require_tangents = true;
+	StdVector<Ref<VoxelBlockyFluid>> indexed_fluids;
+	StdVector<blocky::BakedFluid> baked_fluids;
 
-	bake(baked_models, keys, material_indexer, &key, true);
+	bake(baked_models, keys, material_indexer, &key, require_tangents, indexed_fluids, baked_fluids);
 
 	ZN_ASSERT_RETURN_V(baked_models.size() == 1, Ref<Mesh>());
-	const VoxelBlockyModel::BakedData &baked_model = baked_models[0];
+	const blocky::BakedModel &baked_model = baked_models[0];
 	Ref<Mesh> mesh = VoxelBlockyModel::make_mesh_from_baked_data(baked_model, require_tangents);
 
 	for (unsigned int surface_index = 0; surface_index < baked_model.model.surface_count; ++surface_index) {
@@ -521,7 +546,8 @@ void unordered_remove_duplicates(StdVector<T> &container, F equality) {
 
 void VoxelBlockyType::gather_and_sort_attributes(
 		const StdVector<Ref<VoxelBlockyAttribute>> &attributes_with_maybe_nulls,
-		StdVector<Ref<VoxelBlockyAttribute>> &out_attributes) {
+		StdVector<Ref<VoxelBlockyAttribute>> &out_attributes
+) {
 	ZN_PROFILE_SCOPE();
 
 	// Gather non-null attributes
@@ -533,9 +559,11 @@ void VoxelBlockyType::gather_and_sort_attributes(
 	}
 
 	unordered_remove_duplicates(
-			out_attributes, [](const Ref<VoxelBlockyAttribute> &a, const Ref<VoxelBlockyAttribute> &b) {
+			out_attributes,
+			[](const Ref<VoxelBlockyAttribute> &a, const Ref<VoxelBlockyAttribute> &b) {
 				return a->get_attribute_name() == b->get_attribute_name();
-			});
+			}
+	);
 
 	// Sort attributes by name for determinism
 	// TODO Should we just consider attribute slots rather than an unordered variable-length list of attributes? Or
@@ -543,8 +571,11 @@ void VoxelBlockyType::gather_and_sort_attributes(
 	VoxelBlockyAttribute::sort_by_name(to_span(out_attributes));
 }
 
-void VoxelBlockyType::generate_keys(const StdVector<Ref<VoxelBlockyAttribute>> &attributes,
-		StdVector<VariantKey> &out_keys, bool include_rotations) {
+void VoxelBlockyType::generate_keys(
+		const StdVector<Ref<VoxelBlockyAttribute>> &attributes,
+		StdVector<VariantKey> &out_keys,
+		bool include_rotations
+) {
 	ZN_PROFILE_SCOPE();
 
 	for (unsigned int i = 0; i < attributes.size(); ++i) {
@@ -664,8 +695,10 @@ void VoxelBlockyType::_b_set_attributes(TypedArray<VoxelBlockyAttribute> attribu
 	if (Engine::get_singleton()->is_editor_hint()) {
 		for (Ref<VoxelBlockyAttribute> &attrib : _attributes) {
 			if (attrib.is_valid()) {
-				attrib->disconnect(VoxelStringNames::get_singleton().changed,
-						callable_mp(this, &VoxelBlockyType::_on_attribute_changed));
+				attrib->disconnect(
+						VoxelStringNames::get_singleton().changed,
+						callable_mp(this, &VoxelBlockyType::_on_attribute_changed)
+				);
 			}
 		}
 	}
@@ -677,8 +710,10 @@ void VoxelBlockyType::_b_set_attributes(TypedArray<VoxelBlockyAttribute> attribu
 	if (Engine::get_singleton()->is_editor_hint()) {
 		for (Ref<VoxelBlockyAttribute> &attrib : _attributes) {
 			if (attrib.is_valid()) {
-				attrib->connect(VoxelStringNames::get_singleton().changed,
-						callable_mp(this, &VoxelBlockyType::_on_attribute_changed));
+				attrib->connect(
+						VoxelStringNames::get_singleton().changed,
+						callable_mp(this, &VoxelBlockyType::_on_attribute_changed)
+				);
 			}
 		}
 	}
@@ -764,19 +799,38 @@ void VoxelBlockyType::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_set_variant_models_data", "data"), &VoxelBlockyType::_b_set_variant_models_data);
 
 	ADD_PROPERTY(PropertyInfo(Variant::STRING_NAME, "unique_name"), "set_unique_name", "get_unique_name");
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "base_model", PROPERTY_HINT_RESOURCE_TYPE,
-						 VoxelBlockyModel::get_class_static()),
-			"set_base_model", "get_base_model");
-	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "attributes", PROPERTY_HINT_ARRAY_TYPE,
-						 MAKE_RESOURCE_TYPE_HINT(VoxelBlockyAttribute::get_class_static())),
-			"set_attributes", "get_attributes");
+	ADD_PROPERTY(
+			PropertyInfo(
+					Variant::OBJECT, "base_model", PROPERTY_HINT_RESOURCE_TYPE, VoxelBlockyModel::get_class_static()
+			),
+			"set_base_model",
+			"get_base_model"
+	);
+	ADD_PROPERTY(
+			PropertyInfo(
+					Variant::ARRAY,
+					"attributes",
+					PROPERTY_HINT_ARRAY_TYPE,
+					MAKE_RESOURCE_TYPE_HINT(VoxelBlockyAttribute::get_class_static())
+			),
+			"set_attributes",
+			"get_attributes"
+	);
 
 	// This property is only for saving, not for direct use by scripts or inspector.
-	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "_variant_models_data", PROPERTY_HINT_NONE, "",
-						 PROPERTY_USAGE_STORAGE
-								 // But editor is required so we can insert a custom editor instead of the property
-								 | PROPERTY_USAGE_EDITOR),
-			"_set_variant_models_data", "_get_variant_models_data");
+	ADD_PROPERTY(
+			PropertyInfo(
+					Variant::ARRAY,
+					"_variant_models_data",
+					PROPERTY_HINT_NONE,
+					"",
+					PROPERTY_USAGE_STORAGE
+							// But editor is required so we can insert a custom editor instead of the property
+							| PROPERTY_USAGE_EDITOR
+			),
+			"_set_variant_models_data",
+			"_get_variant_models_data"
+	);
 
 	BIND_CONSTANT(MAX_ATTRIBUTES);
 }

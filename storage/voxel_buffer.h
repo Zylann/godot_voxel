@@ -183,15 +183,26 @@ public:
 	void copy_channels_from(const VoxelBuffer &other);
 	void copy_channel_from(const VoxelBuffer &other, unsigned int channel_index);
 	void copy_channel_from(
-			const VoxelBuffer &other, Vector3i src_min, Vector3i src_max, Vector3i dst_min, unsigned int channel_index);
+			const VoxelBuffer &other,
+			Vector3i src_min,
+			Vector3i src_max,
+			Vector3i dst_min,
+			unsigned int channel_index
+	);
 
 	// Copy a region from a box of values, passed as a raw array.
 	// `src_size` is the total 3D size of the source box.
 	// `src_min` and `src_max` are the sub-region of that box we want to copy.
 	// `dst_min` is the lower corner where we want the data to be copied into the destination.
 	template <typename T>
-	void copy_channel_from(Span<const T> src, Vector3i src_size, Vector3i src_min, Vector3i src_max, Vector3i dst_min,
-			unsigned int channel_index) {
+	void copy_channel_from(
+			Span<const T> src,
+			Vector3i src_size,
+			Vector3i src_min,
+			Vector3i src_max,
+			Vector3i dst_min,
+			unsigned int channel_index
+	) {
 		ZN_ASSERT_RETURN(channel_index < MAX_CHANNELS);
 
 		Channel &channel = _channels[channel_index];
@@ -216,8 +227,14 @@ public:
 	// `dst_min` is the lower corner of where we want the source data to be stored.
 	// `src_min` and `src_max` is the sub-region of the source we want to copy.
 	template <typename T>
-	void copy_channel_to(Span<T> dst, Vector3i dst_size, Vector3i dst_min, Vector3i src_min, Vector3i src_max,
-			unsigned int channel_index) const {
+	void copy_channel_to(
+			Span<T> dst,
+			Vector3i dst_size,
+			Vector3i dst_min,
+			Vector3i src_min,
+			Vector3i src_max,
+			unsigned int channel_index
+	) const {
 		ZN_ASSERT_RETURN(channel_index < MAX_CHANNELS);
 
 		const Channel &channel = _channels[channel_index];
@@ -306,8 +323,13 @@ public:
 
 	// void action_func(Vector3i pos, Data0_T &inout_v0, Data1_T &inout_v1)
 	template <typename F, typename Data0_T, typename Data1_T>
-	void write_box_2_template(const Box3i &box, unsigned int channel_index0, unsigned int channel_index1, F action_func,
-			Vector3i offset) {
+	void write_box_2_template(
+			const Box3i &box,
+			unsigned int channel_index0,
+			unsigned int channel_index1,
+			F action_func,
+			Vector3i offset
+	) {
 		decompress_channel(channel_index0);
 		decompress_channel(channel_index1);
 		Channel &channel0 = _channels[channel_index0];
@@ -410,19 +432,36 @@ public:
 	}
 
 	inline uint64_t get_volume() const {
-		return Vector3iUtil::get_volume(_size);
+		return Vector3iUtil::get_volume_u64(_size);
 	}
 
-	bool get_channel_raw(unsigned int channel_index, Span<uint8_t> &slice) const;
-	bool get_channel_raw_read_only(unsigned int channel_index, Span<const uint8_t> &slice) const;
+	// Gets a slice aliasing the channel's data
+	bool get_channel_as_bytes(unsigned int channel_index, Span<uint8_t> &slice);
 
+	// Gets a read-only slice aliasing the channel's data
+	bool get_channel_as_bytes_read_only(unsigned int channel_index, Span<const uint8_t> &slice) const;
+
+	// Gets a slice aliasing the channel's data, reinterpreted to a specific type
 	template <typename T>
-	bool get_channel_data(unsigned int channel_index, Span<T> &dst) const {
+	bool get_channel_data(unsigned int channel_index, Span<T> &dst) {
 		Span<uint8_t> dst8;
-		ZN_ASSERT_RETURN_V(get_channel_raw(channel_index, dst8), false);
+		ZN_ASSERT_RETURN_V(get_channel_as_bytes(channel_index, dst8), false);
 		dst = dst8.reinterpret_cast_to<T>();
 		return true;
 	}
+
+	// Gets a read-only slice aliasing the channel's data, reinterpreted to a specific type
+	template <typename T>
+	bool get_channel_data_read_only(unsigned int channel_index, Span<const T> &dst) const {
+		Span<const uint8_t> dst8;
+		ZN_ASSERT_RETURN_V(get_channel_as_bytes_read_only(channel_index, dst8), false);
+		dst = dst8.reinterpret_cast_to<const T>();
+		return true;
+	}
+
+	// Overwrites contents of a channel with raw data. This skips default initialization of the channel, so it
+	// can be a little bit faster than using `decompress_channel`. The input data must have the right size.
+	void set_channel_from_bytes(const unsigned int channel_index, Span<const uint8_t> src);
 
 	void downscale_to(VoxelBuffer &dst, Vector3i src_min, Vector3i src_max, Vector3i dst_min) const;
 
@@ -459,7 +498,8 @@ public:
 		// TODO For `find`s and this kind of iteration, we may want to separate keys and values in FlatMap's internal
 		// storage, to reduce cache misses
 		for (FlatMapMoveOnly<Vector3i, VoxelMetadata>::ConstIterator it = _voxel_metadata.begin();
-				it != _voxel_metadata.end(); ++it) {
+			 it != _voxel_metadata.end();
+			 ++it) {
 			if (box.contains(it->key)) {
 				callback(it->key, it->value);
 			}
@@ -518,42 +558,50 @@ void get_unscaled_sdf(const VoxelBuffer &voxels, Span<float> sdf);
 void scale_and_store_sdf(VoxelBuffer &voxels, Span<float> sdf);
 void scale_and_store_sdf_if_modified(VoxelBuffer &voxels, Span<float> sdf, Span<const float> comparand);
 
-void paste(Span<const uint8_t> channels, //
-		const VoxelBuffer &src_buffer, //
-		VoxelBuffer &dst_buffer, //
-		const Vector3i dst_base_pos, //
-		bool with_metadata);
+void paste(
+		Span<const uint8_t> channels,
+		const VoxelBuffer &src_buffer,
+		VoxelBuffer &dst_buffer,
+		const Vector3i dst_base_pos,
+		bool with_metadata
+);
 
 // Paste if the source is not a certain value
-void paste_src_masked(Span<const uint8_t> channels, //
-		const VoxelBuffer &src_buffer, //
-		unsigned int src_mask_channel, //
-		uint64_t src_mask_value, //
-		VoxelBuffer &dst_buffer, //
-		const Vector3i dst_base_pos, //
-		bool with_metadata); //
+void paste_src_masked(
+		Span<const uint8_t> channels,
+		const VoxelBuffer &src_buffer,
+		unsigned int src_mask_channel,
+		uint64_t src_mask_value,
+		VoxelBuffer &dst_buffer,
+		const Vector3i dst_base_pos,
+		bool with_metadata
+);
 
 // Paste if the source is not a certain value, and the destination is a certain value
-void paste_src_masked_dst_writable_value(Span<const uint8_t> channels, //
-		const VoxelBuffer &src_buffer, //
-		unsigned int src_mask_channel, //
-		uint64_t src_mask_value, //
-		VoxelBuffer &dst_buffer, //
-		const Vector3i dst_base_pos, //
-		unsigned int dst_mask_channel, //
-		uint64_t dst_mask_value, //
-		bool with_metadata); //
+void paste_src_masked_dst_writable_value(
+		Span<const uint8_t> channels,
+		const VoxelBuffer &src_buffer,
+		unsigned int src_mask_channel,
+		uint64_t src_mask_value,
+		VoxelBuffer &dst_buffer,
+		const Vector3i dst_base_pos,
+		unsigned int dst_mask_channel,
+		uint64_t dst_mask_value,
+		bool with_metadata
+);
 
 // Paste if the source is not a certain value, and the specified bitset contains the destination value
-void paste_src_masked_dst_writable_bitarray(Span<const uint8_t> channels, //
-		const VoxelBuffer &src_buffer, //
-		unsigned int src_mask_channel, //
-		uint64_t src_mask_value, //
-		VoxelBuffer &dst_buffer, //
-		const Vector3i dst_base_pos, //
-		unsigned int dst_mask_channel, //
-		const DynamicBitset &bitarray, //
-		bool with_metadata);
+void paste_src_masked_dst_writable_bitarray(
+		Span<const uint8_t> channels,
+		const VoxelBuffer &src_buffer,
+		unsigned int src_mask_channel,
+		uint64_t src_mask_value,
+		VoxelBuffer &dst_buffer,
+		const Vector3i dst_base_pos,
+		unsigned int dst_mask_channel,
+		const DynamicBitset &bitarray,
+		bool with_metadata
+);
 
 } // namespace voxel
 } // namespace zylann

@@ -7,18 +7,21 @@ namespace zylann {
 
 class NoiseAnalysisWindow;
 
-class FastNoise2EditorPlugin : public EditorPlugin {
-	GDCLASS(FastNoise2EditorPlugin, EditorPlugin)
+class FastNoise2EditorPlugin : public zylann::godot::ZN_EditorPlugin {
+	GDCLASS(FastNoise2EditorPlugin, zylann::godot::ZN_EditorPlugin)
 public:
 	FastNoise2EditorPlugin();
 
-	String get_name() const override {
+protected:
+	String _zn_get_plugin_name() const override {
 		return "FastNoise2";
 	}
 
 private:
 	void init();
 	void _notification(int p_what);
+
+	static void _bind_methods() {}
 
 	NoiseAnalysisWindow *_noise_analysis_window = nullptr;
 };

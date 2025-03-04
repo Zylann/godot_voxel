@@ -4,9 +4,14 @@ on:
     branches: [ master ]
   pull_request:
     branches: [ master ]
+  workflow_call:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  # Not using `${{ github.workflow }}` because when called from another workflow, it takes the value of the caller,
+  # which leads to unexpected cancellation.
+  # See https://github.com/orgs/community/discussions/30708
+  # group: ${{ github.workflow }}-${{ github.ref }}
+  group: windows-extension-${{ github.ref }}
   cancel-in-progress: true
 
 # Global Cache Settings
@@ -51,7 +56,7 @@ jobs:
       # Upload cache on completion and check it out now
       # Editing this is pretty dangerous for Windows since it can break and needs to be properly tested with a fresh cache.
       - name: Load .scons_cache directory
-        id: windows-editor-cache
+        id: windows-gdextension-cache
         #uses: ${{matrix.cache_action}}
         uses: actions/cache@v4
         with:
