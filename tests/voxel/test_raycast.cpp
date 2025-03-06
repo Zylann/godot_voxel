@@ -1,5 +1,6 @@
 #include "test_raycast.h"
 #include "../../edition/raycast.h"
+#include "../../generators/graph/voxel_generator_graph.h"
 #include "../../meshers/blocky/voxel_blocky_library.h"
 #include "../../meshers/blocky/voxel_blocky_model_cube.h"
 #include "../../meshers/blocky/voxel_blocky_model_empty.h"
@@ -203,6 +204,82 @@ void test_raycast_blocky() {
 		const float expected_distance = ray_origin.y - (static_cast<float>(slab_position.y) + slab_height);
 		ZN_TEST_ASSERT(Math::is_equal_approx(hit->distance_along_ray, expected_distance));
 	}
+}
+
+void test_raycast_blocky_no_cache_graph() {
+	using namespace pg;
+
+	Ref<VoxelGeneratorGraph> graph;
+	graph.instantiate();
+
+	const int floor_height = 5;
+
+	const int air_id = 0;
+	const int cube_id = 1;
+
+	// Make flat world with ground below Y=5
+	{
+		Ref<VoxelGraphFunction> main = graph->get_main_function();
+
+		const uint32_t n_in_y = main->create_node(VoxelGraphFunction::NODE_INPUT_Y);
+		const uint32_t n_select = main->create_node(VoxelGraphFunction::NODE_SELECT);
+		const uint32_t n_out_type = main->create_node(VoxelGraphFunction::NODE_OUTPUT_TYPE);
+
+		const int threshold_param_index = 0;
+		main->set_node_param(n_select, threshold_param_index, floor_height);
+		main->set_node_default_input(n_select, 0, cube_id);
+		main->set_node_default_input(n_select, 1, air_id);
+
+		main->add_connection(n_in_y, 0, n_select, 2);
+		main->add_connection(n_select, 0, n_out_type, 0);
+
+		const CompilationResult result = graph->compile(false);
+		ZN_TEST_ASSERT(result.success);
+	}
+
+	VoxelData data;
+	data.set_bounds(Box3i::from_min_max(Vector3iUtil::create(-100), Vector3iUtil::create(100)));
+	data.set_generator(graph);
+	data.set_streaming_enabled(false);
+	data.set_full_load_completed(true);
+
+	Ref<VoxelMesherBlocky> mesher;
+	{
+		Ref<VoxelBlockyLibrary> library;
+		library.instantiate();
+
+		{
+			Ref<VoxelBlockyModelEmpty> air;
+			air.instantiate();
+			library->add_model(air);
+		}
+		{
+			Ref<VoxelBlockyModelCube> cube;
+			cube.instantiate();
+			library->add_model(cube);
+		}
+
+		library->bake();
+
+		mesher.instantiate();
+		mesher->set_library(library);
+	}
+
+	const Vector3 ray_origin(10.0, 20.0, 15.0);
+	const Vector3 ray_dir(0, -1, 0);
+
+	const uint32_t collision_mask = 0xffffffff;
+
+	const int v1 = graph->generate_single(Vector3i(0, floor_height, 0), VoxelBuffer::CHANNEL_TYPE).i;
+	const int v0 = graph->generate_single(Vector3i(0, floor_height - 1, 0), VoxelBuffer::CHANNEL_TYPE).i;
+
+	ZN_TEST_ASSERT(v1 == air_id);
+	ZN_TEST_ASSERT(v0 == cube_id);
+
+	Ref<VoxelRaycastResult> hit = raycast_blocky(data, **mesher, ray_origin, ray_dir, 20, collision_mask);
+
+	ZN_TEST_ASSERT(hit.is_valid());
+	ZN_TEST_ASSERT(hit->position == Vector3i(10, floor_height - 1, 15));
 }
 
 } // namespace zylann::voxel::tests
