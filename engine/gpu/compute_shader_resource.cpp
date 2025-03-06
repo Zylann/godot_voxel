@@ -148,7 +148,7 @@ void ComputeShaderResourceInternal::create_texture_2d(RenderingDevice &rd, const
 		float *wd = (float *)wd8;
 
 		for (unsigned int i = 0; i < width; ++i) {
-			const float t = curve_domain.min + curve_domain_range + i / static_cast<float>(width);
+			const float t = curve_domain.min + curve_domain_range * (i / static_cast<float>(width));
 			// TODO Thread-safety: `sample_baked` can actually be a WRITING method! The baked cache is lazily created
 			wd[i] = curve.sample_baked(t);
 			// print_line(String("X: {0}, Y: {1}").format(varray(t, wd[i])));
