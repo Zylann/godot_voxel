@@ -115,6 +115,17 @@ jobs:
         run:
           python modules/voxel/misc/instrument.py -d . -c modules/voxel/misc/instruments.json
 
+      # Add ANGLE support.
+      # This is not provided by default.
+      # See https://docs.godotengine.org/en/stable/contributing/development/compiling/compiling_for_windows.html#compiling-with-angle-support
+      - name: Add ANGLE
+        run: |
+          curl -LO "https://github.com/godotengine/godot-angle-static/releases/download/chromium%2F6601.2/godot-angle-static-x86_64-msvc-release.zip"
+          7z x godot-angle-static-x86_64-msvc-release.zip -oangle
+          dir
+          cd angle
+          dir
+
       # Compile with explicit flags.
       #
       # TODO `PYTHONIOENCODING` is not working!
@@ -128,7 +139,7 @@ jobs:
       - name: Compilation
         run: |
           set PYTHONIOENCODING=utf-8
-          scons verbose=yes warnings=all werror=yes platform=windows tests=no target=${{matrix.target}} dev_build=no precision=${{matrix.precision}} tracy=${{matrix.tracy}} production=yes "cache_path=${{github.workspace}}/.scons_cache/" cache_limit=${{env.SCONS_CACHE_LIMIT_GB}}
+          scons verbose=yes warnings=all werror=yes platform=windows tests=no target=${{matrix.target}} dev_build=no precision=${{matrix.precision}} tracy=${{matrix.tracy}} production=yes "cache_path=${{github.workspace}}/.scons_cache/" cache_limit=${{env.SCONS_CACHE_LIMIT_GB}} "angle_libs=${{github.workspace}}/angle"
 
       - name: "Rename executable"
         if: ${{ matrix.tracy == 'yes' }}
