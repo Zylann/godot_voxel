@@ -289,6 +289,8 @@ void RenderDetailTextureGPUTask::prepare(GPUTaskContext &ctx) {
 
 	// Make compute list
 
+	_uniform_sets_to_free.reserve(5 + modifiers.size());
+
 	const int compute_list_id = rd.compute_list_begin();
 
 	// Gather hits
@@ -310,6 +312,7 @@ void RenderDetailTextureGPUTask::prepare(GPUTaskContext &ctx) {
 		gather_hits_uniforms[5] = hit_positions_uniform;
 
 		const RID gather_hits_uniform_set_rid = uniform_set_create(rd, gather_hits_uniforms, gather_hits_shader_rid, 0);
+		_uniform_sets_to_free.push_back(gather_hits_uniform_set_rid);
 
 		rd.compute_list_bind_compute_pipeline(compute_list_id, _gather_hits_pipeline_rid);
 		rd.compute_list_bind_uniform_set(compute_list_id, gather_hits_uniform_set_rid, 0);
@@ -350,6 +353,7 @@ void RenderDetailTextureGPUTask::prepare(GPUTaskContext &ctx) {
 		}
 
 		const RID detail_generator_uniform_set = uniform_set_create(rd, detail_generator_uniforms, shader_rid, 0);
+		_uniform_sets_to_free.push_back(detail_generator_uniform_set);
 
 		rd.compute_list_bind_compute_pipeline(compute_list_id, _detail_generator_pipeline_rid);
 		rd.compute_list_bind_uniform_set(compute_list_id, detail_generator_uniform_set, 0);
@@ -402,6 +406,7 @@ void RenderDetailTextureGPUTask::prepare(GPUTaskContext &ctx) {
 
 		const RID detail_modifier_uniform_set =
 				uniform_set_create(rd, detail_modifier_uniforms, modifier_shader_rid, 0);
+		_uniform_sets_to_free.push_back(detail_modifier_uniform_set);
 
 		const RID pipeline_rid = _detail_modifier_pipelines[modifier_index];
 		rd.compute_list_bind_compute_pipeline(compute_list_id, pipeline_rid);
@@ -440,6 +445,7 @@ void RenderDetailTextureGPUTask::prepare(GPUTaskContext &ctx) {
 
 		const RID detail_normalmap_uniform_set_rid =
 				uniform_set_create(rd, detail_normalmap_uniforms, detail_normalmap_shader_rid, 0);
+		_uniform_sets_to_free.push_back(detail_normalmap_uniform_set_rid);
 
 		rd.compute_list_bind_compute_pipeline(compute_list_id, _detail_normalmap_pipeline_rid);
 		rd.compute_list_bind_uniform_set(compute_list_id, detail_normalmap_uniform_set_rid, 0);
@@ -470,6 +476,7 @@ void RenderDetailTextureGPUTask::prepare(GPUTaskContext &ctx) {
 		dilation_uniforms[1] = image1_uniform;
 		dilation_uniforms[2] = dilation_params_uniform;
 		const RID dilation_uniform_set_rid = uniform_set_create(rd, dilation_uniforms, dilation_shader_rid, 0);
+		_uniform_sets_to_free.push_back(dilation_uniform_set_rid);
 
 		rd.compute_list_bind_compute_pipeline(compute_list_id, _normalmap_dilation_pipeline_rid);
 		rd.compute_list_bind_uniform_set(compute_list_id, dilation_uniform_set_rid, 0);
@@ -506,6 +513,7 @@ void RenderDetailTextureGPUTask::prepare(GPUTaskContext &ctx) {
 		dilation_uniforms[2] = dilation_params_uniform;
 		// TODO Do I really have to create a new uniform set every time I modify just one of the passed values?
 		const RID dilation_uniform_set_rid = uniform_set_create(rd, dilation_uniforms, dilation_shader_rid, 0);
+		_uniform_sets_to_free.push_back(dilation_uniform_set_rid);
 
 		rd.compute_list_bind_uniform_set(compute_list_id, dilation_uniform_set_rid, 0);
 
@@ -547,6 +555,14 @@ PackedByteArray RenderDetailTextureGPUTask::collect_texture_and_cleanup(
 		free_rendering_device_rid(rd, _detail_normalmap_pipeline_rid);
 		free_rendering_device_rid(rd, _normalmap_dilation_pipeline_rid);
 		for (RID rid : _detail_modifier_pipelines) {
+			free_rendering_device_rid(rd, rid);
+		}
+
+		// This is not documented: from dev source, uniform sets are "automatically freed by their dependencies". So
+		// apparently we don't *have* to free them. However, I got a bug report where RID limit got exceeded after
+		// several minutes, unless those RIDs get freed after use... something odd is going on, but absence of
+		// documentation on the automatic behavior doesn't help.
+		for (RID rid : _uniform_sets_to_free) {
 			free_rendering_device_rid(rd, rid);
 		}
 

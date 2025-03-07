@@ -85,6 +85,7 @@ private:
 	RID _detail_normalmap_pipeline_rid;
 	RID _normalmap_dilation_pipeline_rid;
 	StdVector<RID> _detail_modifier_pipelines;
+	StdVector<RID> _uniform_sets_to_free;
 
 	GPUStorageBuffer _mesh_vertices_sb;
 	GPUStorageBuffer _mesh_indices_sb;
