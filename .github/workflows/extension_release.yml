@@ -72,6 +72,7 @@ jobs:
         run: |
           cd project
           find -maxdepth 1 -type f -delete
+          rm -r tests
           ls -l
 
       # Make package
