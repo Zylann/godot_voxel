@@ -5,7 +5,17 @@ This is a high-level list of features, changes and fixes that have been made ove
 
 At the moment, this module doesn't have a distinct release schedule, so this changelog follows Godot's version numbers and binary releases. Almost each version mentionned here should have an associated Git branch (for THIS repo, not Godot's) containing features at the time of the version. Backports aren't done so far.
 
-Semver is not yet in place, so each version can have breaking changes, although it shouldn't happen often across minor versions.
+I try to minimize breaking changes, but there are usually a few in each release which I list in detail, so watch out for that section.
+
+
+Dev 1.4.1 - ??/03/2025
+---------------------------------
+
+- Fixes
+    - `VoxelGeneratorGraph`: 
+        - Fixed `Curve` node was incorrect when used on the GPU.
+        - Fixed single-voxel queries not working with blocky voxels (notably fixes raycast in VoxelLodTerrain)
+
 
 1.4 - 03/03/2025 - tag `v1.4`
 ------------------------------
