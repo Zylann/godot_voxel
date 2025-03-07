@@ -11,7 +11,7 @@ jobs:
     uses: Zylann/godot_voxel/.github/workflows/extension_linux.yml@master
 
   build_windows:
-    uses: Zylann/godot_fast_noise_2/.github/workflows/windows.yml@master
+    uses: Zylann/godot_voxel/.github/workflows/extension_windows.yml@master
 
   dist:
     runs-on: ubuntu-22.04
