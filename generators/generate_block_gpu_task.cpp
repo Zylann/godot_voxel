@@ -151,8 +151,8 @@ void GenerateBlockGPUTask::prepare(GPUTaskContext &ctx) {
 		// Note, this internally locks RenderingDeviceVulkan's class mutex. Which means it could perhaps be used outside
 		// of the compute list (which already locks the class mutex until it ends). Thankfully, it uses a recursive
 		// Mutex (instead of BinaryMutex)
-		_generator_uniform_set =
-				zylann::godot::uniform_set_create(rd, generator_uniforms, generator_shader_rid, 0);
+		const RID generator_uniform_set = zylann::godot::uniform_set_create(rd, generator_uniforms, generator_shader_rid, 0);
+		_generator_uniform_sets.push_back(generator_uniform_set);
 
 		{
 			ZN_PROFILE_SCOPE_NAMED("compute_list_bind_compute_pipeline");
@@ -160,7 +160,7 @@ void GenerateBlockGPUTask::prepare(GPUTaskContext &ctx) {
 		}
 		{
 			ZN_PROFILE_SCOPE_NAMED("compute_list_bind_uniform_set");
-			rd.compute_list_bind_uniform_set(compute_list_id, _generator_uniform_set, 0);
+			rd.compute_list_bind_uniform_set(compute_list_id, generator_uniform_set, 0);
 		}
 
 		const Box3i &box = boxes_to_generate[box_index];
@@ -464,7 +464,10 @@ void GenerateBlockGPUTask::collect(GPUTaskContext &ctx) {
 	}
 
 	zylann::godot::free_rendering_device_rid(rd, _generator_pipeline_rid);
-	zylann::godot::free_rendering_device_rid(rd, _generator_uniform_set);
+
+	for (RID rid : _generator_uniform_sets) {
+		zylann::godot::free_rendering_device_rid(rd, rid);
+	}
 	
 	for (RID rid : _modifier_pipelines) {
 		zylann::godot::free_rendering_device_rid(rd, rid);
