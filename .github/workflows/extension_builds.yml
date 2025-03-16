@@ -115,11 +115,11 @@ jobs:
       #     APPLE_DEV_APP_ID: ${{ secrets.APPLE_DEV_APP_ID }}
 
       # Clean up compilation files
-      # - name: Windows - Delete compilation files
-      #   if: ${{ matrix.target.platform == 'windows' }}
-      #   shell: pwsh
-      #   run: |
-      #     Remove-Item bin/* -Include *.exp,*.lib,*.pdb -Force
+      - name: Windows - Delete compilation files
+        if: ${{ matrix.target.platform == 'windows' }}
+        shell: pwsh
+        run: |
+          Remove-Item project/addons/zylann.voxel/bin/* -Include *.exp,*.lib,*.pdb -Force
 
       # Upload the build
       - name: Upload Artifact
