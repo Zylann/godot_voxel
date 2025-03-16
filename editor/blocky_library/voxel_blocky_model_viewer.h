@@ -24,7 +24,7 @@ public:
 
 	// TODO GDX: `SceneTree::get_process_time` is not exposed, can't get delta time from `_notification`
 #ifdef ZN_GODOT_EXTENSION
-	void _process(double delta);
+	void _process(double delta) override;
 #endif
 
 private:
