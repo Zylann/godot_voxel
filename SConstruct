@@ -74,7 +74,7 @@ if is_editor_build:
 
 if env["platform"] == "macos":
     library = env.SharedLibrary(
-        "{}/{}.{}.framework/{}.{}".format(
+        "{}/{}{}.framework/{}{}".format(
             BIN_FOLDER,
             LIB_NAME,
             env['suffix'],
