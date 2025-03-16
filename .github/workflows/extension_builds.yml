@@ -1,13 +1,17 @@
 name: ⚙️ Extension Builds
 on:
-  # push:
-  #   branches: [ master ]
-  # pull_request:
-  #   branches: [ master ]
-  # workflow_call:
-  workflow_dispatch:
+  workflow_call:
+    inputs:
+      # TODO Unfortunately Github Actions does not support array inputs.
+      # So instead we use a JSON string containing an array, and we unpack it with fromJson
+      # https://github.com/orgs/community/discussions/11692
+      float-precisions:
+        required: false
+        type: string
+        default: "['single']"
 
 concurrency:
+  # Cancel in-progress builds when triggering new ones, to save resources.
   # Not using `${{ github.workflow }}` because when called from another workflow, it takes the value of the caller,
   # which leads to unexpected cancellation.
   # See https://github.com/orgs/community/discussions/30708
@@ -41,7 +45,7 @@ jobs:
             # { platform: web, arch: wasm32, os: ubuntu-22.04 }
           ]
         target-type: [editor, template_release]
-        float-precision: [single, double]
+        float-precision: ${{ fromJson(inputs.float-precisions) }}
 
         # include: # Also build a release version for these specific targets. Remove if you add template_release above.
         #   - target: { platform: linux, arch: x86_64, os: ubuntu-22.04 }
@@ -78,12 +82,13 @@ jobs:
       # Setup dependencies (Python, SCons, Android SDK...)
       - name: Setup godot-cpp
         # uses: ${{env.GODOT_CPP_PATH}}/.github/actions/setup-godot-cpp
+        # Unfortunately Github doesnt support variables in that path so we have to hardcode it
         uses: ./thirdparty/godot-cpp/.github/actions/setup-godot-cpp
         with:
           platform: ${{ matrix.target.platform }}
           em-version: 3.1.62
           # windows-compiler: msvc
-            
+      
       # Load build cache
       - name: Cache .scons_cache
         uses: actions/cache@v4
