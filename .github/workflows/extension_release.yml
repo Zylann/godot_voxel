@@ -1,7 +1,7 @@
 
 # Generates a GDExtension release package of the plugin.
 
-name: Make GDExtension release package
+name: 🚢 Make GDExtension release package
 on:
   workflow_dispatch:
 

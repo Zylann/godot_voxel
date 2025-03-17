@@ -1,4 +1,4 @@
-name: Build extension on code changes
+name: 📊 Build extension on code changes
 on:
   push:
     branches: [ master ]
