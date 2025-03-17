@@ -9,6 +9,8 @@ on:
 jobs:
   build_binaries:
     uses: Zylann/godot_voxel/.github/workflows/extension_builds.yml@master
+    with:
+      godot-cpp-branch: godot-4.4-stable
 
   dist:
     runs-on: ubuntu-22.04

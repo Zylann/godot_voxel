@@ -9,6 +9,11 @@ on:
         required: false
         type: string
         default: "['single']"
+      
+      godot-cpp-branch:
+        required: false
+        type: string
+        default: master
 
 concurrency:
   # Cancel in-progress builds when triggering new ones, to save resources.
@@ -76,7 +81,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: godotengine/godot-cpp
-          ref: master
+          ref: ${{inputs.godot-cpp-branch}}
           path: ${{env.GODOT_CPP_PATH}}
 
       # Setup dependencies (Python, SCons, Android SDK...)
@@ -94,7 +99,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/.scons-cache/
-          key: ${{ matrix.target.platform }}_${{ matrix.target.arch }}_${{ matrix.float-precision }}_${{ matrix.target-type }}_gdextension_cache
+          key: ${{ matrix.target.platform }}_${{ matrix.target.arch }}_${{ matrix.float-precision }}_${{ matrix.target-type }}_${{ inputs.godot-cpp-branch }}_gdextension_cache
       
       - name: Build
         shell: sh

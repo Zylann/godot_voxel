@@ -8,5 +8,7 @@ on:
 jobs:
   build_binaries:
     uses: Zylann/godot_voxel/.github/workflows/extension_builds.yml@master
-    # with:
-    #   float-precisions: [single, double]
+    with:
+      godot-cpp-branch: master
+      # float-precisions: [single, double]
+
