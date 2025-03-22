@@ -110,7 +110,7 @@ void test_raycast_blocky() {
 
 	const float slab_height = 0.3f;
 
-	const int air_id = 0;
+	// const int air_id = 0;
 	const int cube_id = 1;
 	const int slab_id = 2;
 
@@ -154,7 +154,7 @@ void test_raycast_blocky() {
 
 		vb.create(Vector3iUtil::create(1 << constants::DEFAULT_BLOCK_SIZE_PO2));
 		vb.fill_area(
-				1,
+				cube_id,
 				Vector3i(0, 0, 0),
 				Vector3i(vb.get_size().x, floor_height, vb.get_size().z),
 				VoxelBuffer::CHANNEL_TYPE

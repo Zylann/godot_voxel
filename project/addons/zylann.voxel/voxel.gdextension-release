@@ -4,8 +4,23 @@ entry_symbol = "voxel_library_init"
 compatibility_minimum = 4.4
 
 [libraries]
+; Relative paths ensure that our GDExtension can be placed anywhere in the project directory.
 
-windows.debug.x86_64 = "res://addons/zylann.voxel/bin/libvoxel.windows.editor.x86_64.dll"
-windows.release.x86_64 = "res://addons/zylann.voxel/bin/libvoxel.windows.template_release.x86_64.dll"
-linux.debug.x86_64 = "res://addons/zylann.voxel/bin/libvoxel.linux.editor.x86_64.dll"
-linux.release.x86_64 = "res://addons/zylann.voxel/bin/libvoxel.linux.template_release.x86_64.dll"
+macos.debug = "./bin/libvoxel.macos.editor.universal.framework/libvoxel.macos.editor.universal"
+macos.release = "./bin/libvoxel.macos.template_release.universal.framework/libvoxel.macos.template_release.universal"
+
+ios.debug = "./bin/libvoxel.ios.editor.arm64.dylib"
+ios.release = "./bin/libvoxel.ios.template_release.arm64.dylib"
+
+windows.debug.x86_64 = "./bin/libvoxel.windows.editor.x86_64.dll"
+windows.release.x86_64 = "./bin/libvoxel.windows.template_release.x86_64.dll"
+
+linux.debug.x86_64 = "./bin/libvoxel.linux.editor.x86_64.so"
+linux.release.x86_64 = "./bin/libvoxel.linux.template_release.x86_64.so"
+linux.debug.arm64 = "./bin/libvoxel.linux.editor.arm64.so"
+linux.release.arm64 = "./bin/libvoxel.linux.template_release.arm64.so"
+
+android.debug.x86_64 = "./bin/libvoxel.android.editor.x86_64.so"
+android.release.x86_64 = "./bin/libvoxel.android.template_release.x86_64.so"
+android.debug.arm64 = "./bin/libvoxel.android.editor.arm64.so"
+android.release.arm64 = "./bin/libvoxel.android.template_release.arm64.so"

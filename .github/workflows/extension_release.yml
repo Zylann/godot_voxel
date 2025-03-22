@@ -1,21 +1,20 @@
 
 # Generates a GDExtension release package of the plugin.
 
-name: Make GDExtension release package
+name: 🚢 Make GDExtension release package
 on:
   workflow_dispatch:
 
 
 jobs:
-  build_linux:
-    uses: Zylann/godot_voxel/.github/workflows/extension_linux.yml@master
-
-  build_windows:
-    uses: Zylann/godot_voxel/.github/workflows/extension_windows.yml@master
+  build_binaries:
+    uses: Zylann/godot_voxel/.github/workflows/extension_builds.yml@master
+    with:
+      godot-cpp-branch: godot-4.4-stable
 
   dist:
     runs-on: ubuntu-22.04
-    needs: [build_linux, build_windows]
+    needs: [build_binaries]
 
     steps:
       # Clone our repo
@@ -25,32 +24,19 @@ jobs:
       # Downloads all artifacts
       - uses: actions/download-artifact@v4
         with:
-          pattern: libvoxel.*
+          pattern: libvoxel
           path: project/addons/zylann.voxel/bin
 
       # Fix downloaded builds:
       # download-artifact does not just download the file we want:
       # it also creates a folder of the same name, and then puts the contents in it.
       # See https://github.com/actions/download-artifact/issues/141
+      # In the present case, we want the contents instead of the folder.
       - name: "Fix downloaded artifacts"
         run: |
           cd project/addons/zylann.voxel/bin
-
-          mv libvoxel.linux.editor.x86_64.so temp
-          mv temp/libvoxel.linux.editor.x86_64.so libvoxel.linux.editor.x86_64.so
-          rm -d temp
-
-          mv libvoxel.linux.template_release.x86_64.so temp
-          mv temp/libvoxel.linux.template_release.x86_64.so libvoxel.linux.template_release.x86_64.so
-          rm -d temp
-
-          mv libvoxel.windows.editor.x86_64.dll temp
-          mv temp/libvoxel.windows.editor.x86_64.dll libvoxel.windows.editor.x86_64.dll
-          rm -d temp
-
-          mv libvoxel.windows.template_release.x86_64.dll temp
-          mv temp/libvoxel.windows.template_release.x86_64.dll libvoxel.windows.template_release.x86_64.dll
-          rm -d temp
+          mv -v libvoxel/* .
+          rm -d libvoxel
 
       # Copy license
       - name: "Copy license"
