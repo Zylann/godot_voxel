@@ -96,15 +96,15 @@ By default, the `Add` node does nothing because its `b` port is not connected to
 
 (note: I used `Add` with a negative value for `b`, but you can also use a `Subtract` node to get the same result).
 
+Making a flat plane also has a shortcut node, `SdfPlane`, which outputs the SDF of a flat plane in one go (equivalent to `y - height`).
+
 #### Noise
 
 A flat plane is simple but a bit boring, so one typical way to generate a terrain is adding good old fractal noise. You can do this in 2D (heightmap) or 3D (volumetric).
 The 2D approach is simpler, as we only need to take our previous setup, and add 2D noise to the result. Also, since noise is generated in the range [-1 to 1], we also need a multiplier to make it larger (`sdf = y - height + noise2d(x, y) * noise_multiplier`).
 
-There are several types of noise available, each with their own parameters. At time of writing, `FastNoise2D` noise is the best option. `Noise2D` works too but it is slower and more limited (it uses Godot's `OpenSimplexNoise` class).
-
-!!! note
-    After you create this node, a new `FastNoiseLite` resource must be created in its parameters. If that resource is not setup, an error will occur and no voxels will be generated.
+There are several types of noise available, each with their own parameters. At time of writing, `FastNoise2D` noise is the best option. `Noise2D` works too but it is slightly slower (in particular when using Voxel Tools as a GDExtension).
+After you create this node, a new `FastNoiseLite` resource must be created in its parameters.
 
 ![Voxel graph 2D noise](images/voxel_graph_noise2d.webp)
 
@@ -112,12 +112,12 @@ There are several types of noise available, each with their own parameters. At t
 
 ![Voxel graph 3D noise](images/voxel_graph_noise3d_not_expanded.webp)
 
-You might notice that despite it being 3D, it still appears to produce a heightmap. That's because the addition of `Y` in the graph is gradually offsetting noise values towards higher and higher values when going towards the sky, which makes the surface fade away quickly. So if we multiply `Y` with a small value, it will increase slower, letting the 3D noise expand more (`sdf = y * height_multiplier - height + noise3d(x, y, z)`):
+You might notice that despite it being 3D, it still appears to produce a heightmap. That's because the addition of `Y` in the graph is gradually offsetting noise values towards higher and higher values when going towards the sky, which makes the surface fade away quickly. We can either multiply `Y` with a value smaller than 1, or we can increase the amplitude of the noise (`sdf = y - height + amplitude * noise3d(x, y, z)`):
 
 ![Voxel graph 3D noise expanded](images/voxel_graph_noise3d_expanded.webp)
 
 !!! note
-    Some nodes have default connections. For example, with 3D noise, if you don't connect inputs, they will automatically assume (X,Y,Z) voxel position by default. If you need a specific constant in an input, this behavior can be opted out by turning off `autoconnect_default_inputs` in the inspector.
+    Some nodes have default connections. For example, with 3D noise, if you don't connect inputs, they will automatically assume (X,Y,Z) voxel position by default (see "Auto" labels). If you need a constant in an input, this behavior can be opted out by turning off `autoconnect_default_inputs` in the inspector, or connecting another node.
 
 #### Planet
 
@@ -129,7 +129,9 @@ We cannot really use 2D noise here, so we can add 3D noise as well:
 
 ![Voxel graph sdf sphere with noise](images/voxel_graph_sphere_with_noise.webp)
 
-However you might still want a heightmap-like result. One way to do this is to feed the 3D noise normalized coordinates, instead of global ones. Picking a ridged fractal can also give an eroded look, although it requires to negate the noise multiplier node to invert its distance field (if we leave it positive it will look puffed instead of eroded).
+If you increase 3D noise amplitude like before, you might notice floating chunks. You should be able to tune the right amount to make them less likely. Another way is to use a height-based approach: project coordinates on the sphere, instead of global 3D coordinates. Then treat the output of noise as a height.
+
+Picking a ridged fractal can also give an eroded look, although it requires to negate the noise to invert its distance field (if we leave it positive it will look puffed instead of eroded).
 
 ![Voxel graph sdf sphere with height noise](images/voxel_graph_sphere_with_noise2.webp)
 
