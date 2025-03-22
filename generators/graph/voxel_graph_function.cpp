@@ -263,8 +263,8 @@ void update_function(ProgramGraph &graph, uint32_t node_id, StdVector<ProgramGra
 ProgramGraph::Node *duplicate_node(
 		ProgramGraph &dst_graph,
 		const ProgramGraph::Node &src_node,
-		bool duplicate_resources,
-		uint32_t id
+		const bool duplicate_resources,
+		const uint32_t id
 ) {
 	ProgramGraph::Node *dst_node = dst_graph.create_node(src_node.type_id, id);
 	ZN_ASSERT(dst_node != nullptr);
@@ -275,8 +275,7 @@ ProgramGraph::Node *duplicate_node(
 		const ProgramGraph::Port &src_input = src_node.inputs[i];
 		ProgramGraph::Port &dst_input = dst_node->inputs[i];
 		dst_input.dynamic_name = src_input.dynamic_name;
-		// Should this be copied?
-		// dst_input.autoconnect_hint = src_input.autoconnect_hint;
+		dst_input.autoconnect_hint = src_input.autoconnect_hint;
 	}
 
 	dst_node->outputs.resize(src_node.outputs.size());

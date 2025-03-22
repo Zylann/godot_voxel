@@ -15,6 +15,7 @@ Dev 1.4.1 - ??/03/2025
     - `VoxelGeneratorGraph`: 
         - Fixed `Curve` node was incorrect when used on the GPU.
         - Fixed single-voxel queries not working with blocky voxels (notably fixes raycast in VoxelLodTerrain)
+        - Editor: auto-connects stopped working when copying a node having some (like noise; workaround was to reload the graph)
 
 
 1.4 - 03/03/2025 - tag `v1.4`
