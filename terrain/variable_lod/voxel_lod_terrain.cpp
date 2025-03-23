@@ -1847,8 +1847,10 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 		// Notify streaming system so it can subdivide LODs as they load
 		VoxelLodTerrainUpdateData::ClipboxStreamingState &cs = _update_data->state.clipbox_streaming;
 		MutexLock mlock(cs.loaded_mesh_blocks_mutex);
-		cs.loaded_mesh_blocks.push_back(VoxelLodTerrainUpdateData::LoadedMeshBlockEvent{
-				ob.position, ob.lod, first_visual_load, first_collision_load });
+		cs.loaded_mesh_blocks.push_back(
+				VoxelLodTerrainUpdateData::LoadedMeshBlockEvent{
+						ob.position, ob.lod, first_visual_load, first_collision_load }
+		);
 	}
 
 	// -------- Part where we invoke Godot functions ---------
@@ -2780,6 +2782,18 @@ bool VoxelLodTerrain::get_generator_use_gpu() const {
 	return _update_data->settings.generator_use_gpu;
 }
 
+void VoxelLodTerrain::set_cache_generated_blocks(const bool enabled) {
+	if (enabled == _update_data->settings.cache_generated_blocks) {
+		return;
+	}
+	_update_data->settings.cache_generated_blocks = enabled;
+	update_configuration_warnings();
+}
+
+bool VoxelLodTerrain::get_cache_generated_blocks() const {
+	return _update_data->settings.cache_generated_blocks;
+}
+
 #ifdef TOOLS_ENABLED
 
 void VoxelLodTerrain::get_configuration_warnings(PackedStringArray &warnings) const {
@@ -2795,6 +2809,22 @@ void VoxelLodTerrain::get_configuration_warnings(PackedStringArray &warnings) co
 		warnings.append(
 				ZN_TTR("The assigned {0} does not support LOD.").format(varray(VoxelGenerator::get_class_static()))
 		);
+	}
+
+	Ref<VoxelStream> stream = get_stream();
+	if (stream.is_valid()) {
+		if (stream->get_save_generator_output()) {
+			if (is_full_load_mode_enabled()) {
+				warnings.append(ZN_TTR("The assigned {0} is set to save generator output, but it is not supported when "
+									   "`full_load_mode` is enabled.")
+										.format(varray(VoxelStream::get_class_static())));
+			}
+			if (get_cache_generated_blocks() == false) {
+				warnings.append(ZN_TTR("The assigned {0} is set to save generator output, but it is not supported when "
+									   "`cache_generated_blocks` is disabled.")
+										.format(varray(VoxelStream::get_class_static())));
+			}
+		}
 	}
 
 	Ref<VoxelMesher> mesher = get_mesher();
@@ -3729,6 +3759,9 @@ void VoxelLodTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_streaming_system", "system"), &Self::set_streaming_system);
 	ClassDB::bind_method(D_METHOD("get_streaming_system"), &Self::get_streaming_system);
 
+	ClassDB::bind_method(D_METHOD("set_cache_generated_blocks", "enabled"), &Self::set_cache_generated_blocks);
+	ClassDB::bind_method(D_METHOD("get_cache_generated_blocks"), &Self::get_cache_generated_blocks);
+
 	// Debug
 
 	ClassDB::bind_method(D_METHOD("get_statistics"), &Self::_b_get_statistics);
@@ -3869,6 +3902,11 @@ void VoxelLodTerrain::_bind_methods() {
 			PropertyInfo(Variant::BOOL, "full_load_mode_enabled"),
 			"set_full_load_mode_enabled",
 			"is_full_load_mode_enabled"
+	);
+	ADD_PROPERTY(
+			PropertyInfo(Variant::BOOL, "cache_generated_blocks"),
+			"set_cache_generated_blocks",
+			"get_cache_generated_blocks"
 	);
 	ADD_PROPERTY(
 			PropertyInfo(Variant::BOOL, "threaded_update_enabled"),
