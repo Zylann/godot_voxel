@@ -7,6 +7,9 @@
 #include "../gpu/compute_shader_parameters.h"
 #include "../voxel_engine.h"
 #include "render_detail_texture_task.h"
+// #ifdef DEBUG_ENABLED
+// #include "../../util/string/format.h"
+// #endif
 
 #include "../../util/godot/classes/rd_sampler_state.h"
 #include "../../util/godot/classes/rd_shader_spirv.h"
@@ -446,6 +449,9 @@ void RenderDetailTextureGPUTask::prepare(GPUTaskContext &ctx) {
 		const RID detail_normalmap_uniform_set_rid =
 				uniform_set_create(rd, detail_normalmap_uniforms, detail_normalmap_shader_rid, 0);
 		_uniform_sets_to_free.push_back(detail_normalmap_uniform_set_rid);
+// #ifdef DEV_ENABLED
+// 		_uniform_sets_expected_to_be_freed.push_back(detail_normalmap_uniform_set_rid);
+// #endif
 
 		rd.compute_list_bind_compute_pipeline(compute_list_id, _detail_normalmap_pipeline_rid);
 		rd.compute_list_bind_uniform_set(compute_list_id, detail_normalmap_uniform_set_rid, 0);
@@ -477,6 +483,9 @@ void RenderDetailTextureGPUTask::prepare(GPUTaskContext &ctx) {
 		dilation_uniforms[2] = dilation_params_uniform;
 		const RID dilation_uniform_set_rid = uniform_set_create(rd, dilation_uniforms, dilation_shader_rid, 0);
 		_uniform_sets_to_free.push_back(dilation_uniform_set_rid);
+// #ifdef DEV_ENABLED
+// 		_uniform_sets_expected_to_be_freed.push_back(dilation_uniform_set_rid);
+// #endif
 
 		rd.compute_list_bind_compute_pipeline(compute_list_id, _normalmap_dilation_pipeline_rid);
 		rd.compute_list_bind_uniform_set(compute_list_id, dilation_uniform_set_rid, 0);
@@ -514,6 +523,9 @@ void RenderDetailTextureGPUTask::prepare(GPUTaskContext &ctx) {
 		// TODO Do I really have to create a new uniform set every time I modify just one of the passed values?
 		const RID dilation_uniform_set_rid = uniform_set_create(rd, dilation_uniforms, dilation_shader_rid, 0);
 		_uniform_sets_to_free.push_back(dilation_uniform_set_rid);
+// #ifdef DEV_ENABLED
+// 		_uniform_sets_expected_to_be_freed.push_back(dilation_uniform_set_rid);
+// #endif
 
 		rd.compute_list_bind_uniform_set(compute_list_id, dilation_uniform_set_rid, 0);
 
@@ -547,6 +559,16 @@ PackedByteArray RenderDetailTextureGPUTask::collect_texture_and_cleanup(
 	{
 		ZN_PROFILE_SCOPE_NAMED("Cleanup");
 
+		// Godot "auto-frees" uniform sets when their dependencies get freed.
+		// But sometimes it doesn't, and can't guess that it should (like when re-using resources).
+		// So we have to manually check what we should or should not free.
+		// See https://github.com/godotengine/godot/issues/103073
+		// Instead of adding more debug checks, we can actually free uniform sets first,
+		// before Godot gets to auto-free them afterwards, which is simpler.
+		for (RID rid : _uniform_sets_to_free) {
+			free_rendering_device_rid(rd, rid);
+		}
+
 		free_rendering_device_rid(rd, _normalmap_texture0_rid);
 		free_rendering_device_rid(rd, _normalmap_texture1_rid);
 
@@ -558,13 +580,14 @@ PackedByteArray RenderDetailTextureGPUTask::collect_texture_and_cleanup(
 			free_rendering_device_rid(rd, rid);
 		}
 
-		// This is not documented: from dev source, uniform sets are "automatically freed by their dependencies". So
-		// apparently we don't *have* to free them. However, I got a bug report where RID limit got exceeded after
-		// several minutes, unless those RIDs get freed after use... something odd is going on, but absence of
-		// documentation on the automatic behavior doesn't help.
-		for (RID rid : _uniform_sets_to_free) {
-			free_rendering_device_rid(rd, rid);
-		}
+// #ifdef DEV_ENABLED
+// 		for (unsigned int i = 0; i < _uniform_sets_expected_to_be_freed.size(); ++i) {
+// 			const RID rid = _uniform_sets_expected_to_be_freed[i];
+// 			if(rd.uniform_set_is_valid(rid)) {
+// 				ZN_PRINT_ERROR(format("Uniform Set #{} wasn't freed by Godot", i));
+// 			}
+// 		}
+// #endif
 
 		storage_buffer_pool.recycle(_mesh_vertices_sb);
 		storage_buffer_pool.recycle(_mesh_indices_sb);
