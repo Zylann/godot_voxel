@@ -12,6 +12,7 @@ Dev 1.4.1 - ??/03/2025
 ---------------------------------
 
 - Fixes
+    - Fixed leak when GPU is enabled for voxel generation or detail normalmap rendering, which could lead to a crash after a while
     - `VoxelGeneratorGraph`: 
         - Fixed `Curve` node was incorrect when used on the GPU.
         - Fixed single-voxel queries not working with blocky voxels (notably fixes raycast in VoxelLodTerrain)
