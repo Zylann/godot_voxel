@@ -1,5 +1,6 @@
 #include "voxel_tool_multipass_generator.h"
 #include "../../edition/funcs.h"
+#include "../../storage/voxel_buffer_gd.h"
 #include "../../util/containers/dynamic_bitset.h"
 #include "../../util/godot/core/packed_arrays.h"
 #include "../../util/string/format.h"
@@ -278,6 +279,24 @@ void VoxelToolMultipassGenerator::do_path(Span<const Vector3> positions, Span<co
 
 		op();
 	}
+}
+
+void VoxelToolMultipassGenerator::set_voxel_metadata(Vector3i pos, Variant meta) {
+	Vector3i rpos;
+	Block *block = get_block_and_relative_position(pos, rpos);
+	if (block == nullptr) {
+		return;
+	}
+	godot::set_voxel_metadata(block->voxels, rpos, meta);
+}
+
+Variant VoxelToolMultipassGenerator::get_voxel_metadata(Vector3i pos) const {
+	Vector3i rpos;
+	Block *block = get_block_and_relative_position(pos, rpos);
+	if (block == nullptr) {
+		return Variant();
+	}
+	return godot::get_voxel_metadata(block->voxels, rpos);
 }
 
 void VoxelToolMultipassGenerator::_bind_methods() {
