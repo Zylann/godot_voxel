@@ -167,6 +167,13 @@
 				[code]collision_mask[/code] is currently only used with blocky voxels. It is combined with [member VoxelBlockyModel.collision_mask] to decide which voxel types the ray can collide with.
 			</description>
 		</method>
+		<method name="set_raycast_normal_enabled">
+			<return type="void" />
+			<param index="0" name="enabled" type="bool" />
+			<description>
+				Sets whether [method raycast] will compute hit normals. This is true by default.
+			</description>
+		</method>
 		<method name="set_voxel">
 			<return type="void" />
 			<param index="0" name="pos" type="Vector3i" />
