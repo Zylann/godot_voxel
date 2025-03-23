@@ -18,7 +18,7 @@ Type                                                                      | Name
 
 ### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_channel"></span> **channel** = 1
 
-Channel that will be used to generate the ground.
+Channel that will be used to generate the ground. Use [VoxelBuffer.CHANNEL_SDF](VoxelBuffer.md#i_CHANNEL_SDF) for smooth terrain, other channels for blocky.
 
 ### [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_height"></span> **height** = 0.0
 
@@ -26,6 +26,6 @@ Altitude of the ground.
 
 ### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_voxel_type"></span> **voxel_type** = 1
 
-If [VoxelGeneratorFlat.channel](VoxelGeneratorFlat.md#i_channel) is set to [VoxelBuffer.CHANNEL_TYPE](VoxelBuffer.md#i_CHANNEL_TYPE), this value will be used to fill ground voxels.
+If [VoxelGeneratorFlat.channel](VoxelGeneratorFlat.md#i_channel) is set to any channel other than [VoxelBuffer.CHANNEL_SDF](VoxelBuffer.md#i_CHANNEL_SDF), this value will be used to fill ground voxels, while air voxels will be set to 0.
 
-_Generated on Aug 27, 2024_
+_Generated on Mar 23, 2025_

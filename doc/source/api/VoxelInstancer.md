@@ -6,7 +6,7 @@ Spawns items on top of voxel surfaces.
 
 ## Description: 
 
-Add-on to voxel nodes, allowing to spawn elements on the surface. These elements are rendered with hardware instancing, can have collisions, and also be persistent. It must be child of a voxel node.
+Add-on to voxel nodes, allowing to spawn static elements on the surface. These elements are rendered with hardware instancing, can have collisions, and also be persistent. It must be child of a voxel node.
 
 ## Properties: 
 
@@ -35,8 +35,8 @@ Return                                                                          
 
 enum **UpMode**: 
 
-- <span id="i_UP_MODE_POSITIVE_Y"></span>**UP_MODE_POSITIVE_Y** = **0**
-- <span id="i_UP_MODE_SPHERE"></span>**UP_MODE_SPHERE** = **1**
+- <span id="i_UP_MODE_POSITIVE_Y"></span>**UP_MODE_POSITIVE_Y** = **0** --- Up is towards the positive Y axis. This is the default assumption in Godot.
+- <span id="i_UP_MODE_SPHERE"></span>**UP_MODE_SPHERE** = **1** --- Up is opposite from the direction where the terrain's origin is. May be used if your terrain is a planet for example.
 
 enum **DebugDrawFlag**: 
 
@@ -53,11 +53,11 @@ enum **DebugDrawFlag**:
 
 ### [VoxelInstanceLibrary](VoxelInstanceLibrary.md)<span id="i_library"></span> **library**
 
-*(This property has no documentation)*
+Library from which instances to spawn will be taken from.
 
 ### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_up_mode"></span> **up_mode** = 0
 
-*(This property has no documentation)*
+Where to consider the "up" direction is on the terrain when generating instances. See also [VoxelInstanceGenerator](VoxelInstanceGenerator.md).
 
 ## Method Descriptions
 
@@ -89,4 +89,4 @@ enum **DebugDrawFlag**:
 
 *(This method has no documentation)*
 
-_Generated on Aug 27, 2024_
+_Generated on Mar 23, 2025_

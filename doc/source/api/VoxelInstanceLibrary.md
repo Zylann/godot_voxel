@@ -4,6 +4,15 @@ Inherits: [Resource](https://docs.godotengine.org/en/stable/classes/class_resour
 
 Contains a list of models that can be used by [VoxelInstancer](VoxelInstancer.md), associated with a unique ID.
 
+## Properties: 
+
+
+Type                                                                      | Name                                 | Default 
+------------------------------------------------------------------------- | ------------------------------------ | --------
+[Array](https://docs.godotengine.org/en/stable/classes/class_array.html)  | [_data](#i__data)                    | [0]     
+[VoxelInstanceLibraryItem](VoxelInstanceLibraryItem.md)                   | [_selected_item](#i__selected_item)  |         
+<p></p>
+
 ## Methods: 
 
 
@@ -20,6 +29,16 @@ Return                                                                          
 ## Constants: 
 
 - <span id="i_MAX_ID"></span>**MAX_ID** = **65535**
+
+## Property Descriptions
+
+### [Array](https://docs.godotengine.org/en/stable/classes/class_array.html)<span id="i__data"></span> **_data** = [0]
+
+*(This property has no documentation)*
+
+### [VoxelInstanceLibraryItem](VoxelInstanceLibraryItem.md)<span id="i__selected_item"></span> **_selected_item**
+
+*(This property has no documentation)*
 
 ## Method Descriptions
 
@@ -47,4 +66,4 @@ Return                                                                          
 
 *(This method has no documentation)*
 
-_Generated on Aug 27, 2024_
+_Generated on Mar 23, 2025_
