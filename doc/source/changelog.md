@@ -11,12 +11,15 @@ I try to minimize breaking changes, but there are usually a few in each release 
 Dev 1.4.1 - ??/03/2025
 ---------------------------------
 
+- `VoxelToolMultipassGenerator`: implemented `get/set_voxel_metadata`
+
 - Fixes
     - Fixed leak when GPU is enabled for voxel generation or detail normalmap rendering, which could lead to a crash after a while
     - `VoxelGeneratorGraph`: 
         - Fixed `Curve` node was incorrect when used on the GPU.
         - Fixed single-voxel queries not working with blocky voxels (notably fixes raycast in VoxelLodTerrain)
         - Editor: auto-connects stopped working when copying a node having some (like noise; workaround was to reload the graph)
+    - `VoxelGeneratorMultipassCB`: Fixed voxel metadata wasn't preserved when outputting final blocks
 
 
 1.4 - 03/03/2025 - tag `v1.4`
