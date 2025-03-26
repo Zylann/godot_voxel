@@ -130,7 +130,7 @@ void VoxelBlockyTypeLibrary::update_id_map(StdVector<VoxelID> &id_map, StdVector
 	for (size_t i = 0; i < _types.size(); ++i) {
 		Ref<VoxelBlockyType> type = _types[i];
 
-		if (type == nullptr) {
+		if (type.is_null()) {
 			continue;
 		}
 
