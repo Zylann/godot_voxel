@@ -207,7 +207,7 @@ Error Data::_load_from_file(String fpath) {
 
 	Error open_err;
 	Ref<FileAccess> f_ref = godot::open_file(fpath, FileAccess::READ, open_err);
-	if (f_ref == nullptr) {
+	if (f_ref.is_null()) {
 		return open_err;
 	}
 	FileAccess &f = **f_ref;
