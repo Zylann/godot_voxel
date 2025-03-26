@@ -139,7 +139,7 @@ jobs:
       - name: Compilation
         run: |
           set PYTHONIOENCODING=utf-8
-          scons verbose=yes warnings=all werror=yes platform=windows tests=no target=${{matrix.target}} dev_build=no precision=${{matrix.precision}} tracy=${{matrix.tracy}} production=yes "cache_path=${{github.workspace}}/.scons_cache/" cache_limit=${{env.SCONS_CACHE_LIMIT_GB}} "angle_libs=${{github.workspace}}/angle"
+          scons verbose=yes warnings=all werror=yes strict_checks=yes strict_checks=yes platform=windows tests=no target=${{matrix.target}} dev_build=no precision=${{matrix.precision}} tracy=${{matrix.tracy}} production=yes "cache_path=${{github.workspace}}/.scons_cache/" cache_limit=${{env.SCONS_CACHE_LIMIT_GB}} "angle_libs=${{github.workspace}}/angle"
 
       - name: "Rename executable"
         if: ${{ matrix.tracy == 'yes' }}
