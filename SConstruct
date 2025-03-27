@@ -12,7 +12,7 @@ import voxel_version
 LIB_NAME = "libvoxel"
 BIN_FOLDER = "project/addons/zylann.voxel/bin"
 
-voxel_version.generate_version_header()
+voxel_version.generate_version_header(False)
 
 # TODO Enhancement: not sure how to provide this as a SCons option since we get our environment *by running GodotCpp*...
 #env_vars.Add(PathVariable("godot_cpp_path", "Path to the GodotCpp library source code", None, PathVariable.PathIsDir))

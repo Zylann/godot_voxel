@@ -95,6 +95,18 @@ int VoxelEngine::get_version_patch() const {
 	return VOXEL_VERSION_PATCH;
 }
 
+String VoxelEngine::get_version_edition() const {
+	return VOXEL_VERSION_EDITION;
+}
+
+String VoxelEngine::get_version_status() const {
+	return VOXEL_VERSION_STATUS;
+}
+
+String VoxelEngine::get_version_git_hash() const {
+	return VOXEL_VERSION_GIT_HASH;
+}
+
 Dictionary to_dict(const zylann::voxel::VoxelEngine::Stats::ThreadPoolStats &stats) {
 	Dictionary d;
 	d["tasks"] = stats.tasks;
@@ -211,6 +223,9 @@ void VoxelEngine::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_version_major"), &VoxelEngine::get_version_major);
 	ClassDB::bind_method(D_METHOD("get_version_minor"), &VoxelEngine::get_version_minor);
 	ClassDB::bind_method(D_METHOD("get_version_patch"), &VoxelEngine::get_version_patch);
+	ClassDB::bind_method(D_METHOD("get_version_edition"), &VoxelEngine::get_version_edition);
+	ClassDB::bind_method(D_METHOD("get_version_status"), &VoxelEngine::get_version_status);
+	ClassDB::bind_method(D_METHOD("get_version_git_hash"), &VoxelEngine::get_version_git_hash);
 	ClassDB::bind_method(D_METHOD("get_stats"), &VoxelEngine::get_stats);
 
 	ClassDB::bind_method(

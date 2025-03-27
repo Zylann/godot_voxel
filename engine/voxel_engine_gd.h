@@ -30,6 +30,9 @@ public:
 	int get_version_major() const;
 	int get_version_minor() const;
 	int get_version_patch() const;
+	String get_version_edition() const;
+	String get_version_status() const;
+	String get_version_git_hash() const;
 
 	Dictionary get_stats() const;
 	void schedule_task(Ref<ZN_ThreadedTask> task);
