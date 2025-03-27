@@ -6,7 +6,7 @@ MAJOR = 1
 MINOR = 4
 PATCH = 1
 # dev, release
-STATUS = "dev"
+STATUS = "release"
 
 import os
 
