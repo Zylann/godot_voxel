@@ -3,7 +3,20 @@
 
 #include "../containers/span.h"
 #include "../math/interval.h"
+
+#if defined(__GNUC__) && !defined(__clang__)
+// FastNoise2 uses virtual inheritance, but Godot 4.5 added a warning to enforce not using it.
+// See https://github.com/godotengine/godot/pull/103708
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wvirtual-inheritance"
+#endif
+
 #include "FastNoise/FastNoise.h"
+
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
+
 #include <core/io/resource.h>
 
 class Image;
