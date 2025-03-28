@@ -72,6 +72,7 @@ void VoxelMeshBlockVLT::set_mesh(
 	} else {
 		if (!_shadow_occluder.is_valid()) {
 			_shadow_occluder.create();
+			_shadow_occluder.set_interpolated(false);
 			_shadow_occluder.set_render_layers_mask(render_layers_mask);
 #ifdef TOOLS_ENABLED
 			_shadow_occluder.set_cast_shadows_setting(shadow_occluder_mode);
@@ -89,6 +90,7 @@ void VoxelMeshBlockVLT::set_mesh(
 		if (!_mesh_instance.is_valid()) {
 			// Create instance if it doesn't exist
 			_mesh_instance.create();
+			_mesh_instance.set_interpolated(false);
 			_mesh_instance.set_gi_mode(gi_mode);
 			_mesh_instance.set_cast_shadows_setting(shadow_casting);
 			_mesh_instance.set_render_layers_mask(render_layers_mask);
@@ -187,6 +189,7 @@ void VoxelMeshBlockVLT::set_transition_mesh(
 		if (!mesh_instance.is_valid()) {
 			// Create instance if it doesn't exist
 			mesh_instance.create();
+			mesh_instance.set_interpolated(false);
 			mesh_instance.set_gi_mode(gi_mode);
 			mesh_instance.set_cast_shadows_setting(shadow_casting);
 			mesh_instance.set_render_layers_mask(render_layers_mask);

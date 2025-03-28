@@ -1473,6 +1473,7 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 							);
 
 							item.mesh_instance.create();
+							item.mesh_instance.set_interpolated(false);
 							item.mesh_instance.set_mesh(mesh_block->get_mesh());
 							item.mesh_instance.set_gi_mode(get_gi_mode());
 							item.mesh_instance.set_transform(
@@ -1562,6 +1563,7 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 						// 		VoxelStringNames::get_singleton().u_lod_fade, Vector2(item.progress, 0.f));
 
 						item.mesh_instance.create();
+						item.mesh_instance.set_interpolated(false);
 						item.mesh_instance.set_mesh(block->get_mesh());
 						item.mesh_instance.set_gi_mode(get_gi_mode());
 						item.mesh_instance.set_transform(volume_transform * Transform3D(Basis(), item.local_position));
