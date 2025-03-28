@@ -430,10 +430,12 @@ void add_loading_block(
 
 		lod.loading_blocks.insert({ position, new_loading_block });
 
-		blocks_to_load.push_back(VoxelLodTerrainUpdateData::BlockToLoad{
-				VoxelLodTerrainUpdateData::BlockLocation{ position, lod_index },
-				new_loading_block.cancellation_token //
-		});
+		blocks_to_load.push_back(
+				VoxelLodTerrainUpdateData::BlockToLoad{
+						VoxelLodTerrainUpdateData::BlockLocation{ position, lod_index },
+						new_loading_block.cancellation_token //
+				}
+		);
 
 	} else {
 		// Already loaded
@@ -1032,8 +1034,10 @@ void unview_mesh_box(
 				if (mesh_block.state == VoxelLodTerrainUpdateData::MESH_NEED_UPDATE) {
 					mesh_block.state = VoxelLodTerrainUpdateData::MESH_UPDATE_NOT_SENT;
 					mesh_block.update_list_index = parent_lod.mesh_blocks_pending_update.size();
-					parent_lod.mesh_blocks_pending_update.push_back(VoxelLodTerrainUpdateData::MeshToUpdate{
-							bpos, TaskCancellationToken(), mesh_block.mesh_viewers.get() > 0 });
+					parent_lod.mesh_blocks_pending_update.push_back(
+							VoxelLodTerrainUpdateData::MeshToUpdate{
+									bpos, TaskCancellationToken(), mesh_block.mesh_viewers.get() > 0 }
+					);
 				}
 			}
 		});
