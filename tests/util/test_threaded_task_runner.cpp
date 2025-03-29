@@ -3,6 +3,7 @@
 #include "../../util/containers/std_vector.h"
 #include "../../util/godot/classes/os.h"
 #include "../../util/godot/classes/time.h"
+#include "../../util/godot/core/random_pcg.h"
 #include "../../util/io/log.h"
 #include "../../util/math/vector3i.h"
 #include "../../util/memory/memory.h"

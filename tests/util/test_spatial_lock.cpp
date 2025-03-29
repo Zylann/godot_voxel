@@ -1,6 +1,7 @@
 #include "test_spatial_lock.h"
 #include "../../util/containers/std_vector.h"
 #include "../../util/godot/classes/time.h"
+#include "../../util/godot/core/random_pcg.h"
 #include "../../util/math/conv.h"
 #include "../../util/memory/memory.h"
 #include "../../util/profiling.h"
