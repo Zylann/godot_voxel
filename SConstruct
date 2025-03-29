@@ -72,6 +72,13 @@ if is_editor_build:
         "util/godot/editor_scale.cpp"
     ]
 
+    try:
+        doc_data = env.GodotCPPDocData("doc_data.gen.cpp", source=Glob("doc/classes/*.xml"))
+        sources.append(doc_data)
+    except AttributeError:
+        print("Not including class reference as we're targeting a pre-4.3 baseline.")
+
+
 if env["platform"] == "macos":
     library = env.SharedLibrary(
         "{}/{}{}.framework/{}{}".format(
