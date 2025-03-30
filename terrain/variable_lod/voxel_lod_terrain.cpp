@@ -2845,7 +2845,7 @@ void VoxelLodTerrain::get_configuration_warnings(PackedStringArray &warnings) co
 		if (!VoxelEngine::get_singleton().has_rendering_device()) {
 			warnings.append(String("`use_gpu_generation` is enabled, but the selected renderer does not support the "
 								   "RenderingDevice API ({0}).")
-									.format(varray(ZN_CLASS_NAME_C(VoxelLodTerrain), get_current_rendering_method())));
+									.format(varray(get_current_rendering_method())));
 		}
 	}
 
