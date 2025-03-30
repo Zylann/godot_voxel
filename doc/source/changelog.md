@@ -8,7 +8,16 @@ At the moment, this module doesn't have a distinct release schedule, so this cha
 I try to minimize breaking changes, but there are usually a few in each release which I list in detail, so watch out for that section.
 
 
-Dev 1.4.1 - 29/03/2025 - tag `v1.4.1`
+Dev 1.4.2
+-------------
+
+Primarily developped with Godot 4.4.1+
+
+- Fixes
+    - `VoxelGeneratorGraph`: Editor: fixed error sometimes printing after closing the graph editor
+
+
+1.4.1 - 29/03/2025 - tag `v1.4.1`
 --------------------------------------
 
 - `VoxelToolMultipassGenerator`: implemented `get/set_voxel_metadata`
