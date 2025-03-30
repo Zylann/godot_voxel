@@ -3,8 +3,8 @@ Getting Voxel Tools
 
 This project exists in two editions:
 
-- Module: bundled as a custom build of Godot Engine and custom export templates. This is the primary way it was developped for a long time.
-- GDExtension: a native add-on that can be added to your project, and will work with an official build of Godot. This is more recent so it had less testing so far.
+- [Module](#module): bundled as a custom build of Godot Engine and custom export templates. This is the primary way it was developped for a long time.
+- [GDExtension](#gdextension): a native add-on that can be added to your project, and will work with an official build of Godot (4.4.1 or later). This is more recent so it had less testing so far.
 
 Each one comes with its own advantages and drawbacks, but generally offer the same functionality.
 
