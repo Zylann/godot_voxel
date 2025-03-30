@@ -47,10 +47,9 @@ void process_unload_data_blocks_sliding_box(
 				VoxelDataMap::voxel_to_block_b(math::floor_to_int(p_viewer_pos), block_size_po2);
 
 		// Should be correct as long as bounds size is a multiple of the biggest LOD chunk
-		const Box3i bounds_in_blocks = Box3i( //
-				bounds_in_voxels.position >> block_size_po2, //
-				bounds_in_voxels.size >> block_size_po2
-		);
+		const Box3i bounds_in_blocks =
+				Box3i(bounds_in_voxels.position >> block_size_po2, //
+					  bounds_in_voxels.size >> block_size_po2);
 
 		const Box3i new_box =
 				Box3i::from_center_extents(viewer_block_pos_within_lod, Vector3iUtil::create(data_block_region_extent));
@@ -143,10 +142,9 @@ void process_unload_mesh_blocks_sliding_box(
 		unsigned int block_size_po2 = mesh_block_size_po2 + lod_index;
 		const Vector3i viewer_block_pos_within_lod = math::floor_to_int(p_viewer_pos) >> block_size_po2;
 
-		const Box3i bounds_in_blocks = Box3i( //
-				bounds_in_voxels.position >> block_size_po2, //
-				bounds_in_voxels.size >> block_size_po2
-		);
+		const Box3i bounds_in_blocks =
+				Box3i(bounds_in_voxels.position >> block_size_po2, //
+					  bounds_in_voxels.size >> block_size_po2);
 
 		const Box3i new_box =
 				Box3i::from_center_extents(viewer_block_pos_within_lod, Vector3iUtil::create(mesh_block_region_extent));

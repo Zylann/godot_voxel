@@ -322,10 +322,9 @@ void process_viewers(
 				const unsigned int lod_data_block_size_po2 = data_block_size_po2 + lod_index;
 
 				// Should be correct as long as bounds size is a multiple of the biggest LOD chunk
-				const Box3i volume_bounds_in_data_blocks = Box3i( //
-						volume_bounds_in_voxels.position >> lod_data_block_size_po2, //
-						volume_bounds_in_voxels.size >> lod_data_block_size_po2
-				);
+				const Box3i volume_bounds_in_data_blocks =
+						Box3i(volume_bounds_in_voxels.position >> lod_data_block_size_po2,
+							  volume_bounds_in_voxels.size >> lod_data_block_size_po2);
 
 				// const int ld =
 				// 		(lod_index == (lod_count - 1) ? lod_distance_in_data_chunks : last_lod_distance_in_data_chunks);
@@ -1262,10 +1261,9 @@ void process_loaded_data_blocks_trigger_meshing(
 
 		// We could group loaded blocks by LOD so we could compute a few things less times?
 		const int lod_data_block_size_po2 = data.get_block_size_po2() + bloc.lod;
-		const Box3i bounds_in_data_blocks = Box3i( //
-				bounds_in_voxels.position >> lod_data_block_size_po2, //
-				bounds_in_voxels.size >> lod_data_block_size_po2
-		);
+		const Box3i bounds_in_data_blocks =
+				Box3i(bounds_in_voxels.position >> lod_data_block_size_po2,
+					  bounds_in_voxels.size >> lod_data_block_size_po2);
 
 		const Box3i data_neighboring =
 				Box3i(bloc.position - Vector3i(1, 1, 1), Vector3i(3, 3, 3)).clipped(bounds_in_data_blocks);

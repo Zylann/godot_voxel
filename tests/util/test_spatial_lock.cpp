@@ -301,8 +301,8 @@ void test_spatial_lock_dependent_map_chunks() {
 		void run(ThreadedTaskContext &ctx) override {
 			ZN_PROFILE_SCOPE();
 
-			const BoxBounds3i box( //
-					Vector3i(column_pos.x - 1, 0, column_pos.y - 1), //
+			const BoxBounds3i box(
+					Vector3i(column_pos.x - 1, 0, column_pos.y - 1),
 					Vector3i(column_pos.x + 1, 24, column_pos.y + 1) + Vector3i(1, 1, 1)
 			);
 

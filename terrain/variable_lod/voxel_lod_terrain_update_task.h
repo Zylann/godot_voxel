@@ -51,25 +51,25 @@ public:
 
 	// Functions also used outside of this task
 
-	static void flush_pending_lod_edits( 
-			VoxelLodTerrainUpdateData::State &state, 
-			VoxelData &data, 
-			const int mesh_block_size 
+	static void flush_pending_lod_edits(
+			VoxelLodTerrainUpdateData::State &state,
+			VoxelData &data,
+			const int mesh_block_size
 	);
 
-	static uint8_t get_transition_mask( 
-			const VoxelLodTerrainUpdateData::State &state, 
-			const Vector3i block_pos, 
-			unsigned int lod_index, 
-			unsigned int lod_count 
+	static uint8_t get_transition_mask(
+			const VoxelLodTerrainUpdateData::State &state,
+			const Vector3i block_pos,
+			unsigned int lod_index,
+			unsigned int lod_count
 	);
 
 	// To use on loaded blocks
-	static inline void schedule_mesh_update( 
-			VoxelLodTerrainUpdateData::MeshBlockState &block, 
-			const Vector3i bpos, 
-			StdVector<VoxelLodTerrainUpdateData::MeshToUpdate> &blocks_pending_update, 
-			const bool require_visual 
+	static inline void schedule_mesh_update(
+			VoxelLodTerrainUpdateData::MeshBlockState &block,
+			const Vector3i bpos,
+			StdVector<VoxelLodTerrainUpdateData::MeshToUpdate> &blocks_pending_update,
+			const bool require_visual
 	) {
 		if (block.state != VoxelLodTerrainUpdateData::MESH_UPDATE_NOT_SENT) {
 			if (block.visual_active || block.collision_active) {
@@ -77,7 +77,8 @@ public:
 				block.state = VoxelLodTerrainUpdateData::MESH_UPDATE_NOT_SENT;
 				block.update_list_index = blocks_pending_update.size();
 				blocks_pending_update.push_back(
-						VoxelLodTerrainUpdateData::MeshToUpdate{ bpos, TaskCancellationToken(), require_visual });
+						VoxelLodTerrainUpdateData::MeshToUpdate{ bpos, TaskCancellationToken(), require_visual }
+				);
 			} else {
 				// Just mark it as needing update, so the visibility system will schedule its update when needed.
 				block.state = VoxelLodTerrainUpdateData::MESH_NEED_UPDATE;
@@ -85,13 +86,13 @@ public:
 		}
 	}
 
-	static void send_block_save_requests( 
-			const VolumeID volume_id, 
-			const Span<VoxelData::BlockToSave> blocks_to_save, 
-			const std::shared_ptr<StreamingDependency> &stream_dependency, 
-			BufferedTaskScheduler &task_scheduler, 
-			const std::shared_ptr<AsyncDependencyTracker> tracker, 
-			const bool with_flush 
+	static void send_block_save_requests(
+			const VolumeID volume_id,
+			const Span<VoxelData::BlockToSave> blocks_to_save,
+			const std::shared_ptr<StreamingDependency> &stream_dependency,
+			BufferedTaskScheduler &task_scheduler,
+			const std::shared_ptr<AsyncDependencyTracker> tracker,
+			const bool with_flush
 	);
 
 private:
