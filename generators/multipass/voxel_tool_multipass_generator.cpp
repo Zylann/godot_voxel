@@ -3,6 +3,7 @@
 #include "../../storage/voxel_buffer_gd.h"
 #include "../../util/containers/dynamic_bitset.h"
 #include "../../util/godot/core/packed_arrays.h"
+#include "../../util/math/vector3.h"
 #include "../../util/string/format.h"
 
 namespace zylann::voxel {

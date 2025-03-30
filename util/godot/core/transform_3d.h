@@ -1,5 +1,5 @@
-#ifndef ZN_MATH_TRANSFORM_3D_H
-#define ZN_MATH_TRANSFORM_3D_H
+#ifndef ZN_GODOT_TRANSFORM_3D_H
+#define ZN_GODOT_TRANSFORM_3D_H
 
 #if defined(ZN_GODOT)
 #include <core/math/transform_3d.h>
@@ -16,4 +16,4 @@ inline Vector3 get_forward(const Transform3D &t) {
 
 } // namespace zylann
 
-#endif // ZN_MATH_TRANSFORM_3D_H
+#endif // ZN_GODOT_TRANSFORM_3D_H
