@@ -42,7 +42,9 @@ Documentation
 Roadmap
 ---------
 
-Areas of interest:
+Check [Feature Branches](https://github.com/Zylann/godot_voxel/issues/640) to see work-in-progress.
+
+Some areas of interest:
 
 * Multiplayer synchronization
 * Smooth voxel texturing
