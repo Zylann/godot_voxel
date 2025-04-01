@@ -9,6 +9,7 @@
 #include "../../util/godot/core/vector3i.h"
 #include "../../util/godot/macros.h"
 #include "../../util/macros.h"
+#include <memory>
 
 ZN_GODOT_FORWARD_DECLARE(class Image);
 ZN_GODOT_FORWARD_DECLARE(class Curve);
