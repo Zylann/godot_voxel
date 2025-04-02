@@ -15,6 +15,7 @@ Primarily developped with Godot 4.4.1+
 
 - Fixes
     - `VoxelGeneratorGraph`: Editor: fixed error sometimes printing after closing the graph editor
+    - `VoxelBlockyTypeLibrary`: fixed crash when setting `types` to empty array
 
 
 1.4.1 - 29/03/2025 - tag `v1.4.1`
