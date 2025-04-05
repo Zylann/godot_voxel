@@ -92,38 +92,37 @@ void register_sdf_nodes(Span<NodeType> types) {
 		};
 	}
 	{
-		struct Params {
-			float radius;
-		};
 		NodeType &t = types[VoxelGraphFunction::NODE_SDF_SPHERE];
 		t.name = "SdfSphere";
 		t.category = CATEGORY_SDF;
 		t.inputs.push_back(NodeType::Port("x", 0.f, VoxelGraphFunction::AUTO_CONNECT_X));
 		t.inputs.push_back(NodeType::Port("y", 0.f, VoxelGraphFunction::AUTO_CONNECT_Y));
 		t.inputs.push_back(NodeType::Port("z", 0.f, VoxelGraphFunction::AUTO_CONNECT_Z));
+		// Having radius as param allows to connect it to a singe Constant node, which can also be used elsewhere
+		t.inputs.push_back(NodeType::Port("radius", 1.f, VoxelGraphFunction::AUTO_CONNECT_NONE, false));
 		t.outputs.push_back(NodeType::Port("sdf"));
-		t.params.push_back(NodeType::Param("radius", Variant::FLOAT, 1.f));
-		t.compile_func = [](CompileContext &ctx) {
-			Params p;
-			p.radius = ctx.get_param(0);
-			ctx.set_params(p);
-		};
 		t.process_buffer_func = [](Runtime::ProcessBufferContext &ctx) {
 			const Runtime::Buffer &x = ctx.get_input(0);
 			const Runtime::Buffer &y = ctx.get_input(1);
 			const Runtime::Buffer &z = ctx.get_input(2);
+			const Runtime::Buffer &r = ctx.get_input(3);
 			Runtime::Buffer &out = ctx.get_output(0);
-			const Params p = ctx.get_params<Params>();
-			for (uint32_t i = 0; i < out.size; ++i) {
-				out.data[i] = Math::sqrt(squared(x.data[i]) + squared(y.data[i]) + squared(z.data[i])) - p.radius;
+			if (r.is_constant) {
+				for (uint32_t i = 0; i < out.size; ++i) {
+					out.data[i] =
+							Math::sqrt(squared(x.data[i]) + squared(y.data[i]) + squared(z.data[i])) - r.constant_value;
+				}
+			} else {
+				for (uint32_t i = 0; i < out.size; ++i) {
+					out.data[i] = Math::sqrt(squared(x.data[i]) + squared(y.data[i]) + squared(z.data[i])) - r.data[i];
+				}
 			}
 		};
 		t.range_analysis_func = [](Runtime::RangeAnalysisContext &ctx) {
 			const Interval x = ctx.get_input(0);
 			const Interval y = ctx.get_input(1);
 			const Interval z = ctx.get_input(2);
-			const Params p = ctx.get_params<Params>();
-			const Interval r = Interval::from_single_value(p.radius);
+			const Interval r = ctx.get_input(3);
 			ctx.set_output(0, get_length(x, y, z) - r);
 		};
 		t.shader_gen_func = [](ShaderGenContext &ctx) {
@@ -133,7 +132,7 @@ void register_sdf_nodes(Span<NodeType> types) {
 					ctx.get_input_name(0),
 					ctx.get_input_name(1),
 					ctx.get_input_name(2),
-					float(ctx.get_param(0))
+					ctx.get_input_name(3)
 			);
 		};
 	}

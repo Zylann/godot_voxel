@@ -802,6 +802,13 @@ void VoxelGraphFunction::_on_subresource_changed() {
 
 namespace {
 
+enum VoxelGraphVariantFormatVersion {
+	// Introduced auto-connect
+	VOXEL_GRAPH_VARIANT_FORMAT_VERSION_2 = 2
+};
+
+static constexpr int VOXEL_GRAPH_VARIANT_FORMAT_VERSION_CURRENT = VOXEL_GRAPH_VARIANT_FORMAT_VERSION_2;
+
 Dictionary get_graph_as_variant_data(const ProgramGraph &graph) {
 	/*
 	{
@@ -927,7 +934,7 @@ Dictionary get_graph_as_variant_data(const ProgramGraph &graph) {
 	Dictionary data;
 	data["nodes"] = nodes_data;
 	data["connections"] = connections_data;
-	data["version"] = 2;
+	data["version"] = VOXEL_GRAPH_VARIANT_FORMAT_VERSION_CURRENT;
 	return data;
 }
 
