@@ -1185,6 +1185,13 @@ void VoxelTerrain::process_viewers() {
 	// Ordered by ascending index in paired viewers list
 	StdVector<size_t> unpaired_viewer_indexes;
 
+	// Sync here to make sure tasks evaluate a more up-to-date distance. Otherwise, a viewer could spawn (or teleport
+	// far away), trigger tasks, but if sync still hasn't run by the time a task priority gets evaluated, the task could
+	// cancel itself because "too far from viewers".
+	// Not ideal since VoxelEngine already calls this, but it should be quick enough.
+	// An alternative is to use explicit cancellation tokens, which are used in VLT Clipbox.
+	VoxelEngine::get_singleton().sync_viewers_task_priority_data();
+
 	// Update viewers
 	{
 		// Our node doesn't have bounds yet, so for now viewers are always paired.
