@@ -48,7 +48,8 @@ private:
 	void sync_all_parameters();
 	void sync_view_distances();
 
-	static void unregister_deferred_callback(const ObjectID viewer_node_id, const Vector2i encoded_viewer_id);
+	// static void unregister_deferred_callback(const ObjectID viewer_node_id, const Vector2i encoded_viewer_id);
+	static void unregister_deferred_callback(const int64_t viewer_node_id, const Vector2i encoded_viewer_id);
 
 	bool is_active() const;
 

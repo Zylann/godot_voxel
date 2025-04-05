@@ -177,8 +177,11 @@ void VoxelViewer::_notification(int p_what) {
 	}
 }
 
-void VoxelViewer::unregister_deferred_callback(const ObjectID viewer_node_id, const Vector2i encoded_viewer_id) {
-	Object *obj = ObjectDB::get_instance(viewer_node_id);
+// TODO GDX: using `callable_mp_static` on a function taking an `ObjectID` doesn't compile with GodotCpp (but does in
+// Godot core)
+// void VoxelViewer::unregister_deferred_callback(const ObjectID viewer_node_id, const Vector2i encoded_viewer_id) {
+void VoxelViewer::unregister_deferred_callback(const int64_t viewer_node_id, const Vector2i encoded_viewer_id) {
+	Object *obj = ObjectDB::get_instance(ObjectID(viewer_node_id));
 	VoxelViewer *viewer = Object::cast_to<VoxelViewer>(obj);
 	if (viewer != nullptr) {
 		viewer->_pending_deferred_unregistration = false;
