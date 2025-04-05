@@ -1162,9 +1162,9 @@ Ref<Mesh> VoxelMesherCubes::generate_mesh_from_image(Ref<Image> image, float vox
 	const int im_size_y = image->get_height();
 
 	// Currently all meshers require pre-padded voxel data...
-	voxels.create( //
-			im_size_x + VoxelMesherCubes::PADDING * 2, //
-			im_size_y + VoxelMesherCubes::PADDING * 2, //
+	voxels.create(
+			im_size_x + VoxelMesherCubes::PADDING * 2,
+			im_size_y + VoxelMesherCubes::PADDING * 2,
 			1 + VoxelMesherCubes::PADDING * 2
 	);
 

@@ -172,7 +172,8 @@ void VoxelViewer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_view_distance"), &VoxelViewer::get_view_distance);
 
 	ClassDB::bind_method(
-			D_METHOD("set_view_distance_vertical_ratio", "ratio"), &VoxelViewer::set_view_distance_vertical_ratio);
+			D_METHOD("set_view_distance_vertical_ratio", "ratio"), &VoxelViewer::set_view_distance_vertical_ratio
+	);
 	ClassDB::bind_method(D_METHOD("get_view_distance_vertical_ratio"), &VoxelViewer::get_view_distance_vertical_ratio);
 
 	ClassDB::bind_method(D_METHOD("set_requires_visuals", "enabled"), &VoxelViewer::set_requires_visuals);
@@ -181,10 +182,13 @@ void VoxelViewer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_requires_collisions", "enabled"), &VoxelViewer::set_requires_collisions);
 	ClassDB::bind_method(D_METHOD("is_requiring_collisions"), &VoxelViewer::is_requiring_collisions);
 
-	ClassDB::bind_method(D_METHOD("set_requires_data_block_notifications", "enabled"),
-			&VoxelViewer::set_requires_data_block_notifications);
 	ClassDB::bind_method(
-			D_METHOD("is_requiring_data_block_notifications"), &VoxelViewer::is_requiring_data_block_notifications);
+			D_METHOD("set_requires_data_block_notifications", "enabled"),
+			&VoxelViewer::set_requires_data_block_notifications
+	);
+	ClassDB::bind_method(
+			D_METHOD("is_requiring_data_block_notifications"), &VoxelViewer::is_requiring_data_block_notifications
+	);
 
 	ClassDB::bind_method(D_METHOD("set_network_peer_id", "id"), &VoxelViewer::set_network_peer_id);
 	ClassDB::bind_method(D_METHOD("get_network_peer_id"), &VoxelViewer::get_network_peer_id);
@@ -193,13 +197,20 @@ void VoxelViewer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("is_enabled_in_editor"), &VoxelViewer::is_enabled_in_editor);
 
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "view_distance"), "set_view_distance", "get_view_distance");
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "view_distance_vertical_ratio"), "set_view_distance_vertical_ratio",
-			"get_view_distance_vertical_ratio");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::FLOAT, "view_distance_vertical_ratio"),
+			"set_view_distance_vertical_ratio",
+			"get_view_distance_vertical_ratio"
+	);
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "requires_visuals"), "set_requires_visuals", "is_requiring_visuals");
 	ADD_PROPERTY(
-			PropertyInfo(Variant::BOOL, "requires_collisions"), "set_requires_collisions", "is_requiring_collisions");
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "requires_data_block_notifications"),
-			"set_requires_data_block_notifications", "is_requiring_data_block_notifications");
+			PropertyInfo(Variant::BOOL, "requires_collisions"), "set_requires_collisions", "is_requiring_collisions"
+	);
+	ADD_PROPERTY(
+			PropertyInfo(Variant::BOOL, "requires_data_block_notifications"),
+			"set_requires_data_block_notifications",
+			"is_requiring_data_block_notifications"
+	);
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "enabled_in_editor"), "set_enabled_in_editor", "is_enabled_in_editor");
 }
 
