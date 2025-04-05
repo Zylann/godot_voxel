@@ -122,13 +122,13 @@ void VoxelViewer::sync_view_distances() {
 
 void VoxelViewer::sync_all_parameters() {
 	sync_view_distances();
-	VoxelEngine::get_singleton().set_viewer_requires_visuals(_viewer_id, _requires_visuals);
-	VoxelEngine::get_singleton().set_viewer_requires_collisions(_viewer_id, _requires_collisions);
-	VoxelEngine::get_singleton().set_viewer_requires_data_block_notifications(
-			_viewer_id, _requires_data_block_notifications);
-	VoxelEngine::get_singleton().set_viewer_network_peer_id(_viewer_id, _network_peer_id);
+	VoxelEngine &ve = VoxelEngine::get_singleton();
+	ve.set_viewer_requires_visuals(_viewer_id, _requires_visuals);
+	ve.set_viewer_requires_collisions(_viewer_id, _requires_collisions);
+	ve.set_viewer_requires_data_block_notifications(_viewer_id, _requires_data_block_notifications);
+	ve.set_viewer_network_peer_id(_viewer_id, _network_peer_id);
 	const Vector3 pos = get_global_transform().origin;
-	VoxelEngine::get_singleton().set_viewer_position(_viewer_id, pos);
+	ve.set_viewer_position(_viewer_id, pos);
 }
 
 void VoxelViewer::_notification(int p_what) {
