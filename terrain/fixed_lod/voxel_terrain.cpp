@@ -1430,10 +1430,10 @@ void VoxelTerrain::process_viewers() {
 }
 
 void VoxelTerrain::process_viewer_data_box_change(
-		ViewerID viewer_id,
-		Box3i prev_data_box,
-		Box3i new_data_box,
-		bool can_load_blocks
+		const ViewerID viewer_id,
+		const Box3i prev_data_box,
+		const Box3i new_data_box,
+		const bool can_load_blocks
 ) {
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT_RETURN(prev_data_box != new_data_box);
