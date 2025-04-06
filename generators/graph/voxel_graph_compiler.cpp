@@ -1293,19 +1293,6 @@ CompilationResult evaluate_single_node(
 	return CompilationResult::make_success();
 }
 
-bool is_node_constant_without_checking_ancestors(const ProgramGraph::Node &node, const NodeType &node_type) {
-	for (const ProgramGraph::Port &input : node.inputs) {
-		if (input.connections.size() != 0) {
-			return false;
-		}
-	}
-	if (node_type.category == pg::CATEGORY_INPUT) {
-		return false;
-	}
-
-	return true;
-}
-
 bool has_ancestor(const ProgramGraph::Node &node) {
 	for (const ProgramGraph::Port &input : node.inputs) {
 		if (input.connections.size() != 0) {
