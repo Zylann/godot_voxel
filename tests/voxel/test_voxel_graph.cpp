@@ -171,7 +171,7 @@ void load_graph_with_sphere_on_plane(VoxelGraphFunction &g, float radius) {
 	g.add_connection(n_in_x, 0, n_sphere, 0);
 	g.add_connection(n_in_y, 0, n_sphere, 1);
 	g.add_connection(n_in_z, 0, n_sphere, 2);
-	g.set_node_param(n_sphere, 0, radius);
+	g.set_node_default_input(n_sphere, 3, radius);
 	g.add_connection(n_in_y, 0, n_plane, 0);
 	g.set_node_default_input(n_plane, 1, 0.f);
 	g.add_connection(n_sphere, 0, n_union, 0);
@@ -894,7 +894,7 @@ void test_voxel_graph_functions_autoconnect() {
 		const uint32_t n_sphere = g.create_node(VoxelGraphFunction::NODE_SDF_SPHERE, Vector2());
 		const uint32_t n_out_sdf = g.create_node(VoxelGraphFunction::NODE_OUTPUT_SDF, Vector2());
 		g.add_connection(n_sphere, 0, n_out_sdf, 0);
-		g.set_node_param(n_sphere, 0, sphere_radius);
+		g.set_node_default_input(n_sphere, 3, sphere_radius);
 
 		g.auto_pick_inputs_and_outputs();
 	}
