@@ -32,10 +32,6 @@ uint64_t get_deep_hash(
 		uint64_t hash = 0
 );
 
-// Turns out these functions are only used in editor for now.
-// They are generic, but I have to wrap them, otherwise GCC throws warnings-as-errors for them being unused.
-#ifdef TOOLS_ENABLED
-
 // Getting property info in Godot modules and GDExtension has a different API, with the same information.
 struct PropertyInfoWrapper {
 	Variant::Type type;
@@ -43,6 +39,10 @@ struct PropertyInfoWrapper {
 	uint32_t usage;
 };
 void get_property_list(const Object &obj, StdVector<PropertyInfoWrapper> &out_properties);
+
+// Turns out these functions are only used in editor for now.
+// They are generic, but I have to wrap them, otherwise GCC throws warnings-as-errors for them being unused.
+#ifdef TOOLS_ENABLED
 
 void set_object_edited(Object &obj);
 
