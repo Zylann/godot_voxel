@@ -390,24 +390,6 @@ void Runtime::prepare_state(State &state, unsigned int buffer_size, bool with_pr
 	}
 }
 
-namespace {
-
-inline Span<const uint8_t> read_params(Span<const uint16_t> operations, unsigned int &pc) {
-	const uint16_t params_size_in_words = operations[pc];
-	++pc;
-	Span<const uint8_t> params;
-	if (params_size_in_words > 0) {
-		const size_t params_offset_in_words = operations[pc];
-		// Seek to aligned position where params start
-		pc += params_offset_in_words;
-		params = operations.sub(pc, params_size_in_words).reinterpret_cast_to<const uint8_t>();
-		pc += params_size_in_words;
-	}
-	return params;
-}
-
-} // namespace
-
 void Runtime::generate_set(
 		State &state,
 		Span<Span<float>> p_inputs,

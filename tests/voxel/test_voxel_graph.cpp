@@ -2366,4 +2366,71 @@ void test_voxel_graph_empty_image() {
 	ZN_TEST_ASSERT(result.success == false);
 }
 
+void test_voxel_graph_constant_reduction() {
+	Ref<FastNoiseLite> fnl;
+	fnl.instantiate();
+
+	const float const1_value = 1.0;
+	const float const2_value = 10.0;
+
+	Ref<VoxelGraphFunction> graph;
+	graph.instantiate();
+	{
+		VoxelGraphFunction &g = **graph;
+
+		//                  X --- Add2 --- Out
+		//                       /
+		//  C1 --- Add1 --- Noise
+		//        /
+		//      C2
+
+		const uint32_t n_in_x = g.create_node(VoxelGraphFunction::NODE_INPUT_X);
+		const uint32_t n_const1 = g.create_node(VoxelGraphFunction::NODE_CONSTANT);
+		const uint32_t n_const2 = g.create_node(VoxelGraphFunction::NODE_CONSTANT);
+		const uint32_t n_add1 = g.create_node(VoxelGraphFunction::NODE_ADD);
+		const uint32_t n_add2 = g.create_node(VoxelGraphFunction::NODE_ADD);
+		const uint32_t n_noise = g.create_node(VoxelGraphFunction::NODE_NOISE_2D);
+		const uint32_t n_out_sdf = g.create_node(VoxelGraphFunction::NODE_OUTPUT_SDF);
+
+		g.set_node_param(n_const1, 0, const1_value);
+		g.set_node_param(n_const2, 0, const2_value);
+		g.set_node_param(n_noise, 0, fnl);
+
+		g.add_connection(n_const1, 0, n_add1, 0);
+		g.add_connection(n_const2, 0, n_add1, 1);
+		g.add_connection(n_add1, 0, n_noise, 0);
+		g.add_connection(n_in_x, 0, n_add2, 0);
+		g.add_connection(n_noise, 0, n_add2, 1);
+		g.add_connection(n_add2, 0, n_out_sdf, 0);
+	}
+
+	Ref<VoxelGraphFunction> expected_graph;
+	expected_graph.instantiate();
+	{
+		VoxelGraphFunction &g = **expected_graph;
+
+		// X --- Add2 --- Out
+
+		const uint32_t n_in_x = g.create_node(VoxelGraphFunction::NODE_INPUT_X);
+		const uint32_t n_add2 = g.create_node(VoxelGraphFunction::NODE_ADD);
+		const uint32_t n_out_sdf = g.create_node(VoxelGraphFunction::NODE_OUTPUT_SDF);
+
+		const float n = fnl->get_noise_2d(const1_value + const2_value, 0.f);
+
+		g.set_node_default_input(n_add2, 1, n);
+
+		g.add_connection(n_in_x, 0, n_add2, 0);
+		g.add_connection(n_add2, 0, n_out_sdf, 0);
+	}
+
+	// TODO Have a test dedicated to `equals`?
+	ZN_TEST_ASSERT(graph->equals(**graph));
+
+	const pg::CompilationResult res = graph->expand_and_reduce();
+	ZN_TEST_ASSERT(res.success);
+
+	ZN_TEST_ASSERT(graph->get_nodes_count() == 3);
+	ZN_TEST_ASSERT(graph->equals(**expected_graph));
+}
+
 } // namespace zylann::voxel::tests

@@ -136,6 +136,7 @@ void run_voxel_tests(const testing::TestOptions &options) {
 	VOXEL_TEST(test_raycast_sdf);
 	VOXEL_TEST(test_raycast_blocky);
 	VOXEL_TEST(test_raycast_blocky_no_cache_graph);
+	VOXEL_TEST(test_voxel_graph_constant_reduction);
 
 	print_line("------------ Voxel tests end -------------");
 }

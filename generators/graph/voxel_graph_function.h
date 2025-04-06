@@ -206,6 +206,7 @@ public:
 
 	// Gets a hash that attempts to only change if the output of the graph is different.
 	// This is computed from the editable graph data, not the compiled result.
+	// Note: this is not guaranteed to work when comparing two graphs. This was designed initially to detect changes.
 	uint64_t get_output_graph_hash() const;
 
 	bool can_load_default_graph() const {
@@ -291,6 +292,12 @@ public:
 	};
 
 	static RuntimeCache &get_runtime_cache_tls();
+
+	CompilationResult expand_and_reduce();
+
+	// Tests if two graphs are the same, considering their output branches. Object parameters are first compared by
+	// reference, and then compared by their properties. Nodes that the outputs don't depend on will be ignored.
+	bool equals(const VoxelGraphFunction &other);
 
 private:
 	void register_subresource(Resource &resource);

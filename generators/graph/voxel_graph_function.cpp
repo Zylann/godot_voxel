@@ -62,6 +62,50 @@ ProgramGraph::Node *create_node_internal(
 	return node;
 }
 
+namespace AutoPickUtility {
+
+bool try_add_port(const VoxelGraphFunction::Port &port, StdVector<VoxelGraphFunction::Port> &added_ports) {
+	for (VoxelGraphFunction::Port &p : added_ports) {
+		if (p.equals(port)) {
+			// Already added
+			return false;
+		}
+	}
+	added_ports.push_back(port);
+	return true;
+}
+
+bool try_add_port(
+		const ProgramGraph::Node &node,
+		const NodeType &type,
+		StdVector<VoxelGraphFunction::Port> &added_ports
+) {
+	return try_add_port(make_port_from_io_node(node, type), added_ports);
+}
+
+struct Comparator {
+	// If special input, move to top. Otherwise, use alphanumeric sorting.
+	bool operator()(const VoxelGraphFunction::Port &a, const VoxelGraphFunction::Port &b) const {
+		if (a.is_custom()) {
+			if (b.is_custom()) {
+				return a.name < b.name;
+			} else {
+				return false;
+			}
+		} else if (b.is_custom()) {
+			return true;
+		} else {
+			if (a.type == b.type) {
+				return a.sub_index < b.sub_index;
+			} else {
+				return a.type < b.type;
+			}
+		}
+	}
+};
+
+} // namespace AutoPickUtility
+
 // Automatically chooses inputs and outputs based on a graph.
 void auto_pick_inputs_and_outputs(
 		const ProgramGraph &graph,
@@ -70,50 +114,6 @@ void auto_pick_inputs_and_outputs(
 ) {
 	const NodeTypeDB &type_db = NodeTypeDB::get_singleton();
 
-	struct L {
-		static void try_add_port(
-				const VoxelGraphFunction::Port &port,
-				StdVector<VoxelGraphFunction::Port> &added_ports
-		) {
-			for (VoxelGraphFunction::Port &p : added_ports) {
-				if (p.equals(port)) {
-					// Already added
-					return;
-				}
-			}
-			added_ports.push_back(port);
-		}
-
-		static void try_add_port(
-				const ProgramGraph::Node &node,
-				const NodeType &type,
-				StdVector<VoxelGraphFunction::Port> &added_ports
-		) {
-			try_add_port(make_port_from_io_node(node, type), added_ports);
-		}
-	};
-
-	struct Comparator {
-		// If special input, move to top. Otherwise, use alphanumeric sorting.
-		bool operator()(const VoxelGraphFunction::Port &a, const VoxelGraphFunction::Port &b) const {
-			if (a.is_custom()) {
-				if (b.is_custom()) {
-					return a.name < b.name;
-				} else {
-					return false;
-				}
-			} else if (b.is_custom()) {
-				return true;
-			} else {
-				if (a.type == b.type) {
-					return a.sub_index < b.sub_index;
-				} else {
-					return a.type < b.type;
-				}
-			}
-		}
-	};
-
 	inputs.clear();
 	outputs.clear();
 
@@ -121,10 +121,10 @@ void auto_pick_inputs_and_outputs(
 		const NodeType &type = type_db.get_type(node.type_id);
 
 		if (type.category == CATEGORY_INPUT) {
-			L::try_add_port(node, type, inputs);
+			AutoPickUtility::try_add_port(node, type, inputs);
 
 		} else if (type.category == CATEGORY_OUTPUT) {
-			L::try_add_port(node, type, outputs);
+			AutoPickUtility::try_add_port(node, type, outputs);
 
 		} else if (node.autoconnect_default_inputs) {
 			// The input node is implicit
@@ -138,14 +138,35 @@ void auto_pick_inputs_and_outputs(
 					const NodeType &input_type = type_db.get_type(input_type_id);
 					ZN_ASSERT(input_type.outputs.size() == 1);
 					const VoxelGraphFunction::Port port(input_type_id, input_type.outputs[0].name);
-					L::try_add_port(port, inputs);
+					AutoPickUtility::try_add_port(port, inputs);
 				}
 			}
 		}
 	});
 
-	std::sort(inputs.begin(), inputs.end(), Comparator());
-	std::sort(outputs.begin(), outputs.end(), Comparator());
+	std::sort(inputs.begin(), inputs.end(), AutoPickUtility::Comparator());
+	std::sort(outputs.begin(), outputs.end(), AutoPickUtility::Comparator());
+}
+
+void auto_pick_outputs(
+		const ProgramGraph &graph,
+		StdVector<VoxelGraphFunction::Port> &outputs,
+		StdVector<uint32_t> &node_ids
+) {
+	const NodeTypeDB &type_db = NodeTypeDB::get_singleton();
+
+	outputs.clear();
+
+	graph.for_each_node_const([&type_db, &outputs, &node_ids](const ProgramGraph::Node &node) {
+		const NodeType &type = type_db.get_type(node.type_id);
+		if (type.category == CATEGORY_OUTPUT) {
+			if (AutoPickUtility::try_add_port(node, type, outputs)) {
+				node_ids.push_back(node.id);
+			}
+		}
+	});
+
+	std::sort(outputs.begin(), outputs.end(), AutoPickUtility::Comparator());
 }
 
 VoxelGraphFunction::AutoConnect get_auto_connect_hint(const VoxelGraphFunction::Port &port) {
@@ -1506,6 +1527,63 @@ VoxelGraphFunction::RuntimeCache &VoxelGraphFunction::get_runtime_cache_tls() {
 bool VoxelGraphFunction::is_compiled() const {
 	MutexLock lock(_compiled_graph_mutex);
 	return _compiled_graph != nullptr;
+}
+
+CompilationResult VoxelGraphFunction::expand_and_reduce() {
+	ProgramGraph graph;
+	Span<const VoxelGraphFunction::Port> input_defs = get_input_definitions();
+	const CompilationResult result =
+			expand_graph(_graph, graph, input_defs, nullptr, NodeTypeDB::get_singleton(), nullptr, true);
+	if (result.success) {
+		_graph.copy_from(graph, false);
+	}
+	return result;
+}
+
+bool VoxelGraphFunction::equals(const VoxelGraphFunction &other) {
+	StdVector<Port> src_output_defs;
+	StdVector<uint32_t> src_output_ids;
+
+	StdVector<Port> dst_output_defs;
+	StdVector<uint32_t> dst_output_ids;
+
+	auto_pick_outputs(_graph, src_output_defs, src_output_ids);
+	auto_pick_outputs(other._graph, dst_output_defs, dst_output_ids);
+
+	ZN_ASSERT_RETURN_V(src_output_defs.size() == src_output_ids.size(), false);
+	ZN_ASSERT_RETURN_V(dst_output_defs.size() == dst_output_ids.size(), false);
+
+	if (src_output_defs.size() != dst_output_defs.size()) {
+		return false;
+	}
+
+	if (src_output_defs.size() == 0) {
+		ZN_PRINT_WARNING("Comparing graphs with no outputs is not relevant, might indicate a bug");
+		return true;
+	}
+
+	for (unsigned int i = 0; i < src_output_defs.size(); ++i) {
+		const Port &src_port = src_output_defs[i];
+		const Port &dst_port = dst_output_defs[i];
+		if (!src_port.equals(dst_port)) {
+			return false;
+		}
+	}
+
+	if (src_output_ids.size() != dst_output_ids.size()) {
+		return false;
+	}
+
+	for (unsigned int i = 0; i < dst_output_ids.size(); ++i) {
+		const uint32_t src_node_id = src_output_ids[i];
+		const uint32_t dst_node_id = dst_output_ids[i];
+
+		if (!_graph.branch_equals(src_node_id, other._graph, dst_node_id)) {
+			return false;
+		}
+	}
+
+	return true;
 }
 
 void VoxelGraphFunction::execute(Span<Span<float>> inputs, Span<Span<float>> outputs) {

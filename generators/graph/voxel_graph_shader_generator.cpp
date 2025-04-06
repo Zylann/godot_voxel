@@ -46,7 +46,7 @@ CompilationResult generate_shader(
 
 	ProgramGraph expanded_graph;
 	const CompilationResult expand_result =
-			expand_graph(p_graph, expanded_graph, input_defs, nullptr, type_db, nullptr);
+			expand_graph(p_graph, expanded_graph, input_defs, nullptr, type_db, nullptr, true);
 	if (!expand_result.success) {
 		return expand_result;
 	}

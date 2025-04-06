@@ -795,9 +795,7 @@ void get_input_node_ids(
 		node_ids.clear();
 	}
 	graph.for_each_node_const([&input_node_ids, &input_defs](const ProgramGraph::Node &node) {
-		if (try_add_io_node(input_defs, node, to_span(input_node_ids))) {
-			return;
-		}
+		try_add_io_node(input_defs, node, to_span(input_node_ids));
 	});
 }
 
@@ -1180,6 +1178,187 @@ CompilationResult combine_inputs(
 	return CompilationResult::make_success();
 }
 
+CompilationResult evaluate_single_node(
+		// TODO Should be const, but isn't because of `CompileContext` constructor
+		ProgramGraph::Node &node,
+		const NodeType &node_type,
+		StdVector<float> &output_values
+) {
+	output_values.clear();
+
+	if (node.type_id == VoxelGraphFunction::NODE_CONSTANT) {
+		ZN_ASSERT(node.params.size() >= 1);
+		output_values.push_back(node.params[0]);
+		return CompilationResult::make_success();
+	}
+
+	ZN_ASSERT_RETURN_V(
+			node_type.process_buffer_func != nullptr,
+			CompilationResult::make_error("Graph node has no buffer processing function. Bug?", node.id)
+	);
+
+	StdVector<float> values;
+	StdVector<Runtime::Buffer> buffers;
+	StdVector<uint16_t> input_indices;
+	StdVector<uint16_t> output_indices;
+	StdVector<uint8_t> params;
+	StdVector<uint16_t> program;
+	StdVector<Runtime::HeapResource> heap_resources;
+
+	for (unsigned int i = 0; i < node.inputs.size(); ++i) {
+		values.push_back(node.default_inputs[i]);
+	}
+	for (unsigned int i = 0; i < node.inputs.size(); ++i) {
+		Runtime::Buffer buffer;
+		buffer.data = &values[i];
+		buffer.is_constant = true;
+		buffer.constant_value = values[i];
+		buffer.size = 1;
+
+		buffers.push_back(buffer);
+		input_indices.push_back(i);
+	}
+
+	values.resize(values.size() + node.outputs.size());
+	for (unsigned int i = 0; i < node.outputs.size(); ++i) {
+		const unsigned int value_index = node.inputs.size() + i;
+
+		Runtime::Buffer buffer;
+		buffer.data = &values[value_index];
+		buffer.is_constant = false;
+		buffer.size = 1;
+		buffers.push_back(buffer);
+
+		output_indices.push_back(value_index);
+	}
+
+	// TODO Might need to put code in common, we have to re-use the compiled binary format here
+	const uint32_t params_size_index = program.size();
+	program.push_back(0);
+
+	if (node_type.compile_func != nullptr) {
+		pg::CompileContext ctx(program, heap_resources, node.params);
+		node_type.compile_func(ctx);
+
+		if (ctx.has_error()) {
+			CompilationResult result;
+			result.success = false;
+			result.message = ctx.get_error_message();
+			result.node_id = node.id;
+			return result;
+		}
+
+		const size_t params_size = ctx.get_params_size_in_words();
+		ZN_ASSERT(params_size <= std::numeric_limits<uint16_t>::max());
+		ZN_ASSERT(params_size_index < program.size());
+		program[params_size_index] = params_size;
+	}
+
+	{
+		Span<const uint16_t> program_s = to_span_const(program);
+		unsigned int pc = 0;
+		Span<const uint8_t> params_s = Runtime::read_params(program_s, pc);
+
+		pg::Runtime::ProcessBufferContext ctx(
+				to_span(input_indices), to_span(output_indices), params_s, to_span(buffers), false
+		);
+		node_type.process_buffer_func(ctx);
+	}
+
+	for (Runtime::HeapResource &hr : heap_resources) {
+		hr.free();
+	}
+
+	output_values.clear();
+	for (const uint16_t oi : output_indices) {
+		output_values.push_back(values[oi]);
+	}
+
+	return CompilationResult::make_success();
+}
+
+bool is_node_constant_without_checking_ancestors(const ProgramGraph::Node &node, const NodeType &node_type) {
+	for (const ProgramGraph::Port &input : node.inputs) {
+		if (input.connections.size() != 0) {
+			return false;
+		}
+	}
+	if (node_type.category == pg::CATEGORY_INPUT) {
+		return false;
+	}
+
+	return true;
+}
+
+bool has_ancestor(const ProgramGraph::Node &node) {
+	for (const ProgramGraph::Port &input : node.inputs) {
+		if (input.connections.size() != 0) {
+			return true;
+		}
+	}
+	return false;
+}
+
+// Removes constant nodes and branches, leaving them as default values on inputs they were connected to.
+// Must be used after applying auto-connects.
+CompilationResult reduce_constants(ProgramGraph &graph, const NodeTypeDB &type_db) {
+	StdVector<uint32_t> src_node_ids;
+	StdVector<float> output_values;
+
+	// Test if any node is constant, remove them, and try again until none of them are
+	// TODO This can likely be optimized
+	bool keep_going = true;
+	while (keep_going) {
+		keep_going = false;
+
+		src_node_ids.clear();
+		graph.get_node_ids(src_node_ids);
+
+		for (const uint32_t node_id : src_node_ids) {
+			ProgramGraph::Node &node = graph.get_node(node_id);
+
+			if (node.outputs.size() == 0) {
+				continue;
+			}
+
+			const NodeType &node_type = type_db.get_type(node.type_id);
+			if (node_type.category == pg::CATEGORY_OUTPUT) {
+				continue;
+			}
+			if (node_type.category == pg::CATEGORY_INPUT) {
+				continue;
+			}
+
+			if (has_ancestor(node)) {
+				continue;
+			}
+
+			const CompilationResult eval_result = evaluate_single_node(node, node_type, output_values);
+			if (!eval_result.success) {
+				return eval_result;
+			}
+
+			ZN_ASSERT_CONTINUE(output_values.size() == node.outputs.size());
+
+			for (unsigned int output_index = 0; output_index < output_values.size(); ++output_index) {
+				const ProgramGraph::Port &output = node.outputs[output_index];
+				const float value = output_values[output_index];
+
+				for (const ProgramGraph::PortLocation &dst_loc : output.connections) {
+					ProgramGraph::Node &dst_node = graph.get_node(dst_loc.node_id);
+					dst_node.default_inputs[dst_loc.port_index] = value;
+				}
+			}
+
+			graph.remove_node(node_id);
+
+			keep_going = true;
+		}
+	}
+
+	return CompilationResult::make_success();
+}
+
 } // namespace
 
 CompilationResult expand_graph(
@@ -1188,7 +1367,8 @@ CompilationResult expand_graph(
 		Span<const VoxelGraphFunction::Port> input_defs,
 		StdVector<uint32_t> *input_node_ids,
 		const NodeTypeDB &type_db,
-		GraphRemappingInfo *remap_info
+		GraphRemappingInfo *remap_info,
+		const bool enable_constant_reduction
 ) {
 	ZN_PROFILE_SCOPE();
 	// First make a copy of the graph which we'll modify
@@ -1206,6 +1386,13 @@ CompilationResult expand_graph(
 	const CompilationResult expr_expand_result = expand_expression_nodes(expanded_graph, type_db, remap_info);
 	if (!expr_expand_result.success) {
 		return expr_expand_result;
+	}
+
+	if (enable_constant_reduction) {
+		const CompilationResult reduction_result = reduce_constants(expanded_graph, type_db);
+		if (!reduction_result.success) {
+			return reduction_result;
+		}
 	}
 
 	merge_equivalences(expanded_graph, remap_info);
@@ -1228,8 +1415,9 @@ CompilationResult Runtime::compile(const VoxelGraphFunction &function, bool debu
 	ProgramGraph expanded_graph;
 	StdVector<uint32_t> input_node_ids;
 	Span<const VoxelGraphFunction::Port> input_defs = function.get_input_definitions();
-	CompilationResult expand_result =
-			expand_graph(function.get_graph(), expanded_graph, input_defs, &input_node_ids, type_db, &remap_info);
+	CompilationResult expand_result = expand_graph(
+			function.get_graph(), expanded_graph, input_defs, &input_node_ids, type_db, &remap_info, !debug
+	);
 	if (!expand_result.success) {
 		expand_result.node_id = get_original_node_id(remap_info, expand_result.node_id);
 		return expand_result;
@@ -1353,9 +1541,9 @@ void compute_node_execution_order(
 CompilationResult Runtime::compile_preprocessed_graph(
 		Program &program,
 		const ProgramGraph &graph,
-		unsigned int input_count,
+		const unsigned int input_count,
 		Span<const uint32_t> input_node_ids,
-		bool debug,
+		const bool debug,
 		const NodeTypeDB &type_db
 ) {
 	ZN_PROFILE_SCOPE();

@@ -34,7 +34,8 @@ CompilationResult expand_graph(
 		Span<const VoxelGraphFunction::Port> input_defs,
 		StdVector<uint32_t> *input_node_ids,
 		const NodeTypeDB &type_db,
-		GraphRemappingInfo *remap_info
+		GraphRemappingInfo *remap_info,
+		const bool debug
 );
 
 // Functions usable by node implementations during the compilation stage
