@@ -1183,7 +1183,7 @@ CompilationResult compile_params(
 		const uint32_t node_id,
 		StdVector<uint16_t> &program,
 		StdVector<Runtime::HeapResource> &heap_resources,
-		StdVector<Variant> &params_source
+		Span<const Variant> params_source
 ) {
 	// Add space for params size, default is no params so size is 0
 	const uint32_t params_size_index = program.size();
@@ -1211,8 +1211,7 @@ CompilationResult compile_params(
 }
 
 CompilationResult evaluate_single_node(
-		// TODO Should be const, but isn't because of `CompileContext` constructor
-		ProgramGraph::Node &node,
+		const ProgramGraph::Node &node,
 		const NodeType &node_type,
 		StdVector<float> &output_values
 ) {
@@ -1265,7 +1264,7 @@ CompilationResult evaluate_single_node(
 	}
 
 	{
-		pg::CompilationResult res = compile_params(node_type, node.id, program, heap_resources, node.params);
+		pg::CompilationResult res = compile_params(node_type, node.id, program, heap_resources, to_span(node.params));
 		if (!res.success) {
 			return res;
 		}
@@ -1332,7 +1331,7 @@ CompilationResult reduce_constants(ProgramGraph &graph, const NodeTypeDB &type_d
 		graph.get_node_ids(src_node_ids);
 
 		for (const uint32_t node_id : src_node_ids) {
-			ProgramGraph::Node &node = graph.get_node(node_id);
+			const ProgramGraph::Node &node = graph.get_node(node_id);
 
 			if (node.outputs.size() == 0) {
 				continue;
@@ -1824,7 +1823,8 @@ CompilationResult Runtime::compile_preprocessed_graph(
 		}
 
 		{
-			CompilationResult res = compile_params(type, node_id, operations, program.heap_resources, params_copy);
+			const CompilationResult res =
+					compile_params(type, node_id, operations, program.heap_resources, to_span(params_copy));
 			if (!res.success) {
 				return res;
 			}
