@@ -1178,6 +1178,38 @@ CompilationResult combine_inputs(
 	return CompilationResult::make_success();
 }
 
+CompilationResult compile_params(
+		const NodeType &node_type,
+		const uint32_t node_id,
+		StdVector<uint16_t> &program,
+		StdVector<Runtime::HeapResource> &heap_resources,
+		StdVector<Variant> &params_source
+) {
+	// Add space for params size, default is no params so size is 0
+	const uint32_t params_size_index = program.size();
+	program.push_back(0);
+
+	if (node_type.compile_func != nullptr) {
+		pg::CompileContext ctx(program, heap_resources, params_source);
+		node_type.compile_func(ctx);
+
+		if (ctx.has_error()) {
+			CompilationResult result;
+			result.success = false;
+			result.message = ctx.get_error_message();
+			result.node_id = node_id;
+			return result;
+		}
+
+		const size_t params_size = ctx.get_params_size_in_words();
+		ZN_ASSERT(params_size <= std::numeric_limits<uint16_t>::max());
+		ZN_ASSERT(params_size_index < program.size());
+		program[params_size_index] = params_size;
+	}
+
+	return CompilationResult::make_success();
+}
+
 CompilationResult evaluate_single_node(
 		// TODO Should be const, but isn't because of `CompileContext` constructor
 		ProgramGraph::Node &node,
@@ -1232,26 +1264,11 @@ CompilationResult evaluate_single_node(
 		output_indices.push_back(value_index);
 	}
 
-	// TODO Might need to put code in common, we have to re-use the compiled binary format here
-	const uint32_t params_size_index = program.size();
-	program.push_back(0);
-
-	if (node_type.compile_func != nullptr) {
-		pg::CompileContext ctx(program, heap_resources, node.params);
-		node_type.compile_func(ctx);
-
-		if (ctx.has_error()) {
-			CompilationResult result;
-			result.success = false;
-			result.message = ctx.get_error_message();
-			result.node_id = node.id;
-			return result;
+	{
+		pg::CompilationResult res = compile_params(node_type, node.id, program, heap_resources, node.params);
+		if (!res.success) {
+			return res;
 		}
-
-		const size_t params_size = ctx.get_params_size_in_words();
-		ZN_ASSERT(params_size <= std::numeric_limits<uint16_t>::max());
-		ZN_ASSERT(params_size_index < program.size());
-		program[params_size_index] = params_size;
 	}
 
 	{
@@ -1778,10 +1795,6 @@ CompilationResult Runtime::compile_preprocessed_graph(
 			operations.push_back(a);
 		}
 
-		// Add space for params size, default is no params so size is 0
-		size_t params_size_index = operations.size();
-		operations.push_back(0);
-
 		// Get params, copy resources when used, and hold a reference to them
 		StdVector<Variant> params_copy;
 		params_copy.reserve(node.params.size());
@@ -1810,20 +1823,11 @@ CompilationResult Runtime::compile_preprocessed_graph(
 			params_copy.push_back(v);
 		}
 
-		if (type.compile_func != nullptr) {
-			CompileContext ctx(/**node,*/ operations, program.heap_resources, params_copy);
-			type.compile_func(ctx);
-			if (ctx.has_error()) {
-				CompilationResult result;
-				result.success = false;
-				result.message = ctx.get_error_message();
-				result.node_id = node_id;
-				return result;
+		{
+			CompilationResult res = compile_params(type, node_id, operations, program.heap_resources, params_copy);
+			if (!res.success) {
+				return res;
 			}
-			const size_t params_size = ctx.get_params_size_in_words();
-			ZN_ASSERT(params_size <= std::numeric_limits<uint16_t>::max());
-			ZN_ASSERT(params_size_index < operations.size());
-			operations[params_size_index] = params_size;
 		}
 
 		if (type.category == pg::CATEGORY_OUTPUT) {
