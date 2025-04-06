@@ -93,6 +93,7 @@ jobs:
           platform: ${{ matrix.target.platform }}
           em-version: 3.1.62
           windows-compiler: msvc
+          buildtool: scons
       
       # Load build cache
       - name: Cache .scons_cache
