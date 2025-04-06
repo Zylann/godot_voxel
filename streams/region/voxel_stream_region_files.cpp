@@ -603,8 +603,11 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 
 	// Backup current folder by renaming it, leaving the current name vacant
 	{
-		Ref<DirAccess> da = open_directory(_directory_path);
-		ERR_FAIL_COND(da.is_null());
+		// Error dir_open_err;
+		// Ref<DirAccess> da = open_directory(_directory_path + "/..", &dir_open_err);
+		// ERR_FAIL_COND_MSG(
+		// 		da.is_null(), String("Failed to open {0}: error {1}").format(varray(_directory_path, dir_open_err))
+		// );
 		int i = 0;
 		String old_dir;
 		while (true) {
@@ -613,10 +616,10 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 			} else {
 				old_dir = _directory_path + "_old" + String::num_int64(i);
 			}
-			if (directory_exists(**da, old_dir)) {
+			if (directory_exists(old_dir)) {
 				++i;
 			} else {
-				Error err = da->rename(_directory_path, old_dir);
+				const Error err = rename_directory(_directory_path, old_dir);
 				ERR_FAIL_COND_MSG(
 						err != OK,
 						String("Failed to rename '{0}' to '{1}', error {2}")
@@ -647,7 +650,7 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 					old_stream->_directory_path.path_join("regions").path_join("lod") + String::num_int64(lod_index);
 			const String ext = String(".") + RegionFormat::FILE_EXTENSION;
 
-			Ref<DirAccess> da = open_directory(lod_folder);
+			Ref<DirAccess> da = open_directory(lod_folder, nullptr);
 			if (da.is_null()) {
 				continue;
 			}

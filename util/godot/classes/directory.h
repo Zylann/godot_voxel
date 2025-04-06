@@ -10,27 +10,25 @@ using namespace godot;
 
 namespace zylann::godot {
 
-inline Ref<DirAccess> open_directory(const String &directory_path) {
-#if defined(ZN_GODOT)
-	return DirAccess::create_for_path(directory_path);
-#elif defined(ZN_GODOT_EXTENSION)
+inline Ref<DirAccess> open_directory(const String &directory_path, Error *out_err) {
 	Ref<DirAccess> dir = DirAccess::open(directory_path);
-	const Error err = DirAccess::get_open_error();
-	if (err != OK) {
-		return Ref<DirAccess>();
-	} else {
-		return dir;
+	if (out_err != nullptr) {
+		*out_err = DirAccess::get_open_error();
 	}
-#endif
+	return dir;
 }
 
-inline bool directory_exists(DirAccess &dir, const String &directory_path) {
-#if defined(ZN_GODOT)
-	return dir.exists(directory_path);
-#elif defined(ZN_GODOT_EXTENSION)
+inline bool directory_exists(const String &directory_path) {
+	return DirAccess::dir_exists_absolute(directory_path);
+}
+
+inline bool directory_exists(DirAccess &dir, const String &relative_directory_path) {
 	// Why this function is not `const`, I wonder
-	return dir.dir_exists(directory_path);
-#endif
+	return dir.dir_exists(relative_directory_path);
+}
+
+inline Error rename_directory(const String &from, const String &to) {
+	return DirAccess::rename_absolute(from, to);
 }
 
 } // namespace zylann::godot
