@@ -442,8 +442,10 @@ void VoxelGraphFunction::get_connections(StdVector<ProgramGraph::Connection> &p_
 	_graph.get_connections(p_connections);
 }
 
-bool VoxelGraphFunction::try_get_connection_to(ProgramGraph::PortLocation dst, ProgramGraph::PortLocation &out_src)
-		const {
+bool VoxelGraphFunction::try_get_connection_to(
+		ProgramGraph::PortLocation dst,
+		ProgramGraph::PortLocation &out_src
+) const {
 	const ProgramGraph::Node &node = _graph.get_node(dst.node_id);
 	ZN_ASSERT_RETURN_V(dst.port_index < node.inputs.size(), false);
 	const ProgramGraph::Port &port = node.inputs[dst.port_index];

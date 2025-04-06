@@ -135,8 +135,12 @@ public:
 	);
 
 	// Checks if the specified connection can be created
-	bool can_connect(uint32_t src_node_id, uint32_t src_port_index, uint32_t dst_node_id, uint32_t dst_port_index)
-			const;
+	bool can_connect(
+			uint32_t src_node_id,
+			uint32_t src_port_index,
+			uint32_t dst_node_id,
+			uint32_t dst_port_index
+	) const;
 
 	// Checks if the specified connection is valid (without considering existing connections)
 	bool is_valid_connection(
@@ -227,8 +231,12 @@ public:
 	static bool try_get_node_type_id_from_auto_connect(AutoConnect ac, NodeTypeID &out_node_type);
 	static bool try_get_auto_connect_from_node_type_id(NodeTypeID node_type, AutoConnect &out_ac);
 
-	void get_node_input_info(uint32_t node_id, unsigned int input_index, String *out_name, AutoConnect *out_autoconnect)
-			const;
+	void get_node_input_info(
+			uint32_t node_id,
+			unsigned int input_index,
+			String *out_name,
+			AutoConnect *out_autoconnect
+	) const;
 	String get_node_output_name(uint32_t node_id, unsigned int output_index) const;
 	Span<const Port> get_input_definitions() const;
 	Span<const Port> get_output_definitions() const;

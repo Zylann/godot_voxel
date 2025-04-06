@@ -638,8 +638,10 @@ void apply_auto_connects(
 			}
 			if (!found_in_input_defs) {
 				// Not a declared input
-				ZN_PRINT_VERBOSE("Not applying auto-connect because the corresponding node type isn't present in input "
-								 "definitions of the function.");
+				ZN_PRINT_VERBOSE(
+						"Not applying auto-connect because the corresponding node type isn't present in input "
+						"definitions of the function."
+				);
 				continue;
 			}
 
@@ -1499,8 +1501,10 @@ CompilationResult Runtime::compile_preprocessed_graph(
 
 			case VoxelGraphFunction::NODE_SDF_PREVIEW: {
 				if (!debug) {
-					ZN_PRINT_WARNING("Found preview node when compiling graph in non-debug mode. That node should not "
-									 "have been present. Bug?");
+					ZN_PRINT_WARNING(
+							"Found preview node when compiling graph in non-debug mode. That node should not "
+							"have been present. Bug?"
+					);
 				}
 				auto it = program.output_port_addresses.find(ProgramGraph::PortLocation{ node_id, 0 });
 				if (it != program.output_port_addresses.end()) {
@@ -1523,7 +1527,8 @@ CompilationResult Runtime::compile_preprocessed_graph(
 		if (order_index == inner_group_start_index) {
 			program.default_execution_map.inner_group_start_index = program.default_execution_map.operations.size();
 		}
-		program.default_execution_map.operations.push_back(ExecutionMap::OperationInfo{ uint16_t(operations.size()), 0 }
+		program.default_execution_map.operations.push_back(
+				ExecutionMap::OperationInfo{ uint16_t(operations.size()), 0 }
 		);
 		if (debug) {
 			// Will be remapped later if the node is an expanded one

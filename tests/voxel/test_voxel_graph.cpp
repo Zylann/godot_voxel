@@ -162,9 +162,11 @@ void load_graph_with_sphere_on_plane(VoxelGraphFunction &g, float radius) {
 	const uint32_t n_union = g.create_node(VoxelGraphFunction::NODE_SDF_SMOOTH_UNION, Vector2());
 
 	uint32_t union_smoothness_id;
-	ZN_ASSERT(NodeTypeDB::get_singleton().try_get_param_index_from_name(
-			VoxelGraphFunction::NODE_SDF_SMOOTH_UNION, "smoothness", union_smoothness_id
-	));
+	ZN_ASSERT(
+			NodeTypeDB::get_singleton().try_get_param_index_from_name(
+					VoxelGraphFunction::NODE_SDF_SMOOTH_UNION, "smoothness", union_smoothness_id
+			)
+	);
 
 	g.add_connection(n_in_x, 0, n_sphere, 0);
 	g.add_connection(n_in_y, 0, n_sphere, 1);
@@ -1557,9 +1559,11 @@ void test_voxel_graph_spots2d_optimized_execution_map() {
 
 		const uint32_t n5_plane = func->create_node(VoxelGraphFunction::NODE_SDF_PLANE, Vector2(), 5);
 		uint32_t height_input_index;
-		ZN_ASSERT(pg::NodeTypeDB::get_singleton().try_get_input_index_from_name(
-				VoxelGraphFunction::NODE_SDF_PLANE, "height", height_input_index
-		));
+		ZN_ASSERT(
+				pg::NodeTypeDB::get_singleton().try_get_input_index_from_name(
+						VoxelGraphFunction::NODE_SDF_PLANE, "height", height_input_index
+				)
+		);
 		func->set_node_default_input(n5_plane, height_input_index, 2.f);
 
 		const uint32_t n6_fnl1 = func->create_node(VoxelGraphFunction::NODE_FAST_NOISE_2D, Vector2(), 6);
@@ -1606,12 +1610,16 @@ void test_voxel_graph_spots2d_optimized_execution_map() {
 		const uint32_t n23_spots2d = func->create_node(VoxelGraphFunction::NODE_SPOTS_2D, Vector2(), 23);
 		uint32_t cell_size_param_index;
 		uint32_t jitter_param_index;
-		ZN_ASSERT(pg::NodeTypeDB::get_singleton().try_get_param_index_from_name(
-				VoxelGraphFunction::NODE_SPOTS_2D, "cell_size", cell_size_param_index
-		));
-		ZN_ASSERT(pg::NodeTypeDB::get_singleton().try_get_param_index_from_name(
-				VoxelGraphFunction::NODE_SPOTS_2D, "jitter", jitter_param_index
-		));
+		ZN_ASSERT(
+				pg::NodeTypeDB::get_singleton().try_get_param_index_from_name(
+						VoxelGraphFunction::NODE_SPOTS_2D, "cell_size", cell_size_param_index
+				)
+		);
+		ZN_ASSERT(
+				pg::NodeTypeDB::get_singleton().try_get_param_index_from_name(
+						VoxelGraphFunction::NODE_SPOTS_2D, "jitter", jitter_param_index
+				)
+		);
 		func->set_node_param(n23_spots2d, cell_size_param_index, CELL_SIZE);
 		func->set_node_param(n23_spots2d, jitter_param_index, JITTER);
 		func->set_node_default_input(n23_spots2d, 2, SPOT_RADIUS);
@@ -2133,28 +2141,28 @@ void test_image_range_grid() {
 	L::test_range(image, image_range_grid, Interval(-image_width, image_width), Interval(-image_height, image_height));
 	L::test_range(
 			image,
-			image_range_grid, //
-			Interval(-10 * image_width, 10 * image_width), //
+			image_range_grid,
+			Interval(-10 * image_width, 10 * image_width),
 			Interval(-5 * image_height, 5 * image_height)
 	);
 	// Far away
 	L::test_range(
 			image,
-			image_range_grid, //
+			image_range_grid,
 			Interval(-10 * image_width + 50, -10 * image_width + 100),
 			Interval(-5 * image_height + 80, -5 * image_height + 90)
 	);
 	// Cross boundary
 	L::test_range(
 			image,
-			image_range_grid, //
-			Interval(image_width - 10, image_width + 10), //
+			image_range_grid,
+			Interval(image_width - 10, image_width + 10),
 			Interval(image_height - 5, image_height + 20)
 	);
 	L::test_range(
 			image,
-			image_range_grid, //
-			Interval(10 * image_width + image_width - 10, 10 * image_width + image_width + 10), //
+			image_range_grid,
+			Interval(10 * image_width + image_width - 10, 10 * image_width + image_width + 10),
 			Interval(5 * image_height + image_height - 5, 5 * image_height + image_height + 20)
 	);
 }
