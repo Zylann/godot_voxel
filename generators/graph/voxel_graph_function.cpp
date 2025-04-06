@@ -707,7 +707,7 @@ void VoxelGraphFunction::set_node_default_input_by_name(
 
 	uint32_t input_index;
 	ZN_ASSERT_RETURN(try_get_input_index_from_name(*node, input_name, NodeTypeDB::get_singleton(), input_index));
-	ERR_FAIL_INDEX(input_index, static_cast<int>(node->default_inputs.size()));
+	ZN_ASSERT_RETURN(input_index < node->default_inputs.size());
 
 	Variant &defval = node->default_inputs[input_index];
 	if (defval != value) {
