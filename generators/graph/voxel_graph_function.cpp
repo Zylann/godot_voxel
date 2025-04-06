@@ -492,45 +492,68 @@ void VoxelGraphFunction::set_node_param(uint32_t node_id, int param_index, Varia
 	ProgramGraph::Node *node = _graph.try_get_node(node_id);
 	ERR_FAIL_COND(node == nullptr);
 	ERR_FAIL_INDEX(param_index, static_cast<int>(node->params.size()));
+	set_node_param_unchecked(*node, param_index, value);
+}
 
-	if (node->params[param_index] != value) {
-		if (node->type_id == VoxelGraphFunction::NODE_FUNCTION && param_index == 0) {
-			// The function param is special, it conditions the presence of other parameters and node ports
+void VoxelGraphFunction::set_node_param_by_name(
+		const uint32_t node_id,
+		const String &param_name,
+		const Variant &value
+) {
+	ProgramGraph::Node *node = _graph.try_get_node(node_id);
+	ERR_FAIL_COND(node == nullptr);
+	const VoxelGraphFunction::NodeTypeID type_id = static_cast<VoxelGraphFunction::NodeTypeID>(node->type_id);
+	const NodeTypeDB &type_db = NodeTypeDB::get_singleton();
+	uint32_t param_index;
+	ZN_ASSERT_RETURN(type_db.try_get_param_index_from_name(type_id, param_name, param_index));
+	set_node_param_unchecked(*node, param_index, value);
+}
 
-			Ref<VoxelGraphFunction> func = value;
-			ERR_FAIL_COND_MSG(
-					func.is_null(),
-					String("A Function node with a null {0} reference is not allowed")
-							.format(varray(VoxelGraphFunction::get_class_static()))
-			);
+void VoxelGraphFunction::set_node_param_unchecked(
+		ProgramGraph::Node &node,
+		const int param_index,
+		const Variant &value
+) {
+	if (node.params[param_index] == value) {
+		return;
+	}
 
-			// Unregister potential resource params, since the previous function could have had different ones
-			for (unsigned int i = 0; i < node->params.size(); ++i) {
-				Ref<Resource> res = node->params[i];
-				if (res.is_valid()) {
-					unregister_subresource(**res);
-				}
-			}
+	if (node.type_id == VoxelGraphFunction::NODE_FUNCTION && param_index == 0) {
+		// The function param is special, it conditions the presence of other parameters and node ports
 
-			setup_function(*node, func);
-			register_subresource(**func);
+		Ref<VoxelGraphFunction> func = value;
+		ERR_FAIL_COND_MSG(
+				func.is_null(),
+				String("A Function node with a null {0} reference is not allowed")
+						.format(varray(VoxelGraphFunction::get_class_static()))
+		);
 
-		} else {
-			Ref<Resource> prev_resource = node->params[param_index];
-			if (prev_resource.is_valid()) {
-				unregister_subresource(**prev_resource);
-			}
-
-			node->params[param_index] = value;
-
-			Ref<Resource> resource = value;
-			if (resource.is_valid()) {
-				register_subresource(**resource);
+		// Unregister potential resource params, since the previous function could have had different ones
+		for (unsigned int i = 0; i < node.params.size(); ++i) {
+			Ref<Resource> res = node.params[i];
+			if (res.is_valid()) {
+				unregister_subresource(**res);
 			}
 		}
 
-		emit_changed();
+		setup_function(node, func);
+		register_subresource(**func);
+
+	} else {
+		Ref<Resource> prev_resource = node.params[param_index];
+		if (prev_resource.is_valid()) {
+			unregister_subresource(**prev_resource);
+		}
+
+		node.params[param_index] = value;
+
+		Ref<Resource> resource = value;
+		if (resource.is_valid()) {
+			register_subresource(**resource);
+		}
 	}
+
+	emit_changed();
 }
 
 bool VoxelGraphFunction::get_expression_variables(std::string_view code, StdVector<std::string_view> &vars) {
@@ -608,6 +631,63 @@ void VoxelGraphFunction::set_node_default_input(uint32_t node_id, int input_inde
 	ProgramGraph::Node *node = _graph.try_get_node(node_id);
 	ERR_FAIL_COND(node == nullptr);
 	ERR_FAIL_INDEX(input_index, static_cast<int>(node->default_inputs.size()));
+	Variant &defval = node->default_inputs[input_index];
+	if (defval != value) {
+		// node->autoconnect_default_inputs = false;
+		defval = value;
+		emit_changed();
+	}
+}
+
+static bool try_get_input_index_from_name(
+		const ProgramGraph::Node &node,
+		const String &name,
+		const NodeTypeDB &type_db,
+		uint32_t &out_index
+) {
+	const VoxelGraphFunction::NodeTypeID type_id = static_cast<VoxelGraphFunction::NodeTypeID>(node.type_id);
+	if (type_db.try_get_param_index_from_name(type_id, name, out_index)) {
+		return true;
+	}
+
+	if (type_id == VoxelGraphFunction::NODE_FUNCTION) {
+		ZN_ASSERT_RETURN_V(node.params.size() >= 1, false);
+		Ref<VoxelGraphFunction> function = node.params[0];
+		ZN_ASSERT_RETURN_V(function.is_valid(), false);
+		Span<const VoxelGraphFunction::Port> input_defs = function->get_input_definitions();
+		for (unsigned int i = 0; i < input_defs.size(); ++i) {
+			if (input_defs[i].name == name) {
+				out_index = i;
+				return true;
+			}
+		}
+	}
+
+	for (uint32_t i = 0; i < node.inputs.size(); ++i) {
+		const ProgramGraph::Port &input = node.inputs[i];
+		if (!input.dynamic_name.empty()) {
+			if (name == input.dynamic_name.c_str()) {
+				out_index = i;
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
+void VoxelGraphFunction::set_node_default_input_by_name(
+		const uint32_t node_id,
+		const String &input_name,
+		const Variant &value
+) {
+	ProgramGraph::Node *node = _graph.try_get_node(node_id);
+	ZN_ASSERT_RETURN(node != nullptr);
+
+	uint32_t input_index;
+	ZN_ASSERT_RETURN(try_get_input_index_from_name(*node, input_name, NodeTypeDB::get_singleton(), input_index));
+	ERR_FAIL_INDEX(input_index, static_cast<int>(node->default_inputs.size()));
+
 	Variant &defval = node->default_inputs[input_index];
 	if (defval != value) {
 		// node->autoconnect_default_inputs = false;
@@ -1755,11 +1835,21 @@ void VoxelGraphFunction::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("find_node_by_name", "name"), &Self::find_node_by_name);
 
 	ClassDB::bind_method(D_METHOD("get_node_type_id", "node_id"), &Self::get_node_type_id);
+
 	ClassDB::bind_method(D_METHOD("get_node_param", "node_id", "param_index"), &Self::get_node_param);
 	ClassDB::bind_method(D_METHOD("set_node_param", "node_id", "param_index", "value"), &Self::set_node_param);
+	ClassDB::bind_method(
+			D_METHOD("set_node_param_by_name", "node_id", "param_name", "value"), &Self::set_node_param_by_name
+	);
+	ClassDB::bind_method(D_METHOD("set_node_param_null", "node_id", "param_index"), &Self::_b_set_node_param_null);
+
 	ClassDB::bind_method(D_METHOD("get_node_default_input", "node_id", "input_index"), &Self::get_node_default_input);
 	ClassDB::bind_method(
 			D_METHOD("set_node_default_input", "node_id", "input_index", "value"), &Self::set_node_default_input
+	);
+	ClassDB::bind_method(
+			D_METHOD("set_node_default_input_by_name", "node_id", "input_name", "value"),
+			&Self::set_node_default_input_by_name
 	);
 	ClassDB::bind_method(
 			D_METHOD("get_node_default_inputs_autoconnect", "node_id"), &Self::get_node_default_inputs_autoconnect
@@ -1768,7 +1858,7 @@ void VoxelGraphFunction::_bind_methods() {
 			D_METHOD("set_node_default_inputs_autoconnect", "node_id", "enabled"),
 			&Self::set_node_default_inputs_autoconnect
 	);
-	ClassDB::bind_method(D_METHOD("set_node_param_null", "node_id", "param_index"), &Self::_b_set_node_param_null);
+
 	ClassDB::bind_method(D_METHOD("get_node_gui_position", "node_id"), &Self::get_node_gui_position);
 	ClassDB::bind_method(D_METHOD("set_node_gui_position", "node_id", "position"), &Self::set_node_gui_position);
 	ClassDB::bind_method(D_METHOD("get_node_gui_size", "node_id"), &Self::get_node_gui_size);

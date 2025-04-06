@@ -171,6 +171,8 @@ public:
 
 	Variant get_node_param(uint32_t node_id, int param_index) const;
 	void set_node_param(uint32_t node_id, int param_index, Variant value);
+	void set_node_param_by_name(const uint32_t node_id, const String &param_name, const Variant &value);
+	void set_node_param_unchecked(ProgramGraph::Node &node, const int param_index, const Variant &value);
 
 	static bool get_expression_variables(std::string_view code, StdVector<std::string_view> &vars);
 	void get_expression_node_inputs(uint32_t node_id, StdVector<StdString> &out_names) const;
@@ -178,6 +180,7 @@ public:
 
 	Variant get_node_default_input(uint32_t node_id, int input_index) const;
 	void set_node_default_input(uint32_t node_id, int input_index, Variant value);
+	void set_node_default_input_by_name(const uint32_t node_id, const String &input_name, const Variant &value);
 
 	bool get_node_default_inputs_autoconnect(uint32_t node_id) const;
 	void set_node_default_inputs_autoconnect(uint32_t node_id, bool enabled);
