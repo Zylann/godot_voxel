@@ -95,6 +95,11 @@ int VoxelEngine::get_version_patch() const {
 	return VOXEL_VERSION_PATCH;
 }
 
+Vector3i VoxelEngine::get_version_v() const {
+	// Handy to compare versions quickly, as Vector3i::operator< compares x first, then y, then z
+	return Vector3i(get_version_major(), get_version_minor(), get_version_patch());
+}
+
 String VoxelEngine::get_version_edition() const {
 	return VOXEL_VERSION_EDITION;
 }
@@ -223,6 +228,7 @@ void VoxelEngine::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_version_major"), &VoxelEngine::get_version_major);
 	ClassDB::bind_method(D_METHOD("get_version_minor"), &VoxelEngine::get_version_minor);
 	ClassDB::bind_method(D_METHOD("get_version_patch"), &VoxelEngine::get_version_patch);
+	ClassDB::bind_method(D_METHOD("get_version_v"), &VoxelEngine::get_version_v);
 	ClassDB::bind_method(D_METHOD("get_version_edition"), &VoxelEngine::get_version_edition);
 	ClassDB::bind_method(D_METHOD("get_version_status"), &VoxelEngine::get_version_status);
 	ClassDB::bind_method(D_METHOD("get_version_git_hash"), &VoxelEngine::get_version_git_hash);

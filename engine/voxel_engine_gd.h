@@ -30,6 +30,7 @@ public:
 	int get_version_major() const;
 	int get_version_minor() const;
 	int get_version_patch() const;
+	Vector3i get_version_v() const;
 	String get_version_edition() const;
 	String get_version_status() const;
 	String get_version_git_hash() const;
