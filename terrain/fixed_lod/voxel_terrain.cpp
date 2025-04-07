@@ -126,6 +126,27 @@ bool VoxelTerrain::get_generator_use_gpu() const {
 	return _generator_use_gpu;
 }
 
+void VoxelTerrain::set_voxel_size(const float new_size) {
+	const float checked_size = math::clamp(new_size, constants::MIN_VOXEL_SIZE, constants::MAX_VOXEL_SIZE);
+
+	if (checked_size == _voxel_size) {
+		return;
+	}
+
+	_voxel_size = checked_size;
+	_on_stream_params_changed();
+}
+
+float VoxelTerrain::get_voxel_size() const {
+	return _voxel_size;
+}
+
+Transform3D VoxelTerrain::get_voxel_to_world_transform() const {
+	Transform3D trans = get_global_transform();
+	trans.basis.scale(Vector3(_voxel_size, _voxel_size, _voxel_size));
+	return trans;
+}
+
 void VoxelTerrain::set_stream(Ref<VoxelStream> p_stream) {
 	if (p_stream == get_stream()) {
 		return;
@@ -865,7 +886,7 @@ void VoxelTerrain::_notification(int p_what) {
 			break;
 
 		case NOTIFICATION_TRANSFORM_CHANGED: {
-			const Transform3D transform = get_global_transform();
+			const Transform3D transform = get_voxel_to_world_transform();
 			// VoxelEngine::get_singleton().set_volume_transform(_volume_id, transform);
 
 			if (!is_inside_tree()) {
@@ -887,8 +908,8 @@ void VoxelTerrain::_notification(int p_what) {
 
 namespace {
 
-Vector3i get_block_center(Vector3i pos, int bs) {
-	return pos * bs + Vector3iUtil::create(bs / 2);
+Vector3i get_block_center(Vector3i pos, int block_resolution) {
+	return pos * block_resolution + Vector3iUtil::create(block_resolution / 2);
 }
 
 void init_sparse_grid_priority_dependency(
@@ -896,14 +917,15 @@ void init_sparse_grid_priority_dependency(
 		Vector3i block_position,
 		int block_size,
 		std::shared_ptr<PriorityDependency::ViewersData> &shared_viewers_data,
-		const Transform3D &volume_transform
+		const Transform3D &voxel_to_world_transform
 ) {
 	const Vector3i voxel_pos = get_block_center(block_position, block_size);
-	const float block_radius = block_size / 2;
 	dep.shared = shared_viewers_data;
-	dep.world_position = to_vec3f(volume_transform.xform(voxel_pos));
+	dep.world_position = to_vec3f(voxel_to_world_transform.xform(voxel_pos));
+
+	const float block_radius = block_size / 2;
 	const float transformed_block_radius =
-			volume_transform.basis.xform(Vector3(block_radius, block_radius, block_radius)).length();
+			voxel_to_world_transform.basis.xform(Vector3(block_radius, block_radius, block_radius)).length();
 
 	// Distance beyond which no field of view can overlap the block.
 	// Doubling block radius to account for an extra margin of blocks,
@@ -917,7 +939,7 @@ void request_block_load(
 		std::shared_ptr<StreamingDependency> stream_dependency,
 		Vector3i block_pos,
 		std::shared_ptr<PriorityDependency::ViewersData> &shared_viewers_data,
-		const Transform3D volume_transform,
+		const Transform3D voxel_to_world_transform,
 		BufferedTaskScheduler &scheduler,
 		bool use_gpu,
 		const std::shared_ptr<VoxelData> &voxel_data
@@ -933,7 +955,7 @@ void request_block_load(
 	if (stream_dependency->stream.is_valid()) {
 		PriorityDependency priority_dependency;
 		init_sparse_grid_priority_dependency(
-				priority_dependency, block_pos, data_block_size, shared_viewers_data, volume_transform
+				priority_dependency, block_pos, data_block_size, shared_viewers_data, voxel_to_world_transform
 		);
 
 		const bool request_instances = false;
@@ -966,7 +988,7 @@ void request_block_load(
 		params.data = voxel_data;
 
 		init_sparse_grid_priority_dependency(
-				params.priority_dependency, block_pos, data_block_size, shared_viewers_data, volume_transform
+				params.priority_dependency, block_pos, data_block_size, shared_viewers_data, voxel_to_world_transform
 		);
 
 		IThreadedTask *task = stream_dependency->generator->create_block_task(params);
@@ -984,7 +1006,7 @@ void VoxelTerrain::send_data_load_requests() {
 		std::shared_ptr<PriorityDependency::ViewersData> shared_viewers_data =
 				VoxelEngine::get_singleton().get_shared_viewers_data_from_default_world();
 
-		const Transform3D volume_transform = get_global_transform();
+		const Transform3D volume_transform = get_voxel_to_world_transform();
 
 		BufferedTaskScheduler &scheduler = BufferedTaskScheduler::get_for_current_thread();
 
@@ -1217,12 +1239,12 @@ void VoxelTerrain::process_viewers() {
 			}
 		}
 
-		const Transform3D local_to_world_transform = get_global_transform();
-		const Transform3D world_to_local_transform = local_to_world_transform.affine_inverse();
+		const Transform3D voxel_to_world_transform = get_voxel_to_world_transform();
+		const Transform3D world_to_voxel_transform = voxel_to_world_transform.affine_inverse();
 
 		// Note, this does not support non-uniform scaling
 		// TODO There is probably a better way to do this
-		const float view_distance_scale = world_to_local_transform.basis.xform(Vector3(1, 0, 0)).length();
+		const float view_distance_scale = world_to_voxel_transform.basis.xform(Vector3(1, 0, 0)).length();
 
 		const Box3i bounds_in_voxels = _data->get_bounds();
 
@@ -1324,7 +1346,7 @@ void VoxelTerrain::process_viewers() {
 
 		// New viewers and updates. Removed viewers won't be iterated but are still paired until later.
 		UpdatePairedViewer u{
-			*this, bounds_in_data_blocks, bounds_in_mesh_blocks, world_to_local_transform, view_distance_scale
+			*this, bounds_in_data_blocks, bounds_in_mesh_blocks, world_to_voxel_transform, view_distance_scale
 		};
 		VoxelEngine::get_singleton().for_each_viewer(u);
 	}
@@ -1787,7 +1809,7 @@ void VoxelTerrain::process_meshing() {
 
 	// Send mesh updates
 
-	const Transform3D volume_transform = get_global_transform();
+	const Transform3D voxel_to_world_transform = get_voxel_to_world_transform();
 	std::shared_ptr<PriorityDependency::ViewersData> shared_viewers_data =
 			VoxelEngine::get_singleton().get_shared_viewers_data_from_default_world();
 
@@ -1855,7 +1877,7 @@ void VoxelTerrain::process_meshing() {
 				task->mesh_block_position,
 				get_mesh_block_size(),
 				shared_viewers_data,
-				volume_transform
+				voxel_to_world_transform
 		);
 
 		scheduler.push_main_task(task);
@@ -1992,7 +2014,7 @@ void VoxelTerrain::apply_mesh_update(const VoxelEngine::BlockMeshOutput &ob) {
 	block->set_visible(block->mesh_viewers.get() > 0);
 	block->set_collision_enabled(gen_collisions);
 	block->set_parent_visible(is_visible());
-	block->set_parent_transform(get_global_transform());
+	block->set_parent_transform(get_voxel_to_world_transform());
 	// TODO We don't set MESH_UP_TO_DATE anywhere, but it seems to work?
 	// Can't set the state because there could be more than one update in progress. Perhaps it needs refactoring.
 	// block->set_mesh_state(VoxelMeshBlockVT::MESH_UP_TO_DATE);
@@ -2182,7 +2204,7 @@ void VoxelTerrain::process_debug_draw() {
 	zylann::godot::DebugRenderer &dr = _debug_renderer;
 	dr.begin();
 
-	const Transform3D parent_transform = get_global_transform();
+	const Transform3D parent_transform = get_voxel_to_world_transform();
 
 	// Volume bounds
 	if (debug_get_draw_flag(DEBUG_DRAW_VOLUME_BOUNDS)) {
@@ -2364,6 +2386,9 @@ void VoxelTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_generator_use_gpu", "enable"), &Self::set_generator_use_gpu);
 	ClassDB::bind_method(D_METHOD("get_generator_use_gpu"), &Self::get_generator_use_gpu);
 
+	ClassDB::bind_method(D_METHOD("set_voxel_size", "new_size"), &Self::set_voxel_size);
+	ClassDB::bind_method(D_METHOD("get_voxel_size"), &Self::get_voxel_size);
+
 	// TODO Rename `_voxel_bounds`
 	ClassDB::bind_method(D_METHOD("set_bounds", "bounds"), &Self::_b_set_bounds);
 	ClassDB::bind_method(D_METHOD("get_bounds"), &Self::_b_get_bounds);
@@ -2393,10 +2418,12 @@ void VoxelTerrain::_bind_methods() {
 	GDVIRTUAL_BIND(_on_area_edited, "area_origin", "area_size");
 #endif
 
-	ADD_GROUP("Bounds", "");
+	ADD_GROUP("Dimensions", "");
 
 	ADD_PROPERTY(PropertyInfo(Variant::AABB, "bounds"), "set_bounds", "get_bounds");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "max_view_distance"), "set_max_view_distance", "get_max_view_distance");
+
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "voxel_size"), "set_voxel_size", "get_voxel_size");
 
 	ADD_GROUP("Collisions", "");
 

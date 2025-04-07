@@ -15,6 +15,9 @@ static const unsigned int MAX_BLOCK_SIZE = 32;
 
 static const unsigned int MAX_BLOCK_COUNT_PER_REQUEST = 4 * 4 * 4;
 
+static const float MIN_VOXEL_SIZE = 0.1f;
+static const float MAX_VOXEL_SIZE = 16.f;
+
 // 24 should be largely enough.
 // With a block size of 32 voxels, and if 1 voxel is 1m large,
 // then the largest blocks will span 268,435.456 kilometers, which is roughly 20 times Earth's diameter.

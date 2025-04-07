@@ -66,6 +66,10 @@ Ref<VoxelTool> VoxelNode::get_voxel_tool() {
 	return Ref<VoxelTool>();
 }
 
+float VoxelNode::get_voxel_size() const {
+	return 1.f;
+}
+
 #ifdef TOOLS_ENABLED
 
 #if defined(ZN_GODOT)

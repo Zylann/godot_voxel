@@ -46,6 +46,8 @@ public:
 
 	virtual Ref<VoxelTool> get_voxel_tool();
 
+	virtual float get_voxel_size() const;
+
 #ifdef TOOLS_ENABLED
 #if defined(ZN_GODOT)
 	PackedStringArray get_configuration_warnings() const override;

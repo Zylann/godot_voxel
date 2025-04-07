@@ -116,7 +116,7 @@ Array separate_floating_chunks(
 		VoxelTool &voxel_tool,
 		Box3i world_box,
 		Node *parent_node,
-		Transform3D terrain_transform,
+		Transform3D terrain_voxel_to_world_transform,
 		Ref<VoxelMesher> mesher,
 		Array materials
 ) {
@@ -470,7 +470,7 @@ Array separate_floating_chunks(
 			collision_shape->set_position(offset);
 
 			RigidBody3D *rigid_body = memnew(RigidBody3D);
-			rigid_body->set_transform(terrain_transform * local_transform.translated_local(-offset));
+			rigid_body->set_transform(terrain_voxel_to_world_transform * local_transform.translated_local(-offset));
 			rigid_body->add_child(collision_shape);
 			rigid_body->set_freeze_mode(RigidBody3D::FREEZE_MODE_KINEMATIC);
 			rigid_body->set_freeze_enabled(true);

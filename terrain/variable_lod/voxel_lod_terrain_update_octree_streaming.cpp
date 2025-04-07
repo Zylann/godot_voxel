@@ -22,8 +22,9 @@ void process_unload_data_blocks_sliding_box(
 	// This should be the same distance relatively to each LOD
 	const int data_block_size = data.get_block_size();
 	const int data_block_size_po2 = data.get_block_size_po2();
-	const int data_block_region_extent =
-			VoxelEngine::get_octree_lod_block_region_extent(settings.lod_distance, data_block_size);
+	const int data_block_region_extent = VoxelEngine::get_octree_lod_block_region_extent(
+			settings.lod_distance_local / settings.voxel_size, data_block_size
+	);
 	const Box3i bounds_in_voxels = data.get_bounds();
 
 	const int mesh_block_size = 1 << settings.mesh_block_size_po2;
@@ -127,8 +128,9 @@ void process_unload_mesh_blocks_sliding_box(
 	// This should be the same distance relatively to each LOD
 	const int mesh_block_size_po2 = settings.mesh_block_size_po2;
 	const int mesh_block_size = 1 << mesh_block_size_po2;
-	const int mesh_block_region_extent =
-			VoxelEngine::get_octree_lod_block_region_extent(settings.lod_distance, mesh_block_size);
+	const int mesh_block_region_extent = VoxelEngine::get_octree_lod_block_region_extent(
+			settings.lod_distance_local / settings.voxel_size, mesh_block_size
+	);
 	const int lod_count = data.get_lod_count();
 	const Box3i bounds_in_voxels = data.get_bounds();
 
@@ -197,11 +199,13 @@ void process_octrees_sliding_box(
 	ZN_PROFILE_SCOPE_NAMED("Sliding box octrees");
 	// TODO Investigate if multi-octree can produce cracks in the terrain (so far I haven't noticed)
 
+	const unsigned int view_distance_voxels = settings.view_distance_local / settings.voxel_size;
+
 	const unsigned int lod_count = data.get_lod_count();
 	const unsigned int mesh_block_size_po2 = settings.mesh_block_size_po2;
 	const unsigned int octree_size_po2 = LodOctree::get_octree_size_po2(mesh_block_size_po2, lod_count);
 	const unsigned int octree_size = 1 << octree_size_po2;
-	const unsigned int octree_region_extent = 1 + settings.view_distance_voxels / (1 << octree_size_po2);
+	const unsigned int octree_region_extent = 1 + view_distance_voxels / (1 << octree_size_po2);
 
 	const Vector3i viewer_octree_pos =
 			(math::floor_to_int(p_viewer_pos) + Vector3iUtil::create(octree_size / 2)) >> octree_size_po2;
@@ -544,7 +548,8 @@ void process_octrees_fitting(
 
 	state.octree_streaming.local_viewer_pos_previous_octree_update = p_viewer_pos;
 
-	const float lod_distance_octree_space = settings.lod_distance / octree_leaf_node_size;
+	const float lod_distance_voxels = settings.lod_distance_local / settings.voxel_size;
+	const float lod_distance_octree_space = lod_distance_voxels / octree_leaf_node_size;
 
 	unsigned int blocked_octree_nodes = 0;
 

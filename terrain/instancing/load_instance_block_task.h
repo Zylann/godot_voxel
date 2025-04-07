@@ -28,7 +28,8 @@ public:
 			uint8_t lod_index, //
 			uint8_t instance_block_size, //
 			uint8_t data_block_size, //
-			UpMode up_mode //
+			UpMode up_mode, //
+			float voxel_size
 	);
 
 	const char *get_debug_name() const override {
@@ -48,6 +49,7 @@ private:
 	uint8_t _instance_block_size;
 	uint8_t _data_block_size;
 	UpMode _up_mode;
+	float _voxel_size;
 };
 
 } // namespace zylann::voxel

@@ -62,7 +62,8 @@ public:
 			// Bits set to zero will cause all instances in the corresponding octant to not be generated.
 			uint8_t octant_mask,
 			// This is block size in world space, not relative to LOD index
-			float block_size
+			float block_size,
+			float voxel_size
 	);
 
 	void set_density(float d);

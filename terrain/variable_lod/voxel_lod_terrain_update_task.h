@@ -24,22 +24,22 @@ class BufferedTaskScheduler;
 //
 class VoxelLodTerrainUpdateTask : public IThreadedTask {
 public:
-	VoxelLodTerrainUpdateTask( 
-			std::shared_ptr<VoxelData> p_data, 
-			std::shared_ptr<VoxelLodTerrainUpdateData> p_update_data, 
-			std::shared_ptr<StreamingDependency> p_streaming_dependency, 
-			std::shared_ptr<MeshingDependency> p_meshing_dependency, 
-			std::shared_ptr<PriorityDependency::ViewersData> p_shared_viewers_data, 
-			const Vector3 p_viewer_pos, 
-			const VolumeID p_volume_id, 
-			const Transform3D p_volume_transform 
-			) :
+	VoxelLodTerrainUpdateTask(
+			std::shared_ptr<VoxelData> p_data,
+			std::shared_ptr<VoxelLodTerrainUpdateData> p_update_data,
+			std::shared_ptr<StreamingDependency> p_streaming_dependency,
+			std::shared_ptr<MeshingDependency> p_meshing_dependency,
+			std::shared_ptr<PriorityDependency::ViewersData> p_shared_viewers_data,
+			const Vector3 p_default_viewer_pos_voxels,
+			const VolumeID p_volume_id,
+			const Transform3D p_volume_transform
+	) :
 			_data(p_data),
 			_update_data(p_update_data),
 			_streaming_dependency(p_streaming_dependency),
 			_meshing_dependency(p_meshing_dependency),
 			_shared_viewers_data(p_shared_viewers_data),
-			_viewer_pos(p_viewer_pos),
+			_default_viewer_pos_voxels(p_default_viewer_pos_voxels),
 			_volume_id(p_volume_id),
 			_volume_transform(p_volume_transform) {}
 
@@ -101,7 +101,7 @@ private:
 	std::shared_ptr<StreamingDependency> _streaming_dependency;
 	std::shared_ptr<MeshingDependency> _meshing_dependency;
 	std::shared_ptr<PriorityDependency::ViewersData> _shared_viewers_data;
-	Vector3 _viewer_pos;
+	Vector3 _default_viewer_pos_voxels;
 	VolumeID _volume_id;
 	Transform3D _volume_transform;
 };

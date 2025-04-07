@@ -149,6 +149,11 @@ public:
 	void set_lod_fade_duration(float seconds);
 	float get_lod_fade_duration() const;
 
+	void set_voxel_size(const float new_size);
+	float get_voxel_size() const override;
+
+	Transform3D get_voxel_to_world_transform() const;
+
 	enum ProcessCallback { //
 		PROCESS_CALLBACK_IDLE = 0,
 		PROCESS_CALLBACK_PHYSICS,
@@ -304,7 +309,7 @@ private:
 	void reset_maps();
 	void reset_mesh_maps();
 
-	Vector3 get_local_viewer_pos() const;
+	Vector3 get_default_viewer_position_in_voxels() const;
 	void _set_lod_count(int p_lod_count);
 	void set_mesh_block_visual_active(VoxelMeshBlockVLT &block, bool active, bool with_fading, unsigned int lod_index);
 

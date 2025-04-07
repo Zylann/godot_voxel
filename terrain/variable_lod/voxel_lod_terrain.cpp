@@ -647,17 +647,17 @@ Ref<VoxelTool> VoxelLodTerrain::get_voxel_tool() {
 }
 
 int VoxelLodTerrain::get_view_distance() const {
-	return _update_data->settings.view_distance_voxels;
+	return _update_data->settings.view_distance_local;
 }
 
 // TODO Needs to be clamped dynamically, to avoid the user accidentally setting blowing up memory.
 // It used to be clamped to a hardcoded value, but now it may depend on LOD count and boundaries
-void VoxelLodTerrain::set_view_distance(int p_distance_in_voxels) {
-	ERR_FAIL_COND(p_distance_in_voxels <= 0);
+void VoxelLodTerrain::set_view_distance(int p_distance_in_local_units) {
+	ERR_FAIL_COND(p_distance_in_local_units <= 0);
 	// Note: this is a hint distance, the terrain will attempt to have this radius filled with loaded voxels.
 	// It is possible for blocks to still load beyond that distance.
 	_update_data->wait_for_end_of_task();
-	_update_data->settings.view_distance_voxels = p_distance_in_voxels;
+	_update_data->settings.view_distance_local = p_distance_in_local_units;
 	_update_data->state.octree_streaming.force_update_octrees_next_update = true;
 }
 
@@ -743,7 +743,7 @@ void VoxelLodTerrain::stop_streamer() {
 }
 
 void VoxelLodTerrain::set_lod_distance(float p_lod_distance) {
-	if (p_lod_distance == _update_data->settings.lod_distance) {
+	if (p_lod_distance == _update_data->settings.lod_distance_local) {
 		return;
 	}
 
@@ -753,7 +753,7 @@ void VoxelLodTerrain::set_lod_distance(float p_lod_distance) {
 	// otherwise lods will decimate too fast and it will look messy
 	const float lod_distance =
 			math::clamp(p_lod_distance, constants::MINIMUM_LOD_DISTANCE, constants::MAXIMUM_LOD_DISTANCE);
-	_update_data->settings.lod_distance = lod_distance;
+	_update_data->settings.lod_distance_local = lod_distance;
 	_update_data->state.octree_streaming.force_update_octrees_next_update = true;
 	// VoxelEngine::get_singleton().set_volume_octree_lod_distance(_volume_id, get_lod_distance());
 
@@ -763,11 +763,11 @@ void VoxelLodTerrain::set_lod_distance(float p_lod_distance) {
 }
 
 float VoxelLodTerrain::get_lod_distance() const {
-	return _update_data->settings.lod_distance;
+	return _update_data->settings.lod_distance_local;
 }
 
 void VoxelLodTerrain::set_secondary_lod_distance(float p_lod_distance) {
-	if (p_lod_distance == _update_data->settings.secondary_lod_distance) {
+	if (p_lod_distance == _update_data->settings.secondary_lod_distance_local) {
 		return;
 	}
 
@@ -777,7 +777,7 @@ void VoxelLodTerrain::set_secondary_lod_distance(float p_lod_distance) {
 	// otherwise lods will decimate too fast and it will look messy
 	const float secondary_lod_distance =
 			math::clamp(p_lod_distance, constants::MINIMUM_LOD_DISTANCE, constants::MAXIMUM_LOD_DISTANCE);
-	_update_data->settings.secondary_lod_distance = secondary_lod_distance;
+	_update_data->settings.secondary_lod_distance_local = secondary_lod_distance;
 	_update_data->state.octree_streaming.force_update_octrees_next_update = true;
 	// VoxelEngine::get_singleton().set_volume_octree_lod_distance(_volume_id, get_lod_distance());
 
@@ -787,7 +787,7 @@ void VoxelLodTerrain::set_secondary_lod_distance(float p_lod_distance) {
 }
 
 float VoxelLodTerrain::get_secondary_lod_distance() const {
-	return _update_data->settings.secondary_lod_distance;
+	return _update_data->settings.secondary_lod_distance_local;
 }
 
 void VoxelLodTerrain::get_lod_distances(Span<float> distances) {
@@ -800,16 +800,17 @@ void VoxelLodTerrain::get_lod_distances(Span<float> distances) {
 	const VoxelLodTerrainUpdateData::Settings &settings = _update_data->settings;
 	const int lod_count = math::min(get_lod_count(), static_cast<int>(distances.size()));
 
-	distances[0] = settings.lod_distance;
+	distances[0] = settings.lod_distance_local;
 
 	if (settings.streaming_system == VoxelLodTerrainUpdateData::STREAMING_SYSTEM_LEGACY_OCTREE) {
 		for (int lod_index = 1; lod_index < lod_count; ++lod_index) {
-			distances[lod_index] = settings.lod_distance;
+			distances[lod_index] = settings.lod_distance_local;
 		}
 
 	} else {
 		for (int lod_index = 1; lod_index < lod_count; ++lod_index) {
-			distances[lod_index] = settings.lod_distance + settings.secondary_lod_distance * (1 << lod_index);
+			distances[lod_index] =
+					settings.lod_distance_local + settings.secondary_lod_distance_local * (1 << lod_index);
 		}
 	}
 }
@@ -995,11 +996,13 @@ float VoxelLodTerrain::get_collision_margin() const {
 }
 
 int VoxelLodTerrain::get_data_block_region_extent() const {
-	return VoxelEngine::get_octree_lod_block_region_extent(_update_data->settings.lod_distance, get_data_block_size());
+	const float lod_distance_voxels = get_lod_distance() / get_voxel_size();
+	return VoxelEngine::get_octree_lod_block_region_extent(lod_distance_voxels, get_data_block_size());
 }
 
 int VoxelLodTerrain::get_mesh_block_region_extent() const {
-	return VoxelEngine::get_octree_lod_block_region_extent(_update_data->settings.lod_distance, get_mesh_block_size());
+	const float lod_distance_voxels = get_lod_distance() / get_voxel_size();
+	return VoxelEngine::get_octree_lod_block_region_extent(lod_distance_voxels, get_mesh_block_size());
 }
 
 Vector3i VoxelLodTerrain::voxel_to_data_block_position(Vector3 vpos, int lod_index) const {
@@ -1116,7 +1119,7 @@ void VoxelLodTerrain::_notification(int p_what) {
 		case NOTIFICATION_TRANSFORM_CHANGED: {
 			ZN_PROFILE_SCOPE_NAMED("VoxelLodTerrain::NOTIFICATION_TRANSFORM_CHANGED");
 
-			const Transform3D transform = get_global_transform();
+			const Transform3D transform = get_voxel_to_world_transform();
 			// VoxelEngine::get_singleton().set_volume_transform(_volume_id, transform);
 
 			if (!is_inside_tree()) {
@@ -1144,7 +1147,7 @@ void VoxelLodTerrain::_notification(int p_what) {
 	}
 }
 
-Vector3 VoxelLodTerrain::get_local_viewer_pos() const {
+Vector3 VoxelLodTerrain::get_default_viewer_position_in_voxels() const {
 	// Pick this by default
 	Vector3 pos = _update_data->state.lods[0].last_viewer_data_block_pos << get_data_block_size_pow2();
 
@@ -1155,7 +1158,7 @@ Vector3 VoxelLodTerrain::get_local_viewer_pos() const {
 			}
 	);
 
-	const Transform3D world_to_local = get_global_transform().affine_inverse();
+	const Transform3D world_to_local = get_voxel_to_world_transform().affine_inverse();
 	pos = world_to_local.xform(pos);
 	return pos;
 }
@@ -1220,7 +1223,7 @@ void VoxelLodTerrain::process(float delta) {
 		apply_main_thread_update_tasks();
 
 		// Get viewer location in voxel space
-		const Vector3 viewer_pos = get_local_viewer_pos();
+		const Vector3 viewer_pos = get_default_viewer_position_in_voxels();
 
 		// Copy viewers
 		{
@@ -1275,7 +1278,7 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 	// Transitions and fading are visual things, in multiplayer servers they won't be used, so we can take a shortcut
 	// and use the camera for them.
 	const LocalCameraInfo camera = get_local_camera_info();
-	const Transform3D volume_transform = get_global_transform();
+	const Transform3D voxel_to_world_transform = get_voxel_to_world_transform();
 	const unsigned int lod_count = get_lod_count();
 
 	// Apply quick reloads
@@ -1318,7 +1321,7 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 			// ERR_CONTINUE(block == nullptr);
 			bool with_fading = false;
 			if (_lod_fade_duration > 0.f) {
-				const Vector3 block_center = volume_transform.xform(
+				const Vector3 block_center = voxel_to_world_transform.xform(
 						to_vec3(block->position * mesh_block_size + Vector3iUtil::create(mesh_block_size / 2))
 				);
 				// Don't start fading on blocks behind the camera
@@ -1338,7 +1341,7 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 			// ERR_CONTINUE(block == nullptr);
 			bool with_fading = false;
 			if (_lod_fade_duration > 0.f) {
-				const Vector3 block_center = volume_transform.xform(
+				const Vector3 block_center = voxel_to_world_transform.xform(
 						to_vec3(block->position * mesh_block_size + Vector3iUtil::create(mesh_block_size / 2))
 				);
 				// Don't start fading on blocks behind the camera
@@ -1422,7 +1425,7 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 				// TODO It may be more efficient to just move the mesh instance from the block we are about to
 				// remove, rather than creating another
 
-				const Vector3 block_center = volume_transform.xform(
+				const Vector3 block_center = voxel_to_world_transform.xform(
 						to_vec3(bpos * mesh_block_size + Vector3iUtil::create(mesh_block_size / 2))
 				);
 
@@ -1477,7 +1480,7 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 							item.mesh_instance.set_mesh(mesh_block->get_mesh());
 							item.mesh_instance.set_gi_mode(get_gi_mode());
 							item.mesh_instance.set_transform(
-									volume_transform * Transform3D(Basis(), item.local_position)
+									voxel_to_world_transform * Transform3D(Basis(), item.local_position)
 							);
 							item.mesh_instance.set_material_override(item.shader_material);
 							item.mesh_instance.set_world(*get_world_3d());
@@ -1537,7 +1540,7 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 					activated_visual_blocks.find(block) == activated_visual_blocks.end() &&
 					tu.transition_mask != block->get_transition_mask()) {
 					//
-					const Vector3 block_center = volume_transform.xform(
+					const Vector3 block_center = voxel_to_world_transform.xform(
 							to_vec3(block->position * mesh_block_size + Vector3iUtil::create(mesh_block_size / 2))
 					);
 
@@ -1566,7 +1569,9 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 						item.mesh_instance.set_interpolated(false);
 						item.mesh_instance.set_mesh(block->get_mesh());
 						item.mesh_instance.set_gi_mode(get_gi_mode());
-						item.mesh_instance.set_transform(volume_transform * Transform3D(Basis(), item.local_position));
+						item.mesh_instance.set_transform(
+								voxel_to_world_transform * Transform3D(Basis(), item.local_position)
+						);
 						item.mesh_instance.set_material_override(item.shader_material);
 						item.mesh_instance.set_world(*get_world_3d());
 						item.mesh_instance.set_visible(true);
@@ -2068,7 +2073,7 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 	// This is done regardless in case a MeshInstance or collision body is created, because it will then set its
 	// position
 	// TODO Godot prevents this from working when outside of the scene tree!
-	block->set_parent_transform(get_global_transform());
+	block->set_parent_transform(get_voxel_to_world_transform());
 
 	if (ob.detail_textures != nullptr && visual_expected) {
 		if (ob.detail_textures->valid) {
@@ -2125,7 +2130,6 @@ void try_apply_parent_detail_texture_to_block(
 		Vector3i parent_bpos,
 		const DetailRenderingSettings &detail_texture_settings
 ) {
-	//
 	Ref<ShaderMaterial> parent_material = parent_block.get_shader_material();
 	ZN_ASSERT_RETURN(parent_material.is_valid());
 	const VoxelStringNames &sn = VoxelStringNames::get_singleton();
@@ -2694,6 +2698,31 @@ float VoxelLodTerrain::get_lod_fade_duration() const {
 	return _lod_fade_duration;
 }
 
+void VoxelLodTerrain::set_voxel_size(const float new_size) {
+	const float checked_size = math::clamp(new_size, constants::MIN_VOXEL_SIZE, constants::MAX_VOXEL_SIZE);
+
+	_update_data->wait_for_end_of_task();
+
+	if (checked_size == _update_data->settings.voxel_size) {
+		return;
+	}
+
+	_update_data->settings.voxel_size = checked_size;
+	// _update_data->state.octree_streaming.force_update_octrees_next_update = true;
+	_on_stream_params_changed();
+}
+
+float VoxelLodTerrain::get_voxel_size() const {
+	return _update_data->settings.voxel_size;
+}
+
+Transform3D VoxelLodTerrain::get_voxel_to_world_transform() const {
+	Transform3D trans = get_global_transform();
+	const float voxel_size = _update_data->settings.voxel_size;
+	trans.basis.scale(Vector3(voxel_size, voxel_size, voxel_size));
+	return trans;
+}
+
 void VoxelLodTerrain::set_normalmap_enabled(bool enable) {
 	_update_data->settings.detail_texture_settings.enabled = enable;
 }
@@ -2984,9 +3013,9 @@ AABB VoxelLodTerrain::_b_get_voxel_bounds() const {
 // DEBUG LAND
 
 Array VoxelLodTerrain::debug_raycast_mesh_block(Vector3 world_origin, Vector3 world_direction) const {
-	const Transform3D world_to_local = get_global_transform().affine_inverse();
-	Vector3 pos = world_to_local.xform(world_origin);
-	const Vector3 dir = world_to_local.basis.xform(world_direction);
+	const Transform3D world_to_voxel = get_voxel_to_world_transform().affine_inverse();
+	Vector3 pos = world_to_voxel.xform(world_origin);
+	const Vector3 dir = world_to_voxel.basis.xform(world_direction);
 	const float max_distance = 256;
 	const float step = 2.f;
 	float distance = 0.f;
@@ -3273,19 +3302,19 @@ void VoxelLodTerrain::update_gizmos() {
 	DebugRenderer &dr = _debug_renderer;
 	dr.begin();
 
-	const Transform3D parent_transform = get_global_transform();
+	const Transform3D voxel_to_world_transform = get_global_transform();
 	const unsigned int lod_count = get_lod_count();
 	const int mesh_block_size = get_mesh_block_size();
 
 	// Octree bounds
 	if (debug_get_draw_flag(DEBUG_DRAW_OCTREE_BOUNDS)) {
 		const int octree_size = 1 << LodOctree::get_octree_size_po2(get_mesh_block_size_pow2(), get_lod_count());
-		const Basis local_octree_basis = Basis().scaled(Vector3(octree_size, octree_size, octree_size));
+		const Basis voxel_octree_basis = Basis().scaled(Vector3(octree_size, octree_size, octree_size));
 
 		for (auto it = state.octree_streaming.lod_octrees.begin(); it != state.octree_streaming.lod_octrees.end();
 			 ++it) {
-			const Transform3D local_transform(local_octree_basis, it->first * octree_size);
-			dr.draw_box(parent_transform * local_transform, Color(0.5, 0.5, 0.5));
+			const Transform3D voxel_transform(voxel_octree_basis, it->first * octree_size);
+			dr.draw_box(voxel_to_world_transform * voxel_transform, Color(0.5, 0.5, 0.5));
 		}
 	}
 
@@ -3297,10 +3326,10 @@ void VoxelLodTerrain::update_gizmos() {
 		if (bounds_in_voxels_len < 10000) {
 			const Vector3 margin = Vector3(1, 1, 1) * bounds_in_voxels_len * 0.0025f;
 			const Vector3 size = bounds_in_voxels.size;
-			const Transform3D local_transform(
+			const Transform3D voxel_transform(
 					Basis().scaled(size + margin * 2.f), Vector3(bounds_in_voxels.position) - margin
 			);
-			dr.draw_box(parent_transform * local_transform, Color(1, 1, 1));
+			dr.draw_box(voxel_to_world_transform * voxel_transform, Color(1, 1, 1));
 		}
 	}
 
@@ -3316,14 +3345,14 @@ void VoxelLodTerrain::update_gizmos() {
 			const Vector3i block_pos_maxlod = it->first;
 			const Vector3i block_offset_lod0 = block_pos_maxlod << (lod_count - 1);
 
-			octree.for_each_leaf([&dr, block_offset_lod0, mesh_block_size, parent_transform, lod_count_f](
+			octree.for_each_leaf([&dr, block_offset_lod0, mesh_block_size, voxel_to_world_transform, lod_count_f](
 										 Vector3i node_pos, int lod_index, const LodOctree::NodeData &node_data
 								 ) {
 				//
 				const int size = mesh_block_size << lod_index;
 				const Vector3i voxel_pos = mesh_block_size * ((node_pos << lod_index) + block_offset_lod0);
-				const Transform3D local_transform(Basis().scaled(Vector3(size, size, size)), voxel_pos);
-				const Transform3D t = parent_transform * local_transform;
+				const Transform3D voxel_transform(Basis().scaled(Vector3(size, size, size)), voxel_pos);
+				const Transform3D t = voxel_to_world_transform * voxel_transform;
 				// Squaring because lower lod indexes are more interesting to see, so we give them more contrast.
 				// Also this might be better with sRGB?
 				const float g = math::squared(math::max(1.f - float(lod_index) / lod_count_f, 0.f));
@@ -3344,8 +3373,8 @@ void VoxelLodTerrain::update_gizmos() {
 					const int size = mesh_block_size << lod_index;
 					const Vector3i bpos = mesh_it->first;
 					const Vector3i voxel_pos = mesh_block_size * (bpos << lod_index);
-					const Transform3D local_transform(Basis().scaled(Vector3(size, size, size)), voxel_pos);
-					const Transform3D t = parent_transform * local_transform;
+					const Transform3D voxel_transform(Basis().scaled(Vector3(size, size, size)), voxel_pos);
+					const Transform3D t = voxel_to_world_transform * voxel_transform;
 					// Squaring because lower lod indexes are more interesting to see, so we give them more contrast.
 					// Also this might be better with sRGB?
 					const float g = math::squared(math::max(1.f - float(lod_index) / lod_count_f, 0.f));
@@ -3361,7 +3390,7 @@ void VoxelLodTerrain::update_gizmos() {
 
 			const int lod_block_size = mesh_block_size << lod_index;
 
-			mesh_map.for_each_block([lod_block_size, &parent_transform, &dr](const VoxelMeshBlockVLT &block) {
+			mesh_map.for_each_block([lod_block_size, &voxel_to_world_transform, &dr](const VoxelMeshBlockVLT &block) {
 				Color8 color;
 				if (block.has_mesh() && block.has_collision_shape()) {
 					color = Color8(255, 255, 0, 255);
@@ -3374,10 +3403,10 @@ void VoxelLodTerrain::update_gizmos() {
 					color = Color8(0, 0, 0, 255);
 				}
 				const Vector3i voxel_pos = block.position * lod_block_size;
-				const Transform3D local_transform(
+				const Transform3D voxel_transform(
 						Basis().scaled(Vector3(lod_block_size, lod_block_size, lod_block_size)), voxel_pos
 				);
-				const Transform3D t = parent_transform * local_transform;
+				const Transform3D t = voxel_to_world_transform * voxel_transform;
 				dr.draw_box(t, color);
 			});
 		}
@@ -3389,7 +3418,7 @@ void VoxelLodTerrain::update_gizmos() {
 
 			const int lod_block_size = mesh_block_size << lod_index;
 
-			mesh_map.for_each_block([lod_block_size, &parent_transform, &dr](const VoxelMeshBlockVLT &block) {
+			mesh_map.for_each_block([lod_block_size, &voxel_to_world_transform, &dr](const VoxelMeshBlockVLT &block) {
 				Color8 color;
 				if (block.visual_active && block.is_collision_enabled()) {
 					color = Color8(255, 255, 0, 255);
@@ -3401,10 +3430,10 @@ void VoxelLodTerrain::update_gizmos() {
 					return;
 				}
 				const Vector3i voxel_pos = block.position * lod_block_size;
-				const Transform3D local_transform(
+				const Transform3D voxel_transform(
 						Basis().scaled(Vector3(lod_block_size, lod_block_size, lod_block_size)), voxel_pos
 				);
-				const Transform3D t = parent_transform * local_transform;
+				const Transform3D t = voxel_to_world_transform * voxel_transform;
 				dr.draw_box(t, color);
 			});
 		}
@@ -3418,11 +3447,11 @@ void VoxelLodTerrain::update_gizmos() {
 			for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
 				const int lod_mesh_block_size = mesh_block_size << lod_index;
 				const Box3i box = paired_viewer.state.mesh_box_per_lod[lod_index];
-				const Transform3D lt(
+				const Transform3D vt(
 						Basis().scaled(to_vec3(box.size * lod_mesh_block_size)),
 						to_vec3(box.position * lod_mesh_block_size)
 				);
-				const Transform3D t = parent_transform * lt;
+				const Transform3D t = voxel_to_world_transform * vt;
 				const float g = math::squared(math::max(1.f - float(lod_index) / lod_count_f, 0.f));
 				dr.draw_box(t, Color8(uint8_t(g * 254.f), 32, 255, 255));
 			}
@@ -3437,10 +3466,12 @@ void VoxelLodTerrain::update_gizmos() {
 		// Note, if this causes too much contention somehow, we could get away with not locking spatial lock, dirty
 		// reads of block flags should not hurt since they are only drawn every frame for debugging
 		_data->for_each_block_at_lod_r(
-				[&dr, parent_transform, data_block_size, basis](const Vector3i &bpos, const VoxelDataBlock &block) {
+				[&dr, voxel_to_world_transform, data_block_size, basis](
+						const Vector3i &bpos, const VoxelDataBlock &block
+				) {
 					if (block.is_edited()) {
-						const Transform3D local_transform(basis, bpos * data_block_size);
-						const Transform3D t = parent_transform * local_transform;
+						const Transform3D voxel_transform(basis, bpos * data_block_size);
+						const Transform3D t = voxel_to_world_transform * voxel_transform;
 						const Color8 c = block.is_modified() ? Color8(255, 255, 0, 255) : Color8(0, 255, 0, 255);
 						dr.draw_box(t, c);
 					}
@@ -3453,12 +3484,12 @@ void VoxelLodTerrain::update_gizmos() {
 	for (unsigned int i = 0; i < _debug_mesh_update_items.size();) {
 		DebugMeshUpdateItem &item = _debug_mesh_update_items[i];
 
-		const Transform3D local_transform(
+		const Transform3D voxel_transform(
 				Basis().scaled(to_vec3(Vector3iUtil::create(mesh_block_size << item.lod))),
 				to_vec3(item.position * (mesh_block_size << item.lod))
 		);
 
-		const Transform3D t = parent_transform * local_transform;
+		const Transform3D t = voxel_to_world_transform * voxel_transform;
 
 		const Color color = math::lerp(
 				Color(0, 0, 0), Color(0, 1, 1), item.remaining_frames / float(DebugMeshUpdateItem::LINGER_FRAMES)
@@ -3477,11 +3508,11 @@ void VoxelLodTerrain::update_gizmos() {
 	for (unsigned int i = 0; i < _debug_edit_items.size();) {
 		DebugEditItem &item = _debug_edit_items[i];
 
-		const Transform3D local_transform(
+		const Transform3D voxel_transform(
 				Basis().scaled(to_vec3(item.voxel_box.size)), to_vec3(item.voxel_box.position)
 		);
 
-		const Transform3D t = parent_transform * local_transform;
+		const Transform3D t = voxel_to_world_transform * voxel_transform;
 
 		const Color color = math::lerp(
 				Color(0, 0, 0), Color(1, 1, 0), item.remaining_frames / float(DebugMeshUpdateItem::LINGER_FRAMES)
@@ -3513,28 +3544,29 @@ void VoxelLodTerrain::update_gizmos() {
 #endif
 
 // This copies at multiple LOD levels to debug mips
-Array VoxelLodTerrain::_b_debug_print_sdf_top_down(Vector3i center, Vector3i extents) {
-	ERR_FAIL_COND_V(!math::is_valid_size(extents), Array());
+Array VoxelLodTerrain::_b_debug_print_sdf_top_down(Vector3i center_in_voxels, Vector3i extents_in_voxels) {
+	ERR_FAIL_COND_V(!math::is_valid_size(extents_in_voxels), Array());
 
 	Array image_array;
 	const unsigned int lod_count = get_lod_count();
 	const VoxelData &voxel_data = *_data;
 
 	for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
-		const Box3i world_box = Box3i::from_center_extents(center >> lod_index, extents >> lod_index);
+		const Box3i box_voxels =
+				Box3i::from_center_extents(center_in_voxels >> lod_index, extents_in_voxels >> lod_index);
 
-		if (Vector3iUtil::get_volume_u64(world_box.size) == 0) {
+		if (Vector3iUtil::get_volume_u64(box_voxels.size) == 0) {
 			continue;
 		}
 
 		VoxelBuffer buffer(VoxelBuffer::ALLOCATOR_DEFAULT);
-		buffer.create(world_box.size);
+		buffer.create(box_voxels.size);
 
-		world_box.for_each_cell([world_box, &buffer, &voxel_data](const Vector3i &world_pos) {
-			const Vector3i rpos = world_pos - world_box.position;
+		box_voxels.for_each_cell([box_voxels, &buffer, &voxel_data](const Vector3i &voxel_pos) {
+			const Vector3i rpos = voxel_pos - box_voxels.position;
 			VoxelSingleValue v;
 			v.f = constants::SDF_FAR_OUTSIDE;
-			v = voxel_data.get_voxel(world_pos, VoxelBuffer::CHANNEL_SDF, v);
+			v = voxel_data.get_voxel(voxel_pos, VoxelBuffer::CHANNEL_SDF, v);
 			buffer.set_voxel_f(v.f, rpos.x, rpos.y, rpos.z, VoxelBuffer::CHANNEL_SDF);
 		});
 
@@ -3564,6 +3596,7 @@ Node3D *VoxelLodTerrain::debug_dump_as_nodes(bool include_instancer) const {
 	root->set_name(get_name());
 
 	const unsigned int lod_count = get_lod_count();
+	const float voxel_size = get_voxel_size();
 
 	for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
 		const VoxelMeshMap<VoxelMeshBlockVLT> &mesh_map = _mesh_maps_per_lod[lod_index];
@@ -3573,12 +3606,15 @@ Node3D *VoxelLodTerrain::debug_dump_as_nodes(bool include_instancer) const {
 		lod_node->set_name(String("LOD{0}").format(varray(lod_index)));
 		root->add_child(lod_node);
 
-		mesh_map.for_each_block([lod_node](const VoxelMeshBlockVLT &block) {
+		mesh_map.for_each_block([lod_node, voxel_size](const VoxelMeshBlockVLT &block) {
 			block.for_each_mesh_instance_with_transform(
-					[lod_node, &block](const zylann::godot::DirectMeshInstance &dmi, Transform3D t) {
+					[lod_node, &block, voxel_size](const zylann::godot::DirectMeshInstance &dmi, Transform3D t) {
 						Ref<Mesh> mesh = dmi.get_mesh();
 
 						if (mesh.is_valid()) {
+							t.origin *= voxel_size;
+							t.basis.scale(Vector3(voxel_size, voxel_size, voxel_size));
+
 							MeshInstance3D *mi = memnew(MeshInstance3D);
 							mi->set_mesh(mesh);
 							mi->set_transform(t);
@@ -3695,6 +3731,9 @@ void VoxelLodTerrain::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("is_area_meshed", "area_in_voxels", "lod_index"), &Self::_b_is_area_meshed);
 
+	ClassDB::bind_method(D_METHOD("set_voxel_size", "new_size"), &Self::set_voxel_size);
+	ClassDB::bind_method(D_METHOD("get_voxel_size"), &Self::get_voxel_size);
+
 	// Normalmaps
 
 	ClassDB::bind_method(D_METHOD("set_normalmap_enabled", "enabled"), &Self::set_normalmap_enabled);
@@ -3808,10 +3847,11 @@ void VoxelLodTerrain::_bind_methods() {
 	BIND_ENUM_CONSTANT(STREAMING_SYSTEM_LEGACY_OCTREE);
 	BIND_ENUM_CONSTANT(STREAMING_SYSTEM_CLIPBOX);
 
-	ADD_GROUP("Bounds", "");
+	ADD_GROUP("Dimensions", "");
 
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "view_distance"), "set_view_distance", "get_view_distance");
 	ADD_PROPERTY(PropertyInfo(Variant::AABB, "voxel_bounds"), "set_voxel_bounds", "get_voxel_bounds");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "voxel_size"), "set_voxel_size", "get_voxel_size");
 
 	ADD_GROUP("Level of detail", "");
 

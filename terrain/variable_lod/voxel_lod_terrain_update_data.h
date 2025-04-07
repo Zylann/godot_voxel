@@ -62,10 +62,18 @@ struct VoxelLodTerrainUpdateData {
 		// unsigned int lod_count = 0;
 
 		// Distance between a viewer and the end of LOD0. May not be respected exactly, it can be rounded up
-		float lod_distance = 0.f;
+		float lod_distance_local = 0.f;
 		// Distance between the end of LOD0 and the end of LOD1, carried over to other LODs
-		float secondary_lod_distance = 0.f;
-		unsigned int view_distance_voxels = 512;
+		float secondary_lod_distance_local = 0.f;
+		float view_distance_local = 512;
+		// Size of one voxel in local terrain space. This works similarly to terrain scale, but does not apply to child
+		// nodes, and can be used by generators to decouple voxel size from generated shapes.
+		// WARNING: be very careful when changing this. It has performance and persistent implications.
+		// Halving it means 8 times more voxels will need to load for the same view distance.
+		// Changing it also changes the size of chunks, which can in turn affect instancing and existing saves,
+		// especially if generators work in space units rather than voxel units.
+		// It is strongly recommended to choose it early on.
+		float voxel_size = 1.f;
 		StreamingSystem streaming_system = STREAMING_SYSTEM_LEGACY_OCTREE;
 		// bool full_load_mode = false;
 		bool run_stream_in_editor = true;

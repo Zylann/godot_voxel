@@ -98,6 +98,11 @@ public:
 	void set_generator_use_gpu(bool enabled);
 	bool get_generator_use_gpu() const;
 
+	void set_voxel_size(const float new_size);
+	float get_voxel_size() const override;
+
+	Transform3D get_voxel_to_world_transform() const;
+
 	VoxelData &get_storage() const {
 		ZN_ASSERT(_data != nullptr);
 		return *_data;
@@ -307,6 +312,7 @@ private:
 	uint32_t _mesh_block_size_po2 = constants::DEFAULT_BLOCK_SIZE_PO2;
 
 	unsigned int _max_view_distance_voxels = 128;
+	float _voxel_size = 1.f;
 
 	// TODO Terrains only need to handle the visible portion of voxels, which reduces the bounds blocks to handle.
 	// Therefore, could a simple grid be better to use than a hashmap?

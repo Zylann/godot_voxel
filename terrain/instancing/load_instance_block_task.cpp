@@ -22,7 +22,8 @@ LoadInstanceChunkTask::LoadInstanceChunkTask( //
 		uint8_t lod_index, //
 		uint8_t instance_block_size, //
 		uint8_t data_block_size, //
-		UpMode up_mode //
+		UpMode up_mode, //
+		float voxel_size
 ) :
 		//
 		_output_queue(output_queue), //
@@ -34,7 +35,8 @@ LoadInstanceChunkTask::LoadInstanceChunkTask( //
 		_lod_index(lod_index), //
 		_instance_block_size(instance_block_size), //
 		_data_block_size(data_block_size), //
-		_up_mode(up_mode) //
+		_up_mode(up_mode), //
+		_voxel_size(voxel_size)
 {
 #ifdef DEBUG_ENABLED
 	ZN_ASSERT(_output_queue != nullptr);
@@ -232,6 +234,7 @@ void LoadInstanceChunkTask::run(ThreadedTaskContext &ctx) {
 						task->mesh_block_grid_position = _render_grid_position;
 						task->layer_id = item.id;
 						task->mesh_block_size = static_cast<int>(_instance_block_size) << _lod_index;
+						task->voxel_size = _voxel_size;
 						task->lod_index = _lod_index;
 						task->edited_mask = layer.edited_mask;
 						task->up_mode = _up_mode;

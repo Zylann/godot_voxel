@@ -182,17 +182,21 @@ void process_viewers(
 
 	// Note, this does not support non-uniform scaling
 	// TODO There is probably a better way to do this
-	const float view_distance_scale = world_to_local_transform.basis.xform(Vector3(1, 0, 0)).length();
+	const float view_distance_scale =
+			world_to_local_transform.basis.xform(Vector3(1, 0, 0)).length() / volume_settings.voxel_size;
 
 	const int data_block_size = 1 << data_block_size_po2;
 
 	const int mesh_block_size = 1 << volume_settings.mesh_block_size_po2;
 	const int mesh_to_data_factor = mesh_block_size / data_block_size;
 
-	const int lod0_distance_in_mesh_chunks =
-			get_lod_distance_in_mesh_chunks(volume_settings.lod_distance, mesh_block_size);
+	const float lod_distance_voxels = volume_settings.lod_distance_local / volume_settings.voxel_size;
+	const float secondary_lod_distance_voxels =
+			volume_settings.secondary_lod_distance_local / volume_settings.voxel_size;
+
+	const int lod0_distance_in_mesh_chunks = get_lod_distance_in_mesh_chunks(lod_distance_voxels, mesh_block_size);
 	const int lodn_distance_in_mesh_chunks =
-			get_lod_distance_in_mesh_chunks(volume_settings.secondary_lod_distance, mesh_block_size);
+			get_lod_distance_in_mesh_chunks(secondary_lod_distance_voxels, mesh_block_size);
 
 	// Data chunks are driven by mesh chunks, because mesh needs data
 	const int lod0_distance_in_data_chunks = lod0_distance_in_mesh_chunks * mesh_to_data_factor;
@@ -228,10 +232,12 @@ void process_viewers(
 			const int view_distance_voxels_v =
 					static_cast<int>(static_cast<float>(viewer.view_distances.vertical) * view_distance_scale);
 
+			const float view_distance_voxels = volume_settings.view_distance_local / volume_settings.voxel_size;
+
 			paired_viewer.state.view_distance_voxels.horizontal =
-					math::min(view_distance_voxels_h, static_cast<int>(volume_settings.view_distance_voxels));
+					math::min(view_distance_voxels_h, static_cast<int>(view_distance_voxels));
 			paired_viewer.state.view_distance_voxels.vertical =
-					math::min(view_distance_voxels_v, static_cast<int>(volume_settings.view_distance_voxels));
+					math::min(view_distance_voxels_v, static_cast<int>(view_distance_voxels));
 		}
 
 		// The last LOD should extend at least up to view distance. It must also be at least the distance specified by

@@ -22,23 +22,27 @@ namespace zylann::voxel {
 
 namespace {
 
-inline Vector3i get_block_center(Vector3i pos, int bs, int lod) {
-	return (pos << lod) * bs + Vector3iUtil::create(bs / 2);
+inline Vector3i get_block_center(const Vector3i pos, const int block_resolution, const int lod) {
+	const int block_size_in_lod0_voxels = block_resolution << lod;
+	return (pos * block_size_in_lod0_voxels) + Vector3iUtil::create(block_size_in_lod0_voxels / 2);
 }
 
 void init_sparse_octree_priority_dependency(
 		PriorityDependency &dep,
 		const Vector3i block_position,
 		const uint8_t lod,
-		const int data_block_size,
+		const int data_block_resolution,
 		const std::shared_ptr<PriorityDependency::ViewersData> &shared_viewers_data,
 		const Transform3D &volume_transform,
-		const float octree_lod_distance
+		const float octree_lod_distance_voxels,
+		const float voxel_size
 ) {
-	const Vector3i voxel_pos = get_block_center(block_position, data_block_size, lod);
-	const float block_radius = (data_block_size << lod) / 2;
+	const Vector3i voxel_pos = get_block_center(block_position, data_block_resolution, lod);
 	dep.shared = shared_viewers_data;
-	dep.world_position = to_vec3f(volume_transform.xform(voxel_pos));
+	dep.world_position = to_vec3f(volume_transform.xform(voxel_pos)) * voxel_size;
+
+	// TODO This should not need to be recalculated each time
+	const float block_radius = voxel_size * (data_block_resolution << lod) / 2;
 	const float transformed_block_radius =
 			volume_transform.basis.xform(Vector3(block_radius, block_radius, block_radius)).length();
 
@@ -47,7 +51,7 @@ void init_sparse_octree_priority_dependency(
 	// TODO Should `data_block_size` be used here? Should it be mesh_block_size instead?
 	dep.drop_distance_squared = math::squared(
 			2.f * transformed_block_radius *
-			VoxelEngine::get_octree_lod_block_region_extent(octree_lod_distance, data_block_size)
+			VoxelEngine::get_octree_lod_block_region_extent(octree_lod_distance_voxels, data_block_resolution)
 	);
 }
 
@@ -85,6 +89,8 @@ void request_block_generate(
 	params.use_gpu = settings.generator_use_gpu;
 	params.cancellation_token = cancellation_token;
 
+	const float lod_distance_voxels = settings.lod_distance_local / settings.voxel_size;
+
 	init_sparse_octree_priority_dependency(
 			params.priority_dependency,
 			block_pos,
@@ -92,7 +98,8 @@ void request_block_generate(
 			data_block_size,
 			shared_viewers_data,
 			volume_transform,
-			settings.lod_distance
+			lod_distance_voxels,
+			settings.voxel_size
 	);
 
 	IThreadedTask *task = stream_dependency->generator->create_block_task(params);
@@ -135,6 +142,8 @@ void request_block_load(
 	}
 
 	if (stream_dependency->stream.is_valid()) {
+		const float lod_distance_voxels = settings.lod_distance_local / settings.voxel_size;
+
 		PriorityDependency priority_dependency;
 		init_sparse_octree_priority_dependency(
 				priority_dependency,
@@ -143,7 +152,8 @@ void request_block_load(
 				data_block_size,
 				shared_viewers_data,
 				volume_transform,
-				settings.lod_distance
+				lod_distance_voxels,
+				settings.voxel_size
 		);
 
 		const bool request_instances = false;
@@ -303,6 +313,8 @@ void send_mesh_requests(
 	const int render_to_data_factor = mesh_block_size / data_block_size;
 	const unsigned int lod_count = data.get_lod_count();
 
+	const float lod_distance_voxels = settings.lod_distance_local / settings.voxel_size;
+
 	for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
 		ZN_PROFILE_SCOPE();
 		VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
@@ -369,7 +381,9 @@ void send_mesh_requests(
 					mesh_block_size,
 					shared_viewers_data,
 					volume_transform,
-					settings.lod_distance
+					// TODO Should we account for secondary lod distance?
+					lod_distance_voxels,
+					settings.voxel_size
 			);
 
 			task_scheduler.push_main_task(task);
@@ -934,7 +948,13 @@ void VoxelLodTerrainUpdateTask::run(ThreadedTaskContext &ctx) {
 	profiling_clock.restart();
 	if (settings.streaming_system == VoxelLodTerrainUpdateData::STREAMING_SYSTEM_LEGACY_OCTREE) {
 		process_octree_streaming(
-				state, data, _viewer_pos, data_blocks_to_save, data_blocks_to_load, settings, stream_enabled
+				state,
+				data,
+				_default_viewer_pos_voxels,
+				data_blocks_to_save,
+				data_blocks_to_load,
+				settings,
+				stream_enabled
 		);
 	} else {
 		process_clipbox_streaming(

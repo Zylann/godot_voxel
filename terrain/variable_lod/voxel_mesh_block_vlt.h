@@ -98,13 +98,12 @@ public:
 
 	template <typename F>
 	void for_each_mesh_instance_with_transform(F f) const {
-		const Transform3D local_transform(Basis(), _position_in_voxels);
-		const Transform3D world_transform = local_transform;
-		f(_mesh_instance, world_transform);
+		const Transform3D voxel_transform(Basis(), _position_in_voxels);
+		f(_mesh_instance, voxel_transform);
 		for (unsigned int i = 0; i < _transition_mesh_instances.size(); ++i) {
 			const zylann::godot::DirectMeshInstance &mi = _transition_mesh_instances[i];
 			if (mi.is_valid()) {
-				f(mi, world_transform);
+				f(mi, voxel_transform);
 			}
 		}
 	}

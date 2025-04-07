@@ -39,7 +39,7 @@ Ref<VoxelRaycastResult> VoxelToolLodTerrain::raycast(
 	return raycast_generic_world(
 			_terrain->get_storage(),
 			_terrain->get_mesher(),
-			_terrain->get_global_transform(),
+			_terrain->get_voxel_to_world_transform(),
 			pos,
 			dir,
 			max_distance,
@@ -317,7 +317,7 @@ Array VoxelToolLodTerrain::separate_floating_chunks(AABB world_box, Object *pare
 	materials.append(_terrain->get_material());
 	const Box3i int_world_box(math::floor_to_int(world_box.position), math::ceil_to_int(world_box.size));
 	return zylann::voxel::separate_floating_chunks(
-			*this, int_world_box, parent_node, _terrain->get_global_transform(), mesher, materials
+			*this, int_world_box, parent_node, _terrain->get_voxel_to_world_transform(), mesher, materials
 	);
 }
 
@@ -333,7 +333,7 @@ Array VoxelToolLodTerrain::separate_floating_chunks(AABB world_box, Object *pare
 //
 void VoxelToolLodTerrain::stamp_sdf(
 		Ref<VoxelMeshSDF> mesh_sdf,
-		Transform3D transform,
+		Transform3D world_transform,
 		float isolevel,
 		float sdf_scale
 ) {
@@ -350,11 +350,13 @@ void VoxelToolLodTerrain::stamp_sdf(
 	ERR_FAIL_COND(buffer.get_channel_compression(channel) == VoxelBuffer::COMPRESSION_UNIFORM);
 	ERR_FAIL_COND(buffer.get_channel_depth(channel) != VoxelBuffer::DEPTH_32_BIT);
 
-	const Transform3D &box_to_world = transform;
+	const Transform3D world_to_voxel = _terrain->get_voxel_to_world_transform().affine_inverse();
+
+	const Transform3D &box_to_voxel = world_to_voxel * world_transform;
 	const AABB local_aabb = mesh_sdf->get_aabb();
 
 	// Note, transform is local to the terrain
-	const AABB aabb = box_to_world.xform(local_aabb);
+	const AABB aabb = box_to_voxel.xform(local_aabb);
 	const Box3i voxel_box = Box3i::from_min_max(aabb.position.floor(), (aabb.position + aabb.size).ceil());
 
 	// TODO Sometimes it will fail near unloaded blocks, even though the transformed box does not intersect them.
@@ -374,12 +376,12 @@ void VoxelToolLodTerrain::stamp_sdf(
 
 	const Transform3D buffer_to_box =
 			Transform3D(Basis().scaled(Vector3(local_aabb.size / buffer.get_size())), local_aabb.position);
-	const Transform3D buffer_to_world = box_to_world * buffer_to_box;
+	const Transform3D buffer_to_voxel = box_to_voxel * buffer_to_box;
 
 	// TODO Support other depths, format should be accessible from the volume
 	ops::SdfOperation16bit<ops::SdfUnion, ops::SdfBufferShape> op;
 	op.op.strength = get_sdf_strength();
-	op.shape.world_to_buffer = buffer_to_world.affine_inverse();
+	op.shape.world_to_buffer = buffer_to_voxel.affine_inverse();
 	op.shape.buffer_size = buffer.get_size();
 	op.shape.isolevel = isolevel;
 	op.shape.sdf_scale = sdf_scale;
@@ -398,16 +400,23 @@ void VoxelToolLodTerrain::stamp_sdf(
 // The graph must have an SDF output and can also have an SDF input to read source voxels.
 // The transform contains the position of the edit, its orientation and scale.
 // Graph base size is the original size of the brush, as designed in the graph. It will be scaled using the transform.
-void VoxelToolLodTerrain::do_graph(Ref<VoxelGeneratorGraph> graph, Transform3D transform, Vector3 graph_base_size) {
+void VoxelToolLodTerrain::do_graph(
+		Ref<VoxelGeneratorGraph> graph,
+		Transform3D world_transform,
+		Vector3 graph_base_size
+) {
 	ZN_PROFILE_SCOPE();
 	ZN_DSTACK();
 	ERR_FAIL_COND(_terrain == nullptr);
 
-	const Vector3 area_size = math::abs(transform.basis.xform(graph_base_size));
+	const Transform3D world_to_voxel = _terrain->get_voxel_to_world_transform().affine_inverse();
+	const Transform3D voxel_transform = world_to_voxel * world_transform;
+
+	const Vector3 area_size = math::abs(voxel_transform.basis.xform(graph_base_size));
 
 	const Box3i box = Box3i::from_min_max(
-							  math::floor_to_int(transform.origin - 0.5 * area_size),
-							  math::ceil_to_int(transform.origin + 0.5 * area_size)
+							  math::floor_to_int(voxel_transform.origin - 0.5 * area_size),
+							  math::ceil_to_int(voxel_transform.origin + 0.5 * area_size)
 	)
 							  .padded(2)
 							  .clipped(_terrain->get_voxel_bounds());
@@ -446,14 +455,14 @@ void VoxelToolLodTerrain::do_graph(Ref<VoxelGeneratorGraph> graph, Transform3D t
 	Span<float> in_y = to_span(tls_in_y);
 	Span<float> in_z = to_span(tls_in_z);
 
-	const Transform3D inv_transform = transform.affine_inverse();
+	const Transform3D inv_transform = voxel_transform.affine_inverse();
 
 	const int output_sdf_buffer_index = graph->get_sdf_output_port_address();
 	ZN_ASSERT_RETURN_MSG(output_sdf_buffer_index != -1, "The graph has no SDF output, cannot use it as a brush");
 
 	// The graph works at a fixed dimension, so if we scale the operation with the Transform3D then we have to also
 	// scale the distance field the graph is working at
-	const float graph_scale = transform.basis.get_scale().length();
+	const float graph_scale = voxel_transform.basis.get_scale().length();
 	const float inv_graph_scale = 1.f / graph_scale;
 
 	for (float &sd : in_sdf_full) {

@@ -728,6 +728,8 @@ void VoxelInstancer::regenerate_layer(uint16_t layer_id, bool regenerate_blocks)
 	const int render_to_data_factor = 1 << (_parent_mesh_block_size_po2 - _parent_mesh_block_size_po2);
 	ERR_FAIL_COND(render_to_data_factor <= 0 || render_to_data_factor > 2);
 
+	const float voxel_size = _parent->get_voxel_size();
+
 	struct L {
 		// Does not return a bool so it can be used in bit-shifting operations without a compiler warning.
 		// Can be treated like a bool too.
@@ -815,7 +817,8 @@ void VoxelInstancer::regenerate_layer(uint16_t layer_id, bool regenerate_blocks)
 				surface_arrays,
 				_up_mode,
 				octant_mask,
-				lod_block_size
+				lod_block_size,
+				voxel_size
 		);
 
 		if (render_to_data_factor == 2 && octant_mask != 0xff) {
@@ -1431,6 +1434,7 @@ void VoxelInstancer::create_render_blocks(Vector3i render_grid_position, int lod
 
 	const unsigned int render_block_size = 1 << _parent_mesh_block_size_po2;
 	const unsigned int data_block_size = 1 << _parent_data_block_size_po2;
+	const float voxel_size = _parent->get_voxel_size();
 
 	Lod &lod = _lods[lod_index];
 
@@ -1458,7 +1462,8 @@ void VoxelInstancer::create_render_blocks(Vector3i render_grid_position, int lod
 			lod_index, //
 			render_block_size, //
 			data_block_size, //
-			_up_mode //
+			_up_mode, //
+			voxel_size
 	));
 
 	VoxelEngine::get_singleton().push_async_io_task(task);

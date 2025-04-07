@@ -22,6 +22,7 @@ public:
 	uint8_t edited_mask;
 	UpMode up_mode;
 	float mesh_block_size;
+	float voxel_size;
 	Array surface_arrays;
 	Ref<VoxelInstanceGenerator> generator;
 	// Can be pre-populated by edited transforms

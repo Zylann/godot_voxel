@@ -40,7 +40,7 @@ Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(
 	return raycast_generic_world(
 			_terrain->get_storage(),
 			_terrain->get_mesher(),
-			_terrain->get_global_transform(),
+			_terrain->get_voxel_to_world_transform(),
 			p_pos,
 			p_dir,
 			p_max_distance,

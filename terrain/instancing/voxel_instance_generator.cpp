@@ -35,7 +35,8 @@ void VoxelInstanceGenerator::generate_transforms(
 		Array surface_arrays,
 		UpMode up_mode,
 		uint8_t octant_mask,
-		float block_size
+		float block_size,
+		float voxel_size
 ) {
 	ZN_PROFILE_SCOPE();
 
@@ -51,6 +52,14 @@ void VoxelInstanceGenerator::generate_transforms(
 
 	if (_density <= 0.f) {
 		return;
+	}
+
+	if (voxel_size != 1.f) {
+		// Copy-on-write
+		Span<Vector3> vertices_s(vertices.ptrw(), vertices.size());
+		for (Vector3 &v : vertices_s) {
+			v *= voxel_size;
+		}
 	}
 
 	PackedVector3Array normals = surface_arrays[ArrayMesh::ARRAY_NORMAL];
@@ -768,15 +777,6 @@ void VoxelInstanceGenerator::generate_transforms(
 
 		out_transforms.push_back(t);
 	}
-
-	// TODO Investigate if this helps (won't help with authored terrain)
-	// if (graph_generator.is_valid()) {
-	// 	for (size_t i = 0; i < _transform_cache.size(); ++i) {
-	// 		Transform &t = _transform_cache[i];
-	// 		const Vector3 up = t.get_basis().get_axis(Vector3::AXIS_Y);
-	// 		t.origin = graph_generator->approximate_surface(t.origin, up * 0.5f);
-	// 	}
-	// }
 }
 
 void VoxelInstanceGenerator::set_density(float density) {
