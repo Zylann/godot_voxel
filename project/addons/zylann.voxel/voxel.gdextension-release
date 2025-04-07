@@ -17,8 +17,6 @@ windows.release.x86_64 = "./bin/libvoxel.windows.template_release.x86_64.dll"
 
 linux.debug.x86_64 = "./bin/libvoxel.linux.editor.x86_64.so"
 linux.release.x86_64 = "./bin/libvoxel.linux.template_release.x86_64.so"
-linux.debug.arm64 = "./bin/libvoxel.linux.editor.arm64.so"
-linux.release.arm64 = "./bin/libvoxel.linux.template_release.arm64.so"
 
 android.debug.x86_64 = "./bin/libvoxel.android.editor.x86_64.so"
 android.release.x86_64 = "./bin/libvoxel.android.template_release.x86_64.so"

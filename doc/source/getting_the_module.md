@@ -135,7 +135,6 @@ You can check which platforms are provided by the extension in the config file a
 
 - Windows x86_64
 - Linux x86_64
-- Linux arm64
 - Mac OS x86_64 (universal)
 - Mac OS arm64 (universal)
 - iOS arm64
