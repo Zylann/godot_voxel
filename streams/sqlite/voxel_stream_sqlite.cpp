@@ -193,6 +193,8 @@ void VoxelStreamSQLite::save_voxel_blocks(Span<VoxelStream::VoxelQueryData> p_bl
 	}
 }
 
+#ifdef VOXEL_ENABLE_INSTANCER
+
 bool VoxelStreamSQLite::supports_instance_blocks() const {
 	return true;
 }
@@ -291,6 +293,8 @@ void VoxelStreamSQLite::save_instance_blocks(Span<VoxelStream::InstancesQueryDat
 	}
 }
 
+#endif
+
 void VoxelStreamSQLite::load_all_blocks(FullLoadingResult &result) {
 	ZN_PROFILE_SCOPE();
 
@@ -331,6 +335,7 @@ void VoxelStreamSQLite::load_all_blocks(FullLoadingResult &result) {
 				result_block.voxels = voxels;
 			}
 
+#ifdef VOXEL_ENABLE_INSTANCER
 			if (instances_data.size() > 0) {
 				StdVector<uint8_t> &temp_block_data = get_tls_temp_block_data();
 				if (!CompressedData::decompress(instances_data, temp_block_data)) {
@@ -343,6 +348,7 @@ void VoxelStreamSQLite::load_all_blocks(FullLoadingResult &result) {
 					return;
 				}
 			}
+#endif
 
 			ctx->result.blocks.push_back(std::move(result_block));
 		}
@@ -409,6 +415,7 @@ void VoxelStreamSQLite::flush_cache_to_connection(sqlite::Connection *p_connecti
 
 		// Save instances
 		temp_compressed_data.clear();
+#ifdef VOXEL_ENABLE_INSTANCER
 		if (block.instances != nullptr) {
 			temp_data.clear();
 
@@ -418,6 +425,7 @@ void VoxelStreamSQLite::flush_cache_to_connection(sqlite::Connection *p_connecti
 					to_span_const(temp_data), temp_compressed_data, CompressedData::COMPRESSION_NONE
 			));
 		}
+#endif
 		p_connection->save_block(loc, to_span(temp_compressed_data), sqlite::Connection::INSTANCES);
 
 		// TODO Optimization: add a version of the query that can update both at once

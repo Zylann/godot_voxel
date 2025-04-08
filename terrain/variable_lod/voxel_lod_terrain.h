@@ -22,8 +22,11 @@ namespace zylann::voxel {
 
 class VoxelTool;
 class VoxelStream;
-class VoxelInstancer;
 class VoxelSaveCompletionTracker;
+
+#ifdef VOXEL_ENABLE_INSTANCER
+class VoxelInstancer;
+#endif
 
 // Paged terrain made of voxel blocks of variable level of detail.
 // Designed for highest view distances, preferably using smooth voxels.
@@ -95,6 +98,7 @@ public:
 	void set_threaded_update_enabled(bool enabled);
 	bool is_threaded_update_enabled() const;
 
+#ifdef VOXEL_ENABLE_SMOOTH_MESHING
 	void set_normalmap_enabled(bool enable);
 	bool is_normalmap_enabled() const;
 
@@ -119,11 +123,16 @@ public:
 	void set_normalmap_generator_override_begin_lod_index(int lod_index);
 	int get_normalmap_generator_override_begin_lod_index() const;
 
+#ifdef VOXEL_ENABLE_GPU
 	void set_normalmap_use_gpu(bool enabled);
 	bool get_normalmap_use_gpu() const;
+#endif
+#endif
 
+#ifdef VOXEL_ENABLE_GPU
 	void set_generator_use_gpu(const bool enabled);
 	bool get_generator_use_gpu() const;
+#endif
 
 	void set_cache_generated_blocks(bool enabled);
 	bool get_cache_generated_blocks() const;
@@ -253,7 +262,10 @@ public:
 
 	// Internal
 
+#ifdef VOXEL_ENABLE_INSTANCER
 	void set_instancer(VoxelInstancer *instancer);
+#endif
+
 	VolumeID get_volume_id() const override {
 		return _volume_id;
 	}
@@ -289,6 +301,8 @@ private:
 
 	void apply_mesh_update(VoxelEngine::BlockMeshOutput &ob);
 	void apply_data_block_response(VoxelEngine::BlockDataOutput &ob);
+
+#ifdef VOXEL_ENABLE_SMOOTH_MESHING
 	void apply_detail_texture_update(VoxelEngine::BlockDetailTextureOutput &ob);
 	void apply_detail_texture_update_to_block(
 			VoxelMeshBlockVLT &block,
@@ -296,6 +310,7 @@ private:
 			unsigned int lod_index
 	);
 	void try_apply_parent_detail_texture_to_block(VoxelMeshBlockVLT &block, Vector3i bpos, unsigned int lod_index);
+#endif
 
 	void start_updater();
 	void stop_updater();
@@ -400,7 +415,9 @@ private:
 
 	StdVector<FadingDetailTexture> _fading_detail_textures;
 
+#ifdef VOXEL_ENABLE_INSTANCER
 	VoxelInstancer *_instancer = nullptr;
+#endif
 
 	Ref<VoxelMesher> _mesher;
 

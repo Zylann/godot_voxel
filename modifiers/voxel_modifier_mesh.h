@@ -15,8 +15,11 @@ public:
 	void set_mesh_sdf(Ref<VoxelMeshSDF> mesh_sdf);
 	void set_isolevel(float isolevel);
 	void apply(VoxelModifierContext ctx) const override;
+
+#ifdef VOXEL_ENABLE_GPU
 	void get_shader_data(ShaderData &out_shader_data) override;
 	void request_shader_data_update();
+#endif
 
 protected:
 	void update_aabb() override;

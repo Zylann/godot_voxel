@@ -7,7 +7,9 @@ namespace zylann::voxel {
 void VoxelModifierSdf::set_operation(Operation op) {
 	RWLockWrite wlock(_rwlock);
 	_operation = op;
+#ifdef VOXEL_ENABLE_GPU
 	_shader_data_need_update = true;
+#endif
 }
 
 void VoxelModifierSdf::set_smoothness(float p_smoothness) {
@@ -17,13 +19,17 @@ void VoxelModifierSdf::set_smoothness(float p_smoothness) {
 		return;
 	}
 	_smoothness = smoothness;
+#ifdef VOXEL_ENABLE_GPU
 	_shader_data_need_update = true;
+#endif
 	update_aabb();
 }
 
 inline float get_largest_coord(Vector3 v) {
 	return math::max(math::max(v.x, v.y), v.z);
 }
+
+#ifdef VOXEL_ENABLE_GPU
 
 void VoxelModifierSdf::update_base_shader_data_no_lock() {
 	struct BaseModifierParams {
@@ -52,5 +58,7 @@ void VoxelModifierSdf::update_base_shader_data_no_lock() {
 		ComputeShaderResource::update_storage_buffer(_shader_data->params[0].resource, pba0);
 	}
 }
+
+#endif
 
 } // namespace zylann::voxel

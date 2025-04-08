@@ -24,9 +24,11 @@ public:
 	void load_voxel_block(VoxelQueryData &query_data) override;
 	void save_voxel_block(VoxelQueryData &query_data) override;
 
+#ifdef VOXEL_ENABLE_INSTANCER
 	bool supports_instance_blocks() const override;
 	void load_instance_blocks(Span<InstancesQueryData> out_blocks) override;
 	void save_instance_blocks(Span<InstancesQueryData> p_blocks) override;
+#endif
 
 	bool supports_loading_all_blocks() const override;
 	void load_all_blocks(FullLoadingResult &result) override;

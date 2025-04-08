@@ -16,7 +16,9 @@
 namespace zylann::voxel {
 
 class VoxelBuffer;
+#ifdef VOXEL_ENABLE_INSTANCER
 struct InstanceBlockData;
+#endif
 
 namespace godot {
 class VoxelBuffer;
@@ -58,12 +60,14 @@ public:
 		ResultCode result;
 	};
 
+#ifdef VOXEL_ENABLE_INSTANCER
 	struct InstancesQueryData {
 		UniquePtr<InstanceBlockData> data;
 		Vector3i position_in_blocks;
 		uint8_t lod_index;
 		ResultCode result;
 	};
+#endif
 
 	// TODO Deprecate
 	// Queries a block of voxels beginning at the given world-space voxel position and LOD.
@@ -81,17 +85,21 @@ public:
 	// This function is recommended if you save to files, because you can batch their access.
 	virtual void save_voxel_blocks(Span<VoxelQueryData> p_blocks);
 
+#ifdef VOXEL_ENABLE_INSTANCER
 	// TODO Merge support functions into a single getter with Feature bitmask
 	virtual bool supports_instance_blocks() const;
 
 	virtual void load_instance_blocks(Span<InstancesQueryData> out_blocks);
 	virtual void save_instance_blocks(Span<InstancesQueryData> p_blocks);
+#endif
 
 	struct FullLoadingResult {
 		// TODO Perhaps this needs to be decoupled. Not all voxel blocks have instances and vice versa
 		struct Block {
 			std::shared_ptr<VoxelBuffer> voxels;
+#ifdef VOXEL_ENABLE_INSTANCER
 			UniquePtr<InstanceBlockData> instances_data;
+#endif
 			Vector3i position;
 			unsigned int lod;
 		};

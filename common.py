@@ -1,9 +1,35 @@
 import glob
 
+
+def register_scons_options(env, is_extension):
+    from SCons.Script import BoolVariable, Variables, Help
+
+    env_vars = Variables()
+
+    env_vars.Add(BoolVariable("voxel_tests", 
+        "Build with tests for the voxel module, which will run on startup of the engine", False))
+    
+    env_vars.Add(BoolVariable("voxel_smooth_meshing", "Build with smooth voxels meshing support", True))
+    env_vars.Add(BoolVariable("voxel_modifiers", "Build with experimental modifiers support", True))
+    env_vars.Add(BoolVariable("voxel_sqlite", "Build with SQLite save stream support", True))
+    env_vars.Add(BoolVariable("voxel_instancer", "Build with VoxelInstancer support", True))
+    env_vars.Add(BoolVariable("voxel_gpu", "Build with GPU compute support", True))
+    
+    if not is_extension:
+        env_vars.Add(BoolVariable("tracy", "Build with enabled Tracy Profiler integration", False))
+        env_vars.Add(BoolVariable("voxel_fast_noise_2", "Build FastNoise2 support (x86-only)", True))
+
+    env_vars.Update(env)
+
+    if not is_extension:
+        # TODO Will this work with GodotCpp?
+        Help(env_vars.GenerateHelpText(env))
+
+
 # Gets sources and configurations that are common to compiling as a module and an extension.
 # For module-specific configuration, see `SCsub`.
 # For extension-specific configuration, see `SConstruct`.
-def get_sources(env, is_editor_build, include_tests):
+def get_sources(env, is_editor_build):
     env.Append(CPPPATH=["."])
 
     env.Append(CPPDEFINES=[
@@ -15,49 +41,55 @@ def get_sources(env, is_editor_build, include_tests):
         # This should be solved either by solving issue #311 or by porting the module to a dynamic library (GDExtension).
         "MESHOPTIMIZER_ZYLANN_WRAP_LIBRARY_IN_NAMESPACE",
     ])
-    if env["platform"] == "windows":
-        # When compiling SQLite with Godot on Windows with MSVC, it produces the following warning:
-        # `sqlite3.c(42754): warning C4996: 'GetVersionExA': was declared deprecated `
-        # To fix it, let's indicate to SQLite it should not use this function, even if it is available.
-        # https://stackoverflow.com/questions/20031597/error-c4996-received-when-compiling-sqlite-c-in-visual-studio-2013
-        env.Append(CPPDEFINES={"SQLITE_WIN32_GETVERSIONEX": 0})
+    
+    tests_enabled = env["voxel_tests"]
+    smoosh_meshing_enabled = env["voxel_smooth_meshing"]
+    modifiers_enabled = env["voxel_modifiers"]
+    sqlite_enabled = env["voxel_sqlite"]
+    instancer_enabled = env["voxel_instancer"]
+    gpu_enabled = env["voxel_gpu"]
 
+    if not smoosh_meshing_enabled:
+        modifiers_enabled = False
+    
     sources = [
         "constants/*.cpp",
 
         "meshers/blocky/*.cpp",
         "meshers/blocky/types/*.cpp",
-        "meshers/transvoxel/*.cpp",
-        "meshers/dmc/*.cpp",
         "meshers/cubes/*.cpp",
         "meshers/*.cpp",
 
         "streams/*.cpp",
-        "streams/sqlite/*.cpp",
         "streams/region/*.cpp",
         "streams/vox/*.cpp",
 
         "storage/*.cpp",
         "storage/metadata/*.cpp",
 
-        "generators/*.cpp",
+        "generators/generate_block_task.cpp",
+        "generators/voxel_generator_script.cpp",
+        "generators/voxel_generator.cpp",
+
         "generators/graph/*.cpp",
         "generators/simple/*.cpp",
         "generators/multipass/*.cpp",
 
-        "modifiers/*.cpp",
-        "modifiers/godot/*.cpp",
-
         "terrain/*.cpp",
-        "terrain/instancing/*.cpp",
         "terrain/fixed_lod/*.cpp",
         "terrain/variable_lod/*.cpp",
 
         "engine/*.cpp",
-        "engine/gpu/*.cpp",
-        "engine/detail_rendering/*.cpp",
 
-        "edition/*.cpp",
+        "edition/floating_chunks.cpp",
+        "edition/funcs.cpp",
+        "edition/raycast.cpp",
+        "edition/voxel_raycast_result.cpp",
+        "edition/voxel_tool_buffer.cpp",
+        "edition/voxel_tool_lod_terrain.cpp",
+        "edition/voxel_tool_terrain.cpp",
+        "edition/voxel_tool.cpp",
+
         "shaders/*.cpp",
 
         "register_types.cpp",
@@ -114,7 +146,6 @@ def get_sources(env, is_editor_build, include_tests):
 
         "thirdparty/lz4/*.c",
         # "thirdparty/sqlite/*.c",
-        "thirdparty/meshoptimizer/*.cpp"
     ]
 
     if is_editor_build:
@@ -124,9 +155,6 @@ def get_sources(env, is_editor_build, include_tests):
             "editor/fast_noise_lite/*.cpp",
             "editor/spot_noise/*.cpp",
             "editor/vox/*.cpp",
-            "editor/instancer/*.cpp",
-            "editor/instance_library/*.cpp",
-            "editor/mesh_sdf/*.cpp",
             "editor/graph/*.cpp",
             "editor/blocky_library/*.cpp",
             "editor/blocky_library/types/*.cpp",
@@ -144,13 +172,103 @@ def get_sources(env, is_editor_build, include_tests):
             "util/godot/classes/graph_node.cpp" # Not editor-only, but only used in editor for now
         ]
 
-    if include_tests:
+    if tests_enabled:
+        env.Append(CPPDEFINES={"VOXEL_TESTS": 1})
+
         sources += [
+            "util/testing/*.cpp",
+
             "tests/*.cpp",
             "tests/util/*.cpp",
-            "tests/voxel/*.cpp",
 
-            "util/testing/*.cpp"
+            "tests/voxel/test_block_serializer.cpp",
+            "tests/voxel/test_curve_range.cpp",
+            "tests/voxel/test_edition_funcs.cpp",
+            "tests/voxel/test_octree.cpp",
+            "tests/voxel/test_raycast.cpp",
+            "tests/voxel/test_region_file.cpp",
+            "tests/voxel/test_storage_funcs.cpp",
+            "tests/voxel/test_util.cpp",
+            "tests/voxel/test_voxel_buffer.cpp",
+            "tests/voxel/test_voxel_data_map.cpp",
+            "tests/voxel/test_voxel_graph.cpp",
+            "tests/voxel/test_voxel_instancer.cpp",
+            "tests/voxel/test_voxel_mesher_cubes.cpp",
+        ]
+
+    if smoosh_meshing_enabled:
+        env.Append(CPPDEFINES={"VOXEL_ENABLE_SMOOTH_MESHING": 1})
+
+        sources += [
+            "meshers/transvoxel/*.cpp",
+            
+            "engine/detail_rendering/detail_rendering.cpp",
+            "engine/detail_rendering/render_detail_texture_task.cpp",
+
+            "edition/voxel_mesh_sdf_gd.cpp",
+            "edition/voxel_mesh_sdf.cpp",
+            "edition/mesh_sdf.cpp",
+
+            "thirdparty/meshoptimizer/*.cpp"
+        ]
+
+        if gpu_enabled:
+            sources += [
+                "engine/detail_rendering/render_detail_texture_gpu_task.cpp",
+                "tests/voxel/test_detail_rendering_gpu.cpp",
+            ]
+
+        if is_editor_build:
+            sources += [
+                "editor/mesh_sdf/*.cpp"
+            ]
+
+        if tests_enabled:
+            sources += [
+                "tests/voxel/test_mesh_sdf.cpp",
+            ]
+        
+    if modifiers_enabled:
+        env.Append(CPPDEFINES={"VOXEL_ENABLE_MODIFIERS": 1})
+        sources += [
+            "modifiers/*.cpp",
+            "modifiers/godot/*.cpp",
+        ]
+    
+    if sqlite_enabled:
+        env.Append(CPPDEFINES={"VOXEL_ENABLE_SQLITE": 1})
+
+        if env["platform"] == "windows":
+            # When compiling SQLite with Godot on Windows with MSVC, it produces the following warning:
+            # `sqlite3.c(42754): warning C4996: 'GetVersionExA': was declared deprecated `
+            # To fix it, let's indicate to SQLite it should not use this function, even if it is available.
+            # https://stackoverflow.com/questions/20031597/error-c4996-received-when-compiling-sqlite-c-in-visual-studio-2013
+            env.Append(CPPDEFINES={"SQLITE_WIN32_GETVERSIONEX": 0})
+        
+        sources += ["streams/sqlite/*.cpp"]
+        
+        if tests_enabled:
+            sources += ["tests/voxel/test_stream_sqlite.cpp"]
+    
+    if instancer_enabled:
+        env.Append(CPPDEFINES={"VOXEL_ENABLE_INSTANCER": 1})
+
+        sources += [
+            "terrain/instancing/*.cpp",
+        ]
+
+        if is_editor_build:
+            sources += [
+                "editor/instancer/*.cpp",
+                "editor/instance_library/*.cpp",
+            ]
+
+    if gpu_enabled:
+        env.Append(CPPDEFINES={"VOXEL_ENABLE_GPU": 1})
+
+        sources += [
+            "engine/gpu/*.cpp",
+            "generators/generate_block_gpu_task.cpp",
         ]
 
     def process_glob_paths(p_sources):

@@ -45,6 +45,8 @@ void VoxelStreamMemory::save_voxel_block(VoxelQueryData &query_data) {
 	save_voxel_blocks(Span<VoxelQueryData>(&query_data, 1));
 }
 
+#ifdef VOXEL_ENABLE_INSTANCER
+
 bool VoxelStreamMemory::supports_instance_blocks() const {
 	return true;
 }
@@ -80,6 +82,8 @@ void VoxelStreamMemory::save_instance_blocks(Span<InstancesQueryData> p_blocks) 
 	}
 }
 
+#endif
+
 bool VoxelStreamMemory::supports_loading_all_blocks() const {
 	return true;
 }
@@ -109,6 +113,7 @@ void VoxelStreamMemory::load_all_blocks(FullLoadingResult &result) {
 			src.voxels.copy_to(*block.voxels, true);
 		}
 
+#ifdef VOXEL_ENABLE_INSTANCER
 		for (auto it = lod.instance_blocks.begin(); it != lod.instance_blocks.end(); ++it) {
 			const Vector3i bpos = it->first;
 			FullLoadingResult::Block *block = nullptr;
@@ -128,6 +133,7 @@ void VoxelStreamMemory::load_all_blocks(FullLoadingResult &result) {
 			block->instances_data = make_unique_instance<InstanceBlockData>();
 			it->second.copy_to(*block->instances_data);
 		}
+#endif
 	}
 }
 

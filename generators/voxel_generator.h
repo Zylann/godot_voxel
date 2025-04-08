@@ -1,7 +1,6 @@
 #ifndef VOXEL_GENERATOR_H
 #define VOXEL_GENERATOR_H
 
-#include "../engine/gpu/compute_shader_resource.h"
 #include "../engine/ids.h"
 #include "../engine/priority_dependency.h"
 #include "../util/containers/span.h"
@@ -11,6 +10,10 @@
 #include "../util/math/vector3f.h"
 #include "../util/tasks/cancellation_token.h"
 #include "../util/thread/mutex.h"
+
+#ifdef VOXEL_ENABLE_GPU
+#include "../engine/gpu/compute_shader_resource.h"
+#endif
 
 #include <memory>
 
@@ -22,10 +25,13 @@ class AsyncDependencyTracker;
 namespace voxel {
 
 class VoxelBuffer;
-class ComputeShader;
-struct ComputeShaderParameters;
 struct StreamingDependency;
 class VoxelData;
+
+#ifdef VOXEL_ENABLE_GPU
+class ComputeShader;
+struct ComputeShaderParameters;
+#endif
 
 namespace godot {
 class VoxelBuffer;
@@ -67,7 +73,9 @@ public:
 		uint8_t lod_index = 0;
 		uint8_t block_size = 0;
 		bool drop_beyond_max_distance = true;
+#ifdef VOXEL_ENABLE_GPU
 		bool use_gpu = false; // This is a hint, if not supported it will just keep using CPU
+#endif
 		PriorityDependency priority_dependency;
 		std::shared_ptr<StreamingDependency> stream_dependency; // For saving generator output
 		std::shared_ptr<VoxelData> data; // Just for modifiers
@@ -108,6 +116,7 @@ public:
 	// Declares the channels this generator will use
 	virtual int get_used_channels_mask() const;
 
+#ifdef VOXEL_ENABLE_GPU
 	// GPU support
 	// The way this support works is by providing a shader and parameters that can produce the same results as the CPU
 	// version of the generator.
@@ -153,6 +162,7 @@ public:
 	void compile_shaders();
 	// Drops currently compiled shaders if any, so that they get recompiled when they are needed again
 	void invalidate_shaders();
+#endif
 
 	// Requests to generate a broad result, which is supposed to be faster to obtain than full generation.
 	// If it returns true, the returned block may be used as if it was a result from `generate_block`.
@@ -186,11 +196,13 @@ protected:
 
 	void _b_generate_block(Ref<godot::VoxelBuffer> out_buffer, Vector3 origin_in_voxels, int lod);
 
+#ifdef VOXEL_ENABLE_GPU
 	std::shared_ptr<ComputeShader> _detail_rendering_shader;
 	std::shared_ptr<ComputeShaderParameters> _detail_rendering_shader_parameters;
 	std::shared_ptr<ComputeShader> _block_rendering_shader;
 	std::shared_ptr<ComputeShaderParameters> _block_rendering_shader_parameters;
 	std::shared_ptr<ShaderOutputs> _block_rendering_shader_outputs;
+#endif
 	Mutex _shader_mutex;
 };
 

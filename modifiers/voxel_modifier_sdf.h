@@ -29,7 +29,9 @@ public:
 	}
 
 protected:
+#ifdef VOXEL_ENABLE_GPU
 	void update_base_shader_data_no_lock();
+#endif
 
 private:
 	Operation _operation = OP_ADD;

@@ -14,7 +14,9 @@ void VoxelModifierSphere::set_radius(float radius) {
 		return;
 	}
 	_radius = radius;
+#ifdef VOXEL_ENABLE_GPU
 	_shader_data_need_update = true;
+#endif
 	update_aabb();
 }
 
@@ -57,6 +59,8 @@ void VoxelModifierSphere::apply(VoxelModifierContext ctx) const {
 	}
 }
 
+#ifdef VOXEL_ENABLE_GPU
+
 void VoxelModifierSphere::get_shader_data(ShaderData &out_shader_data) {
 	struct SphereParams {
 		float radius;
@@ -87,5 +91,7 @@ void VoxelModifierSphere::get_shader_data(ShaderData &out_shader_data) {
 	out_shader_data.modifier_type = get_type();
 	out_shader_data.params = _shader_data;
 }
+
+#endif
 
 } // namespace zylann::voxel

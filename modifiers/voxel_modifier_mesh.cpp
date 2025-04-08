@@ -11,7 +11,9 @@ void VoxelModifierMesh::set_mesh_sdf(Ref<VoxelMeshSDF> mesh_sdf) {
 	// ZN_ASSERT_RETURN(buffer != nullptr);
 	RWLockWrite wlock(_rwlock);
 	_mesh_sdf = mesh_sdf;
+#ifdef VOXEL_ENABLE_GPU
 	_shader_data_need_update = true;
+#endif
 	update_aabb();
 }
 
@@ -91,6 +93,8 @@ void VoxelModifierMesh::update_aabb() {
 	_aabb = model_to_world.xform(_mesh_sdf->get_aabb());
 }
 
+#ifdef VOXEL_ENABLE_GPU
+
 void VoxelModifierMesh::get_shader_data(ShaderData &out_shader_data) {
 	struct MeshParams {
 		Vector3f model_to_buffer_translation;
@@ -141,5 +145,7 @@ void VoxelModifierMesh::get_shader_data(ShaderData &out_shader_data) {
 void VoxelModifierMesh::request_shader_data_update() {
 	_shader_data_need_update = true;
 }
+
+#endif
 
 } // namespace zylann::voxel

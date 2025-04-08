@@ -29,13 +29,16 @@
 #include "../../util/profiling_clock.h"
 #include "../../util/string/format.h"
 #include "../../util/tasks/async_dependency_tracker.h"
-#include "../instancing/voxel_instancer.h"
 #include "../voxel_data_block_enter_info.h"
 #include "../voxel_save_completion_tracker.h"
 #include "voxel_terrain_multiplayer_synchronizer.h"
 
 #ifdef TOOLS_ENABLED
 #include "../../meshers/transvoxel/voxel_mesher_transvoxel.h"
+#endif
+
+#ifdef VOXEL_ENABLE_INSTANCER
+#include "../instancing/voxel_instancer.h"
 #endif
 
 namespace zylann::voxel {
@@ -118,6 +121,7 @@ Ref<Material> VoxelTerrain::get_material_override() const {
 	return _material_override;
 }
 
+#ifdef VOXEL_ENABLE_GPU
 void VoxelTerrain::set_generator_use_gpu(bool enabled) {
 	_generator_use_gpu = enabled;
 }
@@ -125,6 +129,7 @@ void VoxelTerrain::set_generator_use_gpu(bool enabled) {
 bool VoxelTerrain::get_generator_use_gpu() const {
 	return _generator_use_gpu;
 }
+#endif
 
 void VoxelTerrain::set_stream(Ref<VoxelStream> p_stream) {
 	if (p_stream == get_stream()) {
@@ -373,9 +378,11 @@ void VoxelTerrain::set_max_view_distance(int distance_in_voxels) {
 	ERR_FAIL_COND(distance_in_voxels < 0);
 	_max_view_distance_voxels = distance_in_voxels;
 
+#ifdef VOXEL_ENABLE_INSTANCER
 	if (_instancer != nullptr) {
 		_instancer->update_mesh_lod_distances_from_parent();
 	}
+#endif
 }
 
 void VoxelTerrain::set_block_enter_notification_enabled(bool enable) {
@@ -515,9 +522,11 @@ void VoxelTerrain::unload_mesh_block(Vector3i bpos) {
 		was_loaded = block.is_loaded;
 	});
 
+#ifdef VOXEL_ENABLE_INSTANCER
 	if (_instancer != nullptr) {
 		_instancer->on_mesh_block_exit(bpos, 0);
 	}
+#endif
 
 	// It's possible the block was added as the viewer moved, but did not have the time to receive its first mesh update
 	if (was_loaded) {
@@ -535,9 +544,11 @@ void VoxelTerrain::save_all_modified_blocks(bool with_copy, std::shared_ptr<Asyn
 	// That may cause a stutter, so should be used when the player won't notice
 	_data->consume_all_modifications(_blocks_to_save, with_copy);
 
+#ifdef VOXEL_ENABLE_INSTANCER
 	if (stream.is_valid() && _instancer != nullptr && stream->supports_instance_blocks()) {
 		_instancer->save_all_modified_blocks(task_scheduler, tracker, true);
 	}
+#endif
 
 	consume_block_data_save_requests(
 			task_scheduler,
@@ -560,12 +571,14 @@ const VoxelTerrain::Stats &VoxelTerrain::get_stats() const {
 	return _stats;
 }
 
+#ifdef VOXEL_ENABLE_INSTANCER
 void VoxelTerrain::set_instancer(VoxelInstancer *instancer) {
 	if (_instancer != nullptr && instancer != nullptr) {
 		ERR_FAIL_COND_MSG(_instancer != nullptr, "No more than one VoxelInstancer per terrain");
 	}
 	_instancer = instancer;
 }
+#endif
 
 void VoxelTerrain::get_meshed_block_positions(StdVector<Vector3i> &out_positions) const {
 	_mesh_map.for_each_block([&out_positions](const VoxelMeshBlock &mesh_block) {
@@ -702,6 +715,7 @@ void VoxelTerrain::stop_streamer() {
 }
 
 void VoxelTerrain::clear_mesh_map() {
+#ifdef VOXEL_ENABLE_INSTANCER
 	if (_instancer != nullptr) {
 		VoxelInstancer &instancer = *_instancer;
 		_mesh_map.for_each_block([&instancer, this](VoxelMeshBlockVT &block) { //
@@ -710,7 +724,9 @@ void VoxelTerrain::clear_mesh_map() {
 				emit_mesh_block_exited(block.position);
 			}
 		});
-	} else {
+	} else
+#endif
+	{
 		_mesh_map.for_each_block([this](VoxelMeshBlockVT &block) { //
 			if (block.is_loaded) {
 				emit_mesh_block_exited(block.position);
@@ -787,9 +803,11 @@ void VoxelTerrain::post_edit_area(Box3i box_in_voxels, bool update_mesh) {
 	if (update_mesh) {
 		try_schedule_mesh_update_from_data(box_in_voxels);
 
+#ifdef VOXEL_ENABLE_INSTANCER
 		if (_instancer != nullptr) {
 			_instancer->on_area_edited(box_in_voxels);
 		}
+#endif
 	}
 }
 
@@ -814,6 +832,7 @@ void VoxelTerrain::_notification(int p_what) {
 		case NOTIFICATION_ENTER_TREE:
 			set_process(true);
 #ifdef TOOLS_ENABLED
+#ifdef VOXEL_ENABLE_SMOOTH_MESHING
 			// In the editor, auto-configure a default mesher, for convenience.
 			// Because Godot has a property hint to automatically instantiate a resource, but if that resource is
 			// abstract, it doesn't work... and it cannot be a default value because such practice was deprecated with a
@@ -823,6 +842,7 @@ void VoxelTerrain::_notification(int p_what) {
 				mesher.instantiate();
 				set_mesher(mesher);
 			}
+#endif
 #endif
 			break;
 
@@ -924,9 +944,11 @@ void request_block_load(
 ) {
 	ZN_ASSERT(stream_dependency != nullptr);
 
+#ifdef VOXEL_ENABLE_GPU
 	if (use_gpu && (stream_dependency->generator.is_null() || !stream_dependency->generator->supports_shaders())) {
 		use_gpu = false;
 	}
+#endif
 
 	const unsigned int data_block_size = voxel_data->get_block_size();
 
@@ -962,7 +984,9 @@ void request_block_load(
 		params.block_position = block_pos;
 		params.block_size = data_block_size;
 		params.stream_dependency = stream_dependency;
+#ifdef VOXEL_ENABLE_GPU
 		params.use_gpu = use_gpu;
+#endif
 		params.data = voxel_data;
 
 		init_sparse_grid_priority_dependency(
@@ -1140,6 +1164,7 @@ void VoxelTerrain::notify_data_block_enter(const VoxelDataBlock &block, Vector3i
 void VoxelTerrain::process() {
 	ZN_PROFILE_SCOPE();
 
+#ifdef VOXEL_ENABLE_GPU
 	if (get_generator_use_gpu()) {
 		Ref<VoxelGenerator> generator = get_generator();
 		if (generator.is_valid() && generator->supports_shaders() &&
@@ -1147,14 +1172,17 @@ void VoxelTerrain::process() {
 			generator->compile_shaders();
 		}
 	}
+#endif
 
 	{
 		for (const QuickReloadingBlock &qrb : _quick_reloading_blocks) {
 			VoxelEngine::BlockDataOutput ob{
 				VoxelEngine::BlockDataOutput::TYPE_LOADED, //
 				qrb.voxels, //
+#ifdef VOXEL_ENABLE_INSTANCER
 				// TODO This doesn't work with VoxelInstancer because it unloads based on meshes...
 				nullptr, //
+#endif
 				qrb.position, //
 				0, // lod_index
 				false, // dropped
@@ -1610,9 +1638,12 @@ void VoxelTerrain::apply_data_block_response(VoxelEngine::BlockDataOutput &ob) {
 			// But we may consider adding version numbers, which requires adding block metadata
 			_unloaded_saving_blocks.erase(ob.position);
 
-		} else if (ob.had_instances && _instancer != nullptr) {
+		}
+#ifdef VOXEL_ENABLE_INSTANCER
+		else if (ob.had_instances && _instancer != nullptr) {
 			_instancer->on_data_block_saved(ob.position, ob.lod_index);
 		}
+#endif
 		return;
 	}
 
@@ -1932,17 +1963,21 @@ void VoxelTerrain::apply_mesh_update(const VoxelEngine::BlockMeshOutput &ob) {
 
 	if (mesh.is_null() && block->has_mesh()) {
 		// No surface anymore in this block
+#ifdef VOXEL_ENABLE_INSTANCER
 		if (_instancer != nullptr) {
 			_instancer->on_mesh_block_exit(ob.position, ob.lod);
 		}
+#endif
 	}
 	if (ob.surfaces.surfaces.size() > 0 && mesh.is_valid() && !block->has_mesh()) {
 		// TODO The mesh could come from an edited region!
 		// We would have to know if specific voxels got edited, or different from the generator
 		// TODO Support multi-surfaces in VoxelInstancer
+#ifdef VOXEL_ENABLE_INSTANCER
 		if (_instancer != nullptr) {
 			_instancer->on_mesh_block_enter(ob.position, ob.lod, ob.surfaces.surfaces[0].arrays);
 		}
+#endif
 	}
 
 #ifdef TOOLS_ENABLED
@@ -2090,6 +2125,7 @@ bool VoxelTerrain::is_area_meshed(const Box3i &box_in_voxels) const {
 void VoxelTerrain::get_configuration_warnings(PackedStringArray &warnings) const {
 	VoxelNode::get_configuration_warnings(warnings);
 
+#ifdef VOXEL_ENABLE_GPU
 	if (get_generator_use_gpu()) {
 		Ref<VoxelGenerator> generator = get_generator();
 		if (generator.is_valid() && !generator->supports_shaders()) {
@@ -2097,6 +2133,7 @@ void VoxelTerrain::get_configuration_warnings(PackedStringArray &warnings) const
 									.format(varray(generator->get_class())));
 		}
 	}
+#endif
 
 	if (get_bounds().is_empty()) {
 		warnings.append(String("Terrain bounds have an empty size."));
@@ -2361,8 +2398,10 @@ void VoxelTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_automatic_loading_enabled", "enable"), &Self::set_automatic_loading_enabled);
 	ClassDB::bind_method(D_METHOD("is_automatic_loading_enabled"), &Self::is_automatic_loading_enabled);
 
+#ifdef VOXEL_ENABLE_GPU
 	ClassDB::bind_method(D_METHOD("set_generator_use_gpu", "enable"), &Self::set_generator_use_gpu);
 	ClassDB::bind_method(D_METHOD("get_generator_use_gpu"), &Self::get_generator_use_gpu);
+#endif
 
 	// TODO Rename `_voxel_bounds`
 	ClassDB::bind_method(D_METHOD("set_bounds", "bounds"), &Self::_b_set_bounds);
@@ -2458,7 +2497,9 @@ void VoxelTerrain::_bind_methods() {
 			"is_stream_running_in_editor"
 	);
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "mesh_block_size"), "set_mesh_block_size", "get_mesh_block_size");
+#ifdef VOXEL_ENABLE_GPU
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "use_gpu_generation"), "set_generator_use_gpu", "get_generator_use_gpu");
+#endif
 
 	ADD_GROUP("Debug", "debug_");
 

@@ -494,16 +494,34 @@ void process_every_frame() {
 }
 ```
 
-Preprocessor macros
----------------------
+Compilation flags and macros
+-------------------------------
 
 The module has a few preprocessor macros that can be defined in order to turn off parts of the code getting compiled.
 Some can be specified through SCons command line parameters.
 
+### Features
+
+By default, features are all enabled, unless specified otherwise. To turn off a feature, specify `flag_name=no` in the SCons command line. 
+
+SCons flag              | C++ Macro                     | Description
+------------------------| ----------------------------- | -------------------------------------------------------------
+`voxel_fast_noise_2`    | `VOXEL_ENABLE_FAST_NOISE_2`   | Enables integrated support for SIMD CPU noise using FastNoise2. It is optional in case it causes problem on some compilers or platforms. **Not available in GDExtension builds**.
+`voxel_tests`           | `VOXEL_TESTS`                 | Enables tests. They will run on startup if the `--run_voxel_tests` command line argument is passed, or if `VoxelEngine.run_tests()` is called.
+`voxel_smooth_meshing`  | `VOXEL_ENABLE_SMOOTH_MESHING` | Enables smooth voxel meshers and some associated features. Turning this off also turns off modifiers, which depend on it.
+`voxel_modifiers`       | `VOXEL_ENABLE_MODIFIERS`      | Enables `VoxelModifier` experimental feature support.
+`voxel_sqlite`          | `VOXEL_ENABLE_SQLITE`         | Enables `VoxelStreamSQLite`, which also bundles the SQLite3 library.
+`voxel_instancer`       | `VOXEL_ENABLE_INSTANCER`      | Enables `VoxelInstancer` support
+`voxel_gpu_enabled`     | `VOXEL_ENABLE_GPU`            | Enables GPU compute support (the GPU is still used when this option is off, just not using compute shaders)
+
+!!! warning
+    Testing combinations of these flags over time is very time-consuming, and most people don't compile custom builds to turn them off. So it is possible that the project doesn't compile with a specific subset. You may signal it and/or open a PR if you want to fix it.
+
+
+### Other macros
+
 - `MESHOPTIMIZER_ZYLANN_NEVER_COLLAPSE_BORDERS`: this one must be defined to fix an issue with `MeshOptimizer`. See [https://github.com/zeux/meshoptimizer/issues/311](https://github.com/zeux/meshoptimizer/issues/311)
 - `MESHOPTIMIZER_ZYLANN_WRAP_LIBRARY_IN_NAMESPACE`: this one must be defined to prevent conflict with Godot's own version of MeshOptimizer. See [https://github.com/zeux/meshoptimizer/issues/311#issuecomment-955750624](https://github.com/zeux/meshoptimizer/issues/311#issuecomment-955750624)
-- `VOXEL_ENABLE_FAST_NOISE_2`: if defined, the module will compile with integrated support for SIMD noise using FastNoise2. It is optional in case it causes problem on some compilers or platforms. SCons parameter: `voxel_fast_noise_2=yes`
-- `VOXEL_TESTS`: If `True`, tests will be compiled as part of the build (SCons parameter: `voxel_tests=yes`). They will run on startup if the `--run_voxel_tests` command line argument is passed. 
 - `ZN_GODOT`: must be defined when compiling this project as a module.
 - `ZN_GODOT_EXTENSION`: must be defined when compiling this project as a GDExtension.
 
