@@ -56,12 +56,14 @@ If you cloned Godot and Voxel Tools, you can use git to update your local code.
 
 This module can compile as a GDExtension library. This allows to distribute it as a library file (`.dll`, `.so`...) without having to recompile Godot Engine.
 You should read Godot's documentation about GDExtension:
+
 - [On Godot Docs](https://docs.godotengine.org/en/stable/tutorials/scripting/gdextension/index.html)
 - [GodotCpp Repository](https://github.com/godotengine/godot-cpp)
 
 To compile the library:
+
 - Download a copy of [GodotCpp](https://github.com/godotengine/godot-cpp)
-- In the voxel's root directory, write the path to GodotCpp at the beginning of the `SConstruct` script, or set the environment variable from command line.
+- In the voxel's root directory, write the path to GodotCpp at the beginning of the `SConstruct` script, or set the environment variable `GODOT_CPP_PATH` from command line.
 - Open the same kind of console you would use to compile Godot, change directory to voxel's root folder, and run `scons` there. It will use the `SConstruct` file instead of `SCsub`.
 
 Example of build command on Windows (unoptimized debug build for use in editor):
