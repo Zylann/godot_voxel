@@ -21,6 +21,7 @@ Primarily developped with Godot 4.4.1+
     - `VoxelStreamRegionFiles`: GDExtension: fixed error creating directories
     - `VoxelTool`: `is_area_editable` was off by one in size, and was always returning `true` if the size of the AABB had any component smaller than 1
     - `VoxelViewer`: reparenting (`remove_child` followed by `add_child`) should no longer reload terrain around the viewer
+    - `VoxelAStarGrid3D`: fixed crash if `find_path` is called without setting a terrain first
 
 - Breaking changes
     - `VoxelGeneratorGraph`: `SdfSphere` node: `radius` is now an input instead of a parameter (compat breakage only occurs if you used a script to set it: replace `set_node_param(id, 0, radius)` with `set_node_default_input(id, 3, radius)`)
