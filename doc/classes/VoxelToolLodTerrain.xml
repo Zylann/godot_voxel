@@ -16,6 +16,9 @@
 			<param index="1" name="transform" type="Transform3D" />
 			<param index="2" name="area_size" type="Vector3" />
 			<description>
+				Uses a [VoxelGeneratorGraph] as a brush, which allows to program SDF operations performed by the brush.
+				The graph must have an SDF input and an SDF output, and preferably work assuming a shape of unit size. For example, an additive sphere brush may use an [code]SdfSphere[/code] node with radius 1 with a [code]Min[/code] to combine it with terrain SDF.
+				See also [url=https://voxel-tools.readthedocs.io/en/latest/generators/#using-voxelgeneratorgraph-as-a-brush]online documentation[/url].
 			</description>
 		</method>
 		<method name="do_hemisphere">
@@ -25,9 +28,10 @@
 			<param index="2" name="flat_direction" type="Vector3" />
 			<param index="3" name="smoothness" type="float" default="0.0" />
 			<description>
+				Operates on a hemisphere, where [code]flat_direction[/code] is pointing away from the flat surface (like a normal). [code]smoothness[/code] determines how the flat part blends with the rounded part, with higher values producing softer more rounded edge.
 			</description>
 		</method>
-		<method name="do_sphere_async">
+		<method name="do_sphere_async" is_experimental="true" experimental="">
 			<return type="void" />
 			<param index="0" name="center" type="Vector3" />
 			<param index="1" name="radius" type="float" />

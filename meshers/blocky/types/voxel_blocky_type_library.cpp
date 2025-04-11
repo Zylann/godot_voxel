@@ -130,7 +130,7 @@ void VoxelBlockyTypeLibrary::update_id_map(StdVector<VoxelID> &id_map, StdVector
 	for (size_t i = 0; i < _types.size(); ++i) {
 		Ref<VoxelBlockyType> type = _types[i];
 
-		if (type == nullptr) {
+		if (type.is_null()) {
 			continue;
 		}
 
@@ -731,11 +731,11 @@ bool VoxelBlockyTypeLibrary::load_id_map_from_json(String json_string) {
 	return load_id_map_from_string_array(map_sarray);
 }
 
-String VoxelBlockyTypeLibrary::to_string(const VoxelID &id) {
-	String s = id.type_name;
-	if (id.variant_key.attribute_names[0] != StringName()) {
+String VoxelBlockyTypeLibrary::VoxelID::to_string() const {
+	String s = type_name;
+	if (variant_key.attribute_names[0] != StringName()) {
 		s += "[";
-		s += id.variant_key.to_string();
+		s += variant_key.to_string();
 		s += "]";
 	}
 	return s;
@@ -752,7 +752,7 @@ PackedStringArray VoxelBlockyTypeLibrary::serialize_id_map_to_string_array(const
 		if (id.type_name == StringName()) {
 			continue;
 		}
-		array_w[model_index] = to_string(id);
+		array_w[model_index] = id.to_string();
 	}
 
 	return array;

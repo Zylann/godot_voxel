@@ -1484,12 +1484,12 @@ void paste_src_masked_dst_writable_bitarray(
 ) {
 	paste_src_masked_dst_predicate(
 			channels,
-			src_buffer, //
-			src_mask_channel, //
-			src_mask_value, //
-			dst_buffer, //
-			dst_base_pos, //
-			dst_mask_channel, //
+			src_buffer,
+			src_mask_channel,
+			src_mask_value,
+			dst_buffer,
+			dst_base_pos,
+			dst_mask_channel,
 			[&bitarray](const uint64_t dst_v) { //
 				return dst_v < bitarray.size() && bitarray.get(dst_v);
 			},

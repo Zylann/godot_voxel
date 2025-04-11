@@ -24,7 +24,7 @@ Return     | Signature
 
 ### [void](#)<span id="i_do_hemisphere"></span> **do_hemisphere**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) center, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) radius, [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) flat_direction, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) smoothness=0.0 ) 
 
-*(This method has no documentation)*
+Operates on a hemisphere, where `flat_direction` is pointing away from the flat surface (like a normal). `smoothness` determines how the flat part blends with the rounded part, with higher values producing softer more rounded edge.
 
 ### [void](#)<span id="i_for_each_voxel_metadata_in_area"></span> **for_each_voxel_metadata_in_area**( [AABB](https://docs.godotengine.org/en/stable/classes/class_aabb.html) voxel_area, [Callable](https://docs.godotengine.org/en/stable/classes/class_callable.html) callback ) 
 
@@ -40,4 +40,4 @@ Picks random voxels within the specified area and executes a function on them. T
 
 The given callback takes two arguments: voxel position (Vector3i), voxel value (int).
 
-_Generated on Aug 27, 2024_
+_Generated on Mar 23, 2025_

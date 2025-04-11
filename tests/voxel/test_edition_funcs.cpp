@@ -7,7 +7,7 @@
 #include "../../meshers/blocky/voxel_blocky_model_mesh.h"
 #include "../../storage/voxel_data.h"
 #include "../../util/godot/classes/image.h"
-#include "../testing.h"
+#include "../../util/testing/test_macros.h"
 #include "test_util.h"
 
 namespace zylann::voxel::tests {

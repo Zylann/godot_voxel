@@ -16,7 +16,6 @@ nav:
   - 'getting_the_module.md'
   - 'quick_start.md'
   - 'overview.md'
-  - 'terrain_types.md'
   - 'blocky_terrain.md'
   - 'smooth_terrain.md'
   - 'generators.md'
@@ -43,11 +42,13 @@ nav:
     - api/VoxelBlockyAttributeCustom.md
     - api/VoxelBlockyAttributeDirection.md
     - api/VoxelBlockyAttributeRotation.md
+    - api/VoxelBlockyFluid.md
     - api/VoxelBlockyLibrary.md
     - api/VoxelBlockyLibraryBase.md
     - api/VoxelBlockyModel.md
     - api/VoxelBlockyModelCube.md
     - api/VoxelBlockyModelEmpty.md
+    - api/VoxelBlockyModelFluid.md
     - api/VoxelBlockyModelMesh.md
     - api/VoxelBlockyType.md
     - api/VoxelBlockyTypeLibrary.md

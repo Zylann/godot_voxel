@@ -130,6 +130,8 @@ void GenerateBlockGPUTask::prepare(GPUTaskContext &ctx) {
 
 	// Generate
 
+	_uniform_sets_to_free.reserve(_boxes_data.size() * (1 + modifiers.size()));
+
 	for (unsigned int box_index = 0; box_index < _boxes_data.size(); ++box_index) {
 		BoxData &bd = _boxes_data[box_index];
 
@@ -153,6 +155,7 @@ void GenerateBlockGPUTask::prepare(GPUTaskContext &ctx) {
 		// Mutex (instead of BinaryMutex)
 		const RID generator_uniform_set =
 				zylann::godot::uniform_set_create(rd, generator_uniforms, generator_shader_rid, 0);
+		_uniform_sets_to_free.push_back(generator_uniform_set);
 
 		{
 			ZN_PROFILE_SCOPE_NAMED("compute_list_bind_compute_pipeline");
@@ -212,6 +215,7 @@ void GenerateBlockGPUTask::prepare(GPUTaskContext &ctx) {
 
 				const RID modifier_uniform_set =
 						zylann::godot::uniform_set_create(rd, modifier_uniforms, modifier_shader_rid, 0);
+				_uniform_sets_to_free.push_back(modifier_uniform_set);
 
 				const RID pipeline_rid = _modifier_pipelines[modifier_index];
 				rd.compute_list_bind_compute_pipeline(compute_list_id, pipeline_rid);
@@ -466,6 +470,10 @@ void GenerateBlockGPUTask::collect(GPUTaskContext &ctx) {
 	zylann::godot::free_rendering_device_rid(rd, _generator_pipeline_rid);
 
 	for (RID rid : _modifier_pipelines) {
+		zylann::godot::free_rendering_device_rid(rd, rid);
+	}
+
+	for (const RID rid : _uniform_sets_to_free) {
 		zylann::godot::free_rendering_device_rid(rd, rid);
 	}
 

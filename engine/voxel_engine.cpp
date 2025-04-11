@@ -132,8 +132,10 @@ void VoxelEngine::wait_and_clear_all_tasks(bool warn) {
 
 	_general_thread_pool.dequeue_completed_tasks([warn](zylann::IThreadedTask *task) {
 		if (warn) {
-			ZN_PRINT_WARNING("General tasks remain on module cleanup, "
-							 "this could become a problem if they reference scripts");
+			ZN_PRINT_WARNING(
+					"General tasks remain on module cleanup, "
+					"this could become a problem if they reference scripts"
+			);
 		}
 		ZN_DELETE(task);
 	});
@@ -172,6 +174,10 @@ ViewerID VoxelEngine::add_viewer() {
 
 void VoxelEngine::remove_viewer(ViewerID viewer_id) {
 	_world.viewers.remove(viewer_id);
+}
+
+bool VoxelEngine::get_viewer_count() const {
+	return _world.viewers.count();
 }
 
 void VoxelEngine::set_viewer_position(ViewerID viewer_id, Vector3 position) {

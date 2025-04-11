@@ -7,24 +7,25 @@ Voxel volume using constant level of detail.
 ## Properties: 
 
 
-Type                                                                            | Name                                                                     | Default                                                                               
-------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------
-[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)          | [area_edit_notification_enabled](#i_area_edit_notification_enabled)      | false                                                                                 
-[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)          | [automatic_loading_enabled](#i_automatic_loading_enabled)                | true                                                                                  
-[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)          | [block_enter_notification_enabled](#i_block_enter_notification_enabled)  | false                                                                                 
-[AABB](https://docs.godotengine.org/en/stable/classes/class_aabb.html)          | [bounds](#i_bounds)                                                      | AABB(-5.36871e+08, -5.36871e+08, -5.36871e+08, 1.07374e+09, 1.07374e+09, 1.07374e+09) 
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)            | [collision_layer](#i_collision_layer)                                    | 1                                                                                     
-[float](https://docs.godotengine.org/en/stable/classes/class_float.html)        | [collision_margin](#i_collision_margin)                                  | 0.04                                                                                  
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)            | [collision_mask](#i_collision_mask)                                      | 1                                                                                     
-[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)          | [debug_draw_enabled](#i_debug_draw_enabled)                              | false                                                                                 
-[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)          | [debug_draw_shadow_occluders](#i_debug_draw_shadow_occluders)            | false                                                                                 
-[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)          | [debug_draw_volume_bounds](#i_debug_draw_volume_bounds)                  | false                                                                                 
-[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)          | [generate_collisions](#i_generate_collisions)                            | true                                                                                  
-[Material](https://docs.godotengine.org/en/stable/classes/class_material.html)  | [material_override](#i_material_override)                                |                                                                                       
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)            | [max_view_distance](#i_max_view_distance)                                | 128                                                                                   
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)            | [mesh_block_size](#i_mesh_block_size)                                    | 16                                                                                    
-[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)          | [run_stream_in_editor](#i_run_stream_in_editor)                          | true                                                                                  
-[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)          | [use_gpu_generation](#i_use_gpu_generation)                              | false                                                                                 
+Type                                                                            | Name                                                                                 | Default                                                                               
+------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------
+[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)          | [area_edit_notification_enabled](#i_area_edit_notification_enabled)                  | false                                                                                 
+[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)          | [automatic_loading_enabled](#i_automatic_loading_enabled)                            | true                                                                                  
+[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)          | [block_enter_notification_enabled](#i_block_enter_notification_enabled)              | false                                                                                 
+[AABB](https://docs.godotengine.org/en/stable/classes/class_aabb.html)          | [bounds](#i_bounds)                                                                  | AABB(-5.36871e+08, -5.36871e+08, -5.36871e+08, 1.07374e+09, 1.07374e+09, 1.07374e+09) 
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)            | [collision_layer](#i_collision_layer)                                                | 1                                                                                     
+[float](https://docs.godotengine.org/en/stable/classes/class_float.html)        | [collision_margin](#i_collision_margin)                                              | 0.04                                                                                  
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)            | [collision_mask](#i_collision_mask)                                                  | 1                                                                                     
+[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)          | [debug_draw_enabled](#i_debug_draw_enabled)                                          | false                                                                                 
+[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)          | [debug_draw_shadow_occluders](#i_debug_draw_shadow_occluders)                        | false                                                                                 
+[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)          | [debug_draw_visual_and_collision_blocks](#i_debug_draw_visual_and_collision_blocks)  | false                                                                                 
+[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)          | [debug_draw_volume_bounds](#i_debug_draw_volume_bounds)                              | false                                                                                 
+[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)          | [generate_collisions](#i_generate_collisions)                                        | true                                                                                  
+[Material](https://docs.godotengine.org/en/stable/classes/class_material.html)  | [material_override](#i_material_override)                                            |                                                                                       
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)            | [max_view_distance](#i_max_view_distance)                                            | 128                                                                                   
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)            | [mesh_block_size](#i_mesh_block_size)                                                | 16                                                                                    
+[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)          | [run_stream_in_editor](#i_run_stream_in_editor)                                      | true                                                                                  
+[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)          | [use_gpu_generation](#i_use_gpu_generation)                                          | false                                                                                 
 <p></p>
 
 ## Methods: 
@@ -72,7 +73,7 @@ Emitted when a mesh block gets unloaded. It is the counterpart of [VoxelTerrain.
 enum **DebugDrawFlag**: 
 
 - <span id="i_DEBUG_DRAW_VOLUME_BOUNDS"></span>**DEBUG_DRAW_VOLUME_BOUNDS** = **0**
-- <span id="i_DEBUG_DRAW_FLAGS_COUNT"></span>**DEBUG_DRAW_FLAGS_COUNT** = **1**
+- <span id="i_DEBUG_DRAW_FLAGS_COUNT"></span>**DEBUG_DRAW_FLAGS_COUNT** = **2**
 
 
 ## Property Descriptions
@@ -110,6 +111,10 @@ Defines the bounds within which the terrain is allowed to have voxels. If an inf
 *(This property has no documentation)*
 
 ### [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_debug_draw_shadow_occluders"></span> **debug_draw_shadow_occluders** = false
+
+*(This property has no documentation)*
+
+### [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_debug_draw_visual_and_collision_blocks"></span> **debug_draw_visual_and_collision_blocks** = false
 
 *(This property has no documentation)*
 
@@ -249,4 +254,4 @@ Note that blocks getting unloaded as the viewer moves around can also trigger sa
 
 *(This method has no documentation)*
 
-_Generated on Aug 27, 2024_
+_Generated on Mar 23, 2025_

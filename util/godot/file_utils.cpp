@@ -23,16 +23,9 @@ const char *to_string(FileResult res) {
 }
 
 Error check_directory_created(const String &p_directory_path) {
-	Ref<DirAccess> d = open_directory(p_directory_path);
-
-	if (d.is_null()) {
-		ERR_PRINT("Could not access to filesystem");
-		return ERR_FILE_CANT_OPEN;
-	}
-
-	if (!directory_exists(**d, p_directory_path)) {
+	if (!directory_exists(p_directory_path)) {
 		// Create if not exist
-		const Error err = d->make_dir_recursive(p_directory_path);
+		const Error err = DirAccess::make_dir_recursive_absolute(p_directory_path);
 		if (err != OK) {
 			ERR_PRINT("Could not create directory");
 			return err;

@@ -418,6 +418,33 @@
 		<constant name="MAX_CHANNELS" value="8" enum="ChannelId">
 			Maximum number of channels a [VoxelBuffer] can have.
 		</constant>
+		<constant name="CHANNEL_TYPE_BIT" value="1" enum="ChannelMask">
+			Bitmask with one bit set at the position corresponding to [constant CHANNEL_TYPE].
+		</constant>
+		<constant name="CHANNEL_SDF_BIT" value="2" enum="ChannelMask">
+			Bitmask with one bit set at the position corresponding to [constant CHANNEL_SDF].
+		</constant>
+		<constant name="CHANNEL_COLOR_BIT" value="4" enum="ChannelMask">
+			Bitmask with one bit set at the position corresponding to [constant CHANNEL_COLOR].
+		</constant>
+		<constant name="CHANNEL_INDICES_BIT" value="8" enum="ChannelMask">
+			Bitmask with one bit set at the position corresponding to [constant CHANNEL_INDICES].
+		</constant>
+		<constant name="CHANNEL_WEIGHTS_BIT" value="16" enum="ChannelMask">
+			Bitmask with one bit set at the position corresponding to [constant CHANNEL_WEIGHTS].
+		</constant>
+		<constant name="CHANNEL_DATA5_BIT" value="32" enum="ChannelMask">
+			Bitmask with one bit set at the position corresponding to [constant CHANNEL_DATA5].
+		</constant>
+		<constant name="CHANNEL_DATA6_BIT" value="64" enum="ChannelMask">
+			Bitmask with one bit set at the position corresponding to [constant CHANNEL_DATA6].
+		</constant>
+		<constant name="CHANNEL_DATA7_BIT" value="128" enum="ChannelMask">
+			Bitmask with one bit set at the position corresponding to [constant CHANNEL_DATA7].
+		</constant>
+		<constant name="ALL_CHANNELS_MASK" value="255" enum="ChannelMask">
+			Bitmask with all channel bits set.
+		</constant>
 		<constant name="DEPTH_8_BIT" value="0" enum="Depth">
 			Voxels will be stored with 8 bits. Raw values will range from 0 to 255. Float values can take 255 values distributed from -10.0 to 10.0. Values outside the range will be clamped.
 		</constant>

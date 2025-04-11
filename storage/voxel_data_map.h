@@ -87,17 +87,17 @@ public:
 
 	void paste(Vector3i min_pos, const VoxelBuffer &src_buffer, unsigned int channels_mask, bool create_new_blocks);
 
-	void paste_masked( //
-			Vector3i min_pos, //
-			const VoxelBuffer &src_buffer, //
-			unsigned int channels_mask, //
-			bool use_src_mask, //
-			uint8_t src_mask_channel, //
-			uint64_t src_mask_value, //
-			bool use_dst_mask, //
-			uint8_t dst_mask_channel, //
-			Span<const int32_t> dst_writable_values, //
-			bool create_new_blocks //
+	void paste_masked(
+			Vector3i min_pos,
+			const VoxelBuffer &src_buffer,
+			unsigned int channels_mask,
+			bool use_src_mask,
+			uint8_t src_mask_channel,
+			uint64_t src_mask_value,
+			bool use_dst_mask,
+			uint8_t dst_mask_channel,
+			Span<const int32_t> dst_writable_values,
+			bool create_new_blocks
 	);
 
 	// Moves the given buffer into a block of the map. The buffer is referenced, no copy is made.

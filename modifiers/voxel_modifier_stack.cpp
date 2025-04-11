@@ -1,6 +1,7 @@
 #include "voxel_modifier_stack.h"
 #include "../edition/funcs.h"
 #include "../util/dstack.h"
+#include "../util/math/vector3.h"
 #include "../util/profiling.h"
 
 namespace zylann::voxel {
@@ -320,8 +321,10 @@ void VoxelModifierStack::apply(
 	}
 }
 
-void VoxelModifierStack::apply_for_gpu_rendering(StdVector<VoxelModifier::ShaderData> &out_data, const AABB aabb)
-		const {
+void VoxelModifierStack::apply_for_gpu_rendering(
+		StdVector<VoxelModifier::ShaderData> &out_data,
+		const AABB aabb
+) const {
 	ZN_PROFILE_SCOPE();
 	RWLockRead lock(_stack_lock);
 

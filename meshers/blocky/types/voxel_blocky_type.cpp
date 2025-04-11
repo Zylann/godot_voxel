@@ -450,10 +450,10 @@ bool try_get_attribute_index_from_name(
 }
 
 template <typename T>
-unsigned int get_non_null_count(const StdVector<T> &objects) {
+unsigned int get_non_null_count(const StdVector<Ref<T>> &objects) {
 	unsigned int count = 0;
-	for (const T &obj : objects) {
-		if (obj != nullptr) {
+	for (const Ref<T> &obj : objects) {
+		if (obj.is_valid()) {
 			++count;
 		}
 	}

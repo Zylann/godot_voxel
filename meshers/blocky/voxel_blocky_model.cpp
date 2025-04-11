@@ -6,6 +6,7 @@
 #include "../../util/godot/core/array.h"
 #include "../../util/godot/core/string.h"
 #include "../../util/math/conv.h"
+#include "../../util/math/vector3.h"
 #include "../../util/string/format.h"
 #include "blocky_material_indexer.h"
 #include "blocky_model_baking_context.h"

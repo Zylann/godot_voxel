@@ -65,4 +65,4 @@ This must be called before any call to `load_voxel_block` (before the terrain st
 
 *(This method has no documentation)*
 
-_Generated on Aug 27, 2024_
+_Generated on Mar 23, 2025_

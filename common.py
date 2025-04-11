@@ -96,6 +96,7 @@ def get_sources(env, is_editor_build, include_tests):
         "util/godot/classes/shader.cpp",
         "util/godot/classes/shape_3d.cpp",
 
+        "util/godot/core/aabb.cpp",
         "util/godot/core/string.cpp",
         "util/godot/core/variant.cpp",
         "util/godot/core/packed_arrays.cpp",
@@ -147,7 +148,9 @@ def get_sources(env, is_editor_build, include_tests):
         sources += [
             "tests/*.cpp",
             "tests/util/*.cpp",
-            "tests/voxel/*.cpp"
+            "tests/voxel/*.cpp",
+
+            "util/testing/*.cpp"
         ]
 
     def process_glob_paths(p_sources):

@@ -8,6 +8,8 @@ Generates coherent and fractal noise gradients using the [FastNoiseLite](https:/
 
 This is an alternate implementation of [FastNoiseLite](https://docs.godotengine.org/en/stable/classes/class_fastnoiselite.html), because Godot's integration does not expose methods to access gradients directly.
 
+These algorithms are specialized to generate vectors to perturb positions, and can be faster than calculating 2 or 3 times a regular noise.
+
 ## Properties: 
 
 
@@ -102,4 +104,4 @@ enum **RotationType3D**:
 
 *(This method has no documentation)*
 
-_Generated on Aug 27, 2024_
+_Generated on Mar 23, 2025_

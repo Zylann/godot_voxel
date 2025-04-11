@@ -2,6 +2,8 @@
 
 Inherits: [RefCounted](https://docs.godotengine.org/en/stable/classes/class_refcounted.html)
 
+Object returned by some asynchronous functions to track progress and completion.
+
 ## Methods: 
 
 
@@ -31,4 +33,4 @@ Return                                                                  | Signat
 
 *(This method has no documentation)*
 
-_Generated on Aug 27, 2024_
+_Generated on Mar 23, 2025_

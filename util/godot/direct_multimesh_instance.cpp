@@ -97,6 +97,13 @@ void DirectMultiMeshInstance::set_gi_mode(GeometryInstance3D::GIMode mode) {
 	set_geometry_instance_gi_mode(_multimesh_instance, mode);
 }
 
+void DirectMultiMeshInstance::set_interpolated(const bool enabled) {
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR >= 4
+	RenderingServer &vs = *RenderingServer::get_singleton();
+	vs.instance_set_interpolated(_multimesh_instance, enabled);
+#endif
+}
+
 template <typename TTransform3>
 inline void write_bulk_array_transform(float *dst, const TTransform3 &t) {
 	// dst[0] = t.basis.rows[0].x;

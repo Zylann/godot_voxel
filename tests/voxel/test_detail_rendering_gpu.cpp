@@ -7,7 +7,7 @@
 #include "../../meshers/transvoxel/transvoxel_cell_iterator.h"
 #include "../../meshers/transvoxel/voxel_mesher_transvoxel.h"
 #include "../../util/godot/classes/time.h"
-#include "../testing.h"
+#include "../../util/testing/test_macros.h"
 
 namespace zylann::voxel::tests {
 

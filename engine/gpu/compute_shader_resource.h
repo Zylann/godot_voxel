@@ -5,9 +5,11 @@
 #include "../../util/godot/classes/ref_counted.h"
 #include "../../util/godot/core/packed_byte_array.h"
 #include "../../util/godot/core/rid.h"
+#include "../../util/godot/core/transform_3d.h"
+#include "../../util/godot/core/vector3i.h"
+#include "../../util/godot/macros.h"
 #include "../../util/macros.h"
-#include "../../util/math/transform_3d.h"
-#include "../../util/math/vector3i.h"
+#include <memory>
 
 ZN_GODOT_FORWARD_DECLARE(class Image);
 ZN_GODOT_FORWARD_DECLARE(class Curve);

@@ -15,6 +15,7 @@ Type                                                                      | Name
 ------------------------------------------------------------------------- | ---------------------------------------------------------- | --------
 [Mesh](https://docs.godotengine.org/en/stable/classes/class_mesh.html)    | [mesh](#i_mesh)                                            |         
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)      | [mesh_ortho_rotation_index](#i_mesh_ortho_rotation_index)  | 0       
+[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)    | [side_cutout_enabled](#i_side_cutout_enabled)              | false   
 [float](https://docs.godotengine.org/en/stable/classes/class_float.html)  | [side_vertex_tolerance](#i_side_vertex_tolerance)          | 0.001   
 <p></p>
 
@@ -30,8 +31,12 @@ Orthogonal rotation applied to the mesh when baking. Values are taken from the s
 
 ([GridMap](https://docs.godotengine.org/en/stable/classes/class_gridmap.html) provides a conversion method from [Basis](https://docs.godotengine.org/en/stable/classes/class_basis.html), unfortunately it is not a static method so it requires a [GridMap](https://docs.godotengine.org/en/stable/classes/class_gridmap.html) instance to exist. A helper method could be added in the future if requested)
 
+### [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_side_cutout_enabled"></span> **side_cutout_enabled** = false
+
+When a neighbor voxel partially covers a side of this voxel, the occluded geometry of the side will be cut away. This only works if the shape of both sides is a rectangle. Note, enabling this option can actually produce more triangles than when it is enabled.
+
 ### [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_side_vertex_tolerance"></span> **side_vertex_tolerance** = 0.001
 
 Margin below which triangles located near one of the 6 sides of the voxel will be considered on that side. Sides get culled or not by comparing between triangles of neighbor sides.
 
-_Generated on Aug 27, 2024_
+_Generated on Mar 23, 2025_

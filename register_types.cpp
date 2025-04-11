@@ -152,6 +152,7 @@
 
 #ifdef VOXEL_TESTS
 #include "tests/tests.h"
+#include "util/testing/test_options.h"
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -367,7 +368,7 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		for (int i = 0; i < command_line_arguments.size(); ++i) {
 			const String arg = command_line_arguments[i];
 			if (arg == tests_cmd) {
-				zylann::voxel::tests::run_voxel_tests();
+				zylann::voxel::tests::run_voxel_tests(zylann::testing::TestOptions());
 				break;
 			}
 		}
