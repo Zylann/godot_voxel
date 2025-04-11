@@ -132,8 +132,10 @@ void VoxelEngine::wait_and_clear_all_tasks(bool warn) {
 
 	_general_thread_pool.dequeue_completed_tasks([warn](zylann::IThreadedTask *task) {
 		if (warn) {
-			ZN_PRINT_WARNING("General tasks remain on module cleanup, "
-							 "this could become a problem if they reference scripts");
+			ZN_PRINT_WARNING(
+					"General tasks remain on module cleanup, "
+					"this could become a problem if they reference scripts"
+			);
 		}
 		ZN_DELETE(task);
 	});
