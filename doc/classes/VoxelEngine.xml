@@ -27,7 +27,8 @@
 						"streaming": int,
 						"meshing": int,
 						"generation": int,
-						"main_thread": int
+						"main_thread": int,
+						"gpu": int
 					},
 					"memory_pools": {
 						"voxel_used": int,
@@ -39,6 +40,12 @@
 					}
 				}
 				[/codeblock]
+			</description>
+		</method>
+		<method name="get_threaded_graphics_resource_building_enabled" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Tells if the voxel engine is able to create graphics resources from different threads. This will usually be true if the current renderer's thread model is safe or multi-threaded, but might also be false if the renderer would poorly benefit from this (such as legacy OpenGL).
 			</description>
 		</method>
 		<method name="get_version_major" qualifiers="const">
@@ -57,6 +64,13 @@
 			<return type="int" />
 			<description>
 				Gets the patch version number of the voxel engine. For example, in [code]1.2.0[/code], [code]0[/code] is the patch version.
+			</description>
+		</method>
+		<method name="run_tests">
+			<return type="void" />
+			<param index="0" name="options" type="Dictionary" />
+			<description>
+				Runs internal unit tests. This function is only available if the voxel engine is compiled with `voxel_tests=true`.
 			</description>
 		</method>
 	</methods>

@@ -41,6 +41,8 @@ void VoxelEngineUpdater::ensure_existence(SceneTree *st) {
 	// TODO This can fail (for example if `Node::data.blocked > 0` while in `_ready()`) but Godot offers no API to check
 	// anything. So if this fail, the node will leak.
 	root->add_child(u);
+
+	VoxelEngine::get_singleton().try_initialize_gpu_features();
 }
 
 void VoxelEngineUpdater::_notification(int p_what) {

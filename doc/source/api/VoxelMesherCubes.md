@@ -78,4 +78,4 @@ Generates a 1-voxel thick greedy mesh from pixels of an image.
 
 Sets one of the materials that will be used when building meshes. This is equivalent to using either [VoxelMesherCubes.opaque_material](VoxelMesherCubes.md#i_opaque_material) or [VoxelMesherCubes.transparent_material](VoxelMesherCubes.md#i_transparent_material).
 
-_Generated on Aug 27, 2024_
+_Generated on Mar 23, 2025_

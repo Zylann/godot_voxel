@@ -1,6 +1,6 @@
 #include "test_math_funcs.h"
 #include "../../util/math/funcs.h"
-#include "../testing.h"
+#include "../../util/testing/test_macros.h"
 
 namespace zylann::tests {
 

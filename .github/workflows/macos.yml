@@ -1,7 +1,7 @@
 name: 🍎 macOS Builds
 on:
   push:
-    branches: [master, github_actions, "1.2"]
+    branches: [master]
   pull_request:
     branches: [master]
 
@@ -11,7 +11,7 @@ concurrency:
 
 # Global Cache Settings
 env:
-  SCONS_CACHE_LIMIT: 4096
+  SCONS_CACHE_LIMIT_GB: 4
 
 jobs:
   build:
@@ -24,15 +24,15 @@ jobs:
         arch: [x86_64, arm64]
         target: [editor, template_release]
         include:
-          - name: 4.3 Editor
+          - name: 4.4.1 Editor
             target: editor
             executable_name: godot.macos.editor
-            godot_base_branch: "4.3-stable"
+            godot_base_branch: "4.4.1-stable"
 
-          - name: 4.3 Template
+          - name: 4.4.1 Template
             target: template_release
             executable_name: godot.macos.template_release
-            godot_base_branch: "4.3-stable"
+            godot_base_branch: "4.4.1-stable"
 
     steps:
       # Clone Godot
@@ -80,10 +80,8 @@ jobs:
 
       # We should always be explicit with our flags usage here since it's gonna be sure to always set those flags
       - name: Compilation
-        env:
-          SCONS_CACHE: ${{github.workspace}}/.scons_cache/
         run: |
-          scons arch=${{matrix.arch}} verbose=yes warnings=extra werror=yes platform=macos tests=no target=${{matrix.target}} dev_build=no production=yes
+          scons arch=${{matrix.arch}} verbose=yes warnings=extra werror=yes strict_checks=yes platform=macos tests=no target=${{matrix.target}} dev_build=no production=yes "cache_path=${{github.workspace}}/.scons_cache/" cache_limit=${{env.SCONS_CACHE_LIMIT_GB}}
           
       # Make build available
       - uses: actions/upload-artifact@v4
@@ -125,7 +123,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: godotengine/godot
-          ref: "4.3-stable"
+          ref: ${{matrix.godot_base_branch}}
      
       - uses: actions/download-artifact@v4
         with:

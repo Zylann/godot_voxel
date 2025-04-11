@@ -1,7 +1,7 @@
 name: 🐧 Linux Builds
 on:
   push:
-    branches: [ master, github_actions, "1.2" ]
+    branches: [ master ]
   pull_request:
     branches: [ master ]
 
@@ -11,11 +11,11 @@ concurrency:
 
 # Global Cache Settings
 env:
-  SCONS_CACHE_LIMIT: 4096
+  SCONS_CACHE_LIMIT_GB: 4
 
 jobs:
   linux:
-    runs-on: "ubuntu-20.04"
+    runs-on: "ubuntu-22.04"
     name: ${{matrix.name}}
 
     strategy:
@@ -62,6 +62,15 @@ jobs:
             # Looking at the code, I could not find what's wrong.
             werror: no
 
+          - name: 4.3 Editor
+            precision: single
+            target: editor
+            production: no
+            executable_name: godot.linuxbsd.editor.x86_64
+            godot_base_branch: "4.3"
+            warnings: extra
+            werror: yes
+
           - name: master Editor
             precision: single
             target: editor
@@ -73,30 +82,30 @@ jobs:
 
           # --- Builds with artifacts ---
 
-          - name: 4.3 Editor
+          - name: 4.4.1 Editor
             precision: single
             target: editor
             production: yes
             executable_name: godot.linuxbsd.editor.x86_64
-            godot_base_branch: "4.3-stable"
+            godot_base_branch: "4.4.1-stable"
             warnings: extra
             werror: yes
 
-          - name: 4.3 Template
+          - name: 4.4.1 Template
             precision: single
             target: template_release
             production: yes
             executable_name: godot.linuxbsd.template_release.x86_64
-            godot_base_branch: "4.3-stable"
+            godot_base_branch: "4.4.1-stable"
             warnings: extra
             werror: yes
 
-          - name: 4.3 Editor Float64
+          - name: 4.4.1 Editor Float64
             precision: double
             target: editor
             production: yes
             executable_name: godot.linuxbsd.editor.double.x86_64
-            godot_base_branch: "4.3-stable"
+            godot_base_branch: "4.4.1-stable"
             warnings: extra
             werror: yes
 
@@ -121,7 +130,7 @@ jobs:
       #      the working directory for all following steps.
       - name: Setup buildroot
         run: |
-          wget https://download.tuxfamily.org/godotengine/toolchains/linux/x86_64-godot-linux-gnu_sdk-buildroot.tar.bz2
+          wget https://github.com/godotengine/buildroot/releases/download/godot-2023.08.x-4/x86_64-godot-linux-gnu_sdk-buildroot.tar.bz2
           tar -xjf x86_64-godot-linux-gnu_sdk-buildroot.tar.bz2
           cd x86_64-godot-linux-gnu_sdk-buildroot
           ./relocate-sdk.sh
@@ -176,10 +185,17 @@ jobs:
       # We should always be explicit with our flags usage here since it's gonna be sure to always set those flags
       - name: Compilation
         env:
+          # `SCONS_CACHE` and `SCONS_CACHE_LIMIT` became deprecated since 
+          # https://github.com/godotengine/godot/commit/0e4a4e3c4d602691ce1b4fc6a721c5c637ead57f
+          # However since we are also building versions preceding that change, 
+          # we have to keep them in addition to the new parameters
           SCONS_CACHE: ${{github.workspace}}/.scons_cache/
+          # The new way uses a different unit.
+          # I wish I could do `SCONS_CACHE_LIMIT_GB * 1024` but it isn't documented as an available operator
+          SCONS_CACHE_LIMIT: 4096
         run: |
           PATH=${GITHUB_WORKSPACE}/x86_64-godot-linux-gnu_sdk-buildroot/bin:$PATH
-          scons verbose=yes warnings=${{matrix.warnings}} werror=${{matrix.werror}} platform=linuxbsd tests=no dev_build=no target=${{matrix.target}} production=${{matrix.production}} precision=${{matrix.precision}}
+          scons verbose=yes warnings=${{matrix.warnings}} werror=${{matrix.werror}} strict_checks=yes platform=linuxbsd tests=no dev_build=no target=${{matrix.target}} production=${{matrix.production}} precision=${{matrix.precision}} "cache_path=${{github.workspace}}/.scons_cache/" cache_limit=${{env.SCONS_CACHE_LIMIT_GB}}
 
       # Make build available
       - uses: actions/upload-artifact@v4

@@ -5,7 +5,37 @@
 #include "../../util/godot/core/string.h"
 #include "../../util/memory/memory.h"
 
+ZN_GODOT_FORWARD_DECLARE(class RenderingDevice)
+
 namespace zylann::voxel {
+
+struct ComputeShaderInternal {
+	RID rid;
+#if DEBUG_ENABLED
+	String debug_name;
+#endif
+
+	void clear(RenderingDevice &rd);
+	void load_from_glsl(RenderingDevice &rd, String source_text, String name);
+
+	// An invalid instance means the shader failed to compile
+	inline bool is_valid() const {
+		return rid.is_valid();
+	}
+};
+
+class ComputeShader;
+
+// See ComputeShaderResourceFactory
+struct ComputeShaderFactory {
+	ComputeShaderFactory() = delete;
+
+	[[nodiscard]]
+	static std::shared_ptr<ComputeShader> create_from_glsl(String source_text, String name);
+
+	[[nodiscard]]
+	static std::shared_ptr<ComputeShader> create_invalid();
+};
 
 // Thin RAII wrapper around compute shaders created with the `RenderingDevice` held inside `VoxelEngine`.
 // If the source can change at runtime, it may be passed around using shared pointers and a new instance may be created,
@@ -13,29 +43,15 @@ namespace zylann::voxel {
 // this shader is running on the graphics card.
 class ComputeShader {
 public:
-	static std::shared_ptr<ComputeShader> create_from_glsl(String source_text, String name);
-	static std::shared_ptr<ComputeShader> create_invalid();
-
-	ComputeShader();
-	ComputeShader(RID p_rid);
+	friend struct ComputeShaderFactory;
 
 	~ComputeShader();
 
-	void clear();
-
-	void load_from_glsl(String source_text, String name);
-
-	// An invalid instance means the shader failed to compile
-	inline bool is_valid() const {
-		return _rid.is_valid();
-	}
-
-	inline RID get_rid() const {
-		return _rid;
-	}
+	// Only use on GPU task thread
+	RID get_rid() const;
 
 private:
-	RID _rid;
+	ComputeShaderInternal _internal;
 };
 
 } // namespace zylann::voxel

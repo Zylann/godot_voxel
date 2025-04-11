@@ -4,6 +4,7 @@
 #include "../util/math/vector3i.h"
 // #include "../util/profiling.h"
 #include "errors.h"
+#include "math/conv.h"
 #include "math/vector3.h"
 
 namespace zylann {

@@ -63,6 +63,7 @@ void VoxelMeshBlock::set_mesh(
 		if (!_mesh_instance.is_valid()) {
 			// Create instance if it doesn't exist
 			_mesh_instance.create();
+			_mesh_instance.set_interpolated(false);
 			_mesh_instance.set_gi_mode(gi_mode);
 			_mesh_instance.set_cast_shadows_setting(shadow_setting);
 			_mesh_instance.set_render_layers_mask(render_layers_mask);
@@ -227,7 +228,9 @@ Ref<ConcavePolygonShape3D> make_collision_shape_from_mesher_output(
 			// Use a sub-region of the render mesh
 			if (mesher_output.surfaces.size() > 0) {
 				shape = create_concave_polygon_shape(
-						mesher_output.surfaces[0].arrays, mesher_output.collision_surface.submesh_index_end
+						mesher_output.surfaces[0].arrays,
+						mesher_output.collision_surface.submesh_vertex_end,
+						mesher_output.collision_surface.submesh_index_end
 				);
 			}
 
@@ -240,16 +243,26 @@ Ref<ConcavePolygonShape3D> make_collision_shape_from_mesher_output(
 
 	} else {
 		// Use render mesh
-		static thread_local StdVector<Array> tls_render_surfaces;
-		ZN_ASSERT(tls_render_surfaces.size() == 0);
+		static const unsigned int MAX_STACK_SURFACES = 8;
 
-		for (unsigned int i = 0; i < mesher_output.surfaces.size(); ++i) {
-			tls_render_surfaces.push_back(mesher_output.surfaces[i].arrays);
+		if (mesher_output.surfaces.size() <= MAX_STACK_SURFACES) {
+			// Use stack
+			std::array<Array, MAX_STACK_SURFACES> render_surfaces_s;
+			for (unsigned int i = 0; i < mesher_output.surfaces.size(); ++i) {
+				render_surfaces_s[i] = mesher_output.surfaces[i].arrays;
+			}
+			Span<const Array> render_surfaces(render_surfaces_s.data(), mesher_output.surfaces.size());
+			shape = create_concave_polygon_shape(render_surfaces);
+
+		} else {
+			// Use heap
+			StdVector<Array> render_surfaces_h;
+			render_surfaces_h.reserve(mesher_output.surfaces.size());
+			for (const VoxelMesher::Output::Surface &surface : mesher_output.surfaces) {
+				render_surfaces_h.push_back(surface.arrays);
+			}
+			shape = create_concave_polygon_shape(to_span(render_surfaces_h));
 		}
-
-		shape = create_concave_polygon_shape(to_span(tls_render_surfaces));
-
-		tls_render_surfaces.clear();
 	}
 
 	return shape;

@@ -911,7 +911,18 @@ void VoxelInstancer::on_library_item_changed(int item_id, IInstanceLibraryItemLi
 			Ref<VoxelInstanceLibraryItem> item = _library->get_item(item_id);
 			ERR_FAIL_COND(item.is_null());
 			add_layer(item_id, item->get_lod_index());
-			regenerate_layer(item_id, true);
+			// In the editor, if you delete a VoxelInstancer, Godot doesn't actually delete it. Instead, it removes it
+			// from the scene tree and keeps it around in the UndoRedo history. But the node still receives
+			// notifications when the library gets modified... this leads to several issues:
+			// - Errors because the node needs to have access to World3D to update
+			// - In theory we could not require World3D, but then it still means a lot of processing has to occur to
+			// re-generate layers, which is wasted CPU for a node that isn't active or is "currently" deleted by the
+			// user.
+			// So we stop it from re-generating layers while in that state. I'm not sure to which extent we should
+			// be supporting out-of-tree automatic refresh... There might be more corner cases than this.
+			if (is_inside_tree()) {
+				regenerate_layer(item_id, true);
+			}
 			update_configuration_warnings();
 		} break;
 
@@ -921,7 +932,10 @@ void VoxelInstancer::on_library_item_changed(int item_id, IInstanceLibraryItemLi
 			break;
 
 		case IInstanceLibraryItemListener::CHANGE_GENERATOR:
-			regenerate_layer(item_id, false);
+			// Don't update in case the node was deleted in the editor...
+			if (is_inside_tree()) {
+				regenerate_layer(item_id, false);
+			}
 			break;
 
 		case IInstanceLibraryItemListener::CHANGE_VISUAL:
@@ -948,7 +962,10 @@ void VoxelInstancer::on_library_item_changed(int item_id, IInstanceLibraryItemLi
 			Lod &new_lod = _lods[layer.lod_index];
 			new_lod.layers.push_back(item_id);
 
-			regenerate_layer(item_id, true);
+			// Don't update in case the node was deleted in the editor...
+			if (is_inside_tree()) {
+				regenerate_layer(item_id, true);
+			}
 		} break;
 
 		default:
@@ -1269,6 +1286,7 @@ void VoxelInstancer::update_block_from_transforms( //
 
 			if (!block.multimesh_instance.is_valid()) {
 				block.multimesh_instance.create();
+				block.multimesh_instance.set_interpolated(false);
 				block.multimesh_instance.set_visible(
 						is_visible() &&
 						!(item->get_hide_beyond_max_lod() && block.current_mesh_lod == settings.mesh_lod_count)

@@ -1,4 +1,5 @@
 #include "voxel_blocky_model_empty.h"
+#include "blocky_model_baking_context.h"
 
 namespace zylann::voxel {
 
@@ -6,9 +7,9 @@ VoxelBlockyModelEmpty::VoxelBlockyModelEmpty() {
 	set_collision_aabbs(Span<const AABB>());
 }
 
-void VoxelBlockyModelEmpty::bake(BakedData &baked_data, bool bake_tangents, MaterialIndexer &materials) const {
-	baked_data.clear();
-	VoxelBlockyModel::bake(baked_data, bake_tangents, materials);
+void VoxelBlockyModelEmpty::bake(blocky::ModelBakingContext &ctx) const {
+	ctx.model.clear();
+	VoxelBlockyModel::bake(ctx);
 }
 
 Ref<Mesh> VoxelBlockyModelEmpty::get_preview_mesh() const {

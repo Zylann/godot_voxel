@@ -265,19 +265,18 @@ void VoxelDataMap::paste(
 	paste_masked(min_pos, src_buffer, channels_mask, false, 0, 0, false, 0, Span<const int32_t>(), create_new_blocks);
 }
 
-void VoxelDataMap::paste_masked( //
-		Vector3i min_pos, //
-		const VoxelBuffer &src_buffer, //
-		unsigned int channels_mask, //
-		bool use_src_mask, //
-		uint8_t src_mask_channel, //
-		uint64_t src_mask_value, //
-		bool use_dst_mask, //
-		uint8_t dst_mask_channel, //
-		Span<const int32_t> dst_writable_values, //
-		bool create_new_blocks //
+void VoxelDataMap::paste_masked(
+		Vector3i min_pos,
+		const VoxelBuffer &src_buffer,
+		unsigned int channels_mask,
+		bool use_src_mask,
+		uint8_t src_mask_channel,
+		uint64_t src_mask_value,
+		bool use_dst_mask,
+		uint8_t dst_mask_channel,
+		Span<const int32_t> dst_writable_values,
+		bool create_new_blocks
 ) {
-	//
 	if (use_dst_mask && !use_src_mask) {
 		ZN_PRINT_ERROR("Destination mask without source mask is not implemented");
 		return;
@@ -327,39 +326,39 @@ void VoxelDataMap::paste_masked( //
 						if (dst_writable_values.size() == 1) {
 							zylann::voxel::paste_src_masked_dst_writable_value(
 									to_span(channel_indices),
-									src_buffer, //
-									src_mask_channel, //
-									src_mask_value, //
-									dst_buffer, //
-									dst_base_pos, //
-									dst_mask_channel, //
-									dst_writable_values[0], //
-									with_metadata //
+									src_buffer,
+									src_mask_channel,
+									src_mask_value,
+									dst_buffer,
+									dst_base_pos,
+									dst_mask_channel,
+									dst_writable_values[0],
+									with_metadata
 							);
 
 						} else {
 							zylann::voxel::paste_src_masked_dst_writable_bitarray(
 									to_span(channel_indices),
-									src_buffer, //
-									src_mask_channel, //
-									src_mask_value, //
-									dst_buffer, //
-									dst_base_pos, //
-									dst_mask_channel, //
-									bitarray, //
-									with_metadata //
+									src_buffer,
+									src_mask_channel,
+									src_mask_value,
+									dst_buffer,
+									dst_base_pos,
+									dst_mask_channel,
+									bitarray,
+									with_metadata
 							);
 						}
 
 					} else {
 						zylann::voxel::paste_src_masked(
 								to_span(channel_indices),
-								src_buffer, //
-								src_mask_channel, //
-								src_mask_value, //
-								dst_buffer, //
-								dst_base_pos, //
-								with_metadata //
+								src_buffer,
+								src_mask_channel,
+								src_mask_value,
+								dst_buffer,
+								dst_base_pos,
+								with_metadata
 						);
 					}
 

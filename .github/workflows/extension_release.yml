@@ -1,0 +1,68 @@
+
+# Generates a GDExtension release package of the plugin.
+
+name: 🚢 Make GDExtension release package
+on:
+  workflow_dispatch:
+
+
+jobs:
+  build_binaries:
+    uses: Zylann/godot_voxel/.github/workflows/extension_builds.yml@master
+    with:
+      godot-cpp-branch: godot-4.4.1-stable
+
+  dist:
+    runs-on: ubuntu-22.04
+    needs: [build_binaries]
+
+    steps:
+      # Clone our repo
+      - uses: actions/checkout@v4
+
+      # Get builds
+      # Downloads all artifacts
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: libvoxel
+          path: project/addons/zylann.voxel/bin
+
+      # Fix downloaded builds:
+      # download-artifact does not just download the file we want:
+      # it also creates a folder of the same name, and then puts the contents in it.
+      # See https://github.com/actions/download-artifact/issues/141
+      # In the present case, we want the contents instead of the folder.
+      - name: "Fix downloaded artifacts"
+        run: |
+          cd project/addons/zylann.voxel/bin
+          mv -v libvoxel/* .
+          rm -d libvoxel
+
+      # Copy license
+      - name: "Copy license"
+        run: |
+          cp LICENSE.md project/addons/zylann.voxel
+
+      # Setup GDExtension file
+      - name: "Setup GDExtension file"
+        run: |
+          cd project/addons/zylann.voxel
+          mv voxel.gdextension-release voxel.gdextension
+
+      # Remove unwanted files because upload-artifacts cannot filter files that go in the archive.
+      # The goal is to get an archive that can be decompressed at the root of a Godot project, 
+      # and have only necessary files go in matching directories. This is how the asset library works (otherwise the
+      # user has to remember to manually choose the right path to the addons/ folder)
+      - name: "Filter files"
+        # Delete all files in `project/` except the `addons` folder
+        run: |
+          cd project
+          find -maxdepth 1 -type f -delete
+          rm -r tests
+          ls -l
+
+      # Make package
+      - uses: actions/upload-artifact@v4
+        with:
+          name: GodotVoxelExtension
+          path: project

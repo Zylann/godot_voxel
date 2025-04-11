@@ -122,8 +122,11 @@ public:
 	void set_normalmap_use_gpu(bool enabled);
 	bool get_normalmap_use_gpu() const;
 
-	void set_generator_use_gpu(bool enabled);
+	void set_generator_use_gpu(const bool enabled);
 	bool get_generator_use_gpu() const;
+
+	void set_cache_generated_blocks(bool enabled);
+	bool get_cache_generated_blocks() const;
 
 	// These must be called after an edit
 	void post_edit_area(Box3i p_box, bool update_mesh);

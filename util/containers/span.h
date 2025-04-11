@@ -107,6 +107,9 @@ public:
 	template <typename TDst>
 	inline void copy_to(Span<TDst> other) const {
 		ZN_ASSERT(other.size() == _size);
+		if (_size == 0) {
+			return;
+		}
 		ZN_ASSERT(other.data() != nullptr);
 		// for (size_t i = 0; i < _size; ++i) {
 		// 	other._ptr[i] = _ptr[i];

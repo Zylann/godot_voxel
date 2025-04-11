@@ -87,8 +87,8 @@ Array generate_debug_seams_wireframe_surface(const ArrayMesh &src_mesh, int surf
 
 	PackedVector3Array dst_positions_pv;
 	PackedInt32Array dst_indices_pv;
-	copy_to(dst_positions_pv, to_span(dst_positions));
-	copy_to(dst_indices_pv, to_span(dst_indices));
+	copy_to(dst_positions_pv, to_span_const(dst_positions));
+	copy_to(dst_indices_pv, to_span_const(dst_indices));
 	Array dst_surface;
 	dst_surface.resize(Mesh::ARRAY_MAX);
 	dst_surface[Mesh::ARRAY_VERTEX] = dst_positions_pv;

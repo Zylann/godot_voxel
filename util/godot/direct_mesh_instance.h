@@ -30,6 +30,7 @@ public:
 	void set_shader_instance_parameter(StringName key, Variant value);
 	void set_gi_mode(GeometryInstance3D::GIMode mode);
 	void set_render_layers_mask(int mask);
+	void set_interpolated(const bool enabled);
 
 	Ref<Mesh> get_mesh() const;
 	const Mesh *get_mesh_ptr() const;

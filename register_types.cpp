@@ -25,9 +25,11 @@
 #include "meshers/blocky/types/voxel_blocky_attribute_direction.h"
 #include "meshers/blocky/types/voxel_blocky_attribute_rotation.h"
 #include "meshers/blocky/types/voxel_blocky_type_library.h"
+#include "meshers/blocky/voxel_blocky_fluid.h"
 #include "meshers/blocky/voxel_blocky_library.h"
 #include "meshers/blocky/voxel_blocky_model_cube.h"
 #include "meshers/blocky/voxel_blocky_model_empty.h"
+#include "meshers/blocky/voxel_blocky_model_fluid.h"
 #include "meshers/blocky/voxel_blocky_model_mesh.h"
 #include "meshers/blocky/voxel_mesher_blocky.h"
 #include "meshers/cubes/voxel_mesher_cubes.h"
@@ -150,6 +152,7 @@
 
 #ifdef VOXEL_TESTS
 #include "tests/tests.h"
+#include "util/testing/test_options.h"
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -221,6 +224,8 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_class<VoxelBlockyModelCube>();
 		ClassDB::register_class<VoxelBlockyModelMesh>();
 		ClassDB::register_class<VoxelBlockyModelEmpty>();
+		ClassDB::register_class<VoxelBlockyModelFluid>();
+		ClassDB::register_class<VoxelBlockyFluid>();
 		ClassDB::register_abstract_class<VoxelBlockyLibraryBase>();
 		ClassDB::register_class<VoxelBlockyLibrary>();
 		ClassDB::register_abstract_class<VoxelBlockyAttribute>();
@@ -346,23 +351,6 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		CheckRefCountDoesNotChange::set_enabled(config.ownership_checks);
 #endif
 		VoxelEngine::create_singleton(config.inner);
-#if defined(ZN_GODOT)
-		// RenderingServer can be null with `tests=yes`.
-		// TODO There is no hook to integrate modules to Godot's test framework, update this when it gets improved
-		if (RenderingServer::get_singleton() != nullptr) {
-			// TODO Enhancement: threaded graphics resource building should be initialized better.
-			// Pick this from the current renderer + user option (at time of writing, Godot 4 has only one
-			// renderer and has not figured out how such option would be exposed). Could use
-			// `can_create_resources_async` but this is internal. AFAIK `is_low_end` will be `true` only for OpenGL
-			// backends, which are the only ones not supporting async resource creation.
-			VoxelEngine::get_singleton().set_threaded_graphics_resource_building_enabled(
-					RenderingServer::get_singleton()->is_low_end() == false
-			);
-		}
-#else
-		// TODO GDX: RenderingServer::is_low_end() is not exposed, can't tell if we can generate graphics resources in
-		// different threads
-#endif
 
 		zylann::voxel::godot::VoxelEngine::create_singleton();
 		zylann::godot::add_singleton("VoxelEngine", zylann::voxel::godot::VoxelEngine::get_singleton());
@@ -380,7 +368,7 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		for (int i = 0; i < command_line_arguments.size(); ++i) {
 			const String arg = command_line_arguments[i];
 			if (arg == tests_cmd) {
-				zylann::voxel::tests::run_voxel_tests();
+				zylann::voxel::tests::run_voxel_tests(zylann::testing::TestOptions());
 				break;
 			}
 		}

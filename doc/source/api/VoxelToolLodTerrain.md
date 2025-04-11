@@ -30,11 +30,15 @@ Return                                                                    | Sign
 
 ### [void](#)<span id="i_do_graph"></span> **do_graph**( [VoxelGeneratorGraph](VoxelGeneratorGraph.md) graph, [Transform3D](https://docs.godotengine.org/en/stable/classes/class_transform3d.html) transform, [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) area_size ) 
 
-*(This method has no documentation)*
+Uses a [VoxelGeneratorGraph](VoxelGeneratorGraph.md) as a brush, which allows to program SDF operations performed by the brush.
+
+The graph must have an SDF input and an SDF output, and preferably work assuming a shape of unit size. For example, an additive sphere brush may use an `SdfSphere` node with radius 1 with a `Min` to combine it with terrain SDF.
+
+See also [online documentation](https://voxel-tools.readthedocs.io/en/latest/generators/#using-voxelgeneratorgraph-as-a-brush).
 
 ### [void](#)<span id="i_do_hemisphere"></span> **do_hemisphere**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) center, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) radius, [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) flat_direction, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) smoothness=0.0 ) 
 
-*(This method has no documentation)*
+Operates on a hemisphere, where `flat_direction` is pointing away from the flat surface (like a normal). `smoothness` determines how the flat part blends with the rounded part, with higher values producing softer more rounded edge.
 
 ### [void](#)<span id="i_do_sphere_async"></span> **do_sphere_async**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) center, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) radius ) 
 
@@ -72,4 +76,4 @@ Only voxels at LOD 0 will be considered.
 
 *(This method has no documentation)*
 
-_Generated on Aug 27, 2024_
+_Generated on Mar 23, 2025_

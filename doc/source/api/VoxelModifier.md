@@ -43,4 +43,4 @@ Increasing this value makes the shape "merge" with its surroundings across a mor
 
 Note, it assumes the base generator produces consistent gradients. This is not always the case. Notably, it is a common optimization for generators to avoid calculating gradients beyond a certain distance from surfaces. If smoothness is too large, or if the generator's cutoff distance is too low, it can lead to gaps in the resulting mesh, usually at chunk boundaries.
 
-_Generated on Aug 27, 2024_
+_Generated on Mar 23, 2025_

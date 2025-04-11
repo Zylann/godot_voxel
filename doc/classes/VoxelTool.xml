@@ -41,7 +41,10 @@
 			<param index="0" name="begin" type="Vector3i" />
 			<param index="1" name="end" type="Vector3i" />
 			<description>
-				Operate on a rectangular cuboid section of the terrain. [code]begin[/code] and [code]end[/code] are inclusive. Choose operation and which voxel to use by setting [code]value[/code] and [code]mode[/code] before calling this function.
+				Operate on a rectangular cuboid section of the terrain.
+				With blocky voxels, [code]begin[/code] and [code]end[/code] are inclusive.
+				With smooth voxels, [code]end[/code] is exclusive.
+				You may choose which operation to do before calling this function, by setting [member mode]. With blocky voxels, you may also set [member value] to choose which voxel ID to use.
 			</description>
 		</method>
 		<method name="do_path">
@@ -56,6 +59,9 @@
 			<return type="void" />
 			<param index="0" name="pos" type="Vector3i" />
 			<description>
+				Operates on a single voxel.
+				You may choose which operation to do before calling this function, by setting [member mode]. With blocky voxels, you may also set [member value] to choose which voxel ID to use.
+				This function is not well adapted to smooth voxels, and can introduce blockyness.
 			</description>
 		</method>
 		<method name="do_sphere">
@@ -63,24 +69,30 @@
 			<param index="0" name="center" type="Vector3" />
 			<param index="1" name="radius" type="float" />
 			<description>
+				Operate on voxels within a sphere.
+				You may choose which operation to do before calling this function, by setting [member mode]. With blocky voxels, you may also set [member value] to choose which voxel ID to use.
 			</description>
 		</method>
 		<method name="get_voxel">
 			<return type="int" />
 			<param index="0" name="pos" type="Vector3i" />
 			<description>
+				Gets data from voxel at [code]pos[/code] coordinates. The returned value will be an unsigned integer. The meaning of the value depends on [member channel] the tool is set to.
+				When using [constant VoxelBuffer.CHANNEL_SDF] for smooth voxels, the returned value will be an encoded value, so you may use [method get_voxel_f] to get a float value instead.
 			</description>
 		</method>
 		<method name="get_voxel_f">
 			<return type="float" />
 			<param index="0" name="pos" type="Vector3i" />
 			<description>
+				Gets data from voxel at [code]pos[/code] coordinates, interpreting it as a floating-point SDF value. This is recommended to query the [constant VoxelBuffer.CHANNEL_SDF] channel for smooth voxels.
 			</description>
 		</method>
 		<method name="get_voxel_metadata" qualifiers="const">
 			<return type="Variant" />
 			<param index="0" name="pos" type="Vector3i" />
 			<description>
+				Gets arbitrary data attached to a specific voxel.
 			</description>
 		</method>
 		<method name="grow_sphere">
@@ -101,12 +113,14 @@
 			<return type="bool" />
 			<param index="0" name="box" type="AABB" />
 			<description>
+				Returns [code]true[/code] if the specified voxel area can be edited. This can also be interpreted as the area being "loaded". Note: when using LOD, only the nearest LOD (0) is editable. Other factors can influence whether an area is editable or not, such as streaming mode or terrain bounds.
 			</description>
 		</method>
 		<method name="normalize_color" qualifiers="static">
 			<return type="Color" />
 			<param index="0" name="_unnamed_arg0" type="Color" />
 			<description>
+				A helper method to set the sum of channels of the `Color` to 1.
 			</description>
 		</method>
 		<method name="paste">
@@ -165,6 +179,13 @@
 				Returns a result object if a voxel got hit, otherwise returns [code]null[/code].
 				This is useful when colliders cannot be relied upon. It might also be faster (at least at short range), and is more precise to find which voxel is hit. It internally uses the DDA algorithm.
 				[code]collision_mask[/code] is currently only used with blocky voxels. It is combined with [member VoxelBlockyModel.collision_mask] to decide which voxel types the ray can collide with.
+			</description>
+		</method>
+		<method name="set_raycast_normal_enabled">
+			<return type="void" />
+			<param index="0" name="enabled" type="bool" />
+			<description>
+				Sets whether [method raycast] will compute hit normals. This is true by default.
 			</description>
 		</method>
 		<method name="set_voxel">
@@ -231,7 +252,7 @@
 			Set which channel will be edited. When used on a terrain node, it will default to the first available channel, based on the stream and generator.
 		</member>
 		<member name="eraser_value" type="int" setter="set_eraser_value" getter="get_eraser_value">
-			Sets which value will be used to erase voxels when editing the [constant VoxelBuffer.CHANNEL_TYPE] channel in [constant MODE_REMOVE] mode.
+			Sets which value will be used to erase voxels when editing the [constant VoxelBuffer.CHANNEL_TYPE] channel in [constant MODE_REMOVE] mode. Only relevant for blocky voxels.
 		</member>
 		<member name="mode" type="int" setter="set_mode" getter="get_mode" enum="VoxelTool.Mode">
 			Sets how [code]do_*[/code] functions will behave. This may vary depending on the channel.
@@ -242,13 +263,16 @@
 			This is related to the [enum VoxelBuffer.Depth] configuration on voxels. For 8-bit and 16-bit, there is a limited range of values the Signed Distance Field can take, and by default it is clamped to -1..1, so the gradient can only range across 2 voxels. But when LOD is used, it is better to stretch that range over a longer distance, and this is achieved by scaling SDF values.
 		</member>
 		<member name="sdf_strength" type="float" setter="set_sdf_strength" getter="get_sdf_strength">
+			When editing [constant VoxelBuffer.CHANNEL_SDF] of smooth Terrains in [constant VoxelTool.MODE_ADD] or [constant VoxelTool.MODE_REMOVE], determines the interpolation phase between current values and values set by the tool. Can be interpreted as the amount of "matter" added or subtracted.
 		</member>
 		<member name="texture_falloff" type="float" setter="set_texture_falloff" getter="get_texture_falloff">
+			Range [0.001..1.0]. Determines texture blending strength when tool is set to [constant VoxelTool.MODE_TEXTURE_PAINT]. Lower values produce sharper transitions. Can be compared to brush softness in an image editing program. This is only relevant with smooth voxels and texturing modes that support long gradients.
 		</member>
 		<member name="texture_index" type="int" setter="set_texture_index" getter="get_texture_index">
 			Index of the texture used in smooth voxel texture painting mode. The choice of this index depends on the way you setup rendering of textured voxel meshes (for example, layer index in a texture array).
 		</member>
 		<member name="texture_opacity" type="float" setter="set_texture_opacity" getter="get_texture_opacity">
+			Range [0.0..1.0]. Determines the maximum weight of a [member texture_index] when tool is set to [constant VoxelTool.MODE_TEXTURE_PAINT]. Can be compared to brush opacity in an image editing program.
 		</member>
 		<member name="value" type="int" setter="set_value" getter="get_value">
 			Sets which voxel value will be used. This is not relevant when editing [constant VoxelBuffer.CHANNEL_SDF].
@@ -265,6 +289,7 @@
 			Replace voxel values without any blending. Useful for blocky voxels.
 		</constant>
 		<constant name="MODE_TEXTURE_PAINT" value="3" enum="Mode">
+			When editing [constant VoxelBuffer.CHANNEL_SDF] in smooth Terrain, enables texture painting. The value of [member texture_index] will be added to texture indices of the affected voxels. The texture's weight will be blended based on the values of [member texture_falloff] and [member texture_opacity]. Results will differ depending on which texturing mode is used by the mesher.
 		</constant>
 	</constants>
 </class>

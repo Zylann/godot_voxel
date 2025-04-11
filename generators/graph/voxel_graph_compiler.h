@@ -34,7 +34,8 @@ CompilationResult expand_graph(
 		Span<const VoxelGraphFunction::Port> input_defs,
 		StdVector<uint32_t> *input_node_ids,
 		const NodeTypeDB &type_db,
-		GraphRemappingInfo *remap_info
+		GraphRemappingInfo *remap_info,
+		const bool debug
 );
 
 // Functions usable by node implementations during the compilation stage
@@ -43,12 +44,12 @@ public:
 	CompileContext(
 			/*const ProgramGraph::Node &node,*/ StdVector<uint16_t> &program,
 			StdVector<Runtime::HeapResource> &heap_resources,
-			StdVector<Variant> &params
+			Span<const Variant> params
 	) :
 			/*_node(node),*/ _program(program), _heap_resources(heap_resources), _params(params) {}
 
-	Variant get_param(size_t i) const {
-		CRASH_COND(i > _params.size());
+	const Variant &get_param(size_t i) const {
+		ZN_ASSERT(i < _params.size());
 		return _params[i];
 	}
 
@@ -122,7 +123,7 @@ private:
 	// const ProgramGraph::Node &_node;
 	StdVector<uint16_t> &_program;
 	StdVector<Runtime::HeapResource> &_heap_resources;
-	StdVector<Variant> &_params;
+	Span<const Variant> _params;
 	String _error_message;
 	size_t _params_size_in_words = 0;
 	bool _has_error = false;
