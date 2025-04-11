@@ -985,6 +985,9 @@ void build_materials_v_1i8_s_2i8_1w8(
 		FixedArray<WeightedIndex, 3 * 3 * 2> weighted_materials;
 		uint32_t num_materials = 0;
 
+		// Initializing this array is pointless, but it is required to avoid warnings when warnings=extra...
+		fill<WeightedIndex>(weighted_materials, { 0, 0 });
+
 		FixedArray<uint8_t, 3 * 3 * 2> material_grid;
 
 		// Find material indices
