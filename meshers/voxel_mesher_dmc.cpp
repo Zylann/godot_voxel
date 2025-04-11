@@ -787,8 +787,6 @@ void build_mesh(
 
 				// construct quad for z edge
 				{
-					const float density_z = density_values[cell_index + STEP_Z];
-
 					// is edge intersected?
 					if ((density <= isolevel) ^ (density_z <= isolevel)) {
 						if (quad_info != nullptr) {
@@ -997,7 +995,7 @@ void build_materials_v_1i8_s_2i8_1w8(
 				for (int32_t x = cell_pos_min.x; x < cell_pos_max.x; ++x) {
 					for (int32_t y = cell_pos_min.y; y < cell_pos_max.y; ++y) {
 						const uint32_t voxel_index = x * STEP_X + y * STEP_Y + z * STEP_Z;
-						const float density = densities[voxel_index];
+						// const float density = densities[voxel_index];
 
 						// TODO I wish I could automatically exclude empty voxels (SDF>0) from this, but I can't...
 						//
