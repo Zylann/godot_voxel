@@ -12,12 +12,6 @@
 #include "generators/graph/node_type_db.h"
 #include "generators/graph/voxel_generator_graph.h"
 #include "generators/multipass/voxel_generator_multipass_cb.h"
-#include "generators/simple/voxel_generator_flat.h"
-#include "generators/simple/voxel_generator_heightmap.h"
-#include "generators/simple/voxel_generator_image.h"
-#include "generators/simple/voxel_generator_noise.h"
-#include "generators/simple/voxel_generator_noise_2d.h"
-#include "generators/simple/voxel_generator_waves.h"
 #include "generators/voxel_generator_script.h"
 #include "meshers/blocky/types/voxel_blocky_attribute_axis.h"
 #include "meshers/blocky/types/voxel_blocky_attribute_custom.h"
@@ -80,6 +74,15 @@
 #include "terrain/instancing/voxel_instance_library_scene_item.h"
 #include "terrain/instancing/voxel_instancer.h"
 #include "terrain/instancing/voxel_instancer_rigidbody.h"
+#endif
+
+#ifdef VOXEL_ENABLE_BASIC_GENERATORS
+#include "generators/simple/voxel_generator_flat.h"
+#include "generators/simple/voxel_generator_heightmap.h"
+#include "generators/simple/voxel_generator_image.h"
+#include "generators/simple/voxel_generator_noise.h"
+#include "generators/simple/voxel_generator_noise_2d.h"
+#include "generators/simple/voxel_generator_waves.h"
 #endif
 
 #ifdef ZN_GODOT_EXTENSION
@@ -282,12 +285,6 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 
 		// Generators
 		ClassDB::register_abstract_class<VoxelGenerator>();
-		ClassDB::register_class<VoxelGeneratorFlat>();
-		ClassDB::register_abstract_class<VoxelGeneratorHeightmap>();
-		ClassDB::register_class<VoxelGeneratorWaves>();
-		ClassDB::register_class<VoxelGeneratorImage>();
-		ClassDB::register_class<VoxelGeneratorNoise2D>();
-		ClassDB::register_class<VoxelGeneratorNoise>();
 		ClassDB::register_class<VoxelGeneratorGraph>();
 		ClassDB::register_class<VoxelGeneratorScript>();
 		ClassDB::register_class<VoxelGeneratorMultipassCB>();
@@ -346,6 +343,15 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_class<VoxelInstancer>();
 		ClassDB::register_class<VoxelInstanceComponent>();
 		ClassDB::register_abstract_class<VoxelInstancerRigidBody>();
+#endif
+
+#ifdef VOXEL_ENABLE_BASIC_GENERATORS
+		ClassDB::register_class<VoxelGeneratorFlat>();
+		ClassDB::register_abstract_class<VoxelGeneratorHeightmap>();
+		ClassDB::register_class<VoxelGeneratorWaves>();
+		ClassDB::register_class<VoxelGeneratorImage>();
+		ClassDB::register_class<VoxelGeneratorNoise2D>();
+		ClassDB::register_class<VoxelGeneratorNoise>();
 #endif
 
 #ifdef ZN_GODOT_EXTENSION

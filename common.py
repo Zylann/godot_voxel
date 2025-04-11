@@ -14,6 +14,7 @@ def register_scons_options(env, is_extension):
     env_vars.Add(BoolVariable("voxel_sqlite", "Build with SQLite save stream support", True))
     env_vars.Add(BoolVariable("voxel_instancer", "Build with VoxelInstancer support", True))
     env_vars.Add(BoolVariable("voxel_gpu", "Build with GPU compute support", True))
+    env_vars.Add(BoolVariable("voxel_basic_generators", "Build with basic/example generators", True))
     
     if not is_extension:
         env_vars.Add(BoolVariable("tracy", "Build with enabled Tracy Profiler integration", False))
@@ -48,6 +49,7 @@ def get_sources(env, is_editor_build):
     sqlite_enabled = env["voxel_sqlite"]
     instancer_enabled = env["voxel_instancer"]
     gpu_enabled = env["voxel_gpu"]
+    basic_generators_enabled = env["voxel_basic_generators"]
 
     if not smoosh_meshing_enabled:
         modifiers_enabled = False
@@ -72,7 +74,6 @@ def get_sources(env, is_editor_build):
         "generators/voxel_generator.cpp",
 
         "generators/graph/*.cpp",
-        "generators/simple/*.cpp",
         "generators/multipass/*.cpp",
 
         "terrain/*.cpp",
@@ -269,6 +270,13 @@ def get_sources(env, is_editor_build):
         sources += [
             "engine/gpu/*.cpp",
             "generators/generate_block_gpu_task.cpp",
+        ]
+    
+    if basic_generators_enabled:
+        env.Append(CPPDEFINES={"VOXEL_ENABLE_BASIC_GENERATORS": 1})
+        
+        sources += [
+            "generators/simple/*.cpp",
         ]
 
     def process_glob_paths(p_sources):
