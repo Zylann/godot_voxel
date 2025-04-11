@@ -4,13 +4,14 @@
 
 MAJOR = 1
 MINOR = 4
-PATCH = 0
+PATCH = 2
+# dev, release
 STATUS = "dev"
 
 import os
 
 
-def generate_version_header():
+def generate_version_header(is_module):
     git_hash = get_git_commit_hash()
 
     info = {
@@ -18,6 +19,7 @@ def generate_version_header():
         "minor": MINOR,
         "patch": PATCH,
         "status": STATUS,
+        "edition": "Module" if is_module else "GDExtension",
         "git_hash": git_hash
     }
 
@@ -32,6 +34,7 @@ def generate_version_header():
 #define VOXEL_VERSION_MINOR {minor}
 #define VOXEL_VERSION_PATCH {patch}
 #define VOXEL_VERSION_STATUS "{status}"
+#define VOXEL_VERSION_EDITION "{edition}"
 #define VOXEL_VERSION_GIT_HASH "{git_hash}"
 
 #endif // VOXEL_VERSION_GENERATED_GEN_H

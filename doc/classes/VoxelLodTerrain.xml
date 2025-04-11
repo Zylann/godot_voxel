@@ -239,6 +239,10 @@
 		</method>
 	</methods>
 	<members>
+		<member name="cache_generated_blocks" type="bool" setter="set_cache_generated_blocks" getter="get_cache_generated_blocks" default="false" is_experimental="true" experimental="">
+			If enabled, streaming the terrain will keep generated voxel data in memory around viewers, even if it wasn't edited. This can speedup voxel queries on non-edited areas and allows [member VoxelStream.save_generator_output] to work, but increases memory usage significantly.
+			This option is not supported when [member full_load_mode_enabled] is enabled.
+		</member>
 		<member name="collision_layer" type="int" setter="set_collision_layer" getter="get_collision_layer" default="1">
 			Collision layer used by generated colliders. Check Godot documentation for more information.
 		</member>

@@ -119,6 +119,13 @@ void DirectMeshInstance::set_render_layers_mask(int mask) {
 	vs.instance_set_layer_mask(_mesh_instance, mask);
 }
 
+void DirectMeshInstance::set_interpolated(const bool enabled) {
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR >= 4
+	RenderingServer &vs = *RenderingServer::get_singleton();
+	vs.instance_set_interpolated(_mesh_instance, enabled);
+#endif
+}
+
 void DirectMeshInstance::operator=(DirectMeshInstance &&src) {
 	if (_mesh_instance == src._mesh_instance) {
 		return;

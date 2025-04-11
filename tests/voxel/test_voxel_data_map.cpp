@@ -1,7 +1,7 @@
 #include "test_voxel_data_map.h"
 #include "../../storage/voxel_buffer.h"
 #include "../../storage/voxel_data_map.h"
-#include "../testing.h"
+#include "../../util/testing/test_macros.h"
 
 namespace zylann::voxel::tests {
 
@@ -64,7 +64,8 @@ void test_voxel_data_map_paste_mask() {
 	const Box3i box(Vector3i(10, 10, 10), buffer.get_size());
 
 	map.paste_masked(
-			box.position, buffer, (1 << channel), true, channel, masked_value, false, 0, Span<const int32_t>(), true);
+			box.position, buffer, (1 << channel), true, channel, masked_value, false, 0, Span<const int32_t>(), true
+	);
 
 	// All voxels in the area must be as pasted. Ignoring the outline.
 	const bool is_match = box.padded(-1).all_cells_match([&map](const Vector3i &pos) { //
@@ -137,7 +138,8 @@ void test_voxel_data_map_copy() {
 	}
 
 	map.paste_masked(
-			box.position, buffer, (1 << channel), true, channel, default_value, false, 0, Span<const int32_t>(), true);
+			box.position, buffer, (1 << channel), true, channel, default_value, false, 0, Span<const int32_t>(), true
+	);
 
 	VoxelBuffer buffer2(VoxelBuffer::ALLOCATOR_DEFAULT);
 	buffer2.create(box.size);

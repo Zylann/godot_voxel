@@ -254,6 +254,9 @@ private:
 	std::shared_ptr<zylann::voxel::VoxelBuffer> _buffer;
 };
 
+Variant get_voxel_metadata(zylann::voxel::VoxelBuffer &vb, const Vector3i pos);
+void set_voxel_metadata(zylann::voxel::VoxelBuffer &vb, const Vector3i pos, const Variant meta);
+
 } // namespace godot
 } // namespace zylann::voxel
 

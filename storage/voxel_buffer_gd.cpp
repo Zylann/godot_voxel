@@ -301,6 +301,24 @@ namespace zylann::voxel::godot {
 const char *VoxelBuffer::CHANNEL_ID_HINT_STRING = "Type,Sdf,Color,Indices,Weights,Data5,Data6,Data7";
 static thread_local bool s_create_shared = false;
 
+Variant get_voxel_metadata(zylann::voxel::VoxelBuffer &vb, const Vector3i pos) {
+	VoxelMetadata *meta = vb.get_voxel_metadata(pos);
+	if (meta == nullptr) {
+		return Variant();
+	}
+	return get_as_variant(*meta);
+}
+
+void set_voxel_metadata(zylann::voxel::VoxelBuffer &vb, const Vector3i pos, const Variant meta) {
+	if (meta.get_type() == Variant::NIL) {
+		vb.erase_voxel_metadata(pos);
+	} else {
+		VoxelMetadata *mv = vb.get_or_create_voxel_metadata(pos);
+		ZN_ASSERT_RETURN(mv != nullptr);
+		set_as_variant(*mv, meta);
+	}
+}
+
 VoxelBuffer::VoxelBuffer() {
 	if (!s_create_shared) {
 		_buffer = make_shared_instance<zylann::voxel::VoxelBuffer>(zylann::voxel::VoxelBuffer::ALLOCATOR_DEFAULT);
@@ -629,21 +647,11 @@ void VoxelBuffer::set_block_metadata(Variant meta) {
 }
 
 Variant VoxelBuffer::get_voxel_metadata(Vector3i pos) const {
-	VoxelMetadata *meta = _buffer->get_voxel_metadata(pos);
-	if (meta == nullptr) {
-		return Variant();
-	}
-	return get_as_variant(*meta);
+	return zylann::voxel::godot::get_voxel_metadata(*_buffer, pos);
 }
 
 void VoxelBuffer::set_voxel_metadata(Vector3i pos, Variant meta) {
-	if (meta.get_type() == Variant::NIL) {
-		_buffer->erase_voxel_metadata(pos);
-	} else {
-		VoxelMetadata *mv = _buffer->get_or_create_voxel_metadata(pos);
-		ZN_ASSERT_RETURN(mv != nullptr);
-		set_as_variant(*mv, meta);
-	}
+	zylann::voxel::godot::set_voxel_metadata(*_buffer, pos, meta);
 }
 
 void VoxelBuffer::for_each_voxel_metadata(const Callable &callback) const {

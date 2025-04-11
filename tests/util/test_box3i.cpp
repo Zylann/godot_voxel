@@ -1,7 +1,7 @@
 #include "test_box3i.h"
 #include "../../util/containers/std_unordered_map.h"
 #include "../../util/math/box3i.h"
-#include "../testing.h"
+#include "../../util/testing/test_macros.h"
 
 namespace zylann::tests {
 

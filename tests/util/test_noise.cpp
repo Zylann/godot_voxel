@@ -1,7 +1,7 @@
 #include "test_noise.h"
 #include "../../util/noise/fast_noise_lite/fast_noise_lite.h"
 #include "../../util/noise/fast_noise_lite/fast_noise_lite_range.h"
-#include "../testing.h"
+#include "../../util/testing/test_macros.h"
 
 namespace zylann::tests {
 

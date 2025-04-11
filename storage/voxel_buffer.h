@@ -179,7 +179,6 @@ public:
 	// Specialized copy functions.
 	// Note: these functions don't include metadata on purpose.
 	// If you also want to copy metadata, use the specialized functions.
-	// TODO Rename `copy_channels_from`
 	void copy_channels_from(const VoxelBuffer &other);
 	void copy_channel_from(const VoxelBuffer &other, unsigned int channel_index);
 	void copy_channel_from(

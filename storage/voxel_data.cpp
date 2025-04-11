@@ -385,45 +385,45 @@ void VoxelData::paste_masked(
 	if (create_new_blocks) {
 		// We will modify the hashmap so no other threads can perform lookups while we do that
 		RWLockWrite wlock(data_lod0.map_lock);
-		data_lod0.map.paste_masked( //
-				min_pos, //
-				src_buffer, //
-				channels_mask, //
-				true, //
-				mask_channel, //
-				mask_value, //
+		data_lod0.map.paste_masked(
+				min_pos,
+				src_buffer,
+				channels_mask,
+				true,
+				mask_channel,
+				mask_value,
 				false, // Unused dst mask
-				0, //
-				Span<const int32_t>(), //
-				create_new_blocks //
+				0,
+				Span<const int32_t>(),
+				create_new_blocks
 		);
 	} else {
 		// We won't modify the hashmap so other threads can still perform lookups in different areas
 		RWLockRead rlock(data_lod0.map_lock);
-		data_lod0.map.paste_masked( //
-				min_pos, //
-				src_buffer, //
-				channels_mask, //
-				true, //
-				mask_channel, //
-				mask_value, //
+		data_lod0.map.paste_masked(
+				min_pos,
+				src_buffer,
+				channels_mask,
+				true,
+				mask_channel,
+				mask_value,
 				false, // Unused dst mask
-				0, //
-				Span<const int32_t>(), //
-				create_new_blocks //
+				0,
+				Span<const int32_t>(),
+				create_new_blocks
 		);
 	}
 }
 
-void VoxelData::paste_masked_writable_list( //
-		Vector3i min_pos, //
-		const VoxelBuffer &src_buffer, //
-		unsigned int channels_mask, //
-		uint8_t src_mask_channel, //
-		uint64_t src_mask_value, //
-		uint8_t dst_mask_channel, //
-		Span<const int32_t> dst_writable_values, //
-		bool create_new_blocks //
+void VoxelData::paste_masked_writable_list(
+		Vector3i min_pos,
+		const VoxelBuffer &src_buffer,
+		unsigned int channels_mask,
+		uint8_t src_mask_channel,
+		uint64_t src_mask_value,
+		uint8_t dst_mask_channel,
+		Span<const int32_t> dst_writable_values,
+		bool create_new_blocks
 ) {
 	Lod &data_lod0 = _lods[0];
 

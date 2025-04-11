@@ -8,4 +8,12 @@
 using namespace godot;
 #endif
 
+#include "../../string/std_stringstream.h"
+
+namespace zylann {
+
+StdStringStream &operator<<(StdStringStream &ss, const AABB &v);
+
+} // namespace zylann
+
 #endif // ZN_GODOT_AABB_H

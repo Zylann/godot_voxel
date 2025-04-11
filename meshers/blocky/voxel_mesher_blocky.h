@@ -57,7 +57,7 @@ public:
 	int get_used_channels_mask() const override;
 
 	bool supports_lod() const override {
-		return false;
+		return true;
 	}
 
 	Ref<Material> get_material_by_index(unsigned int index) const override;

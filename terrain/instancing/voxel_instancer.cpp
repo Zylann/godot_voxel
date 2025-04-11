@@ -1286,6 +1286,7 @@ void VoxelInstancer::update_block_from_transforms( //
 
 			if (!block.multimesh_instance.is_valid()) {
 				block.multimesh_instance.create();
+				block.multimesh_instance.set_interpolated(false);
 				block.multimesh_instance.set_visible(
 						is_visible() &&
 						!(item->get_hide_beyond_max_lod() && block.current_mesh_lod == settings.mesh_lod_count)

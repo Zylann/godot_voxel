@@ -3,8 +3,8 @@
 	<brief_description>
 		Properties of a blocky fluid.
 	</brief_description>
-		Common properties of a specific fluid. It may be shared between multiple blocky models, each representing a level/state of the fluid.
 	<description>
+		Common properties of a specific fluid. It may be shared between multiple blocky models, each representing a level/state of the fluid.
 	</description>
 	<tutorials>
 	</tutorials>

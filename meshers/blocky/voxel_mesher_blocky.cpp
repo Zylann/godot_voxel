@@ -215,7 +215,7 @@ void generate_mesh(
 						if (neighbor_voxel_id < library.models.size()) {
 							const BakedModel &other_vt = library.models[neighbor_voxel_id];
 
-							const std::unordered_map<uint32_t, FixedArray<BakedModel::SideSurface, MAX_SURFACES>>
+							const StdUnorderedMap<uint32_t, FixedArray<BakedModel::SideSurface, MAX_SURFACES>>
 									&cutout_side_surfaces_by_neighbor_shape = model.cutout_side_surfaces[side];
 
 							const unsigned int neighbor_shape_id =

@@ -94,7 +94,9 @@ def get_sources(env, is_editor_build, include_tests):
         "util/godot/classes/rendering_server.cpp",
         "util/godot/classes/resource_loader.cpp",
         "util/godot/classes/shader.cpp",
+        "util/godot/classes/shape_3d.cpp",
 
+        "util/godot/core/aabb.cpp",
         "util/godot/core/string.cpp",
         "util/godot/core/variant.cpp",
         "util/godot/core/packed_arrays.cpp",
@@ -139,15 +141,16 @@ def get_sources(env, is_editor_build, include_tests):
             "util/godot/classes/editor_property.cpp",
             "util/godot/classes/editor_settings.cpp",
             "util/godot/classes/graph_edit.cpp", # Not editor-only, but only used in editor for now
-            "util/godot/classes/graph_node.cpp", # Not editor-only, but only used in editor for now
-            "util/godot/classes/shape_3d.cpp" # Not editor-only, but only used in editor for now
+            "util/godot/classes/graph_node.cpp" # Not editor-only, but only used in editor for now
         ]
 
     if include_tests:
         sources += [
             "tests/*.cpp",
             "tests/util/*.cpp",
-            "tests/voxel/*.cpp"
+            "tests/voxel/*.cpp",
+
+            "util/testing/*.cpp"
         ]
 
     def process_glob_paths(p_sources):

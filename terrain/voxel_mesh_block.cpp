@@ -63,6 +63,7 @@ void VoxelMeshBlock::set_mesh(
 		if (!_mesh_instance.is_valid()) {
 			// Create instance if it doesn't exist
 			_mesh_instance.create();
+			_mesh_instance.set_interpolated(false);
 			_mesh_instance.set_gi_mode(gi_mode);
 			_mesh_instance.set_cast_shadows_setting(shadow_setting);
 			_mesh_instance.set_render_layers_mask(render_layers_mask);

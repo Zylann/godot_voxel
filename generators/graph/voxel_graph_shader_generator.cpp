@@ -21,7 +21,7 @@ void ShaderGenContext::require_lib_code(const char *lib_name, const char **code)
 	_code_gen.require_lib_code(lib_name, code);
 }
 
-StdString ShaderGenContext::add_uniform(ComputeShaderResource &&res) {
+StdString ShaderGenContext::add_uniform(std::shared_ptr<ComputeShaderResource> res) {
 	StdString name = format("u_vg_resource_{}", _uniforms.size());
 	_uniforms.push_back(ShaderParameter());
 	ShaderParameter &sp = _uniforms.back();
@@ -46,7 +46,7 @@ CompilationResult generate_shader(
 
 	ProgramGraph expanded_graph;
 	const CompilationResult expand_result =
-			expand_graph(p_graph, expanded_graph, input_defs, nullptr, type_db, nullptr);
+			expand_graph(p_graph, expanded_graph, input_defs, nullptr, type_db, nullptr, true);
 	if (!expand_result.success) {
 		return expand_result;
 	}
