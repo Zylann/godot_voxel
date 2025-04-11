@@ -175,6 +175,7 @@ public:
 	int get_viewer_network_peer_id(ViewerID viewer_id) const;
 	bool viewer_exists(ViewerID viewer_id) const;
 	void sync_viewers_task_priority_data();
+	bool get_viewer_count() const;
 
 	template <typename F>
 	inline void for_each_viewer(F f) const {

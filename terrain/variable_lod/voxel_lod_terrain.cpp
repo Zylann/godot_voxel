@@ -608,6 +608,19 @@ void VoxelLodTerrain::post_edit_area(Box3i p_box, bool update_mesh) {
 	if (_instancer != nullptr && update_mesh) {
 		_instancer->on_area_edited(p_box);
 	}
+
+#ifdef TOOLS_ENABLED
+	// This is a workaround for a defect in the LegacyOctree streaming system:
+	// when no VoxelViewer is present, it still loads terrain, but some functionalities don't work properly.
+	if (get_streaming_system() == STREAMING_SYSTEM_LEGACY_OCTREE) {
+		if (VoxelEngine::get_singleton().get_viewer_count() == 0) {
+			ZN_PRINT_WARNING_ONCE(
+					"Terrain was edited without a VoxelViewer. The LegacyOctree streaming system requires one "
+					"VoxelViewer, but none are present in the scene."
+			);
+		}
+	}
+#endif
 }
 
 void VoxelLodTerrain::post_edit_modifiers(Box3i p_voxel_box) {
