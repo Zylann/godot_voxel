@@ -1258,8 +1258,8 @@ void VoxelMesherDMC::build(VoxelMesher::Output &output, const VoxelMesher::Input
 			PackedVector3Array gd_normals;
 			PackedFloat32Array gd_material_data;
 
-			zylann::godot::copy_to(gd_vertices, dmc_tex_vertices);
-			zylann::godot::copy_to(gd_normals, dmc_tex_normals);
+			zylann::godot::copy_to(gd_vertices, to_span_const(dmc_tex_vertices));
+			zylann::godot::copy_to(gd_normals, to_span_const(dmc_tex_normals));
 			zylann::godot::copy_to(gd_material_data, to_span(dmc_tex_material_data).reinterpret_cast_to<const float>());
 
 			PackedInt32Array gd_indices;
