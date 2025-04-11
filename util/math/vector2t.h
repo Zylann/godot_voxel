@@ -127,6 +127,11 @@ inline T distance_squared(const Vector2T<T> &a, const Vector2T<T> &b) {
 }
 
 template <typename T>
+inline Vector2T<T> min(const Vector2T<T> a, const Vector2T<T> b) {
+	return Vector2T<T>(min(a.x, b.x), min(a.y, b.y));
+}
+
+template <typename T>
 inline Vector2T<T> max(const Vector2T<T> a, const Vector2T<T> b) {
 	return Vector2T<T>(max(a.x, b.x), max(a.y, b.y));
 }

@@ -12,7 +12,7 @@ import voxel_version
 LIB_NAME = "libvoxel"
 BIN_FOLDER = "project/addons/zylann.voxel/bin"
 
-voxel_version.generate_version_header()
+voxel_version.generate_version_header(False)
 
 # TODO Enhancement: not sure how to provide this as a SCons option since we get our environment *by running GodotCpp*...
 #env_vars.Add(PathVariable("godot_cpp_path", "Path to the GodotCpp library source code", None, PathVariable.PathIsDir))
@@ -72,16 +72,21 @@ if is_editor_build:
         "util/godot/editor_scale.cpp"
     ]
 
+    try:
+        doc_data = env.GodotCPPDocData("doc_data.gen.cpp", source=Glob("doc/classes/*.xml"))
+        sources.append(doc_data)
+    except AttributeError:
+        print("Not including class reference as we're targeting a pre-4.3 baseline.")
+
+
 if env["platform"] == "macos":
     library = env.SharedLibrary(
-        "{}/{}.{}.{}.framework/{}.{}.{}".format(
+        "{}/{}{}.framework/{}{}".format(
             BIN_FOLDER,
             LIB_NAME,
-            env["platform"],
-            env["target"],
+            env['suffix'],
             LIB_NAME,
-            env["platform"],
-            env["target"]
+            env['suffix']
         ),
         source = sources
     )

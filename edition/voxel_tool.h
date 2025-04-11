@@ -102,6 +102,8 @@ public:
 
 	virtual Ref<VoxelRaycastResult> raycast(Vector3 pos, Vector3 dir, float max_distance, uint32_t collision_mask);
 
+	void set_raycast_normal_enabled(bool enabled);
+
 	// Checks if an edit affecting the given box can be applied, fully or partially
 	virtual bool is_area_editable(const Box3i &box) const;
 
@@ -158,6 +160,7 @@ protected:
 	// If true, operations will be allowed even if the affected area is partially outside the bounds of editable voxels.
 	// Depending on the context, it may be useful, or cause iconsistent results.
 	bool _allow_out_of_bounds = false;
+	bool _raycast_normal_enabled = true;
 
 	// Used on smooth terrain
 	ops::TextureParams _texture_params;

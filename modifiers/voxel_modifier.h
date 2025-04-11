@@ -3,7 +3,8 @@
 
 #include "../engine/gpu/compute_shader_parameters.h"
 #include "../util/containers/fixed_array.h"
-#include "../util/math/transform_3d.h"
+#include "../util/godot/core/rid.h"
+#include "../util/godot/core/transform_3d.h"
 #include "../util/math/vector3f.h"
 #include "../util/thread/rw_lock.h"
 
@@ -13,6 +14,8 @@ struct VoxelModifierContext {
 	Span<float> sdf; // Signed distance values to modify
 	Span<const Vector3f> positions; // Positions associated to each signed distance
 };
+
+struct BaseGPUResources;
 
 class VoxelModifier {
 public:
@@ -36,13 +39,14 @@ public:
 	virtual bool is_sdf() const = 0;
 
 	struct ShaderData {
-		enum Type { TYPE_BLOCK = 0, TYPE_DETAIL, TYPE_COUNT };
-
-		FixedArray<RID, TYPE_COUNT> shader_rids;
+		VoxelModifier::Type modifier_type;
 		std::shared_ptr<ComputeShaderParameters> params;
 	};
 
 	virtual void get_shader_data(ShaderData &out_shader_data) = 0;
+
+	static RID get_detail_shader(const BaseGPUResources &base_resources, const Type type);
+	static RID get_block_shader(const BaseGPUResources &base_resources, const Type type);
 
 protected:
 	virtual void update_aabb() = 0;

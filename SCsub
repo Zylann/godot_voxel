@@ -9,7 +9,7 @@ Import("env_modules")
 import common
 import voxel_version
 
-voxel_version.generate_version_header()
+voxel_version.generate_version_header(True)
 
 # Note, support for FastNoise2 requires C++17, and only works on x86.
 FAST_NOISE_2_SRC = env["voxel_fast_noise_2"]

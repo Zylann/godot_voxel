@@ -158,7 +158,7 @@ void GenerateBlockMultipassCBTask::run(zylann::ThreadedTaskContext &ctx) {
 			voxels = make_shared_instance<VoxelBuffer>(VoxelBuffer::ALLOCATOR_POOL);
 			voxels->create(block.voxels.get_size());
 			voxels->copy_channels_from(block.voxels);
-			// TODO Metadata?
+			voxels->copy_voxel_metadata(block.voxels);
 
 			run_stream_saving_and_finish();
 		}

@@ -744,6 +744,21 @@ bool VoxelBuffer::get_channel_as_bytes_read_only(unsigned int channel_index, Spa
 	return false;
 }
 
+void VoxelBuffer::set_channel_from_bytes(const unsigned int channel_index, Span<const uint8_t> src) {
+	const Channel &channel = _channels[channel_index];
+	if (channel.compression == COMPRESSION_UNIFORM) {
+		// We don't init channel data to nullptr in the constructor so can't do that check
+		// #ifdef DEV_ENABLED
+		// 		ZN_ASSERT(channel.data == nullptr);
+		// #endif
+		ZN_ASSERT_RETURN(create_channel_noinit(channel_index, _size));
+	}
+	ZN_ASSERT_RETURN(channel.data != nullptr);
+	ZN_ASSERT_RETURN(src.size() == channel.size_in_bytes);
+	ZN_ASSERT(channel.compression == COMPRESSION_NONE);
+	src.copy_to(Span<uint8_t>(channel.data, channel.size_in_bytes));
+}
+
 bool VoxelBuffer::create_channel(int i, uint64_t defval) {
 	ZN_DSTACK();
 	if (!create_channel_noinit(i, _size)) {
@@ -1469,12 +1484,12 @@ void paste_src_masked_dst_writable_bitarray(
 ) {
 	paste_src_masked_dst_predicate(
 			channels,
-			src_buffer, //
-			src_mask_channel, //
-			src_mask_value, //
-			dst_buffer, //
-			dst_base_pos, //
-			dst_mask_channel, //
+			src_buffer,
+			src_mask_channel,
+			src_mask_value,
+			dst_buffer,
+			dst_base_pos,
+			dst_mask_channel,
 			[&bitarray](const uint64_t dst_v) { //
 				return dst_v < bitarray.size() && bitarray.get(dst_v);
 			},

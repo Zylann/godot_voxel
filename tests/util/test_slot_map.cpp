@@ -1,6 +1,6 @@
 #include "test_slot_map.h"
 #include "../../util/containers/slot_map.h"
-#include "../testing.h"
+#include "../../util/testing/test_macros.h"
 
 namespace zylann::tests {
 

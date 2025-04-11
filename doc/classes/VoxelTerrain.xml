@@ -151,6 +151,8 @@
 		</member>
 		<member name="debug_draw_shadow_occluders" type="bool" setter="debug_set_draw_shadow_occluders" getter="debug_get_draw_shadow_occluders" default="false">
 		</member>
+		<member name="debug_draw_visual_and_collision_blocks" type="bool" setter="debug_set_draw_flag" getter="debug_get_draw_flag" default="false">
+		</member>
 		<member name="debug_draw_volume_bounds" type="bool" setter="debug_set_draw_flag" getter="debug_get_draw_flag" default="false">
 		</member>
 		<member name="generate_collisions" type="bool" setter="set_generate_collisions" getter="get_generate_collisions" default="true">
@@ -203,7 +205,7 @@
 	<constants>
 		<constant name="DEBUG_DRAW_VOLUME_BOUNDS" value="0" enum="DebugDrawFlag">
 		</constant>
-		<constant name="DEBUG_DRAW_FLAGS_COUNT" value="1" enum="DebugDrawFlag">
+		<constant name="DEBUG_DRAW_FLAGS_COUNT" value="2" enum="DebugDrawFlag">
 		</constant>
 	</constants>
 </class>

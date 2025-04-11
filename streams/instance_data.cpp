@@ -1,7 +1,6 @@
 #include "instance_data.h"
 #include "../constants/voxel_constants.h"
 #include "../util/io/serialization.h"
-#include "../util/math/basis.h"
 #include "../util/math/funcs.h"
 #include "../util/string/format.h"
 
@@ -173,7 +172,8 @@ bool deserialize_instance_block_data(InstanceBlockData &dst, Span<const uint8_t>
 
 	const uint32_t control_end = r.get_32();
 	ZN_ASSERT_RETURN_V_MSG(
-			control_end == TRAILING_MAGIC, false, format("Expected {}, found {}", TRAILING_MAGIC, control_end));
+			control_end == TRAILING_MAGIC, false, format("Expected {}, found {}", TRAILING_MAGIC, control_end)
+	);
 
 	return true;
 }

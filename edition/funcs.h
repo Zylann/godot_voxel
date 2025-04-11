@@ -6,11 +6,12 @@
 #include "../storage/voxel_data_grid.h"
 #include "../util/containers/dynamic_bitset.h"
 #include "../util/containers/fixed_array.h"
+#include "../util/godot/core/transform_3d.h"
 #include "../util/godot/macros.h"
 #include "../util/math/box3f.h"
 #include "../util/math/conv.h"
 #include "../util/math/sdf.h"
-#include "../util/math/transform_3d.h"
+#include "../util/math/vector3.h"
 #include "../util/profiling.h"
 
 ZN_GODOT_FORWARD_DECLARE(class Callable);

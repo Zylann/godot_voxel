@@ -3,6 +3,7 @@
 #include "../../util/containers/std_vector.h"
 #include "../../util/godot/classes/os.h"
 #include "../../util/godot/classes/time.h"
+#include "../../util/godot/core/random_pcg.h"
 #include "../../util/io/log.h"
 #include "../../util/math/vector3i.h"
 #include "../../util/memory/memory.h"
@@ -10,7 +11,7 @@
 #include "../../util/string/format.h"
 #include "../../util/string/std_stringstream.h"
 #include "../../util/tasks/threaded_task_runner.h"
-#include "../testing.h"
+#include "../../util/testing/test_macros.h"
 
 // #define VOXEL_TEST_TASK_POSTPONING_DUMP_EVENTS
 #ifdef VOXEL_TEST_TASK_POSTPONING_DUMP_EVENTS

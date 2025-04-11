@@ -9,11 +9,18 @@
 #include "../../util/godot/core/string.h"
 #include "../../util/io/log.h"
 #include "../../util/math/conv.h"
+#include "../../util/math/funcs.h"
 #include "../../util/profiling.h"
 #include "../../util/string/format.h"
+#include "blocky_material_indexer.h"
+#include "blocky_model_baking_context.h"
 #include "voxel_blocky_model_cube.h"
 #include "voxel_blocky_model_empty.h"
+#include "voxel_blocky_model_fluid.h"
 #include "voxel_blocky_model_mesh.h"
+#ifdef TOOLS_ENABLED
+#include "../../util/godot/classes/resource.h"
+#endif
 
 #include <bitset>
 
@@ -30,6 +37,7 @@ void VoxelBlockyLibrary::clear() {
 void VoxelBlockyLibrary::load_default() {
 	clear();
 
+	// TODO Why not empty?
 	Ref<VoxelBlockyModelMesh> air;
 	air.instantiate();
 	air->set_name("air");
@@ -54,16 +62,30 @@ void VoxelBlockyLibrary::bake() {
 	// This is the only place we modify the data.
 
 	_indexed_materials.clear();
-	VoxelBlockyModel::MaterialIndexer materials{ _indexed_materials };
+	blocky::MaterialIndexer materials{ _indexed_materials };
+
+	StdVector<Ref<VoxelBlockyFluid>> indexed_fluids;
 
 	_baked_data.models.resize(_voxel_models.size());
-	for (size_t i = 0; i < _voxel_models.size(); ++i) {
-		Ref<VoxelBlockyModel> config = _voxel_models[i];
+	for (uint16_t model_index = 0; model_index < _voxel_models.size(); ++model_index) {
+		Ref<VoxelBlockyModel> config = _voxel_models[model_index];
+		blocky::BakedModel &baked_model = _baked_data.models[model_index];
+
 		if (config.is_valid()) {
-			config->bake(_baked_data.models[i], _bake_tangents, materials);
+			blocky::ModelBakingContext context{
+				baked_model, _bake_tangents, materials, indexed_fluids, _baked_data.fluids
+			};
+			config->bake(context);
+
 		} else {
-			_baked_data.models[i].clear();
+			baked_model.clear();
 		}
+	}
+
+	for (unsigned int fluid_index = 0; fluid_index < indexed_fluids.size(); ++fluid_index) {
+		const VoxelBlockyFluid &fluid = **indexed_fluids[fluid_index];
+		blocky::BakedFluid &baked_fluid = _baked_data.fluids[fluid_index];
+		fluid.bake(baked_fluid, materials);
 	}
 
 	_baked_data.indexed_materials_count = _indexed_materials.size();
@@ -192,6 +214,16 @@ void VoxelBlockyLibrary::get_configuration_warnings(PackedStringArray &out_warni
 		// Should we really consider it a problem?
 		out_warnings.append(String(ZN_TTR("The {0} has null model entries: {1}"))
 									.format(varray(VoxelBlockyLibrary::get_class_static(), indices_str)));
+	}
+
+	for (unsigned int i = 0; i < _voxel_models.size() && !has_solid_model; ++i) {
+		Ref<VoxelBlockyModel> model = _voxel_models[i];
+		if (model.is_null()) {
+			continue;
+		}
+		zylann::godot::get_resource_configuration_warnings(**model, out_warnings, [i]() {
+			return String("Model {0}: ").format(varray(i));
+		});
 	}
 }
 

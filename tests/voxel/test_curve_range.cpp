@@ -2,7 +2,7 @@
 #include "../../generators/graph/range_utility.h"
 #include "../../util/containers/std_vector.h"
 #include "../../util/godot/classes/curve.h"
-#include "../testing.h"
+#include "../../util/testing/test_macros.h"
 
 namespace zylann::voxel::tests {
 

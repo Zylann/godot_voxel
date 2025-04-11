@@ -79,7 +79,7 @@ It must contain the following fields:
 - `block_size_po2`: size of blocks in voxels, as an integer power of two (4 for 16, 5 for 32 etc). Blocks are always cubic.
 - `lod_count`: how many LOD levels there are. There will be as many LOD folders. It must be greater than 0.
 - `region_size_po2`: size of regions in blocks, as an integer power of two (4 for 16, 5 for 32 etc). Regions are always cubic.
-- `sector_size`: size of a sector within a region file, as a strictly positive integer. See region format for more information.
+- `sector_size`: size of a sector within a region file, as a strictly positive integer. See [region file](#region-file) for more information.
 - `channel_depths`: array of 8 integers, representing the bit depth of each voxel channel:
 	- `0`: 8 bits
 	- `1`: 16 bits

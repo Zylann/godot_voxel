@@ -76,7 +76,7 @@ GenerateColumnMultipassTask::~GenerateColumnMultipassTask() {
 void GenerateColumnMultipassTask::run(ThreadedTaskContext &ctx) {
 	ZN_DSTACK();
 	ZN_PROFILE_SCOPE();
-	ZN_ASSERT(_generator != nullptr);
+	ZN_ASSERT(_generator.is_valid());
 
 	Map &map = _generator_internal->map;
 	BufferedTaskScheduler &task_scheduler = BufferedTaskScheduler::get_for_current_thread();
@@ -161,7 +161,6 @@ void GenerateColumnMultipassTask::run(ThreadedTaskContext &ctx) {
 			// TODO We don't create new columns from here, could use a shared lock?
 			MutexLock mlock(map.mutex);
 
-			Vector2i bpos;
 			// Coordinate order matters (note, Y in Vector2i corresponds to Z in 3D here).
 			neighbors_box.for_each_cell_yx([&columns, &map](Vector2i cpos) {
 				auto it = map.columns.find(cpos);

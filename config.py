@@ -22,7 +22,10 @@ def configure(env):
 
 
 def get_icons_path():
-    return "editor/icons"
+    # return "editor/icons"
+    # GDExtension icons have to be shipped as external files instead of being compiled in the library.
+    # So we put them here to avoid having to copy them.
+    return "project/addons/zylann.voxel/editor/icons"
 
 
 def get_doc_classes():
@@ -40,7 +43,9 @@ def get_doc_classes():
         "VoxelBlockyModel",
         "VoxelBlockyModelCube",
         "VoxelBlockyModelEmpty",
+        "VoxelBlockyModelFluid",
         "VoxelBlockyModelMesh",
+        "VoxelBlockyFluid",
         "VoxelBlockyType",
         "VoxelBlockyTypeLibrary",
         "VoxelBoxMover",

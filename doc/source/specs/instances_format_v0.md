@@ -12,7 +12,7 @@ Specification
 ### Compressed container
 
 A block is usually serialized as compressed data.
-See [Compressed container format](#compressed-container) for specification.
+See [Compressed container format](compressed_container.md) for specification.
 
 
 ### Binary data

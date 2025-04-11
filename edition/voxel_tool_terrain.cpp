@@ -45,7 +45,8 @@ Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(
 			p_dir,
 			p_max_distance,
 			p_collision_mask,
-			0
+			0,
+			_raycast_normal_enabled
 	);
 }
 
@@ -82,29 +83,29 @@ void VoxelToolTerrain::paste_masked(
 	_post_edit(Box3i(pos, p_voxels->get_buffer().get_size()));
 }
 
-void VoxelToolTerrain::paste_masked_writable_list( //
-		Vector3i pos, //
-		Ref<godot::VoxelBuffer> p_voxels, //
-		uint8_t channels_mask, //
-		uint8_t src_mask_channel, //
-		uint64_t src_mask_value, //
-		uint8_t dst_mask_channel, //
-		PackedInt32Array dst_writable_list //
+void VoxelToolTerrain::paste_masked_writable_list(
+		Vector3i pos,
+		Ref<godot::VoxelBuffer> p_voxels,
+		uint8_t channels_mask,
+		uint8_t src_mask_channel,
+		uint64_t src_mask_value,
+		uint8_t dst_mask_channel,
+		PackedInt32Array dst_writable_list
 ) {
 	ERR_FAIL_COND(_terrain == nullptr);
 	ERR_FAIL_COND(p_voxels.is_null());
 	if (channels_mask == 0) {
 		channels_mask = (1 << _channel);
 	}
-	_terrain->get_storage().paste_masked_writable_list( //
-			pos, //
-			p_voxels->get_buffer(), //
-			channels_mask, //
-			src_mask_channel, //
-			src_mask_value, //
-			dst_mask_channel, //
+	_terrain->get_storage().paste_masked_writable_list(
+			pos,
+			p_voxels->get_buffer(),
+			channels_mask,
+			src_mask_channel,
+			src_mask_value,
+			dst_mask_channel,
 			to_span(dst_writable_list),
-			false //
+			false
 	);
 	_post_edit(Box3i(pos, p_voxels->get_buffer().get_size()));
 }

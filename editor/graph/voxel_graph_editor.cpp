@@ -349,7 +349,9 @@ void VoxelGraphEditor::process(float delta) {
 	if (_time_before_preview_update > 0.f) {
 		_time_before_preview_update -= delta;
 		if (_time_before_preview_update < 0.f) {
-			update_previews(true);
+			if (_graph.is_valid()) {
+				update_previews(true);
+			}
 		}
 	}
 

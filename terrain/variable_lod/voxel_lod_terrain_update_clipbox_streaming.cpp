@@ -322,10 +322,9 @@ void process_viewers(
 				const unsigned int lod_data_block_size_po2 = data_block_size_po2 + lod_index;
 
 				// Should be correct as long as bounds size is a multiple of the biggest LOD chunk
-				const Box3i volume_bounds_in_data_blocks = Box3i( //
-						volume_bounds_in_voxels.position >> lod_data_block_size_po2, //
-						volume_bounds_in_voxels.size >> lod_data_block_size_po2
-				);
+				const Box3i volume_bounds_in_data_blocks =
+						Box3i(volume_bounds_in_voxels.position >> lod_data_block_size_po2,
+							  volume_bounds_in_voxels.size >> lod_data_block_size_po2);
 
 				// const int ld =
 				// 		(lod_index == (lod_count - 1) ? lod_distance_in_data_chunks : last_lod_distance_in_data_chunks);
@@ -430,10 +429,12 @@ void add_loading_block(
 
 		lod.loading_blocks.insert({ position, new_loading_block });
 
-		blocks_to_load.push_back(VoxelLodTerrainUpdateData::BlockToLoad{
-				VoxelLodTerrainUpdateData::BlockLocation{ position, lod_index },
-				new_loading_block.cancellation_token //
-		});
+		blocks_to_load.push_back(
+				VoxelLodTerrainUpdateData::BlockToLoad{
+						VoxelLodTerrainUpdateData::BlockLocation{ position, lod_index },
+						new_loading_block.cancellation_token //
+				}
+		);
 
 	} else {
 		// Already loaded
@@ -1032,8 +1033,10 @@ void unview_mesh_box(
 				if (mesh_block.state == VoxelLodTerrainUpdateData::MESH_NEED_UPDATE) {
 					mesh_block.state = VoxelLodTerrainUpdateData::MESH_UPDATE_NOT_SENT;
 					mesh_block.update_list_index = parent_lod.mesh_blocks_pending_update.size();
-					parent_lod.mesh_blocks_pending_update.push_back(VoxelLodTerrainUpdateData::MeshToUpdate{
-							bpos, TaskCancellationToken(), mesh_block.mesh_viewers.get() > 0 });
+					parent_lod.mesh_blocks_pending_update.push_back(
+							VoxelLodTerrainUpdateData::MeshToUpdate{
+									bpos, TaskCancellationToken(), mesh_block.mesh_viewers.get() > 0 }
+					);
 				}
 			}
 		});
@@ -1258,10 +1261,9 @@ void process_loaded_data_blocks_trigger_meshing(
 
 		// We could group loaded blocks by LOD so we could compute a few things less times?
 		const int lod_data_block_size_po2 = data.get_block_size_po2() + bloc.lod;
-		const Box3i bounds_in_data_blocks = Box3i( //
-				bounds_in_voxels.position >> lod_data_block_size_po2, //
-				bounds_in_voxels.size >> lod_data_block_size_po2
-		);
+		const Box3i bounds_in_data_blocks =
+				Box3i(bounds_in_voxels.position >> lod_data_block_size_po2,
+					  bounds_in_voxels.size >> lod_data_block_size_po2);
 
 		const Box3i data_neighboring =
 				Box3i(bloc.position - Vector3i(1, 1, 1), Vector3i(3, 3, 3)).clipped(bounds_in_data_blocks);

@@ -1,21 +1,14 @@
-#ifndef ZYLANN_VECTOR3I_H
-#define ZYLANN_VECTOR3I_H
+#ifndef ZN_MATH_VECTOR3I_H
+#define ZN_MATH_VECTOR3I_H
 
+#include "../godot/core/vector3.h"
+#include "../godot/core/vector3i.h"
+#include "../godot/macros.h"
 #include "../hash_funcs.h"
+#include "../macros.h"
+#include "../string/std_stringstream.h"
 #include "funcs.h"
 #include <functional> // For std::hash
-
-#if defined(ZN_GODOT)
-#include <core/math/vector3.h>
-#include <core/math/vector3i.h>
-#elif defined(ZN_GODOT_EXTENSION)
-#include <godot_cpp/variant/vector3.hpp>
-#include <godot_cpp/variant/vector3i.hpp>
-using namespace godot;
-#endif
-
-#include "../godot/macros.h"
-#include "../string/std_stringstream.h"
 
 namespace zylann {
 namespace Vector3iUtil {
@@ -222,4 +215,4 @@ struct hash<Vector3i> {
 };
 } // namespace std
 
-#endif // ZYLANN_VECTOR3I_H
+#endif // ZN_MATH_VECTOR3I_H

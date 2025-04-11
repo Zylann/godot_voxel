@@ -11,7 +11,7 @@
 #endif
 
 #elif defined(ZN_GODOT_EXTENSION)
-#include <godot_cpp/classes/accept_dialog.hpp>
+#include <godot_cpp/classes/area3d.hpp>
 using namespace godot;
 #endif
 

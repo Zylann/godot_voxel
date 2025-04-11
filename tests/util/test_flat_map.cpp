@@ -2,7 +2,7 @@
 #include "../../util/containers/flat_map.h"
 #include "../../util/containers/std_vector.h"
 #include "../../util/godot/core/random_pcg.h"
-#include "../testing.h"
+#include "../../util/testing/test_macros.h"
 
 namespace zylann::tests {
 
