@@ -1144,7 +1144,7 @@ void VoxelMesherDMC::build(VoxelMesher::Output &output, const VoxelMesher::Input
 	ZN_PROFILE_SCOPE();
 
 	StdVector<float> temp_sd;
-	temp_sd.resize(Vector3iUtil::get_volume(input.voxels.get_size()));
+	temp_sd.resize(Vector3iUtil::get_volume_u64(input.voxels.get_size()));
 	get_unscaled_sdf(input.voxels, to_span(temp_sd));
 
 	for (float &sd : temp_sd) {
