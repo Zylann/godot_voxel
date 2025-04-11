@@ -17,6 +17,7 @@
 			<param index="2" name="flat_direction" type="Vector3" />
 			<param index="3" name="smoothness" type="float" default="0.0" />
 			<description>
+				Operates on a hemisphere, where [code]flat_direction[/code] is pointing away from the flat surface (like a normal). [code]smoothness[/code] determines how the flat part blends with the rounded part, with higher values producing softer more rounded edge.
 			</description>
 		</method>
 		<method name="for_each_voxel_metadata_in_area">

@@ -49,4 +49,26 @@ void geometry_2d_make_atlas(Span<const Vector2i> p_sizes, StdVector<Vector2i> &r
 #endif
 }
 
+void geometry_2d_clip_polygons( //
+		const PackedVector2Array &polygon_a, //
+		const PackedVector2Array &polygon_b, //
+		StdVector<PackedVector2Array> &output //
+) {
+#if defined(ZN_GODOT)
+	Vector<Vector<Vector2>> result = Geometry2D::clip_polygons(polygon_a, polygon_b);
+	output.resize(result.size());
+	for (unsigned int i = 0; i < output.size(); ++i) {
+		output[i] = result[i];
+	}
+
+#elif defined(ZN_GODOT_EXTENSION)
+	TypedArray<PackedVector2Array> result = Geometry2D::get_singleton()->clip_polygons(polygon_a, polygon_b);
+	output.resize(result.size());
+	for (unsigned int i = 0; i < output.size(); ++i) {
+		output[i] = result[i];
+	}
+
+#endif
+}
+
 } // namespace zylann::godot

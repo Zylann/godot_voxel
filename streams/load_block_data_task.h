@@ -13,10 +13,19 @@ class VoxelData;
 
 class LoadBlockDataTask : public IThreadedTask {
 public:
-	LoadBlockDataTask(VolumeID p_volume_id, Vector3i p_block_pos, uint8_t p_lod, uint8_t p_block_size,
-			bool p_request_instances, std::shared_ptr<StreamingDependency> p_stream_dependency,
-			PriorityDependency p_priority_dependency, bool generate_cache_data, bool generator_use_gpu,
-			const std::shared_ptr<VoxelData> &vdata, TaskCancellationToken cancellation_token);
+	LoadBlockDataTask(
+			VolumeID p_volume_id,
+			Vector3i p_block_pos,
+			uint8_t p_lod,
+			uint8_t p_block_size,
+			bool p_request_instances,
+			std::shared_ptr<StreamingDependency> p_stream_dependency,
+			PriorityDependency p_priority_dependency,
+			bool generate_cache_data,
+			bool generator_use_gpu,
+			const std::shared_ptr<VoxelData> &vdata,
+			TaskCancellationToken cancellation_token
+	);
 
 	~LoadBlockDataTask();
 

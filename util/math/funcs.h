@@ -115,11 +115,11 @@ inline T cubed(const T x) {
 }
 
 inline float lerp(float a, float b, float t) {
-	return a + t * (b - a);
+	return Math::lerp(a, b, t);
 }
 
 inline double lerp(double a, double b, double t) {
-	return a + t * (b - a);
+	return Math::lerp(a, b, t);
 }
 
 // Performs euclidean division, aka floored division.

@@ -203,11 +203,12 @@ inline T distance(const Vector3T<T> &a, const Vector3T<T> &b) {
 
 template <typename T>
 inline Vector3T<T> cross(const Vector3T<T> &a, const Vector3T<T> &b) {
-	const Vector3T<T> ret( //
-			(a.y * b.z) - (a.z * b.y), //
-			(a.z * b.x) - (a.x * b.z), //
-			(a.x * b.y) - (a.y * b.x)
-	);
+	const Vector3T<T>
+			ret( //
+					(a.y * b.z) - (a.z * b.y), //
+					(a.z * b.x) - (a.x * b.z), //
+					(a.x * b.y) - (a.y * b.x)
+			);
 	return ret;
 }
 

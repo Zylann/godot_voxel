@@ -7,6 +7,7 @@
 		Generates coherent noise with support for SIMD processing, which can speed up generation significantly compared to scalar implementations like [FastNoiseLite].
 		It uses a node-based structure internally for configuration, which is however not editable from within Godot at the moment. Instead, simplified properties are exposed. It possible to edit noise graphs with an external Noise Tool, which can export an encoded node tree as a base64 string.
 		The current integration uses FastNoise2 version 0.10.0-alpha. If you use encoded node trees made with the Noise Tool, it must match that version.
+		After changing properties, you must call [method update_generator] for the internal graph to be rebuilt and changes to take effect.
 	</description>
 	<tutorials>
 	</tutorials>

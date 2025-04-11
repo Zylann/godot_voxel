@@ -199,10 +199,10 @@ private:
 	void process();
 	void process_viewers();
 	void process_viewer_data_box_change(
-			ViewerID viewer_id,
-			Box3i prev_data_box,
-			Box3i new_data_box,
-			bool can_load_blocks
+			const ViewerID viewer_id,
+			const Box3i prev_data_box,
+			const Box3i new_data_box,
+			const bool can_load_blocks
 	);
 	// void process_received_data_blocks();
 	void process_meshing();

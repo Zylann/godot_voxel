@@ -2,8 +2,8 @@
 #define VOXEL_RAYCAST_FUNCS_H
 
 #include "../meshers/voxel_mesher.h"
-#include "../util/math/transform_3d.h"
-#include "../util/math/vector3.h"
+#include "../util/godot/core/transform_3d.h"
+#include "../util/godot/core/vector3.h"
 #include "voxel_raycast_result.h"
 
 namespace zylann::voxel {
@@ -16,7 +16,8 @@ Ref<VoxelRaycastResult> raycast_sdf(
 		const Vector3 ray_origin,
 		const Vector3 ray_dir,
 		const float max_distance,
-		const uint8_t binary_search_iterations
+		const uint8_t binary_search_iterations,
+		const bool normal_enabled
 );
 
 Ref<VoxelRaycastResult> raycast_blocky(
@@ -43,7 +44,8 @@ Ref<VoxelRaycastResult> raycast_generic(
 		const Vector3 ray_dir,
 		const float max_distance,
 		const uint32_t p_collision_mask,
-		const uint8_t binary_search_iterations
+		const uint8_t binary_search_iterations,
+		const bool normal_enabled
 );
 
 Ref<VoxelRaycastResult> raycast_generic_world(
@@ -54,7 +56,8 @@ Ref<VoxelRaycastResult> raycast_generic_world(
 		const Vector3 ray_dir_world,
 		const float max_distance_world,
 		const uint32_t p_collision_mask,
-		const uint8_t binary_search_iterations
+		const uint8_t binary_search_iterations,
+		const bool normal_enabled
 );
 
 } // namespace zylann::voxel

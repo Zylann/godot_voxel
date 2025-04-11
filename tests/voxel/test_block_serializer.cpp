@@ -3,7 +3,7 @@
 #include "../../streams/voxel_block_serializer.h"
 #include "../../streams/voxel_block_serializer_gd.h"
 #include "../../util/godot/classes/stream_peer_buffer.h"
-#include "../testing.h"
+#include "../../util/testing/test_macros.h"
 
 namespace zylann::voxel::tests {
 

@@ -3,7 +3,8 @@
 #include "../../streams/region/voxel_stream_region_files.h"
 #include "../../util/containers/std_unordered_map.h"
 #include "../../util/godot/core/random_pcg.h"
-#include "../testing.h"
+#include "../../util/testing/test_directory.h"
+#include "../../util/testing/test_macros.h"
 
 namespace zylann::voxel::tests {
 

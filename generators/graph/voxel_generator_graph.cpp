@@ -1626,7 +1626,7 @@ bool VoxelGeneratorGraph::get_shader_source(ShaderSourceData &out_data) const {
 	if (params.size() > 0) {
 		out_data.parameters.reserve(params.size());
 		for (pg::ShaderParameter &p : params) {
-			out_data.parameters.push_back(ShaderParameter{ String::utf8(p.name.c_str()), std::move(p.resource) });
+			out_data.parameters.push_back(ShaderParameter{ String::utf8(p.name.c_str()), p.resource });
 		}
 	}
 
@@ -1657,63 +1657,63 @@ bool VoxelGeneratorGraph::get_shader_source(ShaderSourceData &out_data) const {
 VoxelSingleValue VoxelGeneratorGraph::generate_single(Vector3i position, unsigned int channel) {
 	// This is very slow when used multiple times, so if possible prefer using bulk queries
 
+	struct L {
+		static inline float query(const Runtime &runtime_info, const Vector3i pos, const int buffer_index) {
+			if (buffer_index == -1) {
+				return 0.f;
+			}
+
+			QueryInputs<float> inputs(runtime_info, pos.x, pos.y, pos.z, 0.f);
+
+			Cache &cache = get_tls_cache();
+			const pg::Runtime &runtime = runtime_info.runtime;
+			runtime.prepare_state(cache.state, 1, false);
+			runtime.generate_single(cache.state, inputs.get(), nullptr);
+			const pg::Runtime::Buffer &buffer = cache.state.get_buffer(buffer_index);
+			ERR_FAIL_COND_V(buffer.size == 0, 0.f);
+			ERR_FAIL_COND_V(buffer.data == nullptr, 0.f);
+			return buffer.data[0];
+		}
+	};
+
 	VoxelSingleValue v;
 	v.i = 0;
-	if (channel == VoxelBuffer::CHANNEL_SDF) {
-		std::shared_ptr<const Runtime> runtime_ptr;
-		{
-			RWLockRead rlock(_runtime_lock);
-			runtime_ptr = _runtime;
-		}
-		ERR_FAIL_COND_V_MSG(runtime_ptr == nullptr, v, "no compiled graph available");
-		if (runtime_ptr->sdf_output_buffer_index == -1) {
-			return v;
-		}
 
-		QueryInputs<float> inputs(*runtime_ptr, position.x, position.y, position.z, 0.f);
-
-		Cache &cache = get_tls_cache();
-		const pg::Runtime &runtime = runtime_ptr->runtime;
-		runtime.prepare_state(cache.state, 1, false);
-		runtime.generate_single(cache.state, inputs.get(), nullptr);
-		const pg::Runtime::Buffer &buffer = cache.state.get_buffer(runtime_ptr->sdf_output_buffer_index);
-		ERR_FAIL_COND_V(buffer.size == 0, v);
-		ERR_FAIL_COND_V(buffer.data == nullptr, v);
-		v.f = buffer.data[0];
-		return v;
-
-	} else if (channel == VoxelBuffer::CHANNEL_INDICES || channel == VoxelBuffer::CHANNEL_WEIGHTS) {
-		std::shared_ptr<const Runtime> runtime_ptr;
-		{
-			RWLockRead rlock(_runtime_lock);
-			runtime_ptr = _runtime;
-		}
-		ERR_FAIL_COND_V_MSG(runtime_ptr == nullptr, v, "no compiled graph available");
-		if (runtime_ptr->single_texture_output_buffer_index == -1) {
-			return v;
-		}
-
-		QueryInputs<float> inputs(*runtime_ptr, position.x, position.y, position.z, 0.f);
-
-		Cache &cache = get_tls_cache();
-		const pg::Runtime &runtime = runtime_ptr->runtime;
-		runtime.prepare_state(cache.state, 1, false);
-		runtime.generate_single(cache.state, inputs.get(), nullptr);
-		const pg::Runtime::Buffer &buffer = cache.state.get_buffer(runtime_ptr->single_texture_output_buffer_index);
-		ERR_FAIL_COND_V(buffer.size == 0, v);
-		ERR_FAIL_COND_V(buffer.data == nullptr, v);
-		const float tex_index = buffer.data[0];
-		if (channel == VoxelBuffer::CHANNEL_INDICES) {
-			v.i = make_encoded_indices_for_single_texture(tex_index);
-		} else {
-			v.i = make_encoded_weights_for_single_texture();
-		}
-		return v;
-
-	} else {
-		// TODO Support other channels
+	std::shared_ptr<const Runtime> runtime_ptr;
+	{
+		RWLockRead rlock(_runtime_lock);
+		runtime_ptr = _runtime;
+	}
+	if (runtime_ptr == nullptr) {
+		ZN_PRINT_ERROR_ONCE("No compiled graph available");
 		return v;
 	}
+
+	switch (channel) {
+		case VoxelBuffer::CHANNEL_SDF: {
+			v.f = L::query(*runtime_ptr, position, runtime_ptr->sdf_output_buffer_index);
+		} break;
+
+		case VoxelBuffer::CHANNEL_TYPE: {
+			v.i = L::query(*runtime_ptr, position, runtime_ptr->type_output_buffer_index);
+		} break;
+
+		case VoxelBuffer::CHANNEL_INDICES: {
+			const float tex_index = L::query(*runtime_ptr, position, runtime_ptr->single_texture_output_buffer_index);
+			v.i = make_encoded_indices_for_single_texture(tex_index);
+		} break;
+
+		case VoxelBuffer::CHANNEL_WEIGHTS: {
+			v.i = make_encoded_weights_for_single_texture();
+		} break;
+
+		default:
+			// Fallback to slow default
+			v = VoxelGenerator::generate_single(position, channel);
+			break;
+	}
+
+	return v;
 }
 
 math::Interval get_range(const Span<const float> values) {

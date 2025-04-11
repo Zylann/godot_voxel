@@ -52,6 +52,7 @@ Return                                                                          
 [void](#)                                                                       | [paste_masked](#i_paste_masked) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) dst_pos, [VoxelBuffer](VoxelBuffer.md) src_buffer, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channels_mask, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) mask_channel, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) mask_value )                                                                                                                                                                                                                                            
 [void](#)                                                                       | [paste_masked_writable_list](#i_paste_masked_writable_list) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) position, [VoxelBuffer](VoxelBuffer.md) voxels, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channels_mask, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) src_mask_channel, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) src_mask_value, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) dst_mask_channel, [PackedInt32Array](https://docs.godotengine.org/en/stable/classes/class_packedint32array.html) dst_writable_list )  
 [VoxelRaycastResult](VoxelRaycastResult.md)                                     | [raycast](#i_raycast) ( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) origin, [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) direction, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) max_distance=10.0, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) collision_mask=4294967295 )                                                                                                                                                                                                                                                                       
+[void](#)                                                                       | [set_raycast_normal_enabled](#i_set_raycast_normal_enabled) ( [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) enabled )                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          
 [void](#)                                                                       | [set_voxel](#i_set_voxel) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) pos, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) v )                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
 [void](#)                                                                       | [set_voxel_f](#i_set_voxel_f) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) pos, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) v )                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
 [void](#)                                                                       | [set_voxel_metadata](#i_set_voxel_metadata) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) pos, [Variant](https://docs.godotengine.org/en/stable/classes/class_variant.html) meta )                                                                                                                                                                                                                                                                                                                                                                                                                                                   
@@ -68,7 +69,7 @@ enum **Mode**:
 - <span id="i_MODE_ADD"></span>**MODE_ADD** = **0** --- When editing [VoxelBuffer.CHANNEL_SDF](VoxelBuffer.md#i_CHANNEL_SDF), will add matter. Useful for building.
 - <span id="i_MODE_REMOVE"></span>**MODE_REMOVE** = **1** --- When editing [VoxelBuffer.CHANNEL_SDF](VoxelBuffer.md#i_CHANNEL_SDF), will subtract matter. Useful for digging.
 - <span id="i_MODE_SET"></span>**MODE_SET** = **2** --- Replace voxel values without any blending. Useful for blocky voxels.
-- <span id="i_MODE_TEXTURE_PAINT"></span>**MODE_TEXTURE_PAINT** = **3**
+- <span id="i_MODE_TEXTURE_PAINT"></span>**MODE_TEXTURE_PAINT** = **3** --- When editing [VoxelBuffer.CHANNEL_SDF](VoxelBuffer.md#i_CHANNEL_SDF) in smooth Terrain, enables texture painting. The value of [VoxelTool.texture_index](VoxelTool.md#i_texture_index) will be added to texture indices of the affected voxels. The texture's weight will be blended based on the values of [VoxelTool.texture_falloff](VoxelTool.md#i_texture_falloff) and [VoxelTool.texture_opacity](VoxelTool.md#i_texture_opacity). Results will differ depending on which texturing mode is used by the mesher.
 
 
 ## Property Descriptions
@@ -79,7 +80,7 @@ Set which channel will be edited. When used on a terrain node, it will default t
 
 ### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_eraser_value"></span> **eraser_value**
 
-Sets which value will be used to erase voxels when editing the [VoxelBuffer.CHANNEL_TYPE](VoxelBuffer.md#i_CHANNEL_TYPE) channel in [VoxelTool.MODE_REMOVE](VoxelTool.md#i_MODE_REMOVE) mode.
+Sets which value will be used to erase voxels when editing the [VoxelBuffer.CHANNEL_TYPE](VoxelBuffer.md#i_CHANNEL_TYPE) channel in [VoxelTool.MODE_REMOVE](VoxelTool.md#i_MODE_REMOVE) mode. Only relevant for blocky voxels.
 
 ### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_mode"></span> **mode**
 
@@ -94,19 +95,19 @@ This is related to the [VoxelBuffer.Depth](VoxelBuffer.md#enumerations) configur
 
 ### [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_sdf_strength"></span> **sdf_strength**
 
-*(This property has no documentation)*
+When editing [VoxelBuffer.CHANNEL_SDF](VoxelBuffer.md#i_CHANNEL_SDF) of smooth Terrains in [VoxelTool.MODE_ADD](VoxelTool.md#i_MODE_ADD) or [VoxelTool.MODE_REMOVE](VoxelTool.md#i_MODE_REMOVE), determines the interpolation phase between current values and values set by the tool. Can be interpreted as the amount of "matter" added or subtracted.
 
 ### [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_texture_falloff"></span> **texture_falloff**
 
-*(This property has no documentation)*
+Range [0.001..1.0]. Determines texture blending strength when tool is set to [VoxelTool.MODE_TEXTURE_PAINT](VoxelTool.md#i_MODE_TEXTURE_PAINT). Lower values produce sharper transitions. Can be compared to brush softness in an image editing program. This is only relevant with smooth voxels and texturing modes that support long gradients.
 
 ### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_texture_index"></span> **texture_index**
 
-*(This property has no documentation)*
+Index of the texture used in smooth voxel texture painting mode. The choice of this index depends on the way you setup rendering of textured voxel meshes (for example, layer index in a texture array).
 
 ### [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_texture_opacity"></span> **texture_opacity**
 
-*(This property has no documentation)*
+Range [0.0..1.0]. Determines the maximum weight of a [VoxelTool.texture_index](VoxelTool.md#i_texture_index) when tool is set to [VoxelTool.MODE_TEXTURE_PAINT](VoxelTool.md#i_MODE_TEXTURE_PAINT). Can be compared to brush opacity in an image editing program.
 
 ### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_value"></span> **value**
 
@@ -132,31 +133,45 @@ Copies voxels in a box and stores them in the passed buffer.
 
 ### [void](#)<span id="i_do_box"></span> **do_box**( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) begin, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) end ) 
 
-Operate on a rectangular cuboid section of the terrain. `begin` and `end` are inclusive. Choose operation and which voxel to use by setting `value` and `mode` before calling this function.
+Operate on a rectangular cuboid section of the terrain.
+
+With blocky voxels, `begin` and `end` are inclusive.
+
+With smooth voxels, `end` is exclusive.
+
+You may choose which operation to do before calling this function, by setting [VoxelTool.mode](VoxelTool.md#i_mode). With blocky voxels, you may also set [VoxelTool.value](VoxelTool.md#i_value) to choose which voxel ID to use.
 
 ### [void](#)<span id="i_do_path"></span> **do_path**( [PackedVector3Array](https://docs.godotengine.org/en/stable/classes/class_packedvector3array.html) points, [PackedFloat32Array](https://docs.godotengine.org/en/stable/classes/class_packedfloat32array.html) radii ) 
 
-*(This method has no documentation)*
+Traces a "tube" defined by a list of points, each having a corresponding radius to control the width of the tube at each point. The begin and end of the path is rounded. This is equivalent to placing/carving multiple connected capsules with varying top/bottom radius. The path is not using bezier or splines, each point is connected linearly to the next. If you need more smoothness, you may add points to areas that need them. The more points, the slower it is.
 
 ### [void](#)<span id="i_do_point"></span> **do_point**( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) pos ) 
 
-*(This method has no documentation)*
+Operates on a single voxel.
+
+You may choose which operation to do before calling this function, by setting [VoxelTool.mode](VoxelTool.md#i_mode). With blocky voxels, you may also set [VoxelTool.value](VoxelTool.md#i_value) to choose which voxel ID to use.
+
+This function is not well adapted to smooth voxels, and can introduce blockyness.
 
 ### [void](#)<span id="i_do_sphere"></span> **do_sphere**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) center, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) radius ) 
 
-*(This method has no documentation)*
+Operate on voxels within a sphere.
+
+You may choose which operation to do before calling this function, by setting [VoxelTool.mode](VoxelTool.md#i_mode). With blocky voxels, you may also set [VoxelTool.value](VoxelTool.md#i_value) to choose which voxel ID to use.
 
 ### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_get_voxel"></span> **get_voxel**( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) pos ) 
 
-*(This method has no documentation)*
+Gets data from voxel at `pos` coordinates. The returned value will be an unsigned integer. The meaning of the value depends on [VoxelTool.channel](VoxelTool.md#i_channel) the tool is set to.
+
+When using [VoxelBuffer.CHANNEL_SDF](VoxelBuffer.md#i_CHANNEL_SDF) for smooth voxels, the returned value will be an encoded value, so you may use [VoxelTool.get_voxel_f](VoxelTool.md#i_get_voxel_f) to get a float value instead.
 
 ### [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_get_voxel_f"></span> **get_voxel_f**( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) pos ) 
 
-*(This method has no documentation)*
+Gets data from voxel at `pos` coordinates, interpreting it as a floating-point SDF value. This is recommended to query the [VoxelBuffer.CHANNEL_SDF](VoxelBuffer.md#i_CHANNEL_SDF) channel for smooth voxels.
 
 ### [Variant](https://docs.godotengine.org/en/stable/classes/class_variant.html)<span id="i_get_voxel_metadata"></span> **get_voxel_metadata**( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) pos ) 
 
-*(This method has no documentation)*
+Gets arbitrary data attached to a specific voxel.
 
 ### [void](#)<span id="i_grow_sphere"></span> **grow_sphere**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) sphere_center, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) sphere_radius, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) strength ) 
 
@@ -174,11 +189,11 @@ Note 2: This is meant to be analogous to Surface tool from Unreal Engine Voxel P
 
 ### [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_is_area_editable"></span> **is_area_editable**( [AABB](https://docs.godotengine.org/en/stable/classes/class_aabb.html) box ) 
 
-*(This method has no documentation)*
+Returns `true` if the specified voxel area can be edited. This can also be interpreted as the area being "loaded". Note: when using LOD, only the nearest LOD (0) is editable. Other factors can influence whether an area is editable or not, such as streaming mode or terrain bounds.
 
 ### [Color](https://docs.godotengine.org/en/stable/classes/class_color.html)<span id="i_normalize_color"></span> **normalize_color**( [Color](https://docs.godotengine.org/en/stable/classes/class_color.html) _unnamed_arg0 ) 
 
-*(This method has no documentation)*
+A helper method to set the sum of channels of the `Color` to 1.
 
 ### [void](#)<span id="i_paste"></span> **paste**( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) dst_pos, [VoxelBuffer](VoxelBuffer.md) src_buffer, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channels_mask ) 
 
@@ -218,13 +233,17 @@ Paste voxels in a box from the given buffer at a specific location. Voxels havin
 
 ### [VoxelRaycastResult](VoxelRaycastResult.md)<span id="i_raycast"></span> **raycast**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) origin, [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) direction, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) max_distance=10.0, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) collision_mask=4294967295 ) 
 
-Runs a voxel-based raycast to find the first hit from an origin and a direction.
+Runs a voxel-based raycast to find the first hit from an origin and a direction. Coordinates are in world space.
 
 Returns a result object if a voxel got hit, otherwise returns `null`.
 
 This is useful when colliders cannot be relied upon. It might also be faster (at least at short range), and is more precise to find which voxel is hit. It internally uses the DDA algorithm.
 
 `collision_mask` is currently only used with blocky voxels. It is combined with [VoxelBlockyModel.collision_mask](VoxelBlockyModel.md#i_collision_mask) to decide which voxel types the ray can collide with.
+
+### [void](#)<span id="i_set_raycast_normal_enabled"></span> **set_raycast_normal_enabled**( [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) enabled ) 
+
+Sets whether [VoxelTool.raycast](VoxelTool.md#i_raycast) will compute hit normals. This is true by default.
 
 ### [void](#)<span id="i_set_voxel"></span> **set_voxel**( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) pos, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) v ) 
 
@@ -264,4 +283,4 @@ Decodes raw voxel integer data from the WEIGHTS channel into a normalized 4-floa
 
 Encodes a 4-integer vector into 16-bit integer voxel data, for use in the INDICES channel.
 
-_Generated on Aug 27, 2024_
+_Generated on Mar 23, 2025_

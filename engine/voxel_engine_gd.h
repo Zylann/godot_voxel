@@ -30,6 +30,10 @@ public:
 	int get_version_major() const;
 	int get_version_minor() const;
 	int get_version_patch() const;
+	Vector3i get_version_v() const;
+	String get_version_edition() const;
+	String get_version_status() const;
+	String get_version_git_hash() const;
 
 	Dictionary get_stats() const;
 	void schedule_task(Ref<ZN_ThreadedTask> task);
@@ -40,8 +44,15 @@ public:
 	Vector3 get_editor_camera_direction() const;
 #endif
 
+#ifdef VOXEL_TESTS
+	void run_tests(Dictionary options_dict);
+#endif
+
 private:
 	void _on_rendering_server_frame_post_draw();
+
+	bool _b_get_threaded_graphics_resource_building_enabled() const;
+	// void _b_set_threaded_graphics_resource_building_enabled(bool enabled);
 
 	static void _bind_methods();
 

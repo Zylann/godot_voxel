@@ -16,12 +16,6 @@ namespace zylann::voxel {
 class VoxelInstanceLibraryEditorPlugin : public zylann::godot::ZN_EditorPlugin {
 	GDCLASS(VoxelInstanceLibraryEditorPlugin, zylann::godot::ZN_EditorPlugin)
 public:
-#ifdef ZN_GODOT
-	virtual String get_name() const override {
-		return "VoxelInstanceLibrary";
-	}
-#endif
-
 	VoxelInstanceLibraryEditorPlugin();
 
 	// Because this is protected in the base class when compiling as a module
@@ -30,6 +24,10 @@ public:
 protected:
 	bool _zn_handles(const Object *p_object) const override;
 	void _zn_edit(Object *p_object) override;
+
+	String _zn_get_plugin_name() const override {
+		return "VoxelInstanceLibrary";
+	}
 
 private:
 	void init();

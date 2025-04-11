@@ -54,7 +54,7 @@
         ],
         "drivers/gles3/storage/mesh_storage.cpp": [
             "void MeshStorage::mesh_add_surface(",
-            "void MeshStorage::multimesh_set_buffer("
+            "void MeshStorage::_multimesh_set_buffer("
         ],
         "drivers/vulkan/rendering_device_driver_vulkan.cpp": [
             "RenderingDeviceDriverVulkan::framebuffer_create(",
@@ -127,7 +127,7 @@
         "servers/audio_server.cpp": [
             "void AudioDriver::audio_server_process("
         ],
-        "servers/physics_3d/godot_physics_server_3d.cpp": [
+        "modules/godot_physics_3d/godot_physics_server_3d.cpp": [
             "void GodotPhysicsServer3D::step("
         ],
         "servers/rendering/rendering_device.cpp": [
@@ -137,7 +137,7 @@
             "void RenderForwardClustered::_render_scene("
         ],
         "servers/rendering/renderer_rd/storage_rd/mesh_storage.cpp": [
-            "void MeshStorage::multimesh_set_buffer(",
+            "void MeshStorage::_multimesh_set_buffer(",
             "void MeshStorage::mesh_add_surface("
         ],
         "servers/rendering/renderer_rd/storage_rd/texture_storage.cpp": [

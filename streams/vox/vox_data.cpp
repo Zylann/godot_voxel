@@ -56,8 +56,9 @@ Error parse_string(FileAccess &f, String &s) {
 
 	static thread_local StdVector<char> bytes;
 	bytes.resize(size);
-	ERR_FAIL_COND_V(godot::get_buffer(f, Span<uint8_t>((uint8_t *)bytes.data(), bytes.size())) != bytes.size(),
-			ERR_PARSE_ERROR);
+	ERR_FAIL_COND_V(
+			godot::get_buffer(f, Span<uint8_t>((uint8_t *)bytes.data(), bytes.size())) != bytes.size(), ERR_PARSE_ERROR
+	);
 
 	s = "";
 	ERR_FAIL_COND_V(godot::parse_utf8(s, to_span(bytes)) != OK, ERR_PARSE_ERROR);
@@ -165,8 +166,11 @@ Basis parse_basis(uint8_t data) {
 Error parse_node_common_header(Node &node, FileAccess &f, const StdUnorderedMap<int, UniquePtr<Node>> &scene_graph) {
 	//
 	const int node_id = f.get_32();
-	ERR_FAIL_COND_V_MSG(scene_graph.find(node_id) != scene_graph.end(), ERR_INVALID_DATA,
-			String("Node with ID {0} already exists").format(varray(node_id)));
+	ERR_FAIL_COND_V_MSG(
+			scene_graph.find(node_id) != scene_graph.end(),
+			ERR_INVALID_DATA,
+			String("Node with ID {0} already exists").format(varray(node_id))
+	);
 
 	node.id = node_id;
 
@@ -203,7 +207,7 @@ Error Data::_load_from_file(String fpath) {
 
 	Error open_err;
 	Ref<FileAccess> f_ref = godot::open_file(fpath, FileAccess::READ, open_err);
-	if (f_ref == nullptr) {
+	if (f_ref.is_null()) {
 		return open_err;
 	}
 	FileAccess &f = **f_ref;
@@ -213,7 +217,12 @@ Error Data::_load_from_file(String fpath) {
 	ERR_FAIL_COND_V(strcmp(magic, "VOX ") != 0, ERR_PARSE_ERROR);
 
 	const uint32_t version = f.get_32();
-	ERR_FAIL_COND_V(version != 150, ERR_PARSE_ERROR);
+	// <2025/01/22>: at this time, the spec repo from ephtracy only indicates version 150. 200 was added at some point,
+	// supposedly adding new extensions, but I could not find a clue in the spec indicating that they were added at
+	// version 200 (the string "200" appears nowhere in the repo). For now, since there was no change to extensions our
+	// loader support, we just allow that version without other difference.
+	// See https://github.com/ephtracy/ephtracy.github.io/issues/264
+	ERR_FAIL_COND_V(version != 150 && version != 200, ERR_PARSE_ERROR);
 
 	const size_t file_length = f.get_length();
 
@@ -380,8 +389,11 @@ Error Data::_load_from_file(String fpath) {
 			for (unsigned int i = 0; i < _layers.size(); ++i) {
 				const Layer *existing_layer = _layers[i].get();
 				CRASH_COND(existing_layer == nullptr);
-				ERR_FAIL_COND_V_MSG(existing_layer->id == layer_id, ERR_INVALID_DATA,
-						String("Layer with ID {0} already exists").format(varray(layer_id)));
+				ERR_FAIL_COND_V_MSG(
+						existing_layer->id == layer_id,
+						ERR_INVALID_DATA,
+						String("Layer with ID {0} already exists").format(varray(layer_id))
+				);
 			}
 			layer.id = layer_id;
 
@@ -411,8 +423,11 @@ Error Data::_load_from_file(String fpath) {
 
 			const int material_id = f.get_32();
 			ERR_FAIL_COND_V(material_id < 0 || material_id > static_cast<int>(_palette.size()), ERR_INVALID_DATA);
-			ERR_FAIL_COND_V_MSG(_materials.find(material_id) != _materials.end(), ERR_INVALID_DATA,
-					String("Material ID {0} already exists").format(varray(material_id)));
+			ERR_FAIL_COND_V_MSG(
+					_materials.find(material_id) != _materials.end(),
+					ERR_INVALID_DATA,
+					String("Material ID {0} already exists").format(varray(material_id))
+			);
 			material.id = material_id;
 
 			StdUnorderedMap<String, String> attributes;
@@ -494,8 +509,11 @@ Error Data::_load_from_file(String fpath) {
 				const TransformNode *transform_node = reinterpret_cast<const TransformNode *>(node);
 
 				const int child_id = transform_node->child_node_id;
-				ERR_FAIL_COND_V_MSG(_scene_graph.find(child_id) == _scene_graph.end(), ERR_INVALID_DATA,
-						String("Child node {0} does not exist").format(varray(child_id)));
+				ERR_FAIL_COND_V_MSG(
+						_scene_graph.find(child_id) == _scene_graph.end(),
+						ERR_INVALID_DATA,
+						String("Child node {0} does not exist").format(varray(child_id))
+				);
 
 				referenced_nodes.insert(child_id);
 
@@ -511,8 +529,9 @@ Error Data::_load_from_file(String fpath) {
 							break;
 						}
 					}
-					ERR_FAIL_COND_V_MSG(!layer_exists, ERR_INVALID_DATA,
-							String("Layer {0} does not exist").format(varray(layer_id)));
+					ERR_FAIL_COND_V_MSG(
+							!layer_exists, ERR_INVALID_DATA, String("Layer {0} does not exist").format(varray(layer_id))
+					);
 				}
 			} break;
 
@@ -520,8 +539,11 @@ Error Data::_load_from_file(String fpath) {
 				const GroupNode *group_node = reinterpret_cast<const GroupNode *>(node);
 				for (size_t i = 0; i < group_node->child_node_ids.size(); ++i) {
 					const int child_id = group_node->child_node_ids[i];
-					ERR_FAIL_COND_V_MSG(_scene_graph.find(child_id) == _scene_graph.end(), ERR_INVALID_DATA,
-							String("Child node {0} does not exist").format(varray(child_id)));
+					ERR_FAIL_COND_V_MSG(
+							_scene_graph.find(child_id) == _scene_graph.end(),
+							ERR_INVALID_DATA,
+							String("Child node {0} does not exist").format(varray(child_id))
+					);
 					referenced_nodes.insert(child_id);
 				}
 			} break;
@@ -529,8 +551,11 @@ Error Data::_load_from_file(String fpath) {
 			case Node::TYPE_SHAPE: {
 				const ShapeNode *shape_node = reinterpret_cast<const ShapeNode *>(node);
 				const int model_id = shape_node->model_id;
-				ERR_FAIL_COND_V_MSG(model_id < 0 || model_id >= static_cast<int>(_models.size()), ERR_INVALID_DATA,
-						String("Model {0} does not exist").format(varray(model_id)));
+				ERR_FAIL_COND_V_MSG(
+						model_id < 0 || model_id >= static_cast<int>(_models.size()),
+						ERR_INVALID_DATA,
+						String("Model {0} does not exist").format(varray(model_id))
+				);
 			} break;
 		}
 	}

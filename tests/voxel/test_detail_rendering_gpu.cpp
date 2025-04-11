@@ -1,15 +1,23 @@
 #include "../../engine/detail_rendering/render_detail_texture_gpu_task.h"
 #include "../../engine/detail_rendering/render_detail_texture_task.h"
+#include "../../engine/gpu/gpu_task_runner.h"
 #include "../../engine/voxel_engine.h"
 #include "../../generators/graph/voxel_generator_graph.h"
 #include "../../meshers/mesh_block_task.h"
 #include "../../meshers/transvoxel/transvoxel_cell_iterator.h"
 #include "../../meshers/transvoxel/voxel_mesher_transvoxel.h"
-#include "../testing.h"
+#include "../../util/godot/classes/time.h"
+#include "../../util/testing/test_macros.h"
 
 namespace zylann::voxel::tests {
 
 void test_normalmap_render_gpu() {
+#ifdef ZN_GODOT_EXTENSION
+	// https://github.com/godotengine/godot-cpp/issues/1180
+	ZN_PRINT_ERROR("This test might not work in GDExtension builds at the moment.");
+#endif
+	VoxelEngine::get_singleton().try_initialize_gpu_features();
+
 	Ref<VoxelGeneratorGraph> generator;
 	generator.instantiate();
 	{
@@ -103,27 +111,62 @@ void test_normalmap_render_gpu() {
 	// We don't use priority here because we call the task directly instead of scheduling it into a runner
 	// nm_task.priority_dependency;
 	nm_task.use_gpu = true;
-	RenderDetailTextureGPUTask *gpu_task = nm_task.make_gpu_task();
 
-	RenderingDevice &rd = VoxelEngine::get_singleton().get_rendering_device();
+	PackedByteArray atlas_texture_data;
+	Vector2i atlas_texture_size;
+	{
+		RenderDetailTextureGPUTask *gpu_task = nm_task.make_gpu_task();
+		atlas_texture_size.x = gpu_task->texture_width;
+		atlas_texture_size.y = gpu_task->texture_height;
+
+		gpu_task->testing_output = &atlas_texture_data;
+
+		VoxelEngine::get_singleton().push_gpu_task(gpu_task);
+
+		const uint64_t time_before = Time::get_singleton()->get_ticks_usec();
+		while (VoxelEngine::get_singleton().get_pending_gpu_tasks_count() > 0) {
+			Thread::sleep_usec(1000);
+
+			// Check if the task times out
+			const uint64_t timeout_seconds = 10;
+			const uint64_t now = Time::get_singleton()->get_ticks_usec();
+			const uint64_t time_elapsed_microseconds = now - time_before;
+			ZN_TEST_ASSERT(time_elapsed_microseconds < timeout_seconds * 1'000'000);
+		}
+	}
+
+	/*
+	RenderingServer *rs = RenderingServer::get_singleton();
+	ZN_ASSERT(rs != nullptr);
+	RenderingDevice *rd = rs->create_local_rendering_device();
+	ZN_ASSERT(rd != nullptr);
+
 	GPUStorageBufferPool storage_buffer_pool;
-	storage_buffer_pool.set_rendering_device(&rd);
+	storage_buffer_pool.set_rendering_device(rd);
 
-	GPUTaskContext gpu_task_context{ rd, storage_buffer_pool };
+	BaseGPUResources base_resources;
+	base_resources.load(*rd);
+
+	GPUTaskContext gpu_task_context(*rd, storage_buffer_pool, base_resources);
 	gpu_task->prepare(gpu_task_context);
 
-	rd.submit();
-	rd.sync();
+	rd->submit();
+	rd->sync();
 
-	const PackedByteArray atlas_texture_data = gpu_task->collect_texture_and_cleanup(rd, storage_buffer_pool);
+	PackedByteArray atlas_texture_data = gpu_task->collect_texture_and_cleanup(*rd, storage_buffer_pool);
+
+	base_resources.clear(*rd);
+	storage_buffer_pool.clear();
+	memdelete(rd);
+	*/
 
 	Ref<Image> gpu_atlas_image = Image::create_from_data(
-			gpu_task->texture_width, gpu_task->texture_height, false, Image::FORMAT_RGBA8, atlas_texture_data
+			atlas_texture_size.x, atlas_texture_size.y, false, Image::FORMAT_RGBA8, atlas_texture_data
 	);
 	ERR_FAIL_COND(gpu_atlas_image.is_null());
 	gpu_atlas_image->convert(Image::FORMAT_RGB8);
 
-	ZN_DELETE(gpu_task);
+	// ZN_DELETE(gpu_task);
 
 	// Make a comparison with the CPU version
 
@@ -179,8 +222,6 @@ void test_normalmap_render_gpu() {
 			return dsum / float(counted_pixels);
 		}
 	};
-
-	storage_buffer_pool.clear();
 
 	// Debug dumps
 	// gpu_atlas_image->save_png("test_gpu_normalmap.png");

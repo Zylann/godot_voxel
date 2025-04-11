@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VoxelBlockyFluid" inherits="Resource" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Properties of a blocky fluid.
+	</brief_description>
+	<description>
+		Common properties of a specific fluid. It may be shared between multiple blocky models, each representing a level/state of the fluid.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="dip_when_flowing_down" type="bool" is_experimental="true" setter="set_dip_when_flowing_down" getter="get_dip_when_flowing_down" default="false">
+			When enabled, if all following conditions are met for a given fluid voxel:
+			- It doesn't have maximum level
+			- It isn't covered by another voxel of the same fluid type 
+			- It can flow downwards (below is air or fluid of the same type)
+			Then the shape of the voxel will change to be "pushed" downwards, creating steeper slopes. Note, this also means the voxel will look as if it has minimum level in some situations. However, in practice these cases don't occur often. You may decide whether to use this option depending on how your fluid simulates.
+		</member>
+		<member name="material" type="Material" setter="set_material" getter="get_material">
+			Material used by all states of the fluid. Note that UVs of a fluid are different than a regular model, so you may need a [ShaderMaterial] to handle flowing animation.
+		</member>
+	</members>
+</class>

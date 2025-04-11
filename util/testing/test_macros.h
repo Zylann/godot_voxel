@@ -1,7 +1,7 @@
-#ifndef ZN_TEST_UTIL_H
-#define ZN_TEST_UTIL_H
+#ifndef ZN_TEST_MACROS_H
+#define ZN_TEST_MACROS_H
 
-#include "../util/godot/core/string.h"
+#include "../godot/macros.h"
 
 // TODO These should actually make the test return and only then fail. This is to allow things like test directories to
 // be cleaned up
@@ -24,25 +24,4 @@
 		GENERATE_TRAP();                                                                                               \
 	}
 
-namespace zylann::testing {
-
-// Utilities for testing
-
-class TestDirectory {
-public:
-	TestDirectory();
-	~TestDirectory();
-
-	bool is_valid() const {
-		return _valid;
-	}
-
-	String get_path() const;
-
-private:
-	bool _valid = false;
-};
-
-} // namespace zylann::testing
-
-#endif // ZN_TEST_UTIL_H
+#endif // ZN_TEST_MACROS_H

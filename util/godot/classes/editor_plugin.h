@@ -31,12 +31,19 @@ public:
 	EditorPlugin::AfterGUIInput forward_3d_gui_input(Camera3D *p_camera, const Ref<InputEvent> &p_event) override;
 	void save_external_data() override;
 
+#if VERSION_MAJOR == 4 && VERSION_MINOR <= 3
+	String get_name() const override;
+#else
+	String get_plugin_name() const override;
+#endif
+
 #elif defined(ZN_GODOT_EXTENSION)
 	bool _handles(Object *p_object) const override;
 	void _edit(Object *p_object) override;
 	void _make_visible(bool visible) override;
 	int32_t _forward_3d_gui_input(Camera3D *p_camera, const Ref<InputEvent> &p_event) override;
 	void _save_external_data() override;
+	String _get_plugin_name() const override;
 #endif
 
 protected:
@@ -45,6 +52,7 @@ protected:
 	virtual void _zn_make_visible(bool visible);
 	virtual EditorPlugin::AfterGUIInput _zn_forward_3d_gui_input(Camera3D *p_camera, const Ref<InputEvent> &p_event);
 	virtual void _zn_save_external_data();
+	virtual String _zn_get_plugin_name() const;
 
 private:
 	// When compiling with GodotCpp, `_bind_methods` is not optional
