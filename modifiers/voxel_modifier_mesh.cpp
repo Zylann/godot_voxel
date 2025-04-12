@@ -3,6 +3,7 @@
 #include "../engine/voxel_engine.h"
 #include "../util/godot/core/packed_arrays.h"
 #include "../util/math/conv.h"
+#include "../util/math/vector3.h"
 #include "../util/profiling.h"
 
 namespace zylann::voxel {
@@ -23,10 +24,6 @@ void VoxelModifierMesh::set_isolevel(float isolevel) {
 		return;
 	}
 	_isolevel = isolevel;
-}
-
-inline float get_largest_coord(Vector3 v) {
-	return math::max(math::max(v.x, v.y), v.z);
 }
 
 void VoxelModifierMesh::apply(VoxelModifierContext ctx) const {
@@ -61,7 +58,7 @@ void VoxelModifierMesh::apply(VoxelModifierContext ctx) const {
 	shape.buffer = buffer_sdf;
 	shape.buffer_size = buffer.get_size();
 	shape.isolevel = _isolevel;
-	shape.sdf_scale = get_largest_coord(model_to_world.get_basis().get_scale());
+	shape.sdf_scale = math::get_largest_coord(model_to_world.get_basis().get_scale());
 	shape.world_to_buffer = buffer_to_world.affine_inverse();
 
 	switch (get_operation()) {

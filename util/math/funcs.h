@@ -390,11 +390,11 @@ inline bool is_inf(double p_val) {
 }
 
 inline double deg_to_rad(double p_y) {
-	return p_y * PI_64 / 180.0;
+	return p_y * PI<double> / 180.0;
 }
 
 inline float deg_to_rad(float p_y) {
-	return p_y * PI_32 / 180.f;
+	return p_y * PI<float> / 180.f;
 }
 
 // Given source and destination intervals, returns parameters to use in an `a*x+b` formula to apply such remap.

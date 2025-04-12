@@ -180,6 +180,10 @@ void VoxelEngine::remove_viewer(ViewerID viewer_id) {
 	_world.viewers.remove(viewer_id);
 }
 
+bool VoxelEngine::get_viewer_count() const {
+	return _world.viewers.count();
+}
+
 void VoxelEngine::set_viewer_position(ViewerID viewer_id, Vector3 position) {
 	Viewer &viewer = _world.viewers.get(viewer_id);
 	viewer.world_position = position;

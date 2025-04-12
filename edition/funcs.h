@@ -385,6 +385,10 @@ struct SdfBufferShape {
 		return interpolate_trilinear(buffer, buffer_size, lpos) * sdf_scale - isolevel;
 	}
 
+	inline bool is_inside(Vector3f pos) const {
+		return (*this)(pos) < 0;
+	}
+
 	inline const char *name() const {
 		return "SdfBufferShape";
 	}

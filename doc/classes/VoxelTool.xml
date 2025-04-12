@@ -47,6 +47,15 @@
 				You may choose which operation to do before calling this function, by setting [member mode]. With blocky voxels, you may also set [member value] to choose which voxel ID to use.
 			</description>
 		</method>
+		<method name="do_mesh">
+			<return type="void" />
+			<param index="0" name="mesh_sdf" type="VoxelMeshSDF" />
+			<param index="1" name="transform" type="Transform3D" />
+			<param index="2" name="isolevel" type="float" default="0.0" />
+			<description>
+				Applies the given mesh shape to the terrain. The model must be baked into a signed distance field with [VoxelMeshSDF]. [code]transform[/code] may be used to position, rotate and scale the model. Non-uniform scale might introduce artifacts. [code]isolevel[/code] is a distance that inflates or contracts the model if increased or decreased respectively. Quality depends on resolution of the model's SDF, and performance will be lower than primitive shapes such as [method do_sphere].
+			</description>
+		</method>
 		<method name="do_path">
 			<return type="void" />
 			<param index="0" name="points" type="PackedVector3Array" />
