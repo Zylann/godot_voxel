@@ -24,6 +24,7 @@ public:
 	Ref<VoxelRaycastResult> raycast(Vector3 pos, Vector3 dir, float max_distance, uint32_t collision_mask) override;
 	void do_box(Vector3i begin, Vector3i end) override;
 	void do_sphere(Vector3 center, float radius) override;
+	void do_mesh(const VoxelMeshSDF &mesh_sdf, const Transform3D &transform, const float isolevel) override;
 	void copy(Vector3i pos, VoxelBuffer &dst, uint8_t channels_mask) const override;
 	void paste(Vector3i pos, const VoxelBuffer &src, uint8_t channels_mask) override;
 

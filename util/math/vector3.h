@@ -70,6 +70,10 @@ inline real_t length_squared(const Vector3 &a) {
 	return a.length_squared();
 }
 
+inline real_t get_largest_coord(Vector3 v) {
+	return math::max(math::max(v.x, v.y), v.z);
+}
+
 } // namespace zylann::math
 
 namespace zylann {

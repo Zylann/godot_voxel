@@ -337,7 +337,7 @@ void VoxelToolLodTerrain::stamp_sdf(
 		float isolevel,
 		float sdf_scale
 ) {
-	// TODO Asynchronous version
+	ZN_PRINT_WARNING_ONCE("This method is deprecated. Use `do_mesh` instead.");
 	ZN_PROFILE_SCOPE();
 
 	ERR_FAIL_COND(_terrain == nullptr);
@@ -392,6 +392,11 @@ void VoxelToolLodTerrain::stamp_sdf(
 	grid.write_box(voxel_box, VoxelBuffer::CHANNEL_SDF, op);
 
 	_post_edit(voxel_box);
+}
+
+void VoxelToolLodTerrain::do_mesh(const VoxelMeshSDF &mesh_sdf, const Transform3D &transform, const float isolevel) {
+	ZN_ASSERT_RETURN(_terrain != nullptr);
+	do_mesh_chunked(mesh_sdf, _terrain->get_storage(), transform, isolevel, true);
 }
 
 // Runs the given graph in a bounding box in the terrain.
