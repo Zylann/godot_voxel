@@ -1300,8 +1300,8 @@ int VoxelGeneratorGraph::get_sdf_output_port_address() const {
 }
 
 inline Vector3 get_3d_pos_from_panorama_uv(Vector2 uv) {
-	const float xa = -Math_TAU * uv.x - Math_PI;
-	const float ya = -Math_PI * (uv.y - 0.5f);
+	const float xa = -math::TAU<real_t> * uv.x - math::PI<real_t>;
+	const float ya = math::PI<real_t> * (uv.y - 0.5);
 	const float y = Math::sin(ya);
 	const float ca = Math::cos(ya);
 	const float x = Math::cos(xa) * ca;

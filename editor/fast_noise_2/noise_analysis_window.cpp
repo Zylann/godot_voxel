@@ -209,7 +209,7 @@ void NoiseAnalysisWindow::_on_calculate_button_pressed() {
 		StdVector<Vector2> &precomputed_unit_vectors_2d = get_tls_precomputed_unit_vectors_2d();
 		precomputed_unit_vectors_2d.resize(precomputed_vectors_count);
 		for (int i = 0; i < precomputed_vectors_count; ++i) {
-			const float a = Math_TAU * float(i) / float(precomputed_vectors_count);
+			const float a = math::TAU<float> * float(i) / float(precomputed_vectors_count);
 			precomputed_unit_vectors_2d[i] = Vector2(Math::cos(a), Math::sin(a));
 		}
 	} else {

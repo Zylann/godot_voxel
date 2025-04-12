@@ -1899,7 +1899,7 @@ void test_voxel_graph_function_execute() {
 		function->add_connection(n_y, 0, n_add3, 1);
 		function->add_connection(n_add3, 0, n_out_sd, 0);
 
-		function->set_node_default_input(n_add1, 1, math::PI_32 / 2.f);
+		function->set_node_default_input(n_add1, 1, math::PI<float> / 2.f);
 
 		function->auto_pick_inputs_and_outputs();
 		const CompilationResult result = function->compile(false);
