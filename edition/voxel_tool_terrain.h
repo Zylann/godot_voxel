@@ -17,8 +17,12 @@ public:
 	VoxelToolTerrain(VoxelTerrain *terrain);
 
 	bool is_area_editable(const Box3i &box) const override;
-	Ref<VoxelRaycastResult> raycast(Vector3 p_pos, Vector3 p_dir, float p_max_distance, uint32_t p_collision_mask)
-			override;
+	Ref<VoxelRaycastResult> raycast(
+			Vector3 p_pos,
+			Vector3 p_dir,
+			float p_max_distance,
+			uint32_t p_collision_mask
+	) override;
 
 	void set_voxel_metadata(Vector3i pos, Variant meta) override;
 	Variant get_voxel_metadata(Vector3i pos) const override;
