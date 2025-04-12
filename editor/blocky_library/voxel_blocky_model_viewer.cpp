@@ -216,15 +216,17 @@ VoxelBlockyModelViewer::VoxelBlockyModelViewer() {
 
 void VoxelBlockyModelViewer::set_model(Ref<VoxelBlockyModel> model) {
 	if (_model.is_valid()) {
-		_model->disconnect(VoxelStringNames::get_singleton().changed,
-				callable_mp(this, &VoxelBlockyModelViewer::_on_model_changed));
+		_model->disconnect(
+				VoxelStringNames::get_singleton().changed, callable_mp(this, &VoxelBlockyModelViewer::_on_model_changed)
+		);
 	}
 
 	_model = model;
 
 	if (_model.is_valid()) {
-		_model->connect(VoxelStringNames::get_singleton().changed,
-				callable_mp(this, &VoxelBlockyModelViewer::_on_model_changed));
+		_model->connect(
+				VoxelStringNames::get_singleton().changed, callable_mp(this, &VoxelBlockyModelViewer::_on_model_changed)
+		);
 	}
 
 	update_model();

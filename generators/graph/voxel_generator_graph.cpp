@@ -1728,8 +1728,11 @@ math::Interval get_range(const Span<const float> values) {
 
 // Note, this wrapper may not be used for main generation tasks.
 // It is mostly used as a debug tool.
-math::Interval VoxelGeneratorGraph::debug_analyze_range(Vector3i min_pos, Vector3i max_pos, bool optimize_execution_map)
-		const {
+math::Interval VoxelGeneratorGraph::debug_analyze_range(
+		Vector3i min_pos,
+		Vector3i max_pos,
+		bool optimize_execution_map
+) const {
 	ZN_ASSERT_RETURN_V(max_pos.x >= min_pos.x, math::Interval());
 	ZN_ASSERT_RETURN_V(max_pos.y >= min_pos.y, math::Interval());
 	ZN_ASSERT_RETURN_V(max_pos.z >= min_pos.z, math::Interval());
