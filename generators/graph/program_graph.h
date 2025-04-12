@@ -146,6 +146,8 @@ public:
 
 	void debug_print_dot_file(String p_file_path) const;
 
+	bool branch_equals(const uint32_t node_id, const ProgramGraph &other_graph, const uint32_t other_node_id) const;
+
 private:
 	StdUnorderedMap<uint32_t, Node *> _nodes;
 	uint32_t _next_node_id = 1;

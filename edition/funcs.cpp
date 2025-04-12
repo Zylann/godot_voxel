@@ -172,7 +172,7 @@ void run_blocky_random_tick(
 		}
 	};
 
-	const VoxelBlockyLibraryBase::BakedData &lib_data = lib.get_baked_data();
+	const blocky::BakedLibrary &lib_data = lib.get_baked_data();
 
 	// Choose blocks at random
 	for (int bi = 0; bi < block_count; ++bi) {
@@ -195,7 +195,7 @@ void run_blocky_random_tick(
 				if (voxels.get_channel_compression(channel) == VoxelBuffer::COMPRESSION_UNIFORM) {
 					const uint64_t v = voxels.get_voxel(0, 0, 0, channel);
 					if (lib_data.has_model(v)) {
-						const VoxelBlockyModel::BakedData &vt = lib_data.models[v];
+						const blocky::BakedModel &vt = lib_data.models[v];
 						if (vt.is_random_tickable) {
 							// Skip whole block
 							continue;
@@ -227,7 +227,7 @@ void run_blocky_random_tick(
 			const Pick pick = picks[i];
 
 			if (lib_data.has_model(pick.value)) {
-				const VoxelBlockyModel::BakedData &vt = lib_data.models[pick.value];
+				const blocky::BakedModel &vt = lib_data.models[pick.value];
 
 				if (vt.is_random_tickable) {
 					ERR_FAIL_COND(!callback(callback_data, pick.rpos + block_origin, pick.value));

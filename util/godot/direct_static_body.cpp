@@ -121,6 +121,7 @@ void DirectStaticBody::set_debug(bool enabled, World3D *world) {
 
 	if (enabled && !_debug_mesh_instance.is_valid()) {
 		_debug_mesh_instance.create();
+		_debug_mesh_instance.set_interpolated(false);
 		_debug_mesh_instance.set_world(world);
 
 		const Transform3D transform =

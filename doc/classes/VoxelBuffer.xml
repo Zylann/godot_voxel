@@ -80,6 +80,17 @@
 				Clears the buffer and gives it the specified size.
 			</description>
 		</method>
+		<method name="create_3d_texture_from_sdf_zxy" qualifiers="const">
+			<return type="ImageTexture3D" />
+			<param index="0" name="output_format" type="int" enum="Image.Format" />
+			<description>
+				Creates a 3D texture from the SDF channel.
+				If [code]output_format[/code] is a 8-bit pixel format, the texture will contain normalized signed distances, where 0.5 is the isolevel, 0 is the furthest away under surface, and 1 is the furthest away above surface.
+				Only 16-bit SDF channel is supported.
+				Only [constant Image.FORMAT_R8] and [constant Image.FORMAT_L8] output formats are suported.
+				Note: when sampling this texture in a shader, you need to swizzle 3D coordinates with [code].yxz[/code]. This is how voxels are internally stored, and this function does not change this convention.
+			</description>
+		</method>
 		<method name="debug_print_sdf_y_slices" qualifiers="const">
 			<return type="Image[]" />
 			<param index="0" name="scale" type="float" default="1.0" />
@@ -171,6 +182,14 @@
 			<return type="Variant" />
 			<description>
 				Gets metadata associated to this [VoxelBuffer].
+			</description>
+		</method>
+		<method name="get_channel_as_byte_array" qualifiers="const">
+			<return type="PackedByteArray" />
+			<param index="0" name="channel_index" type="int" enum="VoxelBuffer.ChannelId" />
+			<description>
+				Gets voxel data from a channel as uncompressed raw bytes. Check [enum VoxelBuffer.Depth] for information about the data format.
+				Note: if the channel is compressed, it will be decompressed on the fly into the returned array. If you want a different behavior in this case, check [method get_channel_compression] before calling this method.
 			</description>
 		</method>
 		<method name="get_channel_compression" qualifiers="const">
@@ -316,6 +335,14 @@
 				Changes the bit depth of a given channel. This controls the range of values a channel can hold. See [enum VoxelBuffer.Depth] for more information.
 			</description>
 		</method>
+		<method name="set_channel_from_byte_array">
+			<return type="void" />
+			<param index="0" name="channel_index" type="int" enum="VoxelBuffer.ChannelId" />
+			<param index="1" name="data" type="PackedByteArray" />
+			<description>
+				Overwrites the contents of a channel from raw voxel data. Check [enum VoxelBuffer.Depth] for information about the expected data format.
+			</description>
+		</method>
 		<method name="set_voxel">
 			<return type="void" />
 			<param index="0" name="value" type="int" />
@@ -355,6 +382,13 @@
 			<description>
 			</description>
 		</method>
+		<method name="update_3d_texture_from_sdf_zxy" qualifiers="const">
+			<return type="void" />
+			<param index="0" name="existing_texture" type="ImageTexture3D" />
+			<description>
+				Updates an existing 3D texture from the SDF channel. See [method create_3d_texture_from_sdf_zxy] for more information.
+			</description>
+		</method>
 	</methods>
 	<constants>
 		<constant name="CHANNEL_TYPE" value="0" enum="ChannelId">
@@ -383,6 +417,33 @@
 		</constant>
 		<constant name="MAX_CHANNELS" value="8" enum="ChannelId">
 			Maximum number of channels a [VoxelBuffer] can have.
+		</constant>
+		<constant name="CHANNEL_TYPE_BIT" value="1" enum="ChannelMask">
+			Bitmask with one bit set at the position corresponding to [constant CHANNEL_TYPE].
+		</constant>
+		<constant name="CHANNEL_SDF_BIT" value="2" enum="ChannelMask">
+			Bitmask with one bit set at the position corresponding to [constant CHANNEL_SDF].
+		</constant>
+		<constant name="CHANNEL_COLOR_BIT" value="4" enum="ChannelMask">
+			Bitmask with one bit set at the position corresponding to [constant CHANNEL_COLOR].
+		</constant>
+		<constant name="CHANNEL_INDICES_BIT" value="8" enum="ChannelMask">
+			Bitmask with one bit set at the position corresponding to [constant CHANNEL_INDICES].
+		</constant>
+		<constant name="CHANNEL_WEIGHTS_BIT" value="16" enum="ChannelMask">
+			Bitmask with one bit set at the position corresponding to [constant CHANNEL_WEIGHTS].
+		</constant>
+		<constant name="CHANNEL_DATA5_BIT" value="32" enum="ChannelMask">
+			Bitmask with one bit set at the position corresponding to [constant CHANNEL_DATA5].
+		</constant>
+		<constant name="CHANNEL_DATA6_BIT" value="64" enum="ChannelMask">
+			Bitmask with one bit set at the position corresponding to [constant CHANNEL_DATA6].
+		</constant>
+		<constant name="CHANNEL_DATA7_BIT" value="128" enum="ChannelMask">
+			Bitmask with one bit set at the position corresponding to [constant CHANNEL_DATA7].
+		</constant>
+		<constant name="ALL_CHANNELS_MASK" value="255" enum="ChannelMask">
+			Bitmask with all channel bits set.
 		</constant>
 		<constant name="DEPTH_8_BIT" value="0" enum="Depth">
 			Voxels will be stored with 8 bits. Raw values will range from 0 to 255. Float values can take 255 values distributed from -10.0 to 10.0. Values outside the range will be clamped.

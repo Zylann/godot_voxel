@@ -12,6 +12,8 @@
 
 namespace zylann::voxel {
 
+class VoxelMeshSDF;
+
 // High-level voxel editing interface.
 // It's not a class to instantiate alone, get it from the voxel objects you want to work with.
 // There might be some overhead, so if a specific case needs optimization, it may be implemented with the underlying
@@ -69,6 +71,7 @@ public:
 	virtual void do_sphere(Vector3 p_center, float radius);
 	virtual void do_box(Vector3i begin, Vector3i end);
 	virtual void do_path(Span<const Vector3> positions, Span<const float> radii);
+	virtual void do_mesh(const VoxelMeshSDF &mesh_sdf, const Transform3D &transform, const float isolevel);
 
 	void sdf_stamp_erase(Ref<godot::VoxelBuffer> stamp, Vector3i pos);
 	void sdf_stamp_erase(const VoxelBuffer &stamp, Vector3i pos);
@@ -102,6 +105,8 @@ public:
 
 	virtual Ref<VoxelRaycastResult> raycast(Vector3 pos, Vector3 dir, float max_distance, uint32_t collision_mask);
 
+	void set_raycast_normal_enabled(bool enabled);
+
 	// Checks if an edit affecting the given box can be applied, fully or partially
 	virtual bool is_area_editable(const Box3i &box) const;
 
@@ -119,6 +124,14 @@ protected:
 	virtual void _set_voxel_f(Vector3i pos, float v);
 	virtual void _post_edit(const Box3i &box);
 
+	void do_mesh_chunked(
+			const VoxelMeshSDF &mesh_sdf,
+			VoxelData &vdata,
+			const Transform3D &transform,
+			const float isolevel,
+			const bool with_pre_generate
+	);
+
 private:
 	// Bindings to convert to more specialized C++ types and handle virtuality,
 	// cuz I don't know if it works by binding straight
@@ -132,6 +145,7 @@ private:
 	void _b_do_sphere(Vector3 pos, float radius);
 	void _b_do_box(Vector3i begin, Vector3i end);
 	void _b_do_path(PackedVector3Array positions, PackedFloat32Array radii);
+	void _b_do_mesh(Ref<VoxelMeshSDF> mesh_sdf, Transform3D transform, float isolevel);
 	void _b_copy(Vector3i pos, Ref<godot::VoxelBuffer> voxels, int channel_mask);
 	void _b_paste(Vector3i pos, Ref<godot::VoxelBuffer> voxels, int channels_mask);
 	void _b_paste_masked(
@@ -158,6 +172,7 @@ protected:
 	// If true, operations will be allowed even if the affected area is partially outside the bounds of editable voxels.
 	// Depending on the context, it may be useful, or cause iconsistent results.
 	bool _allow_out_of_bounds = false;
+	bool _raycast_normal_enabled = true;
 
 	// Used on smooth terrain
 	ops::TextureParams _texture_params;

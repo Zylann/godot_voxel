@@ -73,8 +73,7 @@ void register_curve_node(Span<NodeType> types) {
 				ctx.make_error(String(ZN_TTR("{0} instance is null")).format(varray(Curve::get_class_static())));
 				return;
 			}
-			ComputeShaderResource res;
-			res.create_texture_2d(**curve);
+			std::shared_ptr<ComputeShaderResource> res = ComputeShaderResourceFactory::create_texture_2d(curve);
 			const StdString uniform_texture = ctx.add_uniform(std::move(res));
 
 			// In Godot 4.4 Curves can be defined beyond 0..1

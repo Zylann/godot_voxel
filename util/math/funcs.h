@@ -114,6 +114,14 @@ inline T cubed(const T x) {
 	return x * x * x;
 }
 
+inline float lerp(float a, float b, float t) {
+	return Math::lerp(a, b, t);
+}
+
+inline double lerp(double a, double b, double t) {
+	return Math::lerp(a, b, t);
+}
+
 // Performs euclidean division, aka floored division.
 // This implementation expects a strictly positive divisor.
 //
@@ -382,11 +390,11 @@ inline bool is_inf(double p_val) {
 }
 
 inline double deg_to_rad(double p_y) {
-	return p_y * PI_64 / 180.0;
+	return p_y * PI<double> / 180.0;
 }
 
 inline float deg_to_rad(float p_y) {
-	return p_y * PI_32 / 180.f;
+	return p_y * PI<float> / 180.f;
 }
 
 // Given source and destination intervals, returns parameters to use in an `a*x+b` formula to apply such remap.

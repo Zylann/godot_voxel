@@ -6,11 +6,12 @@
 #include "../storage/voxel_data_grid.h"
 #include "../util/containers/dynamic_bitset.h"
 #include "../util/containers/fixed_array.h"
+#include "../util/godot/core/transform_3d.h"
 #include "../util/godot/macros.h"
 #include "../util/math/box3f.h"
 #include "../util/math/conv.h"
 #include "../util/math/sdf.h"
-#include "../util/math/transform_3d.h"
+#include "../util/math/vector3.h"
 #include "../util/profiling.h"
 
 ZN_GODOT_FORWARD_DECLARE(class Callable);
@@ -382,6 +383,10 @@ struct SdfBufferShape {
 		// TODO Trilinear looks bad when the shape is scaled up.
 		// Use Hermite in 3D https://www.researchgate.net/publication/360206102_Hermite_interpolation_of_heightmaps
 		return interpolate_trilinear(buffer, buffer_size, lpos) * sdf_scale - isolevel;
+	}
+
+	inline bool is_inside(Vector3f pos) const {
+		return (*this)(pos) < 0;
 	}
 
 	inline const char *name() const {

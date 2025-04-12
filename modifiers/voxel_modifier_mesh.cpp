@@ -3,6 +3,7 @@
 #include "../engine/voxel_engine.h"
 #include "../util/godot/core/packed_arrays.h"
 #include "../util/math/conv.h"
+#include "../util/math/vector3.h"
 #include "../util/profiling.h"
 
 namespace zylann::voxel {
@@ -21,10 +22,6 @@ void VoxelModifierMesh::set_isolevel(float isolevel) {
 		return;
 	}
 	_isolevel = isolevel;
-}
-
-inline float get_largest_coord(Vector3 v) {
-	return math::max(math::max(v.x, v.y), v.z);
 }
 
 void VoxelModifierMesh::apply(VoxelModifierContext ctx) const {
@@ -59,7 +56,7 @@ void VoxelModifierMesh::apply(VoxelModifierContext ctx) const {
 	shape.buffer = buffer_sdf;
 	shape.buffer_size = buffer.get_size();
 	shape.isolevel = _isolevel;
-	shape.sdf_scale = get_largest_coord(model_to_world.get_basis().get_scale());
+	shape.sdf_scale = math::get_largest_coord(model_to_world.get_basis().get_scale());
 	shape.world_to_buffer = buffer_to_world.affine_inverse();
 
 	switch (get_operation()) {
@@ -119,25 +116,22 @@ void VoxelModifierMesh::get_shader_data(ShaderData &out_shader_data) {
 		zylann::godot::copy_bytes_to(pba, mesh_params);
 
 		if (_shader_data->params.size() < 3) {
-			std::shared_ptr<ComputeShaderResource> params_res = make_shared_instance<ComputeShaderResource>();
-			params_res->create_storage_buffer(pba);
+			std::shared_ptr<ComputeShaderResource> params_res =
+					ComputeShaderResourceFactory::create_storage_buffer(pba);
 			_shader_data->params.push_back(ComputeShaderParameter{ 5, params_res });
 
 			std::shared_ptr<ComputeShaderResource> buffer_res = _mesh_sdf->get_gpu_resource();
 			_shader_data->params.push_back(ComputeShaderParameter{ 6, buffer_res });
 
 		} else if (_shader_data_need_update) {
-			_shader_data->params[1].resource->update_storage_buffer(pba);
+			ComputeShaderResource::update_storage_buffer(_shader_data->params[1].resource, pba);
 			_shader_data->params[2].resource = _mesh_sdf->get_gpu_resource();
 		}
 
 		_shader_data_need_update = false;
 	}
 
-	out_shader_data.shader_rids[ShaderData::TYPE_DETAIL] =
-			VoxelEngine::get_singleton().get_detail_modifier_sphere_shader().get_rid();
-	out_shader_data.shader_rids[ShaderData::TYPE_BLOCK] =
-			VoxelEngine::get_singleton().get_block_modifier_sphere_shader().get_rid();
+	out_shader_data.modifier_type = get_type();
 	out_shader_data.params = _shader_data;
 }
 

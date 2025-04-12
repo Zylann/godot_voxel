@@ -17,13 +17,13 @@ Type                                                                    | Name  
 ## Methods: 
 
 
-Return                                                                        | Signature                                                                                                                                                                                                                                                              
------------------------------------------------------------------------------ | -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-[void](#)                                                                     | [flush](#i_flush) ( )                                                                                                                                                                                                                                                  
-[Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html)  | [get_block_size](#i_get_block_size) ( ) const                                                                                                                                                                                                                          
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)          | [get_used_channels_mask](#i_get_used_channels_mask) ( ) const                                                                                                                                                                                                          
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)          | [load_voxel_block](#i_load_voxel_block) ( [VoxelBuffer](VoxelBuffer.md) out_buffer, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) origin_in_voxels, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) lod_index )  
-[void](#)                                                                     | [save_voxel_block](#i_save_voxel_block) ( [VoxelBuffer](VoxelBuffer.md) buffer, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) origin_in_voxels, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) lod_index )      
+Return                                                                        | Signature                                                                                                                                                                                                                                                            
+----------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+[void](#)                                                                     | [flush](#i_flush) ( )                                                                                                                                                                                                                                                
+[Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html)  | [get_block_size](#i_get_block_size) ( ) const                                                                                                                                                                                                                        
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)          | [get_used_channels_mask](#i_get_used_channels_mask) ( ) const                                                                                                                                                                                                        
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)          | [load_voxel_block](#i_load_voxel_block) ( [VoxelBuffer](VoxelBuffer.md) out_buffer, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) block_position, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) lod_index )  
+[void](#)                                                                     | [save_voxel_block](#i_save_voxel_block) ( [VoxelBuffer](VoxelBuffer.md) buffer, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) block_position, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) lod_index )      
 <p></p>
 
 ## Enumerations: 
@@ -39,7 +39,7 @@ enum **ResultCode**:
 
 ### [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_save_generator_output"></span> **save_generator_output** = false
 
-When this is enabled, if a block cannot be found in the stream and it gets generated, then the generated block will immediately be saved into the stream. This can be used if the generator is too expensive to run on the fly (like Minecraft does), but it will require more disk usage (amount of I/Os and space) and eventual network traffic. If this setting is off, only modified blocks will be saved.
+When this is enabled, if a block cannot be found in the stream and it gets generated, then the generated block will immediately be saved into the stream. This can be used if the generator is too expensive to run on the fly (like Minecraft does), but it will require more disk usage (amount of I/Os and space) and increase network traffic. If this setting is off, only modified blocks will be saved.
 
 ## Method Descriptions
 
@@ -59,12 +59,16 @@ Note that terrains save asynchronously, so flushing might not always fulfill you
 
 *(This method has no documentation)*
 
-### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_load_voxel_block"></span> **load_voxel_block**( [VoxelBuffer](VoxelBuffer.md) out_buffer, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) origin_in_voxels, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) lod_index ) 
+### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_load_voxel_block"></span> **load_voxel_block**( [VoxelBuffer](VoxelBuffer.md) out_buffer, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) block_position, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) lod_index ) 
 
-*(This method has no documentation)*
+`out_buffer`: Block of voxels to load. Must be a pre-created instance (not null).
 
-### [void](#)<span id="i_save_voxel_block"></span> **save_voxel_block**( [VoxelBuffer](VoxelBuffer.md) buffer, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) origin_in_voxels, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) lod_index ) 
+`block_position`: Position of the block in block coordinates within the specified LOD.
+
+### [void](#)<span id="i_save_voxel_block"></span> **save_voxel_block**( [VoxelBuffer](VoxelBuffer.md) buffer, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) block_position, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) lod_index ) 
 
 `buffer`: Block of voxels to save. It is strongly recommended to not keep a reference to that data afterward, because streams are allowed to cache it, and saved data must represent either snapshots (copies) or last references to the data after the volume they belonged to is destroyed.
 
-_Generated on Aug 27, 2024_
+`block_position`: Position of the block in block coordinates within the specified LOD.
+
+_Generated on Mar 23, 2025_

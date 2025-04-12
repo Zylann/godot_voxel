@@ -1,6 +1,6 @@
 #include "tests.h"
 #include "../util/profiling.h"
-#include "testing.h"
+#include "../util/testing/test_options.h"
 
 #include "util/test_box3i.h"
 #include "util/test_container_funcs.h"
@@ -20,6 +20,7 @@
 #include "voxel/test_edition_funcs.h"
 #include "voxel/test_mesh_sdf.h"
 #include "voxel/test_octree.h"
+#include "voxel/test_raycast.h"
 #include "voxel/test_region_file.h"
 #include "voxel/test_storage_funcs.h"
 #include "voxel/test_stream_sqlite.h"
@@ -36,13 +37,12 @@
 namespace zylann::voxel::tests {
 
 #define VOXEL_TEST(fname)                                                                                              \
-	{                                                                                                                  \
-		print_line("Running " #fname);                                                                                 \
+	if (options.can_run_print(#fname)) {                                                                               \
 		ZN_PROFILE_SCOPE_NAMED(#fname);                                                                                \
 		fname();                                                                                                       \
 	}
 
-void run_voxel_tests() {
+void run_voxel_tests(const testing::TestOptions &options) {
 	print_line("------------ Voxel tests begin -------------");
 
 	using namespace zylann::tests;
@@ -132,6 +132,11 @@ void run_voxel_tests() {
 	VOXEL_TEST(test_voxel_stream_sqlite_coordinate_format);
 	VOXEL_TEST(test_sdf_hemisphere);
 	VOXEL_TEST(test_fnl_range);
+	VOXEL_TEST(test_voxel_buffer_set_channel_bytes);
+	VOXEL_TEST(test_raycast_sdf);
+	VOXEL_TEST(test_raycast_blocky);
+	VOXEL_TEST(test_raycast_blocky_no_cache_graph);
+	VOXEL_TEST(test_voxel_graph_constant_reduction);
 
 	print_line("------------ Voxel tests end -------------");
 }

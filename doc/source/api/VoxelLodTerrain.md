@@ -13,6 +13,7 @@ Renders large terrain using variable level of details. This is preferably used w
 
 Type                                                                            | Name                                                                                               | Default                                                                               
 ------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------
+[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)          | [cache_generated_blocks](#i_cache_generated_blocks)                                                | false                                                                                 
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)            | [collision_layer](#i_collision_layer)                                                              | 1                                                                                     
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)            | [collision_lod_count](#i_collision_lod_count)                                                      | 0                                                                                     
 [float](https://docs.godotengine.org/en/stable/classes/class_float.html)        | [collision_margin](#i_collision_margin)                                                            | 0.04                                                                                  
@@ -116,13 +117,19 @@ enum **StreamingSystem**:
 
 ## Property Descriptions
 
+### [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_cache_generated_blocks"></span> **cache_generated_blocks** = false
+
+If enabled, streaming the terrain will keep generated voxel data in memory around viewers, even if it wasn't edited. This can speedup voxel queries on non-edited areas and allows [VoxelStream.save_generator_output](VoxelStream.md#i_save_generator_output) to work, but increases memory usage significantly.
+
+This option is not supported when [VoxelLodTerrain.full_load_mode_enabled](VoxelLodTerrain.md#i_full_load_mode_enabled) is enabled.
+
 ### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_collision_layer"></span> **collision_layer** = 1
 
 Collision layer used by generated colliders. Check Godot documentation for more information.
 
 ### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_collision_lod_count"></span> **collision_lod_count** = 0
 
-How many LOD levels are set to generate colliders, starting from LOD 0.
+How many LOD levels are set to generate colliders, starting from LOD 0. Setting this property to 0 means all LODs have collision.
 
 ### [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_collision_margin"></span> **collision_margin** = 0.04
 
@@ -215,6 +222,8 @@ When set greater than 0, enables LOD fading. When mesh blocks get split/merged a
 ### [Material](https://docs.godotengine.org/en/stable/classes/class_material.html)<span id="i_material"></span> **material**
 
 Material used for the surface of the volume. The main usage of this node is with smooth voxels, which means if you want more than one "material" on the ground, you need to use splatmapping techniques with a shader. In addition, many features require shaders to work properly. Check the online documentation or examples for more information.
+
+Note: if you use a [ShaderMaterial](https://docs.godotengine.org/en/stable/classes/class_shadermaterial.html), it will be instanced on every chunk in order to support per-chunk/LOD features, so dynamic changes done to parameters will not apply. You can use [global uniforms](https://docs.godotengine.org/en/stable/tutorials/shaders/shader_reference/shading_language.html#global-uniforms) to workaround this limitation.
 
 ### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_mesh_block_size"></span> **mesh_block_size** = 16
 
@@ -470,4 +479,4 @@ Converts a voxel position into a data block position for a specific LOD index.
 
 Converts a voxel position into a mesh block position for a specific LOD index.
 
-_Generated on Aug 27, 2024_
+_Generated on Mar 23, 2025_

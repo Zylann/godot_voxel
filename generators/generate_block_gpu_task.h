@@ -4,6 +4,7 @@
 #include "../engine/gpu/gpu_storage_buffer_pool.h"
 #include "../engine/gpu/gpu_task_runner.h"
 #include "../generators/voxel_generator.h"
+#include "../modifiers/voxel_modifier.h"
 #include "../util/containers/std_vector.h"
 #include "../util/godot/classes/rd_uniform.h"
 #include "../util/math/box3i.h"
@@ -71,11 +72,7 @@ public:
 	std::shared_ptr<ComputeShaderParameters> generator_shader_params;
 	std::shared_ptr<VoxelGenerator::ShaderOutputs> generator_shader_outputs;
 
-	struct ModifierData {
-		RID shader_rid;
-		std::shared_ptr<ComputeShaderParameters> params;
-	};
-	StdVector<ModifierData> modifiers;
+	StdVector<VoxelModifier::ShaderData> modifiers;
 
 private:
 	struct BoxData {
@@ -87,6 +84,7 @@ private:
 	StdVector<BoxData> _boxes_data;
 	RID _generator_pipeline_rid;
 	StdVector<RID> _modifier_pipelines;
+	StdVector<RID> _uniform_sets_to_free;
 };
 
 } // namespace zylann::voxel

@@ -1,7 +1,7 @@
 name: 🚪 Windows Builds
 on:
   push:
-    branches: [ master, github_actions, "1.2" ]
+    branches: [ master ]
   pull_request:
     branches: [ master ]
 
@@ -12,9 +12,9 @@ concurrency:
 # Global Cache Settings
 # SCONS_CACHE for windows must be set in the build environment
 env:
-  GODOT_BASE_BRANCH: "4.3-stable"
+  GODOT_BASE_BRANCH: "4.4.1-stable"
   SCONS_CACHE_MSVC_CONFIG: true
-  SCONS_CACHE_LIMIT: 4096
+  SCONS_CACHE_LIMIT_GB: 4
 
 jobs:
   windows:
@@ -25,13 +25,13 @@ jobs:
     strategy:
       matrix:
         include:
-          - name: 4.3 Editor
+          - name: 4.4.1 Editor
             target: editor
             precision: single
             executable_name: godot.windows.editor.x86_64.exe
             tracy: no
           
-          - name: 4.3 Profiling Editor
+          - name: 4.4.1 Profiling Editor
             target: editor
             precision: single
             # This is not a built-in feature of Godot so we have to do some changes manually
@@ -39,13 +39,13 @@ jobs:
             original_executable_name: godot.windows.editor.x86_64.exe
             tracy: yes
 
-          - name: 4.3 Editor Float64
+          - name: 4.4.1 Editor Float64
             target: editor
             precision: double
             executable_name: godot.windows.editor.double.x86_64.exe
             tracy: no
 
-          - name: 4.3 Template
+          - name: 4.4.1 Template
             target: template_release
             precision: single
             executable_name: godot.windows.template_release.x86_64.exe
@@ -65,19 +65,19 @@ jobs:
 
       # The version of ThorVG in 4.3-stable hits an error in latest MSVC (see godot#95861).
       # We should no longer need this in 4.3.1 and later.
-      - name: Patch ThorVG
-        run: |
-          curl -LO https://github.com/godotengine/godot/commit/4abc358952a69427617b0683fd76427a14d6faa8.patch
-          git apply 4abc358952a69427617b0683fd76427a14d6faa8.patch
+      # - name: Patch ThorVG
+      #   run: |
+      #     curl -LO https://github.com/godotengine/godot/commit/4abc358952a69427617b0683fd76427a14d6faa8.patch
+      #     git apply 4abc358952a69427617b0683fd76427a14d6faa8.patch
 
       # Upload cache on completion and check it out now
       # Editing this is pretty dangerous for Windows since it can break and needs to be properly tested with a fresh cache.
       - name: Load .scons_cache directory
-        id: windows-cache
+        id: windows-cache-2
         #uses: ${{matrix.cache_action}}
         uses: actions/cache@v4
         with:
-          path: /.scons_cache/
+          path: ${{github.workspace}}/.scons_cache/
           key: ${{matrix.executable_name}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
           restore-keys: |
             ${{matrix.executable_name}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
@@ -115,14 +115,31 @@ jobs:
         run:
           python modules/voxel/misc/instrument.py -d . -c modules/voxel/misc/instruments.json
 
-      # We should always be explicit with our flags usage here since it's gonna be sure to always set those flags
+      # Add ANGLE support.
+      # This is not provided by default.
+      # See https://docs.godotengine.org/en/stable/contributing/development/compiling/compiling_for_windows.html#compiling-with-angle-support
+      - name: Add ANGLE
+        run: |
+          curl -LO "https://github.com/godotengine/godot-angle-static/releases/download/chromium%2F6601.2/godot-angle-static-x86_64-msvc-release.zip"
+          7z x godot-angle-static-x86_64-msvc-release.zip -oangle
+          dir
+          cd angle
+          dir
+
+      # Compile with explicit flags.
+      #
+      # TODO `PYTHONIOENCODING` is not working!
+      # It would be needed due to certain characters the Godot build system might print (such as '∞',
+      # when `cache_limit` is not specified), otherwise it makes the job fail with an encoding error.
+      # Currently we specify it, but the issue remain unsolved if it shows up again.
+      # See https://github.com/godotengine/godot/issues/103520
+      #
       # TODO Enhancement: we'd like to use `warnings=extra` with MSVC but Godot doesn't compile yet with that level of warnings.
       # See https://github.com/godotengine/godot/issues/66537
       - name: Compilation
-        env:
-          SCONS_CACHE: /.scons_cache/
         run: |
-          scons verbose=yes warnings=all werror=yes platform=windows tests=no target=${{matrix.target}} dev_build=no precision=${{matrix.precision}} tracy=${{matrix.tracy}} production=yes
+          set PYTHONIOENCODING=utf-8
+          scons verbose=yes warnings=all werror=yes strict_checks=yes strict_checks=yes platform=windows tests=no target=${{matrix.target}} dev_build=no precision=${{matrix.precision}} tracy=${{matrix.tracy}} production=yes "cache_path=${{github.workspace}}/.scons_cache/" cache_limit=${{env.SCONS_CACHE_LIMIT_GB}} "angle_libs=${{github.workspace}}/angle"
 
       - name: "Rename executable"
         if: ${{ matrix.tracy == 'yes' }}

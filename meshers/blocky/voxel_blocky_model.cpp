@@ -6,7 +6,10 @@
 #include "../../util/godot/core/array.h"
 #include "../../util/godot/core/string.h"
 #include "../../util/math/conv.h"
+#include "../../util/math/vector3.h"
 #include "../../util/string/format.h"
+#include "blocky_material_indexer.h"
+#include "blocky_model_baking_context.h"
 #include "voxel_blocky_library.h"
 
 // TODO Only required because of MAX_MATERIALS... could be enough inverting that dependency
@@ -15,27 +18,6 @@
 #include "voxel_blocky_model_cube.h"
 
 namespace zylann::voxel {
-
-unsigned int VoxelBlockyModel::MaterialIndexer::get_or_create_index(const Ref<Material> &p_material) {
-	for (size_t i = 0; i < materials.size(); ++i) {
-		const Ref<Material> &material = materials[i];
-		if (material == p_material) {
-			return i;
-		}
-	}
-#ifdef TOOLS_ENABLED
-	if (materials.size() == VoxelBlockyLibraryBase::MAX_MATERIALS) {
-		ZN_PRINT_ERROR(
-				format("Maximum material count reached ({}), try reduce your number of materials by re-using "
-					   "them or using atlases.",
-					   VoxelBlockyLibraryBase::MAX_MATERIALS)
-		);
-	}
-#endif
-	const unsigned int ret = materials.size();
-	materials.push_back(p_material);
-	return ret;
-}
 
 VoxelBlockyModel::VoxelBlockyModel() : _color(1.f, 1.f, 1.f) {}
 
@@ -137,9 +119,7 @@ void VoxelBlockyModel::_get_property_list(List<PropertyInfo> *p_list) const {
 					Variant::OBJECT,
 					String("material_override_{0}").format(varray(i)),
 					PROPERTY_HINT_RESOURCE_TYPE,
-					String("{0},{1}").format(
-							varray(BaseMaterial3D::get_class_static(), ShaderMaterial::get_class_static())
-					)
+					zylann::godot::MATERIAL_3D_PROPERTY_HINT_STRING
 			));
 		}
 
@@ -238,9 +218,12 @@ void VoxelBlockyModel::set_collision_mask(uint32_t mask) {
 	_collision_mask = mask;
 }
 
-void VoxelBlockyModel::bake(BakedData &baked_data, bool bake_tangents, MaterialIndexer &materials) const {
+void VoxelBlockyModel::bake(blocky::ModelBakingContext &ctx) const {
 	// TODO That's a bit iffy, design something better?
 	// The following logic must run after derived classes, should not be called directly
+
+	blocky::BakedModel &baked_data = ctx.model;
+	blocky::MaterialIndexer &materials = ctx.material_indexer;
 
 	// baked_data.contributes_to_ao is set by the side culling phase
 	baked_data.transparency_index = _transparency_index;
@@ -251,31 +234,25 @@ void VoxelBlockyModel::bake(BakedData &baked_data, bool bake_tangents, MaterialI
 	baked_data.box_collision_aabbs = _collision_aabbs;
 	baked_data.lod_skirts = _lod_skirts;
 
-	BakedData::Model &model = baked_data.model;
+	blocky::BakedModel::Model &model = baked_data.model;
 
 	// Note: mesh rotation is not implemented here, it is done in derived classes.
 
 	// Set empty sides mask
 	model.empty_sides_mask = 0;
 	for (unsigned int side = 0; side < Cube::SIDE_COUNT; ++side) {
-		bool empty = true;
-		for (unsigned int surface_index = 0; surface_index < model.surface_count; ++surface_index) {
-			const BakedData::Surface &surface = model.surfaces[surface_index];
-			if (surface.sides[side].indices.size() > 0) {
-				empty = false;
-				break;
-			}
+		if (!zylann::voxel::is_empty(model.sides_surfaces[side])) {
+			continue;
 		}
-		if (empty) {
-			model.empty_sides_mask |= (1 << side);
-		}
+		model.empty_sides_mask |= (1 << side);
 	}
 
 	// Assign material overrides if any
 	for (unsigned int surface_index = 0; surface_index < model.surface_count; ++surface_index) {
 		if (surface_index < _surface_count) {
 			const SurfaceParams &surface_params = _surface_params[surface_index];
-			BakedData::Surface &surface = model.surfaces[surface_index];
+
+			blocky::BakedModel::Surface &surface = model.surfaces[surface_index];
 
 			if (surface_params.material_override.is_valid()) {
 				const unsigned int material_index = materials.get_or_create_index(surface_params.material_override);
@@ -342,6 +319,14 @@ bool VoxelBlockyModel::is_random_tickable() const {
 	return _random_tickable;
 }
 
+#ifdef TOOLS_ENABLED
+
+void VoxelBlockyModel::get_configuration_warnings(PackedStringArray &out_warnings) const {
+	// May have implementations in subclasses
+}
+
+#endif
+
 bool VoxelBlockyModel::is_empty() const {
 	ZN_PRINT_ERROR("Not implemented");
 	// Implemented in child classes
@@ -365,21 +350,42 @@ Ref<Mesh> VoxelBlockyModel::get_preview_mesh() const {
 	return Ref<Mesh>();
 }
 
-Ref<Mesh> VoxelBlockyModel::make_mesh_from_baked_data(const BakedData &baked_data, bool tangents_enabled) {
-	const VoxelBlockyModel::BakedData::Model &model = baked_data.model;
+Ref<Mesh> VoxelBlockyModel::make_mesh_from_baked_data(
+		const blocky::BakedModel &baked_data,
+		const bool tangents_enabled
+) {
+	return make_mesh_from_baked_data(
+			to_span(baked_data.model.surfaces),
+			to_span(baked_data.model.sides_surfaces),
+			baked_data.color,
+			tangents_enabled
+	);
+}
 
+Ref<Mesh> VoxelBlockyModel::make_mesh_from_baked_data(
+		Span<const blocky::BakedModel::Surface> inner_surfaces,
+		Span<const FixedArray<blocky::BakedModel::SideSurface, blocky::MAX_SURFACES>> sides_surfaces,
+		const Color model_color,
+		const bool tangents_enabled
+) {
 	Ref<ArrayMesh> mesh;
 	mesh.instantiate();
 
-	for (unsigned int surface_index = 0; surface_index < model.surface_count; ++surface_index) {
-		const BakedData::Surface &surface = model.surfaces[surface_index];
+	for (unsigned int surface_index = 0; surface_index < inner_surfaces.size(); ++surface_index) {
+		const blocky::BakedModel::Surface &surface = inner_surfaces[surface_index];
 
 		// Get vertex and index count in the surface
 		unsigned int vertex_count = surface.positions.size();
 		unsigned int index_count = surface.indices.size();
-		for (const BakedData::SideSurface &side_surface : surface.sides) {
+		for (const FixedArray<blocky::BakedModel::SideSurface, blocky::MAX_SURFACES> &side_surfaces : sides_surfaces) {
+			const blocky::BakedModel::SideSurface &side_surface = side_surfaces[surface_index];
 			vertex_count += side_surface.positions.size();
 			index_count += side_surface.indices.size();
+		}
+
+		// Godot doesn't like being given empty arrays when adding a surface to a mesh
+		if (index_count == 0) {
+			continue;
 		}
 
 		// Allocate surface arrays
@@ -420,7 +426,7 @@ Ref<Mesh> VoxelBlockyModel::make_mesh_from_baked_data(const BakedData &baked_dat
 		for (unsigned int i = 0; i < surface.positions.size(); ++i) {
 			vertices_w[vi] = to_vec3(surface.positions[i]);
 			normals_w[vi] = to_vec3(surface.normals[i]);
-			colors_w[vi] = baked_data.color;
+			colors_w[vi] = model_color;
 			uvs_w[vi] = to_vec2(surface.uvs[i]);
 			++vi;
 		}
@@ -435,8 +441,8 @@ Ref<Mesh> VoxelBlockyModel::make_mesh_from_baked_data(const BakedData &baked_dat
 			++ii;
 		}
 
-		for (unsigned int side = 0; side < surface.sides.size(); ++side) {
-			const BakedData::SideSurface &side_surface = surface.sides[side];
+		for (unsigned int side = 0; side < sides_surfaces.size(); ++side) {
+			const blocky::BakedModel::SideSurface &side_surface = sides_surfaces[side][surface_index];
 			Span<const Vector3f> side_positions = to_span(side_surface.positions);
 			Span<const Vector2f> side_uvs = to_span(side_surface.uvs);
 			Span<const int> side_indices = to_span(side_surface.indices);
@@ -448,7 +454,7 @@ Ref<Mesh> VoxelBlockyModel::make_mesh_from_baked_data(const BakedData &baked_dat
 			for (unsigned int i = 0; i < side_positions.size(); ++i) {
 				vertices_w[vi] = to_vec3(side_positions[i]);
 				normals_w[vi] = side_normal;
-				colors_w[vi] = baked_data.color;
+				colors_w[vi] = model_color;
 				uvs_w[vi] = to_vec2(side_uvs[i]);
 				++vi;
 			}

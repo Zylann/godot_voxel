@@ -1,6 +1,7 @@
 #ifndef VOXEL_BUFFER_GD_H
 #define VOXEL_BUFFER_GD_H
 
+#include "../util/godot/classes/image.h"
 #include "../util/godot/classes/ref_counted.h"
 #include "../util/godot/core/array.h"
 #include "../util/godot/core/typed_array.h"
@@ -10,7 +11,9 @@
 #include <cstdint>
 #include <memory>
 
-ZN_GODOT_FORWARD_DECLARE(class Image)
+// Can't forward-declare because we use Image::Format
+// ZN_GODOT_FORWARD_DECLARE(class Image)
+ZN_GODOT_FORWARD_DECLARE(class ImageTexture3D)
 
 namespace zylann::voxel {
 
@@ -35,6 +38,18 @@ public:
 		CHANNEL_DATA6 = zylann::voxel::VoxelBuffer::CHANNEL_DATA6,
 		CHANNEL_DATA7 = zylann::voxel::VoxelBuffer::CHANNEL_DATA7,
 		MAX_CHANNELS = zylann::voxel::VoxelBuffer::MAX_CHANNELS,
+	};
+
+	enum ChannelMask {
+		CHANNEL_TYPE_BIT = 1 << CHANNEL_TYPE,
+		CHANNEL_SDF_BIT = 1 << CHANNEL_SDF,
+		CHANNEL_COLOR_BIT = 1 << CHANNEL_COLOR,
+		CHANNEL_INDICES_BIT = 1 << CHANNEL_INDICES,
+		CHANNEL_WEIGHTS_BIT = 1 << CHANNEL_WEIGHTS,
+		CHANNEL_DATA5_BIT = 1 << CHANNEL_DATA5,
+		CHANNEL_DATA6_BIT = 1 << CHANNEL_DATA6,
+		CHANNEL_DATA7_BIT = 1 << CHANNEL_DATA7,
+		ALL_CHANNELS_MASK = (1 << MAX_CHANNELS) - 1,
 	};
 
 	// TODO use C++17 inline to initialize right here...
@@ -160,6 +175,12 @@ public:
 
 	Allocator get_allocator() const;
 
+	PackedByteArray get_channel_as_byte_array(const ChannelId channel) const;
+	void set_channel_from_byte_array(const ChannelId channel, const PackedByteArray &pba);
+
+	Ref<ImageTexture3D> create_3d_texture_from_sdf_zxy(const Image::Format output_format) const;
+	void update_3d_texture_from_sdf_zxy(Ref<ImageTexture3D> texture) const;
+
 	// Operations
 
 	void op_add_buffer_f(Ref<VoxelBuffer> other, VoxelBuffer::ChannelId channel);
@@ -220,10 +241,14 @@ private:
 	std::shared_ptr<zylann::voxel::VoxelBuffer> _buffer;
 };
 
+Variant get_voxel_metadata(zylann::voxel::VoxelBuffer &vb, const Vector3i pos);
+void set_voxel_metadata(zylann::voxel::VoxelBuffer &vb, const Vector3i pos, const Variant meta);
+
 } // namespace godot
 } // namespace zylann::voxel
 
 VARIANT_ENUM_CAST(zylann::voxel::godot::VoxelBuffer::ChannelId)
+VARIANT_ENUM_CAST(zylann::voxel::godot::VoxelBuffer::ChannelMask)
 VARIANT_ENUM_CAST(zylann::voxel::godot::VoxelBuffer::Depth)
 VARIANT_ENUM_CAST(zylann::voxel::godot::VoxelBuffer::Compression)
 VARIANT_ENUM_CAST(zylann::voxel::godot::VoxelBuffer::Allocator)

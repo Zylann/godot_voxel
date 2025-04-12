@@ -88,8 +88,10 @@ void VoxelNode::get_configuration_warnings(PackedStringArray &warnings) const {
 	Ref<VoxelGenerator> generator = get_generator();
 
 	if (mesher.is_null()) {
-		warnings.append(ZN_TTR("This node has no mesher assigned, it won't produce any mesh visuals. "
-							   "You can assign one on the `mesher` property."));
+		warnings.append(
+				ZN_TTR("This node has no mesher assigned, it won't produce any mesh visuals. "
+					   "You can assign one on the `mesher` property.")
+		);
 	}
 
 	if (stream.is_valid()) {
@@ -99,8 +101,10 @@ void VoxelNode::get_configuration_warnings(PackedStringArray &warnings) const {
 			if (stream_script->is_tool()) {
 				// TODO This is very annoying. Probably needs an issue or proposal in Godot so we can handle this
 				// properly?
-				warnings.append(ZN_TTR("Careful, don't edit your custom stream while it's running, "
-									   "it can cause crashes. Turn off `run_stream_in_editor` before doing so."));
+				warnings.append(
+						ZN_TTR("Careful, don't edit your custom stream while it's running, "
+							   "it can cause crashes. Turn off `run_stream_in_editor` before doing so.")
+				);
 			} else {
 				warnings.append(ZN_TTR("The custom stream is not tool, the editor won't be able to use it."));
 			}
@@ -127,8 +131,10 @@ void VoxelNode::get_configuration_warnings(PackedStringArray &warnings) const {
 			if (generator_script->is_tool()) {
 				// TODO This is very annoying. Probably needs an issue or proposal in Godot so we can handle this
 				// properly?
-				warnings.append(ZN_TTR("Careful, don't edit your custom generator while it's running, "
-									   "it can cause crashes. Turn off `run_stream_in_editor` before doing so."));
+				warnings.append(
+						ZN_TTR("Careful, don't edit your custom generator while it's running, "
+							   "it can cause crashes. Turn off `run_stream_in_editor` before doing so.")
+				);
 			} else {
 				can_check_generator_channels = false;
 				// return ZN_TTR("The custom generator is not tool, the editor won't be able to use it.");

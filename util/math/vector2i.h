@@ -1,16 +1,11 @@
 #ifndef ZN_MATH_VECTOR2I_H
 #define ZN_MATH_VECTOR2I_H
 
-#if defined(ZN_GODOT)
-#include <core/math/vector2i.h>
-#elif defined(ZN_GODOT_EXTENSION)
-#include <godot_cpp/variant/vector2i.hpp>
-using namespace godot;
-#endif
-
 #include "../errors.h"
+#include "../godot/core/vector2i.h"
 #include "../godot/macros.h"
 #include "../hash_funcs.h"
+#include "../macros.h"
 #include "../string/std_stringstream.h"
 #include "funcs.h"
 #include <functional> // For std::hash

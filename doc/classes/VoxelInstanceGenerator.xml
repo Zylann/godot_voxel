@@ -9,12 +9,28 @@
 	</description>
 	<tutorials>
 	</tutorials>
+	<methods>
+		<method name="get_voxel_texture_filter_mask" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="set_voxel_texture_filter_mask">
+			<return type="void" />
+			<param index="0" name="mask" type="int" />
+			<description>
+			</description>
+		</method>
+	</methods>
 	<members>
 		<member name="density" type="float" setter="set_density" getter="get_density" default="0.1">
 			Controls how many instances are generated. Might give different results depending on the type of emission chosen.
 		</member>
 		<member name="emit_mode" type="int" setter="set_emit_mode" getter="get_emit_mode" enum="VoxelInstanceGenerator.EmitMode" default="0">
 			In which way instances are primarily emitted.
+		</member>
+		<member name="jitter" type="float" setter="set_jitter" getter="get_jitter" default="1.0">
+			Controls randomness of spawning position when [member emit_mode] is set to [constant EMIT_ONE_PER_TRIANGLE].
 		</member>
 		<member name="max_height" type="float" setter="set_max_height" getter="get_max_height" default="3.40282e+38">
 			Instances will not be created above this height.
@@ -63,11 +79,23 @@
 		<member name="scale_distribution" type="int" setter="set_scale_distribution" getter="get_scale_distribution" enum="VoxelInstanceGenerator.Distribution" default="1">
 			Sets how random scales are distributed.
 		</member>
+		<member name="triangle_area_threshold" type="float" setter="set_triangle_area_threshold" getter="get_triangle_area_threshold" default="0.0">
+			If set greater than zero, triangles of the ground with an area lower than this threshold will be ignored.
+			Some meshing algorithms can often produce thin or small triangles that can affect distribution quality of spawned instances. If this happens, use this property to filter them out.
+			Note: this property is relative to LOD0. The generator will scale it when spawning instances on meshes of different LOD index.
+		</member>
 		<member name="vertical_alignment" type="float" setter="set_vertical_alignment" getter="get_vertical_alignment" default="1.0">
 			Sets how much instances will align with the ground.
 			If 0, they will completely align with the ground.
 			If 1, they will completely align with whichever direction is considered "up".
 			This depends on [member VoxelInstancer.up_mode].
+		</member>
+		<member name="voxel_texture_filter_array" type="PackedInt32Array" setter="set_voxel_texture_filter_array" getter="get_voxel_texture_filter_array" default="PackedInt32Array(0)">
+			Specifies which voxel texture indices on top of which instances may spawn.
+			This only works when [member voxel_texture_filter_enabled] is enabled, and [VoxelMesherTransvoxel] is used with [member VoxelMesherTransvoxel.texturing_mode] set to [constant VoxelMesherTransvoxel.TEXTURES_BLEND_4_OVER_16].
+		</member>
+		<member name="voxel_texture_filter_enabled" type="bool" setter="set_voxel_texture_filter_enabled" getter="is_voxel_texture_filter_enabled" default="false">
+			When true, enables filtering of instances based on voxel texture indices. See [member voxel_texture_filter_array].
 		</member>
 	</members>
 	<constants>
@@ -80,7 +108,10 @@
 		<constant name="EMIT_FROM_FACES" value="2" enum="EmitMode">
 			Uses faces of the mesh to spawn instances. This is the slowest option, but should produce no noticeable patterns.
 		</constant>
-		<constant name="EMIT_MODE_COUNT" value="3" enum="EmitMode">
+		<constant name="EMIT_ONE_PER_TRIANGLE" value="3" enum="EmitMode">
+			Uses faces of the mesh to spawn instances (where faces are triangles). Only one instance is spawned per triangle. By default, it spawns in the middle of triangles. Randomness can be added to this position with [member jitter].
+		</constant>
+		<constant name="EMIT_MODE_COUNT" value="4" enum="EmitMode">
 		</constant>
 		<constant name="DISTRIBUTION_LINEAR" value="0" enum="Distribution">
 			Uniform distribution.

@@ -135,8 +135,12 @@ public:
 	);
 
 	// Checks if the specified connection can be created
-	bool can_connect(uint32_t src_node_id, uint32_t src_port_index, uint32_t dst_node_id, uint32_t dst_port_index)
-			const;
+	bool can_connect(
+			uint32_t src_node_id,
+			uint32_t src_port_index,
+			uint32_t dst_node_id,
+			uint32_t dst_port_index
+	) const;
 
 	// Checks if the specified connection is valid (without considering existing connections)
 	bool is_valid_connection(
@@ -167,6 +171,8 @@ public:
 
 	Variant get_node_param(uint32_t node_id, int param_index) const;
 	void set_node_param(uint32_t node_id, int param_index, Variant value);
+	void set_node_param_by_name(const uint32_t node_id, const String &param_name, const Variant &value);
+	void set_node_param_unchecked(ProgramGraph::Node &node, const int param_index, const Variant &value);
 
 	static bool get_expression_variables(std::string_view code, StdVector<std::string_view> &vars);
 	void get_expression_node_inputs(uint32_t node_id, StdVector<StdString> &out_names) const;
@@ -174,6 +180,7 @@ public:
 
 	Variant get_node_default_input(uint32_t node_id, int input_index) const;
 	void set_node_default_input(uint32_t node_id, int input_index, Variant value);
+	void set_node_default_input_by_name(const uint32_t node_id, const String &input_name, const Variant &value);
 
 	bool get_node_default_inputs_autoconnect(uint32_t node_id) const;
 	void set_node_default_inputs_autoconnect(uint32_t node_id, bool enabled);
@@ -199,6 +206,7 @@ public:
 
 	// Gets a hash that attempts to only change if the output of the graph is different.
 	// This is computed from the editable graph data, not the compiled result.
+	// Note: this is not guaranteed to work when comparing two graphs. This was designed initially to detect changes.
 	uint64_t get_output_graph_hash() const;
 
 	bool can_load_default_graph() const {
@@ -227,8 +235,12 @@ public:
 	static bool try_get_node_type_id_from_auto_connect(AutoConnect ac, NodeTypeID &out_node_type);
 	static bool try_get_auto_connect_from_node_type_id(NodeTypeID node_type, AutoConnect &out_ac);
 
-	void get_node_input_info(uint32_t node_id, unsigned int input_index, String *out_name, AutoConnect *out_autoconnect)
-			const;
+	void get_node_input_info(
+			uint32_t node_id,
+			unsigned int input_index,
+			String *out_name,
+			AutoConnect *out_autoconnect
+	) const;
 	String get_node_output_name(uint32_t node_id, unsigned int output_index) const;
 	Span<const Port> get_input_definitions() const;
 	Span<const Port> get_output_definitions() const;
@@ -280,6 +292,12 @@ public:
 	};
 
 	static RuntimeCache &get_runtime_cache_tls();
+
+	CompilationResult expand_and_reduce();
+
+	// Tests if two graphs are the same, considering their output branches. Object parameters are first compared by
+	// reference, and then compared by their properties. Nodes that the outputs don't depend on will be ignored.
+	bool equals(const VoxelGraphFunction &other);
 
 private:
 	void register_subresource(Resource &resource);

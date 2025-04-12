@@ -86,7 +86,7 @@ void fill_surface_arrays(Array &arrays, const transvoxel::MeshArrays &src) {
 	PackedFloat32Array texturing_data; // 2*4*uint8 as 2*float32
 	PackedInt32Array indices;
 
-	copy_to(vertices, src.vertices);
+	copy_to(vertices, to_span_const(src.vertices));
 
 	// raw_copy_to(lod_data, src.lod_data);
 	lod_data.resize(src.lod_data.size() * 4);
@@ -94,12 +94,12 @@ void fill_surface_arrays(Array &arrays, const transvoxel::MeshArrays &src) {
 	static_assert(sizeof(transvoxel::LodAttrib) == 16);
 	memcpy(lod_data.ptrw(), src.lod_data.data(), lod_data.size() * sizeof(float));
 
-	copy_to(indices, src.indices);
+	copy_to(indices, to_span_const(src.indices));
 
 	arrays.resize(Mesh::ARRAY_MAX);
 	arrays[Mesh::ARRAY_VERTEX] = vertices;
 	if (src.normals.size() != 0) {
-		copy_to(normals, src.normals);
+		copy_to(normals, to_span_const(src.normals));
 		arrays[Mesh::ARRAY_NORMAL] = normals;
 	}
 	if (src.texturing_data.size() != 0) {

@@ -23,13 +23,13 @@ struct Vector3T {
 		T coords[3];
 	};
 
-	Vector3T() : x(0), y(0), z(0) {}
+	inline Vector3T() : x(0), y(0), z(0) {}
 
 	// It is recommended to use `explicit` because otherwise it would open the door to plenty of implicit conversions
 	// which would make many cases ambiguous.
-	explicit Vector3T(T p_v) : x(p_v), y(p_v), z(p_v) {}
+	inline explicit Vector3T(T p_v) : x(p_v), y(p_v), z(p_v) {}
 
-	Vector3T(T p_x, T p_y, T p_z) : x(p_x), y(p_y), z(p_z) {}
+	inline Vector3T(T p_x, T p_y, T p_z) : x(p_x), y(p_y), z(p_z) {}
 
 	inline const T &operator[](const unsigned int p_axis) const {
 #ifdef DEBUG_ENABLED

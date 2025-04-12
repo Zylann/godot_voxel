@@ -7,6 +7,9 @@
 #include "../gpu/compute_shader_parameters.h"
 #include "../voxel_engine.h"
 #include "render_detail_texture_task.h"
+// #ifdef DEBUG_ENABLED
+// #include "../../util/string/format.h"
+// #endif
 
 #include "../../util/godot/classes/rd_sampler_state.h"
 #include "../../util/godot/classes/rd_shader_spirv.h"
@@ -28,7 +31,7 @@ void RenderDetailTextureGPUTask::prepare(GPUTaskContext &ctx) {
 	ERR_FAIL_COND(cell_triangles.size() == 0);
 
 	ERR_FAIL_COND(shader == nullptr);
-	ERR_FAIL_COND(!shader->is_valid());
+	ERR_FAIL_COND(!shader->get_rid().is_valid());
 
 	RenderingDevice &rd = ctx.rendering_device;
 	GPUStorageBufferPool &storage_buffer_pool = ctx.storage_buffer_pool;
@@ -257,7 +260,7 @@ void RenderDetailTextureGPUTask::prepare(GPUTaskContext &ctx) {
 	// Pipelines
 	// Not sure what a pipeline is required for in compute shaders, it seems to be required "just because"
 
-	const RID gather_hits_shader_rid = VoxelEngine::get_singleton().get_detail_gather_hits_compute_shader().get_rid();
+	const RID gather_hits_shader_rid = ctx.base_resources.detail_gather_hits_shader.rid;
 	ERR_FAIL_COND(!gather_hits_shader_rid.is_valid());
 	// TODO Perhaps we could cache this pipeline?
 	_gather_hits_pipeline_rid = rd.compute_pipeline_create(gather_hits_shader_rid);
@@ -267,27 +270,29 @@ void RenderDetailTextureGPUTask::prepare(GPUTaskContext &ctx) {
 	_detail_generator_pipeline_rid = rd.compute_pipeline_create(shader_rid);
 	ERR_FAIL_COND(!_detail_generator_pipeline_rid.is_valid());
 
-	for (const ModifierData &modifier : modifiers) {
-		ERR_FAIL_COND(!modifier.shader_rid.is_valid());
-		const RID rid = rd.compute_pipeline_create(modifier.shader_rid);
+	for (const VoxelModifier::ShaderData &modifier : modifiers) {
+		const RID modifier_shader_rid = VoxelModifier::get_detail_shader(ctx.base_resources, modifier.modifier_type);
+		ERR_FAIL_COND(!modifier_shader_rid.is_valid());
+		const RID rid = rd.compute_pipeline_create(modifier_shader_rid);
 		ERR_FAIL_COND(!rid.is_valid());
 		_detail_modifier_pipelines.push_back(rid);
 	}
 
-	const RID detail_normalmap_shader_rid =
-			VoxelEngine::get_singleton().get_detail_normalmap_compute_shader().get_rid();
+	const RID detail_normalmap_shader_rid = ctx.base_resources.detail_normalmap_shader.rid;
 	ERR_FAIL_COND(!detail_normalmap_shader_rid.is_valid());
 	// TODO Perhaps we could cache this pipeline?
 	_detail_normalmap_pipeline_rid = rd.compute_pipeline_create(detail_normalmap_shader_rid);
 	ERR_FAIL_COND(!_detail_normalmap_pipeline_rid.is_valid());
 
-	const RID dilation_shader_rid = VoxelEngine::get_singleton().get_dilate_normalmap_compute_shader().get_rid();
+	const RID dilation_shader_rid = ctx.base_resources.dilate_normalmap_shader.rid;
 	ERR_FAIL_COND(!dilation_shader_rid.is_valid());
 	// TODO Perhaps we could cache this pipeline?
 	_normalmap_dilation_pipeline_rid = rd.compute_pipeline_create(dilation_shader_rid);
 	ERR_FAIL_COND(!_normalmap_dilation_pipeline_rid.is_valid());
 
 	// Make compute list
+
+	_uniform_sets_to_free.reserve(5 + modifiers.size());
 
 	const int compute_list_id = rd.compute_list_begin();
 
@@ -310,6 +315,7 @@ void RenderDetailTextureGPUTask::prepare(GPUTaskContext &ctx) {
 		gather_hits_uniforms[5] = hit_positions_uniform;
 
 		const RID gather_hits_uniform_set_rid = uniform_set_create(rd, gather_hits_uniforms, gather_hits_shader_rid, 0);
+		_uniform_sets_to_free.push_back(gather_hits_uniform_set_rid);
 
 		rd.compute_list_bind_compute_pipeline(compute_list_id, _gather_hits_pipeline_rid);
 		rd.compute_list_bind_uniform_set(compute_list_id, gather_hits_uniform_set_rid, 0);
@@ -344,10 +350,13 @@ void RenderDetailTextureGPUTask::prepare(GPUTaskContext &ctx) {
 
 		// Extra params
 		if (shader_params != nullptr && shader_params->params.size() > 0) {
-			add_uniform_params(shader_params->params, detail_generator_uniforms);
+			add_uniform_params(
+					shader_params->params, detail_generator_uniforms, ctx.base_resources.filtering_sampler_rid
+			);
 		}
 
 		const RID detail_generator_uniform_set = uniform_set_create(rd, detail_generator_uniforms, shader_rid, 0);
+		_uniform_sets_to_free.push_back(detail_generator_uniform_set);
 
 		rd.compute_list_bind_compute_pipeline(compute_list_id, _detail_generator_pipeline_rid);
 		rd.compute_list_bind_uniform_set(compute_list_id, detail_generator_uniform_set, 0);
@@ -368,8 +377,10 @@ void RenderDetailTextureGPUTask::prepare(GPUTaskContext &ctx) {
 	// Apply modifiers
 
 	for (unsigned int modifier_index = 0; modifier_index < modifiers.size(); ++modifier_index) {
-		const ModifierData &modifier_data = modifiers[modifier_index];
-		ZN_ASSERT_CONTINUE(modifier_data.shader_rid.is_valid());
+		const VoxelModifier::ShaderData &modifier_data = modifiers[modifier_index];
+		const RID modifier_shader_rid =
+				VoxelModifier::get_detail_shader(ctx.base_resources, modifier_data.modifier_type);
+		ZN_ASSERT_CONTINUE(modifier_shader_rid.is_valid());
 
 		hit_positions_uniform->set_binding(0);
 		generator_params_uniform->set_binding(1);
@@ -391,11 +402,14 @@ void RenderDetailTextureGPUTask::prepare(GPUTaskContext &ctx) {
 
 		// Extra params
 		if (modifier_data.params != nullptr) {
-			add_uniform_params(modifier_data.params->params, detail_modifier_uniforms);
+			add_uniform_params(
+					modifier_data.params->params, detail_modifier_uniforms, ctx.base_resources.filtering_sampler_rid
+			);
 		}
 
 		const RID detail_modifier_uniform_set =
-				uniform_set_create(rd, detail_modifier_uniforms, modifier_data.shader_rid, 0);
+				uniform_set_create(rd, detail_modifier_uniforms, modifier_shader_rid, 0);
+		_uniform_sets_to_free.push_back(detail_modifier_uniform_set);
 
 		const RID pipeline_rid = _detail_modifier_pipelines[modifier_index];
 		rd.compute_list_bind_compute_pipeline(compute_list_id, pipeline_rid);
@@ -434,6 +448,10 @@ void RenderDetailTextureGPUTask::prepare(GPUTaskContext &ctx) {
 
 		const RID detail_normalmap_uniform_set_rid =
 				uniform_set_create(rd, detail_normalmap_uniforms, detail_normalmap_shader_rid, 0);
+		_uniform_sets_to_free.push_back(detail_normalmap_uniform_set_rid);
+// #ifdef DEV_ENABLED
+// 		_uniform_sets_expected_to_be_freed.push_back(detail_normalmap_uniform_set_rid);
+// #endif
 
 		rd.compute_list_bind_compute_pipeline(compute_list_id, _detail_normalmap_pipeline_rid);
 		rd.compute_list_bind_uniform_set(compute_list_id, detail_normalmap_uniform_set_rid, 0);
@@ -464,6 +482,10 @@ void RenderDetailTextureGPUTask::prepare(GPUTaskContext &ctx) {
 		dilation_uniforms[1] = image1_uniform;
 		dilation_uniforms[2] = dilation_params_uniform;
 		const RID dilation_uniform_set_rid = uniform_set_create(rd, dilation_uniforms, dilation_shader_rid, 0);
+		_uniform_sets_to_free.push_back(dilation_uniform_set_rid);
+// #ifdef DEV_ENABLED
+// 		_uniform_sets_expected_to_be_freed.push_back(dilation_uniform_set_rid);
+// #endif
 
 		rd.compute_list_bind_compute_pipeline(compute_list_id, _normalmap_dilation_pipeline_rid);
 		rd.compute_list_bind_uniform_set(compute_list_id, dilation_uniform_set_rid, 0);
@@ -500,6 +522,10 @@ void RenderDetailTextureGPUTask::prepare(GPUTaskContext &ctx) {
 		dilation_uniforms[2] = dilation_params_uniform;
 		// TODO Do I really have to create a new uniform set every time I modify just one of the passed values?
 		const RID dilation_uniform_set_rid = uniform_set_create(rd, dilation_uniforms, dilation_shader_rid, 0);
+		_uniform_sets_to_free.push_back(dilation_uniform_set_rid);
+// #ifdef DEV_ENABLED
+// 		_uniform_sets_expected_to_be_freed.push_back(dilation_uniform_set_rid);
+// #endif
 
 		rd.compute_list_bind_uniform_set(compute_list_id, dilation_uniform_set_rid, 0);
 
@@ -533,6 +559,16 @@ PackedByteArray RenderDetailTextureGPUTask::collect_texture_and_cleanup(
 	{
 		ZN_PROFILE_SCOPE_NAMED("Cleanup");
 
+		// Godot "auto-frees" uniform sets when their dependencies get freed.
+		// But sometimes it doesn't, and can't guess that it should (like when re-using resources).
+		// So we have to manually check what we should or should not free.
+		// See https://github.com/godotengine/godot/issues/103073
+		// Instead of adding more debug checks, we can actually free uniform sets first,
+		// before Godot gets to auto-free them afterwards, which is simpler.
+		for (RID rid : _uniform_sets_to_free) {
+			free_rendering_device_rid(rd, rid);
+		}
+
 		free_rendering_device_rid(rd, _normalmap_texture0_rid);
 		free_rendering_device_rid(rd, _normalmap_texture1_rid);
 
@@ -543,6 +579,15 @@ PackedByteArray RenderDetailTextureGPUTask::collect_texture_and_cleanup(
 		for (RID rid : _detail_modifier_pipelines) {
 			free_rendering_device_rid(rd, rid);
 		}
+
+// #ifdef DEV_ENABLED
+// 		for (unsigned int i = 0; i < _uniform_sets_expected_to_be_freed.size(); ++i) {
+// 			const RID rid = _uniform_sets_expected_to_be_freed[i];
+// 			if(rd.uniform_set_is_valid(rid)) {
+// 				ZN_PRINT_ERROR(format("Uniform Set #{} wasn't freed by Godot", i));
+// 			}
+// 		}
+// #endif
 
 		storage_buffer_pool.recycle(_mesh_vertices_sb);
 		storage_buffer_pool.recycle(_mesh_indices_sb);
@@ -573,6 +618,13 @@ void RenderDetailTextureGPUTask::collect(GPUTaskContext &ctx) {
 	ZN_DSTACK();
 
 	PackedByteArray texture_data = collect_texture_and_cleanup(ctx.rendering_device, ctx.storage_buffer_pool);
+
+#if DEBUG_ENABLED
+	if (testing_output != nullptr) {
+		*testing_output = texture_data;
+		return;
+	}
+#endif
 
 	{
 		StdVector<DetailTextureData::Tile> tile_data2;

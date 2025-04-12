@@ -10,6 +10,8 @@ namespace zylann {
 FastNoise2::FastNoise2() {
 	// Setup default
 	update_generator();
+	// https://github.com/Auburn/FastNoise2/issues/136
+	_generator->GetSIMDLevel();
 }
 
 void FastNoise2::set_encoded_node_tree(String data) {

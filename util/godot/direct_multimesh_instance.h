@@ -33,6 +33,7 @@ public:
 	void set_cast_shadows_setting(RenderingServer::ShadowCastingSetting mode);
 	void set_render_layer(int render_layer);
 	void set_gi_mode(GeometryInstance3D::GIMode mode);
+	void set_interpolated(const bool enabled);
 
 	static void make_transform_3d_bulk_array(Span<const Transform3D> transforms, PackedFloat32Array &bulk_array);
 	static void make_transform_3d_bulk_array(Span<const Transform3f> transforms, PackedFloat32Array &bulk_array);

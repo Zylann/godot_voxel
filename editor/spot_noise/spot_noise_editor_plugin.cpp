@@ -10,10 +10,8 @@ ZN_SpotNoiseEditorPlugin::ZN_SpotNoiseEditorPlugin() {
 	add_inspector_plugin(plugin);
 }
 
-#ifdef ZN_GODOT
-String ZN_SpotNoiseEditorPlugin::get_name() const {
+String ZN_SpotNoiseEditorPlugin::_zn_get_plugin_name() const {
 	return ZN_SpotNoiseEditorPlugin::get_class_static();
 }
-#endif
 
 } // namespace zylann

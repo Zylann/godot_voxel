@@ -1,11 +1,12 @@
 Voxel Tools for Godot
 =========================
 
-A C++ module for creating volumetric worlds in Godot Engine 4.
+A C++ module/extension for creating volumetric terrains in Godot Engine 4.
 
 [![🚪 Windows Builds](https://github.com/Zylann/godot_voxel/actions/workflows/windows.yml/badge.svg)](https://github.com/Zylann/godot_voxel/actions/workflows/windows.yml)
 [![🐧 Linux Builds](https://github.com/Zylann/godot_voxel/actions/workflows/linux.yml/badge.svg)](https://github.com/Zylann/godot_voxel/actions/workflows/linux.yml)
 [![🐒 Mono Builds](https://github.com/Zylann/godot_voxel/actions/workflows/mono.yml/badge.svg)](https://github.com/Zylann/godot_voxel/actions/workflows/mono.yml)
+[![🧩 GDExtension Builds](https://github.com/Zylann/godot_voxel/actions/workflows/extension_ci.yml/badge.svg)](https://github.com/Zylann/godot_voxel/actions/workflows/extension_ci.yml)
 [![Documentation Status](https://readthedocs.org/projects/voxel-tools/badge/?version=latest)](https://voxel-tools.readthedocs.io/en/latest/?badge=latest)
 
 [![Discord](https://img.shields.io/discord/850070170793410582?style=flat-square&logo=discord "Discord")](https://discord.gg/pkXmESmrAR)
@@ -34,14 +35,16 @@ Documentation
 ---------------
 
 - [Main documentation](https://voxel-tools.readthedocs.io/en/latest/)
-- [How to get the module](https://voxel-tools.readthedocs.io/en/latest/getting_the_module/)
+- [How to install](https://voxel-tools.readthedocs.io/en/latest/getting_the_module/)
 - [Quick start](https://voxel-tools.readthedocs.io/en/latest/quick_start/)
 
 
 Roadmap
 ---------
 
-Areas of interest:
+Check [Feature Branches](https://github.com/Zylann/godot_voxel/issues/640) to see work-in-progress.
+
+Some areas of interest:
 
 * Multiplayer synchronization
 * Smooth voxel texturing

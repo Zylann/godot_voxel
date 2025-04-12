@@ -17,6 +17,11 @@
 				Gets the material override for a specific surface of the model.
 			</description>
 		</method>
+		<method name="get_mesh_ortho_rotation_index" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
 		<method name="is_mesh_collision_enabled" qualifiers="const">
 			<return type="bool" />
 			<param index="0" name="surface_index" type="int" />
@@ -47,6 +52,12 @@
 				Enables or disables mesh-based collision on a specific surface. It allows a model to have solid parts and others where players can pass through.
 			</description>
 		</method>
+		<method name="set_mesh_ortho_rotation_index">
+			<return type="void" />
+			<param index="0" name="i" type="int" />
+			<description>
+			</description>
+		</method>
 	</methods>
 	<members>
 		<member name="collision_aabbs" type="AABB[]" setter="set_collision_aabbs" getter="get_collision_aabbs" default="[]">
@@ -60,6 +71,10 @@
 		</member>
 		<member name="culls_neighbors" type="bool" setter="set_culls_neighbors" getter="get_culls_neighbors" default="true">
 			If enabled, this voxel culls the faces of its neighbors. Disabling can be useful for denser transparent voxels, such as foliage.
+		</member>
+		<member name="lod_skirts_enabled" type="bool" setter="set_lod_skirts_enabled" getter="get_lod_skirts_enabled" default="true">
+			If enabled and the terrain has LODs, this model will produce skirts when located at the edge of a chunk. This is intented to hide "cracks" between chunks of different LOD.
+			You may turn this off if the model is transparent, as the skirt would become visible from behind other surfaces.
 		</member>
 		<member name="random_tickable" type="bool" setter="set_random_tickable" getter="is_random_tickable" default="false">
 			If enabled, voxels having this ID in the TYPE channel will be used by [method VoxelToolTerrain.run_blocky_random_tick].

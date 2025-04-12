@@ -17,10 +17,10 @@ Type                                                                          | 
 
 ### [Vector2](https://docs.godotengine.org/en/stable/classes/class_vector2.html)<span id="i_pattern_offset"></span> **pattern_offset** = Vector2(0, 0)
 
-*(This property has no documentation)*
+Offset (or phase) of the waves.
 
 ### [Vector2](https://docs.godotengine.org/en/stable/classes/class_vector2.html)<span id="i_pattern_size"></span> **pattern_size** = Vector2(30, 30)
 
-*(This property has no documentation)*
+Length of the waves. Note that this only controls length across the X and Z axes. Height is controlled by [VoxelGeneratorHeightmap.height_start](VoxelGeneratorHeightmap.md#i_height_start) and [VoxelGeneratorHeightmap.height_range](VoxelGeneratorHeightmap.md#i_height_range).
 
-_Generated on Aug 27, 2024_
+_Generated on Mar 23, 2025_

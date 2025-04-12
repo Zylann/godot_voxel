@@ -1,16 +1,9 @@
-#ifndef ZN_VECTOR3_H
-#define ZN_VECTOR3_H
+#ifndef ZN_MATH_VECTOR3_H
+#define ZN_MATH_VECTOR3_H
 
-#include "funcs.h"
-
-#if defined(ZN_GODOT)
-#include <core/math/vector3.h>
-#elif defined(ZN_GODOT_EXTENSION)
-#include <godot_cpp/variant/vector3.hpp>
-using namespace godot;
-#endif
-
+#include "../godot/core/vector3.h"
 #include "../string/std_stringstream.h"
+#include "funcs.h"
 
 // 3-dimensional vector which components are either 32-bit float or 64-bit float depending on how Godot was compiled.
 // This is the type to use for interoperating with Godot.
@@ -77,10 +70,14 @@ inline real_t length_squared(const Vector3 &a) {
 	return a.length_squared();
 }
 
+inline real_t get_largest_coord(Vector3 v) {
+	return math::max(math::max(v.x, v.y), v.z);
+}
+
 } // namespace zylann::math
 
 namespace zylann {
 StdStringStream &operator<<(StdStringStream &ss, const Vector3 &v);
 }
 
-#endif // ZN_VECTOR3_H
+#endif // ZN_MATH_VECTOR3_H

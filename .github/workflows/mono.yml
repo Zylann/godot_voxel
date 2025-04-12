@@ -1,7 +1,7 @@
 name: 🐒 Mono Builds
 on:
   push:
-    branches: [ master, github_actions, "1.2" ]
+    branches: [ master ]
   pull_request:
     branches: [ master ]
 
@@ -11,13 +11,13 @@ concurrency:
 
 # Global Cache Settings
 env:
-  GODOT_BASE_BRANCH: "4.3-stable"
-  SCONS_CACHE_LIMIT: 4096
+  GODOT_BASE_BRANCH: "4.4.1-stable"
+  SCONS_CACHE_LIMIT_GB: 4
 
 jobs:
 
   mono-glue:
-    runs-on: "ubuntu-20.04"
+    runs-on: "ubuntu-22.04"
     name: Generate Mono Glue
 
     steps:
@@ -77,10 +77,8 @@ jobs:
 
       # We should always be explicit with our flags usage here since it's gonna be sure to always set those flags
       - name: Compile Godot (module_mono_enabled=yes mono_glue=no)
-        env:
-          SCONS_CACHE: ${{github.workspace}}/.scons_cache/
         run: |
-          scons verbose=yes warnings=all werror=yes platform=linuxbsd tests=no target=editor dev_build=no debug_symbols=no module_mono_enabled=yes mono_glue=no copy_mono_root=yes
+          scons verbose=yes warnings=all werror=yes strict_checks=yes platform=linuxbsd tests=no target=editor dev_build=no debug_symbols=no module_mono_enabled=yes mono_glue=no copy_mono_root=yes "cache_path=${{github.workspace}}/.scons_cache/" cache_limit=${{env.SCONS_CACHE_LIMIT_GB}}
 
       - name: Generate Mono Glue
         run: |
@@ -98,7 +96,7 @@ jobs:
             modules/mono/glue/GodotSharp/GodotSharpEditor/Generated/
 
   linux-editor-mono:
-    runs-on: "ubuntu-20.04"
+    runs-on: "ubuntu-22.04"
     name: Linux Editor w/ Mono
     needs: mono-glue
 
@@ -170,10 +168,8 @@ jobs:
 
       # We should always be explicit with our flags usage here since it's gonna be sure to always set those flags
       - name: Compilation
-        env:
-          SCONS_CACHE: ${{github.workspace}}/.scons_cache/
         run: |
-          scons verbose=yes warnings=all werror=yes platform=linuxbsd tests=no target=editor dev_build=no debug_symbols=no module_mono_enabled=yes mono_glue=yes mono_static=yes copy_mono_root=yes
+          scons verbose=yes warnings=all werror=yes strict_checks=yes platform=linuxbsd tests=no target=editor dev_build=no debug_symbols=no module_mono_enabled=yes mono_glue=yes mono_static=yes copy_mono_root=yes "cache_path=${{github.workspace}}/.scons_cache/"  cache_limit=${{env.SCONS_CACHE_LIMIT_GB}}
 
       # Make build available
       - uses: actions/upload-artifact@v4
@@ -196,10 +192,10 @@ jobs:
 
       # The version of ThorVG in 4.3-stable hits an error in latest MSVC (see godot#95861).
       # We should no longer need this in 4.3.1 and later.
-      - name: Patch ThorVG
-        run: |
-          curl -LO https://github.com/godotengine/godot/commit/4abc358952a69427617b0683fd76427a14d6faa8.patch
-          git apply 4abc358952a69427617b0683fd76427a14d6faa8.patch
+      # - name: Patch ThorVG
+      #   run: |
+      #     curl -LO https://github.com/godotengine/godot/commit/4abc358952a69427617b0683fd76427a14d6faa8.patch
+      #     git apply 4abc358952a69427617b0683fd76427a14d6faa8.patch
 
       # Clone our module under the correct directory
       - uses: actions/checkout@v4
@@ -216,7 +212,7 @@ jobs:
         id: windows-editor-mono-cache
         uses: actions/cache@v4
         with:
-          path: /.scons_cache/
+          path: ${{github.workspace}}/.scons_cache/
           key: ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
           restore-keys: |
             ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
@@ -251,13 +247,15 @@ jobs:
         run: |
           python ./modules/mono/build_scripts/build_assemblies.py --godot-output-dir=./bin
 
-      # We should always be explicit with our flags usage here since it's gonna be sure to always set those flags
+      # Compile with explicit flags.
+      # `PYTHONIOENCODING` was needed due to certain characters the Godot build system might print (such as '∞'), 
+      # otherwise it makes the job fail with an encoding error.
       - name: Compilation
         env:
           SCONS_CACHE_MSVC_CONFIG: true
-          SCONS_CACHE: /.scons_cache/
         run: |
-          scons verbose=yes warnings=all werror=yes platform=windows tests=no target=editor dev_build=no debug_symbols=no module_mono_enabled=yes mono_glue=yes copy_mono_root=yes mono_static=yes
+          set PYTHONIOENCODING=utf8
+          scons verbose=yes warnings=all werror=yes strict_checks=yes platform=windows tests=no target=editor dev_build=no debug_symbols=no module_mono_enabled=yes mono_glue=yes copy_mono_root=yes mono_static=yes "cache_path=${{github.workspace}}/.scons_cache/" cache_limit=${{env.SCONS_CACHE_LIMIT_GB}}
 
       # TODO Enhancement: Run tests? Such tests are able to run from Godot 4.0 only
       # Execute unit tests for the editor
