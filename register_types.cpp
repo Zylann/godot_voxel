@@ -4,6 +4,7 @@
 #endif
 
 #include "constants/voxel_string_names.h"
+#include "edition/voxel_mesh_sdf_gd.h"
 #include "edition/voxel_tool.h"
 #include "edition/voxel_tool_buffer.h"
 #include "edition/voxel_tool_lod_terrain.h"
@@ -53,7 +54,6 @@
 #include "util/tasks/godot/threaded_task_gd.h"
 
 #ifdef VOXEL_ENABLE_SMOOTH_MESHING
-#include "edition/voxel_mesh_sdf_gd.h"
 #include "meshers/transvoxel/voxel_mesher_transvoxel.h"
 #endif
 
@@ -307,6 +307,7 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_class<ZN_ThreadedTask>();
 		ClassDB::register_class<VoxelTerrainMultiplayerSynchronizer>();
 		ClassDB::register_class<VoxelAStarGrid3D>();
+		ClassDB::register_class<VoxelMeshSDF>();
 
 		// Meshers
 		ClassDB::register_abstract_class<VoxelMesher>();
@@ -319,7 +320,6 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 #endif
 
 #ifdef VOXEL_ENABLE_SMOOTH_MESHING
-		ClassDB::register_class<VoxelMeshSDF>();
 		ClassDB::register_class<VoxelMesherTransvoxel>();
 #endif
 
@@ -482,6 +482,10 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_internal_class<VoxelGeneratorMultipassEditorInspectorPlugin>();
 		ClassDB::register_internal_class<VoxelGeneratorMultipassCacheViewer>();
 
+		ClassDB::register_internal_class<VoxelMeshSDFViewer>();
+		ClassDB::register_internal_class<VoxelMeshSDFEditorPlugin>();
+		ClassDB::register_internal_class<VoxelMeshSDFInspectorPlugin>();
+
 #ifdef VOXEL_ENABLE_INSTANCER
 		ClassDB::register_internal_class<VoxelInstancerEditorPlugin>();
 		ClassDB::register_internal_class<VoxelInstancerStatView>();
@@ -493,11 +497,6 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_internal_class<VoxelInstanceLibraryListEditor>();
 #endif
 
-#ifdef VOXEL_ENABLE_SMOOTH_MESHING
-		ClassDB::register_internal_class<VoxelMeshSDFViewer>();
-		ClassDB::register_internal_class<VoxelMeshSDFEditorPlugin>();
-		ClassDB::register_internal_class<VoxelMeshSDFInspectorPlugin>();
-#endif
 #endif // ZN_GODOT_EXTENSION
 
 		EditorPlugins::add_by_type<VoxelGraphEditorPlugin>();
@@ -507,14 +506,14 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		EditorPlugins::add_by_type<magica::VoxelVoxEditorPlugin>();
 		EditorPlugins::add_by_type<VoxelBlockyLibraryEditorPlugin>();
 		EditorPlugins::add_by_type<VoxelGeneratorMultipassEditorPlugin>();
+		EditorPlugins::add_by_type<VoxelMeshSDFEditorPlugin>();
+
 #ifdef VOXEL_ENABLE_INSTANCER
 		EditorPlugins::add_by_type<VoxelInstancerEditorPlugin>();
 		EditorPlugins::add_by_type<VoxelInstanceLibraryEditorPlugin>();
 		EditorPlugins::add_by_type<VoxelInstanceLibraryMultiMeshItemEditorPlugin>();
 #endif
-#ifdef VOXEL_ENABLE_SMOOTH_MESHING
-		EditorPlugins::add_by_type<VoxelMeshSDFEditorPlugin>();
-#endif
+
 #ifdef VOXEL_ENABLE_FAST_NOISE_2
 		EditorPlugins::add_by_type<FastNoise2EditorPlugin>();
 #endif

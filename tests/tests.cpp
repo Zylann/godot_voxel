@@ -17,6 +17,7 @@
 #include "voxel/test_block_serializer.h"
 #include "voxel/test_curve_range.h"
 #include "voxel/test_edition_funcs.h"
+#include "voxel/test_mesh_sdf.h"
 #include "voxel/test_octree.h"
 #include "voxel/test_raycast.h"
 #include "voxel/test_region_file.h"
@@ -31,7 +32,6 @@
 #ifdef VOXEL_ENABLE_GPU
 #include "voxel/test_detail_rendering_gpu.h"
 #endif
-#include "voxel/test_mesh_sdf.h"
 #endif
 
 #ifdef VOXEL_ENABLE_FAST_NOISE_2
@@ -129,8 +129,8 @@ void run_voxel_tests(const testing::TestOptions &options) {
 	VOXEL_TEST(test_threaded_task_runner_misc);
 	VOXEL_TEST(test_threaded_task_runner_debug_names);
 	VOXEL_TEST(test_task_priority_values);
-#ifdef VOXEL_ENABLE_SMOOTH_MESHING
 	VOXEL_TEST(test_voxel_mesh_sdf_issue463);
+#ifdef VOXEL_ENABLE_SMOOTH_MESHING
 #ifdef VOXEL_ENABLE_GPU
 	VOXEL_TEST(test_normalmap_render_gpu);
 #endif

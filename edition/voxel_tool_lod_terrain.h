@@ -43,9 +43,7 @@ public:
 	Array separate_floating_chunks(AABB world_box, Object *parent_node_o);
 #endif
 
-#ifdef VOXEL_ENABLE_SMOOTH_MESHING
 	void stamp_sdf(Ref<VoxelMeshSDF> mesh_sdf, Transform3D transform, float isolevel, float sdf_scale);
-#endif
 	void do_graph(Ref<VoxelGeneratorGraph> graph, Transform3D transform, Vector3 area_size);
 
 	void run_blocky_random_tick(

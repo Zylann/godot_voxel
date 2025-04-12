@@ -321,8 +321,6 @@ Array VoxelToolLodTerrain::separate_floating_chunks(AABB world_box, Object *pare
 	);
 }
 
-#ifdef VOXEL_ENABLE_SMOOTH_MESHING
-
 // Combines a precalculated SDF with the terrain at a specific position, rotation and scale.
 //
 // `transform` is where the buffer should be applied on the terrain.
@@ -395,8 +393,6 @@ void VoxelToolLodTerrain::stamp_sdf(
 
 	_post_edit(voxel_box);
 }
-
-#endif
 
 void VoxelToolLodTerrain::do_mesh(const VoxelMeshSDF &mesh_sdf, const Transform3D &transform, const float isolevel) {
 	ZN_ASSERT_RETURN(_terrain != nullptr);
@@ -570,9 +566,7 @@ void VoxelToolLodTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_voxel_f_interpolated", "position"), &Self::get_voxel_f_interpolated);
 	ClassDB::bind_method(D_METHOD("separate_floating_chunks", "box", "parent_node"), &Self::separate_floating_chunks);
 	ClassDB::bind_method(D_METHOD("do_sphere_async", "center", "radius"), &Self::do_sphere_async);
-#ifdef VOXEL_ENABLE_SMOOTH_MESHING
 	ClassDB::bind_method(D_METHOD("stamp_sdf", "mesh_sdf", "transform", "isolevel", "sdf_scale"), &Self::stamp_sdf);
-#endif
 	ClassDB::bind_method(D_METHOD("do_graph", "graph", "transform", "area_size"), &Self::do_graph);
 	ClassDB::bind_method(
 			D_METHOD("do_hemisphere", "center", "radius", "flat_direction", "smoothness"),
