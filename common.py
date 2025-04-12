@@ -90,6 +90,9 @@ def get_sources(env, is_editor_build):
         "edition/voxel_tool_lod_terrain.cpp",
         "edition/voxel_tool_terrain.cpp",
         "edition/voxel_tool.cpp",
+        "edition/voxel_mesh_sdf_gd.cpp",
+        "edition/voxel_mesh_sdf.cpp",
+        "edition/mesh_sdf.cpp",
 
         "shaders/*.cpp",
 
@@ -160,6 +163,7 @@ def get_sources(env, is_editor_build):
             "editor/blocky_library/*.cpp",
             "editor/blocky_library/types/*.cpp",
             "editor/multipass/*.cpp",
+            "editor/mesh_sdf/*.cpp",
 
             "util/godot/debug_renderer.cpp",
             "util/godot/check_ref_ownership.cpp",
@@ -195,6 +199,7 @@ def get_sources(env, is_editor_build):
             "tests/voxel/test_voxel_graph.cpp",
             "tests/voxel/test_voxel_instancer.cpp",
             "tests/voxel/test_voxel_mesher_cubes.cpp",
+            "tests/voxel/test_mesh_sdf.cpp",
         ]
 
     if smoosh_meshing_enabled:
@@ -206,10 +211,6 @@ def get_sources(env, is_editor_build):
             "engine/detail_rendering/detail_rendering.cpp",
             "engine/detail_rendering/render_detail_texture_task.cpp",
 
-            "edition/voxel_mesh_sdf_gd.cpp",
-            "edition/voxel_mesh_sdf.cpp",
-            "edition/mesh_sdf.cpp",
-
             "thirdparty/meshoptimizer/*.cpp"
         ]
 
@@ -217,16 +218,6 @@ def get_sources(env, is_editor_build):
             sources += [
                 "engine/detail_rendering/render_detail_texture_gpu_task.cpp",
                 "tests/voxel/test_detail_rendering_gpu.cpp",
-            ]
-
-        if is_editor_build:
-            sources += [
-                "editor/mesh_sdf/*.cpp"
-            ]
-
-        if tests_enabled:
-            sources += [
-                "tests/voxel/test_mesh_sdf.cpp",
             ]
         
     if modifiers_enabled:
