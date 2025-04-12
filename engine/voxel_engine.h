@@ -38,7 +38,7 @@ public:
 		};
 
 		Type type;
-		VoxelMesher::Output surfaces;
+		VoxelMesherOutput surfaces;
 		// Only used if `has_mesh_resource` is true (usually when meshes are allowed to be build in threads). Otherwise,
 		// mesh data will be in `surfaces` and has to be built on the main thread.
 		Ref<Mesh> mesh;

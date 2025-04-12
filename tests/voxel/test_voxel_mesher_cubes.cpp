@@ -17,8 +17,8 @@ void test_voxel_mesher_cubes() {
 	mesher.instantiate();
 	mesher->set_color_mode(VoxelMesherCubes::COLOR_RAW);
 
-	VoxelMesher::Input input{ vb, nullptr, Vector3i(), 0, false };
-	VoxelMesher::Output output;
+	VoxelMesherInput input{ vb, nullptr, Vector3i(), 0, false };
+	VoxelMesherOutput output;
 	mesher->build(output, input);
 
 	const unsigned int opaque_surface_index = VoxelMesherCubes::MATERIAL_OPAQUE;

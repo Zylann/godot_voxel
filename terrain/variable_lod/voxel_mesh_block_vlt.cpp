@@ -438,8 +438,8 @@ void VoxelMeshBlockVLT::clear_fading() {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool is_mesh_empty(Span<const VoxelMesher::Output::Surface> surfaces) {
-	for (const VoxelMesher::Output::Surface &surf : surfaces) {
+bool is_mesh_empty(Span<const VoxelMesherOutput::Surface> surfaces) {
+	for (const VoxelMesherOutput::Surface &surf : surfaces) {
 		if (is_surface_triangulated(surf.arrays)) {
 			return false;
 		}
@@ -448,7 +448,7 @@ bool is_mesh_empty(Span<const VoxelMesher::Output::Surface> surfaces) {
 }
 
 Ref<ArrayMesh> build_mesh(
-		Span<const VoxelMesher::Output::Surface> surfaces,
+		Span<const VoxelMesherOutput::Surface> surfaces,
 		Mesh::PrimitiveType primitive,
 		int flags,
 		Ref<Material> material
@@ -458,7 +458,7 @@ Ref<ArrayMesh> build_mesh(
 
 	unsigned int surface_index = 0;
 	for (unsigned int i = 0; i < surfaces.size(); ++i) {
-		const VoxelMesher::Output::Surface &surface = surfaces[i];
+		const VoxelMesherOutput::Surface &surface = surfaces[i];
 		Array arrays = surface.arrays;
 
 		if (arrays.is_empty()) {

@@ -236,7 +236,7 @@ void copy_block_and_neighbors(
 } // namespace
 
 Ref<ArrayMesh> build_mesh(
-		Span<const VoxelMesher::Output::Surface> surfaces,
+		Span<const VoxelMesherOutput::Surface> surfaces,
 		Mesh::PrimitiveType primitive,
 		int flags,
 		// This vector indexes surfaces to the material they use (if a surface uses a material but is empty, it
@@ -249,7 +249,7 @@ Ref<ArrayMesh> build_mesh(
 	Ref<ArrayMesh> mesh;
 
 	for (unsigned int i = 0; i < surfaces.size(); ++i) {
-		const VoxelMesher::Output::Surface &surface = surfaces[i];
+		const VoxelMesherOutput::Surface &surface = surfaces[i];
 		Array arrays = surface.arrays;
 
 		if (arrays.is_empty()) {
@@ -490,7 +490,7 @@ void MeshBlockTask::build_mesh() {
 
 	const Vector3i origin_in_voxels = mesh_block_position * (mesh_block_size << lod_index);
 
-	const VoxelMesher::Input input{
+	const VoxelMesherInput input{
 		_voxels,
 		meshing_dependency->generator.ptr(),
 		origin_in_voxels,

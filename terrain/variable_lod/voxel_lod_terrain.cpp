@@ -1874,7 +1874,7 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 	VoxelMeshMap<VoxelMeshBlockVLT> &mesh_map = _mesh_maps_per_lod[ob.lod];
 	VoxelMeshBlockVLT *block = mesh_map.get_block(ob.position);
 
-	VoxelMesher::Output &mesh_data = ob.surfaces;
+	VoxelMesherOutput &mesh_data = ob.surfaces;
 
 	Ref<ArrayMesh> mesh;
 	Ref<ArrayMesh> shadow_occluder_mesh;
@@ -2072,7 +2072,7 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 		} else {
 			if (block->deferred_collider_data == nullptr) {
 				_deferred_collision_updates_per_lod[ob.lod].push_back(ob.position);
-				block->deferred_collider_data = make_unique_instance<VoxelMesher::Output>();
+				block->deferred_collider_data = make_unique_instance<VoxelMesherOutput>();
 			}
 			*block->deferred_collider_data = std::move(ob.surfaces);
 		}

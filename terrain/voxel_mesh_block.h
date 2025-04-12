@@ -101,7 +101,7 @@ protected:
 };
 
 Ref<ConcavePolygonShape3D> make_collision_shape_from_mesher_output(
-		const VoxelMesher::Output &mesher_output,
+		const VoxelMesherOutput &mesher_output,
 		const VoxelMesher &mesher
 );
 

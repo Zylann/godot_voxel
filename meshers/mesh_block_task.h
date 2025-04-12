@@ -74,7 +74,7 @@ private:
 	bool _has_mesh_resource = false;
 	uint8_t _stage = 0;
 	VoxelBuffer _voxels;
-	VoxelMesher::Output _surfaces_output;
+	VoxelMesherOutput _surfaces_output;
 	Ref<Mesh> _mesh;
 	Ref<Mesh> _shadow_occluder_mesh;
 	StdVector<uint16_t> _mesh_material_indices; // Indexed by mesh surface
@@ -86,7 +86,7 @@ private:
 // will be in the returned mesh. Empty surfaces won't be added to the mesh. If the mesh is totally empty, null will be
 // returned.
 Ref<ArrayMesh> build_mesh( //
-		Span<const VoxelMesher::Output::Surface> surfaces, //
+		Span<const VoxelMesherOutput::Surface> surfaces, //
 		Mesh::PrimitiveType primitive, //
 		int flags, //
 		StdVector<uint16_t> &mesh_material_indices //

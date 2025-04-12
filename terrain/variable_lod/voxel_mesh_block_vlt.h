@@ -37,7 +37,7 @@ public:
 	uint8_t detail_texture_fallback_level = 0;
 
 	uint64_t last_collider_update_time = 0;
-	UniquePtr<VoxelMesher::Output> deferred_collider_data;
+	UniquePtr<VoxelMesherOutput> deferred_collider_data;
 
 	VoxelMeshBlockVLT(const Vector3i bpos, unsigned int size, unsigned int p_lod_index);
 	~VoxelMeshBlockVLT();
@@ -140,10 +140,10 @@ private:
 #endif
 };
 
-bool is_mesh_empty(Span<const VoxelMesher::Output::Surface> surfaces);
+bool is_mesh_empty(Span<const VoxelMesherOutput::Surface> surfaces);
 
 Ref<ArrayMesh> build_mesh(
-		Span<const VoxelMesher::Output::Surface> surfaces,
+		Span<const VoxelMesherOutput::Surface> surfaces,
 		Mesh::PrimitiveType primitive,
 		int flags,
 		Ref<Material> material

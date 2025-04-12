@@ -72,8 +72,8 @@ void test_normalmap_render_gpu() {
 	const uint8_t lod_index = 0;
 	generator->generate_block(VoxelGenerator::VoxelQueryData{ voxels, origin_in_voxels, 0 });
 
-	const VoxelMesher::Input mesher_input{ voxels, generator.ptr(), origin_in_voxels, lod_index, false, false, true };
-	VoxelMesher::Output mesher_output;
+	const VoxelMesherInput mesher_input{ voxels, generator.ptr(), origin_in_voxels, lod_index, false, false, true };
+	VoxelMesherOutput mesher_output;
 	mesher->build(mesher_output, mesher_input);
 
 	const bool mesh_is_empty = VoxelMesher::is_mesh_empty(mesher_output.surfaces);

@@ -13,8 +13,8 @@ Ref<Mesh> build_mesh(
 		float p_scale,
 		Vector3 p_offset
 ) {
-	VoxelMesher::Output output;
-	VoxelMesher::Input input{ voxels, nullptr, Vector3i(), 0, false };
+	VoxelMesherOutput output;
+	VoxelMesherInput input{ voxels, nullptr, Vector3i(), 0, false };
 	mesher.build(output, input);
 
 	if (output.surfaces.size() == 0) {
@@ -25,7 +25,7 @@ Ref<Mesh> build_mesh(
 	mesh.instantiate();
 
 	for (unsigned int i = 0; i < output.surfaces.size(); ++i) {
-		VoxelMesher::Output::Surface &surface = output.surfaces[i];
+		VoxelMesherOutput::Surface &surface = output.surfaces[i];
 		Array arrays = surface.arrays;
 
 		if (arrays.is_empty()) {
