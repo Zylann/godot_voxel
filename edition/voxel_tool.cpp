@@ -6,7 +6,11 @@
 #include "../util/math/color8.h"
 #include "../util/math/conv.h"
 #include "../util/profiling.h"
+
+#ifdef VOXEL_ENABLE_MESH_SDF
 #include "voxel_mesh_sdf_gd.h"
+#endif
+
 #ifdef DEBUG_ENABLED
 #include "../util/godot/core/aabb.h"
 #include "../util/string/format.h"
@@ -261,10 +265,12 @@ void VoxelTool::do_path(Span<const Vector3> positions, Span<const float> radii) 
 	// Implemented in derived classes
 }
 
+#ifdef VOXEL_ENABLE_MESH_SDF
 void VoxelTool::do_mesh(const VoxelMeshSDF &mesh_sdf, const Transform3D &transform, const float isolevel) {
 	ERR_PRINT("Not implemented");
 	// Implemented in derived classes
 }
+#endif
 
 void VoxelTool::copy(Vector3i pos, VoxelBuffer &dst, uint8_t channels_mask) const {
 	ERR_PRINT("Not implemented");
@@ -409,6 +415,7 @@ Variant VoxelTool::get_voxel_metadata(Vector3i pos) const {
 	return Variant();
 }
 
+#ifdef VOXEL_ENABLE_MESH_SDF
 void VoxelTool::do_mesh_chunked(
 		const VoxelMeshSDF &mesh_sdf,
 		VoxelData &vdata,
@@ -484,6 +491,7 @@ void VoxelTool::do_mesh_chunked(
 
 	_post_edit(voxel_box);
 }
+#endif
 
 // Binding land
 
@@ -523,10 +531,12 @@ void VoxelTool::_b_do_path(PackedVector3Array positions, PackedFloat32Array radi
 	do_path(to_span(positions), to_span(radii));
 }
 
+#ifdef VOXEL_ENABLE_MESH_SDF
 void VoxelTool::_b_do_mesh(Ref<VoxelMeshSDF> mesh_sdf, Transform3D transform, float isolevel) {
 	ZN_ASSERT_RETURN(mesh_sdf.is_valid());
 	do_mesh(**mesh_sdf, transform, isolevel);
 }
+#endif
 
 void VoxelTool::_b_copy(Vector3i pos, Ref<godot::VoxelBuffer> voxels, int channel_mask) {
 	copy(pos, voxels, channel_mask);
@@ -644,7 +654,9 @@ void VoxelTool::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("do_sphere", "center", "radius"), &VoxelTool::_b_do_sphere);
 	ClassDB::bind_method(D_METHOD("do_box", "begin", "end"), &VoxelTool::_b_do_box);
 	ClassDB::bind_method(D_METHOD("do_path", "points", "radii"), &VoxelTool::_b_do_path);
+#ifdef VOXEL_ENABLE_MESH_SDF
 	ClassDB::bind_method(D_METHOD("do_mesh", "mesh_sdf", "transform", "isolevel"), &VoxelTool::_b_do_mesh, DEFVAL(0.0));
+#endif
 
 	ClassDB::bind_method(
 			D_METHOD("smooth_sphere", "sphere_center", "sphere_radius", "blur_radius"), &VoxelTool::smooth_sphere

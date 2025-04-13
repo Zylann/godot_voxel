@@ -516,6 +516,7 @@ SCons flag               | C++ Macro                       | Description
 `voxel_instancer`        | `VOXEL_ENABLE_INSTANCER`        | `VoxelInstancer` support
 `voxel_gpu_enabled`      | `VOXEL_ENABLE_GPU`              | GPU compute support (the GPU is still used when this option is off, just not using compute shaders)
 `voxel_basic_generators` | `VOXEL_ENABLE_BASIC_GENERATORS` | Includes basic generators that could be used for testing.
+`voxel_mesh_sdf`         | `VOXEL_ENABLE_MESH_SDF`         | Support for voxelized meshes with `VoxelMeshSDF`. Turning this off also turns off modifiers, which depend on it.
 
 !!! warning
     Testing combinations of these flags over time is very time-consuming, and most people don't compile custom builds to turn them off. So it is possible that the project doesn't compile with a specific subset. You may signal it and/or open a PR if you want to fix it.

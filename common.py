@@ -15,6 +15,7 @@ def register_scons_options(env, is_extension):
     env_vars.Add(BoolVariable("voxel_instancer", "Build with VoxelInstancer support", True))
     env_vars.Add(BoolVariable("voxel_gpu", "Build with GPU compute support", True))
     env_vars.Add(BoolVariable("voxel_basic_generators", "Build with basic/example generators", True))
+    env_vars.Add(BoolVariable("voxel_mesh_sdf", "Build with mesh voxelization support", True))
     
     if not is_extension:
         env_vars.Add(BoolVariable("tracy", "Build with enabled Tracy Profiler integration", False))
@@ -50,8 +51,12 @@ def get_sources(env, is_editor_build):
     instancer_enabled = env["voxel_instancer"]
     gpu_enabled = env["voxel_gpu"]
     basic_generators_enabled = env["voxel_basic_generators"]
+    voxel_mesh_sdf_enabled = env["voxel_mesh_sdf"]
 
     if not smoosh_meshing_enabled:
+        modifiers_enabled = False
+    
+    if not voxel_mesh_sdf_enabled:
         modifiers_enabled = False
     
     sources = [
@@ -90,9 +95,6 @@ def get_sources(env, is_editor_build):
         "edition/voxel_tool_lod_terrain.cpp",
         "edition/voxel_tool_terrain.cpp",
         "edition/voxel_tool.cpp",
-        "edition/voxel_mesh_sdf_gd.cpp",
-        "edition/voxel_mesh_sdf.cpp",
-        "edition/mesh_sdf.cpp",
 
         "shaders/*.cpp",
 
@@ -163,7 +165,6 @@ def get_sources(env, is_editor_build):
             "editor/blocky_library/*.cpp",
             "editor/blocky_library/types/*.cpp",
             "editor/multipass/*.cpp",
-            "editor/mesh_sdf/*.cpp",
 
             "util/godot/debug_renderer.cpp",
             "util/godot/check_ref_ownership.cpp",
@@ -199,7 +200,6 @@ def get_sources(env, is_editor_build):
             "tests/voxel/test_voxel_graph.cpp",
             "tests/voxel/test_voxel_instancer.cpp",
             "tests/voxel/test_voxel_mesher_cubes.cpp",
-            "tests/voxel/test_mesh_sdf.cpp",
         ]
 
     if smoosh_meshing_enabled:
@@ -269,6 +269,21 @@ def get_sources(env, is_editor_build):
         sources += [
             "generators/simple/*.cpp",
         ]
+
+    if voxel_mesh_sdf_enabled:
+        env.Append(CPPDEFINES={"VOXEL_ENABLE_MESH_SDF": 1})
+
+        sources += [
+            "edition/voxel_mesh_sdf_gd.cpp",
+            "edition/voxel_mesh_sdf.cpp",
+            "edition/mesh_sdf.cpp",
+        ]
+
+        if is_editor_build:
+            sources += ["editor/mesh_sdf/*.cpp"]
+        
+        if tests_enabled:
+            sources += ["tests/voxel/test_mesh_sdf.cpp"]
 
     def process_glob_paths(p_sources):
         out = []
