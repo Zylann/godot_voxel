@@ -1,7 +1,7 @@
 #include "../../../util/godot/classes/curve.h"
 #include "../../../util/profiling.h"
+#include "../curve_utility.h"
 #include "../node_type_db.h"
-#include "../range_utility.h"
 
 namespace zylann::voxel::pg {
 
