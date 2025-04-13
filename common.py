@@ -273,7 +273,6 @@ def get_sources(env, is_editor_build):
 
         sources += [
             "edition/voxel_mesh_sdf_gd.cpp",
-            "edition/voxel_mesh_sdf.cpp",
             "edition/mesh_sdf.cpp",
         ]
 
