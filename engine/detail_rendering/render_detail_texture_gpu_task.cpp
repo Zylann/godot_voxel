@@ -633,7 +633,7 @@ void RenderDetailTextureGPUTask::collect(GPUTaskContext &ctx) {
 
 	PackedByteArray texture_data = collect_texture_and_cleanup(ctx.rendering_device, ctx.storage_buffer_pool);
 
-#if DEBUG_ENABLED
+#ifdef VOXEL_TESTS
 	if (testing_output != nullptr) {
 		*testing_output = texture_data;
 		return;

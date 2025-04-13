@@ -213,10 +213,10 @@ def get_sources(env, is_editor_build):
         ]
 
         if gpu_enabled:
-            sources += [
-                "engine/detail_rendering/render_detail_texture_gpu_task.cpp",
-                "tests/voxel/test_detail_rendering_gpu.cpp",
-            ]
+            sources += ["engine/detail_rendering/render_detail_texture_gpu_task.cpp"]
+
+            if tests_enabled:
+                sources += ["tests/voxel/test_detail_rendering_gpu.cpp"]
         
     if modifiers_enabled:
         env.Append(CPPDEFINES={"VOXEL_ENABLE_MODIFIERS": 1})

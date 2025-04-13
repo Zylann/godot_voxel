@@ -71,7 +71,7 @@ public:
 	Vector3i block_size;
 	VolumeID volume_id;
 	uint8_t lod_index;
-#if DEBUG_ENABLED
+#ifdef VOXEL_TESTS
 	PackedByteArray *testing_output = nullptr;
 #endif
 
