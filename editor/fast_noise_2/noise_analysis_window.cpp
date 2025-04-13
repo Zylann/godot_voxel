@@ -112,7 +112,8 @@ NoiseAnalysisWindow::NoiseAnalysisWindow() {
 		label->set_text(TTR("Maximum derivative over step length*:"));
 		label->set_tooltip_text(
 				TTR("Depending on the noise type, this measure can vary due to very small discontinuities, "
-					"so it may be interesting to try multiple step lengths, from shortest to longest."));
+					"so it may be interesting to try multiple step lengths, from shortest to longest.")
+		);
 		label->set_mouse_filter(Control::MOUSE_FILTER_STOP);
 		vbox_container->add_child(label);
 	}
@@ -208,7 +209,7 @@ void NoiseAnalysisWindow::_on_calculate_button_pressed() {
 		StdVector<Vector2> &precomputed_unit_vectors_2d = get_tls_precomputed_unit_vectors_2d();
 		precomputed_unit_vectors_2d.resize(precomputed_vectors_count);
 		for (int i = 0; i < precomputed_vectors_count; ++i) {
-			const float a = Math_TAU * float(i) / float(precomputed_vectors_count);
+			const float a = math::TAU<float> * float(i) / float(precomputed_vectors_count);
 			precomputed_unit_vectors_2d[i] = Vector2(Math::cos(a), Math::sin(a));
 		}
 	} else {
@@ -254,8 +255,11 @@ void NoiseAnalysisWindow::_process() {
 		return;
 	}
 
-	const float step_length = Math::lerp(_analysis_params.step_minimum_length, _analysis_params.step_maximum_length,
-			float(_current_step) / _analysis_params.step_count);
+	const float step_length = Math::lerp(
+			_analysis_params.step_minimum_length,
+			_analysis_params.step_maximum_length,
+			float(_current_step) / _analysis_params.step_count
+	);
 
 	StdVector<float> x_cache;
 	StdVector<float> y_cache;
@@ -309,7 +313,8 @@ void NoiseAnalysisWindow::_process() {
 		StdVector<Vector3> &precomputed_unit_vectors_3d = get_tls_precomputed_unit_vectors_3d();
 
 		_noise->get_noise_3d_series(
-				to_span_const(x_cache), to_span_const(y_cache), to_span_const(z_cache), to_span(noise_cache));
+				to_span_const(x_cache), to_span_const(y_cache), to_span_const(z_cache), to_span(noise_cache)
+		);
 
 		for (size_t i = 0; i < noise_cache.size(); ++i) {
 			const Vector3 u = step_length * precomputed_unit_vectors_3d[i % precomputed_unit_vectors_3d.size()];
@@ -319,7 +324,8 @@ void NoiseAnalysisWindow::_process() {
 		}
 
 		_noise->get_noise_3d_series(
-				to_span_const(x_cache), to_span_const(y_cache), to_span_const(z_cache), to_span(noise_cache2));
+				to_span_const(x_cache), to_span_const(y_cache), to_span_const(z_cache), to_span(noise_cache2)
+		);
 	}
 
 	float max_derivative = 0.f;

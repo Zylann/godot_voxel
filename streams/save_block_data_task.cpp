@@ -35,6 +35,8 @@ SaveBlockDataTask::SaveBlockDataTask(
 	++g_debug_save_block_tasks_count;
 }
 
+#ifdef VOXEL_ENABLE_INSTANCER
+
 SaveBlockDataTask::SaveBlockDataTask(
 		VolumeID p_volume_id,
 		Vector3i p_block_pos,
@@ -56,6 +58,8 @@ SaveBlockDataTask::SaveBlockDataTask(
 	//
 	++g_debug_save_block_tasks_count;
 }
+
+#endif
 
 SaveBlockDataTask::~SaveBlockDataTask() {
 	--g_debug_save_block_tasks_count;
@@ -92,6 +96,7 @@ void SaveBlockDataTask::run(zylann::ThreadedTaskContext &ctx) {
 		stream->save_voxel_block(q);
 	}
 
+#ifdef VOXEL_ENABLE_INSTANCER
 	if (_save_instances && stream->supports_instance_blocks()) {
 		// If the provided data is null, it means this instance block was never modified.
 		// Since we are in a save request, the saved data will revert to unmodified.
@@ -107,6 +112,7 @@ void SaveBlockDataTask::run(zylann::ThreadedTaskContext &ctx) {
 		};
 		stream->save_instance_blocks(Span<VoxelStream::InstancesQueryData>(&instances_query, 1));
 	}
+#endif
 
 	if (_tracker != nullptr) {
 		if (_flush_on_last_tracked_task && _tracker->get_remaining_count() == 1) {

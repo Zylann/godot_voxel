@@ -4,12 +4,15 @@
 #include "../engine/gpu/gpu_storage_buffer_pool.h"
 #include "../engine/gpu/gpu_task_runner.h"
 #include "../generators/voxel_generator.h"
-#include "../modifiers/voxel_modifier.h"
 #include "../util/containers/std_vector.h"
 #include "../util/godot/classes/rd_uniform.h"
 #include "../util/math/box3i.h"
 #include "../util/memory/memory.h"
 #include "../util/tasks/threaded_task.h"
+
+#ifdef VOXEL_ENABLE_MODIFIERS
+#include "../modifiers/voxel_modifier.h"
+#endif
 
 namespace zylann::voxel {
 
@@ -72,7 +75,9 @@ public:
 	std::shared_ptr<ComputeShaderParameters> generator_shader_params;
 	std::shared_ptr<VoxelGenerator::ShaderOutputs> generator_shader_outputs;
 
+#ifdef VOXEL_ENABLE_MODIFIERS
 	StdVector<VoxelModifier::ShaderData> modifiers;
+#endif
 
 private:
 	struct BoxData {

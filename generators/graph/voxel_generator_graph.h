@@ -105,6 +105,7 @@ public:
 	bool try_get_output_port_address(ProgramGraph::PortLocation port, uint32_t &out_address) const;
 	int get_sdf_output_port_address() const;
 
+#ifdef VOXEL_ENABLE_GPU
 	// GPU support
 
 	bool supports_shaders() const override {
@@ -113,6 +114,7 @@ public:
 	}
 
 	bool get_shader_source(ShaderSourceData &out_data) const override;
+#endif
 
 	// Debug
 

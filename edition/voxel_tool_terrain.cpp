@@ -425,6 +425,13 @@ void VoxelToolTerrain::do_path(Span<const Vector3> positions, Span<const float> 
 	_post_edit(total_voxel_box);
 }
 
+#ifdef VOXEL_ENABLE_MESH_SDF
+void VoxelToolTerrain::do_mesh(const VoxelMeshSDF &mesh_sdf, const Transform3D &transform, const float isolevel) {
+	ZN_ASSERT_RETURN(_terrain != nullptr);
+	do_mesh_chunked(mesh_sdf, _terrain->get_storage(), transform, isolevel, false);
+}
+#endif
+
 void VoxelToolTerrain::_bind_methods() {
 	ClassDB::bind_method(
 			D_METHOD("run_blocky_random_tick", "area", "voxel_count", "callback", "batch_count"),

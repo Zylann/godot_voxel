@@ -14,6 +14,8 @@ Dev 1.4.2
 Primarily developped with Godot 4.4.1+
 
 - `VoxelGeneratorGraph`: implemented constant reduction, which slightly optimizes graphs running on CPU if they contain constant branches
+- `VoxelTool`: added `do_mesh` to replace `stamp_sdf`. Supported on terrains only.
+- Build system: added options to turn off features when doing custom builds
 
 - Fixes
     - `VoxelBlockyTypeLibrary`: fixed crash when setting `types` to empty array

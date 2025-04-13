@@ -6,6 +6,7 @@
 
 #ifdef TOOLS_ENABLED
 #include "../../util/godot/core/packed_arrays.h"
+#include "../../util/godot/core/string.h"
 #endif
 
 namespace zylann::voxel::godot {
@@ -174,10 +175,14 @@ void VoxelModifier::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_smoothness", "smoothness"), &VoxelModifier::set_smoothness);
 	ClassDB::bind_method(D_METHOD("get_smoothness"), &VoxelModifier::get_smoothness);
 
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "operation", PROPERTY_HINT_ENUM, "Add,Remove"), "set_operation",
-			"get_operation");
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "smoothness", PROPERTY_HINT_RANGE, "0.0, 100.0, 0.1"), "set_smoothness",
-			"get_smoothness");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::INT, "operation", PROPERTY_HINT_ENUM, "Add,Remove"), "set_operation", "get_operation"
+	);
+	ADD_PROPERTY(
+			PropertyInfo(Variant::FLOAT, "smoothness", PROPERTY_HINT_RANGE, "0.0, 100.0, 0.1"),
+			"set_smoothness",
+			"get_smoothness"
+	);
 
 	BIND_ENUM_CONSTANT(OPERATION_ADD);
 	BIND_ENUM_CONSTANT(OPERATION_REMOVE);

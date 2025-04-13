@@ -1171,9 +1171,11 @@ pg::CompilationResult VoxelGeneratorGraph::compile(bool debug) {
 	const int64_t time_spent = Time::get_singleton()->get_ticks_usec() - time_before;
 	ZN_PRINT_VERBOSE(format("Voxel graph compiled in {} us", time_spent));
 
+#ifdef VOXEL_ENABLE_GPU
 	if (result.success) {
 		invalidate_shaders();
 	}
+#endif
 
 	return result;
 }
@@ -1300,8 +1302,8 @@ int VoxelGeneratorGraph::get_sdf_output_port_address() const {
 }
 
 inline Vector3 get_3d_pos_from_panorama_uv(Vector2 uv) {
-	const float xa = -Math_TAU * uv.x - Math_PI;
-	const float ya = -Math_PI * (uv.y - 0.5f);
+	const float xa = -math::TAU<real_t> * uv.x - math::PI<real_t>;
+	const float ya = math::PI<real_t> * (uv.y - 0.5);
 	const float y = Math::sin(ya);
 	const float ca = Math::cos(ya);
 	const float x = Math::cos(xa) * ca;
@@ -1604,6 +1606,8 @@ void VoxelGeneratorGraph::bake_sphere_normalmap(Ref<Image> im, float ref_radius,
 	for_chunks_2d(im->get_width(), im->get_height(), 32, pc);
 }
 
+#ifdef VOXEL_ENABLE_GPU
+
 bool VoxelGeneratorGraph::get_shader_source(ShaderSourceData &out_data) const {
 	ZN_PROFILE_SCOPE();
 	ERR_FAIL_COND_V(_main_function.is_null(), false);
@@ -1653,6 +1657,8 @@ bool VoxelGeneratorGraph::get_shader_source(ShaderSourceData &out_data) const {
 
 	return true;
 }
+
+#endif
 
 VoxelSingleValue VoxelGeneratorGraph::generate_single(Vector3i position, unsigned int channel) {
 	// This is very slow when used multiple times, so if possible prefer using bulk queries
@@ -1728,8 +1734,11 @@ math::Interval get_range(const Span<const float> values) {
 
 // Note, this wrapper may not be used for main generation tasks.
 // It is mostly used as a debug tool.
-math::Interval VoxelGeneratorGraph::debug_analyze_range(Vector3i min_pos, Vector3i max_pos, bool optimize_execution_map)
-		const {
+math::Interval VoxelGeneratorGraph::debug_analyze_range(
+		Vector3i min_pos,
+		Vector3i max_pos,
+		bool optimize_execution_map
+) const {
 	ZN_ASSERT_RETURN_V(max_pos.x >= min_pos.x, math::Interval());
 	ZN_ASSERT_RETURN_V(max_pos.y >= min_pos.y, math::Interval());
 	ZN_ASSERT_RETURN_V(max_pos.z >= min_pos.z, math::Interval());

@@ -26,10 +26,13 @@ class AsyncDependencyTracker;
 namespace voxel {
 
 class VoxelTool;
-class VoxelInstancer;
 class VoxelSaveCompletionTracker;
 class VoxelTerrainMultiplayerSynchronizer;
 class BufferedTaskScheduler;
+
+#ifdef VOXEL_ENABLE_INSTANCER
+class VoxelInstancer;
+#endif
 
 // Infinite paged terrain made of voxel blocks all with the same level of detail.
 // Voxels are polygonized around the viewer by distance in a large cubic space.
@@ -95,8 +98,10 @@ public:
 	void set_material_override(Ref<Material> material);
 	Ref<Material> get_material_override() const;
 
+#ifdef VOXEL_ENABLE_GPU
 	void set_generator_use_gpu(bool enabled);
 	bool get_generator_use_gpu() const;
+#endif
 
 	VoxelData &get_storage() const {
 		ZN_ASSERT(_data != nullptr);
@@ -167,7 +172,9 @@ public:
 
 	// Internal
 
+#ifdef VOXEL_ENABLE_INSTANCER
 	void set_instancer(VoxelInstancer *instancer);
+#endif
 	void get_meshed_block_positions(StdVector<Vector3i> &out_positions) const;
 	Array get_mesh_block_surface(Vector3i block_pos) const;
 
@@ -363,7 +370,9 @@ private:
 	zylann::godot::ObjectUniquePtr<VoxelDataBlockEnterInfo> _data_block_enter_info_obj;
 
 	// References to external nodes.
+#ifdef VOXEL_ENABLE_INSTANCER
 	VoxelInstancer *_instancer = nullptr;
+#endif
 	VoxelTerrainMultiplayerSynchronizer *_multiplayer_synchronizer = nullptr;
 
 	Stats _stats;

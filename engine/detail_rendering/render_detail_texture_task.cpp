@@ -6,7 +6,10 @@
 #include "../../modifiers/voxel_modifier_stack.h"
 #include "../../storage/voxel_data.h"
 #include "../../util/math/conv.h"
+
+#ifdef VOXEL_ENABLE_GPU
 #include "render_detail_texture_gpu_task.h"
+#endif
 
 namespace zylann::voxel {
 
@@ -49,10 +52,13 @@ void RenderDetailTextureTask::run(ThreadedTaskContext &ctx) {
 	ZN_ASSERT_RETURN(output_textures->valid == false);
 	ZN_ASSERT_RETURN(cell_iterator != nullptr);
 
+#ifdef VOXEL_ENABLE_GPU
 	if (use_gpu) {
 		ZN_ASSERT_RETURN(generator->supports_shaders());
 		run_on_gpu();
-	} else {
+	} else
+#endif
+	{
 		run_on_cpu();
 	}
 }
@@ -149,9 +155,8 @@ bool RenderDetailTextureTask::is_cancelled() {
 	return false;
 }
 
-namespace {
-
-void build_gpu_tiles_data(
+#ifdef VOXEL_ENABLE_GPU
+static void build_gpu_tiles_data(
 		ICellIterator &cell_iterator,
 		unsigned int tile_count,
 		StdVector<int32_t> &cell_triangles,
@@ -200,8 +205,6 @@ void build_gpu_tiles_data(
 		tile_data.push_back(td);
 	}
 }
-
-} // namespace
 
 void RenderDetailTextureTask::run_on_gpu() {
 	ZN_PROFILE_SCOPE();
@@ -271,6 +274,7 @@ RenderDetailTextureGPUTask *RenderDetailTextureTask::make_gpu_task() {
 		dst_vertices.push_back(Vector4f(v.x, v.y, v.z, 0.f));
 	}
 
+#ifdef VOXEL_ENABLE_MODIFIERS
 	if (voxel_data != nullptr) {
 		const AABB aabb_voxels(to_vec3(origin_in_voxels), to_vec3(mesh_block_size << lod_index));
 		StdVector<VoxelModifier::ShaderData> modifiers_shader_data;
@@ -278,6 +282,7 @@ RenderDetailTextureGPUTask *RenderDetailTextureTask::make_gpu_task() {
 		modifiers.apply_for_gpu_rendering(modifiers_shader_data, aabb_voxels);
 		gpu_task->modifiers = std::move(modifiers_shader_data);
 	}
+#endif
 
 	gpu_task->cell_triangles = std::move(cell_triangles);
 	gpu_task->tile_data = std::move(tile_data);
@@ -293,6 +298,8 @@ RenderDetailTextureGPUTask *RenderDetailTextureTask::make_gpu_task() {
 
 	return gpu_task;
 }
+
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -355,6 +362,8 @@ void combine_edited_tiles(
 	}
 }
 
+#ifdef VOXEL_ENABLE_GPU
+
 void RenderDetailTexturePass2Task::run(ThreadedTaskContext &ctx) {
 	ZN_PROFILE_SCOPE();
 
@@ -410,5 +419,7 @@ void RenderDetailTexturePass2Task::apply_result() {
 	ZN_ASSERT_RETURN(callbacks.data != nullptr);
 	callbacks.detail_texture_output_callback(callbacks.data, o);
 }
+
+#endif
 
 } // namespace zylann::voxel

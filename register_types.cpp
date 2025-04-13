@@ -4,7 +4,6 @@
 #endif
 
 #include "constants/voxel_string_names.h"
-#include "edition/voxel_mesh_sdf_gd.h"
 #include "edition/voxel_tool.h"
 #include "edition/voxel_tool_buffer.h"
 #include "edition/voxel_tool_lod_terrain.h"
@@ -13,12 +12,6 @@
 #include "generators/graph/node_type_db.h"
 #include "generators/graph/voxel_generator_graph.h"
 #include "generators/multipass/voxel_generator_multipass_cb.h"
-#include "generators/simple/voxel_generator_flat.h"
-#include "generators/simple/voxel_generator_heightmap.h"
-#include "generators/simple/voxel_generator_image.h"
-#include "generators/simple/voxel_generator_noise.h"
-#include "generators/simple/voxel_generator_noise_2d.h"
-#include "generators/simple/voxel_generator_waves.h"
 #include "generators/voxel_generator_script.h"
 #include "meshers/blocky/types/voxel_blocky_attribute_axis.h"
 #include "meshers/blocky/types/voxel_blocky_attribute_custom.h"
@@ -33,29 +26,17 @@
 #include "meshers/blocky/voxel_blocky_model_mesh.h"
 #include "meshers/blocky/voxel_mesher_blocky.h"
 #include "meshers/cubes/voxel_mesher_cubes.h"
-#include "meshers/transvoxel/voxel_mesher_transvoxel.h"
-#include "modifiers/godot/voxel_modifier_gd.h"
-#include "modifiers/godot/voxel_modifier_mesh_gd.h"
-#include "modifiers/godot/voxel_modifier_sphere_gd.h"
 #include "storage/metadata/voxel_metadata_factory.h"
 #include "storage/metadata/voxel_metadata_variant.h"
 #include "storage/voxel_buffer_gd.h"
 #include "storage/voxel_memory_pool.h"
 #include "streams/region/voxel_stream_region_files.h"
-#include "streams/sqlite/voxel_stream_sqlite.h"
-#include "streams/vox/vox_loader.h"
 #include "streams/voxel_block_serializer_gd.h"
 #include "streams/voxel_stream_memory.h"
 #include "streams/voxel_stream_script.h"
 #include "terrain/fixed_lod/voxel_box_mover.h"
 #include "terrain/fixed_lod/voxel_terrain.h"
 #include "terrain/fixed_lod/voxel_terrain_multiplayer_synchronizer.h"
-#include "terrain/instancing/voxel_instance_component.h"
-#include "terrain/instancing/voxel_instance_library.h"
-#include "terrain/instancing/voxel_instance_library_multimesh_item.h"
-#include "terrain/instancing/voxel_instance_library_scene_item.h"
-#include "terrain/instancing/voxel_instancer.h"
-#include "terrain/instancing/voxel_instancer_rigidbody.h"
 #include "terrain/variable_lod/voxel_lod_terrain.h"
 #include "terrain/voxel_a_star_grid_3d.h"
 #include "terrain/voxel_mesh_block.h"
@@ -70,6 +51,38 @@
 #include "util/tasks/async_dependency_tracker.h"
 #include "util/tasks/godot/threaded_task_gd.h"
 
+#ifdef VOXEL_ENABLE_SMOOTH_MESHING
+#include "meshers/transvoxel/voxel_mesher_transvoxel.h"
+#endif
+
+#ifdef VOXEL_ENABLE_MODIFIERS
+#include "modifiers/godot/voxel_modifier_gd.h"
+#include "modifiers/godot/voxel_modifier_mesh_gd.h"
+#include "modifiers/godot/voxel_modifier_sphere_gd.h"
+#endif
+
+#ifdef VOXEL_ENABLE_SQLITE
+#include "streams/sqlite/voxel_stream_sqlite.h"
+#endif
+
+#ifdef VOXEL_ENABLE_INSTANCER
+#include "terrain/instancing/voxel_instance_component.h"
+#include "terrain/instancing/voxel_instance_library.h"
+#include "terrain/instancing/voxel_instance_library_multimesh_item.h"
+#include "terrain/instancing/voxel_instance_library_scene_item.h"
+#include "terrain/instancing/voxel_instancer.h"
+#include "terrain/instancing/voxel_instancer_rigidbody.h"
+#endif
+
+#ifdef VOXEL_ENABLE_BASIC_GENERATORS
+#include "generators/simple/voxel_generator_flat.h"
+#include "generators/simple/voxel_generator_heightmap.h"
+#include "generators/simple/voxel_generator_image.h"
+#include "generators/simple/voxel_generator_noise.h"
+#include "generators/simple/voxel_generator_noise_2d.h"
+#include "generators/simple/voxel_generator_waves.h"
+#endif
+
 #ifdef ZN_GODOT_EXTENSION
 #include "engine/voxel_engine_updater.h"
 #include "util/thread/godot_thread_helper.h"
@@ -77,6 +90,14 @@
 
 #ifdef VOXEL_ENABLE_FAST_NOISE_2
 #include "util/noise/fast_noise_2.h"
+#endif
+
+#ifdef VOXEL_ENABLE_MESH_SDF
+#include "edition/voxel_mesh_sdf_gd.h"
+#endif
+
+#ifdef VOXEL_ENABLE_VOX
+#include "streams/vox/vox_loader.h"
 #endif
 
 #include "util/godot/classes/engine.h"
@@ -96,11 +117,8 @@
 #include "editor/graph/voxel_graph_editor_node_preview.h"
 #include "editor/graph/voxel_graph_editor_plugin.h"
 #include "editor/instance_library/control_sizer.h"
-#include "editor/instance_library/voxel_instance_library_editor_plugin.h"
-#include "editor/instance_library/voxel_instance_library_list_editor.h"
-#include "editor/instance_library/voxel_instance_library_multimesh_item_editor_plugin.h"
+
 #include "editor/instancer/voxel_instancer_editor_plugin.h"
-#include "editor/mesh_sdf/voxel_mesh_sdf_editor_plugin.h"
 #include "editor/multipass/voxel_generator_multipass_editor_plugin.h"
 #include "editor/spot_noise/spot_noise_editor_plugin.h"
 #include "editor/terrain/voxel_terrain_editor_plugin.h"
@@ -109,6 +127,16 @@
 
 #ifdef VOXEL_ENABLE_FAST_NOISE_2
 #include "editor/fast_noise_2/fast_noise_2_editor_plugin.h"
+#endif
+
+#ifdef VOXEL_ENABLE_INSTANCER
+#include "editor/instance_library/voxel_instance_library_editor_plugin.h"
+#include "editor/instance_library/voxel_instance_library_list_editor.h"
+#include "editor/instance_library/voxel_instance_library_multimesh_item_editor_plugin.h"
+#endif
+
+#ifdef VOXEL_ENABLE_MESH_SDF
+#include "editor/mesh_sdf/voxel_mesh_sdf_editor_plugin.h"
 #endif
 
 #ifdef ZN_GODOT_EXTENSION
@@ -137,15 +165,19 @@
 #include "editor/graph/voxel_graph_node_dialog.h"
 #include "editor/graph/voxel_graph_node_inspector_wrapper.h"
 #include "editor/graph/voxel_range_analysis_dialog.h"
-#include "editor/instance_library/voxel_instance_library_inspector_plugin.h"
-#include "editor/instance_library/voxel_instance_library_multimesh_item_inspector_plugin.h"
-#include "editor/instancer/voxel_instancer_stat_view.h"
 #include "editor/mesh_sdf/voxel_mesh_sdf_viewer.h"
 #include "editor/multipass/voxel_generator_multipass_cache_viewer.h"
 #include "editor/spot_noise/spot_noise_editor_inspector_plugin.h"
 #include "editor/spot_noise/spot_noise_viewer.h"
 #include "editor/terrain/editor_property_aabb_min_max.h"
 #include "editor/terrain/voxel_terrain_editor_task_indicator.h"
+
+#ifdef VOXEL_ENABLE_INSTANCER
+#include "editor/instance_library/voxel_instance_library_inspector_plugin.h"
+#include "editor/instance_library/voxel_instance_library_multimesh_item_inspector_plugin.h"
+#include "editor/instancer/voxel_instancer_stat_view.h"
+#endif
+
 #endif // ZN_GODOT_EXTENSION
 
 #endif // TOOLS_ENABLED
@@ -191,12 +223,16 @@ void print_size_reminders() {
 	ZN_PRINT_VERBOSE(format("Size of VoxelMeshBlock: {}", sizeof(VoxelMeshBlock)));
 	ZN_PRINT_VERBOSE(format("Size of VoxelTerrain: {}", sizeof(VoxelTerrain)));
 	ZN_PRINT_VERBOSE(format("Size of VoxelLodTerrain: {}", sizeof(VoxelLodTerrain)));
+#ifdef VOXEL_ENABLE_INSTANCER
 	ZN_PRINT_VERBOSE(format("Size of VoxelInstancer: {}", sizeof(VoxelInstancer)));
+#endif
 	ZN_PRINT_VERBOSE(format("Size of VoxelDataMap: {}", sizeof(VoxelDataMap)));
 	ZN_PRINT_VERBOSE(format("Size of VoxelData: {}", sizeof(VoxelData)));
 	ZN_PRINT_VERBOSE(format("Size of VoxelMesher::Output: {}", sizeof(VoxelMesher::Output)));
 	ZN_PRINT_VERBOSE(format("Size of VoxelEngine::BlockMeshOutput: {}", sizeof(VoxelEngine::BlockMeshOutput)));
+#ifdef VOXEL_ENABLE_MODIFIERS
 	ZN_PRINT_VERBOSE(format("Size of VoxelModifierStack: {}", sizeof(VoxelModifierStack)));
+#endif
 	ZN_PRINT_VERBOSE(format("Size of AsyncDependencyTracker: {}", sizeof(AsyncDependencyTracker)));
 }
 
@@ -237,10 +273,6 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_class<VoxelBlockyTypeLibrary>();
 
 		ClassDB::register_class<VoxelColorPalette>();
-		ClassDB::register_class<VoxelInstanceLibrary>();
-		ClassDB::register_abstract_class<VoxelInstanceLibraryItem>();
-		ClassDB::register_class<VoxelInstanceLibraryMultiMeshItem>();
-		ClassDB::register_class<VoxelInstanceLibrarySceneItem>();
 		ClassDB::register_class<VoxelDataBlockEnterInfo>();
 		ClassDB::register_class<VoxelSaveCompletionTracker>();
 		ClassDB::register_class<pg::VoxelGraphFunction>();
@@ -253,29 +285,15 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_class<VoxelTerrain>();
 		ClassDB::register_class<VoxelLodTerrain>();
 		ClassDB::register_class<VoxelViewer>();
-		ClassDB::register_class<VoxelInstanceGenerator>();
-		ClassDB::register_class<VoxelInstancer>();
-		ClassDB::register_class<VoxelInstanceComponent>();
-		ClassDB::register_abstract_class<VoxelInstancerRigidBody>();
-		ClassDB::register_abstract_class<zylann::voxel::godot::VoxelModifier>();
-		ClassDB::register_class<zylann::voxel::godot::VoxelModifierSphere>();
-		ClassDB::register_class<zylann::voxel::godot::VoxelModifierMesh>();
 
 		// Streams
 		ClassDB::register_abstract_class<VoxelStream>();
 		ClassDB::register_class<VoxelStreamRegionFiles>();
 		ClassDB::register_class<VoxelStreamScript>();
-		ClassDB::register_class<VoxelStreamSQLite>();
 		ClassDB::register_class<VoxelStreamMemory>();
 
 		// Generators
 		ClassDB::register_abstract_class<VoxelGenerator>();
-		ClassDB::register_class<VoxelGeneratorFlat>();
-		ClassDB::register_abstract_class<VoxelGeneratorHeightmap>();
-		ClassDB::register_class<VoxelGeneratorWaves>();
-		ClassDB::register_class<VoxelGeneratorImage>();
-		ClassDB::register_class<VoxelGeneratorNoise2D>();
-		ClassDB::register_class<VoxelGeneratorNoise>();
 		ClassDB::register_class<VoxelGeneratorGraph>();
 		ClassDB::register_class<VoxelGeneratorScript>();
 		ClassDB::register_class<VoxelGeneratorMultipassCB>();
@@ -291,24 +309,65 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_abstract_class<VoxelToolBuffer>();
 		ClassDB::register_abstract_class<VoxelToolMultipassGenerator>();
 		ClassDB::register_class<zylann::voxel::godot::VoxelBlockSerializer>();
-		ClassDB::register_class<VoxelVoxLoader>();
 		ClassDB::register_class<ZN_FastNoiseLite>();
 		ClassDB::register_class<ZN_FastNoiseLiteGradient>();
 		ClassDB::register_class<ZN_SpotNoise>();
 		ClassDB::register_class<ZN_ThreadedTask>();
-		// See SCsub
-#ifdef VOXEL_ENABLE_FAST_NOISE_2
-		ClassDB::register_class<FastNoise2>();
-#endif
-		ClassDB::register_class<VoxelMeshSDF>();
 		ClassDB::register_class<VoxelTerrainMultiplayerSynchronizer>();
 		ClassDB::register_class<VoxelAStarGrid3D>();
 
 		// Meshers
 		ClassDB::register_abstract_class<VoxelMesher>();
 		ClassDB::register_class<VoxelMesherBlocky>();
-		ClassDB::register_class<VoxelMesherTransvoxel>();
 		ClassDB::register_class<VoxelMesherCubes>();
+
+		// See SCsub
+#ifdef VOXEL_ENABLE_FAST_NOISE_2
+		ClassDB::register_class<FastNoise2>();
+#endif
+
+#ifdef VOXEL_ENABLE_SMOOTH_MESHING
+		ClassDB::register_class<VoxelMesherTransvoxel>();
+#endif
+
+#ifdef VOXEL_ENABLE_MODIFIERS
+		ClassDB::register_abstract_class<zylann::voxel::godot::VoxelModifier>();
+		ClassDB::register_class<zylann::voxel::godot::VoxelModifierSphere>();
+		ClassDB::register_class<zylann::voxel::godot::VoxelModifierMesh>();
+#endif
+
+#ifdef VOXEL_ENABLE_SQLITE
+		ClassDB::register_class<VoxelStreamSQLite>();
+#endif
+
+#ifdef VOXEL_ENABLE_INSTANCER
+		ClassDB::register_class<VoxelInstanceLibrary>();
+		ClassDB::register_abstract_class<VoxelInstanceLibraryItem>();
+		ClassDB::register_class<VoxelInstanceLibraryMultiMeshItem>();
+		ClassDB::register_class<VoxelInstanceLibrarySceneItem>();
+		ClassDB::register_class<VoxelInstanceGenerator>();
+
+		ClassDB::register_class<VoxelInstancer>();
+		ClassDB::register_class<VoxelInstanceComponent>();
+		ClassDB::register_abstract_class<VoxelInstancerRigidBody>();
+#endif
+
+#ifdef VOXEL_ENABLE_BASIC_GENERATORS
+		ClassDB::register_class<VoxelGeneratorFlat>();
+		ClassDB::register_abstract_class<VoxelGeneratorHeightmap>();
+		ClassDB::register_class<VoxelGeneratorWaves>();
+		ClassDB::register_class<VoxelGeneratorImage>();
+		ClassDB::register_class<VoxelGeneratorNoise2D>();
+		ClassDB::register_class<VoxelGeneratorNoise>();
+#endif
+
+#ifdef VOXEL_ENABLE_MESH_SDF
+		ClassDB::register_class<VoxelMeshSDF>();
+#endif
+
+#ifdef VOXEL_ENABLE_VOX
+		ClassDB::register_class<VoxelVoxLoader>();
+#endif
 
 #ifdef ZN_GODOT_EXTENSION
 		// TODO GDX: I don't want to expose these classes, but there is no way not to expose them
@@ -359,7 +418,9 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 				zylann::voxel::godot::METADATA_TYPE_VARIANT
 		);
 
+#ifdef VOXEL_ENABLE_SMOOTH_MESHING
 		VoxelMesherTransvoxel::load_static_resources();
+#endif
 
 #ifdef VOXEL_TESTS
 		const PackedStringArray command_line_arguments = zylann::godot::get_command_line_arguments();
@@ -416,23 +477,6 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_internal_class<VoxelBlockyTypeAttributeCombinationSelector>();
 		ClassDB::register_internal_class<VoxelBlockyTypeVariantListEditor>();
 
-		ClassDB::register_internal_class<magica::VoxelVoxEditorPlugin>();
-		ClassDB::register_internal_class<magica::VoxelVoxMeshImporter>();
-		ClassDB::register_internal_class<magica::VoxelVoxSceneImporter>();
-
-		ClassDB::register_internal_class<VoxelInstancerEditorPlugin>();
-		ClassDB::register_internal_class<VoxelInstancerStatView>();
-
-		ClassDB::register_internal_class<VoxelInstanceLibraryEditorPlugin>();
-		ClassDB::register_internal_class<VoxelInstanceLibraryInspectorPlugin>();
-		ClassDB::register_internal_class<VoxelInstanceLibraryMultiMeshItemEditorPlugin>();
-		ClassDB::register_internal_class<VoxelInstanceLibraryMultiMeshItemInspectorPlugin>();
-		ClassDB::register_internal_class<VoxelInstanceLibraryListEditor>();
-
-		ClassDB::register_internal_class<VoxelMeshSDFViewer>();
-		ClassDB::register_internal_class<VoxelMeshSDFEditorPlugin>();
-		ClassDB::register_internal_class<VoxelMeshSDFInspectorPlugin>();
-
 		ClassDB::register_internal_class<VoxelGraphEditorInspectorPlugin>();
 		ClassDB::register_internal_class<VoxelGraphFunctionInspectorPlugin>();
 		ClassDB::register_internal_class<VoxelGraphEditorNodePreview>();
@@ -448,21 +492,55 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_internal_class<VoxelGeneratorMultipassEditorPlugin>();
 		ClassDB::register_internal_class<VoxelGeneratorMultipassEditorInspectorPlugin>();
 		ClassDB::register_internal_class<VoxelGeneratorMultipassCacheViewer>();
+
+#ifdef VOXEL_ENABLE_MESH_SDF
+		ClassDB::register_internal_class<VoxelMeshSDFViewer>();
+		ClassDB::register_internal_class<VoxelMeshSDFEditorPlugin>();
+		ClassDB::register_internal_class<VoxelMeshSDFInspectorPlugin>();
+#endif
+
+#ifdef VOXEL_ENABLE_INSTANCER
+		ClassDB::register_internal_class<VoxelInstancerEditorPlugin>();
+		ClassDB::register_internal_class<VoxelInstancerStatView>();
+
+		ClassDB::register_internal_class<VoxelInstanceLibraryEditorPlugin>();
+		ClassDB::register_internal_class<VoxelInstanceLibraryInspectorPlugin>();
+		ClassDB::register_internal_class<VoxelInstanceLibraryMultiMeshItemEditorPlugin>();
+		ClassDB::register_internal_class<VoxelInstanceLibraryMultiMeshItemInspectorPlugin>();
+		ClassDB::register_internal_class<VoxelInstanceLibraryListEditor>();
+#endif
+
+#ifdef VOXEL_ENABLE_VOX
+		ClassDB::register_internal_class<magica::VoxelVoxEditorPlugin>();
+		ClassDB::register_internal_class<magica::VoxelVoxMeshImporter>();
+		ClassDB::register_internal_class<magica::VoxelVoxSceneImporter>();
+#endif
+
 #endif // ZN_GODOT_EXTENSION
 
 		EditorPlugins::add_by_type<VoxelGraphEditorPlugin>();
 		EditorPlugins::add_by_type<VoxelTerrainEditorPlugin>();
-		EditorPlugins::add_by_type<VoxelInstanceLibraryEditorPlugin>();
-		EditorPlugins::add_by_type<VoxelInstanceLibraryMultiMeshItemEditorPlugin>();
 		EditorPlugins::add_by_type<ZN_FastNoiseLiteEditorPlugin>();
 		EditorPlugins::add_by_type<ZN_SpotNoiseEditorPlugin>();
-		EditorPlugins::add_by_type<magica::VoxelVoxEditorPlugin>();
-		EditorPlugins::add_by_type<VoxelInstancerEditorPlugin>();
-		EditorPlugins::add_by_type<VoxelMeshSDFEditorPlugin>();
 		EditorPlugins::add_by_type<VoxelBlockyLibraryEditorPlugin>();
 		EditorPlugins::add_by_type<VoxelGeneratorMultipassEditorPlugin>();
+
+#ifdef VOXEL_ENABLE_MESH_SDF
+		EditorPlugins::add_by_type<VoxelMeshSDFEditorPlugin>();
+#endif
+
+#ifdef VOXEL_ENABLE_INSTANCER
+		EditorPlugins::add_by_type<VoxelInstancerEditorPlugin>();
+		EditorPlugins::add_by_type<VoxelInstanceLibraryEditorPlugin>();
+		EditorPlugins::add_by_type<VoxelInstanceLibraryMultiMeshItemEditorPlugin>();
+#endif
+
 #ifdef VOXEL_ENABLE_FAST_NOISE_2
 		EditorPlugins::add_by_type<FastNoise2EditorPlugin>();
+#endif
+
+#ifdef VOXEL_ENABLE_VOX
+		EditorPlugins::add_by_type<magica::VoxelVoxEditorPlugin>();
 #endif
 
 #ifdef TOOLS_ENABLED
@@ -502,7 +580,9 @@ void uninitialize_voxel_module(ModuleInitializationLevel p_level) {
 		// users can write custom generators, which run inside threads, and these threads are hosted in the engine
 		// singleton... See https://github.com/Zylann/godot_voxel/issues/189
 
+#ifdef VOXEL_ENABLE_SMOOTH_MESHING
 		VoxelMesherTransvoxel::free_static_resources();
+#endif
 		VoxelStringNames::destroy_singleton();
 		pg::NodeTypeDB::destroy_singleton();
 		zylann::voxel::godot::VoxelEngine::destroy_singleton();

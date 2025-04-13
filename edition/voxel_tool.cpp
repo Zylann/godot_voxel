@@ -1,10 +1,16 @@
 #include "voxel_tool.h"
 #include "../storage/voxel_buffer_gd.h"
+#include "../storage/voxel_data.h"
 #include "../util/godot/core/packed_arrays.h"
 #include "../util/io/log.h"
 #include "../util/math/color8.h"
 #include "../util/math/conv.h"
 #include "../util/profiling.h"
+
+#ifdef VOXEL_ENABLE_MESH_SDF
+#include "voxel_mesh_sdf_gd.h"
+#endif
+
 #ifdef DEBUG_ENABLED
 #include "../util/godot/core/aabb.h"
 #include "../util/string/format.h"
@@ -259,6 +265,13 @@ void VoxelTool::do_path(Span<const Vector3> positions, Span<const float> radii) 
 	// Implemented in derived classes
 }
 
+#ifdef VOXEL_ENABLE_MESH_SDF
+void VoxelTool::do_mesh(const VoxelMeshSDF &mesh_sdf, const Transform3D &transform, const float isolevel) {
+	ERR_PRINT("Not implemented");
+	// Implemented in derived classes
+}
+#endif
+
 void VoxelTool::copy(Vector3i pos, VoxelBuffer &dst, uint8_t channels_mask) const {
 	ERR_PRINT("Not implemented");
 	// Implemented in derived classes
@@ -402,6 +415,84 @@ Variant VoxelTool::get_voxel_metadata(Vector3i pos) const {
 	return Variant();
 }
 
+#ifdef VOXEL_ENABLE_MESH_SDF
+void VoxelTool::do_mesh_chunked(
+		const VoxelMeshSDF &mesh_sdf,
+		VoxelData &vdata,
+		const Transform3D &transform,
+		const float isolevel,
+		const bool with_pre_generate
+) {
+	ZN_PROFILE_SCOPE();
+
+	ZN_ASSERT_RETURN(mesh_sdf.is_baked());
+	Ref<godot::VoxelBuffer> buffer_ref = mesh_sdf.get_voxel_buffer();
+	ZN_ASSERT_RETURN(buffer_ref.is_valid());
+	const VoxelBuffer &buffer = buffer_ref->get_buffer();
+	const VoxelBuffer::ChannelId buffer_channel = VoxelBuffer::CHANNEL_SDF;
+	ZN_ASSERT_RETURN(buffer.get_channel_compression(buffer_channel) != VoxelBuffer::COMPRESSION_UNIFORM);
+	ZN_ASSERT_RETURN(buffer.get_channel_depth(buffer_channel) == VoxelBuffer::DEPTH_32_BIT);
+
+	const Transform3D &box_to_world = transform;
+	const AABB local_aabb = mesh_sdf.get_aabb();
+
+	// Note, transform is local to the terrain
+	const AABB aabb = box_to_world.xform(local_aabb);
+	const Box3i voxel_box =
+			Box3i::from_min_max(aabb.position.floor(), (aabb.position + aabb.size).ceil()).clipped(vdata.get_bounds());
+
+	// TODO Sometimes it will fail near unloaded blocks, even though the transformed box does not intersect them.
+	// This could be avoided with a box/transformed-box intersection algorithm. Might investigate if the use case
+	// occurs. It won't happen with full load mode. This also affects other shapes.
+	if (!is_area_editable(voxel_box)) {
+		ZN_PRINT_WARNING("Area not editable");
+		return;
+	}
+
+	if (with_pre_generate) {
+		vdata.pre_generate_box(voxel_box);
+	}
+
+	// TODO Maybe more efficient to "rasterize" the box? We're going to iterate voxels the box doesn't intersect.
+	// TODO Maybe we should scale SDF values based on the scale of the transform too
+	// TODO Support other depths, format should be accessible from the volume
+
+	const Transform3D buffer_to_box =
+			Transform3D(Basis().scaled(Vector3(local_aabb.size / buffer.get_size())), local_aabb.position);
+	const Transform3D buffer_to_world = box_to_world * buffer_to_box;
+
+	// Making the model bigger should also make signed distances larger.
+	// Non-uniform scaling is not well supported though.
+	const float size_scale = math::get_largest_coord(transform.get_basis().get_scale());
+
+	ops::DoShapeChunked<ops::SdfBufferShape, ops::VoxelDataGridAccess> op;
+	op.shape.world_to_buffer = buffer_to_world.affine_inverse();
+	op.shape.buffer_size = buffer.get_size();
+	op.shape.isolevel = isolevel;
+	op.shape.sdf_scale = get_sdf_scale() * size_scale;
+	// Note, the passed buffer must not be shared with another thread.
+	// buffer.decompress_channel(channel);
+	ZN_ASSERT_RETURN(buffer.get_channel_data_read_only(buffer_channel, op.shape.buffer));
+	op.mode = static_cast<ops::Mode>(get_mode());
+	op.texture_params = _texture_params;
+	op.blocky_value = _value;
+	op.channel = get_channel();
+	op.strength = get_sdf_strength();
+	op.box = voxel_box;
+
+	VoxelDataGrid grid;
+	vdata.get_blocks_grid(grid, voxel_box, 0);
+	op.block_access.grid = &grid;
+
+	{
+		VoxelDataGrid::LockWrite wlock(grid);
+		op();
+	}
+
+	_post_edit(voxel_box);
+}
+#endif
+
 // Binding land
 
 uint64_t VoxelTool::_b_get_voxel(Vector3i pos) {
@@ -439,6 +530,13 @@ void VoxelTool::_b_do_box(Vector3i begin, Vector3i end) {
 void VoxelTool::_b_do_path(PackedVector3Array positions, PackedFloat32Array radii) {
 	do_path(to_span(positions), to_span(radii));
 }
+
+#ifdef VOXEL_ENABLE_MESH_SDF
+void VoxelTool::_b_do_mesh(Ref<VoxelMeshSDF> mesh_sdf, Transform3D transform, float isolevel) {
+	ZN_ASSERT_RETURN(mesh_sdf.is_valid());
+	do_mesh(**mesh_sdf, transform, isolevel);
+}
+#endif
 
 void VoxelTool::_b_copy(Vector3i pos, Ref<godot::VoxelBuffer> voxels, int channel_mask) {
 	copy(pos, voxels, channel_mask);
@@ -556,6 +654,9 @@ void VoxelTool::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("do_sphere", "center", "radius"), &VoxelTool::_b_do_sphere);
 	ClassDB::bind_method(D_METHOD("do_box", "begin", "end"), &VoxelTool::_b_do_box);
 	ClassDB::bind_method(D_METHOD("do_path", "points", "radii"), &VoxelTool::_b_do_path);
+#ifdef VOXEL_ENABLE_MESH_SDF
+	ClassDB::bind_method(D_METHOD("do_mesh", "mesh_sdf", "transform", "isolevel"), &VoxelTool::_b_do_mesh, DEFVAL(0.0));
+#endif
 
 	ClassDB::bind_method(
 			D_METHOD("smooth_sphere", "sphere_center", "sphere_radius", "blur_radius"), &VoxelTool::smooth_sphere

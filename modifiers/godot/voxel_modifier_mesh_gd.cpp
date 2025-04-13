@@ -2,6 +2,10 @@
 #include "../../util/godot/core/array.h"
 #include "../voxel_modifier_mesh.h"
 
+#ifdef TOOLS_ENABLED
+#include "../../util/godot/core/string.h"
+#endif
+
 namespace zylann::voxel::godot {
 
 zylann::voxel::VoxelModifierMesh *get_mesh_modifier(VoxelLodTerrain &volume, uint32_t id) {

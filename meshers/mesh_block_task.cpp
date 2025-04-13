@@ -1,6 +1,4 @@
 #include "mesh_block_task.h"
-#include "../engine/detail_rendering/render_detail_texture_task.h"
-#include "../meshers/transvoxel/voxel_mesher_transvoxel.h"
 #include "../storage/voxel_data.h"
 #include "../terrain/voxel_mesh_block.h"
 #include "../util/dstack.h"
@@ -10,8 +8,16 @@
 #include "../util/profiling.h"
 // #include "../util/string/format.h" // Debug
 #include "../engine/voxel_engine.h"
-#include "../generators/generate_block_gpu_task.h"
+
+#ifdef VOXEL_ENABLE_SMOOTH_MESHING
+#include "../engine/detail_rendering/render_detail_texture_task.h"
 #include "../meshers/transvoxel/transvoxel_cell_iterator.h"
+#include "../meshers/transvoxel/voxel_mesher_transvoxel.h"
+#endif
+
+#ifdef VOXEL_ENABLE_GPU
+#include "../generators/generate_block_gpu_task.h"
+#endif
 
 namespace zylann::voxel {
 
@@ -207,7 +213,9 @@ void copy_block_and_neighbors(
 		ZN_PROFILE_SCOPE_NAMED("Generate");
 		VoxelBuffer generated_voxels(VoxelBuffer::ALLOCATOR_POOL);
 
+#ifdef VOXEL_ENABLE_MODIFIERS
 		const VoxelModifierStack &modifiers = voxel_data.get_modifiers();
+#endif
 
 		for (const Box3i &box : boxes_to_generate) {
 			ZN_PROFILE_SCOPE_NAMED("Box");
@@ -222,7 +230,9 @@ void copy_block_and_neighbors(
 			if (generator.is_valid()) {
 				generator->generate_block(q);
 			}
+#ifdef VOXEL_ENABLE_MODIFIERS
 			modifiers.apply(q.voxel_buffer, AABB(q.origin_in_voxels, q.voxel_buffer.get_size() << lod_index));
+#endif
 
 			for (const uint8_t channel_index : channels) {
 				dst.copy_channel_from(
@@ -342,6 +352,7 @@ void MeshBlockTask::run(zylann::ThreadedTaskContext &ctx) {
 	// end up with a huge surface at the bottom facing down, since the default for chunks outside bounds is air.
 	// We would have to somehow expose a way to set what these areas default to as well...
 
+#ifdef VOXEL_ENABLE_GPU
 	if (block_generation_use_gpu) {
 		if (_stage == 0) {
 			gather_voxels_gpu(ctx);
@@ -353,11 +364,15 @@ void MeshBlockTask::run(zylann::ThreadedTaskContext &ctx) {
 		if (_stage == 2) {
 			build_mesh();
 		}
-	} else {
+	} else
+#endif
+	{
 		gather_voxels_cpu();
 		build_mesh();
 	}
 }
+
+#ifdef VOXEL_ENABLE_GPU
 
 void MeshBlockTask::gather_voxels_gpu(zylann::ThreadedTaskContext &ctx) {
 	ZN_ASSERT(meshing_dependency != nullptr);
@@ -410,11 +425,13 @@ void MeshBlockTask::gather_voxels_gpu(zylann::ThreadedTaskContext &ctx) {
 	gpu_task->origin_in_voxels = origin_in_voxels;
 	gpu_task->consumer_task = this;
 
+#ifdef VOXEL_ENABLE_MODIFIERS
 	const AABB aabb_voxels(to_vec3(origin_in_voxels), to_vec3(_voxels.get_size() << lod_index));
 	StdVector<VoxelModifier::ShaderData> modifiers_shader_data;
 	const VoxelModifierStack &modifiers = data->get_modifiers();
 	modifiers.apply_for_gpu_rendering(modifiers_shader_data, aabb_voxels);
 	gpu_task->modifiers = std::move(modifiers_shader_data);
+#endif
 
 	ctx.status = ThreadedTaskContext::STATUS_TAKEN_OUT;
 
@@ -426,6 +443,8 @@ void MeshBlockTask::set_gpu_results(StdVector<GenerateBlockGPUTaskResult> &&resu
 	_gpu_generation_results = std::move(results);
 	_stage = 1;
 }
+
+#endif
 
 void MeshBlockTask::gather_voxels_cpu() {
 	ZN_ASSERT(meshing_dependency != nullptr);
@@ -502,6 +521,7 @@ void MeshBlockTask::build_mesh() {
 	};
 	mesher->build(_surfaces_output, input);
 
+#ifdef VOXEL_ENABLE_SMOOTH_MESHING
 	const bool mesh_is_empty = VoxelMesher::is_mesh_empty(_surfaces_output.surfaces);
 
 	// Currently, Transvoxel only is supported in combination with detail normalmap texturing, because the algorithm
@@ -552,11 +572,14 @@ void MeshBlockTask::build_mesh() {
 		nm_task->output_textures = detail_textures;
 		nm_task->detail_texture_settings = detail_texture_settings;
 		nm_task->priority_dependency = priority_dependency;
+#ifdef VOXEL_ENABLE_GPU
 		nm_task->use_gpu =
 				(detail_texture_use_gpu && nm_task->generator.is_valid() && nm_task->generator->supports_shaders());
+#endif
 
 		VoxelEngine::get_singleton().push_async_task(nm_task);
 	}
+#endif
 
 	if (require_visual && VoxelEngine::get_singleton().is_threaded_graphics_resource_building_enabled()) {
 		// This can only run if the engine supports building meshes from multiple threads
@@ -620,7 +643,9 @@ void MeshBlockTask::apply_result() {
 			o.mesh_material_indices = std::move(_mesh_material_indices);
 			o.has_mesh_resource = _has_mesh_resource;
 			o.visual_was_required = require_visual;
+#ifdef VOXEL_ENABLE_SMOOTH_MESHING
 			o.detail_textures = _detail_textures;
+#endif
 
 			VoxelEngine::VolumeCallbacks callbacks = VoxelEngine::get_singleton().get_volume_callbacks(volume_id);
 			ERR_FAIL_COND(callbacks.mesh_output_callback == nullptr);

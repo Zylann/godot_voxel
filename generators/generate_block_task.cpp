@@ -19,7 +19,9 @@ GenerateBlockTask::GenerateBlockTask(const VoxelGenerator::BlockTaskParams &para
 		_lod_index(params.lod_index),
 		_block_size(params.block_size),
 		_drop_beyond_max_distance(params.drop_beyond_max_distance),
+#ifdef VOXEL_ENABLE_GPU
 		_use_gpu(params.use_gpu),
+#endif
 		_priority_dependency(params.priority_dependency),
 		_stream_dependency(params.stream_dependency),
 		_data(params.data),
@@ -49,6 +51,7 @@ void GenerateBlockTask::run(zylann::ThreadedTaskContext &ctx) {
 		_voxels->create(_block_size, _block_size, _block_size);
 	}
 
+#ifdef VOXEL_ENABLE_GPU
 	if (_use_gpu) {
 		if (_stage == 0) {
 			run_gpu_task(ctx);
@@ -59,11 +62,15 @@ void GenerateBlockTask::run(zylann::ThreadedTaskContext &ctx) {
 		if (_stage == 2) {
 			run_stream_saving_and_finish();
 		}
-	} else {
+	} else
+#endif
+	{
 		run_cpu_generation();
 		run_stream_saving_and_finish();
 	}
 }
+
+#ifdef VOXEL_ENABLE_GPU
 
 void GenerateBlockTask::run_gpu_task(zylann::ThreadedTaskContext &ctx) {
 	Ref<VoxelGenerator> generator = _stream_dependency->generator;
@@ -95,6 +102,7 @@ void GenerateBlockTask::run_gpu_task(zylann::ThreadedTaskContext &ctx) {
 	gpu_task->origin_in_voxels = origin_in_voxels;
 	gpu_task->consumer_task = this;
 
+#ifdef VOXEL_ENABLE_MODIFIERS
 	if (_data != nullptr) {
 		const AABB aabb_voxels(to_vec3(origin_in_voxels), to_vec3(resolution << _lod_index));
 		StdVector<VoxelModifier::ShaderData> modifiers_shader_data;
@@ -102,6 +110,7 @@ void GenerateBlockTask::run_gpu_task(zylann::ThreadedTaskContext &ctx) {
 		modifiers.apply_for_gpu_rendering(modifiers_shader_data, aabb_voxels);
 		gpu_task->modifiers = std::move(modifiers_shader_data);
 	}
+#endif
 
 	ctx.status = ThreadedTaskContext::STATUS_TAKEN_OUT;
 
@@ -119,6 +128,8 @@ void GenerateBlockTask::run_gpu_conversion() {
 	_stage = 2;
 }
 
+#endif
+
 void GenerateBlockTask::run_cpu_generation() {
 	const Vector3i origin_in_voxels = (_position << _lod_index) * _block_size;
 
@@ -128,12 +139,14 @@ void GenerateBlockTask::run_cpu_generation() {
 	const VoxelGenerator::Result result = generator->generate_block(query_data);
 	_max_lod_hint = result.max_lod_hint;
 
+#ifdef VOXEL_ENABLE_MODIFIERS
 	if (_data != nullptr) {
 		_data->get_modifiers().apply(
 				query_data.voxel_buffer,
 				AABB(query_data.origin_in_voxels, query_data.voxel_buffer.get_size() << _lod_index)
 		);
 	}
+#endif
 }
 
 void GenerateBlockTask::run_stream_saving_and_finish() {

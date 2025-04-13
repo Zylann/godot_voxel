@@ -1,22 +1,25 @@
 #include "render_detail_texture_gpu_task.h"
-#include "../../modifiers/voxel_modifier.h"
 #include "../../util/dstack.h"
-#include "../../util/godot/core/packed_arrays.h"
-#include "../../util/profiling.h"
-#include "../gpu/compute_shader.h"
-#include "../gpu/compute_shader_parameters.h"
-#include "../voxel_engine.h"
-#include "render_detail_texture_task.h"
-// #ifdef DEBUG_ENABLED
-// #include "../../util/string/format.h"
-// #endif
-
 #include "../../util/godot/classes/rd_sampler_state.h"
 #include "../../util/godot/classes/rd_shader_spirv.h"
 #include "../../util/godot/classes/rd_texture_format.h"
 #include "../../util/godot/classes/rd_texture_view.h"
 #include "../../util/godot/classes/rd_uniform.h"
 #include "../../util/godot/classes/rendering_device.h"
+#include "../../util/godot/core/packed_arrays.h"
+#include "../../util/profiling.h"
+#include "../gpu/compute_shader.h"
+#include "../gpu/compute_shader_parameters.h"
+#include "../voxel_engine.h"
+#include "render_detail_texture_task.h"
+
+#ifdef VOXEL_ENABLE_MODIFIERS
+#include "../../modifiers/voxel_modifier.h"
+#endif
+
+// #ifdef DEBUG_ENABLED
+// #include "../../util/string/format.h"
+// #endif
 
 using namespace zylann::godot;
 
@@ -210,6 +213,7 @@ void RenderDetailTextureGPUTask::prepare(GPUTaskContext &ctx) {
 	sd_buffer0_uniform->set_uniform_type(RenderingDevice::UNIFORM_TYPE_STORAGE_BUFFER);
 	sd_buffer0_uniform->add_id(_sd_buffer0_sb.rid);
 
+#ifdef VOXEL_ENABLE_MODIFIERS
 	Ref<RDUniform> sd_buffer1_uniform;
 	if (modifiers.size() > 0) {
 		_sd_buffer1_sb = storage_buffer_pool.allocate(sd_buffer_size_bytes);
@@ -218,6 +222,7 @@ void RenderDetailTextureGPUTask::prepare(GPUTaskContext &ctx) {
 		sd_buffer1_uniform->set_uniform_type(RenderingDevice::UNIFORM_TYPE_STORAGE_BUFFER);
 		sd_buffer1_uniform->add_id(_sd_buffer1_sb.rid);
 	}
+#endif
 
 	// Normalmap params
 
@@ -270,6 +275,7 @@ void RenderDetailTextureGPUTask::prepare(GPUTaskContext &ctx) {
 	_detail_generator_pipeline_rid = rd.compute_pipeline_create(shader_rid);
 	ERR_FAIL_COND(!_detail_generator_pipeline_rid.is_valid());
 
+#ifdef VOXEL_ENABLE_MODIFIERS
 	for (const VoxelModifier::ShaderData &modifier : modifiers) {
 		const RID modifier_shader_rid = VoxelModifier::get_detail_shader(ctx.base_resources, modifier.modifier_type);
 		ERR_FAIL_COND(!modifier_shader_rid.is_valid());
@@ -277,6 +283,7 @@ void RenderDetailTextureGPUTask::prepare(GPUTaskContext &ctx) {
 		ERR_FAIL_COND(!rid.is_valid());
 		_detail_modifier_pipelines.push_back(rid);
 	}
+#endif
 
 	const RID detail_normalmap_shader_rid = ctx.base_resources.detail_normalmap_shader.rid;
 	ERR_FAIL_COND(!detail_normalmap_shader_rid.is_valid());
@@ -292,7 +299,12 @@ void RenderDetailTextureGPUTask::prepare(GPUTaskContext &ctx) {
 
 	// Make compute list
 
-	_uniform_sets_to_free.reserve(5 + modifiers.size());
+#ifdef VOXEL_ENABLE_MODIFIERS
+	const unsigned int modifier_count = modifiers.size();
+#else
+	const unsigned int modifier_count = 0;
+#endif
+	_uniform_sets_to_free.reserve(5 + modifier_count);
 
 	const int compute_list_id = rd.compute_list_begin();
 
@@ -376,6 +388,7 @@ void RenderDetailTextureGPUTask::prepare(GPUTaskContext &ctx) {
 
 	// Apply modifiers
 
+#ifdef VOXEL_ENABLE_MODIFIERS
 	for (unsigned int modifier_index = 0; modifier_index < modifiers.size(); ++modifier_index) {
 		const VoxelModifier::ShaderData &modifier_data = modifiers[modifier_index];
 		const RID modifier_shader_rid =
@@ -427,6 +440,7 @@ void RenderDetailTextureGPUTask::prepare(GPUTaskContext &ctx) {
 
 		rd.compute_list_add_barrier(compute_list_id);
 	}
+#endif
 
 	// Normalmap rendering
 	{
@@ -449,9 +463,9 @@ void RenderDetailTextureGPUTask::prepare(GPUTaskContext &ctx) {
 		const RID detail_normalmap_uniform_set_rid =
 				uniform_set_create(rd, detail_normalmap_uniforms, detail_normalmap_shader_rid, 0);
 		_uniform_sets_to_free.push_back(detail_normalmap_uniform_set_rid);
-// #ifdef DEV_ENABLED
-// 		_uniform_sets_expected_to_be_freed.push_back(detail_normalmap_uniform_set_rid);
-// #endif
+		// #ifdef DEV_ENABLED
+		// 		_uniform_sets_expected_to_be_freed.push_back(detail_normalmap_uniform_set_rid);
+		// #endif
 
 		rd.compute_list_bind_compute_pipeline(compute_list_id, _detail_normalmap_pipeline_rid);
 		rd.compute_list_bind_uniform_set(compute_list_id, detail_normalmap_uniform_set_rid, 0);
@@ -483,9 +497,9 @@ void RenderDetailTextureGPUTask::prepare(GPUTaskContext &ctx) {
 		dilation_uniforms[2] = dilation_params_uniform;
 		const RID dilation_uniform_set_rid = uniform_set_create(rd, dilation_uniforms, dilation_shader_rid, 0);
 		_uniform_sets_to_free.push_back(dilation_uniform_set_rid);
-// #ifdef DEV_ENABLED
-// 		_uniform_sets_expected_to_be_freed.push_back(dilation_uniform_set_rid);
-// #endif
+		// #ifdef DEV_ENABLED
+		// 		_uniform_sets_expected_to_be_freed.push_back(dilation_uniform_set_rid);
+		// #endif
 
 		rd.compute_list_bind_compute_pipeline(compute_list_id, _normalmap_dilation_pipeline_rid);
 		rd.compute_list_bind_uniform_set(compute_list_id, dilation_uniform_set_rid, 0);
@@ -523,9 +537,9 @@ void RenderDetailTextureGPUTask::prepare(GPUTaskContext &ctx) {
 		// TODO Do I really have to create a new uniform set every time I modify just one of the passed values?
 		const RID dilation_uniform_set_rid = uniform_set_create(rd, dilation_uniforms, dilation_shader_rid, 0);
 		_uniform_sets_to_free.push_back(dilation_uniform_set_rid);
-// #ifdef DEV_ENABLED
-// 		_uniform_sets_expected_to_be_freed.push_back(dilation_uniform_set_rid);
-// #endif
+		// #ifdef DEV_ENABLED
+		// 		_uniform_sets_expected_to_be_freed.push_back(dilation_uniform_set_rid);
+		// #endif
 
 		rd.compute_list_bind_uniform_set(compute_list_id, dilation_uniform_set_rid, 0);
 
@@ -580,14 +594,14 @@ PackedByteArray RenderDetailTextureGPUTask::collect_texture_and_cleanup(
 			free_rendering_device_rid(rd, rid);
 		}
 
-// #ifdef DEV_ENABLED
-// 		for (unsigned int i = 0; i < _uniform_sets_expected_to_be_freed.size(); ++i) {
-// 			const RID rid = _uniform_sets_expected_to_be_freed[i];
-// 			if(rd.uniform_set_is_valid(rid)) {
-// 				ZN_PRINT_ERROR(format("Uniform Set #{} wasn't freed by Godot", i));
-// 			}
-// 		}
-// #endif
+		// #ifdef DEV_ENABLED
+		// 		for (unsigned int i = 0; i < _uniform_sets_expected_to_be_freed.size(); ++i) {
+		// 			const RID rid = _uniform_sets_expected_to_be_freed[i];
+		// 			if(rd.uniform_set_is_valid(rid)) {
+		// 				ZN_PRINT_ERROR(format("Uniform Set #{} wasn't freed by Godot", i));
+		// 			}
+		// 		}
+		// #endif
 
 		storage_buffer_pool.recycle(_mesh_vertices_sb);
 		storage_buffer_pool.recycle(_mesh_indices_sb);
@@ -619,7 +633,7 @@ void RenderDetailTextureGPUTask::collect(GPUTaskContext &ctx) {
 
 	PackedByteArray texture_data = collect_texture_and_cleanup(ctx.rendering_device, ctx.storage_buffer_pool);
 
-#if DEBUG_ENABLED
+#ifdef VOXEL_TESTS
 	if (testing_output != nullptr) {
 		*testing_output = texture_data;
 		return;

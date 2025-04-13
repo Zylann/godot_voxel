@@ -81,7 +81,9 @@ VoxelEngine::~VoxelEngine() {
 	// See https://github.com/Zylann/godot_voxel/issues/189
 	wait_and_clear_all_tasks(true);
 
+#ifdef VOXEL_ENABLE_GPU
 	_gpu_task_runner.stop();
+#endif
 }
 
 static bool auto_detect_threaded_graphics_resource_building_support() {
@@ -122,9 +124,11 @@ void VoxelEngine::try_initialize_gpu_features() {
 			"Auto-detected threaded graphics resource building: {}", _threaded_graphics_resource_building_enabled
 	));
 
+#ifdef VOXEL_ENABLE_GPU
 	if (_gpu_task_runner.is_running() == false) {
 		_gpu_task_runner.start();
 	}
+#endif
 }
 
 void VoxelEngine::wait_and_clear_all_tasks(bool warn) {
@@ -283,6 +287,7 @@ void VoxelEngine::push_async_io_tasks(Span<zylann::IThreadedTask *> tasks) {
 	_general_thread_pool.enqueue(tasks, true);
 }
 
+#ifdef VOXEL_ENABLE_GPU
 void VoxelEngine::push_gpu_task(IGPUTask *task) {
 	_gpu_task_runner.push(task);
 }
@@ -290,6 +295,7 @@ void VoxelEngine::push_gpu_task(IGPUTask *task) {
 uint32_t VoxelEngine::get_pending_gpu_tasks_count() const {
 	return _gpu_task_runner.get_pending_task_count();
 }
+#endif
 
 void VoxelEngine::process() {
 	ZN_PROFILE_SCOPE();
@@ -318,7 +324,9 @@ void VoxelEngine::process() {
 	// Update viewer dependencies
 	sync_viewers_task_priority_data();
 
+#ifdef VOXEL_ENABLE_GPU
 	ZN_PROFILE_PLOT("Pending GPU tasks", int64_t(_gpu_task_runner.get_pending_task_count()));
+#endif
 }
 
 void VoxelEngine::sync_viewers_task_priority_data() {
@@ -393,7 +401,9 @@ VoxelEngine::Stats VoxelEngine::get_stats() const {
 	s.meshing_tasks = MeshBlockTask::debug_get_running_count();
 	s.streaming_tasks = LoadBlockDataTask::debug_get_running_count() + SaveBlockDataTask::debug_get_running_count();
 	s.main_thread_tasks = _time_spread_task_runner.get_pending_count() + _progressive_task_runner.get_pending_count();
+#ifdef VOXEL_ENABLE_GPU
 	s.gpu_tasks = _gpu_task_runner.get_pending_task_count();
+#endif
 	return s;
 }
 

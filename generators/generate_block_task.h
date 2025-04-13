@@ -6,7 +6,10 @@
 #include "../engine/streaming_dependency.h"
 #include "../util/containers/std_vector.h"
 #include "../util/tasks/threaded_task.h"
+
+#ifdef VOXEL_ENABLE_GPU
 #include "generate_block_gpu_task.h"
+#endif
 
 namespace zylann {
 
@@ -17,7 +20,13 @@ namespace voxel {
 class VoxelData;
 
 // Generic task to procedurally generate a block of voxels in a single pass
-class GenerateBlockTask : public IGeneratingVoxelsThreadedTask {
+class GenerateBlockTask
+#ifdef VOXEL_ENABLE_GPU
+		: public IGeneratingVoxelsThreadedTask
+#else
+		: public IThreadedTask
+#endif
+{
 public:
 	GenerateBlockTask(const VoxelGenerator::BlockTaskParams &params);
 	~GenerateBlockTask();
@@ -31,11 +40,15 @@ public:
 	bool is_cancelled() override;
 	void apply_result() override;
 
+#ifdef VOXEL_ENABLE_GPU
 	void set_gpu_results(StdVector<GenerateBlockGPUTaskResult> &&results) override;
+#endif
 
 private:
+#ifdef VOXEL_ENABLE_GPU
 	void run_gpu_task(zylann::ThreadedTaskContext &ctx);
 	void run_gpu_conversion();
+#endif
 	void run_cpu_generation();
 	void run_stream_saving_and_finish();
 
@@ -58,7 +71,9 @@ private:
 	bool _too_far = false;
 	bool _max_lod_hint = false;
 	uint8_t _stage = 0;
+#ifdef VOXEL_ENABLE_GPU
 	StdVector<GenerateBlockGPUTaskResult> _gpu_generation_results;
+#endif
 };
 
 } // namespace voxel

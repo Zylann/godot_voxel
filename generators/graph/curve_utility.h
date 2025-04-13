@@ -1,5 +1,5 @@
-#ifndef RANGE_UTILITY_H
-#define RANGE_UTILITY_H
+#ifndef ZN_CURVE_UTILITY_H
+#define ZN_CURVE_UTILITY_H
 
 #include "../../util/containers/std_vector.h"
 #include "../../util/godot/core/rect2i.h"
@@ -7,11 +7,8 @@
 #include "../../util/math/interval.h"
 
 ZN_GODOT_FORWARD_DECLARE(class Curve)
-ZN_GODOT_FORWARD_DECLARE(class Image)
 
 namespace zylann {
-
-// Curve ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 struct CurveMonotonicSection {
 	float x_min;
@@ -41,11 +38,6 @@ math::Interval get_curve_range(Curve &curve, const StdVector<CurveMonotonicSecti
 // Legacy
 math::Interval get_curve_range(Curve &curve, bool &is_monotonic_increasing);
 
-// Heightmaps //////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-math::Interval get_heightmap_range(const Image &im);
-math::Interval get_heightmap_range(const Image &im, Rect2i rect);
-
 } // namespace zylann
 
-#endif // RANGE_UTILITY_H
+#endif // ZN_CURVE_UTILITY_H

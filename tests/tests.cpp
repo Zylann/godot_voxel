@@ -16,22 +16,33 @@
 
 #include "voxel/test_block_serializer.h"
 #include "voxel/test_curve_range.h"
-#include "voxel/test_detail_rendering_gpu.h"
 #include "voxel/test_edition_funcs.h"
-#include "voxel/test_mesh_sdf.h"
 #include "voxel/test_octree.h"
 #include "voxel/test_raycast.h"
 #include "voxel/test_region_file.h"
 #include "voxel/test_storage_funcs.h"
-#include "voxel/test_stream_sqlite.h"
 #include "voxel/test_voxel_buffer.h"
 #include "voxel/test_voxel_data_map.h"
 #include "voxel/test_voxel_graph.h"
 #include "voxel/test_voxel_instancer.h"
 #include "voxel/test_voxel_mesher_cubes.h"
 
+#ifdef VOXEL_ENABLE_SMOOTH_MESHING
+#ifdef VOXEL_ENABLE_GPU
+#include "voxel/test_detail_rendering_gpu.h"
+#endif
+#endif
+
 #ifdef VOXEL_ENABLE_FAST_NOISE_2
 #include "fast_noise_2/test_fast_noise_2.h"
+#endif
+
+#ifdef VOXEL_ENABLE_SQLITE
+#include "voxel/test_stream_sqlite.h"
+#endif
+
+#ifdef VOXEL_ENABLE_MESH_SDF
+#include "voxel/test_mesh_sdf.h"
 #endif
 
 namespace zylann::voxel::tests {
@@ -73,7 +84,9 @@ void run_voxel_tests(const testing::TestOptions &options) {
 	VOXEL_TEST(test_voxel_graph_functions_autoconnect);
 	VOXEL_TEST(test_voxel_graph_functions_io_mismatch);
 	VOXEL_TEST(test_voxel_graph_functions_misc);
+#ifdef VOXEL_ENABLE_GPU
 	VOXEL_TEST(test_voxel_graph_issue461);
+#endif
 	VOXEL_TEST(test_voxel_graph_fuzzing);
 #ifdef VOXEL_ENABLE_FAST_NOISE_2
 	VOXEL_TEST(test_voxel_graph_issue427);
@@ -81,7 +94,9 @@ void run_voxel_tests(const testing::TestOptions &options) {
 	VOXEL_TEST(test_voxel_graph_hash);
 #endif
 #endif
+#ifdef VOXEL_ENABLE_GPU
 	VOXEL_TEST(test_voxel_graph_issue471);
+#endif
 	VOXEL_TEST(test_voxel_graph_unused_single_texture_output);
 	VOXEL_TEST(test_voxel_graph_spots2d_optimized_execution_map);
 	VOXEL_TEST(test_voxel_graph_unused_inner_output);
@@ -117,8 +132,14 @@ void run_voxel_tests(const testing::TestOptions &options) {
 	VOXEL_TEST(test_threaded_task_runner_misc);
 	VOXEL_TEST(test_threaded_task_runner_debug_names);
 	VOXEL_TEST(test_task_priority_values);
+#ifdef VOXEL_ENABLE_MESH_SDF
 	VOXEL_TEST(test_voxel_mesh_sdf_issue463);
+#endif
+#ifdef VOXEL_ENABLE_SMOOTH_MESHING
+#ifdef VOXEL_ENABLE_GPU
 	VOXEL_TEST(test_normalmap_render_gpu);
+#endif
+#endif
 	VOXEL_TEST(test_slot_map);
 	VOXEL_TEST(test_box_blur);
 	VOXEL_TEST(test_threaded_task_postponing);
@@ -126,10 +147,12 @@ void run_voxel_tests(const testing::TestOptions &options) {
 	VOXEL_TEST(test_spatial_lock_spam);
 	VOXEL_TEST(test_spatial_lock_dependent_map_chunks);
 	VOXEL_TEST(test_discord_soakil_copypaste);
+#ifdef VOXEL_ENABLE_SQLITE
 	VOXEL_TEST(test_voxel_stream_sqlite_key_string_csd_encoding);
 	VOXEL_TEST(test_voxel_stream_sqlite_key_blob80_encoding);
 	VOXEL_TEST(test_voxel_stream_sqlite_basic);
 	VOXEL_TEST(test_voxel_stream_sqlite_coordinate_format);
+#endif
 	VOXEL_TEST(test_sdf_hemisphere);
 	VOXEL_TEST(test_fnl_range);
 	VOXEL_TEST(test_voxel_buffer_set_channel_bytes);

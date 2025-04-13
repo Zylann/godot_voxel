@@ -321,6 +321,8 @@ void VoxelModifierStack::apply(
 	}
 }
 
+#ifdef VOXEL_ENABLE_GPU
+
 void VoxelModifierStack::apply_for_gpu_rendering(
 		StdVector<VoxelModifier::ShaderData> &out_data,
 		const AABB aabb
@@ -343,6 +345,8 @@ void VoxelModifierStack::apply_for_gpu_rendering(
 		}
 	}
 }
+
+#endif
 
 void VoxelModifierStack::clear() {
 	RWLockWrite lock(_stack_lock);

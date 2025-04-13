@@ -381,6 +381,8 @@ AABB VoxelMeshSDF::get_aabb() const {
 	return AABB(to_vec3(_min_pos), to_vec3(_max_pos - _min_pos));
 }
 
+#ifdef VOXEL_ENABLE_GPU
+
 std::shared_ptr<ComputeShaderResource> VoxelMeshSDF::get_gpu_resource() {
 	MutexLock mlock(_gpu_resource_mutex);
 
@@ -397,6 +399,8 @@ std::shared_ptr<ComputeShaderResource> VoxelMeshSDF::get_gpu_resource() {
 
 	return _gpu_resource;
 }
+
+#endif
 
 Array VoxelMeshSDF::debug_check_sdf(Ref<Mesh> mesh) {
 	Array result;

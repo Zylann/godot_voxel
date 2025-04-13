@@ -184,7 +184,9 @@ inline Vector3f encode_normal_xyz(const Vector3f n) {
 
 void query_sdf_with_edits(
 		VoxelGenerator &generator,
+#ifdef VOXEL_ENABLE_MODIFIERS
 		const VoxelModifierStack &modifiers,
+#endif
 		const VoxelDataGrid &grid,
 		Span<const float> query_x_buffer,
 		Span<const float> query_y_buffer,
@@ -255,6 +257,7 @@ void query_sdf_with_edits(
 					query_max_pos
 			);
 
+#ifdef VOXEL_ENABLE_MODIFIERS
 			modifiers.apply(
 					to_span(x_gen, gen_count),
 					to_span(y_gen, gen_count),
@@ -263,6 +266,7 @@ void query_sdf_with_edits(
 					query_min_pos,
 					query_max_pos
 			);
+#endif
 
 			for (unsigned int j = 0; j < gen_count; ++j) {
 				sd_samples[i_gen[j]] = gen_samples[j];
@@ -339,7 +343,9 @@ struct ClearVoxelDataGridOnExit {
 inline void query_sdf(
 		VoxelGenerator &generator,
 		const VoxelDataGrid *edited_voxel_data,
+#ifdef VOXEL_ENABLE_MODIFIERS
 		const VoxelModifierStack *modifiers,
+#endif
 		Span<const float> query_x_buffer,
 		Span<const float> query_y_buffer,
 		Span<const float> query_z_buffer,
@@ -350,13 +356,17 @@ inline void query_sdf(
 	ZN_PROFILE_SCOPE();
 
 	if (edited_voxel_data != nullptr) {
+#ifdef VOXEL_ENABLE_MODIFIERS
 		// Usually if there are edits, it means there is a modifier stack too. Could be optional, but currently no
 		// reason not to be there either.
 		ZN_ASSERT(modifiers != nullptr);
+#endif
 
 		query_sdf_with_edits(
 				generator,
+#ifdef VOXEL_ENABLE_MODIFIERS
 				*modifiers,
+#endif
 				*edited_voxel_data,
 				query_x_buffer,
 				query_y_buffer,
@@ -379,11 +389,13 @@ inline void query_sdf(
 				query_max_pos
 		);
 
+#ifdef VOXEL_ENABLE_MODIFIERS
 		if (modifiers != nullptr) {
 			modifiers->apply(
 					query_x_buffer, query_y_buffer, query_z_buffer, query_sdf_buffer, query_min_pos, query_max_pos
 			);
 		}
+#endif
 	}
 
 #if DEBUG_ENABLED
@@ -582,13 +594,17 @@ void compute_detail_texture_data(
 
 		{
 			const VoxelDataGrid *edits_grid = cell_has_edits ? &tls_voxel_data_grid : nullptr;
+#ifdef VOXEL_ENABLE_MODIFIERS
 			const VoxelModifierStack *modifiers = voxel_data != nullptr ? &voxel_data->get_modifiers() : nullptr;
+#endif
 
 			// Query voxel data
 			query_sdf(
 					generator,
 					edits_grid,
+#ifdef VOXEL_ENABLE_MODIFIERS
 					modifiers,
+#endif
 					to_span(tls_x_buffer),
 					to_span(tls_y_buffer),
 					to_span(tls_z_buffer),

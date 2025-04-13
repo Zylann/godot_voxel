@@ -2,11 +2,14 @@
 #define VOXEL_DATA_H
 
 #include "../generators/voxel_generator.h"
-#include "../modifiers/voxel_modifier_stack.h"
 #include "../streams/voxel_stream.h"
 #include "../util/thread/mutex.h"
 #include "../util/thread/spatial_lock_3d.h"
 #include "voxel_data_map.h"
+
+#ifdef VOXEL_ENABLE_MODIFIERS
+#include "../modifiers/voxel_modifier_stack.h"
+#endif
 
 namespace zylann::voxel {
 
@@ -73,6 +76,7 @@ public:
 		return _stream;
 	}
 
+#ifdef VOXEL_ENABLE_MODIFIERS
 	inline VoxelModifierStack &get_modifiers() {
 		return _modifiers;
 	}
@@ -80,6 +84,7 @@ public:
 	inline const VoxelModifierStack &get_modifiers() const {
 		return _modifiers;
 	}
+#endif
 
 	void set_streaming_enabled(bool enabled);
 
@@ -373,8 +378,11 @@ private:
 			unsigned int data_block_size,
 			bool streaming,
 			unsigned int lod_count,
-			Ref<VoxelGenerator> generator,
+			Ref<VoxelGenerator> generator
+#ifdef VOXEL_ENABLE_MODIFIERS
+			,
 			VoxelModifierStack &modifiers
+#endif
 	);
 
 	static inline std::shared_ptr<VoxelBuffer> try_get_voxel_buffer_with_lock(
@@ -432,7 +440,9 @@ private:
 	bool _full_load_completed = false;
 
 	// Procedural generation stack
+#ifdef VOXEL_ENABLE_MODIFIERS
 	VoxelModifierStack _modifiers;
+#endif
 	Ref<VoxelGenerator> _generator;
 
 	// Persistent storage (file(s)).

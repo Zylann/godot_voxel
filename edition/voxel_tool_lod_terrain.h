@@ -11,7 +11,6 @@ namespace zylann::voxel {
 
 class VoxelLodTerrain;
 class VoxelDataMap;
-class VoxelMeshSDF;
 class VoxelGeneratorGraph;
 
 class VoxelToolLodTerrain : public VoxelTool {
@@ -24,6 +23,9 @@ public:
 	Ref<VoxelRaycastResult> raycast(Vector3 pos, Vector3 dir, float max_distance, uint32_t collision_mask) override;
 	void do_box(Vector3i begin, Vector3i end) override;
 	void do_sphere(Vector3 center, float radius) override;
+#ifdef VOXEL_ENABLE_MESH_SDF
+	void do_mesh(const VoxelMeshSDF &mesh_sdf, const Transform3D &transform, const float isolevel) override;
+#endif
 	void copy(Vector3i pos, VoxelBuffer &dst, uint8_t channels_mask) const override;
 	void paste(Vector3i pos, const VoxelBuffer &src, uint8_t channels_mask) override;
 
@@ -42,7 +44,10 @@ public:
 	Array separate_floating_chunks(AABB world_box, Object *parent_node_o);
 #endif
 
+#ifdef VOXEL_ENABLE_MESH_SDF
 	void stamp_sdf(Ref<VoxelMeshSDF> mesh_sdf, Transform3D transform, float isolevel, float sdf_scale);
+#endif
+
 	void do_graph(Ref<VoxelGeneratorGraph> graph, Transform3D transform, Vector3 area_size);
 
 	void run_blocky_random_tick(
