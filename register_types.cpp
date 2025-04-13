@@ -31,7 +31,6 @@
 #include "storage/voxel_buffer_gd.h"
 #include "storage/voxel_memory_pool.h"
 #include "streams/region/voxel_stream_region_files.h"
-#include "streams/vox/vox_loader.h"
 #include "streams/voxel_block_serializer_gd.h"
 #include "streams/voxel_stream_memory.h"
 #include "streams/voxel_stream_script.h"
@@ -95,6 +94,10 @@
 
 #ifdef VOXEL_ENABLE_MESH_SDF
 #include "edition/voxel_mesh_sdf_gd.h"
+#endif
+
+#ifdef VOXEL_ENABLE_VOX
+#include "streams/vox/vox_loader.h"
 #endif
 
 #include "util/godot/classes/engine.h"
@@ -306,7 +309,6 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_abstract_class<VoxelToolBuffer>();
 		ClassDB::register_abstract_class<VoxelToolMultipassGenerator>();
 		ClassDB::register_class<zylann::voxel::godot::VoxelBlockSerializer>();
-		ClassDB::register_class<VoxelVoxLoader>();
 		ClassDB::register_class<ZN_FastNoiseLite>();
 		ClassDB::register_class<ZN_FastNoiseLiteGradient>();
 		ClassDB::register_class<ZN_SpotNoise>();
@@ -361,6 +363,10 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 
 #ifdef VOXEL_ENABLE_MESH_SDF
 		ClassDB::register_class<VoxelMeshSDF>();
+#endif
+
+#ifdef VOXEL_ENABLE_VOX
+		ClassDB::register_class<VoxelVoxLoader>();
 #endif
 
 #ifdef ZN_GODOT_EXTENSION
@@ -471,10 +477,6 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_internal_class<VoxelBlockyTypeAttributeCombinationSelector>();
 		ClassDB::register_internal_class<VoxelBlockyTypeVariantListEditor>();
 
-		ClassDB::register_internal_class<magica::VoxelVoxEditorPlugin>();
-		ClassDB::register_internal_class<magica::VoxelVoxMeshImporter>();
-		ClassDB::register_internal_class<magica::VoxelVoxSceneImporter>();
-
 		ClassDB::register_internal_class<VoxelGraphEditorInspectorPlugin>();
 		ClassDB::register_internal_class<VoxelGraphFunctionInspectorPlugin>();
 		ClassDB::register_internal_class<VoxelGraphEditorNodePreview>();
@@ -508,13 +510,18 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_internal_class<VoxelInstanceLibraryListEditor>();
 #endif
 
+#ifdef VOXEL_ENABLE_VOX
+		ClassDB::register_internal_class<magica::VoxelVoxEditorPlugin>();
+		ClassDB::register_internal_class<magica::VoxelVoxMeshImporter>();
+		ClassDB::register_internal_class<magica::VoxelVoxSceneImporter>();
+#endif
+
 #endif // ZN_GODOT_EXTENSION
 
 		EditorPlugins::add_by_type<VoxelGraphEditorPlugin>();
 		EditorPlugins::add_by_type<VoxelTerrainEditorPlugin>();
 		EditorPlugins::add_by_type<ZN_FastNoiseLiteEditorPlugin>();
 		EditorPlugins::add_by_type<ZN_SpotNoiseEditorPlugin>();
-		EditorPlugins::add_by_type<magica::VoxelVoxEditorPlugin>();
 		EditorPlugins::add_by_type<VoxelBlockyLibraryEditorPlugin>();
 		EditorPlugins::add_by_type<VoxelGeneratorMultipassEditorPlugin>();
 
@@ -530,6 +537,10 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 
 #ifdef VOXEL_ENABLE_FAST_NOISE_2
 		EditorPlugins::add_by_type<FastNoise2EditorPlugin>();
+#endif
+
+#ifdef VOXEL_ENABLE_VOX
+		EditorPlugins::add_by_type<magica::VoxelVoxEditorPlugin>();
 #endif
 
 #ifdef TOOLS_ENABLED

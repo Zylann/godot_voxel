@@ -16,6 +16,7 @@ def register_scons_options(env, is_extension):
     env_vars.Add(BoolVariable("voxel_gpu", "Build with GPU compute support", True))
     env_vars.Add(BoolVariable("voxel_basic_generators", "Build with basic/example generators", True))
     env_vars.Add(BoolVariable("voxel_mesh_sdf", "Build with mesh voxelization support", True))
+    env_vars.Add(BoolVariable("voxel_vox", "Build with support for loading .vox files", True))
     
     if not is_extension:
         env_vars.Add(BoolVariable("tracy", "Build with enabled Tracy Profiler integration", False))
@@ -52,6 +53,7 @@ def get_sources(env, is_editor_build):
     gpu_enabled = env["voxel_gpu"]
     basic_generators_enabled = env["voxel_basic_generators"]
     voxel_mesh_sdf_enabled = env["voxel_mesh_sdf"]
+    voxel_vox_enabled = env["voxel_vox"]
 
     if not smoosh_meshing_enabled:
         modifiers_enabled = False
@@ -69,7 +71,6 @@ def get_sources(env, is_editor_build):
 
         "streams/*.cpp",
         "streams/region/*.cpp",
-        "streams/vox/*.cpp",
 
         "storage/*.cpp",
         "storage/metadata/*.cpp",
@@ -160,7 +161,6 @@ def get_sources(env, is_editor_build):
             "editor/terrain/*.cpp",
             "editor/fast_noise_lite/*.cpp",
             "editor/spot_noise/*.cpp",
-            "editor/vox/*.cpp",
             "editor/graph/*.cpp",
             "editor/blocky_library/*.cpp",
             "editor/blocky_library/types/*.cpp",
@@ -284,6 +284,14 @@ def get_sources(env, is_editor_build):
         
         if tests_enabled:
             sources += ["tests/voxel/test_mesh_sdf.cpp"]
+
+    if voxel_vox_enabled:
+        env.Append(CPPDEFINES={"VOXEL_ENABLE_VOX": 1})
+
+        sources += ["streams/vox/*.cpp"]
+
+        if is_editor_build:
+            sources += ["editor/vox/*.cpp"]
 
     def process_glob_paths(p_sources):
         out = []
