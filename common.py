@@ -24,9 +24,7 @@ def register_scons_options(env, is_extension):
 
     env_vars.Update(env)
 
-    if not is_extension:
-        # TODO Will this work with GodotCpp?
-        Help(env_vars.GenerateHelpText(env))
+    Help(env_vars.GenerateHelpText(env))
 
 
 # Gets sources and configurations that are common to compiling as a module and an extension.

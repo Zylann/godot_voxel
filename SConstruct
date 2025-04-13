@@ -31,7 +31,6 @@ env = SConscript(godot_cpp_path + "/SConstruct")
 # If such a check should exist, it needs to be HERE, not in GodotCpp.
 
 common.register_scons_options(env, True)
-Help(env_vars.GenerateHelpText(env))
 
 env.Append(CPPDEFINES=[
 	# Tell engine-agnostic code we are using Godot Engine as an extension
