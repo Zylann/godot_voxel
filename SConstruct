@@ -112,8 +112,8 @@ sources += [
 
 sources += [
 	# GodotCpp doesn't come with RandomPCG.
-	thirdparty_env.Object("util/godot/core/pcg.cpp"),
-	thirdparty_env.Object("util/godot/core/random_pcg.cpp")
+	thirdparty_env.SharedObject("util/godot/core/pcg.cpp"),
+	thirdparty_env.SharedObject("util/godot/core/random_pcg.cpp")
 ]
 
 if is_editor_build:
