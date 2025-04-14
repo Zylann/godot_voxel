@@ -45,8 +45,11 @@ int ZN_EditorImportPlugin::get_import_order() const {
 	return _zn_get_import_order();
 }
 
-void ZN_EditorImportPlugin::get_import_options(const String &p_path, List<ImportOption> *r_options, int p_preset)
-		const {
+void ZN_EditorImportPlugin::get_import_options(
+		const String &p_path,
+		List<ImportOption> *r_options,
+		int p_preset
+) const {
 	ZN_ASSERT_RETURN(r_options != nullptr);
 	StdVector<ImportOptionWrapper> options;
 	_zn_get_import_options(options, p_path, p_preset);
