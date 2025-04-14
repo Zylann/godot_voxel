@@ -38,9 +38,7 @@ def configure_warnings(env):
             "/wd4820",  # C4820 (padding added after construct)
         ]
         
-        # Can't enable all warnings because GodotCpp is full of them
         env.Append(CXXFLAGS=["/W3"])
-        # env["WARNLEVEL"] = "/W3"
         # C4458 is like -Wshadow. Part of /W4 but let's apply it for the default /W3 too.
         env.AppendUnique(CXXFLAGS=["/w34458"] + disabled_warnings)
     
