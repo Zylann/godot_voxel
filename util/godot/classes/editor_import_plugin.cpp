@@ -145,7 +145,7 @@ TypedArray<Dictionary> ZN_EditorImportPlugin::_get_import_options(const String &
 	const String hint_string_key = "hint_string";
 	const String usage_key = "usage";
 
-	for (const ImportOptionWrapper option : options) {
+	for (const ImportOptionWrapper &option : options) {
 		Dictionary d;
 		d[name_key] = String(option.option.name);
 		d[default_value_key] = option.default_value;
