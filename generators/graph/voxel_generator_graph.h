@@ -30,6 +30,15 @@ class VoxelGeneratorGraph : public VoxelGenerator {
 public:
 	static const char *SIGNAL_NODE_NAME_CHANGED;
 
+	// Selects the format produced by texture outputs
+	enum TextureMode {
+		// Voxels contain 4 indices and 4 weights encoded in 16-bit channels INDICES and WEIGHTS
+		TEXTURE_MODE_MIXEL4,
+		// Voxels contain 1 index in 8-bit channel INDICES
+		TEXTURE_MODE_SINGLE,
+		TEXTURE_MODE_COUNT
+	};
+
 	VoxelGeneratorGraph();
 	~VoxelGeneratorGraph();
 
@@ -57,6 +66,9 @@ public:
 
 	void set_use_xz_caching(bool enabled);
 	bool is_using_xz_caching() const;
+
+	void set_texture_mode(const TextureMode mode);
+	TextureMode get_texture_mode() const;
 
 	// VoxelGenerator implementation
 
@@ -156,14 +168,15 @@ private:
 		unsigned int output_buffer_index;
 	};
 
-	static void gather_indices_and_weights(
+	static void gather_texturing_data_from_weight_outputs(
 			Span<const WeightOutput> weight_outputs,
 			const pg::Runtime::State &state,
-			Vector3i rmin,
-			Vector3i rmax,
-			int ry,
+			const Vector3i rmin,
+			const Vector3i rmax,
+			const int ry,
 			VoxelBuffer &out_voxel_buffer,
-			FixedArray<uint8_t, 4> spare_indices
+			const FixedArray<uint8_t, 4> spare_indices,
+			const TextureMode mode
 	);
 
 	static void _bind_methods();
@@ -190,6 +203,7 @@ private:
 	bool _use_xz_caching = true;
 	// If true, inverts clipped blocks so they create visual artifacts making the clipped area visible.
 	bool _debug_clipped_blocks = false;
+	TextureMode _texture_mode = TEXTURE_MODE_MIXEL4;
 
 	// Only compiling and generation methods are thread-safe.
 
@@ -267,5 +281,7 @@ private:
 };
 
 } // namespace zylann::voxel
+
+VARIANT_ENUM_CAST(zylann::voxel::VoxelGeneratorGraph::TextureMode)
 
 #endif // VOXEL_GENERATOR_GRAPH_H
