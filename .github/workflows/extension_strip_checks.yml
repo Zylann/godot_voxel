@@ -65,4 +65,4 @@ jobs:
         env:
           SCONS_CACHE: ${{ github.workspace }}/.scons-cache/
         run: |
-          scons target=editor platform=linux arch=x86_64 dev_build=no verbose=yes
+          scons target=editor platform=linux arch=x86_64 dev_build=no verbose=yes ${{ matrix.sconsflags }}
