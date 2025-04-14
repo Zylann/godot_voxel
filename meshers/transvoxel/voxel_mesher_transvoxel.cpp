@@ -334,9 +334,6 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 		case TEXTURES_SINGLE_S4:
 			output.mesh_flags |= (RenderingServer::ARRAY_CUSTOM_RG_FLOAT << Mesh::ARRAY_FORMAT_CUSTOM1_SHIFT);
 			break;
-		case TEXTURES_SINGLE_S2:
-			output.mesh_flags |= (RenderingServer::ARRAY_CUSTOM_R_FLOAT << Mesh::ARRAY_FORMAT_CUSTOM1_SHIFT);
-			break;
 		default:
 			ZN_PRINT_ERROR("Unhandled texture mode");
 			break;
@@ -526,7 +523,6 @@ void VoxelMesherTransvoxel::_bind_methods() {
 	// TODO Rename MIXEL
 	BIND_ENUM_CONSTANT(TEXTURES_BLEND_4_OVER_16);
 	BIND_ENUM_CONSTANT(TEXTURES_SINGLE_S4);
-	BIND_ENUM_CONSTANT(TEXTURES_SINGLE_S2);
 }
 
 } // namespace zylann::voxel
