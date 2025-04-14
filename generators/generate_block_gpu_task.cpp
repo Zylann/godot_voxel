@@ -479,11 +479,11 @@ void GenerateBlockGPUTask::collect(GPUTaskContext &ctx) {
 
 	zylann::godot::free_rendering_device_rid(rd, _generator_pipeline_rid);
 
-	for (RID rid : _modifier_pipelines) {
+	for (const RID &rid : _modifier_pipelines) {
 		zylann::godot::free_rendering_device_rid(rd, rid);
 	}
 
-	for (const RID rid : _uniform_sets_to_free) {
+	for (const RID &rid : _uniform_sets_to_free) {
 		zylann::godot::free_rendering_device_rid(rd, rid);
 	}
 
