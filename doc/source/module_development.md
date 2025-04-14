@@ -514,7 +514,7 @@ SCons flag               | C++ Macro                       | Description
 `voxel_modifiers`        | `VOXEL_ENABLE_MODIFIERS`        | `VoxelModifier` experimental feature support.
 `voxel_sqlite`           | `VOXEL_ENABLE_SQLITE`           | `VoxelStreamSQLite`, which also bundles the SQLite3 library.
 `voxel_instancer`        | `VOXEL_ENABLE_INSTANCER`        | `VoxelInstancer` support
-`voxel_gpu`      | `VOXEL_ENABLE_GPU`              | GPU compute support (the GPU is still used when this option is off, just not using compute shaders)
+`voxel_gpu`              | `VOXEL_ENABLE_GPU`              | GPU compute support (the GPU is still used when this option is off, just not using compute shaders)
 `voxel_basic_generators` | `VOXEL_ENABLE_BASIC_GENERATORS` | Includes basic generators that could be used for testing.
 `voxel_mesh_sdf`         | `VOXEL_ENABLE_MESH_SDF`         | Support for voxelized meshes with `VoxelMeshSDF`. Turning this off also turns off modifiers, which depend on it.
 `voxel_vox`              | `VOXEL_ENABLE_VOX`              | Ability to load `.vox` MagicaVoxel files.
