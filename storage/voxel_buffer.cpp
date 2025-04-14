@@ -174,10 +174,10 @@ void VoxelBuffer::init_channel_defaults() {
 	_channels[CHANNEL_SDF].depth = DEFAULT_SDF_CHANNEL_DEPTH;
 	_channels[CHANNEL_SDF].defval = g_default_values[CHANNEL_SDF];
 
-	_channels[CHANNEL_INDICES].depth = DEPTH_16_BIT;
+	_channels[CHANNEL_INDICES].depth = DEFAULT_INDICES_CHANNEL_DEPTH;
 	_channels[CHANNEL_INDICES].defval = g_default_values[CHANNEL_INDICES];
 
-	_channels[CHANNEL_WEIGHTS].depth = DEPTH_16_BIT;
+	_channels[CHANNEL_WEIGHTS].depth = DEFAULT_WEIGHTS_CHANNEL_DEPTH;
 	_channels[CHANNEL_WEIGHTS].defval = g_default_values[CHANNEL_WEIGHTS];
 }
 
