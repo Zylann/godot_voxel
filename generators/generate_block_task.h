@@ -60,7 +60,9 @@ private:
 	uint8_t _lod_index;
 	uint8_t _block_size;
 	bool _drop_beyond_max_distance = true;
+#ifdef VOXEL_ENABLE_GPU
 	bool _use_gpu = false;
+#endif
 	PriorityDependency _priority_dependency;
 	std::shared_ptr<StreamingDependency> _stream_dependency; // For saving generator output
 	std::shared_ptr<VoxelData> _data; // Just for modifiers
@@ -70,8 +72,8 @@ private:
 	bool _has_run = false;
 	bool _too_far = false;
 	bool _max_lod_hint = false;
-	uint8_t _stage = 0;
 #ifdef VOXEL_ENABLE_GPU
+	uint8_t _stage = 0;
 	StdVector<GenerateBlockGPUTaskResult> _gpu_generation_results;
 #endif
 };
