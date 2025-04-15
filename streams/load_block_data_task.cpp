@@ -30,9 +30,13 @@ LoadBlockDataTask::LoadBlockDataTask(
 		_volume_id(p_volume_id),
 		_lod_index(p_lod),
 		_block_size(p_block_size),
+#ifdef VOXEL_ENABLE_INSTANCER
 		_request_instances(p_request_instances),
+#endif
 		_generate_cache_data(generate_cache_data),
+#ifdef VOXEL_ENABLE_GPU
 		_generator_use_gpu(generator_use_gpu),
+#endif
 		//_request_voxels(true),
 		_stream_dependency(p_stream_dependency),
 		_voxel_data(vdata),
