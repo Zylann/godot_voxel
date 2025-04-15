@@ -310,16 +310,19 @@ bool VoxelGraphNodeInspectorWrapper::_get(const StringName &p_name, Variant &r_r
 	unsigned int index;
 	if (graph->get_node_param_index_by_name(_node_id, p_name, index)) {
 		r_ret = graph->get_node_param(_node_id, index);
-
-	} else if (graph->get_node_input_index_by_name(_node_id, p_name, index)) {
-		r_ret = graph->get_node_default_input(_node_id, index);
-
-	} else {
-		ERR_PRINT(String("Invalid param name {0}").format(varray(p_name)));
-		return false;
+		return true;
 	}
 
-	return true;
+	if (graph->get_node_input_index_by_name(_node_id, p_name, index)) {
+		r_ret = graph->get_node_default_input(_node_id, index);
+		return true;
+	}
+
+	// Can't error-check like that, Godot sometimes spams properties such as `script` in the editor for unknown
+	// reasons (like every frame, even when not visible in the inspector)
+	// ERR_PRINT(String("Invalid param name {0}").format(varray(p_name)));
+
+	return false;
 }
 
 // This method is an undocumented hack used in `EditorInspector::_edit_set` so we can implement UndoRedo ourselves.
