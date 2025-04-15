@@ -701,10 +701,8 @@ void VoxelBuffer::for_each_voxel_metadata_in_area(const Callable &callback, Vect
 		);
 
 #elif defined(ZN_GODOT_EXTENSION)
-		// TODO Error reporting? GodotCpp doesn't expose anything
-		//callback.call(rel_pos, v);
-		// TODO GodotCpp is missing the implementation of `Callable::call`.
-		ZN_PRINT_ERROR("Unable to call Callable, go moan at https://github.com/godotengine/godot-cpp/issues/802");
+		// Can't do error-reporting the same way we do in modules.
+		callback.call(rel_pos, v);
 #endif
 	});
 }
