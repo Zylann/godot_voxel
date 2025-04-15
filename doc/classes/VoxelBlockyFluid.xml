@@ -9,7 +9,7 @@
 	<tutorials>
 	</tutorials>
 	<members>
-		<member name="dip_when_flowing_down" type="bool" is_experimental="true" setter="set_dip_when_flowing_down" getter="get_dip_when_flowing_down" default="false">
+		<member name="dip_when_flowing_down" type="bool" setter="set_dip_when_flowing_down" getter="get_dip_when_flowing_down" default="false" experimental="">
 			When enabled, if all following conditions are met for a given fluid voxel:
 			- It doesn't have maximum level
 			- It isn't covered by another voxel of the same fluid type 

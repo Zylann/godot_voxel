@@ -31,7 +31,7 @@
 				Operates on a hemisphere, where [code]flat_direction[/code] is pointing away from the flat surface (like a normal). [code]smoothness[/code] determines how the flat part blends with the rounded part, with higher values producing softer more rounded edge.
 			</description>
 		</method>
-		<method name="do_sphere_async" is_experimental="true" experimental="">
+		<method name="do_sphere_async" experimental="">
 			<return type="void" />
 			<param index="0" name="center" type="Vector3" />
 			<param index="1" name="radius" type="float" />
