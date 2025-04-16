@@ -109,6 +109,8 @@ OrthoBasis OrthoBasis::from_axis_turns(const Vector3i::Axis axis, const int turn
 					return { Vector3i(1, 0, 0), Vector3i(0, -1, 0), Vector3i(0, 0, -1) };
 				case 3:
 					return { Vector3i(1, 0, 0), Vector3i(0, 0, 1), Vector3i(0, -1, 0) };
+				default:
+					break;
 			}
 		case Vector3i::AXIS_Y:
 			switch (mturns) {
@@ -118,6 +120,8 @@ OrthoBasis OrthoBasis::from_axis_turns(const Vector3i::Axis axis, const int turn
 					return { Vector3i(-1, 0, 0), Vector3i(0, 1, 0), Vector3i(0, 0, -1) };
 				case 3:
 					return { Vector3i(0, 0, -1), Vector3i(0, 1, 0), Vector3i(1, 0, 0) };
+				default:
+					break;
 			}
 		case Vector3i::AXIS_Z:
 			switch (mturns) {
@@ -127,11 +131,13 @@ OrthoBasis OrthoBasis::from_axis_turns(const Vector3i::Axis axis, const int turn
 					return { Vector3i(-1, 0, 0), Vector3i(0, -1, 0), Vector3i(0, 0, 1) };
 				case 3:
 					return { Vector3i(0, 1, 0), Vector3i(-1, 0, 0), Vector3i(0, 0, 1) };
+				default:
+					break;
 			}
 		default:
 			ZN_PRINT_ERROR("Invalid axis");
-			return OrthoBasis();
 	}
+	return OrthoBasis();
 }
 
 bool OrthoBasis::is_orthonormal() const {
