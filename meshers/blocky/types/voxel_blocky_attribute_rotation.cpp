@@ -57,12 +57,16 @@ void VoxelBlockyAttributeRotation::update_values() {
 
 void VoxelBlockyAttributeRotation::_bind_methods() {
 	ClassDB::bind_method(
-			D_METHOD("is_horizontal_roll_enabled"), &VoxelBlockyAttributeRotation::is_horizontal_roll_enabled);
-	ClassDB::bind_method(D_METHOD("set_horizontal_roll_enabled", "enabled"),
-			&VoxelBlockyAttributeRotation::set_horizontal_roll_enabled);
+			D_METHOD("is_horizontal_roll_enabled"), &VoxelBlockyAttributeRotation::is_horizontal_roll_enabled
+	);
+	ClassDB::bind_method(
+			D_METHOD("set_horizontal_roll_enabled", "enabled"),
+			&VoxelBlockyAttributeRotation::set_horizontal_roll_enabled
+	);
 
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "horizontal_only"), "set_horizontal_roll_enabled",
-			"is_horizontal_roll_enabled");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::BOOL, "horizontal_only"), "set_horizontal_roll_enabled", "is_horizontal_roll_enabled"
+	);
 }
 
 } // namespace zylann::voxel

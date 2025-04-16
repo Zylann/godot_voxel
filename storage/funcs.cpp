@@ -14,7 +14,6 @@ void copy_3d_region_zxy(
 		Vector3i src_max,
 		size_t item_size
 ) {
-	//
 	Vector3iUtil::sort_min_max(src_min, src_max);
 	clip_copy_region(src_min, src_max, src_size, dst_min, dst_size);
 	const Vector3i area_size = src_max - src_min;
