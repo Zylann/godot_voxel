@@ -984,6 +984,76 @@ void VoxelBuffer::get_range_f(float &out_min, float &out_max, ChannelId channel_
 	out_max = max_value * q;
 }
 
+inline bool is_orthogonal_to(const Vector3i a, const Vector3i b) {
+	return math::dot(a, b) == 0;
+}
+
+template <typename T>
+Vector3i transform_channel(
+		Span<T> channel_data,
+		const Vector3i src_size,
+		const math::OrthoBasis &basis,
+		Vector3i &out_trans_origin
+) {
+	// TODO Candidate for temp allocator
+	StdVector<T> temp;
+	temp.resize(channel_data.size());
+	Span<T> temp_s = to_span(temp);
+	const Vector3i transformed_size =
+			transform_3d_array_zxy(channel_data.to_const(), temp_s, src_size, basis, &out_trans_origin);
+	temp_s.copy_to(channel_data);
+	return transformed_size;
+}
+
+void VoxelBuffer::transform(const math::OrthoBasis &basis) {
+	ZN_ASSERT_RETURN(basis.is_orthonormal());
+
+	if (Vector3iUtil::is_empty_size(_size)) {
+		return;
+	}
+
+	const size_t volume = get_volume();
+	Vector3i trans_origin;
+
+	for (Channel &channel : _channels) {
+		if (channel.compression == VoxelBuffer::COMPRESSION_UNIFORM) {
+			continue;
+		}
+#ifdef DEV_ENABLED
+		ZN_ASSERT(channel.data != nullptr);
+#endif
+		switch (channel.depth) {
+			case VoxelBuffer::DEPTH_8_BIT:
+				_size = transform_channel<uint8_t>(Span<uint8_t>(channel.data, volume), _size, basis, trans_origin);
+				break;
+			case VoxelBuffer::DEPTH_16_BIT:
+				_size = transform_channel<uint16_t>(
+						Span<uint16_t>(reinterpret_cast<uint16_t *>(channel.data), volume), _size, basis, trans_origin
+				);
+				break;
+			case VoxelBuffer::DEPTH_32_BIT:
+				_size = transform_channel<uint32_t>(
+						Span<uint32_t>(reinterpret_cast<uint32_t *>(channel.data), volume), _size, basis, trans_origin
+				);
+				break;
+			case VoxelBuffer::DEPTH_64_BIT:
+				_size = transform_channel<uint64_t>(
+						Span<uint64_t>(reinterpret_cast<uint64_t *>(channel.data), volume), _size, basis, trans_origin
+				);
+				break;
+			default:
+				ZN_CRASH();
+				break;
+		}
+	}
+
+	if (_voxel_metadata.size() > 0) {
+		_voxel_metadata.remap_keys_unchecked([basis, trans_origin](Vector3i pos) {
+			return trans_origin + basis.xform(pos);
+		});
+	}
+}
+
 const VoxelMetadata *VoxelBuffer::get_voxel_metadata(Vector3i pos) const {
 	ZN_ASSERT_RETURN_V(is_position_valid(pos), nullptr);
 	return _voxel_metadata.find(pos);

@@ -10,37 +10,39 @@ namespace zylann::math {
 // axis, which gives 4 * 6 = 24 bases.
 
 // Values are taken from Godot's GridMap code. Order is arbitrary, but must remain the same to match enum values.
+// clang-format off
 static const OrthoBasis g_ortho_bases[ORTHOGONAL_BASIS_COUNT] = {
-	OrthoBasis(Vector3i8(1, 0, 0), Vector3i8(0, 1, 0), Vector3i8(0, 0, 1)), // identity
-	OrthoBasis(Vector3i8(0, -1, 0), Vector3i8(1, 0, 0), Vector3i8(0, 0, 1)), //
-	OrthoBasis(Vector3i8(-1, 0, 0), Vector3i8(0, -1, 0), Vector3i8(0, 0, 1)), //
-	OrthoBasis(Vector3i8(0, 1, 0), Vector3i8(-1, 0, 0), Vector3i8(0, 0, 1)), //
+	OrthoBasis(Vector3i( 1,  0,  0), Vector3i( 0,  1,  0), Vector3i( 0,  0,  1)), // identity
+	OrthoBasis(Vector3i( 0, -1,  0), Vector3i( 1,  0,  0), Vector3i( 0,  0,  1)), //
+	OrthoBasis(Vector3i(-1,  0,  0), Vector3i( 0, -1,  0), Vector3i( 0,  0,  1)), //
+	OrthoBasis(Vector3i( 0,  1,  0), Vector3i(-1,  0,  0), Vector3i( 0,  0,  1)), //
 
-	OrthoBasis(Vector3i8(1, 0, 0), Vector3i8(0, 0, -1), Vector3i8(0, 1, 0)), //
-	OrthoBasis(Vector3i8(0, 0, 1), Vector3i8(1, 0, 0), Vector3i8(0, 1, 0)), //
-	OrthoBasis(Vector3i8(-1, 0, 0), Vector3i8(0, 0, 1), Vector3i8(0, 1, 0)), //
-	OrthoBasis(Vector3i8(0, 0, -1), Vector3i8(-1, 0, 0), Vector3i8(0, 1, 0)), //
+	OrthoBasis(Vector3i( 1,  0,  0), Vector3i( 0,  0, -1), Vector3i( 0,  1,  0)), //
+	OrthoBasis(Vector3i( 0,  0,  1), Vector3i( 1,  0,  0), Vector3i( 0,  1,  0)), //
+	OrthoBasis(Vector3i(-1,  0,  0), Vector3i( 0,  0,  1), Vector3i( 0,  1,  0)), //
+	OrthoBasis(Vector3i( 0,  0, -1), Vector3i(-1,  0,  0), Vector3i( 0,  1,  0)), //
 
-	OrthoBasis(Vector3i8(1, 0, 0), Vector3i8(0, -1, 0), Vector3i8(0, 0, -1)), //
-	OrthoBasis(Vector3i8(0, 1, 0), Vector3i8(1, 0, 0), Vector3i8(0, 0, -1)), //
-	OrthoBasis(Vector3i8(-1, 0, 0), Vector3i8(0, 1, 0), Vector3i8(0, 0, -1)), //
-	OrthoBasis(Vector3i8(0, -1, 0), Vector3i8(-1, 0, 0), Vector3i8(0, 0, -1)), //
+	OrthoBasis(Vector3i( 1,  0,  0), Vector3i( 0, -1,  0), Vector3i( 0,  0, -1)), //
+	OrthoBasis(Vector3i( 0,  1,  0), Vector3i( 1,  0,  0), Vector3i( 0,  0, -1)), //
+	OrthoBasis(Vector3i(-1,  0,  0), Vector3i( 0,  1,  0), Vector3i( 0,  0, -1)), //
+	OrthoBasis(Vector3i( 0, -1,  0), Vector3i(-1,  0,  0), Vector3i( 0,  0, -1)), //
 
-	OrthoBasis(Vector3i8(1, 0, 0), Vector3i8(0, 0, 1), Vector3i8(0, -1, 0)), //
-	OrthoBasis(Vector3i8(0, 0, -1), Vector3i8(1, 0, 0), Vector3i8(0, -1, 0)), //
-	OrthoBasis(Vector3i8(-1, 0, 0), Vector3i8(0, 0, -1), Vector3i8(0, -1, 0)), //
-	OrthoBasis(Vector3i8(0, 0, 1), Vector3i8(-1, 0, 0), Vector3i8(0, -1, 0)), //
+	OrthoBasis(Vector3i( 1,  0,  0), Vector3i( 0,  0,  1), Vector3i( 0, -1,  0)), //
+	OrthoBasis(Vector3i( 0,  0, -1), Vector3i( 1,  0,  0), Vector3i( 0, -1,  0)), //
+	OrthoBasis(Vector3i(-1,  0,  0), Vector3i( 0,  0, -1), Vector3i( 0, -1,  0)), //
+	OrthoBasis(Vector3i( 0,  0,  1), Vector3i(-1,  0,  0), Vector3i( 0, -1,  0)), //
 
-	OrthoBasis(Vector3i8(0, 0, 1), Vector3i8(0, 1, 0), Vector3i8(-1, 0, 0)), //
-	OrthoBasis(Vector3i8(0, -1, 0), Vector3i8(0, 0, 1), Vector3i8(-1, 0, 0)), //
-	OrthoBasis(Vector3i8(0, 0, -1), Vector3i8(0, -1, 0), Vector3i8(-1, 0, 0)), //
-	OrthoBasis(Vector3i8(0, 1, 0), Vector3i8(0, 0, -1), Vector3i8(-1, 0, 0)), //
+	OrthoBasis(Vector3i( 0,  0,  1), Vector3i( 0,  1,  0), Vector3i(-1,  0,  0)), //
+	OrthoBasis(Vector3i( 0, -1,  0), Vector3i( 0,  0,  1), Vector3i(-1,  0,  0)), //
+	OrthoBasis(Vector3i( 0,  0, -1), Vector3i( 0, -1,  0), Vector3i(-1,  0,  0)), //
+	OrthoBasis(Vector3i( 0,  1,  0), Vector3i( 0,  0, -1), Vector3i(-1,  0,  0)), //
 
-	OrthoBasis(Vector3i8(0, 0, 1), Vector3i8(0, -1, 0), Vector3i8(1, 0, 0)), //
-	OrthoBasis(Vector3i8(0, 1, 0), Vector3i8(0, 0, 1), Vector3i8(1, 0, 0)), //
-	OrthoBasis(Vector3i8(0, 0, -1), Vector3i8(0, 1, 0), Vector3i8(1, 0, 0)), //
-	OrthoBasis(Vector3i8(0, -1, 0), Vector3i8(0, 0, -1), Vector3i8(1, 0, 0)) //
+	OrthoBasis(Vector3i( 0,  0,  1), Vector3i( 0, -1,  0), Vector3i( 1,  0,  0)), //
+	OrthoBasis(Vector3i( 0,  1,  0), Vector3i( 0,  0,  1), Vector3i( 1,  0,  0)), //
+	OrthoBasis(Vector3i( 0,  0, -1), Vector3i( 0,  1,  0), Vector3i( 1,  0,  0)), //
+	OrthoBasis(Vector3i( 0, -1,  0), Vector3i( 0,  0, -1), Vector3i( 1,  0,  0)) //
 };
+// clang-format on
 
 OrthoBasis get_ortho_basis_from_index(int i) {
 	ZN_ASSERT(i >= 0 && i < ORTHOGONAL_BASIS_COUNT);
@@ -89,6 +91,56 @@ const char *s_rotation_names[ORTHO_ROTATION_COUNT] = {
 const char *ortho_rotation_to_string(int i) {
 	ZN_ASSERT_RETURN_V(i >= 0 && i < ORTHO_ROTATION_COUNT, "<error>");
 	return s_rotation_names[i];
+}
+
+OrthoBasis OrthoBasis::from_axis_turns(const Vector3i::Axis axis, const int turns) {
+	// If turns are negative, do the positive equivalent
+	const int mturns = turns >= 0 ? turns % 4 : 4 - ((-turns) % 4);
+	if (mturns == 0) {
+		return OrthoBasis();
+	}
+	// Clockwise with the rotation axis pointing at us
+	switch (axis) {
+		case Vector3i::AXIS_X:
+			switch (mturns) {
+				case 1:
+					return { Vector3i(1, 0, 0), Vector3i(0, 0, -1), Vector3i(0, 1, 0) };
+				case 2:
+					return { Vector3i(1, 0, 0), Vector3i(0, -1, 0), Vector3i(0, 0, -1) };
+				case 3:
+					return { Vector3i(1, 0, 0), Vector3i(0, 0, 1), Vector3i(0, -1, 0) };
+			}
+		case Vector3i::AXIS_Y:
+			switch (mturns) {
+				case 1:
+					return { Vector3i(0, 0, 1), Vector3i(0, 1, 0), Vector3i(-1, 0, 0) };
+				case 2:
+					return { Vector3i(-1, 0, 0), Vector3i(0, 1, 0), Vector3i(0, 0, -1) };
+				case 3:
+					return { Vector3i(0, 0, -1), Vector3i(0, 1, 0), Vector3i(1, 0, 0) };
+			}
+		case Vector3i::AXIS_Z:
+			switch (mturns) {
+				case 1:
+					return { Vector3i(0, -1, 0), Vector3i(1, 0, 0), Vector3i(0, 0, 1) };
+				case 2:
+					return { Vector3i(-1, 0, 0), Vector3i(0, -1, 0), Vector3i(0, 0, 1) };
+				case 3:
+					return { Vector3i(0, 1, 0), Vector3i(-1, 0, 0), Vector3i(0, 0, 1) };
+			}
+		default:
+			ZN_PRINT_ERROR("Invalid axis");
+			return OrthoBasis();
+	}
+}
+
+bool OrthoBasis::is_orthonormal() const {
+	return Vector3iUtil::is_unit_vector(x) && //
+			Vector3iUtil::is_unit_vector(y) && //
+			Vector3iUtil::is_unit_vector(z) && //
+			math::dot(x, y) == 0 && //
+			math::dot(x, z) == 0 && //
+			math::dot(y, z) == 0;
 }
 
 } // namespace zylann::math

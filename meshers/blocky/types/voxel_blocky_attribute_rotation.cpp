@@ -46,7 +46,7 @@ void VoxelBlockyAttributeRotation::update_values() {
 	} else {
 		for (unsigned int ortho_index = 0; ortho_index < math::ORTHOGONAL_BASIS_COUNT; ++ortho_index) {
 			const math::OrthoBasis &basis = math::get_ortho_basis_from_index(ortho_index);
-			if (basis.y != math::Vector3i8(0, 1, 0) && basis.z.y == 0) {
+			if (basis.y != Vector3i(0, 1, 0) && basis.z.y == 0) {
 				// Skip rotations where Y is not up and Z is not horizontal
 				continue;
 			}
