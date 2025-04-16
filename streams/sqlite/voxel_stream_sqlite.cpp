@@ -385,7 +385,9 @@ void VoxelStreamSQLite::flush_cache_to_connection(sqlite::Connection *p_connecti
 	ERR_FAIL_COND(p_connection == nullptr);
 	ERR_FAIL_COND(p_connection->begin_transaction() == false);
 
+#ifdef VOXEL_ENABLE_INSTANCER
 	StdVector<uint8_t> &temp_data = get_tls_temp_block_data();
+#endif
 	StdVector<uint8_t> &temp_compressed_data = get_tls_temp_compressed_block_data();
 
 	const BlockLocation::CoordinateFormat coordinate_format = p_connection->get_meta().coordinate_format;
@@ -393,9 +395,13 @@ void VoxelStreamSQLite::flush_cache_to_connection(sqlite::Connection *p_connecti
 	const unsigned int lod_count = BlockLocation::get_lod_count(coordinate_format);
 
 	// TODO Needs better error rollback handling
-	_cache.flush([p_connection, &temp_data, &temp_compressed_data, coordinate_range, lod_count](
-						 VoxelStreamCache::Block &block
-				 ) {
+	_cache.flush([p_connection,
+#ifdef VOXEL_ENABLE_INSTANCER
+				  &temp_data,
+#endif
+				  &temp_compressed_data,
+				  coordinate_range,
+				  lod_count](VoxelStreamCache::Block &block) {
 		ZN_ASSERT_RETURN(validate_range(block.position, block.lod, coordinate_range, lod_count));
 
 		BlockLocation loc;

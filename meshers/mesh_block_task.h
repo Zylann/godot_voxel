@@ -90,7 +90,9 @@ private:
 	bool _has_run = false;
 	bool _too_far = false;
 	bool _has_mesh_resource = false;
+#ifdef VOXEL_ENABLE_GPU
 	uint8_t _stage = 0;
+#endif
 	VoxelBuffer _voxels;
 	VoxelMesher::Output _surfaces_output;
 	Ref<Mesh> _mesh;
