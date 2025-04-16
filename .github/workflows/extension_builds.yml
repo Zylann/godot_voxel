@@ -133,6 +133,7 @@ jobs:
           Remove-Item project/addons/zylann.voxel/bin/* -Include *.exp,*.lib,*.pdb -Force
 
       - name: Print
+        shell: bash
         run: |
           cd project/addons/zylann.voxel/bin
           ls -l
