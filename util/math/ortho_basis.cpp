@@ -112,6 +112,7 @@ OrthoBasis OrthoBasis::from_axis_turns(const Vector3i::Axis axis, const int turn
 				default:
 					break;
 			}
+			break;
 		case Vector3i::AXIS_Y:
 			switch (mturns) {
 				case 1:
@@ -123,6 +124,7 @@ OrthoBasis OrthoBasis::from_axis_turns(const Vector3i::Axis axis, const int turn
 				default:
 					break;
 			}
+			break;
 		case Vector3i::AXIS_Z:
 			switch (mturns) {
 				case 1:
@@ -134,6 +136,7 @@ OrthoBasis OrthoBasis::from_axis_turns(const Vector3i::Axis axis, const int turn
 				default:
 					break;
 			}
+			break;
 		default:
 			ZN_PRINT_ERROR("Invalid axis");
 	}
