@@ -66,3 +66,8 @@ jobs:
           SCONS_CACHE: ${{ github.workspace }}/.scons-cache/
         run: |
           scons target=editor platform=linux arch=x86_64 dev_build=no verbose=yes use_llvm=yes ${{ matrix.sconsflags }}
+
+      - name: Print
+        run: |
+          cd project/addons/zylann.voxel/bin
+          ls -l
