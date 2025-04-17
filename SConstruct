@@ -12,6 +12,53 @@ import voxel_version
 LIB_NAME = "libvoxel"
 BIN_FOLDER = "project/addons/zylann.voxel/bin"
 
+
+def is_using_clang(env):
+    return "clang" in os.path.basename(env["CC"])
+
+
+def is_using_gcc(env):
+    return "gcc" in os.path.basename(env["CC"])
+
+
+# GodotCpp doesn't come with helpers to configure warning levels
+def configure_warnings(env):
+    if env.get("is_msvc", False):
+        disabled_warnings = [
+            "/wd4100",  # C4100 (unreferenced formal parameter): Doesn't play nice with polymorphism.
+            "/wd4127",  # C4127 (conditional expression is constant)
+            "/wd4201",  # C4201 (non-standard nameless struct/union): Only relevant for C89.
+            "/wd4244",  # C4244 C4245 C4267 (narrowing conversions): Unavoidable at this scale.
+            "/wd4245",
+            "/wd4267",
+            "/wd4305",  # C4305 (truncation): double to float or real_t, too hard to avoid.
+            "/wd4324",  # C4820 (structure was padded due to alignment specifier)
+            "/wd4514",  # C4514 (unreferenced inline function has been removed)
+            "/wd4714",  # C4714 (function marked as __forceinline not inlined)
+            "/wd4820",  # C4820 (padding added after construct)
+        ]
+        
+        env.Append(CXXFLAGS=["/W3"])
+        # C4458 is like -Wshadow. Part of /W4 but let's apply it for the default /W3 too.
+        env.AppendUnique(CXXFLAGS=["/w34458"] + disabled_warnings)
+    
+    else: # GCC, Clang
+        common_warnings = []
+
+        if is_using_gcc(env):
+            common_warnings += ["-Wshadow", "-Wno-misleading-indentation"]
+
+        elif is_using_clang(env):
+            common_warnings += ["-Wshadow-field-in-constructor", "-Wshadow-uncaptured-local"]
+            # We often implement `operator<` for structs of pointers as a requirement
+            # for putting them in `Set` or `Map`. We don't mind about unreliable ordering.
+            common_warnings += ["-Wno-ordered-compare-function-pointers"]
+
+        env.AppendUnique(CXXFLAGS=["-Wall"] + common_warnings)
+
+        # if env["werror"]:
+        #     env.AppendUnique(CXXFLAGS=["-Werror"])
+
 voxel_version.generate_version_header(False)
 
 # TODO Enhancement: not sure how to provide this as a SCons option since we get our environment *by running GodotCpp*...
@@ -37,6 +84,11 @@ env.Append(CPPDEFINES=[
 	"ZN_GODOT_EXTENSION"
 ])
 
+# We don't enable warnings on thirdparty libs
+thirdparty_env = env.Clone()
+
+configure_warnings(env)
+
 is_editor_build = (env["target"] == "editor")
 
 sources = common.get_sources(env, is_editor_build)
@@ -54,10 +106,12 @@ if env["voxel_sqlite"]:
 
 sources += [
 	"util/thread/godot_thread_helper.cpp",
+]
 
-	# GodotCpp doesn't come with RandomPCG
-	"util/godot/core/pcg.cpp",
-	"util/godot/core/random_pcg.cpp"
+sources += [
+	# GodotCpp doesn't come with RandomPCG.
+	thirdparty_env.SharedObject("util/godot/core/pcg.cpp"),
+	thirdparty_env.SharedObject("util/godot/core/random_pcg.cpp")
 ]
 
 if is_editor_build:

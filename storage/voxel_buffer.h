@@ -5,6 +5,7 @@
 #include "../util/containers/flat_map.h"
 #include "../util/containers/small_vector.h"
 #include "../util/math/box3i.h"
+#include "../util/math/ortho_basis.h"
 #include "funcs.h"
 #include "metadata/voxel_metadata.h"
 
@@ -475,6 +476,8 @@ public:
 	static float get_sdf_quantization_scale(Depth d);
 
 	void get_range_f(float &out_min, float &out_max, ChannelId channel_index) const;
+
+	void transform(const math::OrthoBasis &basis);
 
 	// Metadata
 
