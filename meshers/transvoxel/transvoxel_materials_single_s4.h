@@ -117,8 +117,8 @@ void get_cell_materials(
 
 		// Select 4 most-represented materials
 		switch (item_count) {
-			// case 0:
-			// Not supposed to happen
+				// case 0: Not supposed to happen
+
 			case 1: {
 				// Same material in whole cell.
 				// Probably the most common case.
