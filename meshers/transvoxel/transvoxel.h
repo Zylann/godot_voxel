@@ -28,7 +28,8 @@ enum TexturingMode {
 	// Each voxel has only one material index, and up to 4 can blend in shader
 	TEXTURES_SINGLE_S4,
 	// Each voxel has only one material index, and up to 2 can blend in shader
-	TEXTURES_SINGLE_S2
+	TEXTURES_SINGLE_S2,
+	TEXTURES_MODE_COUNT
 };
 
 struct LodAttrib {

@@ -385,6 +385,7 @@ Ref<ArrayMesh> VoxelMesherTransvoxel::build_transition_mesh(Ref<godot::VoxelBuff
 }
 
 void VoxelMesherTransvoxel::set_texturing_mode(TexturingMode mode) {
+	ZN_ASSERT_RETURN(mode >= 0 && mode < TEXTURES_MODE_COUNT);
 	if (mode != _texture_mode) {
 		_texture_mode = mode;
 		emit_changed();
