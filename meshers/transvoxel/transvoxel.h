@@ -27,8 +27,10 @@ enum TexturingMode {
 	TEXTURES_BLEND_4_OVER_16,
 	// Each voxel has only one material index, and up to 4 can blend in shader
 	TEXTURES_SINGLE_S4,
+#ifdef VOXEL_ENABLE_TRANSVOXEL_MATERIAL_SINGLE_S2
 	// Each voxel has only one material index, and up to 2 can blend in shader
 	TEXTURES_SINGLE_S2,
+#endif
 	TEXTURES_MODE_COUNT
 };
 

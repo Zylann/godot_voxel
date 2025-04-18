@@ -7,9 +7,13 @@
 #include "../../util/profiling.h"
 #include "transvoxel_materials_mixel4.h"
 #include "transvoxel_materials_null.h"
-#include "transvoxel_materials_single_s2.h"
 #include "transvoxel_materials_single_s4.h"
 #include "transvoxel_tables.cpp"
+
+// Quality isn't great so not available for now.
+#ifdef VOXEL_ENABLE_TRANSVOXEL_MATERIAL_SINGLE_S2
+#include "transvoxel_materials_single_s2.h"
+#endif
 
 // #define VOXEL_TRANSVOXEL_REUSE_VERTEX_ON_COINCIDENT_CASES
 
@@ -1329,6 +1333,7 @@ DefaultTextureIndicesData build_regular_mesh(
 			);
 		} break;
 
+#ifdef VOXEL_ENABLE_TRANSVOXEL_MATERIAL_SINGLE_S2
 		case TEXTURES_SINGLE_S2: {
 			const materials::single::VoxelMaterialIndices voxel_material_indices =
 					materials::single::get_material_indices_from_vb(
@@ -1349,6 +1354,7 @@ DefaultTextureIndicesData build_regular_mesh(
 					edge_clamp_margin
 			);
 		} break;
+#endif
 
 		default:
 			ZN_PRINT_ERROR("Invalid material mode");
@@ -1517,6 +1523,7 @@ void build_transition_mesh(
 			);
 		} break;
 
+#ifdef VOXEL_ENABLE_TRANSVOXEL_MATERIAL_SINGLE_S2
 		case TEXTURES_SINGLE_S2: {
 			materials::single::VoxelMaterialIndices voxel_material_indices;
 			if (default_texture_indices_data.use) {
@@ -1538,6 +1545,7 @@ void build_transition_mesh(
 					edge_clamp_margin
 			);
 		} break;
+#endif
 
 		default:
 			ZN_PRINT_ERROR("Invalid material mode");
