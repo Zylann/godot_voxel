@@ -50,7 +50,7 @@
 			In cases where more than 4 textures cross each other in a 2x2x2 voxel area, triangles in that area will only use the 4 indices with the highest weights.
 			A custom shader is required to render this, usually with texture arrays to index textures easily.
 		</constant>
-		<constant name="TEXTURES_BLEND_4_OVER_16" deprecated="Use TEXTURES_MIXEL4_S4" value="1">
+		<constant name="TEXTURES_BLEND_4_OVER_16" value="1" deprecated="Use TEXTURES_MIXEL4_S4">
 			Legacy alias for [constant TEXTURES_MIXEL4_S4].
 		</constant>
 	</constants>

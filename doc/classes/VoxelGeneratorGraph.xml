@@ -97,6 +97,9 @@
 		<member name="subdivision_size" type="int" setter="set_subdivision_size" getter="get_subdivision_size" default="16">
 			When generating SDF blocks for a terrain, and if block size is divisible by this value, range analysis will operate on such subdivision. This allows to optimize away more precise areas. However, it may not be set too small otherwise overhead will outweight the benefits.
 		</member>
+		<member name="texture_mode" type="int" setter="set_texture_mode" getter="get_texture_mode" enum="VoxelGeneratorGraph.TextureMode" default="0">
+			Sets which voxel format will be produced by texture outputs, if present.
+		</member>
 		<member name="use_optimized_execution_map" type="bool" setter="set_use_optimized_execution_map" getter="is_using_optimized_execution_map" default="true">
 			If enabled, when generating blocks for a terrain, the generator will attempt to skip specific nodes if they are found to have no importance in specific areas.
 		</member>
@@ -114,4 +117,12 @@
 			</description>
 		</signal>
 	</signals>
+	<constants>
+		<constant name="TEXTURE_MODE_MIXEL4" value="0" enum="TextureMode">
+			Writes texture data into [constant VoxelBuffer.CHANNEL_INDICES] as 4 packed 4-bit indices and into [constant VoxelBuffer.CHANNEL_WEIGHTS] as 4 packed 4-bit weights. See [VoxelMesherTransvoxel] and docs about smooth voxels to see how this data is used. 
+		</constant>
+		<constant name="TEXTURE_MODE_SINGLE" value="1" enum="TextureMode">
+			Writes texture data into [constant VoxelBuffer.CHANNEL_INDICES] as one 8-bit value per voxel.
+		</constant>
+	</constants>
 </class>
