@@ -2324,8 +2324,8 @@ void VoxelGeneratorGraph::_bind_methods() {
 
 	ADD_PROPERTY(
 			PropertyInfo(Variant::INT, "texture_mode", PROPERTY_HINT_ENUM, "None,Single,Mixel4"),
-			"texture_mode",
-			"texture_mode"
+			"set_texture_mode",
+			"get_texture_mode"
 	);
 
 	ADD_GROUP("Performance Tuning", "");
