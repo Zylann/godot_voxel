@@ -2323,7 +2323,7 @@ void VoxelGeneratorGraph::_bind_methods() {
 	);
 
 	ADD_PROPERTY(
-			PropertyInfo(Variant::INT, "texture_mode", PROPERTY_HINT_ENUM, "None,Single,Mixel4"),
+			PropertyInfo(Variant::INT, "texture_mode", PROPERTY_HINT_ENUM, "Mixel4,Single"),
 			"set_texture_mode",
 			"get_texture_mode"
 	);
@@ -2346,6 +2346,9 @@ void VoxelGeneratorGraph::_bind_methods() {
 	);
 
 	ADD_SIGNAL(MethodInfo(SIGNAL_NODE_NAME_CHANGED, PropertyInfo(Variant::INT, "node_id")));
+
+	BIND_ENUM_CONSTANT(TEXTURE_MODE_MIXEL4);
+	BIND_ENUM_CONSTANT(TEXTURE_MODE_SINGLE);
 }
 
 } // namespace zylann::voxel
