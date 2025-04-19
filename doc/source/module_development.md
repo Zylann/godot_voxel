@@ -552,7 +552,7 @@ Currently, C++ code generating shaders is intertwined with the contents of those
 Using the module from another module
 ----------------------------------------
 
-Writing a custom C++ module directly in Godot is one way to access features of Godot and the voxel engine more directly, which can be better for performance and more stable than a GDExtension. You can do this too if you want to create a custom generator, mesher, stream, or just use components of the module, without having to modify the module directly.
+Writing a custom C++ module directly in Godot is the easiest way to access features of Godot and the voxel engine directly, which can be better for performance and more stable than a GDExtension. You can do this too if you want to create a custom generator, mesher, stream, or just use components of the module, without having to modify the module directly.
 
 You can include files from the voxel module by using `modules/voxel/` in your includes:
 
@@ -567,3 +567,5 @@ env_yourmodule.Append(CPPDEFINES = [
     'ZN_GODOT'
 ])
 ```
+
+TODO: since the implementation of [compiling-out features](https://github.com/Zylann/godot_voxel/issues/746), you will have a lot more of preprocessor symbols to define, since you may want to `#include` headers of the voxel engine that expect them to be defined or not. There is currently no helper to do this, so you have to add them manually in your `CPPDEFINES` array. See the [list of macros](#Features).
