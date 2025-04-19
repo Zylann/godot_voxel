@@ -24,7 +24,7 @@ enum TexturingMode {
 	// Blends the 4 most-represented textures in the given block, ignoring the others.
 	// Texture indices and blend factors have 4-bit precision (maximum 16 textures and 16 transition gradients),
 	// and are respectively encoded in UV.x and UV.y.
-	TEXTURES_BLEND_4_OVER_16,
+	TEXTURES_MIXEL4_S4,
 	// Each voxel has only one material index, and up to 4 can blend in shader
 	TEXTURES_SINGLE_S4,
 #ifdef VOXEL_ENABLE_TRANSVOXEL_MATERIAL_SINGLE_S2

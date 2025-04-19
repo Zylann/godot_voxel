@@ -330,7 +330,7 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 	switch (_texture_mode) {
 		case TEXTURES_NONE:
 			break;
-		case TEXTURES_BLEND_4_OVER_16:
+		case TEXTURES_MIXEL4_S4:
 		case TEXTURES_SINGLE_S4:
 			output.mesh_flags |= (RenderingServer::ARRAY_CUSTOM_RG_FLOAT << Mesh::ARRAY_FORMAT_CUSTOM1_SHIFT);
 			break;
@@ -483,7 +483,7 @@ void VoxelMesherTransvoxel::_bind_methods() {
 	ADD_GROUP("Materials", "");
 
 	ADD_PROPERTY(
-			PropertyInfo(Variant::INT, "texturing_mode", PROPERTY_HINT_ENUM, "None,4-blend over 16 textures (4 bits)"),
+			PropertyInfo(Variant::INT, "texturing_mode", PROPERTY_HINT_ENUM, "None,Mixel4,Single"),
 			"set_texturing_mode",
 			"get_texturing_mode"
 	);
@@ -521,9 +521,11 @@ void VoxelMesherTransvoxel::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "edge_clamp_margin"), "set_edge_clamp_margin", "get_edge_clamp_margin");
 
 	BIND_ENUM_CONSTANT(TEXTURES_NONE);
-	// TODO Rename MIXEL
-	BIND_ENUM_CONSTANT(TEXTURES_BLEND_4_OVER_16);
+	BIND_ENUM_CONSTANT(TEXTURES_MIXEL4_S4);
 	BIND_ENUM_CONSTANT(TEXTURES_SINGLE_S4);
+
+	// Legacy alias for MIXEL4_S4
+	BIND_CONSTANT(TEXTURES_BLEND_4_OVER_16);
 }
 
 } // namespace zylann::voxel

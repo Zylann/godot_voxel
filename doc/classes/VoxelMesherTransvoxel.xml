@@ -38,11 +38,20 @@
 		<constant name="TEXTURES_NONE" value="0" enum="TexturingMode">
 			Disables texturing information. This mode is the fastest if you can use a shader to apply textures procedurally.
 		</constant>
-		<constant name="TEXTURES_BLEND_4_OVER_16" value="1" enum="TexturingMode">
-			Adds texturing information as 4 texture indices and 4 weights, encoded in [code]CUSTOM1.xy[/code] in Godot fragment shaders, where x and y contain 4 packed 8-bit values.
+		<constant name="TEXTURES_MIXEL4_S4" value="1" enum="TexturingMode">
 			Expects voxels to have 4 4-bit indices packed in 16-bit values in [constant VoxelBuffer.CHANNEL_INDICES], and 4 4-bit weights in [constant VoxelBuffer.CHANNEL_WEIGHTS].
+			Adds texturing information as 4 texture indices and 4 weights, encoded in [code]CUSTOM1.xy[/code] in Godot fragment shaders, where x and y contain 4 packed 8-bit values.
 			In cases where more than 4 textures cross each other in a 2x2x2 voxel area, triangles in that area will only use the 4 indices with the highest weights.
 			A custom shader is required to render this, usually with texture arrays to index textures easily.
+		</constant>
+		<constant name="TEXTURES_SINGLE_S4" value="2" enum="TexturingMode">
+			Expects voxels to have a 8-bit texture index in the [constant VoxelBuffer.CHANNEL_INDICES] channel.
+			Adds texturing information as 4 texture indices and 4 weights, encoded in [code]CUSTOM1.xy[/code] in Godot fragment shaders, where x and y contain 4 packed 8-bit values.
+			In cases where more than 4 textures cross each other in a 2x2x2 voxel area, triangles in that area will only use the 4 indices with the highest weights.
+			A custom shader is required to render this, usually with texture arrays to index textures easily.
+		</constant>
+		<constant name="TEXTURES_BLEND_4_OVER_16" deprecated="Use TEXTURES_MIXEL4_S4" value="1">
+			Legacy alias for [constant TEXTURES_MIXEL4_S4].
 		</constant>
 	</constants>
 </class>

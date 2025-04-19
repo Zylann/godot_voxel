@@ -1276,7 +1276,7 @@ DefaultTextureIndicesData build_regular_mesh(
 			);
 			break;
 
-		case TEXTURES_BLEND_4_OVER_16: {
+		case TEXTURES_MIXEL4_S4: {
 			materials::mixel4::TextureIndicesData voxel_material_indices;
 			materials::mixel4::WeightSamplerPackedU16 voxel_material_weights;
 			{
@@ -1463,7 +1463,7 @@ void build_transition_mesh(
 			);
 			break;
 
-		case TEXTURES_BLEND_4_OVER_16: {
+		case TEXTURES_MIXEL4_S4: {
 			// TODO Support more texturing data configurations
 			materials::mixel4::TextureIndicesData indices_data;
 			materials::mixel4::WeightSamplerPackedU16 weights_data;

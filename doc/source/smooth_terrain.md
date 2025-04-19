@@ -197,12 +197,32 @@ In the shader parameters, add your two albedo maps, and optionally normal, and A
 
 Voxel data is heavy, so if texturing rules of your game are simple enough to be determined from a shader and don't impact gameplay, you won't need to define any extra data in the voxels. For example, you can check the normal of a terrain surface to blend between a grass and rock texture, and use snow above a certain height.
 
+### Voxel texturing
 
-### 4-blend over 16 textures
+If on the other hand you really need texturing to be a property of voxels themselves, it would be necessary to store that information in them somehow. This means voxel data will take more space, and more volumetric processing has to occur accounting for that.
 
-#### Voxel data
+Voxel texturing can be split in 2 parts:
 
-If you want textures to come from voxel data, `VoxelMesherTransvoxel` has a `texture_mode` property which can be set to `TEXTURES_BLEND_4_OVER_16`. This mode allows up to 16 textures and blends only the 4 most used ones per voxel. It expects voxel data in the `INDICES` and `WEIGHTS` channels, encoded into 16-bit depth values. There are 4 weights and 4 indices per voxel, each using 4 bits. It is very tight and does not allow for long gradients, but should be enough for most cases.
+- The voxel data format: what voxels actually contain.
+- The vertex data format: what is used in meshes built from voxel data.
+
+### Voxel texture formats
+
+#### Single
+
+The simplest format is to give every voxel a 8-bit index telling what texture they have. This allows to choose whithin a pool of 256 possible textures. This is usually way mmore than enough for smooth terrains. This format cannot represent gradients, so painting has no falloff.
+
+This data is stored in the [INDICES](api/VoxelBuffer.md#i_CHANNEL_INDICES) channel, using a depth of 8-bits.
+
+
+#### Mixel4
+
+Another approach consists in storing multiple indices in every voxel, and how much of each of those it has, using weights.
+This allows to define gradients since a stretch of land can then gradually transition between voxels having little to more of a certain texture, while other textures decrease. The implementation can store up to 4 different textures per voxel.
+
+This format however has a number of drawbacks: it is much heavier and complicated to manipulate. The implementation also limits texture count to 16.
+
+The data for the 4 textures (`a`, `b`, `c`, `d`) is encoded over two channels, [INDICES](api/VoxelBuffer.md#i_CHANNEL_INDICES) and [WEIGHTS](api/VoxelBuffer.md#i_CHANNEL_WEIGHTS), both using a depth of 16 bits. So each texture only has 4 bits of precision.
 
 ```
           1st byte    2nd byte
@@ -220,7 +240,20 @@ You may use `VoxelTool` helper functions to encode/decode these values:
 - [u16_indices_to_vec4i](https://voxel-tools.readthedocs.io/en/latest/api/VoxelTool/#i_u16_indices_to_vec4i)
 - [u16_weights_to_color](https://voxel-tools.readthedocs.io/en/latest/api/VoxelTool/#i_u16_weights_to_color)
 
-One easy way to paint is to use `VoxelTool.do_sphere()`:
+
+### Editing voxels with texture
+
+If you use the [Single](#single) mode, you can directly set indices as if it were blocky voxels. So blocky editing functions can be used with the [SET](api/VoxelTool.md#i_MODE_SET) mode.
+
+```gdscript
+# Paints texture 2 in a sphere area (does not create matter)
+voxel_tool.set_mode(VoxelTool.MODE_SET)
+voxel_tool.set_channel(VoxelBuffer.CHANNEL_INDICES)
+voxel_tool.set_texture_index(2)
+voxel_tool.do_sphere(hit_position, radius)
+```
+
+If you use [Mixel4](#mixel4), you have to use the [TEXTURE_PAINT](api/VoxelTool.md#i_MODE_TEXTURE_PAINT) mode.
 
 ```gdscript
 # Paints texture 2 in a sphere area (does not create matter)
@@ -235,7 +268,9 @@ It is also possible to generate this in `VoxelGeneratorGraph` using special outp
 See also this [painting demo](https://github.com/Zylann/voxelgame/tree/master/project/smooth_materials).
 
 
-#### Mesh data
+### Mesh data
+
+Currently, all voxel texture formats are combined into the same vertex format: when calculating every marching cube cell, the mesher gathers the most-represented textures over the corresponding voxels, and stores the result in vertex data. This format is referred to as `S4` in `VoxelMesherTransvoxel`, as it gathers groups of 4 textures.
 
 The mesher will include texturing information in the `CUSTOM1` attribute of vertices. Contrary to voxel values, the packed information will have 8 bits of precision:
 
@@ -247,12 +282,14 @@ Each index tell which texture needs to be used, and each weight respectively tel
 
 #### Shader
 
+A shader is necessary to render voxel textures using the data encoded in vertices. If you can have more than 4 different textures, it is also preferable for your textures to be in a [Texture2DArray](https://docs.godotengine.org/en/stable/classes/class_texture2darray.html).
+
 Here is the shader code you will need:
 
 ```glsl
 shader_type spatial;
 
-// Textures should preferably be in a TextureArray, so looking them up is cheap
+// Textures should preferably be in a Texture2DArray, so looking them up is cheap
 uniform sampler2DArray u_texture_array : source_color;
 
 // We'll need to pass data from the vertex shader to the fragment shader
@@ -337,7 +374,7 @@ void fragment() {
 ![Smooth voxel painting prototype](images/smooth_voxel_painting_on_plane.webp)
 
 !!! note
-	If you only need 4 textures, then you can leave indices to their default values (which contains `0,1,2,3`) and only use weights. When using `VoxelTool`, you may only use texture indices 0, 1, 2 or 3. Texture arrays are less relevant in this case.
+	If you want to use `Mixel4` but only need 4 textures, then you can leave indices to their default values (which contains `0,1,2,3`) and only use weights. When using `VoxelTool`, you may only use texture indices 0, 1, 2 or 3. Texture arrays are less relevant in this case.
 
 
 ### Recommended Reading

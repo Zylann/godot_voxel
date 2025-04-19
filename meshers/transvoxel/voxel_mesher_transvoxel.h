@@ -20,11 +20,12 @@ class VoxelMesherTransvoxel : public VoxelMesher {
 public:
 	enum TexturingMode {
 		TEXTURES_NONE = transvoxel::TEXTURES_NONE,
-		TEXTURES_BLEND_4_OVER_16 = transvoxel::TEXTURES_BLEND_4_OVER_16,
-		// TEXTURES_MIXEL4_S4 = transvoxel::TEXTURES_BLEND_4_OVER_16,
+		TEXTURES_MIXEL4_S4 = transvoxel::TEXTURES_MIXEL4_S4,
 		TEXTURES_SINGLE_S4 = transvoxel::TEXTURES_SINGLE_S4,
 		TEXTURES_MODE_COUNT = transvoxel::TEXTURES_MODE_COUNT
 	};
+
+	static const int TEXTURES_BLEND_4_OVER_16 = 1;
 
 	VoxelMesherTransvoxel();
 	~VoxelMesherTransvoxel();
