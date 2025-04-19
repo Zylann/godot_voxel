@@ -671,7 +671,7 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelGenerator::Voxel
 			out_buffer.set_channel_depth(VoxelBuffer::CHANNEL_INDICES, VoxelBuffer::DEPTH_8_BIT);
 			break;
 		default:
-			ZN_PRINT_ERROR_ONCE("Unknwon texture mode");
+			ZN_PRINT_ERROR_ONCE("Unknown texture mode");
 			break;
 	}
 
