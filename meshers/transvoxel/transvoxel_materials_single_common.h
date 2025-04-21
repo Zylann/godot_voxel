@@ -15,7 +15,7 @@ struct WeightedIndex {
 	}
 };
 
-template <unsigned int N>
+template <size_t N>
 void insert_combine(std::array<WeightedIndex, N> &items, uint32_t &item_count, const uint8_t new_index) {
 	for (uint32_t i = 0; i < item_count; ++i) {
 		if (items[i].index == new_index) {
