@@ -55,7 +55,10 @@ void copy_from_chunked_storage(
 						// For now, inexistent blocks default to hardcoded defaults, corresponding to "empty space".
 						// If we want to change this, we may have to add an API for that.
 						dst_buffer.fill_area(
-								VoxelBuffer::get_default_value_static(channel),
+								VoxelBuffer::get_default_raw_value(
+										static_cast<VoxelBuffer::ChannelId>(channel),
+										dst_buffer.get_channel_depth(channel)
+								),
 								src_block_origin - min_pos,
 								src_block_origin - min_pos + block_size_v,
 								channel

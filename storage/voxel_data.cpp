@@ -115,6 +115,25 @@ void VoxelData::set_generator(Ref<VoxelGenerator> generator) {
 	_generator = generator;
 }
 
+VoxelFormat VoxelData::get_format() const {
+	MutexLock rlock(_settings_mutex);
+	return _format;
+}
+
+void VoxelData::set_format(const VoxelFormat format) {
+	MutexLock rlock(_settings_mutex);
+	if (format == _format) {
+		return;
+	}
+	// CAREFUL: Changing format usually means reloading the whole data. Even if we lock settings, it is preferable to do
+	// this change while no background task is running.
+	_format = format;
+	for (Lod &lod : _lods) {
+		lod.map.set_format(_format);
+	}
+	reset_maps_no_settings_lock();
+}
+
 void VoxelData::set_stream(Ref<VoxelStream> stream) {
 	MutexLock wlock(_settings_mutex);
 	_stream = stream;
@@ -301,6 +320,10 @@ void VoxelData::copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsigned int cha
 #endif
 
 	Ref<VoxelGenerator> generator = get_generator();
+
+	// We could have assumed the passed buffer already has the right format, but that would require changing a lot more
+	// places
+	get_format().configure_buffer(dst_buffer);
 
 	const Box3i blocks_box = Box3i(min_pos, dst_buffer.get_size()).downscaled(data_lod0.map.get_block_size());
 	SpatialLock3D::Read srlock(data_lod0.spatial_lock, BoxBounds3i(blocks_box));
@@ -506,11 +529,11 @@ void VoxelData::pre_generate_box(
 		unsigned int data_block_size,
 		bool streaming,
 		unsigned int lod_count,
-		Ref<VoxelGenerator> generator
+		Ref<VoxelGenerator> generator,
 #ifdef VOXEL_ENABLE_MODIFIERS
-		,
-		VoxelModifierStack &modifiers
+		VoxelModifierStack &modifiers,
 #endif
+		const VoxelFormat format
 ) {
 	// This is mostly used by VoxelLodTerrain, in cases non-edited blocks aren't cached.
 
@@ -576,8 +599,7 @@ void VoxelData::pre_generate_box(
 	for (unsigned int i = 0; i < todo.size(); ++i) {
 		Task &task = todo[i];
 		task.voxels = make_shared_instance<VoxelBuffer>(VoxelBuffer::ALLOCATOR_POOL);
-		task.voxels->create(block_size);
-		// TODO Format?
+		task.voxels->create(block_size, &format);
 		if (generator.is_valid()) {
 			ZN_PROFILE_SCOPE_NAMED("Generate");
 			VoxelGenerator::VoxelQueryData q{ //
@@ -634,11 +656,11 @@ void VoxelData::pre_generate_box(Box3i voxel_box) {
 			data_block_size,
 			streaming,
 			lod_count,
-			get_generator()
+			get_generator(),
 #ifdef VOXEL_ENABLE_MODIFIERS
-					,
-			_modifiers
+			_modifiers,
 #endif
+			get_format()
 	);
 }
 

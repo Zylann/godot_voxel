@@ -662,18 +662,43 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelGenerator::Voxel
 
 	VoxelBuffer &out_buffer = input.voxel_buffer;
 
+#ifdef TOOLS_ENABLED
 	switch (_texture_mode) {
-		case TEXTURE_MODE_MIXEL4:
-			out_buffer.set_channel_depth(VoxelBuffer::CHANNEL_INDICES, VoxelBuffer::DEPTH_16_BIT);
-			out_buffer.set_channel_depth(VoxelBuffer::CHANNEL_WEIGHTS, VoxelBuffer::DEPTH_16_BIT);
-			break;
-		case TEXTURE_MODE_SINGLE:
-			out_buffer.set_channel_depth(VoxelBuffer::CHANNEL_INDICES, VoxelBuffer::DEPTH_8_BIT);
-			break;
+		case TEXTURE_MODE_MIXEL4: {
+			const VoxelBuffer::Depth indices_depth = out_buffer.get_channel_depth(VoxelBuffer::CHANNEL_INDICES);
+			if (indices_depth != VoxelBuffer::DEPTH_16_BIT) {
+				ZN_PRINT_ERROR_ONCE(format(
+						"The Indices channel is set to {} bits, but 16 bits are necessary to use the Mixel4 texturing "
+						"mode.",
+						VoxelBuffer::get_depth_byte_count(indices_depth)
+				));
+			}
+			const VoxelBuffer::Depth weights_depth = out_buffer.get_channel_depth(VoxelBuffer::CHANNEL_WEIGHTS);
+			if (weights_depth != VoxelBuffer::DEPTH_16_BIT) {
+				ZN_PRINT_ERROR_ONCE(format(
+						"The Weights channel is set to {} bits, but 16 bits are necessary to use the Mixel4 texturing "
+						"mode.",
+						VoxelBuffer::get_depth_byte_count(weights_depth)
+				));
+			}
+		} break;
+
+		case TEXTURE_MODE_SINGLE: {
+			const VoxelBuffer::Depth indices_depth = out_buffer.get_channel_depth(VoxelBuffer::CHANNEL_INDICES);
+			if (indices_depth != VoxelBuffer::DEPTH_8_BIT) {
+				ZN_PRINT_WARNING_ONCE(
+						format("The Indices channel is set to {} bits, but only 8 bits are required to use the Single "
+							   "texturing mode.",
+							   VoxelBuffer::get_depth_byte_count(indices_depth))
+				);
+			}
+		} break;
+
 		default:
 			ZN_PRINT_ERROR_ONCE("Unknown texture mode");
 			break;
 	}
+#endif
 
 	const Vector3i bs = out_buffer.get_size();
 	const VoxelBuffer::ChannelId sdf_channel = VoxelBuffer::CHANNEL_SDF;
@@ -1381,7 +1406,7 @@ void VoxelGeneratorGraph::generate_series(
 	switch (channel) {
 		case VoxelBuffer::CHANNEL_SDF:
 			buffer_index = runtime_ptr->sdf_output_buffer_index;
-			defval = VoxelBuffer::get_default_value_static(channel);
+			defval = constants::SDF_FAR_OUTSIDE;
 			break;
 		case VoxelBuffer::CHANNEL_TYPE:
 			buffer_index = runtime_ptr->type_output_buffer_index;

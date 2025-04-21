@@ -443,6 +443,8 @@ void VoxelLodTerrain::_on_stream_params_changed() {
 	// also this code isn't right, it doesn't update the other lods
 	//_data->lods[0].map.create(p_block_size_po2, 0);
 
+	_data->set_format(get_internal_format());
+
 	Ref<VoxelGenerator> generator = get_generator();
 
 	if ((stream.is_valid() || generator.is_valid()) &&
@@ -875,6 +877,10 @@ void VoxelLodTerrain::_set_lod_count(int p_lod_count) {
 
 	// Not entirely required, but changing LOD count at runtime is rarely needed
 	reset_maps();
+}
+
+void VoxelLodTerrain::on_format_changed() {
+	_on_stream_params_changed();
 }
 
 void VoxelLodTerrain::reset_maps() {

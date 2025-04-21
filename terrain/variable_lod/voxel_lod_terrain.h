@@ -287,6 +287,8 @@ public:
 
 	void get_lod_distances(Span<float> distances);
 
+	void on_format_changed() override;
+
 protected:
 	void _notification(int p_what);
 

@@ -13,6 +13,9 @@
 #include "../../util/math/conv.h"
 #include "../../util/profiling.h"
 #include "transvoxel_tables.cpp"
+#ifdef TOOLS_ENABLED
+#include "../../util/string/format.h"
+#endif
 
 using namespace zylann::godot;
 
@@ -221,6 +224,58 @@ void simplify(
 
 } // namespace
 
+// TODO Maybe we could auto-detect? It could become ambiguous tho
+static VoxelMesherTransvoxel::TexturingMode check_texturing_mode(
+		const VoxelMesherTransvoxel::TexturingMode expected_tex_mode,
+		const VoxelBuffer &vb
+) {
+#ifdef TOOLS_ENABLED
+	// Do more advanced error reporting in development
+	switch (expected_tex_mode) {
+		case VoxelMesherTransvoxel::TEXTURES_MIXEL4_S4: {
+			const VoxelBuffer::Depth indices_depth = vb.get_channel_depth(VoxelBuffer::CHANNEL_INDICES);
+			if (indices_depth != VoxelBuffer::DEPTH_16_BIT) {
+				ZN_PRINT_ERROR_ONCE(format(
+						"The Indices channel is set to {} bits, but 16 bits are necessary to use the Mixel4 texturing "
+						"mode.",
+						VoxelBuffer::get_depth_byte_count(indices_depth)
+				));
+				return VoxelMesherTransvoxel::TEXTURES_NONE;
+			}
+			const VoxelBuffer::Depth weights_depth = vb.get_channel_depth(VoxelBuffer::CHANNEL_WEIGHTS);
+			if (weights_depth != VoxelBuffer::DEPTH_16_BIT) {
+				ZN_PRINT_ERROR_ONCE(format(
+						"The Weights channel is set to {} bits, but 16 bits are necessary to use the Mixel4 texturing "
+						"mode.",
+						VoxelBuffer::get_depth_byte_count(weights_depth)
+				));
+				return VoxelMesherTransvoxel::TEXTURES_NONE;
+			}
+		} break;
+
+		case VoxelMesherTransvoxel::TEXTURES_SINGLE_S4: {
+			const VoxelBuffer::Depth indices_depth = vb.get_channel_depth(VoxelBuffer::CHANNEL_INDICES);
+			if (indices_depth != VoxelBuffer::DEPTH_8_BIT) {
+				ZN_PRINT_WARNING_ONCE(
+						format("The Indices channel is set to {} bits, but only 8 bits are required to use the Single "
+							   "texturing mode.",
+							   VoxelBuffer::get_depth_byte_count(indices_depth))
+				);
+				return VoxelMesherTransvoxel::TEXTURES_NONE;
+			}
+		} break;
+
+		case VoxelMesherTransvoxel::TEXTURES_NONE:
+			break;
+
+		default:
+			ZN_PRINT_ERROR_ONCE("Unknown texture mode");
+			break;
+	}
+#endif
+	return expected_tex_mode;
+}
+
 void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher::Input &input) {
 	ZN_PROFILE_SCOPE();
 
@@ -252,11 +307,13 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 		cell_infos = &transvoxel::get_tls_cell_infos();
 	}
 
+	const TexturingMode texture_mode = check_texturing_mode(_texture_mode, voxels);
+
 	default_texture_indices_data = transvoxel::build_regular_mesh(
 			voxels,
 			sdf_channel,
 			input.lod_index,
-			static_cast<transvoxel::TexturingMode>(_texture_mode),
+			static_cast<transvoxel::TexturingMode>(texture_mode),
 			tls_cache,
 			mesh_arrays,
 			cell_infos,
@@ -304,7 +361,7 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 					sdf_channel,
 					dir,
 					input.lod_index,
-					static_cast<transvoxel::TexturingMode>(_texture_mode),
+					static_cast<transvoxel::TexturingMode>(texture_mode),
 					tls_cache,
 					*combined_mesh_arrays,
 					default_texture_indices_data,
@@ -327,7 +384,7 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 	output.mesh_flags = (RenderingServer::ARRAY_CUSTOM_RGBA_FLOAT << Mesh::ARRAY_FORMAT_CUSTOM0_SHIFT);
 
 	// Texture data
-	switch (_texture_mode) {
+	switch (texture_mode) {
 		case TEXTURES_NONE:
 			break;
 		case TEXTURES_MIXEL4_S4:

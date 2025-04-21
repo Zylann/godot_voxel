@@ -214,6 +214,9 @@ The simplest format is to give every voxel a 8-bit index telling what texture th
 
 This data is stored in the [INDICES](api/VoxelBuffer.md#i_CHANNEL_INDICES) channel, using a depth of 8-bits.
 
+!!! note
+	This mode is the easiest, but wasn't the first to be implemented. So unfortunately, the default voxel format isn't suitable for it. To fix this, assign a new [VoxelFormat](api/VoxelFormat.md) resource to your terrain, and change its `indices_depth` to `8-bit`. Then make sure your mesher has its texture mode set to `Single`. In some cases, you may also configure your generator (notably [VoxelGeneratorGraph](api/VoxelGeneratorGraph.md)).
+
 
 #### Mixel4
 

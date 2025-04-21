@@ -1464,7 +1464,6 @@ void build_transition_mesh(
 			break;
 
 		case TEXTURES_MIXEL4_S4: {
-			// TODO Support more texturing data configurations
 			materials::mixel4::TextureIndicesData indices_data;
 			materials::mixel4::WeightSamplerPackedU16 weights_data;
 

@@ -6,6 +6,7 @@
 #include "../util/thread/mutex.h"
 #include "../util/thread/spatial_lock_3d.h"
 #include "voxel_data_map.h"
+#include "voxel_format.h"
 
 #ifdef VOXEL_ENABLE_MODIFIERS
 #include "../modifiers/voxel_modifier_stack.h"
@@ -61,6 +62,9 @@ public:
 		MutexLock rlock(_settings_mutex);
 		return _bounds_in_voxels;
 	}
+
+	VoxelFormat get_format() const;
+	void set_format(const VoxelFormat format);
 
 	void set_generator(Ref<VoxelGenerator> generator);
 
@@ -378,11 +382,11 @@ private:
 			unsigned int data_block_size,
 			bool streaming,
 			unsigned int lod_count,
-			Ref<VoxelGenerator> generator
+			Ref<VoxelGenerator> generator,
 #ifdef VOXEL_ENABLE_MODIFIERS
-			,
-			VoxelModifierStack &modifiers
+			VoxelModifierStack &modifiers,
 #endif
+			const VoxelFormat format
 	);
 
 	static inline std::shared_ptr<VoxelBuffer> try_get_voxel_buffer_with_lock(
@@ -447,6 +451,8 @@ private:
 
 	// Persistent storage (file(s)).
 	Ref<VoxelStream> _stream;
+
+	VoxelFormat _format;
 
 	// This should be locked when accessing settings members.
 	// If other locks are needed simultaneously such as voxel maps, they should always be locked AFTER, to prevent

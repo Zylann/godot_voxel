@@ -62,6 +62,8 @@ public:
 
 	void for_each_voxel_metadata_in_area(AABB voxel_area, const Callable &callback);
 
+	VoxelFormat get_format() const override;
+
 protected:
 	uint64_t _get_voxel(Vector3i pos) const override;
 	float _get_voxel_f(Vector3i pos) const override;
