@@ -69,8 +69,10 @@ VoxelMaterialIndices get_material_indices_from_vb(
 			static bool s_once = false;
 			if (!s_once) {
 				s_once = true;
-				ZN_PRINT_WARNING("Transvoxel: the Single texturing mode expects 8-bit indices in voxel data, but "
-								 "it was passed 16-bit. Data will be converted on the fly, with a performance cost.");
+				ZN_PRINT_WARNING(
+						"Transvoxel: the Single texturing mode expects 8-bit indices in voxel data, but "
+						"it was passed 16-bit. Data will be converted on the fly, with a performance cost."
+				);
 			}
 
 			Span<const uint16_t> data_u16;
@@ -88,8 +90,10 @@ VoxelMaterialIndices get_material_indices_from_vb(
 			static bool s_once = false;
 			if (!s_once) {
 				s_once = true;
-				ZN_PRINT_WARNING("Transvoxel: the Single texturing mode expects 8-bit indices in voxel data, but "
-								 "it was passed 32-bit. This is not supported.");
+				ZN_PRINT_WARNING(
+						"Transvoxel: the Single texturing mode expects 8-bit indices in voxel data, but "
+						"it was passed 32-bit. This is not supported."
+				);
 			}
 			data.is_uniform = true;
 			data.uniform_value = 0;
@@ -99,8 +103,10 @@ VoxelMaterialIndices get_material_indices_from_vb(
 			static bool s_once = false;
 			if (!s_once) {
 				s_once = true;
-				ZN_PRINT_WARNING("Transvoxel: the Single texturing mode expects 8-bit indices in voxel data, but "
-								 "it was passed 64-bit. This is not supported.");
+				ZN_PRINT_WARNING(
+						"Transvoxel: the Single texturing mode expects 8-bit indices in voxel data, but "
+						"it was passed 64-bit. This is not supported."
+				);
 			}
 			data.is_uniform = true;
 			data.uniform_value = 0;
