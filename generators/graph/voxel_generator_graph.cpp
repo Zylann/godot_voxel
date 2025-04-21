@@ -1873,6 +1873,9 @@ VoxelSingleValue VoxelGeneratorGraph::generate_single(Vector3i position, unsigne
 				case TEXTURE_MODE_SINGLE:
 					v.i = math::clamp(int(tex_index), 0, 255);
 					break;
+				default:
+					ZN_PRINT_ERROR("Unknown texture mode");
+					break;
 			}
 		} break;
 
