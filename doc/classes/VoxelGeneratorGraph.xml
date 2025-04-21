@@ -119,7 +119,7 @@
 	</signals>
 	<constants>
 		<constant name="TEXTURE_MODE_MIXEL4" value="0" enum="TextureMode">
-			Writes texture data into [constant VoxelBuffer.CHANNEL_INDICES] as 4 packed 4-bit indices and into [constant VoxelBuffer.CHANNEL_WEIGHTS] as 4 packed 4-bit weights. See [VoxelMesherTransvoxel] and docs about smooth voxels to see how this data is used. 
+			Writes texture data into [constant VoxelBuffer.CHANNEL_INDICES] as 4 packed 4-bit indices and into [constant VoxelBuffer.CHANNEL_WEIGHTS] as 4 packed 4-bit weights. See [VoxelMesherTransvoxel] and docs about smooth voxels to see how this data is used.
 		</constant>
 		<constant name="TEXTURE_MODE_SINGLE" value="1" enum="TextureMode">
 			Writes texture data into [constant VoxelBuffer.CHANNEL_INDICES] as one 8-bit value per voxel.
