@@ -568,4 +568,5 @@ env_yourmodule.Append(CPPDEFINES = [
 ])
 ```
 
-TODO: since the implementation of [compiling-out features](https://github.com/Zylann/godot_voxel/issues/746), you will have a lot more of preprocessor symbols to define, since you may want to `#include` headers of the voxel engine that expect them to be defined or not. There is currently no helper to do this, so you have to add them manually in your `CPPDEFINES` array. See the [list of macros](#Features).
+TODO: since the implementation of [compiling-out features](https://github.com/Zylann/godot_voxel/issues/746), you will have a lot more of preprocessor symbols to define, since you may want to `#include` headers of the voxel engine that expect them to be defined or not. There is currently no helper to do this, so you have to add them manually in your `CPPDEFINES` array. See the [list of macros](#features).
+
