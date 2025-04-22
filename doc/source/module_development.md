@@ -570,3 +570,5 @@ env_yourmodule.Append(CPPDEFINES = [
 
 TODO: since the implementation of [compiling-out features](https://github.com/Zylann/godot_voxel/issues/746), you will have a lot more of preprocessor symbols to define, since you may want to `#include` headers of the voxel engine that expect them to be defined or not. There is currently no helper to do this, so you have to add them manually in your `CPPDEFINES` array. See the [list of macros](#features).
 
+!!! note
+    While API docs cover functions you will also find in C++, internals sometimes only have comments. They are not documented outside, and there is no plan to do so. It is recommended to inspect the headers to find what is exposed, what namespaces to use etc. You may also read existing code in `.cpp` files to see how some things are used.
