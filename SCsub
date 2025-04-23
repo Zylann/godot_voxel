@@ -1,4 +1,3 @@
-
 # This is the entry point for SCons to build this engine as a module.
 # It has to be integrated to Godot's codebase, so it cannot be run on its own, see `README` for more information.
 # To build as an extension, see `SConstruct`.
@@ -11,82 +10,67 @@ import voxel_version
 
 voxel_version.generate_version_header(True)
 
-# Note, support for FastNoise2 requires C++17, and only works on x86.
+# Note, support for FastNoise2 requires C++17.
 FAST_NOISE_2_SRC = env["voxel_fast_noise_2"]
-if not env["arch"].startswith("x86"):
-	FAST_NOISE_2_SRC = False
 
 env_voxel = env_modules.Clone()
 
 voxel_files = common.get_sources(env_voxel, env.editor_build)
 
-env_voxel.Append(CPPDEFINES=[
-	# Tell engine-agnostic code we are using Godot Engine as a module
-	"ZN_GODOT"
-])
+env_voxel.Append(
+    CPPDEFINES=[
+        # Tell engine-agnostic code we are using Godot Engine as a module
+        "ZN_GODOT"
+    ]
+)
 
 if env["voxel_sqlite"]:
-	env_sqlite = env_voxel.Clone()
+    env_sqlite = env_voxel.Clone()
 
-	# Turn off warnings, we get some with Clang and with `warnings=extra`
-	env_sqlite.disable_warnings()
+    # Turn off warnings, we get some with Clang and with `warnings=extra`
+    env_sqlite.disable_warnings()
 
-	# if not env_sqlite.msvc:
-	#     env_sqlite.Append(CXXFLAGS=["-Wno-discarded-qualifiers"])
+    # if not env_sqlite.msvc:
+    #     env_sqlite.Append(CXXFLAGS=["-Wno-discarded-qualifiers"])
 
-	# TODO Enhancement: the way SQLite is integrated should not be duplicated between Godot and GodotCpp targets.
-	# Had to do so, because this line below is specific to Godot's build system!
-	env_sqlite.add_source_files(env.modules_sources, ["thirdparty/sqlite/sqlite3.c"])
+    # TODO Enhancement: the way SQLite is integrated should not be duplicated between Godot and GodotCpp targets.
+    # Had to do so, because this line below is specific to Godot's build system!
+    env_sqlite.add_source_files(env.modules_sources, ["thirdparty/sqlite/sqlite3.c"])
 
 # ----------------------------------------------------------------------------------------------------------------------
 # FastNoise 2
 
 if FAST_NOISE_2_SRC:
-	if not env.msvc:
-		# TODO Enhancement: workaround for https://github.com/Auburn/FastNoise2/issues/80
-		# FastNoise2 is using MSVC-specific compiler directives.
-		# Done before calling FastNoise2 SConscript, as FastNoise2 also includes the headers
-		env_voxel.Append(CXXFLAGS=["-Wno-unknown-pragmas"])
-	
-	# Build from source. Should be the simplest, but requires C++17
-	SConscript("thirdparty/fast_noise_2/SConscript", exports = ["env", "env_voxel"])
+    if not env.msvc:
+        # TODO Enhancement: workaround for https://github.com/Auburn/FastNoise2/issues/80
+        # FastNoise2 is using MSVC-specific compiler directives.
+        # Done before calling FastNoise2 SConscript, as FastNoise2 also includes the headers
+        env_voxel.Append(CXXFLAGS=["-Wno-unknown-pragmas"])
 
-	env_voxel.Append(CPPPATH=["thirdparty/fast_noise_2/include"])
-	
-	voxel_files += [
-		"util/noise/fast_noise_2.cpp"
-	]
+    # Build from source. Should be the simplest, but requires C++17
+    SConscript("thirdparty/fast_noise_2/SConscript", exports=["env", "env_voxel"])
 
-	if env.editor_build:
-		voxel_files += [
-			"editor/fast_noise_2/*.cpp"
-		]
+    env_voxel.Append(CPPPATH=["thirdparty/fast_noise_2/include"])
 
-	if env["voxel_tests"]:
-		voxel_files += ["tests/fast_noise_2/*.cpp"]
+    voxel_files += ["util/noise/fast_noise_2.cpp"]
+
+    if env.editor_build:
+        env_voxel.add_source_files(env.modules_sources, "editor/fast_noise_2/*.cpp")
+
+    if env["voxel_tests"]:
+        env_voxel.add_source_files(env.modules_sources, "tests/fast_noise_2/*.cpp")
 
 # ----------------------------------------------------------------------------------------------------------------------
 # Tracy library
 
 if env["tracy"]:
-	# This is not a feature of Godot's build system so we have to define a few things ourselves
-	env.Append(CPPDEFINES="TRACY_ENABLE")
-	env_voxel.Append(CPPDEFINES="TRACY_ENABLE")
-	env_voxel.Append(CPPPATH=["#thirdparty/tracy/public"])
-	voxel_files += [
-		"#thirdparty/tracy/public/TracyClient.cpp"
-	]
+    # This is not a feature of Godot's build system so we have to define a few things ourselves
+    env.Append(CPPDEFINES="TRACY_ENABLE")
+    env_voxel.Append(CPPDEFINES="TRACY_ENABLE")
+    env_voxel.Append(CPPPATH=["#thirdparty/tracy/public"])
+    voxel_files += ["#thirdparty/tracy/public/TracyClient.cpp"]
 
-# ----------------------------------------------------------------------------------------------------------------------
 
-for f in voxel_files:
-	env_voxel.add_source_files(env.modules_sources, f)
+env_voxel.add_source_files(env.modules_sources, voxel_files)
 
 # TODO Feature: check webassembly builds (`env["platform"] == "javascript"`)
-
-# Doesn't work, since the rest of Godot doesn't use this, linking fails.
-# No safe STL boundary checks for you.
-#if env["target"] == "debug":
-#	if env.msvc:
-#		# Enable STL bound checks, Godot's master environment doesn't do it
-#		env_voxel.Append(CXXFLAGS=["/D_DEBUG"])
