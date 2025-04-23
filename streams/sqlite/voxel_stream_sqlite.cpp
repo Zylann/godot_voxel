@@ -611,8 +611,8 @@ void VoxelStreamSQLite::_bind_methods() {
 					PROPERTY_HINT_ENUM,
 					"Int64_X16_Y16_Z16_LOD16,Int64_X19_Y19_Z19_LOD7,String_CSD,Blob80_X25_Y25_Z25_LOD5"
 			),
-			"set_database_path",
-			"get_database_path"
+			"set_preferred_coordinate_format",
+			"get_preferred_coordinate_format"
 	);
 }
 
