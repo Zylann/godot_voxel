@@ -20,6 +20,7 @@ Primarily developped with Godot 4.4.1+
 
 - Fixes
     - `VoxelBlockyTypeLibrary`: fixed crash when setting `types` to empty array
+    - `VoxelInstancer`: fixed instances getting generated when digging down or building up in *already meshed* chunks that had no geometry before
     - `VoxelGeneratorGraph`: 
         - Editor: fixed error sometimes printing after closing the graph editor
         - Editor: fixed error spam `Invalid param name` after editing a graph (in some yet unknown situations)
