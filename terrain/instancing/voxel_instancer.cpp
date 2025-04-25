@@ -1651,9 +1651,10 @@ SaveBlockDataTask *VoxelInstancer::save_block(
 void VoxelInstancer::remove_floating_multimesh_instances(
 		Block &block,
 		const Transform3D &parent_transform,
-		Box3i p_voxel_box,
+		const Box3i p_voxel_box,
 		const VoxelTool &voxel_tool,
-		int block_size_po2
+		const int block_size_po2,
+		const float sd_threshold
 ) {
 	if (!block.multimesh_instance.is_valid()) {
 		// Empty block
@@ -1685,7 +1686,7 @@ void VoxelInstancer::remove_floating_multimesh_instances(
 		// TODO Optimize: use a transaction instead of random single queries
 		// 1-voxel cheap check without interpolation
 		const float sdf = voxel_tool.get_voxel_f(voxel_pos);
-		if (sdf < -0.0001f) {
+		if (sdf <= sd_threshold) {
 			// Still enough ground
 			continue;
 		}
@@ -1750,9 +1751,10 @@ void VoxelInstancer::remove_floating_multimesh_instances(
 void VoxelInstancer::remove_floating_scene_instances(
 		Block &block,
 		const Transform3D &parent_transform,
-		Box3i p_voxel_box,
+		const Box3i p_voxel_box,
 		const VoxelTool &voxel_tool,
-		int block_size_po2
+		const int block_size_po2,
+		const float sd_threshold
 ) {
 	const unsigned int initial_instance_count = block.scene_instances.size();
 	unsigned int instance_count = initial_instance_count;
@@ -1776,7 +1778,7 @@ void VoxelInstancer::remove_floating_scene_instances(
 
 		// 1-voxel cheap check without interpolation
 		const float sdf = voxel_tool.get_voxel_f(voxel_pos);
-		if (sdf < -0.1f) {
+		if (sdf < sd_threshold) {
 			// Still enough ground
 			continue;
 		}
@@ -1855,11 +1857,11 @@ void VoxelInstancer::on_area_edited(Box3i p_voxel_box) {
 
 						if (block.scene_instances.size() > 0) {
 							remove_floating_scene_instances(
-									block, parent_transform, p_voxel_box, voxel_tool, block_size_po2
+									block, parent_transform, p_voxel_box, voxel_tool, block_size_po2, 0.f
 							);
 						} else {
 							remove_floating_multimesh_instances(
-									block, parent_transform, p_voxel_box, voxel_tool, block_size_po2
+									block, parent_transform, p_voxel_box, voxel_tool, block_size_po2, 0.f
 							);
 						}
 
