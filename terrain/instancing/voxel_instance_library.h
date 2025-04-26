@@ -37,6 +37,10 @@ public:
 	const VoxelInstanceLibraryItem *get_item_const(int id) const;
 	VoxelInstanceLibraryItem *get_item(int id);
 
+#ifdef TOOLS_ENABLED
+	int get_item_id(const VoxelInstanceLibraryItem *item) const;
+#endif
+
 	// f(int item_id, VoxelInstanceLibraryItem &item)
 	template <typename F>
 	void for_each_item(F f) {

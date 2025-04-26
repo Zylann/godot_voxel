@@ -35,6 +35,7 @@ class VoxelInstanceComponent;
 class VoxelInstanceLibrary;
 class VoxelInstanceLibraryItem;
 class VoxelInstanceLibrarySceneItem;
+class VoxelInstanceLibraryMultiMeshItem;
 class VoxelTool;
 class SaveBlockDataTask;
 class BufferedTaskScheduler;
@@ -203,13 +204,27 @@ private:
 
 	struct Block;
 
+	struct MMRemovalCallbackContext {
+		VoxelInstancer *instancer;
+		VoxelInstanceLibraryMultiMeshItem *item;
+	};
+
+	typedef void (*MMRemovalCallback)(MMRemovalCallbackContext, const Transform3D &);
+
+	static MMRemovalCallback get_mm_removal_callback(
+			VoxelInstancer *instancer,
+			VoxelInstanceLibraryMultiMeshItem *mm_item
+	);
+
 	static void remove_floating_multimesh_instances(
 			Block &block,
 			const Transform3D &parent_transform,
 			const Box3i p_voxel_box,
 			const VoxelTool &voxel_tool,
 			const int block_size_po2,
-			const float sd_threshold
+			const float sd_threshold,
+			const MMRemovalCallback callback,
+			MMRemovalCallbackContext callback_context
 	);
 
 	static void remove_floating_scene_instances(

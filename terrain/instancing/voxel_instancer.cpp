@@ -1654,7 +1654,9 @@ void VoxelInstancer::remove_floating_multimesh_instances(
 		const Box3i p_voxel_box,
 		const VoxelTool &voxel_tool,
 		const int block_size_po2,
-		const float sd_threshold
+		const float sd_threshold,
+		const MMRemovalCallback callback,
+		MMRemovalCallbackContext callback_context
 ) {
 	if (!block.multimesh_instance.is_valid()) {
 		// Empty block
@@ -1667,8 +1669,9 @@ void VoxelInstancer::remove_floating_multimesh_instances(
 	const int initial_instance_count = zylann::godot::get_visible_instance_count(**multimesh);
 	int instance_count = initial_instance_count;
 
-	const Transform3D block_global_transform =
-			Transform3D(parent_transform.basis, parent_transform.xform(block.grid_position << block_size_po2));
+	// const Transform3D block_global_transform =
+	// 		Transform3D(parent_transform.basis, parent_transform.xform(block.grid_position << block_size_po2));
+	const Vector3i block_origin_in_voxels = block.grid_position << block_size_po2;
 
 	// Let's check all instances one by one
 	// Note: the fact we have to query VisualServer in and out is pretty bad though.
@@ -1677,7 +1680,7 @@ void VoxelInstancer::remove_floating_multimesh_instances(
 	for (int instance_index = 0; instance_index < instance_count; ++instance_index) {
 		// TODO Optimize: This is terrible in MT mode! Think about keeping a local copy...
 		const Transform3D mm_transform = multimesh->get_instance_transform(instance_index);
-		const Vector3i voxel_pos(math::floor_to_int(mm_transform.origin + block_global_transform.origin));
+		const Vector3i voxel_pos(math::floor_to_int(mm_transform.origin) + block_origin_in_voxels);
 
 		if (!p_voxel_box.contains(voxel_pos)) {
 			continue;
@@ -1717,6 +1720,11 @@ void VoxelInstancer::remove_floating_multimesh_instances(
 		}
 
 		--instance_index;
+
+		if (callback != nullptr) {
+			const Transform3D trans(mm_transform.basis, mm_transform.origin + Vector3(block_origin_in_voxels));
+			callback(callback_context, trans);
+		}
 
 		// DEBUG
 		// Ref<CubeMesh> cm;
@@ -1814,6 +1822,66 @@ void VoxelInstancer::remove_floating_scene_instances(
 	}
 }
 
+VoxelInstancer::MMRemovalCallback VoxelInstancer::get_mm_removal_callback(
+		VoxelInstancer *instancer,
+		VoxelInstanceLibraryMultiMeshItem *mm_item
+) {
+	if (mm_item == nullptr) {
+		ZN_PRINT_ERROR_ONCE("Didn't expect multimesh item to be null, bug?");
+		return nullptr;
+	}
+
+	switch (mm_item->get_removal_behavior()) {
+		case VoxelInstanceLibraryMultiMeshItem::REMOVAL_BEHAVIOR_NONE:
+			break;
+
+		case VoxelInstanceLibraryMultiMeshItem::REMOVAL_BEHAVIOR_INSTANTIATE: {
+			Ref<PackedScene> scene = mm_item->get_removal_scene();
+			if (scene.is_null()) {
+#ifdef TOOLS_ENABLED
+				Ref<VoxelInstanceLibrary> lib = instancer->get_library();
+				const int item_id = lib->get_item_id(mm_item);
+				ZN_PRINT_ERROR_ONCE(format(
+						"Removal behavior of item {} is set to instantiate a scene, but the scene is null.", item_id
+				));
+				return nullptr;
+#endif
+			}
+			return [](MMRemovalCallbackContext ctx, const Transform3D &trans) {
+				Ref<PackedScene> scene = ctx.item->get_removal_scene();
+				Node *root = scene->instantiate();
+				Node3D *root_3d = Object::cast_to<Node3D>(root);
+				if (root_3d != nullptr) {
+					root_3d->set_transform(trans);
+					ctx.instancer->add_child(root);
+				} else {
+#ifdef TOOLS_ENABLED
+					Ref<VoxelInstanceLibrary> lib = ctx.instancer->get_library();
+					const int item_id = lib->get_item_id(ctx.item);
+					ZN_PRINT_ERROR_ONCE(
+							format("Removal behavior of item {} is set to instantiate a scene, but its root is not "
+								   "a Node3D.",
+								   item_id)
+					);
+#endif
+				}
+			};
+		} break;
+
+		case VoxelInstanceLibraryMultiMeshItem::REMOVAL_BEHAVIOR_CALLBACK:
+			return [](MMRemovalCallbackContext ctx, const Transform3D &trans) {
+				ctx.item->trigger_removal_callback(ctx.instancer, trans);
+			};
+			break;
+
+		default:
+			ZN_PRINT_ERROR("Unknown removal mode");
+			break;
+	}
+
+	return nullptr;
+}
+
 void VoxelInstancer::on_area_edited(Box3i p_voxel_box) {
 	ZN_PROFILE_SCOPE();
 	ERR_FAIL_COND(_parent == nullptr);
@@ -1839,14 +1907,19 @@ void VoxelInstancer::on_area_edited(Box3i p_voxel_box) {
 		const Box3i data_blocks_box = p_voxel_box.downscaled(data_block_size << lod_index);
 
 		for (auto layer_it = lod.layers.begin(); layer_it != lod.layers.end(); ++layer_it) {
-			const Layer &layer = get_layer(*layer_it);
+			const int layer_id = *layer_it;
+			const Layer &layer = get_layer(layer_id);
 			const StdVector<UniquePtr<Block>> &blocks = _blocks;
 			const int block_size_po2 = base_block_size_po2 + layer.lod_index;
 
-			render_blocks_box.for_each_cell(
-					[layer, &blocks, &voxel_tool, p_voxel_box, parent_transform, block_size_po2, &lod, data_blocks_box](
-							Vector3i block_pos
-					) {
+			VoxelInstanceLibraryMultiMeshItem *mm_item = nullptr;
+
+			const Vector3i bmax = data_blocks_box.position + data_blocks_box.size;
+			Vector3i block_pos;
+			for (block_pos.z = data_blocks_box.position.z; block_pos.z < bmax.z; ++block_pos.z) {
+				for (block_pos.x = data_blocks_box.position.x; block_pos.x < bmax.x; ++block_pos.x) {
+					for (block_pos.y = data_blocks_box.position.y; block_pos.y < bmax.y; ++block_pos.y) {
+						//
 						const auto block_it = layer.blocks.find(block_pos);
 						if (block_it == layer.blocks.end()) {
 							// No instancing block here
@@ -1859,9 +1932,25 @@ void VoxelInstancer::on_area_edited(Box3i p_voxel_box) {
 							remove_floating_scene_instances(
 									block, parent_transform, p_voxel_box, voxel_tool, block_size_po2, 0.f
 							);
+
 						} else {
+							if (mm_item == nullptr) {
+								VoxelInstanceLibraryItem *item = _library->get_item(layer_id);
+								mm_item = Object::cast_to<VoxelInstanceLibraryMultiMeshItem>(item);
+							}
+
+							MMRemovalCallbackContext callback_context{ this, mm_item };
+							MMRemovalCallback callback = get_mm_removal_callback(this, mm_item);
+
 							remove_floating_multimesh_instances(
-									block, parent_transform, p_voxel_box, voxel_tool, block_size_po2, 0.f
+									block,
+									parent_transform,
+									p_voxel_box,
+									voxel_tool,
+									block_size_po2,
+									0.f,
+									callback,
+									callback_context
 							);
 						}
 
@@ -1873,7 +1962,8 @@ void VoxelInstancer::on_area_edited(Box3i p_voxel_box) {
 							lod.modified_blocks.insert(data_block_pos);
 						});
 					}
-			);
+				}
+			}
 		}
 	}
 }
@@ -1892,6 +1982,19 @@ void VoxelInstancer::on_body_removed(
 
 		Ref<MultiMesh> multimesh = block.multimesh_instance.get_multimesh();
 		ERR_FAIL_COND(multimesh.is_null());
+
+		{
+			Ref<VoxelInstanceLibraryItem> item = _library->get_item(block.layer_id);
+			Ref<VoxelInstanceLibraryMultiMeshItem> mm_item = item;
+			MMRemovalCallback cb = get_mm_removal_callback(this, mm_item.ptr());
+			if (cb != nullptr) {
+				MMRemovalCallbackContext ctx{ this, mm_item.ptr() };
+				const Transform3D ltrans = multimesh->get_instance_transform(instance_index);
+				const Vector3i block_origin_in_voxels = data_block_position << block.lod_index;
+				const Transform3D trans(ltrans.basis, ltrans.origin + Vector3(block_origin_in_voxels));
+				cb(ctx, trans);
+			}
+		}
 
 		int visible_count = zylann::godot::get_visible_instance_count(**multimesh);
 		ERR_FAIL_COND(static_cast<int>(instance_index) >= visible_count);
