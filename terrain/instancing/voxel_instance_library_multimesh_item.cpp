@@ -830,6 +830,10 @@ void VoxelInstanceLibraryMultiMeshItem::_bind_methods() {
 
 	BIND_CONSTANT(MAX_MESH_LODS);
 
+	BIND_CONSTANT(REMOVAL_BEHAVIOR_NONE);
+	BIND_CONSTANT(REMOVAL_BEHAVIOR_INSTANTIATE);
+	BIND_CONSTANT(REMOVAL_BEHAVIOR_CALLBACK);
+
 	GDVIRTUAL_BIND(_on_instance_removed, "instancer", "transform");
 }
 
