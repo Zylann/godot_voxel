@@ -1966,18 +1966,18 @@ void VoxelInstancer::on_area_edited(Box3i p_voxel_box) {
 									callback_context
 							);
 						}
-
-						// All instances have to be frozen as edited.
-						// Because even if none of them were removed or added, the ground on which they can spawn has
-						// changed, and at the moment we don't want unexpected instances to generate when loading back
-						// this area.
-						data_blocks_box.for_each_cell([&lod](Vector3i data_block_pos) { //
-							lod.modified_blocks.insert(data_block_pos);
-						});
 					}
 				}
 			}
 		}
+
+		// All instances have to be frozen as edited.
+		// Because even if none of them were removed or added, the ground on which they can spawn has
+		// changed, and at the moment we don't want unexpected instances to generate when loading back
+		// this area.
+		data_blocks_box.for_each_cell([&lod](Vector3i data_block_pos) { //
+			lod.modified_blocks.insert(data_block_pos);
+		});
 	}
 }
 

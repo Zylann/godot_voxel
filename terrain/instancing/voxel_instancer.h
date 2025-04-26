@@ -297,6 +297,8 @@ private:
 
 		// Blocks that have have unsaved changes.
 		// Keys follows the data block coordinate system.
+		// Can contain coordinates where no instance blocks are present (can happen because of support for render blocks
+		// being twice as big; not ideal, but shouldn't cause issues)
 		StdUnorderedSet<Vector3i> modified_blocks;
 
 		// This is a temporary place to store loaded instances data while it's not visible yet.
