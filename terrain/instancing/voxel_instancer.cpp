@@ -1,3 +1,4 @@
+#include "../../constants/voxel_string_names.h"
 #include "../../edition/voxel_tool.h"
 #include "../../engine/buffered_task_scheduler.h"
 #include "../../streams/save_block_data_task.h"
@@ -1862,7 +1863,10 @@ VoxelInstancer::MMRemovalCallback VoxelInstancer::get_mm_removal_callback(
 				Node3D *root_3d = Object::cast_to<Node3D>(root);
 				if (root_3d != nullptr) {
 					root_3d->set_transform(trans);
-					ctx.instancer->add_child(root);
+					// We can't add_child when the callback occurs from within the removal of bodies, because Godot
+					// locks children of VoxelInstancer during the process, preventing from adding nodes...
+					// ctx.instancer->add_child(root);
+					ctx.instancer->call_deferred(VoxelStringNames::get_singleton().add_child, root);
 				} else {
 #ifdef TOOLS_ENABLED
 					Ref<VoxelInstanceLibrary> lib = ctx.instancer->get_library();
