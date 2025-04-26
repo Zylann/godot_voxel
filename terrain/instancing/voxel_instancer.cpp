@@ -1927,11 +1927,11 @@ void VoxelInstancer::on_area_edited(Box3i p_voxel_box) {
 
 			VoxelInstanceLibraryMultiMeshItem *mm_item = nullptr;
 
-			const Vector3i bmax = data_blocks_box.position + data_blocks_box.size;
+			const Vector3i bmax = render_blocks_box.position + render_blocks_box.size;
 			Vector3i block_pos;
-			for (block_pos.z = data_blocks_box.position.z; block_pos.z < bmax.z; ++block_pos.z) {
-				for (block_pos.x = data_blocks_box.position.x; block_pos.x < bmax.x; ++block_pos.x) {
-					for (block_pos.y = data_blocks_box.position.y; block_pos.y < bmax.y; ++block_pos.y) {
+			for (block_pos.z = render_blocks_box.position.z; block_pos.z < bmax.z; ++block_pos.z) {
+				for (block_pos.x = render_blocks_box.position.x; block_pos.x < bmax.x; ++block_pos.x) {
+					for (block_pos.y = render_blocks_box.position.y; block_pos.y < bmax.y; ++block_pos.y) {
 						//
 						const auto block_it = layer.blocks.find(block_pos);
 						if (block_it == layer.blocks.end()) {
