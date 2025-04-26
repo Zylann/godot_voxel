@@ -582,6 +582,10 @@ int _b_color_to_u16(Color col) {
 	return Color8(col).to_u16();
 }
 
+uint32_t _b_color_to_u32(Color col) {
+	return Color8(col).to_u32();
+}
+
 int _b_vec4i_to_u16_indices(Vector4i v) {
 	return encode_indices_to_packed_u16(v.x, v.y, v.z, v.w);
 }
@@ -701,6 +705,7 @@ void VoxelTool::_bind_methods() {
 
 	// Encoding helpers
 	ClassDB::bind_static_method(VoxelTool::get_class_static(), D_METHOD("color_to_u16", "color"), &_b_color_to_u16);
+	ClassDB::bind_static_method(VoxelTool::get_class_static(), D_METHOD("color_to_u32", "color"), &_b_color_to_u32);
 	ClassDB::bind_static_method(
 			VoxelTool::get_class_static(), D_METHOD("vec4i_to_u16_indices"), &_b_vec4i_to_u16_indices
 	);
