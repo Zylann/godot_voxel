@@ -643,7 +643,7 @@ void FastNoise2::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_simd_level"), &FastNoise2::get_simd_level);
 
 	ClassDB::bind_static_method(
-			"FastNoise2", D_METHOD("get_simd_level_name", "level"), &FastNoise2::get_simd_level_name
+			FastNoise2::get_class_static(), D_METHOD("get_simd_level_name", "level"), &FastNoise2::get_simd_level_name
 	);
 	// ClassDB::bind_method(D_METHOD("_on_warp_noise_changed"), &FastNoiseLite::_on_warp_noise_changed);
 
