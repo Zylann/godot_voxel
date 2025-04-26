@@ -48,6 +48,8 @@ public:
 	uint64_t get_voxel(Vector3i pos) const;
 	float get_voxel_f(Vector3i pos) const;
 
+	virtual float get_voxel_f_interpolated(const Vector3 pos) const;
+
 	float get_sdf_scale() const;
 	void set_sdf_scale(float s);
 

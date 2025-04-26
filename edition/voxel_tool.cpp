@@ -6,6 +6,7 @@
 #include "../util/math/color8.h"
 #include "../util/math/conv.h"
 #include "../util/profiling.h"
+#include "funcs.h"
 
 #ifdef VOXEL_ENABLE_MESH_SDF
 #include "voxel_mesh_sdf_gd.h"
@@ -111,6 +112,11 @@ uint64_t VoxelTool::get_voxel(Vector3i pos) const {
 
 float VoxelTool::get_voxel_f(Vector3i pos) const {
 	return _get_voxel_f(pos);
+}
+
+float VoxelTool::get_voxel_f_interpolated(const Vector3 pos) const {
+	// Default, slow implementation
+	return get_sdf_interpolated([this](Vector3i ipos) { return _get_voxel_f(ipos); }, pos);
 }
 
 void VoxelTool::set_voxel(Vector3i pos, uint64_t v) {

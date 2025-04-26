@@ -1695,9 +1695,12 @@ void VoxelInstancer::remove_floating_multimesh_instances(
 			continue;
 		}
 
+		const Vector3 instance_pos_terrain = mm_transform.origin + Vector3(block_origin_in_voxels);
+
 		// TODO Optimize: use a transaction instead of random single queries
 		// 1-voxel cheap check without interpolation
-		const float sdf = voxel_tool.get_voxel_f(voxel_pos);
+		// const float sdf = voxel_tool.get_voxel_f(voxel_pos);
+		const float sdf = voxel_tool.get_voxel_f_interpolated(instance_pos_terrain);
 		if (sdf <= sd_threshold) {
 			// Still enough ground
 			continue;

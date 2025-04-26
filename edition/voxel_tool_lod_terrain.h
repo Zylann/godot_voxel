@@ -35,7 +35,7 @@ public:
 	void set_raycast_binary_search_iterations(int iterations);
 	void do_sphere_async(Vector3 center, float radius);
 	void do_hemisphere(Vector3 center, float radius, Vector3 flat_direction, float smoothness);
-	float get_voxel_f_interpolated(Vector3 position) const;
+	float get_voxel_f_interpolated(Vector3 position) const override;
 
 	// TODO GDX: it seems binding a method taking a `Node*` fails to compile. It is supposed to be working.
 #if defined(ZN_GODOT)
