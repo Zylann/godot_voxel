@@ -15,6 +15,7 @@ Primarily developped with Godot 4.4.1+
 
 - `VoxelBuffer`: added functions to rotate/mirror contents
 - `VoxelGeneratorGraph`: implemented constant reduction, which slightly optimizes graphs running on CPU if they contain constant branches
+- `VoxelMesherBlocky`: added tint mode to modulate voxel colors using the `COLOR` channel.
 - `VoxelTool`: added `do_mesh` to replace `stamp_sdf`. Supported on terrains only.
 - Build system: added options to turn off features when doing custom builds
 

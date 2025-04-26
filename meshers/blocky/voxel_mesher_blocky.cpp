@@ -42,7 +42,8 @@ void generate_mesh(
 		const Vector3i block_size,
 		const BakedLibrary &library,
 		const bool bake_occlusion,
-		const float baked_occlusion_darkness
+		const float baked_occlusion_darkness,
+		const TintSampler tint_sampler
 ) {
 	// TODO Optimization: not sure if this mandates a template function. There is so much more happening in this
 	// function other than reading voxels, although reading is on the hottest path. It needs to be profiled. If
@@ -196,6 +197,8 @@ void generate_mesh(
 					model_surface_count = 1;
 				}
 
+				const Color modulate_color = voxel.color * tint_sampler.evaluate(Vector3i(x, y, z));
+
 				// Sides
 				for (unsigned int side = 0; side < Cube::SIDE_COUNT; ++side) {
 					if ((visible_sides_mask & (1 << side)) == 0) {
@@ -327,7 +330,6 @@ void generate_mesh(
 							const int append_index = arrays.colors.size();
 							arrays.colors.resize(arrays.colors.size() + vertex_count);
 							Color *w = arrays.colors.data() + append_index;
-							const Color modulate_color = voxel.color;
 
 							if (bake_occlusion) {
 								for (unsigned int i = 0; i < vertex_count; ++i) {
@@ -422,7 +424,6 @@ void generate_mesh(
 
 					const StdVector<Vector3f> &positions = surface.positions;
 					const unsigned int vertex_count = positions.size();
-					const Color modulate_color = voxel.color;
 
 					const StdVector<Vector3f> &normals = surface.normals;
 					const StdVector<Vector2f> &uvs = surface.uvs;
@@ -547,6 +548,17 @@ uint8_t VoxelMesherBlocky::get_shadow_occluder_mask() const {
 	return _parameters.shadow_occluders_mask;
 }
 
+VoxelMesherBlocky::TintMode VoxelMesherBlocky::get_tint_mode() const {
+	RWLockRead rlock(_parameters_lock);
+	return _parameters.tint_mode;
+}
+
+void VoxelMesherBlocky::set_tint_mode(const VoxelMesherBlocky::TintMode new_mode) {
+	ZN_ASSERT_RETURN(new_mode >= 0 && new_mode < TINT_MODE_COUNT);
+	RWLockWrite wlock(_parameters_lock);
+	_parameters.tint_mode = new_mode;
+}
+
 void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::Input &input) {
 	const VoxelBuffer::ChannelId channel = VoxelBuffer::CHANNEL_TYPE;
 	Parameters params;
@@ -633,6 +645,9 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 			arrays_per_material.resize(material_count);
 		}
 
+		const blocky::TintSampler tint_sampler =
+				blocky::TintSampler::create(voxels, static_cast<blocky::TintSampler::Mode>(params.tint_mode));
+
 		switch (channel_depth) {
 			case VoxelBuffer::DEPTH_8_BIT:
 				blocky::generate_mesh(
@@ -642,10 +657,13 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 						block_size,
 						library_baked_data,
 						params.bake_occlusion,
-						baked_occlusion_darkness
+						baked_occlusion_darkness,
+						tint_sampler
 				);
 				if (input.lod_index > 0) {
-					blocky::append_skirts(raw_channel, block_size, arrays_per_material, library_baked_data);
+					blocky::append_skirts(
+							raw_channel, block_size, arrays_per_material, library_baked_data, tint_sampler
+					);
 				}
 				break;
 
@@ -658,10 +676,11 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 						block_size,
 						library_baked_data,
 						params.bake_occlusion,
-						baked_occlusion_darkness
+						baked_occlusion_darkness,
+						tint_sampler
 				);
 				if (input.lod_index > 0) {
-					blocky::append_skirts(model_ids, block_size, arrays_per_material, library_baked_data);
+					blocky::append_skirts(model_ids, block_size, arrays_per_material, library_baked_data, tint_sampler);
 				}
 			} break;
 
@@ -862,6 +881,9 @@ void VoxelMesherBlocky::_bind_methods() {
 	);
 	ClassDB::bind_method(D_METHOD("get_shadow_occluder_side", "side"), &VoxelMesherBlocky::get_shadow_occluder_side);
 
+	ClassDB::bind_method(D_METHOD("set_tint_mode", "mode"), &VoxelMesherBlocky::set_tint_mode);
+	ClassDB::bind_method(D_METHOD("get_tint_mode"), &VoxelMesherBlocky::get_tint_mode);
+
 	ADD_PROPERTY(
 			PropertyInfo(
 					Variant::OBJECT,
@@ -901,6 +923,9 @@ void VoxelMesherBlocky::_bind_methods() {
 	BIND_ENUM_CONSTANT(SIDE_POSITIVE_Y);
 	BIND_ENUM_CONSTANT(SIDE_NEGATIVE_Z);
 	BIND_ENUM_CONSTANT(SIDE_POSITIVE_Z);
+
+	BIND_ENUM_CONSTANT(TINT_NONE);
+	BIND_ENUM_CONSTANT(TINT_RAW_COLOR);
 }
 
 } // namespace zylann::voxel
