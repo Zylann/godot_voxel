@@ -2019,7 +2019,8 @@ void VoxelInstancer::on_body_removed(
 			if (cb != nullptr) {
 				MMRemovalCallbackContext ctx{ this, mm_item.ptr() };
 				const Transform3D ltrans = multimesh->get_instance_transform(instance_index);
-				const Vector3i block_origin_in_voxels = data_block_position << block.lod_index;
+				const Vector3i block_origin_in_voxels = data_block_position
+						<< (_parent_mesh_block_size_po2 + block.lod_index);
 				const Transform3D trans(ltrans.basis, ltrans.origin + Vector3(block_origin_in_voxels));
 				cb(ctx, trans);
 			}
