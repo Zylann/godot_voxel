@@ -36,11 +36,17 @@
 				Note that generating values one by one will not benefit from SIMD performance as much as generating multiple values at once.
 			</description>
 		</method>
-		<method name="get_simd_level_name">
+		<method name="get_simd_level" qualifiers="const">
+			<return type="int" enum="FastNoise2.SIMDLevel" />
+			<description>
+				Gets which SIMD level was detected by the library. This gives an indication of performance on the current CPU, as different models can have different SIMD instructions available.
+			</description>
+		</method>
+		<method name="get_simd_level_name" qualifiers="static">
 			<return type="String" />
 			<param index="0" name="level" type="int" enum="FastNoise2.SIMDLevel" />
 			<description>
-				Gets which SIMD level was detected by the library. This gives an indication of performance on the current CPU, as different models can have different SIMD instructions available.
+				Gets the name of SIMD level.
 			</description>
 		</method>
 		<method name="update_generator">
