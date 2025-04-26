@@ -1928,6 +1928,7 @@ void VoxelInstancer::on_area_edited(Box3i p_voxel_box) {
 			const StdVector<UniquePtr<Block>> &blocks = _blocks;
 			const int block_size_po2 = base_block_size_po2 + layer.lod_index;
 
+			VoxelInstanceLibraryItem *item = nullptr;
 			VoxelInstanceLibraryMultiMeshItem *mm_item = nullptr;
 
 			const Vector3i bmax = render_blocks_box.position + render_blocks_box.size;
@@ -1944,14 +1945,22 @@ void VoxelInstancer::on_area_edited(Box3i p_voxel_box) {
 
 						Block &block = *blocks[block_it->second];
 
+						if (item == nullptr) {
+							item = _library->get_item(layer_id);
+						}
+
 						if (block.scene_instances.size() > 0) {
 							remove_floating_scene_instances(
-									block, parent_transform, p_voxel_box, voxel_tool, block_size_po2, 0.f
+									block,
+									parent_transform,
+									p_voxel_box,
+									voxel_tool,
+									block_size_po2,
+									item->get_floating_sdf_threshold()
 							);
 
 						} else {
 							if (mm_item == nullptr) {
-								VoxelInstanceLibraryItem *item = _library->get_item(layer_id);
 								mm_item = Object::cast_to<VoxelInstanceLibraryMultiMeshItem>(item);
 							}
 
@@ -1964,7 +1973,7 @@ void VoxelInstancer::on_area_edited(Box3i p_voxel_box) {
 									p_voxel_box,
 									voxel_tool,
 									block_size_po2,
-									0.f,
+									item->get_floating_sdf_threshold(),
 									callback,
 									callback_context
 							);
