@@ -30,6 +30,7 @@ void VoxelBlockyAttributeCustom::set_value_count(int count) {
 }
 
 void VoxelBlockyAttributeCustom::set_value_name(int index, StringName p_name) {
+	ZN_ASSERT_RETURN(index >= 0 && index < static_cast<int>(_value_names.size()));
 	_value_names[index] = p_name;
 }
 
