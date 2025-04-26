@@ -135,7 +135,8 @@ void VoxelBlockyAttributeCustom::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_attribute_name", "name"), &VoxelBlockyAttributeCustom::set_attribute_name);
 	ClassDB::bind_method(D_METHOD("set_value_count", "count"), &VoxelBlockyAttributeCustom::set_value_count);
 	ClassDB::bind_method(
-			D_METHOD("set_value_name", "value", "value_name"), &VoxelBlockyAttributeCustom::set_value_name);
+			D_METHOD("set_value_name", "value", "value_name"), &VoxelBlockyAttributeCustom::set_value_name
+	);
 	ClassDB::bind_method(D_METHOD("set_default_value", "value"), &VoxelBlockyAttributeCustom::set_default_value);
 	// ClassDB::bind_method(D_METHOD("set_is_rotation", "is_rotation"), &VoxelBlockyAttributeCustom::set_is_rotation);
 	// ClassDB::bind_method(D_METHOD("set_value_ortho_rotation", "ortho_rotation_index"),
