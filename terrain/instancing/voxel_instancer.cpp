@@ -1936,7 +1936,7 @@ void VoxelInstancer::on_area_edited(Box3i p_voxel_box) {
 						const auto block_it = layer.blocks.find(block_pos);
 						if (block_it == layer.blocks.end()) {
 							// No instancing block here
-							return;
+							continue;
 						}
 
 						Block &block = *blocks[block_it->second];
