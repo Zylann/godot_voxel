@@ -9,6 +9,7 @@
 #include "../../util/godot/classes/packed_scene.h"
 #include "../../util/godot/classes/rendering_server.h"
 #include "../../util/godot/classes/shape_3d.h"
+#include "../../util/godot/core/gdvirtual.h"
 #include "voxel_instance_library_item.h"
 
 // I had to include this because of GDVIRTUAL, otherwise it complains with a narrowing conversion warning
