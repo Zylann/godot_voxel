@@ -1,5 +1,6 @@
 #include "voxel_format_gd.h"
 #include "../constants/voxel_string_names.h"
+#include "../util/string/format.h"
 
 namespace zylann::voxel::godot {
 
@@ -15,6 +16,11 @@ void VoxelFormat::set_channel_depth(const VoxelBuffer::ChannelId channel_index, 
 
 	const unsigned int byte_count = zylann::voxel::VoxelBuffer::get_depth_byte_count(idepth);
 	if (!supported_range.contains(byte_count)) {
+		ZN_PRINT_ERROR(
+				format("Depth of {}-bits is not supported by channel `{}`",
+					   byte_count,
+					   zylann::voxel::VoxelBuffer::get_channel_name(ichannel_index))
+		);
 		return;
 	}
 
@@ -106,6 +112,12 @@ void VoxelFormat::_bind_methods() {
 			"set_channel_depth",
 			"get_channel_depth",
 			VoxelBuffer::CHANNEL_INDICES
+	);
+	ADD_PROPERTYI(
+			PropertyInfo(Variant::INT, "color_depth", PROPERTY_HINT_ENUM, depth_hint_string, PROPERTY_USAGE_EDITOR),
+			"set_channel_depth",
+			"get_channel_depth",
+			VoxelBuffer::CHANNEL_COLOR
 	);
 }
 

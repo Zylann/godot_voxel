@@ -37,6 +37,8 @@ public:
 		MAX_CHANNELS
 	};
 
+	static const char *get_channel_name(const ChannelId id);
+
 	static const int ALL_CHANNELS_MASK = 0xff;
 
 	enum Compression : uint8_t {

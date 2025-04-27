@@ -122,6 +122,30 @@ inline real_t raw_voxel_to_real(uint64_t value, VoxelBuffer::Depth depth) {
 	}
 }
 
+const char *VoxelBuffer::get_channel_name(const ChannelId id) {
+	switch (id) {
+		case CHANNEL_TYPE:
+			return "type";
+		case CHANNEL_SDF:
+			return "sdf";
+		case CHANNEL_COLOR:
+			return "color";
+		case CHANNEL_INDICES:
+			return "indices";
+		case CHANNEL_WEIGHTS:
+			return "weights";
+		case CHANNEL_DATA5:
+			return "data5";
+		case CHANNEL_DATA6:
+			return "data6";
+		case CHANNEL_DATA7:
+			return "data7";
+		default:
+			ZN_PRINT_ERROR("Unknown channel ID");
+			return "<error>";
+	}
+}
+
 // Casted explicitly to avoid warning about narrowing conversion, the intent is to store all bits of the value
 // as-is in a type that can store them all. The interpretation of the type is meaningless (depends on its use). It
 // should be possible to cast it back to the actual type with no loss of data, as long as all bits are preserved.
