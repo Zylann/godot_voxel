@@ -29,6 +29,8 @@ Type                                                                            
 [float](https://docs.godotengine.org/en/stable/classes/class_float.html)                                                                     | [mesh_lod2_distance_ratio](#i_mesh_lod2_distance_ratio)    | 0.6                                   
 [Mesh](https://docs.godotengine.org/en/stable/classes/class_mesh.html)                                                                       | [mesh_lod3](#i_mesh_lod3)                                  |                                       
 [float](https://docs.godotengine.org/en/stable/classes/class_float.html)                                                                     | [mesh_lod3_distance_ratio](#i_mesh_lod3_distance_ratio)    | 1.0                                   
+[RemovalBehavior](VoxelInstanceLibraryMultiMeshItem.md#enumerations)                                                                         | [removal_behavior](#i_removal_behavior)                    | 0                                     
+[PackedScene](https://docs.godotengine.org/en/stable/classes/class_packedscene.html)                                                         | [removal_scene](#i_removal_scene)                          |                                       
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)                                                                         | [render_layer](#i_render_layer)                            | 1                                     
 [PackedScene](https://docs.godotengine.org/en/stable/classes/class_packedscene.html)                                                         | [scene](#i_scene)                                          |                                       
 <p></p>
@@ -36,18 +38,22 @@ Type                                                                            
 ## Methods: 
 
 
-Return                                                                                  | Signature                                                                                                                                                                                     
---------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-[StringName[]](https://docs.godotengine.org/en/stable/classes/class_stringname[].html)  | [get_collider_group_names](#i_get_collider_group_names) ( ) const                                                                                                                             
-[Mesh](https://docs.godotengine.org/en/stable/classes/class_mesh.html)                  | [get_mesh](#i_get_mesh) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) mesh_lod_index ) const                                                                         
-[void](#)                                                                               | [set_collider_group_names](#i_set_collider_group_names) ( [StringName[]](https://docs.godotengine.org/en/stable/classes/class_stringname[].html) names )                                      
-[void](#)                                                                               | [set_mesh](#i_set_mesh) ( [Mesh](https://docs.godotengine.org/en/stable/classes/class_mesh.html) mesh, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) mesh_lod_index )  
-[void](#)                                                                               | [setup_from_template](#i_setup_from_template) ( [Node](https://docs.godotengine.org/en/stable/classes/class_node.html) node )                                                                 
+Return                                                                                  | Signature                                                                                                                                                                                                 
+--------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+[void](#)                                                                               | [_on_instance_removed](#i__on_instance_removed) ( [VoxelInstancer](VoxelInstancer.md) instancer, [Transform3D](https://docs.godotengine.org/en/stable/classes/class_transform3d.html) transform ) virtual 
+[StringName[]](https://docs.godotengine.org/en/stable/classes/class_stringname[].html)  | [get_collider_group_names](#i_get_collider_group_names) ( ) const                                                                                                                                         
+[Mesh](https://docs.godotengine.org/en/stable/classes/class_mesh.html)                  | [get_mesh](#i_get_mesh) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) mesh_lod_index ) const                                                                                     
+[void](#)                                                                               | [set_collider_group_names](#i_set_collider_group_names) ( [StringName[]](https://docs.godotengine.org/en/stable/classes/class_stringname[].html) names )                                                  
+[void](#)                                                                               | [set_mesh](#i_set_mesh) ( [Mesh](https://docs.godotengine.org/en/stable/classes/class_mesh.html) mesh, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) mesh_lod_index )              
+[void](#)                                                                               | [setup_from_template](#i_setup_from_template) ( [Node](https://docs.godotengine.org/en/stable/classes/class_node.html) node )                                                                             
 <p></p>
 
 ## Constants: 
 
 - <span id="i_MAX_MESH_LODS"></span>**MAX_MESH_LODS** = **4**
+- <span id="i_REMOVAL_BEHAVIOR_NONE"></span>**REMOVAL_BEHAVIOR_NONE** = **0** --- No extra logic will run when instances are removed.
+- <span id="i_REMOVAL_BEHAVIOR_INSTANTIATE"></span>**REMOVAL_BEHAVIOR_INSTANTIATE** = **1** --- Instantiates the [VoxelInstanceLibraryMultiMeshItem.removal_scene](VoxelInstanceLibraryMultiMeshItem.md#i_removal_scene) for each instance getting removed. The scene must have a root derived from [Node3D](https://docs.godotengine.org/en/stable/classes/class_node3d.html), and will be given the same transform as the instance before being added to the scene tree. It will be added under the [VoxelInstancer](VoxelInstancer.md) node.
+- <span id="i_REMOVAL_BEHAVIOR_CALLBACK"></span>**REMOVAL_BEHAVIOR_CALLBACK** = **2** --- Calls [VoxelInstanceLibraryMultiMeshItem._on_instance_removed](VoxelInstanceLibraryMultiMeshItem.md#i__on_instance_removed) when an instance gets removed. You should attach a script to the item in order to implement this. Note: every resource can have a [Object.script](https://docs.godotengine.org/en/stable/classes/class_object.html#class-object-property-script). But in the editor, Godot currently doesn't show you that property if the resource appears in a sub-inspector. To workaround that, right-click the property in which the resource is, and choose "Edit". That will open the item in a full inspector. An alternative is to save your item as a file, and then edit it from the file browser.
 
 ## Property Descriptions
 
@@ -115,6 +121,14 @@ Alternating list of [CollisionShape](https://docs.godotengine.org/en/stable/clas
 
 *(This property has no documentation)*
 
+### [RemovalBehavior](VoxelInstanceLibraryMultiMeshItem.md#enumerations)<span id="i_removal_behavior"></span> **removal_behavior** = 0
+
+Specifies what should happen when instances get removed. This is useful if they should turn into more complex objects with animation or logic in them.
+
+### [PackedScene](https://docs.godotengine.org/en/stable/classes/class_packedscene.html)<span id="i_removal_scene"></span> **removal_scene**
+
+Scene that will be used if [VoxelInstanceLibraryMultiMeshItem.removal_behavior](VoxelInstanceLibraryMultiMeshItem.md#i_removal_behavior) is set to [VoxelInstanceLibraryMultiMeshItem.REMOVAL_BEHAVIOR_INSTANTIATE](VoxelInstanceLibraryMultiMeshItem.md#i_REMOVAL_BEHAVIOR_INSTANTIATE).
+
 ### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_render_layer"></span> **render_layer** = 1
 
 *(This property has no documentation)*
@@ -124,6 +138,12 @@ Alternating list of [CollisionShape](https://docs.godotengine.org/en/stable/clas
 *(This property has no documentation)*
 
 ## Method Descriptions
+
+### [void](#)<span id="i__on_instance_removed"></span> **_on_instance_removed**( [VoxelInstancer](VoxelInstancer.md) instancer, [Transform3D](https://docs.godotengine.org/en/stable/classes/class_transform3d.html) transform ) 
+
+This method will be called if you set [VoxelInstanceLibraryMultiMeshItem.removal_behavior](VoxelInstanceLibraryMultiMeshItem.md#i_removal_behavior) to [VoxelInstanceLibraryMultiMeshItem.REMOVAL_BEHAVIOR_CALLBACK](VoxelInstanceLibraryMultiMeshItem.md#i_REMOVAL_BEHAVIOR_CALLBACK).
+
+Note: this method can be called from within the removal of a node that is child of [VoxelInstancer](VoxelInstancer.md). In this context, Godot will prevent you from adding new child nodes. You can workaround that by using [Object.call_deferred](https://docs.godotengine.org/en/stable/classes/class_object.html#class-object-method-call-deferred). See also [VoxelInstancerRigidBody.queue_free_and_notify_instancer](VoxelInstancerRigidBody.md#i_queue_free_and_notify_instancer).
 
 ### [StringName[]](https://docs.godotengine.org/en/stable/classes/class_stringname[].html)<span id="i_get_collider_group_names"></span> **get_collider_group_names**( ) 
 
