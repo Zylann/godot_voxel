@@ -84,7 +84,13 @@ public:
 
 	// void on_data_block_loaded(Vector3i grid_position, unsigned int lod_index, UniquePtr<InstanceBlockData>
 	// instances);
-	void on_mesh_block_enter(Vector3i render_grid_position, unsigned int lod_index, Array surface_arrays);
+	void on_mesh_block_enter(
+			const Vector3i render_grid_position,
+			const unsigned int lod_index,
+			Array surface_arrays,
+			const int32_t vertex_range_end,
+			const int32_t index_range_end
+	);
 	void on_mesh_block_exit(Vector3i render_grid_position, unsigned int lod_index);
 	void on_area_edited(Box3i p_voxel_box);
 	void on_body_removed(Vector3i data_block_position, unsigned int render_block_index, unsigned int instance_index);
@@ -123,6 +129,8 @@ public:
 	void debug_set_draw_flag(DebugDrawFlag flag_index, bool enabled);
 	bool debug_get_draw_flag(DebugDrawFlag flag_index) const;
 
+	Dictionary debug_get_block_infos(const Vector3 world_position, const int item_id);
+
 	// Editor
 
 #ifdef TOOLS_ENABLED
@@ -146,7 +154,12 @@ private:
 
 	void add_layer(int layer_id, int lod_index);
 	void remove_layer(int layer_id);
-	unsigned int create_block(Layer &layer, uint16_t layer_id, Vector3i grid_position, bool pending_instances);
+	unsigned int create_block(
+			Layer &layer,
+			const uint16_t layer_id,
+			const Vector3i grid_position,
+			const bool pending_instances
+	);
 	void remove_block(unsigned int block_index);
 	void set_world(World3D *world);
 	void clear_blocks();
@@ -168,7 +181,13 @@ private:
 	void regenerate_layer(uint16_t layer_id, bool regenerate_blocks);
 	void update_layer_meshes(int layer_id);
 	void update_layer_scenes(int layer_id);
-	void create_render_blocks(Vector3i grid_position, int lod_index, Array surface_arrays);
+	void create_render_blocks(
+			const Vector3i grid_position,
+			const int lod_index,
+			Array surface_arrays,
+			const int32_t vertex_range_end,
+			const int32_t index_range_end
+	);
 
 #ifdef TOOLS_ENABLED
 	void process_gizmos();

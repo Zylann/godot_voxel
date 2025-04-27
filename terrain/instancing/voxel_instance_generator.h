@@ -53,16 +53,20 @@ public:
 	// large coordinates.
 	void generate_transforms(
 			StdVector<Transform3f> &out_transforms,
-			Vector3i grid_position,
-			int lod_index,
-			int layer_id,
+			const Vector3i grid_position,
+			const int lod_index,
+			const int layer_id,
 			Array surface_arrays,
-			UpMode up_mode,
+			// If not negative, vertices at this index and beyond should be ignored
+			const int32_t vertex_range_end,
+			// If not negative, indices at this index and beyond should be ignored
+			const int32_t index_range_end,
+			const UpMode up_mode,
 			// When generating a 2x2x2 data block area, bits in `octant_mask` tell which octant should be generated.
 			// Bits set to zero will cause all instances in the corresponding octant to not be generated.
-			uint8_t octant_mask,
+			const uint8_t octant_mask,
 			// This is block size in world space, not relative to LOD index
-			float block_size
+			const float block_size
 	);
 
 	void set_density(float d);

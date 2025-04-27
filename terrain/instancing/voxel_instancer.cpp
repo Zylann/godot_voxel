@@ -799,8 +799,12 @@ void VoxelInstancer::regenerate_layer(uint16_t layer_id, bool regenerate_blocks)
 		transform_cache.clear();
 
 		Array surface_arrays;
+		int32_t vertex_range_end = -1;
+		int32_t index_range_end = -1;
 		if (parent_vlt != nullptr) {
-			surface_arrays = parent_vlt->get_mesh_block_surface(block.grid_position, lod_index);
+			surface_arrays = parent_vlt->get_mesh_block_surface(
+					block.grid_position, lod_index, vertex_range_end, index_range_end
+			);
 		} else if (parent_vt != nullptr) {
 			surface_arrays = parent_vt->get_mesh_block_surface(block.grid_position);
 		}
@@ -814,6 +818,8 @@ void VoxelInstancer::regenerate_layer(uint16_t layer_id, bool regenerate_blocks)
 				block.lod_index,
 				layer_id,
 				surface_arrays,
+				vertex_range_end,
+				index_range_end,
 				_up_mode,
 				octant_mask,
 				lod_block_size
@@ -1075,11 +1081,17 @@ void VoxelInstancer::remove_block(unsigned int block_index) {
 // 	lod.loaded_instances_data.insert(std::make_pair(grid_position, std::move(instances)));
 // }
 
-void VoxelInstancer::on_mesh_block_enter(Vector3i render_grid_position, unsigned int lod_index, Array surface_arrays) {
+void VoxelInstancer::on_mesh_block_enter(
+		const Vector3i render_grid_position,
+		const unsigned int lod_index,
+		Array surface_arrays,
+		const int32_t vertex_range_end,
+		const int32_t index_range_end
+) {
 	if (lod_index >= _lods.size()) {
 		return;
 	}
-	create_render_blocks(render_grid_position, lod_index, surface_arrays);
+	create_render_blocks(render_grid_position, lod_index, surface_arrays, vertex_range_end, index_range_end);
 }
 
 void VoxelInstancer::on_mesh_block_exit(Vector3i render_grid_position, unsigned int lod_index) {
@@ -1209,9 +1221,9 @@ VoxelInstancer::SceneInstance VoxelInstancer::create_scene_instance(
 
 unsigned int VoxelInstancer::create_block(
 		Layer &layer,
-		uint16_t layer_id,
-		Vector3i grid_position,
-		bool pending_instances
+		const uint16_t layer_id,
+		const Vector3i grid_position,
+		const bool pending_instances
 ) {
 	UniquePtr<Block> block = make_unique_instance<Block>();
 	block->layer_id = layer_id;
@@ -1432,7 +1444,13 @@ void VoxelInstancer::update_block_from_transforms( //
 	}
 }
 
-void VoxelInstancer::create_render_blocks(Vector3i render_grid_position, int lod_index, Array surface_arrays) {
+void VoxelInstancer::create_render_blocks(
+		const Vector3i render_grid_position,
+		const int lod_index,
+		Array surface_arrays,
+		const int32_t vertex_range_end,
+		const int32_t index_range_end
+) {
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT_RETURN(_library.is_valid());
 	ZN_ASSERT_RETURN(_parent != nullptr);
@@ -1457,17 +1475,19 @@ void VoxelInstancer::create_render_blocks(Vector3i render_grid_position, int lod
 		create_block(layer, layer_id, render_grid_position, true);
 	}
 
-	LoadInstanceChunkTask *task = ZN_NEW(LoadInstanceChunkTask( //
-			_loading_results, //
-			stream, //
-			lod.quick_reload_cache, //
-			_library, //
-			surface_arrays, //
-			render_grid_position, //
-			lod_index, //
-			render_block_size, //
-			data_block_size, //
-			_up_mode //
+	LoadInstanceChunkTask *task = ZN_NEW(LoadInstanceChunkTask(
+			_loading_results,
+			stream,
+			lod.quick_reload_cache,
+			_library,
+			surface_arrays,
+			vertex_range_end,
+			index_range_end,
+			render_grid_position,
+			lod_index,
+			render_block_size,
+			data_block_size,
+			_up_mode
 	));
 
 	VoxelEngine::get_singleton().push_async_io_task(task);
@@ -2280,6 +2300,78 @@ bool VoxelInstancer::debug_get_draw_flag(DebugDrawFlag flag_index) const {
 #endif
 }
 
+Dictionary VoxelInstancer::debug_get_block_infos(const Vector3 world_position, const int item_id) {
+#ifndef TOOLS_ENABLED
+	return Dictionary();
+#else
+	Dictionary dict;
+
+	auto layer_it = _layers.find(item_id);
+	if (layer_it == _layers.end()) {
+		ZN_PRINT_ERROR("Invalid item id");
+		return Dictionary();
+	}
+	const Layer &layer = layer_it->second;
+
+	dict["lod_index"] = layer.lod_index;
+
+	const int block_shift = _parent_mesh_block_size_po2 + layer.lod_index;
+	const Vector3i bpos = Vector3i(world_position.floor()) >> block_shift;
+	const Vector3i block_origin_in_voxels = bpos << block_shift;
+	const int block_size_in_voxels = 1 << block_shift;
+
+	dict["aabb"] =
+			AABB(block_origin_in_voxels, Vector3(block_size_in_voxels, block_size_in_voxels, block_size_in_voxels));
+
+	dict["grid_position"] = bpos;
+
+	auto block_it = layer.blocks.find(bpos);
+	const bool allocated = (block_it != layer.blocks.end());
+	dict["allocated"] = allocated;
+	if (!allocated) {
+		return dict;
+	}
+
+	const unsigned int block_index = block_it->second;
+	const Block *block = _blocks[block_index].get();
+	ZN_ASSERT(block != nullptr);
+
+	dict["mesh_lod"] = block->current_mesh_lod;
+
+	Array instances_array;
+	Array bodies_array;
+	Array scenes_array;
+
+	if (block->multimesh_instance.is_valid()) {
+		Ref<MultiMesh> mm = block->multimesh_instance.get_multimesh();
+
+		if (mm.is_valid()) {
+			const unsigned int count = zylann::godot::get_visible_instance_count(**mm);
+			instances_array.resize(count);
+
+			for (unsigned int instance_index = 0; instance_index < count; ++instance_index) {
+				const Transform3D instance_transform = mm->get_instance_transform(instance_index);
+				instances_array[instance_index] = instance_transform;
+			}
+		}
+	}
+
+	for (const VoxelInstancerRigidBody *body : block->bodies) {
+		bodies_array.push_back(body);
+	}
+
+	for (const SceneInstance &scene : block->scene_instances) {
+		scenes_array.push_back(scene.root);
+	}
+
+	dict["instances"] = instances_array;
+	dict["bodies"] = bodies_array;
+	dict["scenes"] = scenes_array;
+
+	return dict;
+#endif
+}
+
 #ifdef TOOLS_ENABLED
 
 #if defined(ZN_GODOT)
@@ -2342,6 +2434,9 @@ void VoxelInstancer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("debug_is_draw_enabled"), &VoxelInstancer::debug_is_draw_enabled);
 	ClassDB::bind_method(D_METHOD("debug_set_draw_flag", "flag", "enabled"), &VoxelInstancer::debug_set_draw_flag);
 	ClassDB::bind_method(D_METHOD("debug_get_draw_flag", "flag"), &VoxelInstancer::debug_get_draw_flag);
+	ClassDB::bind_method(
+			D_METHOD("debug_get_block_infos", "world_position", "item_id"), &VoxelInstancer::debug_get_block_infos
+	);
 
 	ADD_PROPERTY(
 			PropertyInfo(
