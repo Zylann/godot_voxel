@@ -1869,16 +1869,18 @@ VoxelInstancer::MMRemovalCallback VoxelInstancer::get_mm_removal_callback(
 			break;
 
 		case VoxelInstanceLibraryMultiMeshItem::REMOVAL_BEHAVIOR_INSTANTIATE: {
-			Ref<PackedScene> scene = mm_item->get_removal_scene();
-			if (scene.is_null()) {
+			{
+				Ref<PackedScene> scene = mm_item->get_removal_scene();
+				if (scene.is_null()) {
 #ifdef TOOLS_ENABLED
-				Ref<VoxelInstanceLibrary> lib = instancer->get_library();
-				const int item_id = lib->get_item_id(mm_item);
-				ZN_PRINT_ERROR_ONCE(format(
-						"Removal behavior of item {} is set to instantiate a scene, but the scene is null.", item_id
-				));
-				return nullptr;
+					Ref<VoxelInstanceLibrary> lib = instancer->get_library();
+					const int item_id = lib->get_item_id(mm_item);
+					ZN_PRINT_ERROR_ONCE(format(
+							"Removal behavior of item {} is set to instantiate a scene, but the scene is null.", item_id
+					));
+					return nullptr;
 #endif
+				}
 			}
 			return [](MMRemovalCallbackContext ctx, const Transform3D &trans) {
 				Ref<PackedScene> scene = ctx.item->get_removal_scene();
