@@ -16,75 +16,6 @@ import markdown
 import bbcode_to_markdown
 
 
-def make_text(text, module_class_names, current_class_name):
-    return bbcode_to_markdown.format_text(text, module_class_names, current_class_name, '')
-
-
-def make_text_single_line(text, module_class_names, current_class_name):
-    return bbcode_to_markdown.format_text_for_table(text, module_class_names, current_class_name, '')
-
-
-# params: Array[ParameterDoc]
-def make_parameter_list(params, module_class_names, current_class_name, classes_by_name):
-    s = "("
-    param_index = 0
-    for param in params:
-        if param_index > 0:
-            s += ","
-        param_index += 1
-        s += " " + markdown.make_type(param.type, '', module_class_names, current_class_name) + " " + param.name
-        if param.default_value is not None:
-            s += "=" + make_default_value(param.type, param.default_value, classes_by_name)
-    s += " )"
-    return s
-
-
-# constants: Array[ConstantDoc]
-def make_constants(constants, module_class_names, current_class_name):
-    s = ""
-    for constant in constants:
-        s += "- "
-
-        # In Godot docs, both constants and enum items can be referred using `[constant ClassName.ENUM_ITEM]` instead
-        # of using the `enum` tag.
-        s += make_custom_internal_anchor(constant.name)
-
-        s += "**" + constant.name + "** = **" + constant.value + "**"
-
-        desc = ""
-        
-        if constant.is_deprecated:
-            desc += "*This constant is deprecated."
-            if constant.deprecated_message != "":
-                desc += " "
-                desc += constant.deprecated_message
-            desc += "*"
-
-        text = constant.description.strip()
-        if text != "" or desc != "":
-            if desc != "":
-                desc += " "
-            desc += make_text_single_line(constant.description, module_class_names, current_class_name)
-
-        if desc != "":
-            s += " --- "
-            s += desc
-
-        s += "\n"
-
-    return s
-
-
-def make_custom_internal_link(name):
-    assert name.find(' ') == -1
-    return markdown.make_link(name, "#i_" + name)
-
-
-# This is a hack we can do because Markdown allows to fallback on HTML
-def make_custom_internal_anchor(name):
-    return '<span id="i_' + name + '"></span>'
-
-
 class ClassDoc:
     def __init__(self, name):
         self.name = name
@@ -323,42 +254,132 @@ def parse_class_from_xml_tree(xml_tree, xml_file_path): # -> ClassDoc
     return klass
 
 
-def make_referred_enum_value(enum_type, value, classes_by_name):
-    parts = enum_type.split('.')
-    class_name = parts[0]
-    klass = classes_by_name.get(class_name, None)
-    if klass is None:
-        # Can't print a nice symbol. This may be the case for Godot enums, 
-        # we'd have to have a representation of all Godot's classes to be able to do this kind of lookup
+# This is a hack we can do because Markdown allows to fallback on HTML
+def make_custom_internal_anchor(name):
+    return '<span id="i_' + name + '"></span>'
+
+
+class ClassFormatter:
+    def __init__(self, current_class_name, module_class_names, classes_by_name):
+        self.current_class_name = current_class_name
+        self.module_class_names = module_class_names
+        self.classes_by_name = classes_by_name
+        self.local_prefix = ''
+    
+    def make_type(self, type_name):
+        return markdown.make_type(type_name, self.local_prefix, self.module_class_names, self.current_class_name)
+    
+    def make_text(self, src):
+        return bbcode_to_markdown.format_text(src, self.module_class_names, self.current_class_name, '')
+
+    def make_default_value(self, value, type_name):
+        return make_default_value(value, type_name, self.classes_by_name)
+
+    def make_parameter_list(self, parameters):
+        return make_parameter_list(parameters, self.module_class_names, self.current_class_name, self.classes_by_name)
+
+    def make_constants(self, items):
+        return make_constants(items, self.module_class_names, self.current_class_name)
+
+    def make_text_single_line(self, text):
+        return bbcode_to_markdown.format_text_for_table(text, self.module_class_names, self.current_class_name, '')
+
+    # constants: Array[ConstantDoc]
+    def make_constants(self, constants):
+        s = ""
+        for constant in constants:
+            s += "- "
+
+            # In Godot docs, both constants and enum items can be referred using `[constant ClassName.ENUM_ITEM]` instead
+            # of using the `enum` tag.
+            s += make_custom_internal_anchor(constant.name)
+
+            s += "**" + constant.name + "** = **" + constant.value + "**"
+
+            desc = ""
+            
+            if constant.is_deprecated:
+                desc += "*This constant is deprecated."
+                if constant.deprecated_message != "":
+                    desc += " "
+                    desc += constant.deprecated_message
+                desc += "*"
+
+            text = constant.description.strip()
+            if text != "" or desc != "":
+                if desc != "":
+                    desc += " "
+                desc += self.make_text_single_line(constant.description)
+
+            if desc != "":
+                s += " --- "
+                s += desc
+
+            s += "\n"
+
+        return s
+
+    # params: Array[ParameterDoc]
+    def make_parameter_list(self, params):
+        s = "("
+        param_index = 0
+        for param in params:
+            if param_index > 0:
+                s += ","
+            param_index += 1
+            s += " " + self.make_type(param.type) + " " + param.name
+            if param.default_value is not None:
+                s += "=" + self.make_default_value(param.default_value, param.type)
+        s += " )"
+        return s
+
+    def make_referred_enum_value(self, value, enum_type):
+        parts = enum_type.split('.')
+        class_name = parts[0]
+        klass = self.classes_by_name.get(class_name, None)
+        if klass is None:
+            # Can't print a nice symbol. This may be the case for Godot enums, 
+            # we'd have to have a representation of all Godot's classes to be able to do this kind of lookup
+            return value
+        en = klass.find_enum(parts[1])
+        if en is None:
+            # ?
+            return value
+        item = en.find_item_from_value(value)
+        if item is None:
+            # ?
+            return value
+        return item.name + " (" + value + ")"
+
+    def make_default_value(self, value, type_name):
+        if '.' in type_name:
+            return self.make_referred_enum_value(value, type_name)
         return value
-    en = klass.find_enum(parts[1])
-    if en is None:
-        # ?
-        return value
-    item = en.find_item_from_value(value)
-    if item is None:
-        # ?
-        return value
-    return item.name + " (" + value + ")"
 
 
-def make_default_value(type_name, value, classes_by_name):
-    if '.' in type_name:
-        return make_referred_enum_value(type_name, value, classes_by_name)
-    return value
+def make_custom_internal_link(name):
+    assert name.find(' ') == -1
+    return markdown.make_link(name, "#i_" + name)
 
 
-def class_doc_to_markdown(klass, f_out, module_class_names, classes_by_name):
+def class_doc_to_markdown(
+    klass, # ClassDoc
+    f_out, # Path to file, or '-' to print the result
+    module_class_names, # List of strings
+    classes_by_name # {name => ClassDoc}
+):
     current_class_name = klass.name
+
+    fmt = ClassFormatter(current_class_name, module_class_names, classes_by_name)
 
     # Header
     out = "# " + current_class_name + "\n\n"
-    out += "Inherits: " + markdown.make_type(klass.parent_name, '', module_class_names, current_class_name) + "\n\n"
+    out += "Inherits: " + fmt.make_type(klass.parent_name) + "\n\n"
 
     if len(klass.children) > 0:
         links = []
         for child in klass.children:
-            links.append(markdown.make_type(child.name, '', module_class_names, current_class_name))
+            links.append(fmt.make_type(child.name))
         out += "Inherited by: " + ', '.join(links) + "\n\n"
 
     if klass.is_experimental:
@@ -370,15 +391,15 @@ def class_doc_to_markdown(klass, f_out, module_class_names, classes_by_name):
         out += "!!! warning\n    This class is deprecated."
         if klass.deprecated_message != "":
             out += " "
-            out += make_text(klass.deprecated_message, module_class_names, current_class_name)
+            out += fmt.make_text(klass.deprecated_message)
         out += "\n\n"
 
-    class_desc = make_text(klass.short_description, module_class_names, current_class_name)
+    class_desc = fmt.make_text(klass.short_description)
     if class_desc != "":
         out += class_desc
         out += "\n\n"
 
-    text = make_text(klass.description, module_class_names, current_class_name)
+    text = fmt.make_text(klass.description)
     if text.strip() != "":
         out += "## Description: \n\n" + text + "\n\n"
 
@@ -394,13 +415,13 @@ def class_doc_to_markdown(klass, f_out, module_class_names, classes_by_name):
         table = [["Type", "Name", "Default"]]
         for prop in klass.properties:
             row = [
-                markdown.make_type(prop.type, '', module_class_names, current_class_name),
+                fmt.make_type(prop.type),
                 make_custom_internal_link(prop.name)
             ]
             if prop.is_deprecated:
                 row[1] += " *(deprecated)*"
             if prop.default_value is not None:
-                row.append(make_default_value(prop.type, prop.default_value, classes_by_name))
+                row.append(fmt.make_default_value(prop.default_value, prop.type))
             else:
                 row.append("")
             table.append(row)
@@ -415,14 +436,14 @@ def class_doc_to_markdown(klass, f_out, module_class_names, classes_by_name):
         # TODO Remove from list if it's a getter/setter of a property
         for method in klass.methods:
             signature = make_custom_internal_link(method.name) + " "
-            signature += make_parameter_list(method.parameters, module_class_names, current_class_name, classes_by_name)
+            signature += fmt.make_parameter_list(method.parameters)
             signature += " "
 
             if method.qualifiers != "":
                 signature += method.qualifiers
 
             row = [
-                markdown.make_type(method.return_type, '', module_class_names, current_class_name),
+                fmt.make_type(method.return_type),
                 signature
             ]
 
@@ -442,7 +463,7 @@ def class_doc_to_markdown(klass, f_out, module_class_names, classes_by_name):
             out += "### "
             out += signal.name
 
-            out += make_parameter_list(signal.parameters, module_class_names, current_class_name, classes_by_name)
+            out += fmt.make_parameter_list(signal.parameters)
             out += " \n\n"
 
             desc = ""
@@ -451,11 +472,11 @@ def class_doc_to_markdown(klass, f_out, module_class_names, classes_by_name):
                 desc += "*This signal is deprecated."
                 if signal.deprecated_message != "":
                     desc += " "
-                    desc += make_text(signal.deprecated_message, module_class_names, current_class_name)
+                    desc += fmt.make_text(signal.deprecated_message)
                 desc += "*\n"
 
             if signal.description.strip() != "":
-                desc += make_text(signal.description, module_class_names, current_class_name)
+                desc += fmt.make_text(signal.description)
             elif not signal.is_deprecated:
                 desc += "*(This signal has no documentation)*"
             
@@ -469,7 +490,7 @@ def class_doc_to_markdown(klass, f_out, module_class_names, classes_by_name):
 
         for enum in klass.enums:
             out += "enum **" + enum.name + "**: \n\n"
-            out += make_constants(enum.items, module_class_names, current_class_name)
+            out += fmt.make_constants(enum.items)
             out += "\n"
         
         out += "\n"
@@ -477,7 +498,7 @@ def class_doc_to_markdown(klass, f_out, module_class_names, classes_by_name):
     # Constants
     if len(klass.constants) > 0:
         out += "## Constants: \n\n"
-        out += make_constants(klass.constants, module_class_names, current_class_name)
+        out += fmt.make_constants(klass.constants)
         out += "\n"
     
     # Property descriptions
@@ -485,21 +506,20 @@ def class_doc_to_markdown(klass, f_out, module_class_names, classes_by_name):
         out += "## Property Descriptions\n\n"
 
         for prop in klass.properties:
-            out += "### " + markdown.make_type(prop.type, '', module_class_names, current_class_name) \
-                + make_custom_internal_anchor(prop.name) + " **" + prop.name + "**"
+            out += "### " + fmt.make_type(prop.type) + make_custom_internal_anchor(prop.name) + " **" + prop.name + "**"
             if prop.default_value is not None:
-                out += " = " + make_default_value(prop.type, prop.default_value, classes_by_name)
+                out += " = " + fmt.make_default_value(prop.default_value, prop.type)
             out += "\n\n"
 
             if prop.is_deprecated:
                 out += "*This property is deprecated."
                 if prop.deprecated_message != "":
                     out += " "
-                    out += make_text(prop.deprecated_message, module_class_names, current_class_name)
+                    out += fmt.make_text(prop.deprecated_message)
                 out += "*\n"
 
             if prop.description != "":
-                text = make_text(prop.description, module_class_names, current_class_name)
+                text = fmt.make_text(prop.description)
                 if text.strip() != "":
                     out += text
                 elif not prop.is_deprecated:
@@ -513,9 +533,9 @@ def class_doc_to_markdown(klass, f_out, module_class_names, classes_by_name):
         out += "## Method Descriptions\n\n"
 
         for method in klass.methods:
-            out += "### " + markdown.make_type(method.return_type, '', module_class_names, current_class_name) \
+            out += "### " + fmt.make_type(method.return_type) \
                 + make_custom_internal_anchor(method.name) + " **" + method.name + "**"
-            out += make_parameter_list(method.parameters, module_class_names, current_class_name, classes_by_name)
+            out += fmt.make_parameter_list(method.parameters)
             out += " "
             if method.qualifiers != "":
                 signature += method.qualifiers
@@ -526,11 +546,11 @@ def class_doc_to_markdown(klass, f_out, module_class_names, classes_by_name):
                 out += "*This method is deprecated."
                 if method.deprecated_message != "":
                     out += " "
-                    out += make_text(method.deprecated_message, module_class_names, current_class_name)
+                    out += fmt.make_text(method.deprecated_message)
                 out += "*\n"
 
             if method.description != "":
-                text = make_text(method.description, module_class_names, current_class_name)
+                text = fmt.make_text(method.description)
                 if text.strip() != "":
                     out += text
                 elif not method.is_deprecated:
