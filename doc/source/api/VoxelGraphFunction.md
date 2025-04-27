@@ -60,11 +60,13 @@ Return                                                                          
 [void](#)                                                                                       | [remove_node](#i_remove_node) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) node_id )                                                                                                                                                                                                                                                                              
 [void](#)                                                                                       | [set_expression_node_inputs](#i_set_expression_node_inputs) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) node_id, [PackedStringArray](https://docs.godotengine.org/en/stable/classes/class_packedstringarray.html) names )                                                                                                                                        
 [void](#)                                                                                       | [set_node_default_input](#i_set_node_default_input) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) node_id, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) input_index, [Variant](https://docs.godotengine.org/en/stable/classes/class_variant.html) value )                                                                                  
+[void](#)                                                                                       | [set_node_default_input_by_name](#i_set_node_default_input_by_name) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) node_id, [String](https://docs.godotengine.org/en/stable/classes/class_string.html) input_name, [Variant](https://docs.godotengine.org/en/stable/classes/class_variant.html) value )                                                             
 [void](#)                                                                                       | [set_node_default_inputs_autoconnect](#i_set_node_default_inputs_autoconnect) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) node_id, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) enabled )                                                                                                                                              
 [void](#)                                                                                       | [set_node_gui_position](#i_set_node_gui_position) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) node_id, [Vector2](https://docs.godotengine.org/en/stable/classes/class_vector2.html) position )                                                                                                                                                                   
 [void](#)                                                                                       | [set_node_gui_size](#i_set_node_gui_size) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) node_id, [Vector2](https://docs.godotengine.org/en/stable/classes/class_vector2.html) size )                                                                                                                                                                               
 [void](#)                                                                                       | [set_node_name](#i_set_node_name) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) node_id, [StringName](https://docs.godotengine.org/en/stable/classes/class_stringname.html) name )                                                                                                                                                                                 
 [void](#)                                                                                       | [set_node_param](#i_set_node_param) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) node_id, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) param_index, [Variant](https://docs.godotengine.org/en/stable/classes/class_variant.html) value )                                                                                                  
+[void](#)                                                                                       | [set_node_param_by_name](#i_set_node_param_by_name) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) node_id, [String](https://docs.godotengine.org/en/stable/classes/class_string.html) param_name, [Variant](https://docs.godotengine.org/en/stable/classes/class_variant.html) value )                                                                             
 [void](#)                                                                                       | [set_node_param_null](#i_set_node_param_null) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) node_id, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) param_index )                                                                                                                                                                            
 <p></p>
 
@@ -295,6 +297,10 @@ If you create an Expression node from code, you should call this method afterwar
 
 Sets the value an input of a node will have when it is left unconnected.
 
+### [void](#)<span id="i_set_node_default_input_by_name"></span> **set_node_default_input_by_name**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) node_id, [String](https://docs.godotengine.org/en/stable/classes/class_string.html) input_name, [Variant](https://docs.godotengine.org/en/stable/classes/class_variant.html) value ) 
+
+Sets the value an input of a node will have when it is left unconnected. The input is specified by its name as seen in the editor.
+
 ### [void](#)<span id="i_set_node_default_inputs_autoconnect"></span> **set_node_default_inputs_autoconnect**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) node_id, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) enabled ) 
 
 Sets wether a node input with no inbound connection will automatically create a default connection when the graph is compiled.
@@ -317,8 +323,12 @@ Sets a custom name for a node.
 
 Set a parameter of a node. The parameter index corresponds to the position that parameter comes in when seen in the editor.
 
+### [void](#)<span id="i_set_node_param_by_name"></span> **set_node_param_by_name**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) node_id, [String](https://docs.godotengine.org/en/stable/classes/class_string.html) param_name, [Variant](https://docs.godotengine.org/en/stable/classes/class_variant.html) value ) 
+
+Set a parameter of a node, using its name as it appears in the editor.
+
 ### [void](#)<span id="i_set_node_param_null"></span> **set_node_param_null**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) node_id, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) param_index ) 
 
 Set a parameter of a node to null. This method only exists to workaround an issue with Godot's UndoRedo system. Prefer using [VoxelGraphFunction.set_node_param](VoxelGraphFunction.md#i_set_node_param).
 
-_Generated on Mar 23, 2025_
+_Generated on Apr 27, 2025_

@@ -49,7 +49,8 @@ Return                                                                      | Si
 [void](#)                                                                   | [generate_image](#i_generate_image) ( [Image](https://docs.godotengine.org/en/stable/classes/class_image.html) image, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) tileable ) const 
 [float](https://docs.godotengine.org/en/stable/classes/class_float.html)    | [get_noise_2d_single](#i_get_noise_2d_single) ( [Vector2](https://docs.godotengine.org/en/stable/classes/class_vector2.html) pos ) const                                                                      
 [float](https://docs.godotengine.org/en/stable/classes/class_float.html)    | [get_noise_3d_single](#i_get_noise_3d_single) ( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) pos ) const                                                                      
-[String](https://docs.godotengine.org/en/stable/classes/class_string.html)  | [get_simd_level_name](#i_get_simd_level_name) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) level )                                                                                  
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)        | [get_simd_level](#i_get_simd_level) ( ) const                                                                                                                                                                 
+[String](https://docs.godotengine.org/en/stable/classes/class_string.html)  | [get_simd_level_name](#i_get_simd_level_name) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) level ) static                                                                           
 [void](#)                                                                   | [update_generator](#i_update_generator) ( )                                                                                                                                                                   
 <p></p>
 
@@ -203,12 +204,16 @@ Generates a single value of 3D noise.
 
 Note that generating values one by one will not benefit from SIMD performance as much as generating multiple values at once.
 
-### [String](https://docs.godotengine.org/en/stable/classes/class_string.html)<span id="i_get_simd_level_name"></span> **get_simd_level_name**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) level ) 
+### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_get_simd_level"></span> **get_simd_level**( ) 
 
 Gets which SIMD level was detected by the library. This gives an indication of performance on the current CPU, as different models can have different SIMD instructions available.
+
+### [String](https://docs.godotengine.org/en/stable/classes/class_string.html)<span id="i_get_simd_level_name"></span> **get_simd_level_name**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) level ) 
+
+Gets the name of SIMD level.
 
 ### [void](#)<span id="i_update_generator"></span> **update_generator**( ) 
 
 This method must be called after you change properties, so they can take effect.
 
-_Generated on Mar 23, 2025_
+_Generated on Apr 27, 2025_

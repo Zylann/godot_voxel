@@ -39,4 +39,4 @@ When a neighbor voxel partially covers a side of this voxel, the occluded geomet
 
 Margin below which triangles located near one of the 6 sides of the voxel will be considered on that side. Sides get culled or not by comparing between triangles of neighbor sides.
 
-_Generated on Mar 23, 2025_
+_Generated on Apr 27, 2025_

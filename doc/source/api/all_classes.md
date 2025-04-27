@@ -34,6 +34,7 @@
                 - [VoxelBlockyModelMesh](VoxelBlockyModelMesh.md)
             - [VoxelBlockyType](VoxelBlockyType.md)
             - [VoxelColorPalette](VoxelColorPalette.md)
+            - [VoxelFormat](VoxelFormat.md)
             - [VoxelGenerator](VoxelGenerator.md)
                 - [VoxelGeneratorFlat](VoxelGeneratorFlat.md)
                 - [VoxelGeneratorGraph](VoxelGeneratorGraph.md)
