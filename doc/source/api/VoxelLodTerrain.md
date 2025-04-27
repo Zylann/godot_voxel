@@ -48,7 +48,7 @@ Type                                                                            
 [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)          | [normalmap_use_gpu](#i_normalmap_use_gpu)                                                          | false                                                                                 
 [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)          | [run_stream_in_editor](#i_run_stream_in_editor)                                                    | true                                                                                  
 [float](https://docs.godotengine.org/en/stable/classes/class_float.html)        | [secondary_lod_distance](#i_secondary_lod_distance)                                                | 48.0                                                                                  
-[StreamingSystem](VoxelLodTerrain.md#enumerations)                              | [streaming_system](#i_streaming_system)                                                            | 0                                                                                     
+[StreamingSystem](VoxelLodTerrain.md#enumerations)                              | [streaming_system](#i_streaming_system)                                                            | STREAMING_SYSTEM_LEGACY_OCTREE (0)                                                    
 [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)          | [threaded_update_enabled](#i_threaded_update_enabled)                                              | false                                                                                 
 [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)          | [use_gpu_generation](#i_use_gpu_generation)                                                        | false                                                                                 
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)            | [view_distance](#i_view_distance)                                                                  | 512                                                                                   
@@ -275,7 +275,7 @@ This is only used when [VoxelLodTerrain.streaming_system](VoxelLodTerrain.md#i_s
 
 To control LOD 0, see [VoxelLodTerrain.lod_distance](VoxelLodTerrain.md#i_lod_distance).
 
-### [StreamingSystem](VoxelLodTerrain.md#enumerations)<span id="i_streaming_system"></span> **streaming_system** = 0
+### [StreamingSystem](VoxelLodTerrain.md#enumerations)<span id="i_streaming_system"></span> **streaming_system** = STREAMING_SYSTEM_LEGACY_OCTREE (0)
 
 Selects the underlying algorithm used to determine when to load and unload chunks around viewers as they move around.
 

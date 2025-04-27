@@ -11,10 +11,10 @@ Add-on to voxel nodes, allowing to spawn static elements on the surface. These e
 ## Properties: 
 
 
-Type                                             | Name                   | Default 
------------------------------------------------- | ---------------------- | --------
-[VoxelInstanceLibrary](VoxelInstanceLibrary.md)  | [library](#i_library)  |         
-[UpMode](VoxelInstancer.md#enumerations)         | [up_mode](#i_up_mode)  | 0       
+Type                                             | Name                   | Default                
+------------------------------------------------ | ---------------------- | -----------------------
+[VoxelInstanceLibrary](VoxelInstanceLibrary.md)  | [library](#i_library)  |                        
+[UpMode](VoxelInstancer.md#enumerations)         | [up_mode](#i_up_mode)  | UP_MODE_POSITIVE_Y (0) 
 <p></p>
 
 ## Methods: 
@@ -55,7 +55,7 @@ enum **DebugDrawFlag**:
 
 Library from which instances to spawn will be taken from.
 
-### [UpMode](VoxelInstancer.md#enumerations)<span id="i_up_mode"></span> **up_mode** = 0
+### [UpMode](VoxelInstancer.md#enumerations)<span id="i_up_mode"></span> **up_mode** = UP_MODE_POSITIVE_Y (0)
 
 Where to consider the "up" direction is on the terrain when generating instances. See also [VoxelInstanceGenerator](VoxelInstanceGenerator.md).
 

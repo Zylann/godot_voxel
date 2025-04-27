@@ -13,13 +13,13 @@ Colors will usually be stored in the `COLOR` vertex attribute and may require a 
 ## Properties: 
 
 
-Type                                                                            | Name                                                 | Default 
-------------------------------------------------------------------------------- | ---------------------------------------------------- | --------
-[ColorMode](VoxelMesherCubes.md#enumerations)                                   | [color_mode](#i_color_mode)                          | 0       
-[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)          | [greedy_meshing_enabled](#i_greedy_meshing_enabled)  | true    
-[Material](https://docs.godotengine.org/en/stable/classes/class_material.html)  | [opaque_material](#i_opaque_material)                |         
-[VoxelColorPalette](VoxelColorPalette.md)                                       | [palette](#i_palette)                                |         
-[Material](https://docs.godotengine.org/en/stable/classes/class_material.html)  | [transparent_material](#i_transparent_material)      |         
+Type                                                                            | Name                                                 | Default       
+------------------------------------------------------------------------------- | ---------------------------------------------------- | --------------
+[ColorMode](VoxelMesherCubes.md#enumerations)                                   | [color_mode](#i_color_mode)                          | COLOR_RAW (0) 
+[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)          | [greedy_meshing_enabled](#i_greedy_meshing_enabled)  | true          
+[Material](https://docs.godotengine.org/en/stable/classes/class_material.html)  | [opaque_material](#i_opaque_material)                |               
+[VoxelColorPalette](VoxelColorPalette.md)                                       | [palette](#i_palette)                                |               
+[Material](https://docs.godotengine.org/en/stable/classes/class_material.html)  | [transparent_material](#i_transparent_material)      |               
 <p></p>
 
 ## Methods: 
@@ -48,7 +48,7 @@ enum **ColorMode**:
 
 ## Property Descriptions
 
-### [ColorMode](VoxelMesherCubes.md#enumerations)<span id="i_color_mode"></span> **color_mode** = 0
+### [ColorMode](VoxelMesherCubes.md#enumerations)<span id="i_color_mode"></span> **color_mode** = COLOR_RAW (0)
 
 Sets how voxel color is determined when building the mesh.
 

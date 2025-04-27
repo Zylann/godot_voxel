@@ -18,10 +18,10 @@ WARNING: it is recommended to choose a format early in development (whether it i
 Type                                                                      | Name                               | Default                     
 ------------------------------------------------------------------------- | ---------------------------------- | ----------------------------
 [Array](https://docs.godotengine.org/en/stable/classes/class_array.html)  | [_data](#i__data)                  | [0, 1, 1, 0, 1, 1, 0, 0, 0] 
-[Depth](VoxelBuffer.md#enumerations)                                      | [color_depth](#i_color_depth)      | 0                           
-[Depth](VoxelBuffer.md#enumerations)                                      | [indices_depth](#i_indices_depth)  | 1                           
-[Depth](VoxelBuffer.md#enumerations)                                      | [sdf_depth](#i_sdf_depth)          | 1                           
-[Depth](VoxelBuffer.md#enumerations)                                      | [type_depth](#i_type_depth)        | 1                           
+[Depth](VoxelBuffer.md#enumerations)                                      | [color_depth](#i_color_depth)      | DEPTH_8_BIT (0)             
+[Depth](VoxelBuffer.md#enumerations)                                      | [indices_depth](#i_indices_depth)  | DEPTH_16_BIT (1)            
+[Depth](VoxelBuffer.md#enumerations)                                      | [sdf_depth](#i_sdf_depth)          | DEPTH_16_BIT (1)            
+[Depth](VoxelBuffer.md#enumerations)                                      | [type_depth](#i_type_depth)        | DEPTH_16_BIT (1)            
 <p></p>
 
 ## Methods: 
@@ -41,19 +41,19 @@ Return                                | Signature
 
 *(This property has no documentation)*
 
-### [Depth](VoxelBuffer.md#enumerations)<span id="i_color_depth"></span> **color_depth** = 0
+### [Depth](VoxelBuffer.md#enumerations)<span id="i_color_depth"></span> **color_depth** = DEPTH_8_BIT (0)
 
 Depth of [VoxelBuffer.CHANNEL_COLOR](VoxelBuffer.md#i_CHANNEL_COLOR).
 
-### [Depth](VoxelBuffer.md#enumerations)<span id="i_indices_depth"></span> **indices_depth** = 1
+### [Depth](VoxelBuffer.md#enumerations)<span id="i_indices_depth"></span> **indices_depth** = DEPTH_16_BIT (1)
 
 Depth of [VoxelBuffer.CHANNEL_INDICES](VoxelBuffer.md#i_CHANNEL_INDICES). Only 8-bit and 16-bit depths are supported.
 
-### [Depth](VoxelBuffer.md#enumerations)<span id="i_sdf_depth"></span> **sdf_depth** = 1
+### [Depth](VoxelBuffer.md#enumerations)<span id="i_sdf_depth"></span> **sdf_depth** = DEPTH_16_BIT (1)
 
 Depth of [VoxelBuffer.CHANNEL_SDF](VoxelBuffer.md#i_CHANNEL_SDF).
 
-### [Depth](VoxelBuffer.md#enumerations)<span id="i_type_depth"></span> **type_depth** = 1
+### [Depth](VoxelBuffer.md#enumerations)<span id="i_type_depth"></span> **type_depth** = DEPTH_16_BIT (1)
 
 Depth of [VoxelBuffer.CHANNEL_TYPE](VoxelBuffer.md#i_CHANNEL_TYPE). Only 8-bit and 16-bit depths are supported.
 

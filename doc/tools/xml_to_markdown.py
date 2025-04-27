@@ -25,7 +25,7 @@ def make_text_single_line(text, module_class_names, current_class_name):
 
 
 # params: Array[ParameterDoc]
-def make_parameter_list(params, module_class_names, current_class_name):
+def make_parameter_list(params, module_class_names, current_class_name, classes_by_name):
     s = "("
     param_index = 0
     for param in params:
@@ -34,7 +34,7 @@ def make_parameter_list(params, module_class_names, current_class_name):
         param_index += 1
         s += " " + markdown.make_type(param.type, '', module_class_names, current_class_name) + " " + param.name
         if param.default_value is not None:
-            s += "=" + param.default_value
+            s += "=" + make_default_value(param.type, param.default_value, classes_by_name)
     s += " )"
     return s
 
@@ -103,6 +103,12 @@ class ClassDoc:
         self.signals = [] # Array[SignalDoc]
         self.constants = [] # Array[ConstantDoc]
         self.enums = [] # Array[EnumDoc]
+    
+    def find_enum(self, name):
+        for en in self.enums:
+            if en.name == name:
+                return en
+        return None
 
 
 class TutorialDoc:
@@ -151,12 +157,19 @@ class ConstantDoc(MemberDoc):
     def __init__(self, name):
         super().__init__(name)
         self.type = ""
+        self.value = None
 
 
 class EnumDoc:
     def __init__(self, name):
         self.name = name
         self.items = [] # Array[ConstantDoc]
+    
+    def find_item_from_value(self, value):
+        for item in self.items:
+            if item.value == value:
+                return item
+        return None
 
 
 def parse_class_from_xml_tree(xml_tree, xml_file_path): # -> ClassDoc
@@ -310,7 +323,32 @@ def parse_class_from_xml_tree(xml_tree, xml_file_path): # -> ClassDoc
     return klass
 
 
-def class_doc_to_markdown(klass, f_out, module_class_names):
+def make_referred_enum_value(enum_type, value, classes_by_name):
+    parts = enum_type.split('.')
+    class_name = parts[0]
+    klass = classes_by_name.get(class_name, None)
+    if klass is None:
+        # Can't print a nice symbol. This may be the case for Godot enums, 
+        # we'd have to have a representation of all Godot's classes to be able to do this kind of lookup
+        return value
+    en = klass.find_enum(parts[1])
+    if en is None:
+        # ?
+        return value
+    item = en.find_item_from_value(value)
+    if item is None:
+        # ?
+        return value
+    return item.name + " (" + value + ")"
+
+
+def make_default_value(type_name, value, classes_by_name):
+    if '.' in type_name:
+        return make_referred_enum_value(type_name, value, classes_by_name)
+    return value
+
+
+def class_doc_to_markdown(klass, f_out, module_class_names, classes_by_name):
     current_class_name = klass.name
 
     # Header
@@ -362,7 +400,7 @@ def class_doc_to_markdown(klass, f_out, module_class_names):
             if prop.is_deprecated:
                 row[1] += " *(deprecated)*"
             if prop.default_value is not None:
-                row.append(prop.default_value)
+                row.append(make_default_value(prop.type, prop.default_value, classes_by_name))
             else:
                 row.append("")
             table.append(row)
@@ -377,7 +415,7 @@ def class_doc_to_markdown(klass, f_out, module_class_names):
         # TODO Remove from list if it's a getter/setter of a property
         for method in klass.methods:
             signature = make_custom_internal_link(method.name) + " "
-            signature += make_parameter_list(method.parameters, module_class_names, current_class_name)
+            signature += make_parameter_list(method.parameters, module_class_names, current_class_name, classes_by_name)
             signature += " "
 
             if method.qualifiers != "":
@@ -404,7 +442,7 @@ def class_doc_to_markdown(klass, f_out, module_class_names):
             out += "### "
             out += signal.name
 
-            out += make_parameter_list(signal.parameters, module_class_names, current_class_name)
+            out += make_parameter_list(signal.parameters, module_class_names, current_class_name, classes_by_name)
             out += " \n\n"
 
             desc = ""
@@ -450,7 +488,7 @@ def class_doc_to_markdown(klass, f_out, module_class_names):
             out += "### " + markdown.make_type(prop.type, '', module_class_names, current_class_name) \
                 + make_custom_internal_anchor(prop.name) + " **" + prop.name + "**"
             if prop.default_value is not None:
-                out += " = " + prop.default_value
+                out += " = " + make_default_value(prop.type, prop.default_value, classes_by_name)
             out += "\n\n"
 
             if prop.is_deprecated:
@@ -477,7 +515,7 @@ def class_doc_to_markdown(klass, f_out, module_class_names):
         for method in klass.methods:
             out += "### " + markdown.make_type(method.return_type, '', module_class_names, current_class_name) \
                 + make_custom_internal_anchor(method.name) + " **" + method.name + "**"
-            out += make_parameter_list(method.parameters, module_class_names, current_class_name)
+            out += make_parameter_list(method.parameters, module_class_names, current_class_name, classes_by_name)
             out += " "
             if method.qualifiers != "":
                 signature += method.qualifiers
@@ -619,7 +657,7 @@ def process_xml_folder(src_dir, dst_dir, verbose):
             dest = dst_dir / (klass.xml_file_path.stem + ".md")
             if verbose:
                 print("Converting ", klass.xml_file_path, dest)
-            class_doc_to_markdown(klass, dest, module_class_names)
+            class_doc_to_markdown(klass, dest, module_class_names, classes_by_name)
             count += 1
             doc_files.append(dest)
 

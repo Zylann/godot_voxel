@@ -7,15 +7,15 @@ Implements isosurface generation (smooth voxels) using the [Transvoxel](https://
 ## Properties: 
 
 
-Type                                                                      | Name                                                                       | Default 
-------------------------------------------------------------------------- | -------------------------------------------------------------------------- | --------
-[float](https://docs.godotengine.org/en/stable/classes/class_float.html)  | [edge_clamp_margin](#i_edge_clamp_margin)                                  | 0.02    
-[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)    | [mesh_optimization_enabled](#i_mesh_optimization_enabled)                  | false   
-[float](https://docs.godotengine.org/en/stable/classes/class_float.html)  | [mesh_optimization_error_threshold](#i_mesh_optimization_error_threshold)  | 0.005   
-[float](https://docs.godotengine.org/en/stable/classes/class_float.html)  | [mesh_optimization_target_ratio](#i_mesh_optimization_target_ratio)        | 0.0     
-[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)    | [textures_ignore_air_voxels](#i_textures_ignore_air_voxels)                | false   
-[TexturingMode](VoxelMesherTransvoxel.md#enumerations)                    | [texturing_mode](#i_texturing_mode)                                        | 0       
-[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)    | [transitions_enabled](#i_transitions_enabled)                              | true    
+Type                                                                      | Name                                                                       | Default           
+------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ------------------
+[float](https://docs.godotengine.org/en/stable/classes/class_float.html)  | [edge_clamp_margin](#i_edge_clamp_margin)                                  | 0.02              
+[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)    | [mesh_optimization_enabled](#i_mesh_optimization_enabled)                  | false             
+[float](https://docs.godotengine.org/en/stable/classes/class_float.html)  | [mesh_optimization_error_threshold](#i_mesh_optimization_error_threshold)  | 0.005             
+[float](https://docs.godotengine.org/en/stable/classes/class_float.html)  | [mesh_optimization_target_ratio](#i_mesh_optimization_target_ratio)        | 0.0               
+[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)    | [textures_ignore_air_voxels](#i_textures_ignore_air_voxels)                | false             
+[TexturingMode](VoxelMesherTransvoxel.md#enumerations)                    | [texturing_mode](#i_texturing_mode)                                        | TEXTURES_NONE (0) 
+[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)    | [transitions_enabled](#i_transitions_enabled)                              | true              
 <p></p>
 
 ## Methods: 
@@ -61,7 +61,7 @@ When a marching cube cell is computed, vertices may be placed anywhere on edges 
 
 *(This property has no documentation)*
 
-### [TexturingMode](VoxelMesherTransvoxel.md#enumerations)<span id="i_texturing_mode"></span> **texturing_mode** = 0
+### [TexturingMode](VoxelMesherTransvoxel.md#enumerations)<span id="i_texturing_mode"></span> **texturing_mode** = TEXTURES_NONE (0)
 
 *(This property has no documentation)*
 
