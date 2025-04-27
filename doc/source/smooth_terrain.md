@@ -217,15 +217,18 @@ This data is stored in the [INDICES](api/VoxelBuffer.md#i_CHANNEL_INDICES) chann
 !!! note
 	This mode is the easiest, but wasn't the first to be implemented. So the default voxel format isn't suitable for it. To fix this, assign a new [VoxelFormat](api/VoxelFormat.md) resource to your terrain, and change its `indices_depth` to `8-bit`. Then make sure your mesher has its texture mode set to `Single`. In some cases, you may also configure your generator to output that format as well (notably [VoxelGeneratorGraph](api/VoxelGeneratorGraph.md)).
 
-Editing voxel textures with that format should be as simple as editing "blocky voxels". So blocky editing functions can be used with the [SET](api/VoxelTool.md#i_MODE_SET) mode. Do not use the `TEXTURE` mode.
+Editing voxel textures with that format is as simple as editing "blocky voxels". So editing functions can be used with the [SET](api/VoxelTool.md#i_MODE_SET) mode.
 
 ```gdscript
 # Paints texture 2 in a sphere area (does not create matter)
-voxel_tool.set_mode(VoxelTool.MODE_SET)
-voxel_tool.set_channel(VoxelBuffer.CHANNEL_INDICES)
-voxel_tool.set_texture_index(2)
+voxel_tool.mode = VoxelTool.MODE_SET
+voxel_tool.channel = VoxelBuffer.CHANNEL_INDICES
+voxel_tool.value = 2
 voxel_tool.do_sphere(hit_position, radius)
 ```
+
+!!! note
+	`VoxelTool` has a `TEXTURE` mode and as `texture_index` property, but these are currently only used with `Mixel4`. You should not use them when editing `Single` texture data.
 
 
 #### Mixel4
@@ -249,9 +252,9 @@ To edit such format, you have to use the [TEXTURE_PAINT](api/VoxelTool.md#i_MODE
 
 ```gdscript
 # Paints texture 2 in a sphere area (does not create matter)
-voxel_tool.set_mode(VoxelTool.MODE_TEXTURE_PAINT)
-voxel_tool.set_texture_index(2)
-voxel_tool.set_texture_opacity(1.0)
+voxel_tool.mode = VoxelTool.MODE_TEXTURE_PAINT
+voxel_tool.texture_index = 2
+voxel_tool.set_texture_opacity = 1.0
 voxel_tool.do_sphere(hit_position, radius)
 ```
 
