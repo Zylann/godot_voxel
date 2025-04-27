@@ -29,7 +29,7 @@ Type                                                                            
 [float](https://docs.godotengine.org/en/stable/classes/class_float.html)                                                                     | [mesh_lod2_distance_ratio](#i_mesh_lod2_distance_ratio)    | 0.6                                   
 [Mesh](https://docs.godotengine.org/en/stable/classes/class_mesh.html)                                                                       | [mesh_lod3](#i_mesh_lod3)                                  |                                       
 [float](https://docs.godotengine.org/en/stable/classes/class_float.html)                                                                     | [mesh_lod3_distance_ratio](#i_mesh_lod3_distance_ratio)    | 1.0                                   
-[RemovalBehavior](VoxelInstanceLibraryMultiMeshItem.md#enumerations)                                                                         | [removal_behavior](#i_removal_behavior)                    | 0                                     
+[RemovalBehavior](VoxelInstanceLibraryMultiMeshItem.md#enumerations)                                                                         | [removal_behavior](#i_removal_behavior)                    | REMOVAL_BEHAVIOR_NONE (0)             
 [PackedScene](https://docs.godotengine.org/en/stable/classes/class_packedscene.html)                                                         | [removal_scene](#i_removal_scene)                          |                                       
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)                                                                         | [render_layer](#i_render_layer)                            | 1                                     
 [PackedScene](https://docs.godotengine.org/en/stable/classes/class_packedscene.html)                                                         | [scene](#i_scene)                                          |                                       
@@ -48,12 +48,18 @@ Return                                                                          
 [void](#)                                                                               | [setup_from_template](#i_setup_from_template) ( [Node](https://docs.godotengine.org/en/stable/classes/class_node.html) node )                                                                             
 <p></p>
 
-## Constants: 
+## Enumerations: 
 
-- <span id="i_MAX_MESH_LODS"></span>**MAX_MESH_LODS** = **4**
+enum **RemovalBehavior**: 
+
 - <span id="i_REMOVAL_BEHAVIOR_NONE"></span>**REMOVAL_BEHAVIOR_NONE** = **0** --- No extra logic will run when instances are removed.
 - <span id="i_REMOVAL_BEHAVIOR_INSTANTIATE"></span>**REMOVAL_BEHAVIOR_INSTANTIATE** = **1** --- Instantiates the [removal_scene](VoxelInstanceLibraryMultiMeshItem.md#i_removal_scene) for each instance getting removed. The scene must have a root derived from [Node3D](https://docs.godotengine.org/en/stable/classes/class_node3d.html), and will be given the same transform as the instance before being added to the scene tree. It will be added under the [VoxelInstancer](VoxelInstancer.md) node.
 - <span id="i_REMOVAL_BEHAVIOR_CALLBACK"></span>**REMOVAL_BEHAVIOR_CALLBACK** = **2** --- Calls [_on_instance_removed](VoxelInstanceLibraryMultiMeshItem.md#i__on_instance_removed) when an instance gets removed. You should attach a script to the item in order to implement this. Note: every resource can have a [Object.script](https://docs.godotengine.org/en/stable/classes/class_object.html#class-object-property-script). But in the editor, Godot currently doesn't show you that property if the resource appears in a sub-inspector. To workaround that, right-click the property in which the resource is, and choose "Edit". That will open the item in a full inspector. An alternative is to save your item as a file, and then edit it from the file browser.
+
+
+## Constants: 
+
+- <span id="i_MAX_MESH_LODS"></span>**MAX_MESH_LODS** = **4**
 
 ## Property Descriptions
 
@@ -121,7 +127,7 @@ Alternating list of [CollisionShape](https://docs.godotengine.org/en/stable/clas
 
 *(This property has no documentation)*
 
-### [RemovalBehavior](VoxelInstanceLibraryMultiMeshItem.md#enumerations)<span id="i_removal_behavior"></span> **removal_behavior** = 0
+### [RemovalBehavior](VoxelInstanceLibraryMultiMeshItem.md#enumerations)<span id="i_removal_behavior"></span> **removal_behavior** = REMOVAL_BEHAVIOR_NONE (0)
 
 Specifies what should happen when instances get removed. This is useful if they should turn into more complex objects with animation or logic in them.
 
