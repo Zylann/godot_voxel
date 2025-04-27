@@ -1920,8 +1920,8 @@ void VoxelInstancer::on_area_edited(Box3i p_voxel_box) {
 		}
 
 		const Box3i render_blocks_box = p_voxel_box.downscaled(render_block_size << lod_index);
-		const Box3i data_blocks_box = p_voxel_box.downscaled(data_block_size << lod_index);
 
+		// Remove floating instances
 		for (auto layer_it = lod.layers.begin(); layer_it != lod.layers.end(); ++layer_it) {
 			const int layer_id = *layer_it;
 			const Layer &layer = get_layer(layer_id);
@@ -1982,6 +1982,8 @@ void VoxelInstancer::on_area_edited(Box3i p_voxel_box) {
 				}
 			}
 		}
+
+		const Box3i data_blocks_box = p_voxel_box.downscaled(data_block_size << lod_index);
 
 		// All instances have to be frozen as edited.
 		// Because even if none of them were removed or added, the ground on which they can spawn has
