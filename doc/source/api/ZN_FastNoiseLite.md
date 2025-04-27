@@ -13,18 +13,18 @@ This is an alternative implementation of [FastNoiseLite](https://docs.godotengin
 
 Type                                                                      | Name                                                         | Default 
 ------------------------------------------------------------------------- | ------------------------------------------------------------ | --------
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)      | [cellular_distance_function](#i_cellular_distance_function)  | 1       
+[CellularDistanceFunction](ZN_FastNoiseLite.md#enumerations)              | [cellular_distance_function](#i_cellular_distance_function)  | 1       
 [float](https://docs.godotengine.org/en/stable/classes/class_float.html)  | [cellular_jitter](#i_cellular_jitter)                        | 1.0     
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)      | [cellular_return_type](#i_cellular_return_type)              | 1       
+[CellularReturnType](ZN_FastNoiseLite.md#enumerations)                    | [cellular_return_type](#i_cellular_return_type)              | 1       
 [float](https://docs.godotengine.org/en/stable/classes/class_float.html)  | [fractal_gain](#i_fractal_gain)                              | 0.5     
 [float](https://docs.godotengine.org/en/stable/classes/class_float.html)  | [fractal_lacunarity](#i_fractal_lacunarity)                  | 2.0     
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)      | [fractal_octaves](#i_fractal_octaves)                        | 3       
 [float](https://docs.godotengine.org/en/stable/classes/class_float.html)  | [fractal_ping_pong_strength](#i_fractal_ping_pong_strength)  | 2.0     
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)      | [fractal_type](#i_fractal_type)                              | 1       
+[FractalType](ZN_FastNoiseLite.md#enumerations)                           | [fractal_type](#i_fractal_type)                              | 1       
 [float](https://docs.godotengine.org/en/stable/classes/class_float.html)  | [fractal_weighted_strength](#i_fractal_weighted_strength)    | 0.0     
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)      | [noise_type](#i_noise_type)                                  | 0       
+[NoiseType](ZN_FastNoiseLite.md#enumerations)                             | [noise_type](#i_noise_type)                                  | 0       
 [float](https://docs.godotengine.org/en/stable/classes/class_float.html)  | [period](#i_period)                                          | 64.0    
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)      | [rotation_type_3d](#i_rotation_type_3d)                      | 0       
+[RotationType3D](ZN_FastNoiseLite.md#enumerations)                        | [rotation_type_3d](#i_rotation_type_3d)                      | 0       
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)      | [seed](#i_seed)                                              | 0       
 [ZN_FastNoiseLiteGradient](ZN_FastNoiseLiteGradient.md)                   | [warp_noise](#i_warp_noise)                                  |         
 <p></p>
@@ -84,7 +84,7 @@ enum **CellularReturnType**:
 
 ## Property Descriptions
 
-### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_cellular_distance_function"></span> **cellular_distance_function** = 1
+### [CellularDistanceFunction](ZN_FastNoiseLite.md#enumerations)<span id="i_cellular_distance_function"></span> **cellular_distance_function** = 1
 
 *(This property has no documentation)*
 
@@ -92,7 +92,7 @@ enum **CellularReturnType**:
 
 *(This property has no documentation)*
 
-### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_cellular_return_type"></span> **cellular_return_type** = 1
+### [CellularReturnType](ZN_FastNoiseLite.md#enumerations)<span id="i_cellular_return_type"></span> **cellular_return_type** = 1
 
 *(This property has no documentation)*
 
@@ -112,7 +112,7 @@ enum **CellularReturnType**:
 
 *(This property has no documentation)*
 
-### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_fractal_type"></span> **fractal_type** = 1
+### [FractalType](ZN_FastNoiseLite.md#enumerations)<span id="i_fractal_type"></span> **fractal_type** = 1
 
 *(This property has no documentation)*
 
@@ -120,7 +120,7 @@ enum **CellularReturnType**:
 
 *(This property has no documentation)*
 
-### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_noise_type"></span> **noise_type** = 0
+### [NoiseType](ZN_FastNoiseLite.md#enumerations)<span id="i_noise_type"></span> **noise_type** = 0
 
 *(This property has no documentation)*
 
@@ -128,7 +128,7 @@ enum **CellularReturnType**:
 
 *(This property has no documentation)*
 
-### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_rotation_type_3d"></span> **rotation_type_3d** = 0
+### [RotationType3D](ZN_FastNoiseLite.md#enumerations)<span id="i_rotation_type_3d"></span> **rotation_type_3d** = 0
 
 *(This property has no documentation)*
 
@@ -158,4 +158,4 @@ enum **CellularReturnType**:
 
 *(This method has no documentation)*
 
-_Generated on Mar 23, 2025_
+_Generated on Apr 27, 2025_

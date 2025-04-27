@@ -27,10 +27,10 @@ Type                                                                      | Name
 ## Methods: 
 
 
-Return                                                                  | Signature                                                                                                                                                                                                              
------------------------------------------------------------------------ | -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)  | [get_shadow_occluder_side](#i_get_shadow_occluder_side) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) side ) const                                                                            
-[void](#)                                                               | [set_shadow_occluder_side](#i_set_shadow_occluder_side) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) side, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) enabled )  
+Return                                                                  | Signature                                                                                                                                                                                   
+----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)  | [get_shadow_occluder_side](#i_get_shadow_occluder_side) ( [Side](VoxelMesherBlocky.md#enumerations) side ) const                                                                            
+[void](#)                                                               | [set_shadow_occluder_side](#i_set_shadow_occluder_side) ( [Side](VoxelMesherBlocky.md#enumerations) side, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) enabled )  
 <p></p>
 
 ## Enumerations: 
@@ -85,12 +85,12 @@ When enabled, generates a quad covering the positive Z side of the chunk if it i
 
 ## Method Descriptions
 
-### [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_get_shadow_occluder_side"></span> **get_shadow_occluder_side**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) side ) 
+### [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_get_shadow_occluder_side"></span> **get_shadow_occluder_side**( [Side](VoxelMesherBlocky.md#enumerations) side ) 
 
 *(This method has no documentation)*
 
-### [void](#)<span id="i_set_shadow_occluder_side"></span> **set_shadow_occluder_side**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) side, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) enabled ) 
+### [void](#)<span id="i_set_shadow_occluder_side"></span> **set_shadow_occluder_side**( [Side](VoxelMesherBlocky.md#enumerations) side, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) enabled ) 
 
 *(This method has no documentation)*
 
-_Generated on Mar 23, 2025_
+_Generated on Apr 27, 2025_

@@ -432,6 +432,11 @@ void VoxelToolTerrain::do_mesh(const VoxelMeshSDF &mesh_sdf, const Transform3D &
 }
 #endif
 
+VoxelFormat VoxelToolTerrain::get_format() const {
+	ZN_ASSERT(_terrain != nullptr);
+	return _terrain->get_storage().get_format();
+}
+
 void VoxelToolTerrain::_bind_methods() {
 	ClassDB::bind_method(
 			D_METHOD("run_blocky_random_tick", "area", "voxel_count", "callback", "batch_count"),

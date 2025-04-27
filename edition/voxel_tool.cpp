@@ -357,6 +357,7 @@ void VoxelTool::smooth_sphere(Vector3 sphere_center, float sphere_radius, int bl
 		copy(padded_voxel_box.position, buffer, (1 << VoxelBuffer::CHANNEL_SDF));
 
 		VoxelBuffer smooth_buffer(VoxelBuffer::ALLOCATOR_POOL);
+		smooth_buffer.copy_format(buffer);
 		const Vector3f relative_sphere_center = to_vec3f(sphere_center - to_vec3(voxel_box.position));
 		ops::box_blur(buffer, smooth_buffer, blur_radius, relative_sphere_center, sphere_radius);
 
@@ -419,6 +420,11 @@ void VoxelTool::set_voxel_metadata(Vector3i pos, Variant meta) {
 Variant VoxelTool::get_voxel_metadata(Vector3i pos) const {
 	ERR_PRINT("Not implemented");
 	return Variant();
+}
+
+VoxelFormat VoxelTool::get_format() const {
+	ERR_PRINT("Not implemented");
+	return VoxelFormat();
 }
 
 #ifdef VOXEL_ENABLE_MESH_SDF

@@ -18,10 +18,10 @@ Type                                                                            
 ## Methods: 
 
 
-Return                                                                          | Signature                                                                                                                                                                                       
-------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-[Vector2i](https://docs.godotengine.org/en/stable/classes/class_vector2i.html)  | [get_tile](#i_get_tile) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) side ) const                                                                                     
-[void](#)                                                                       | [set_tile](#i_set_tile) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) side, [Vector2i](https://docs.godotengine.org/en/stable/classes/class_vector2i.html) position )  
+Return                                                                          | Signature                                                                                                                                                           
+------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------
+[Vector2i](https://docs.godotengine.org/en/stable/classes/class_vector2i.html)  | [get_tile](#i_get_tile) ( [Side](VoxelBlockyModel.md#enumerations) side ) const                                                                                     
+[void](#)                                                                       | [set_tile](#i_set_tile) ( [Side](VoxelBlockyModel.md#enumerations) side, [Vector2i](https://docs.godotengine.org/en/stable/classes/class_vector2i.html) position )  
 <p></p>
 
 ## Property Descriptions
@@ -45,12 +45,12 @@ If you are not using an atlas and every side uses the same full texture, use (1,
 
 ## Method Descriptions
 
-### [Vector2i](https://docs.godotengine.org/en/stable/classes/class_vector2i.html)<span id="i_get_tile"></span> **get_tile**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) side ) 
+### [Vector2i](https://docs.godotengine.org/en/stable/classes/class_vector2i.html)<span id="i_get_tile"></span> **get_tile**( [Side](VoxelBlockyModel.md#enumerations) side ) 
 
 *(This method has no documentation)*
 
-### [void](#)<span id="i_set_tile"></span> **set_tile**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) side, [Vector2i](https://docs.godotengine.org/en/stable/classes/class_vector2i.html) position ) 
+### [void](#)<span id="i_set_tile"></span> **set_tile**( [Side](VoxelBlockyModel.md#enumerations) side, [Vector2i](https://docs.godotengine.org/en/stable/classes/class_vector2i.html) position ) 
 
 *(This method has no documentation)*
 
-_Generated on Mar 23, 2025_
+_Generated on Apr 27, 2025_

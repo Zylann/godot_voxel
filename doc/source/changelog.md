@@ -15,12 +15,16 @@ Primarily developped with Godot 4.4.1+
 
 - `VoxelBuffer`: added functions to rotate/mirror contents
 - `VoxelGeneratorGraph`: implemented constant reduction, which slightly optimizes graphs running on CPU if they contain constant branches
+- `VoxelMesherTransvoxel`: added `Single` texturing mode, which uses only one byte per voxel to store a texture index. `VoxelGeneratorGraph` was also updated to include this mode.
 - `VoxelTool`: added `do_mesh` to replace `stamp_sdf`. Supported on terrains only.
 - Build system: added options to turn off features when doing custom builds
+- Introduced `VoxelFormat` to allow overriding default channel depths (was required to use the new `Single` voxel textures mode)
 
 - Fixes
     - `VoxelBlockyTypeLibrary`: fixed crash when setting `types` to empty array
-    - `VoxelInstancer`: fixed instances getting generated when digging down or building up in *already meshed* chunks that had no geometry before
+    - `VoxelInstancer`: 
+        - Fixed instance removal failing randomly after at least one chunk gets unloaded
+        - Fixed instances getting generated when digging down or building up in *already meshed* chunks that had no geometry before, when using `VoxelLodTerrain`
     - `VoxelGeneratorGraph`: 
         - Editor: fixed error sometimes printing after closing the graph editor
         - Editor: fixed error spam `Invalid param name` after editing a graph (in some yet unknown situations)

@@ -19,7 +19,7 @@ Note 2: Only works with smooth terrain (SDF).
 
 Type                                                                      | Name                         | Default 
 ------------------------------------------------------------------------- | ---------------------------- | --------
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)      | [operation](#i_operation)    | 0       
+[Operation](VoxelModifier.md#enumerations)                                | [operation](#i_operation)    | 0       
 [float](https://docs.godotengine.org/en/stable/classes/class_float.html)  | [smoothness](#i_smoothness)  | 0.0     
 <p></p>
 
@@ -33,7 +33,7 @@ enum **Operation**:
 
 ## Property Descriptions
 
-### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_operation"></span> **operation** = 0
+### [Operation](VoxelModifier.md#enumerations)<span id="i_operation"></span> **operation** = 0
 
 An operation that the modifier performs on the terrain or on the other modifiers.
 
@@ -43,4 +43,4 @@ Increasing this value makes the shape "merge" with its surroundings across a mor
 
 Note, it assumes the base generator produces consistent gradients. This is not always the case. Notably, it is a common optimization for generators to avoid calculating gradients beyond a certain distance from surfaces. If smoothness is too large, or if the generator's cutoff distance is too low, it can lead to gaps in the resulting mesh, usually at chunk boundaries.
 
-_Generated on Mar 23, 2025_
+_Generated on Apr 27, 2025_

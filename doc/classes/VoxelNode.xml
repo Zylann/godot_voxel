@@ -9,16 +9,23 @@
 	</tutorials>
 	<members>
 		<member name="cast_shadow" type="int" setter="set_shadow_casting" getter="get_shadow_casting" enum="GeometryInstance3D.ShadowCastingSetting" default="1">
+			Sets the shadow casting mode that meshes of the terrain will use.
+		</member>
+		<member name="format" type="VoxelFormat" setter="set_format" getter="get_format">
+			Overrides the default format of voxels.
+			WARNING: changing this will reload the terrain. If it has a stream attached with data saved with a different format, it might load improperly.
 		</member>
 		<member name="generator" type="VoxelGenerator" setter="set_generator" getter="get_generator">
 			Procedural generator used to load voxel blocks when not present in the stream.
 		</member>
 		<member name="gi_mode" type="int" setter="set_gi_mode" getter="get_gi_mode" enum="GeometryInstance3D.GIMode" default="0">
+			Sets the Global Illumination mode meshes of the terrain will use.
 		</member>
 		<member name="mesher" type="VoxelMesher" setter="set_mesher" getter="get_mesher">
 			Defines how voxels are transformed into visible meshes.
 		</member>
 		<member name="render_layers_mask" type="int" setter="set_render_layers_mask" getter="get_render_layers_mask" default="1">
+			Sets the render layers meshes of the terrain will use.
 		</member>
 		<member name="stream" type="VoxelStream" setter="set_stream" getter="get_stream">
 			Primary source of persistent voxel data. If left unassigned, the whole volume will use the generator.

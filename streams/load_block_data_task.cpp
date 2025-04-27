@@ -2,6 +2,7 @@
 #include "../engine/voxel_engine.h"
 #include "../generators/generate_block_task.h"
 #include "../storage/voxel_buffer.h"
+#include "../storage/voxel_data.h"
 #include "../util/dstack.h"
 #include "../util/io/log.h"
 #include "../util/profiling.h"
@@ -63,7 +64,8 @@ void LoadBlockDataTask::run(zylann::ThreadedTaskContext &ctx) {
 
 	ERR_FAIL_COND(_voxels != nullptr);
 	_voxels = make_shared_instance<VoxelBuffer>(VoxelBuffer::ALLOCATOR_POOL);
-	_voxels->create(_block_size, _block_size, _block_size);
+	const VoxelFormat format = _voxel_data->get_format();
+	_voxels->create(Vector3iUtil::create(_block_size), &format);
 
 	// TODO We should consider batching this again, but it needs to be done carefully.
 	// Each task is one block, and priority depends on distance to closest viewer.
@@ -86,6 +88,7 @@ void LoadBlockDataTask::run(zylann::ThreadedTaskContext &ctx) {
 				params.voxels = _voxels;
 				params.volume_id = _volume_id;
 				params.block_position = _position;
+				params.format = format;
 				params.lod_index = _lod_index;
 				params.block_size = _block_size;
 				params.stream_dependency = _stream_dependency;

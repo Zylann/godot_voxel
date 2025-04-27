@@ -43,6 +43,7 @@ def get_doc_classes():
         "VoxelColorPalette",
         "VoxelDataBlockEnterInfo",
         "VoxelEngine",
+        "VoxelFormat",
         "VoxelGenerator",
         "VoxelGeneratorFlat",
         "VoxelGeneratorGraph",

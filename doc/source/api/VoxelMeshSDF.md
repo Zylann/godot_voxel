@@ -20,7 +20,7 @@ Note 2: not all meshes can be baked. Best meshes should be manifold and represen
 Type                                                                                | Name                                                       | Default 
 ----------------------------------------------------------------------------------- | ---------------------------------------------------------- | --------
 [Dictionary](https://docs.godotengine.org/en/stable/classes/class_dictionary.html)  | [_data](#i__data)                                          | {}      
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)                | [bake_mode](#i_bake_mode)                                  | 1       
+[BakeMode](VoxelMeshSDF.md#enumerations)                                            | [bake_mode](#i_bake_mode)                                  | 1       
 [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)              | [boundary_sign_fix_enabled](#i_boundary_sign_fix_enabled)  | true    
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)                | [cell_count](#i_cell_count)                                | 64      
 [float](https://docs.godotengine.org/en/stable/classes/class_float.html)            | [margin_ratio](#i_margin_ratio)                            | 0.25    
@@ -65,7 +65,7 @@ enum **BakeMode**:
 
 *(This property has no documentation)*
 
-### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_bake_mode"></span> **bake_mode** = 1
+### [BakeMode](VoxelMeshSDF.md#enumerations)<span id="i_bake_mode"></span> **bake_mode** = 1
 
 Selects the algorithm that will be used to compute SDF from the mesh.
 
@@ -151,4 +151,4 @@ Gets whether the resource contains baked SDF data.
 
 Gets whether a asynchronous baking operation is pending.
 
-_Generated on Mar 23, 2025_
+_Generated on Apr 27, 2025_

@@ -16,7 +16,7 @@ Note: to generate voxels, see [VoxelGenerator](VoxelGenerator.md).
 Type                                                                                            | Name                                                             | Default             
 ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- | --------------------
 [float](https://docs.godotengine.org/en/stable/classes/class_float.html)                        | [density](#i_density)                                            | 0.1                 
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)                            | [emit_mode](#i_emit_mode)                                        | 0                   
+[EmitMode](VoxelInstanceGenerator.md#enumerations)                                              | [emit_mode](#i_emit_mode)                                        | 0                   
 [float](https://docs.godotengine.org/en/stable/classes/class_float.html)                        | [jitter](#i_jitter)                                              | 1.0                 
 [float](https://docs.godotengine.org/en/stable/classes/class_float.html)                        | [max_height](#i_max_height)                                      | 3.40282e+38         
 [float](https://docs.godotengine.org/en/stable/classes/class_float.html)                        | [max_scale](#i_max_scale)                                        | 1.0                 
@@ -25,13 +25,13 @@ Type                                                                            
 [float](https://docs.godotengine.org/en/stable/classes/class_float.html)                        | [min_scale](#i_min_scale)                                        | 1.0                 
 [float](https://docs.godotengine.org/en/stable/classes/class_float.html)                        | [min_slope_degrees](#i_min_slope_degrees)                        | 0.0                 
 [Noise](https://docs.godotengine.org/en/stable/classes/class_noise.html)                        | [noise](#i_noise)                                                |                     
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)                            | [noise_dimension](#i_noise_dimension)                            | 1                   
+[Dimension](VoxelInstanceGenerator.md#enumerations)                                             | [noise_dimension](#i_noise_dimension)                            | 1                   
 [VoxelGraphFunction](VoxelGraphFunction.md)                                                     | [noise_graph](#i_noise_graph)                                    |                     
 [float](https://docs.godotengine.org/en/stable/classes/class_float.html)                        | [noise_on_scale](#i_noise_on_scale)                              | 0.0                 
 [float](https://docs.godotengine.org/en/stable/classes/class_float.html)                        | [offset_along_normal](#i_offset_along_normal)                    | 0.0                 
 [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)                          | [random_rotation](#i_random_rotation)                            | true                
 [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)                          | [random_vertical_flip](#i_random_vertical_flip)                  | false               
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)                            | [scale_distribution](#i_scale_distribution)                      | 1                   
+[Distribution](VoxelInstanceGenerator.md#enumerations)                                          | [scale_distribution](#i_scale_distribution)                      | 1                   
 [float](https://docs.godotengine.org/en/stable/classes/class_float.html)                        | [triangle_area_threshold](#i_triangle_area_threshold)            | 0.0                 
 [float](https://docs.godotengine.org/en/stable/classes/class_float.html)                        | [vertical_alignment](#i_vertical_alignment)                      | 1.0                 
 [PackedInt32Array](https://docs.godotengine.org/en/stable/classes/class_packedint32array.html)  | [voxel_texture_filter_array](#i_voxel_texture_filter_array)      | PackedInt32Array(0) 
@@ -78,7 +78,7 @@ enum **Dimension**:
 
 Controls how many instances are generated. Might give different results depending on the type of emission chosen.
 
-### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_emit_mode"></span> **emit_mode** = 0
+### [EmitMode](VoxelInstanceGenerator.md#enumerations)<span id="i_emit_mode"></span> **emit_mode** = 0
 
 In which way instances are primarily emitted.
 
@@ -120,7 +120,7 @@ This also depends on the chosen [VoxelInstancer.up_mode](VoxelInstancer.md#i_up_
 
 Noise used to filter out spawned instances, so that they may spawn in patterns described by the noise.
 
-### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_noise_dimension"></span> **noise_dimension** = 1
+### [Dimension](VoxelInstanceGenerator.md#enumerations)<span id="i_noise_dimension"></span> **noise_dimension** = 1
 
 Which dimension should be used when evaluating [VoxelInstanceGenerator.noise](VoxelInstanceGenerator.md#i_noise) and [VoxelInstanceGenerator.noise_graph](VoxelInstanceGenerator.md#i_noise_graph).
 
@@ -148,7 +148,7 @@ When enbabled, instances will be given a random rotation. If not, they will use 
 
 When enabled, instances will randomly be flipped upside down. This can be useful with small rocks to create illusion of more variety.
 
-### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_scale_distribution"></span> **scale_distribution** = 1
+### [Distribution](VoxelInstanceGenerator.md#enumerations)<span id="i_scale_distribution"></span> **scale_distribution** = 1
 
 Sets how random scales are distributed.
 
@@ -190,4 +190,4 @@ When true, enables filtering of instances based on voxel texture indices. See [V
 
 *(This method has no documentation)*
 
-_Generated on Mar 23, 2025_
+_Generated on Apr 27, 2025_

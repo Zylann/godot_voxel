@@ -267,6 +267,8 @@ void VoxelTerrain::_on_stream_params_changed() {
 	// The whole map might change, so regenerate it
 	reset_map();
 
+	_data->set_format(get_internal_format());
+
 	if ((get_stream().is_valid() || get_generator().is_valid()) &&
 		(Engine::get_singleton()->is_editor_hint() == false || _run_stream_in_editor)) {
 		start_streamer();
@@ -2141,6 +2143,10 @@ void VoxelTerrain::get_configuration_warnings(PackedStringArray &warnings) const
 }
 
 #endif
+
+void VoxelTerrain::on_format_changed() {
+	_on_stream_params_changed();
+}
 
 // DEBUG LAND
 

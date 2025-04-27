@@ -19,9 +19,9 @@ By default, if an operation overlaps a non-editable area (if not loaded yet for 
 
 Type                                                                      | Name                                   | Default 
 ------------------------------------------------------------------------- | -------------------------------------- | --------
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)      | [channel](#i_channel)                  |         
+[ChannelId](VoxelBuffer.md#enumerations)                                  | [channel](#i_channel)                  |         
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)      | [eraser_value](#i_eraser_value)        |         
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)      | [mode](#i_mode)                        |         
+[Mode](VoxelTool.md#enumerations)                                         | [mode](#i_mode)                        |         
 [float](https://docs.godotengine.org/en/stable/classes/class_float.html)  | [sdf_scale](#i_sdf_scale)              |         
 [float](https://docs.godotengine.org/en/stable/classes/class_float.html)  | [sdf_strength](#i_sdf_strength)        |         
 [float](https://docs.godotengine.org/en/stable/classes/class_float.html)  | [texture_falloff](#i_texture_falloff)  |         
@@ -39,6 +39,7 @@ Return                                                                          
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)            | [color_to_u16_weights](#i_color_to_u16_weights) ( [Color](https://docs.godotengine.org/en/stable/classes/class_color.html) _unnamed_arg0 ) static                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       
 [void](#)                                                                       | [copy](#i_copy) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) src_pos, [VoxelBuffer](VoxelBuffer.md) dst_buffer, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channels_mask )                                                                                                                                                                                                                                                                                                                                                                                                                                
 [void](#)                                                                       | [do_box](#i_do_box) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) begin, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) end )                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+[void](#)                                                                       | [do_mesh](#i_do_mesh) ( [VoxelMeshSDF](VoxelMeshSDF.md) mesh_sdf, [Transform3D](https://docs.godotengine.org/en/stable/classes/class_transform3d.html) transform, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) isolevel=0.0 )                                                                                                                                                                                                                                                                                                                                                                                                               
 [void](#)                                                                       | [do_path](#i_do_path) ( [PackedVector3Array](https://docs.godotengine.org/en/stable/classes/class_packedvector3array.html) points, [PackedFloat32Array](https://docs.godotengine.org/en/stable/classes/class_packedfloat32array.html) radii )                                                                                                                                                                                                                                                                                                                                                                                                                           
 [void](#)                                                                       | [do_point](#i_do_point) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) pos )                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          
 [void](#)                                                                       | [do_sphere](#i_do_sphere) ( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) center, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) radius )                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
@@ -74,7 +75,7 @@ enum **Mode**:
 
 ## Property Descriptions
 
-### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_channel"></span> **channel**
+### [ChannelId](VoxelBuffer.md#enumerations)<span id="i_channel"></span> **channel**
 
 Set which channel will be edited. When used on a terrain node, it will default to the first available channel, based on the stream and generator.
 
@@ -82,7 +83,7 @@ Set which channel will be edited. When used on a terrain node, it will default t
 
 Sets which value will be used to erase voxels when editing the [VoxelBuffer.CHANNEL_TYPE](VoxelBuffer.md#i_CHANNEL_TYPE) channel in [VoxelTool.MODE_REMOVE](VoxelTool.md#i_MODE_REMOVE) mode. Only relevant for blocky voxels.
 
-### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_mode"></span> **mode**
+### [Mode](VoxelTool.md#enumerations)<span id="i_mode"></span> **mode**
 
 Sets how `do_*` functions will behave. This may vary depending on the channel.
 
@@ -91,7 +92,7 @@ Sets how `do_*` functions will behave. This may vary depending on the channel.
 When working with smooth voxels, applies a scale to the signed distance field. A high scale (1 or higher) will tend to produce blocky results, and a low scale (below 1, but not too close to zero) will tend to be smoother.
 
 
-This is related to the [VoxelBuffer.Depth](VoxelBuffer.md#enumerations) configuration on voxels. For 8-bit and 16-bit, there is a limited range of values the Signed Distance Field can take, and by default it is clamped to -1..1, so the gradient can only range across 2 voxels. But when LOD is used, it is better to stretch that range over a longer distance, and this is achieved by scaling SDF values.
+This is related to the [Depth](VoxelBuffer.md#enumerations) configuration on voxels. For 8-bit and 16-bit, there is a limited range of values the Signed Distance Field can take, and by default it is clamped to -1..1, so the gradient can only range across 2 voxels. But when LOD is used, it is better to stretch that range over a longer distance, and this is achieved by scaling SDF values.
 
 ### [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_sdf_strength"></span> **sdf_strength**
 
@@ -125,7 +126,7 @@ Encodes normalized 4-float color into 16-bit integer data, for use with the WEIG
 
 ### [void](#)<span id="i_copy"></span> **copy**( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) src_pos, [VoxelBuffer](VoxelBuffer.md) dst_buffer, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channels_mask ) 
 
-Copies voxels in a box and stores them in the passed buffer.
+Copies voxels in a box and stores them in the passed buffer. The source format will overwrite the destination.
 
 `src_pos` is the lowest corner of the box, and its size is determined by the size of `dst_buffer`.
 
@@ -140,6 +141,10 @@ With blocky voxels, `begin` and `end` are inclusive.
 With smooth voxels, `end` is exclusive.
 
 You may choose which operation to do before calling this function, by setting [VoxelTool.mode](VoxelTool.md#i_mode). With blocky voxels, you may also set [VoxelTool.value](VoxelTool.md#i_value) to choose which voxel ID to use.
+
+### [void](#)<span id="i_do_mesh"></span> **do_mesh**( [VoxelMeshSDF](VoxelMeshSDF.md) mesh_sdf, [Transform3D](https://docs.godotengine.org/en/stable/classes/class_transform3d.html) transform, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) isolevel=0.0 ) 
+
+Applies the given mesh shape to the terrain. The model must be baked into a signed distance field with [VoxelMeshSDF](VoxelMeshSDF.md). `transform` may be used to position, rotate and scale the model. Non-uniform scale might introduce artifacts. `isolevel` is a distance that inflates or contracts the model if increased or decreased respectively. Quality depends on resolution of the model's SDF, and performance will be lower than primitive shapes such as [VoxelTool.do_sphere](VoxelTool.md#i_do_sphere).
 
 ### [void](#)<span id="i_do_path"></span> **do_path**( [PackedVector3Array](https://docs.godotengine.org/en/stable/classes/class_packedvector3array.html) points, [PackedFloat32Array](https://docs.godotengine.org/en/stable/classes/class_packedfloat32array.html) radii ) 
 
@@ -283,4 +288,4 @@ Decodes raw voxel integer data from the WEIGHTS channel into a normalized 4-floa
 
 Encodes a 4-integer vector into 16-bit integer voxel data, for use in the INDICES channel.
 
-_Generated on Mar 23, 2025_
+_Generated on Apr 27, 2025_

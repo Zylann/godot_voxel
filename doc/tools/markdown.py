@@ -58,7 +58,12 @@ def get_godot_class_url(name):
 # the workspace. Or it might not be handled at all.
 # So we may have to keep using relative paths and so we have to pass prefixes in some cases.
 
-def make_type(name, local_prefix, module_class_names):
+def make_type(name, local_prefix, module_class_names, context_class_name):
+    if '.' in name:
+        # Assume enum
+        parts = name.split('.')
+        return make_enum_link(parts[0], parts[1], local_prefix, module_class_names, context_class_name)
+    
     if name == "void":
         link = "#"
     elif name in module_class_names:
@@ -109,13 +114,19 @@ def make_method_link(class_name, member_name, local_prefix, module_class_names):
     return make_link(link_text, link)
 
 
-def make_enum_link(class_name, member_name, local_prefix, module_class_names):
+def make_enum_link(class_name, member_name, local_prefix, module_class_names, context_class_name):
     if class_name in module_class_names:
         # TODO Link to specific enum not supported yet
         link = local_prefix + class_name + ".md#enumerations"
     else:
         link = get_godot_enum_url(class_name, member_name)
-    link_text = class_name + "." + member_name
+
+    # if class_name == context_class_name:
+    #     link_text = member_name
+    # else:
+    #     link_text = class_name + "." + member_name
+    link_text = member_name
+
     return make_link(link_text, link)
 
 

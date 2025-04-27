@@ -57,6 +57,8 @@ public:
 			const int block_batch_count
 	);
 
+	VoxelFormat get_format() const override;
+
 protected:
 	uint64_t _get_voxel(Vector3i pos) const override;
 	float _get_voxel_f(Vector3i pos) const override;

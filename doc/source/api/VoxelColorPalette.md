@@ -2,7 +2,7 @@
 
 Inherits: [Resource](https://docs.godotengine.org/en/stable/classes/class_resource.html)
 
-Limited list of colors that can be indexed quickly.
+Limited list of 256 colors in 8-bit format that can be indexed quickly.
 
 ## Description: 
 
@@ -48,10 +48,10 @@ Array used to store colors as 8-bit binary components in the resource file. It m
 
 ### [Color](https://docs.godotengine.org/en/stable/classes/class_color.html)<span id="i_get_color"></span> **get_color**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) index ) 
 
-*(This method has no documentation)*
+Gets the color at the given index.
 
 ### [void](#)<span id="i_set_color"></span> **set_color**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) index, [Color](https://docs.godotengine.org/en/stable/classes/class_color.html) color ) 
 
-*(This method has no documentation)*
+Sets the color at the given index.
 
-_Generated on Mar 23, 2025_
+_Generated on Apr 27, 2025_

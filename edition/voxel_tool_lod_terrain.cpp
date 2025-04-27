@@ -563,6 +563,11 @@ void VoxelToolLodTerrain::run_blocky_random_tick(
 	);
 }
 
+VoxelFormat VoxelToolLodTerrain::get_format() const {
+	ZN_ASSERT(_terrain != nullptr);
+	return _terrain->get_storage().get_format();
+}
+
 void VoxelToolLodTerrain::_bind_methods() {
 	using Self = VoxelToolLodTerrain;
 

@@ -261,10 +261,12 @@ void test_discord_soakil_copypaste() {
 
 			// Material
 
+			const VoxelFormat format = vd.get_format();
+
 			VoxelSingleValue default_indices;
-			default_indices.i = VoxelBuffer::get_default_value_static(VoxelBuffer::CHANNEL_INDICES);
+			default_indices.i = format.get_default_raw_value(VoxelBuffer::CHANNEL_INDICES);
 			VoxelSingleValue default_weights;
-			default_weights.i = VoxelBuffer::get_default_value_static(VoxelBuffer::CHANNEL_WEIGHTS);
+			default_weights.i = format.get_default_raw_value(VoxelBuffer::CHANNEL_WEIGHTS);
 
 			const uint16_t packed_indices_in_platform =
 					vd.get_voxel(Vector3i(0, 0, 0), VoxelBuffer::CHANNEL_INDICES, default_indices).i;
