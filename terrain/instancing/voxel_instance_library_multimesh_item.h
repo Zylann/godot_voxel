@@ -136,7 +136,7 @@ public:
 	void deserialize_multimesh_item_properties(Array a);
 
 #ifdef TOOLS_ENABLED
-	virtual void get_configuration_warnings(PackedStringArray &warnings) const;
+	void get_configuration_warnings(PackedStringArray &warnings) const override;
 #endif
 
 private:
