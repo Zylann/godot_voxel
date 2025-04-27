@@ -79,6 +79,7 @@ void request_block_generate(
 	VoxelGenerator::BlockTaskParams params;
 	params.volume_id = volume_id;
 	params.block_position = block_pos;
+	params.format = data->get_format();
 	params.lod_index = lod_index;
 	params.block_size = data_block_size;
 	params.stream_dependency = stream_dependency;

@@ -6,6 +6,7 @@
 #include "../util/macros.h"
 #include "../util/memory/memory.h"
 #include "../util/string/format.h"
+#include "voxel_format.h"
 
 #include <limits>
 
@@ -25,6 +26,10 @@ void VoxelDataMap::create(unsigned int lod_index) {
 	clear();
 	// set_block_size_pow2(block_size_po2);
 	set_lod_index(lod_index);
+}
+
+void VoxelDataMap::set_format(const VoxelFormat format) {
+	_format = format;
 }
 
 // void VoxelDataMap::set_block_size_pow2(unsigned int p) {
@@ -51,15 +56,14 @@ int VoxelDataMap::get_voxel(Vector3i pos, unsigned int c) const {
 	Vector3i bpos = voxel_to_block(pos);
 	const VoxelDataBlock *block = get_block(bpos);
 	if (block == nullptr || !block->has_voxels()) {
-		return VoxelBuffer::get_default_value_static(c);
+		return _format.get_default_raw_value(static_cast<VoxelBuffer::ChannelId>(c));
 	}
 	return block->get_voxels_const().get_voxel(to_local(pos), c);
 }
 
 VoxelDataBlock *VoxelDataMap::create_default_block(Vector3i bpos) {
 	std::shared_ptr<VoxelBuffer> buffer = make_shared_instance<VoxelBuffer>(VoxelBuffer::ALLOCATOR_POOL);
-	buffer->create(get_block_size(), get_block_size(), get_block_size());
-	// buffer->set_default_values(_default_voxel);
+	buffer->create(Vector3iUtil::create(get_block_size()), &_format);
 #ifdef DEBUG_ENABLED
 	ZN_ASSERT_RETURN_V(!has_block(bpos), nullptr);
 #endif
@@ -89,8 +93,7 @@ float VoxelDataMap::get_voxel_f(Vector3i pos, unsigned int c) const {
 	const VoxelDataBlock *block = get_block(bpos);
 	// TODO The generator needs to be invoked if the block has no voxels
 	if (block == nullptr || !block->has_voxels()) {
-		// TODO Not valid for a float return value
-		return VoxelBuffer::get_default_value_static(c);
+		return constants::SDF_FAR_OUTSIDE;
 	}
 	Vector3i lpos = to_local(pos);
 	return block->get_voxels_const().get_voxel_f(lpos.x, lpos.y, lpos.z, c);
@@ -228,8 +231,8 @@ void VoxelDataMap::copy(
 					const Box3i box = Box3i(bpos << get_block_size_pow2(), block_size_v)
 											  .clipped(Box3i(min_pos, dst_buffer.get_size()));
 
-					// TODO Format?
 					VoxelBuffer temp(VoxelBuffer::ALLOCATOR_POOL);
+					temp.copy_format(dst_buffer);
 					temp.create(box.size);
 					gen_func(callback_data, temp, box.position);
 
@@ -244,7 +247,7 @@ void VoxelDataMap::copy(
 						// For now, inexistent blocks default to hardcoded defaults, corresponding to "empty space".
 						// If we want to change this, we may have to add an API for that.
 						dst_buffer.fill_area(
-								VoxelBuffer::get_default_value_static(channel),
+								_format.get_default_raw_value(static_cast<VoxelBuffer::ChannelId>(channel)),
 								src_block_origin - min_pos,
 								src_block_origin - min_pos + block_size_v,
 								channel

@@ -3,6 +3,7 @@
 
 #include "../storage/funcs.h"
 #include "../storage/voxel_buffer_gd.h"
+#include "../storage/voxel_format.h"
 #include "../util/math/box3i.h"
 #include "../util/math/sdf.h"
 #include "funcs.h"
@@ -116,6 +117,8 @@ public:
 
 	virtual void set_voxel_metadata(Vector3i pos, Variant meta);
 	virtual Variant get_voxel_metadata(Vector3i pos) const;
+
+	virtual VoxelFormat get_format() const;
 
 protected:
 	static void _bind_methods();

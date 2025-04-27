@@ -48,7 +48,10 @@ void GenerateBlockTask::run(zylann::ThreadedTaskContext &ctx) {
 
 	if (_voxels == nullptr) {
 		_voxels = make_shared_instance<VoxelBuffer>(VoxelBuffer::ALLOCATOR_POOL);
-		_voxels->create(_block_size, _block_size, _block_size);
+		_voxels->create(Vector3iUtil::create(_block_size), &_format);
+
+	} else if (!_voxels->has_format(_format)) {
+		_voxels->create(Vector3iUtil::create(_block_size), &_format);
 	}
 
 #ifdef VOXEL_ENABLE_GPU

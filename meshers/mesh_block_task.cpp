@@ -94,21 +94,8 @@ void copy_block_and_neighbors(
 	const int mesh_block_size = data_block_size * area_info.mesh_block_size_factor;
 	const int padded_mesh_block_size = mesh_block_size + min_padding + max_padding;
 
-	dst.create(padded_mesh_block_size, padded_mesh_block_size, padded_mesh_block_size);
-
-	// TODO Need to provide format differently, this won't work in full load mode where areas are generated on the fly
-	// for (unsigned int ci = 0; ci < channels.size(); ++ci) {
-	// 	dst.set_channel_depth(ci, central_buffer->get_channel_depth(ci));
-	// }
-	// This is a hack
-	for (unsigned int i = 0; i < blocks.size(); ++i) {
-		const std::shared_ptr<VoxelBuffer> &buffer = blocks[i];
-		if (buffer != nullptr) {
-			// Initialize channel depths from the first non-null block found
-			dst.copy_format(*buffer);
-			break;
-		}
-	}
+	const VoxelFormat voxel_format = voxel_data.get_format();
+	dst.create(Vector3iUtil::create(padded_mesh_block_size), &voxel_format);
 
 	const Box3i bounds_in_voxels_lod0 = voxel_data.get_bounds();
 	const Box3i bounds_in_voxels(bounds_in_voxels_lod0.position >> lod_index, bounds_in_voxels_lod0.size >> lod_index);
@@ -220,7 +207,7 @@ void copy_block_and_neighbors(
 		for (const Box3i &box : boxes_to_generate) {
 			ZN_PROFILE_SCOPE_NAMED("Box");
 			// print_line(String("size={0}").format(varray(box.size.to_vec3())));
-			generated_voxels.create(box.size);
+			generated_voxels.create(box.size, &voxel_format);
 			// generated_voxels.set_voxel_f(2.0f, box.size.x / 2, box.size.y / 2, box.size.z / 2,
 			// VoxelBuffer::CHANNEL_SDF);
 			VoxelGenerator::VoxelQueryData q{ generated_voxels,
@@ -351,6 +338,15 @@ void MeshBlockTask::run(zylann::ThreadedTaskContext &ctx) {
 	// This also rises another concern: if height gets limited vertically but not horizontally, typical terrain will
 	// end up with a huge surface at the bottom facing down, since the default for chunks outside bounds is air.
 	// We would have to somehow expose a way to set what these areas default to as well...
+
+#ifdef VOXEL_ENABLE_GPU
+	if (_stage == 0)
+#endif
+	{
+		ZN_ASSERT(data != nullptr);
+		const VoxelFormat format = data->get_format();
+		format.configure_buffer(_voxels);
+	}
 
 #ifdef VOXEL_ENABLE_GPU
 	if (block_generation_use_gpu) {

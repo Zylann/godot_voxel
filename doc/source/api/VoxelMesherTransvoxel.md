@@ -31,8 +31,13 @@ Return                                                                          
 enum **TexturingMode**: 
 
 - <span id="i_TEXTURES_NONE"></span>**TEXTURES_NONE** = **0** --- Disables texturing information. This mode is the fastest if you can use a shader to apply textures procedurally.
-- <span id="i_TEXTURES_BLEND_4_OVER_16"></span>**TEXTURES_BLEND_4_OVER_16** = **1** --- Adds texturing information as 4 texture indices and 4 weights, encoded in `CUSTOM1.xy` in Godot fragment shaders, where x and y contain 4 packed 8-bit values. Expects voxels to have 4 4-bit indices packed in 16-bit values in [VoxelBuffer.CHANNEL_INDICES](VoxelBuffer.md#i_CHANNEL_INDICES), and 4 4-bit weights in [VoxelBuffer.CHANNEL_WEIGHTS](VoxelBuffer.md#i_CHANNEL_WEIGHTS). In cases where more than 4 textures cross each other in a 2x2x2 voxel area, triangles in that area will only use the 4 indices with the highest weights. A custom shader is required to render this, usually with texture arrays to index textures easily.
+- <span id="i_TEXTURES_MIXEL4_S4"></span>**TEXTURES_MIXEL4_S4** = **1** --- Expects voxels to have 4 4-bit indices packed in 16-bit values in [VoxelBuffer.CHANNEL_INDICES](VoxelBuffer.md#i_CHANNEL_INDICES), and 4 4-bit weights in [VoxelBuffer.CHANNEL_WEIGHTS](VoxelBuffer.md#i_CHANNEL_WEIGHTS). Adds texturing information as 4 texture indices and 4 weights, encoded in `CUSTOM1.xy` in Godot fragment shaders, where x and y contain 4 packed 8-bit values. In cases where more than 4 textures cross each other in a 2x2x2 voxel area, triangles in that area will only use the 4 indices with the highest weights. A custom shader is required to render this, usually with texture arrays to index textures easily.
+- <span id="i_TEXTURES_SINGLE_S4"></span>**TEXTURES_SINGLE_S4** = **2** --- Expects voxels to have a 8-bit texture index in the [VoxelBuffer.CHANNEL_INDICES](VoxelBuffer.md#i_CHANNEL_INDICES) channel. Adds texturing information as 4 texture indices and 4 weights, encoded in `CUSTOM1.xy` in Godot fragment shaders, where x and y contain 4 packed 8-bit values. In cases where more than 4 textures cross each other in a 2x2x2 voxel area, triangles in that area will only use the 4 indices with the highest weights. A custom shader is required to render this, usually with texture arrays to index textures easily.
 
+
+## Constants: 
+
+- <span id="i_TEXTURES_BLEND_4_OVER_16"></span>**TEXTURES_BLEND_4_OVER_16** = **1** --- *This constant is deprecated. Use TEXTURES_MIXEL4_S4* Legacy alias for [VoxelMesherTransvoxel.TEXTURES_MIXEL4_S4](VoxelMesherTransvoxel.md#i_TEXTURES_MIXEL4_S4).
 
 ## Property Descriptions
 
@@ -70,4 +75,4 @@ When a marching cube cell is computed, vertices may be placed anywhere on edges 
 
 Generates only the part of the mesh that Transvoxel uses to connect surfaces with different level of detail. This method is mainly for testing purposes.
 
-_Generated on Mar 23, 2025_
+_Generated on Apr 27, 2025_

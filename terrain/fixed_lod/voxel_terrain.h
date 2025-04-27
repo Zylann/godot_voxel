@@ -195,6 +195,8 @@ public:
 	void get_configuration_warnings(PackedStringArray &warnings) const override;
 #endif // TOOLS_ENABLED
 
+	void on_format_changed() override;
+
 protected:
 	void _notification(int p_what);
 

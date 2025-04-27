@@ -3,6 +3,7 @@
 
 #include "../engine/ids.h"
 #include "../engine/priority_dependency.h"
+#include "../storage/voxel_format.h"
 #include "../util/containers/span.h"
 #include "../util/containers/std_vector.h"
 #include "../util/godot/classes/resource.h"
@@ -69,6 +70,7 @@ public:
 
 	struct BlockTaskParams {
 		Vector3i block_position;
+		VoxelFormat format;
 		VolumeID volume_id;
 		uint8_t lod_index = 0;
 		uint8_t block_size = 0;

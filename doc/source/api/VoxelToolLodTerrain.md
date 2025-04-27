@@ -23,7 +23,7 @@ Return                                                                    | Sign
 [void](#)                                                                 | [run_blocky_random_tick](#i_run_blocky_random_tick) ( [AABB](https://docs.godotengine.org/en/stable/classes/class_aabb.html) area, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) voxel_count, [Callable](https://docs.godotengine.org/en/stable/classes/class_callable.html) callback, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) batch_count=16 )  
 [Array](https://docs.godotengine.org/en/stable/classes/class_array.html)  | [separate_floating_chunks](#i_separate_floating_chunks) ( [AABB](https://docs.godotengine.org/en/stable/classes/class_aabb.html) box, [Node](https://docs.godotengine.org/en/stable/classes/class_node.html) parent_node )                                                                                                                                                                           
 [void](#)                                                                 | [set_raycast_binary_search_iterations](#i_set_raycast_binary_search_iterations) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) iterations )                                                                                                                                                                                                                                  
-[void](#)                                                                 | [stamp_sdf](#i_stamp_sdf) ( [VoxelMeshSDF](VoxelMeshSDF.md) mesh_sdf, [Transform3D](https://docs.godotengine.org/en/stable/classes/class_transform3d.html) transform, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) isolevel, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) sdf_scale )                                                        
+[void](#)                                                                 | [stamp_sdf](#i_stamp_sdf) ( [VoxelMeshSDF](VoxelMeshSDF.md) mesh_sdf, [Transform3D](https://docs.godotengine.org/en/stable/classes/class_transform3d.html) transform, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) isolevel, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) sdf_scale )  *(deprecated)*                                        
 <p></p>
 
 ## Method Descriptions
@@ -74,6 +74,7 @@ Only voxels at LOD 0 will be considered.
 
 ### [void](#)<span id="i_stamp_sdf"></span> **stamp_sdf**( [VoxelMeshSDF](VoxelMeshSDF.md) mesh_sdf, [Transform3D](https://docs.godotengine.org/en/stable/classes/class_transform3d.html) transform, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) isolevel, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) sdf_scale ) 
 
-*(This method has no documentation)*
+*This method is deprecated. Use [VoxelToolLodTerrain.do_mesh](VoxelToolLodTerrain.md#i_do_mesh) instead.*
 
-_Generated on Mar 23, 2025_
+
+_Generated on Apr 27, 2025_

@@ -56,6 +56,7 @@ private:
 	std::shared_ptr<VoxelBuffer> _voxels;
 
 	Vector3i _position;
+	VoxelFormat _format;
 	VolumeID _volume_id;
 	uint8_t _lod_index;
 	uint8_t _block_size;
