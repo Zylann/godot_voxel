@@ -51,7 +51,7 @@ Vector3f get_border_offset(const Vector3f pos_scaled, const int lod_index, const
 
 		} else if (p > (p2k * (s - 1))) {
 			// The vertex is inside the maximum cell.
-			delta[i] = ((p2k * s) - 1.0f - p) * wk;
+			delta[i] = (s - 1.0f - p2mk * p) * wk;
 		}
 	}
 

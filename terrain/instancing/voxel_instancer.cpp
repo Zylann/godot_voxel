@@ -1049,13 +1049,21 @@ void VoxelInstancer::remove_block(unsigned int block_index) {
 		instance.root->queue_free();
 	}
 
-	// If the block we removed was also the last one, we don't enter here
+	// Update block index references, since we had to change the index of the last block during swap-remove.
+	// If the block we removed was actually the last one, we don't enter here
 	if (block.get() != &moved_block) {
 		// Update the index of the moved block referenced in its layer
 		Layer &layer = get_layer(moved_block.layer_id);
 		auto it = layer.blocks.find(moved_block.grid_position);
 		CRASH_COND(it == layer.blocks.end());
 		it->second = block_index;
+
+		for (VoxelInstancerRigidBody *body : moved_block.bodies) {
+			body->set_render_block_index(block_index);
+		}
+		for (const SceneInstance &scene : moved_block.scene_instances) {
+			scene.component->set_render_block_index(block_index);
+		}
 	}
 }
 
@@ -1651,9 +1659,10 @@ SaveBlockDataTask *VoxelInstancer::save_block(
 void VoxelInstancer::remove_floating_multimesh_instances(
 		Block &block,
 		const Transform3D &parent_transform,
-		Box3i p_voxel_box,
+		const Box3i p_voxel_box,
 		const VoxelTool &voxel_tool,
-		int block_size_po2
+		const int block_size_po2,
+		const float sd_threshold
 ) {
 	if (!block.multimesh_instance.is_valid()) {
 		// Empty block
@@ -1685,7 +1694,7 @@ void VoxelInstancer::remove_floating_multimesh_instances(
 		// TODO Optimize: use a transaction instead of random single queries
 		// 1-voxel cheap check without interpolation
 		const float sdf = voxel_tool.get_voxel_f(voxel_pos);
-		if (sdf < -0.0001f) {
+		if (sdf <= sd_threshold) {
 			// Still enough ground
 			continue;
 		}
@@ -1708,6 +1717,7 @@ void VoxelInstancer::remove_floating_multimesh_instances(
 			// Detach so it won't try to update our instances, we already do it here
 			rb->detach_and_destroy();
 
+			// Update the last body index since we did a swap-removal
 			VoxelInstancerRigidBody *moved_rb = block.bodies[last_instance_index];
 			if (moved_rb != rb) {
 				moved_rb->set_instance_index(instance_index);
@@ -1750,9 +1760,10 @@ void VoxelInstancer::remove_floating_multimesh_instances(
 void VoxelInstancer::remove_floating_scene_instances(
 		Block &block,
 		const Transform3D &parent_transform,
-		Box3i p_voxel_box,
+		const Box3i p_voxel_box,
 		const VoxelTool &voxel_tool,
-		int block_size_po2
+		const int block_size_po2,
+		const float sd_threshold
 ) {
 	const unsigned int initial_instance_count = block.scene_instances.size();
 	unsigned int instance_count = initial_instance_count;
@@ -1776,7 +1787,7 @@ void VoxelInstancer::remove_floating_scene_instances(
 
 		// 1-voxel cheap check without interpolation
 		const float sdf = voxel_tool.get_voxel_f(voxel_pos);
-		if (sdf < -0.1f) {
+		if (sdf < sd_threshold) {
 			// Still enough ground
 			continue;
 		}
@@ -1855,11 +1866,11 @@ void VoxelInstancer::on_area_edited(Box3i p_voxel_box) {
 
 						if (block.scene_instances.size() > 0) {
 							remove_floating_scene_instances(
-									block, parent_transform, p_voxel_box, voxel_tool, block_size_po2
+									block, parent_transform, p_voxel_box, voxel_tool, block_size_po2, 0.f
 							);
 						} else {
 							remove_floating_multimesh_instances(
-									block, parent_transform, p_voxel_box, voxel_tool, block_size_po2
+									block, parent_transform, p_voxel_box, voxel_tool, block_size_po2, 0.f
 							);
 						}
 
@@ -1882,8 +1893,24 @@ void VoxelInstancer::on_body_removed(
 		unsigned int render_block_index,
 		unsigned int instance_index
 ) {
+	ZN_PRINT_VERBOSE(format("on_body_removed from block {}", render_block_index));
+
 	Block &block = *_blocks[render_block_index];
-	ZN_ASSERT_RETURN(instance_index < block.bodies.size());
+
+	if (instance_index >= block.bodies.size()) {
+		int instance_count = -1;
+		if (block.multimesh_instance.is_valid()) {
+			Ref<MultiMesh> multimesh = block.multimesh_instance.get_multimesh();
+			instance_count = zylann::godot::get_visible_instance_count(**multimesh);
+		}
+		ZN_PRINT_ERROR(
+				format("Can't remove instance with index {} (bodies: {}, instances: {})",
+					   instance_index,
+					   block.bodies.size(),
+					   instance_count)
+		);
+		return;
+	}
 
 	if (block.multimesh_instance.is_valid()) {
 		// Remove the multimesh instance
@@ -1895,6 +1922,7 @@ void VoxelInstancer::on_body_removed(
 		ERR_FAIL_COND(static_cast<int>(instance_index) >= visible_count);
 
 		--visible_count;
+		// Swap-remove
 		// TODO Optimize: This is terrible in MT mode! Think about keeping a local copy...
 		const Transform3D last_trans = multimesh->get_instance_transform(visible_count);
 		multimesh->set_instance_transform(instance_index, last_trans);
@@ -1906,6 +1934,7 @@ void VoxelInstancer::on_body_removed(
 	const unsigned int last_instance_index = --body_count;
 	VoxelInstancerRigidBody *moved_body = block.bodies[last_instance_index];
 	if (instance_index != last_instance_index) {
+		// Update last body index because we did a swap-remove
 		moved_body->set_instance_index(instance_index);
 		block.bodies[instance_index] = moved_body;
 	}
@@ -1930,6 +1959,7 @@ void VoxelInstancer::on_scene_instance_removed(
 	const unsigned int last_instance_index = --instance_count;
 	SceneInstance moved_instance = block.scene_instances[last_instance_index];
 	if (instance_index != last_instance_index) {
+		// Update last instance index because we did a swap-remove
 		ERR_FAIL_COND(moved_instance.component == nullptr);
 		moved_instance.component->set_instance_index(instance_index);
 		block.scene_instances[instance_index] = moved_instance;

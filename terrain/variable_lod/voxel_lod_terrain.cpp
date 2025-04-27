@@ -1977,12 +1977,15 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 
 #ifdef VOXEL_ENABLE_INSTANCER
 		// TODO Need a more generic API for this kind of stuff
-		if (_instancer != nullptr && ob.surfaces.surfaces.size() > 0) {
-			// TODO The mesh could come from an edited region!
-			// If we place spheres upwards eventually it will create a new chunk mesh which we can't differenciate
-			// from a mesh that would have been part of the original terrain. Because of that the instancer will
-			// unexpectedly generate instances on it
 
+		// Check whether this was "a first load" of any of the features that produces the mesh:
+		// We don't create MeshBlocks when loaded meshes turn out to be empty. But that means we can't just rely on
+		// `block == nullptr` to find out that it has loaded in. For example, the block being created could also be
+		// an area that just didn't have a mesh before, because voxels produced no surface there. So that made instances
+		// generating as we dig or build, which is unexpected.
+		const bool first_mesh_load = (first_visual_load || first_collision_load);
+
+		if (_instancer != nullptr && first_mesh_load && ob.surfaces.surfaces.size() > 0) {
 			// We would have to know if specific voxels got edited, or different from the generator
 			_instancer->on_mesh_block_enter(ob.position, ob.lod, ob.surfaces.surfaces[0].arrays);
 		}

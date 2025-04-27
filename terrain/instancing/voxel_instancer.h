@@ -206,17 +206,19 @@ private:
 	static void remove_floating_multimesh_instances(
 			Block &block,
 			const Transform3D &parent_transform,
-			Box3i p_voxel_box,
+			const Box3i p_voxel_box,
 			const VoxelTool &voxel_tool,
-			int block_size_po2
+			const int block_size_po2,
+			const float sd_threshold
 	);
 
 	static void remove_floating_scene_instances(
 			Block &block,
 			const Transform3D &parent_transform,
-			Box3i p_voxel_box,
+			const Box3i p_voxel_box,
 			const VoxelTool &voxel_tool,
-			int block_size_po2
+			const int block_size_po2,
+			const float sd_threshold
 	);
 
 	static void update_mesh_from_mesh_lod(
