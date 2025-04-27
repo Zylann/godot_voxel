@@ -203,19 +203,29 @@ If on the other hand you really need texturing to be a property of voxels themse
 
 Voxel texturing can be split in 2 parts:
 
-- The voxel data format: what voxels actually contain.
-- The vertex data format: what is used in meshes built from voxel data.
+- The voxel format: what voxels actually contain.
+- The vertex format: what is used in meshes built from voxel data, so that shaders can render it.
 
 ### Voxel texture formats
 
 #### Single
 
-The simplest format is to give every voxel a 8-bit index telling what texture they have. This allows to choose whithin a pool of 256 possible textures. This is usually way mmore than enough for smooth terrains. This format cannot represent gradients, so painting has no falloff.
+The simplest format is to give every voxel a 8-bit index telling what texture they have. This allows to choose whithin a pool of 256 possible textures. This is usually way more than enough for smooth terrains. This format cannot represent gradients, so painting has no falloff.
 
 This data is stored in the [INDICES](api/VoxelBuffer.md#i_CHANNEL_INDICES) channel, using a depth of 8-bits.
 
 !!! note
-	This mode is the easiest, but wasn't the first to be implemented. So unfortunately, the default voxel format isn't suitable for it. To fix this, assign a new [VoxelFormat](api/VoxelFormat.md) resource to your terrain, and change its `indices_depth` to `8-bit`. Then make sure your mesher has its texture mode set to `Single`. In some cases, you may also configure your generator (notably [VoxelGeneratorGraph](api/VoxelGeneratorGraph.md)).
+	This mode is the easiest, but wasn't the first to be implemented. So the default voxel format isn't suitable for it. To fix this, assign a new [VoxelFormat](api/VoxelFormat.md) resource to your terrain, and change its `indices_depth` to `8-bit`. Then make sure your mesher has its texture mode set to `Single`. In some cases, you may also configure your generator to output that format as well (notably [VoxelGeneratorGraph](api/VoxelGeneratorGraph.md)).
+
+Editing voxel textures with that format should be as simple as editing "blocky voxels". So blocky editing functions can be used with the [SET](api/VoxelTool.md#i_MODE_SET) mode. Do not use the `TEXTURE` mode.
+
+```gdscript
+# Paints texture 2 in a sphere area (does not create matter)
+voxel_tool.set_mode(VoxelTool.MODE_SET)
+voxel_tool.set_channel(VoxelBuffer.CHANNEL_INDICES)
+voxel_tool.set_texture_index(2)
+voxel_tool.do_sphere(hit_position, radius)
+```
 
 
 #### Mixel4
@@ -223,7 +233,7 @@ This data is stored in the [INDICES](api/VoxelBuffer.md#i_CHANNEL_INDICES) chann
 Another approach consists in storing multiple indices in every voxel, and how much of each of those it has, using weights.
 This allows to define gradients since a stretch of land can then gradually transition between voxels having little to more of a certain texture, while other textures decrease. The implementation can store up to 4 different textures per voxel.
 
-This format however has a number of drawbacks: it is much heavier and complicated to manipulate. The implementation also limits texture count to 16.
+This format however has a lot of drawbacks: it is much heavier and complicated to manipulate. The implementation also limits texture count to 16.
 
 The data for the 4 textures (`a`, `b`, `c`, `d`) is encoded over two channels, [INDICES](api/VoxelBuffer.md#i_CHANNEL_INDICES) and [WEIGHTS](api/VoxelBuffer.md#i_CHANNEL_WEIGHTS), both using a depth of 16 bits. So each texture only has 4 bits of precision.
 
@@ -235,28 +245,7 @@ WEIGHTS:  aaaa bbbb   cccc dddd
 
 By default, these channels default to indices `(0,1,2,3)` and weights `(1,0,0,0)`, meaning voxels always start with texture `0`. Another rule is that indices must not appear twice (for example, indices `(0,1,1,1)` are invalid). If an index appears twice, in particular with different weights, it can cause ambiguous calculations.
 
-At the moment, indices and weights are mostly applied manually. It is possible to set them directly with `VoxelTool.set_voxel` but it is up to you to pack them properly. 
-
-You may use `VoxelTool` helper functions to encode/decode these values:
-- [vec4i_to_u16_indices](https://voxel-tools.readthedocs.io/en/latest/api/VoxelTool/#i_vec4i_to_u16_indices)
-- [color_to_u16_weights](https://voxel-tools.readthedocs.io/en/latest/api/VoxelTool/#i_color_to_u16_weights)
-- [u16_indices_to_vec4i](https://voxel-tools.readthedocs.io/en/latest/api/VoxelTool/#i_u16_indices_to_vec4i)
-- [u16_weights_to_color](https://voxel-tools.readthedocs.io/en/latest/api/VoxelTool/#i_u16_weights_to_color)
-
-
-### Editing voxels with texture
-
-If you use the [Single](#single) mode, you can directly set indices as if it were blocky voxels. So blocky editing functions can be used with the [SET](api/VoxelTool.md#i_MODE_SET) mode.
-
-```gdscript
-# Paints texture 2 in a sphere area (does not create matter)
-voxel_tool.set_mode(VoxelTool.MODE_SET)
-voxel_tool.set_channel(VoxelBuffer.CHANNEL_INDICES)
-voxel_tool.set_texture_index(2)
-voxel_tool.do_sphere(hit_position, radius)
-```
-
-If you use [Mixel4](#mixel4), you have to use the [TEXTURE_PAINT](api/VoxelTool.md#i_MODE_TEXTURE_PAINT) mode.
+To edit such format, you have to use the [TEXTURE_PAINT](api/VoxelTool.md#i_MODE_TEXTURE_PAINT) mode.
 
 ```gdscript
 # Paints texture 2 in a sphere area (does not create matter)
@@ -265,6 +254,15 @@ voxel_tool.set_texture_index(2)
 voxel_tool.set_texture_opacity(1.0)
 voxel_tool.do_sphere(hit_position, radius)
 ```
+
+It is possible to set mixel values directly with `VoxelTool.set_voxel` but it is up to you to pack them properly. 
+
+You may use `VoxelTool` helper functions to encode/decode these values:
+- [vec4i_to_u16_indices](https://voxel-tools.readthedocs.io/en/latest/api/VoxelTool/#i_vec4i_to_u16_indices)
+- [color_to_u16_weights](https://voxel-tools.readthedocs.io/en/latest/api/VoxelTool/#i_color_to_u16_weights)
+- [u16_indices_to_vec4i](https://voxel-tools.readthedocs.io/en/latest/api/VoxelTool/#i_u16_indices_to_vec4i)
+- [u16_weights_to_color](https://voxel-tools.readthedocs.io/en/latest/api/VoxelTool/#i_u16_weights_to_color)
+
 
 It is also possible to generate this in `VoxelGeneratorGraph` using special outputs, but it still requires a bit of math to produce valid data.
 
@@ -280,7 +278,8 @@ The mesher will include texturing information in the `CUSTOM1` attribute of vert
 - `CUSTOM1.x` will contain 4 indices, encoded as 4 bytes, which can be obtained by reinterpreting the float number as an integer and using bit-shifting operators.
 - `CUSTOM1.y` will contain 4 weights, again encoded as 4 bytes.
 
-Each index tell which texture needs to be used, and each weight respectively tells how much of that texture should be blended. It is essentially the same as a classic color splatmap, except textures can vary. One minor downside is that you cannot blend more than 4 textures per voxel, so if this happens, it might cause artifacts. But in practice, it is assumed this case is so infrequent it can be ignored.
+Each index tells which texture needs to be used, and each weight respectively tells how much of that texture should be blended. It is essentially the same as a classic color splatmap, except textures can vary, which allows for more than 4 possibe textures.
+One minor downside is that you cannot blend more than 4 textures per voxel, so if this happens, it might cause artifacts. But in practice, it is assumed this case is so infrequent it can be ignored.
 
 
 #### Shader
@@ -382,7 +381,6 @@ void fragment() {
 
 ### Recommended Reading
 
-- [SpatialMaterial](https://docs.godotengine.org/en/stable/classes/class_spatialmaterial.html) - demonstrates many of the shader options available in Godot.
 - [Shading Index](https://docs.godotengine.org/en/stable/tutorials/shading/index.html) - tutorials and the shader language API
 - Shader API Reference - some of the most frequently accessed references
 	- [Shading Language](https://docs.godotengine.org/en/stable/tutorials/shading/shading_reference/shading_language.html)
