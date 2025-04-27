@@ -89,11 +89,13 @@ def format_doc_bbcodes_for_markdown(text, multiline, module_class_names, current
             
             elif bb_node.name == 'member':
                 class_name, member_name = _extract_member_and_class(bb_node.get_first_option_key(), current_class_name)
-                out += markdown.make_property_link(class_name, member_name, local_link_prefix, module_class_names)
+                out += markdown.make_property_link(
+                    class_name, member_name, local_link_prefix, module_class_names, current_class_name)
 
             elif bb_node.name == 'method':
                 class_name, member_name = _extract_member_and_class(bb_node.get_first_option_key(), current_class_name)
-                out += markdown.make_method_link(class_name, member_name, local_link_prefix, module_class_names)
+                out += markdown.make_method_link(
+                    class_name, member_name, local_link_prefix, module_class_names, current_class_name)
 
             elif bb_node.name == 'enum':
                 class_name, member_name = _extract_member_and_class(bb_node.get_first_option_key(), current_class_name)
@@ -106,7 +108,8 @@ def format_doc_bbcodes_for_markdown(text, multiline, module_class_names, current
 
             elif bb_node.name == 'constant':
                 class_name, member_name = _extract_member_and_class(bb_node.get_first_option_key(), current_class_name)
-                out += markdown.make_constant_link(class_name, member_name, local_link_prefix, module_class_names)
+                out += markdown.make_constant_link(
+                    class_name, member_name, local_link_prefix, module_class_names, current_class_name)
 
             elif bb_node.name == 'i':
                 # Simple emphasis, usually italic

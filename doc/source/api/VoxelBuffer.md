@@ -80,14 +80,14 @@ enum **ChannelId**:
 
 enum **ChannelMask**: 
 
-- <span id="i_CHANNEL_TYPE_BIT"></span>**CHANNEL_TYPE_BIT** = **1** --- Bitmask with one bit set at the position corresponding to [VoxelBuffer.CHANNEL_TYPE](VoxelBuffer.md#i_CHANNEL_TYPE).
-- <span id="i_CHANNEL_SDF_BIT"></span>**CHANNEL_SDF_BIT** = **2** --- Bitmask with one bit set at the position corresponding to [VoxelBuffer.CHANNEL_SDF](VoxelBuffer.md#i_CHANNEL_SDF).
-- <span id="i_CHANNEL_COLOR_BIT"></span>**CHANNEL_COLOR_BIT** = **4** --- Bitmask with one bit set at the position corresponding to [VoxelBuffer.CHANNEL_COLOR](VoxelBuffer.md#i_CHANNEL_COLOR).
-- <span id="i_CHANNEL_INDICES_BIT"></span>**CHANNEL_INDICES_BIT** = **8** --- Bitmask with one bit set at the position corresponding to [VoxelBuffer.CHANNEL_INDICES](VoxelBuffer.md#i_CHANNEL_INDICES).
-- <span id="i_CHANNEL_WEIGHTS_BIT"></span>**CHANNEL_WEIGHTS_BIT** = **16** --- Bitmask with one bit set at the position corresponding to [VoxelBuffer.CHANNEL_WEIGHTS](VoxelBuffer.md#i_CHANNEL_WEIGHTS).
-- <span id="i_CHANNEL_DATA5_BIT"></span>**CHANNEL_DATA5_BIT** = **32** --- Bitmask with one bit set at the position corresponding to [VoxelBuffer.CHANNEL_DATA5](VoxelBuffer.md#i_CHANNEL_DATA5).
-- <span id="i_CHANNEL_DATA6_BIT"></span>**CHANNEL_DATA6_BIT** = **64** --- Bitmask with one bit set at the position corresponding to [VoxelBuffer.CHANNEL_DATA6](VoxelBuffer.md#i_CHANNEL_DATA6).
-- <span id="i_CHANNEL_DATA7_BIT"></span>**CHANNEL_DATA7_BIT** = **128** --- Bitmask with one bit set at the position corresponding to [VoxelBuffer.CHANNEL_DATA7](VoxelBuffer.md#i_CHANNEL_DATA7).
+- <span id="i_CHANNEL_TYPE_BIT"></span>**CHANNEL_TYPE_BIT** = **1** --- Bitmask with one bit set at the position corresponding to [CHANNEL_TYPE](VoxelBuffer.md#i_CHANNEL_TYPE).
+- <span id="i_CHANNEL_SDF_BIT"></span>**CHANNEL_SDF_BIT** = **2** --- Bitmask with one bit set at the position corresponding to [CHANNEL_SDF](VoxelBuffer.md#i_CHANNEL_SDF).
+- <span id="i_CHANNEL_COLOR_BIT"></span>**CHANNEL_COLOR_BIT** = **4** --- Bitmask with one bit set at the position corresponding to [CHANNEL_COLOR](VoxelBuffer.md#i_CHANNEL_COLOR).
+- <span id="i_CHANNEL_INDICES_BIT"></span>**CHANNEL_INDICES_BIT** = **8** --- Bitmask with one bit set at the position corresponding to [CHANNEL_INDICES](VoxelBuffer.md#i_CHANNEL_INDICES).
+- <span id="i_CHANNEL_WEIGHTS_BIT"></span>**CHANNEL_WEIGHTS_BIT** = **16** --- Bitmask with one bit set at the position corresponding to [CHANNEL_WEIGHTS](VoxelBuffer.md#i_CHANNEL_WEIGHTS).
+- <span id="i_CHANNEL_DATA5_BIT"></span>**CHANNEL_DATA5_BIT** = **32** --- Bitmask with one bit set at the position corresponding to [CHANNEL_DATA5](VoxelBuffer.md#i_CHANNEL_DATA5).
+- <span id="i_CHANNEL_DATA6_BIT"></span>**CHANNEL_DATA6_BIT** = **64** --- Bitmask with one bit set at the position corresponding to [CHANNEL_DATA6](VoxelBuffer.md#i_CHANNEL_DATA6).
+- <span id="i_CHANNEL_DATA7_BIT"></span>**CHANNEL_DATA7_BIT** = **128** --- Bitmask with one bit set at the position corresponding to [CHANNEL_DATA7](VoxelBuffer.md#i_CHANNEL_DATA7).
 - <span id="i_ALL_CHANNELS_MASK"></span>**ALL_CHANNELS_MASK** = **255** --- Bitmask with all channel bits set.
 
 enum **Depth**: 
@@ -231,7 +231,7 @@ Gets metadata associated to this [VoxelBuffer](VoxelBuffer.md).
 
 Gets voxel data from a channel as uncompressed raw bytes. Check [Depth](VoxelBuffer.md#enumerations) for information about the data format.
 
-Note: if the channel is compressed, it will be decompressed on the fly into the returned array. If you want a different behavior in this case, check [VoxelBuffer.get_channel_compression](VoxelBuffer.md#i_get_channel_compression) before calling this method.
+Note: if the channel is compressed, it will be decompressed on the fly into the returned array. If you want a different behavior in this case, check [get_channel_compression](VoxelBuffer.md#i_get_channel_compression) before calling this method.
 
 ### [Compression](VoxelBuffer.md#enumerations)<span id="i_get_channel_compression"></span> **get_channel_compression**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channel ) 
 
@@ -271,31 +271,31 @@ Mirrors voxel values along the specified axis.
 
 ### [void](#)<span id="i_op_add_buffer_f"></span> **op_add_buffer_f**( [VoxelBuffer](VoxelBuffer.md) other, [ChannelId](VoxelBuffer.md#enumerations) channel ) 
 
-Computes the sum of corresponding voxels between the current buffer and the other buffer, and stores the result in the current buffer. Voxels are interpreted as signed distances (usually the [VoxelBuffer.CHANNEL_SDF](VoxelBuffer.md#i_CHANNEL_SDF) channel).
+Computes the sum of corresponding voxels between the current buffer and the other buffer, and stores the result in the current buffer. Voxels are interpreted as signed distances (usually the [CHANNEL_SDF](VoxelBuffer.md#i_CHANNEL_SDF) channel).
 
 ### [void](#)<span id="i_op_max_buffer_f"></span> **op_max_buffer_f**( [VoxelBuffer](VoxelBuffer.md) other, [ChannelId](VoxelBuffer.md#enumerations) channel ) 
 
-Computes the maximum of corresponding voxels between the current buffer and the other buffer, and stores the result in the current buffer. Voxels are interpreted as signed distances (usually the [VoxelBuffer.CHANNEL_SDF](VoxelBuffer.md#i_CHANNEL_SDF) channel).
+Computes the maximum of corresponding voxels between the current buffer and the other buffer, and stores the result in the current buffer. Voxels are interpreted as signed distances (usually the [CHANNEL_SDF](VoxelBuffer.md#i_CHANNEL_SDF) channel).
 
 ### [void](#)<span id="i_op_min_buffer_f"></span> **op_min_buffer_f**( [VoxelBuffer](VoxelBuffer.md) other, [ChannelId](VoxelBuffer.md#enumerations) channel ) 
 
-Computes the minimum of corresponding voxels between the current buffer and the other buffer, and stores the result in the current buffer. Voxels are interpreted as signed distances (usually the [VoxelBuffer.CHANNEL_SDF](VoxelBuffer.md#i_CHANNEL_SDF) channel).
+Computes the minimum of corresponding voxels between the current buffer and the other buffer, and stores the result in the current buffer. Voxels are interpreted as signed distances (usually the [CHANNEL_SDF](VoxelBuffer.md#i_CHANNEL_SDF) channel).
 
 ### [void](#)<span id="i_op_mul_buffer_f"></span> **op_mul_buffer_f**( [VoxelBuffer](VoxelBuffer.md) other, [ChannelId](VoxelBuffer.md#enumerations) channel ) 
 
-Computes the multiplication of corresponding voxels between the current buffer and the other buffer, and stores the result in the current buffer. Voxels are interpreted as signed distances (usually the [VoxelBuffer.CHANNEL_SDF](VoxelBuffer.md#i_CHANNEL_SDF) channel).
+Computes the multiplication of corresponding voxels between the current buffer and the other buffer, and stores the result in the current buffer. Voxels are interpreted as signed distances (usually the [CHANNEL_SDF](VoxelBuffer.md#i_CHANNEL_SDF) channel).
 
 ### [void](#)<span id="i_op_mul_value_f"></span> **op_mul_value_f**( [float](https://docs.godotengine.org/en/stable/classes/class_float.html) other, [ChannelId](VoxelBuffer.md#enumerations) channel ) 
 
-Multiplies every voxels in the buffer by the given value. Voxels are interpreted as signed distances (usually the [VoxelBuffer.CHANNEL_SDF](VoxelBuffer.md#i_CHANNEL_SDF) channel).
+Multiplies every voxels in the buffer by the given value. Voxels are interpreted as signed distances (usually the [CHANNEL_SDF](VoxelBuffer.md#i_CHANNEL_SDF) channel).
 
 ### [void](#)<span id="i_op_select_less_src_f_dst_i_values"></span> **op_select_less_src_f_dst_i_values**( [VoxelBuffer](VoxelBuffer.md) src, [ChannelId](VoxelBuffer.md#enumerations) src_channel, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) threshold, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) value_if_less, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) value_if_more, [ChannelId](VoxelBuffer.md#enumerations) dst_channel ) 
 
-For every voxel in the source buffer, if the value is lower than a threshold, set the corresponding voxel in the current buffer to a specific integer value, or another value otherwise. Voxels in the source buffer are interpreted as signed distances (usually the [VoxelBuffer.CHANNEL_SDF](VoxelBuffer.md#i_CHANNEL_SDF) channel).
+For every voxel in the source buffer, if the value is lower than a threshold, set the corresponding voxel in the current buffer to a specific integer value, or another value otherwise. Voxels in the source buffer are interpreted as signed distances (usually the [CHANNEL_SDF](VoxelBuffer.md#i_CHANNEL_SDF) channel).
 
 ### [void](#)<span id="i_op_sub_buffer_f"></span> **op_sub_buffer_f**( [VoxelBuffer](VoxelBuffer.md) other, [ChannelId](VoxelBuffer.md#enumerations) channel ) 
 
-Computes the subtraction of corresponding voxels between the current buffer and the other buffer (`current - other`), and stores the result in the current buffer. Voxels are interpreted as signed distances (usually the [VoxelBuffer.CHANNEL_SDF](VoxelBuffer.md#i_CHANNEL_SDF) channel).
+Computes the subtraction of corresponding voxels between the current buffer and the other buffer (`current - other`), and stores the result in the current buffer. Voxels are interpreted as signed distances (usually the [CHANNEL_SDF](VoxelBuffer.md#i_CHANNEL_SDF) channel).
 
 ### [void](#)<span id="i_remap_values"></span> **remap_values**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channel, [PackedInt32Array](https://docs.godotengine.org/en/stable/classes/class_packedint32array.html) map ) 
 
@@ -321,7 +321,7 @@ Overwrites the contents of a channel from raw voxel data. Check [Depth](VoxelBuf
 
 ### [void](#)<span id="i_set_voxel"></span> **set_voxel**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) value, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) x, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) y, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) z, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channel=0 ) 
 
-Sets the raw value of a voxel. If you use smooth voxels, you may prefer using [VoxelBuffer.set_voxel_f](VoxelBuffer.md#i_set_voxel_f).
+Sets the raw value of a voxel. If you use smooth voxels, you may prefer using [set_voxel_f](VoxelBuffer.md#i_set_voxel_f).
 
 ### [void](#)<span id="i_set_voxel_f"></span> **set_voxel_f**( [float](https://docs.godotengine.org/en/stable/classes/class_float.html) value, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) x, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) y, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) z, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channel=0 ) 
 
@@ -339,6 +339,6 @@ If this [VoxelBuffer](VoxelBuffer.md) is saved, this metadata will also be saved
 
 ### [void](#)<span id="i_update_3d_texture_from_sdf_zxy"></span> **update_3d_texture_from_sdf_zxy**( [ImageTexture3D](https://docs.godotengine.org/en/stable/classes/class_imagetexture3d.html) existing_texture ) 
 
-Updates an existing 3D texture from the SDF channel. See [VoxelBuffer.create_3d_texture_from_sdf_zxy](VoxelBuffer.md#i_create_3d_texture_from_sdf_zxy) for more information.
+Updates an existing 3D texture from the SDF channel. See [create_3d_texture_from_sdf_zxy](VoxelBuffer.md#i_create_3d_texture_from_sdf_zxy) for more information.
 
 _Generated on Apr 27, 2025_

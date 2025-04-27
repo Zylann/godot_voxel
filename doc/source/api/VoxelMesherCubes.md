@@ -42,8 +42,8 @@ enum **Materials**:
 enum **ColorMode**: 
 
 - <span id="i_COLOR_RAW"></span>**COLOR_RAW** = **0** --- Voxel values will be directly interpreted as colors. 8-bit voxels are interpreted as `rrggbbaa` (2 bits per component) where the range per component is converted from 0..3 to 0..255. 16-bit voxels are interpreted as `rrrrgggg bbbbaaaa` (4 bits per component) where the range per component is converted from 0..15 to 0..255. 32-bit voxels are interpreted as `rrrrrrrr gggggggg bbbbbbbb aaaaaaaa` (8 bits per component) where each component is in 0..255.
-- <span id="i_COLOR_MESHER_PALETTE"></span>**COLOR_MESHER_PALETTE** = **1** --- Voxel values will be interpreted as indices within the color palette assigned in the [VoxelMesherCubes.palette](VoxelMesherCubes.md#i_palette) property.
-- <span id="i_COLOR_SHADER_PALETTE"></span>**COLOR_SHADER_PALETTE** = **2** --- Voxel values will be directly written as such in the mesh, instead of colors. They are written in the red component of the `COLOR`, leaving red and blue to zero. Note, it will be normalized to 0..1 in shader, so if you need the integer value back you may use `int(COLOR.r * 255.0)`. The alpha component will be set to the transparency of the corresponding color in [VoxelMesherCubes.palette](VoxelMesherCubes.md#i_palette) (a palette resource is still needed to differenciate transparent parts; RGB values are not used). You are expected to use a [ShaderMaterial](https://docs.godotengine.org/en/stable/classes/class_shadermaterial.html) to read vertex data and choose the actual color with a custom shader. [StandardMaterial](https://docs.godotengine.org/en/stable/classes/class_standardmaterial.html) will not work with this mode.
+- <span id="i_COLOR_MESHER_PALETTE"></span>**COLOR_MESHER_PALETTE** = **1** --- Voxel values will be interpreted as indices within the color palette assigned in the [palette](VoxelMesherCubes.md#i_palette) property.
+- <span id="i_COLOR_SHADER_PALETTE"></span>**COLOR_SHADER_PALETTE** = **2** --- Voxel values will be directly written as such in the mesh, instead of colors. They are written in the red component of the `COLOR`, leaving red and blue to zero. Note, it will be normalized to 0..1 in shader, so if you need the integer value back you may use `int(COLOR.r * 255.0)`. The alpha component will be set to the transparency of the corresponding color in [palette](VoxelMesherCubes.md#i_palette) (a palette resource is still needed to differenciate transparent parts; RGB values are not used). You are expected to use a [ShaderMaterial](https://docs.godotengine.org/en/stable/classes/class_shadermaterial.html) to read vertex data and choose the actual color with a custom shader. [StandardMaterial](https://docs.godotengine.org/en/stable/classes/class_standardmaterial.html) will not work with this mode.
 
 
 ## Property Descriptions
@@ -62,7 +62,7 @@ Material that will be used for opaque parts of the mesh.
 
 ### [VoxelColorPalette](VoxelColorPalette.md)<span id="i_palette"></span> **palette**
 
-Palette that will be used when using the [VoxelMesherCubes.COLOR_MESHER_PALETTE](VoxelMesherCubes.md#i_COLOR_MESHER_PALETTE) color mode.
+Palette that will be used when using the [COLOR_MESHER_PALETTE](VoxelMesherCubes.md#i_COLOR_MESHER_PALETTE) color mode.
 
 ### [Material](https://docs.godotengine.org/en/stable/classes/class_material.html)<span id="i_transparent_material"></span> **transparent_material**
 
@@ -76,6 +76,6 @@ Generates a 1-voxel thick greedy mesh from pixels of an image.
 
 ### [void](#)<span id="i_set_material_by_index"></span> **set_material_by_index**( [Materials](VoxelMesherCubes.md#enumerations) id, [Material](https://docs.godotengine.org/en/stable/classes/class_material.html) material ) 
 
-Sets one of the materials that will be used when building meshes. This is equivalent to using either [VoxelMesherCubes.opaque_material](VoxelMesherCubes.md#i_opaque_material) or [VoxelMesherCubes.transparent_material](VoxelMesherCubes.md#i_transparent_material).
+Sets one of the materials that will be used when building meshes. This is equivalent to using either [opaque_material](VoxelMesherCubes.md#i_opaque_material) or [transparent_material](VoxelMesherCubes.md#i_transparent_material).
 
 _Generated on Apr 27, 2025_

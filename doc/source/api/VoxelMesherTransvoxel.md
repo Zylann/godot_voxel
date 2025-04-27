@@ -37,7 +37,7 @@ enum **TexturingMode**:
 
 ## Constants: 
 
-- <span id="i_TEXTURES_BLEND_4_OVER_16"></span>**TEXTURES_BLEND_4_OVER_16** = **1** --- *This constant is deprecated. Use TEXTURES_MIXEL4_S4* Legacy alias for [VoxelMesherTransvoxel.TEXTURES_MIXEL4_S4](VoxelMesherTransvoxel.md#i_TEXTURES_MIXEL4_S4).
+- <span id="i_TEXTURES_BLEND_4_OVER_16"></span>**TEXTURES_BLEND_4_OVER_16** = **1** --- *This constant is deprecated. Use TEXTURES_MIXEL4_S4* Legacy alias for [TEXTURES_MIXEL4_S4](VoxelMesherTransvoxel.md#i_TEXTURES_MIXEL4_S4).
 
 ## Property Descriptions
 

@@ -54,7 +54,7 @@ enum **EmitMode**:
 - <span id="i_EMIT_FROM_VERTICES"></span>**EMIT_FROM_VERTICES** = **0** --- Use vertices of the mesh to spawn instances. This is the fasted option, but can produce noticeable patterns.
 - <span id="i_EMIT_FROM_FACES_FAST"></span>**EMIT_FROM_FACES_FAST** = **1** --- Uses faces of the mesh to spawn instances. It is a balanced option with some shortcuts taken, without causing too noticeable patterns.
 - <span id="i_EMIT_FROM_FACES"></span>**EMIT_FROM_FACES** = **2** --- Uses faces of the mesh to spawn instances. This is the slowest option, but should produce no noticeable patterns.
-- <span id="i_EMIT_ONE_PER_TRIANGLE"></span>**EMIT_ONE_PER_TRIANGLE** = **3** --- Uses faces of the mesh to spawn instances (where faces are triangles). Only one instance is spawned per triangle. By default, it spawns in the middle of triangles. Randomness can be added to this position with [VoxelInstanceGenerator.jitter](VoxelInstanceGenerator.md#i_jitter).
+- <span id="i_EMIT_ONE_PER_TRIANGLE"></span>**EMIT_ONE_PER_TRIANGLE** = **3** --- Uses faces of the mesh to spawn instances (where faces are triangles). Only one instance is spawned per triangle. By default, it spawns in the middle of triangles. Randomness can be added to this position with [jitter](VoxelInstanceGenerator.md#i_jitter).
 - <span id="i_EMIT_MODE_COUNT"></span>**EMIT_MODE_COUNT** = **4**
 
 enum **Distribution**: 
@@ -84,7 +84,7 @@ In which way instances are primarily emitted.
 
 ### [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_jitter"></span> **jitter** = 1.0
 
-Controls randomness of spawning position when [VoxelInstanceGenerator.emit_mode](VoxelInstanceGenerator.md#i_emit_mode) is set to [VoxelInstanceGenerator.EMIT_ONE_PER_TRIANGLE](VoxelInstanceGenerator.md#i_EMIT_ONE_PER_TRIANGLE).
+Controls randomness of spawning position when [emit_mode](VoxelInstanceGenerator.md#i_emit_mode) is set to [EMIT_ONE_PER_TRIANGLE](VoxelInstanceGenerator.md#i_EMIT_ONE_PER_TRIANGLE).
 
 ### [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_max_height"></span> **max_height** = 3.40282e+38
 
@@ -122,23 +122,23 @@ Noise used to filter out spawned instances, so that they may spawn in patterns d
 
 ### [Dimension](VoxelInstanceGenerator.md#enumerations)<span id="i_noise_dimension"></span> **noise_dimension** = DIMENSION_3D (1)
 
-Which dimension should be used when evaluating [VoxelInstanceGenerator.noise](VoxelInstanceGenerator.md#i_noise) and [VoxelInstanceGenerator.noise_graph](VoxelInstanceGenerator.md#i_noise_graph).
+Which dimension should be used when evaluating [noise](VoxelInstanceGenerator.md#i_noise) and [noise_graph](VoxelInstanceGenerator.md#i_noise_graph).
 
 ### [VoxelGraphFunction](VoxelGraphFunction.md)<span id="i_noise_graph"></span> **noise_graph**
 
-Graph function used to filter out spawned instances, similar to [VoxelInstanceGenerator.noise](VoxelInstanceGenerator.md#i_noise), but allows more custom noise computations.
+Graph function used to filter out spawned instances, similar to [noise](VoxelInstanceGenerator.md#i_noise), but allows more custom noise computations.
 
-The graph must have 2 inputs (X and Z) if [VoxelInstanceGenerator.noise_dimension](VoxelInstanceGenerator.md#i_noise_dimension) is 2D, and 3 inputs (X, Y and Z) if 3D. There must be one SDF output.
+The graph must have 2 inputs (X and Z) if [noise_dimension](VoxelInstanceGenerator.md#i_noise_dimension) is 2D, and 3 inputs (X, Y and Z) if 3D. There must be one SDF output.
 
 ### [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_noise_on_scale"></span> **noise_on_scale** = 0.0
 
-How much [VoxelInstanceGenerator.noise](VoxelInstanceGenerator.md#i_noise) also affects the scale of instances.
+How much [noise](VoxelInstanceGenerator.md#i_noise) also affects the scale of instances.
 
 ### [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_offset_along_normal"></span> **offset_along_normal** = 0.0
 
 Offsets spawned instances along the normal of the ground.
 
-The normal depends on [VoxelInstancer.up_mode](VoxelInstancer.md#i_up_mode) and is also affected by [VoxelInstanceGenerator.vertical_alignment](VoxelInstanceGenerator.md#i_vertical_alignment).
+The normal depends on [VoxelInstancer.up_mode](VoxelInstancer.md#i_up_mode) and is also affected by [vertical_alignment](VoxelInstanceGenerator.md#i_vertical_alignment).
 
 ### [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_random_rotation"></span> **random_rotation** = true
 
@@ -174,11 +174,11 @@ This depends on [VoxelInstancer.up_mode](VoxelInstancer.md#i_up_mode).
 
 Specifies which voxel texture indices on top of which instances may spawn.
 
-This only works when [VoxelInstanceGenerator.voxel_texture_filter_enabled](VoxelInstanceGenerator.md#i_voxel_texture_filter_enabled) is enabled, and [VoxelMesherTransvoxel](VoxelMesherTransvoxel.md) is used with [VoxelMesherTransvoxel.texturing_mode](VoxelMesherTransvoxel.md#i_texturing_mode) set to [VoxelMesherTransvoxel.TEXTURES_BLEND_4_OVER_16](VoxelMesherTransvoxel.md#i_TEXTURES_BLEND_4_OVER_16).
+This only works when [voxel_texture_filter_enabled](VoxelInstanceGenerator.md#i_voxel_texture_filter_enabled) is enabled, and [VoxelMesherTransvoxel](VoxelMesherTransvoxel.md) is used with [VoxelMesherTransvoxel.texturing_mode](VoxelMesherTransvoxel.md#i_texturing_mode) set to [VoxelMesherTransvoxel.TEXTURES_BLEND_4_OVER_16](VoxelMesherTransvoxel.md#i_TEXTURES_BLEND_4_OVER_16).
 
 ### [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_voxel_texture_filter_enabled"></span> **voxel_texture_filter_enabled** = false
 
-When true, enables filtering of instances based on voxel texture indices. See [VoxelInstanceGenerator.voxel_texture_filter_array](VoxelInstanceGenerator.md#i_voxel_texture_filter_array).
+When true, enables filtering of instances based on voxel texture indices. See [voxel_texture_filter_array](VoxelInstanceGenerator.md#i_voxel_texture_filter_array).
 
 ## Method Descriptions
 

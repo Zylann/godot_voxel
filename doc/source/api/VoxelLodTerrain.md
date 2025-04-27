@@ -111,8 +111,8 @@ enum **DebugDrawFlag**:
 
 enum **StreamingSystem**: 
 
-- <span id="i_STREAMING_SYSTEM_LEGACY_OCTREE"></span>**STREAMING_SYSTEM_LEGACY_OCTREE** = **0** --- Loads chunks around the viewer in a spherical pattern. Does not support multiple viewers. Does not support collision-only viewers. Does not support "no viewers" (will assume origin instead). Does not support per-viewer view distance, only [VoxelLodTerrain.view_distance](VoxelLodTerrain.md#i_view_distance) is used. This was the first system to be implemented, therefore it remains available as default for compatibility.
-- <span id="i_STREAMING_SYSTEM_CLIPBOX"></span>**STREAMING_SYSTEM_CLIPBOX** = **1** --- Loads chunks around the viewer in concentric boxes. Supports multiple viewers and collision-only viewers. This is a better system for multiplayer streaming. Due to simplifications, chunk locations at each LOD might be less optimal than [VoxelLodTerrain.STREAMING_SYSTEM_LEGACY_OCTREE](VoxelLodTerrain.md#i_STREAMING_SYSTEM_LEGACY_OCTREE).
+- <span id="i_STREAMING_SYSTEM_LEGACY_OCTREE"></span>**STREAMING_SYSTEM_LEGACY_OCTREE** = **0** --- Loads chunks around the viewer in a spherical pattern. Does not support multiple viewers. Does not support collision-only viewers. Does not support "no viewers" (will assume origin instead). Does not support per-viewer view distance, only [view_distance](VoxelLodTerrain.md#i_view_distance) is used. This was the first system to be implemented, therefore it remains available as default for compatibility.
+- <span id="i_STREAMING_SYSTEM_CLIPBOX"></span>**STREAMING_SYSTEM_CLIPBOX** = **1** --- Loads chunks around the viewer in concentric boxes. Supports multiple viewers and collision-only viewers. This is a better system for multiplayer streaming. Due to simplifications, chunk locations at each LOD might be less optimal than [STREAMING_SYSTEM_LEGACY_OCTREE](VoxelLodTerrain.md#i_STREAMING_SYSTEM_LEGACY_OCTREE).
 
 
 ## Property Descriptions
@@ -121,7 +121,7 @@ enum **StreamingSystem**:
 
 If enabled, streaming the terrain will keep generated voxel data in memory around viewers, even if it wasn't edited. This can speedup voxel queries on non-edited areas and allows [VoxelStream.save_generator_output](VoxelStream.md#i_save_generator_output) to work, but increases memory usage significantly.
 
-This option is not supported when [VoxelLodTerrain.full_load_mode_enabled](VoxelLodTerrain.md#i_full_load_mode_enabled) is enabled.
+This option is not supported when [full_load_mode_enabled](VoxelLodTerrain.md#i_full_load_mode_enabled) is enabled.
 
 ### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_collision_layer"></span> **collision_layer** = 1
 
@@ -197,7 +197,7 @@ How long to wait before updating colliders after an edit, in milliseconds. Colli
 
 ### [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_full_load_mode_enabled"></span> **full_load_mode_enabled** = false
 
-If enabled, data streaming will be turned off, and all voxel data will be loaded from the [VoxelLodTerrain.stream](VoxelLodTerrain.md#i_stream) into memory.
+If enabled, data streaming will be turned off, and all voxel data will be loaded from the [stream](VoxelLodTerrain.md#i_stream) into memory.
 
 This removes several constraints, such as being able to edit anywhere and allowing distant normalmaps to include edited regions. This comes at the expense of more memory usage. However, only edited regions use memory, so in practice it can be good enough.
 
@@ -207,13 +207,13 @@ If enabled, chunked colliders will be generated from meshes.
 
 ### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_lod_count"></span> **lod_count** = 4
 
-How many LOD levels to use. This should be tuned alongside [VoxelLodTerrain.lod_distance](VoxelLodTerrain.md#i_lod_distance): if you want to see very far, you need more LOD levels. This allows blocks to become larger the further away they are, to keep their numbers to an acceptable amount. In contrast, too few LOD levels means regions far away will have to use too many small blocks, which can affect performance.
+How many LOD levels to use. This should be tuned alongside [lod_distance](VoxelLodTerrain.md#i_lod_distance): if you want to see very far, you need more LOD levels. This allows blocks to become larger the further away they are, to keep their numbers to an acceptable amount. In contrast, too few LOD levels means regions far away will have to use too many small blocks, which can affect performance.
 
 ### [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_lod_distance"></span> **lod_distance** = 48.0
 
-How far LOD 0 extends from the viewer. Each parent LOD will extend twice as far as their children LOD levels. When [VoxelLodTerrain.full_load_mode_enabled](VoxelLodTerrain.md#i_full_load_mode_enabled) is disabled, this also defines how far edits are allowed.
+How far LOD 0 extends from the viewer. Each parent LOD will extend twice as far as their children LOD levels. When [full_load_mode_enabled](VoxelLodTerrain.md#i_full_load_mode_enabled) is disabled, this also defines how far edits are allowed.
 
-For further control of LODs beyond 0, see [VoxelLodTerrain.secondary_lod_distance](VoxelLodTerrain.md#i_secondary_lod_distance).
+For further control of LODs beyond 0, see [secondary_lod_distance](VoxelLodTerrain.md#i_secondary_lod_distance).
 
 ### [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_lod_fade_duration"></span> **lod_fade_duration** = 0.0
 
@@ -255,7 +255,7 @@ Maximum resolution of tiles in distant normalmaps.
 
 Minimum resolution of tiles in distant normalmaps.
 
-This is the resolution at which normalmaps will begin with, at the LOD level defined in [VoxelLodTerrain.normalmap_begin_lod_index](VoxelLodTerrain.md#i_normalmap_begin_lod_index). Resolutions will double at each LOD level, until they reach [VoxelLodTerrain.normalmap_tile_resolution_max](VoxelLodTerrain.md#i_normalmap_tile_resolution_max).
+This is the resolution at which normalmaps will begin with, at the LOD level defined in [normalmap_begin_lod_index](VoxelLodTerrain.md#i_normalmap_begin_lod_index). Resolutions will double at each LOD level, until they reach [normalmap_tile_resolution_max](VoxelLodTerrain.md#i_normalmap_tile_resolution_max).
 
 ### [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_normalmap_use_gpu"></span> **normalmap_use_gpu** = false
 
@@ -263,7 +263,7 @@ Enables GPU detail normalmaps generation, which can speed it up. This is only va
 
 ### [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_run_stream_in_editor"></span> **run_stream_in_editor** = true
 
-Sets wether the [VoxelLodTerrain.generator](VoxelLodTerrain.md#i_generator) and the [VoxelLodTerrain.stream](VoxelLodTerrain.md#i_stream) will run in the editor. This setting may turn on automatically if either contain a script, as multithreading can clash with script reloading in unexpected ways.
+Sets wether the [generator](VoxelLodTerrain.md#i_generator) and the [stream](VoxelLodTerrain.md#i_stream) will run in the editor. This setting may turn on automatically if either contain a script, as multithreading can clash with script reloading in unexpected ways.
 
 ### [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_secondary_lod_distance"></span> **secondary_lod_distance** = 48.0
 
@@ -271,9 +271,9 @@ Controls the size of each LOD above LOD 0, in voxels relative to those LODs (vox
 
 Note that it will not necessarily be respected accurately, and will rather be used as a target minimum distance.
 
-This is only used when [VoxelLodTerrain.streaming_system](VoxelLodTerrain.md#i_streaming_system) is set to [VoxelLodTerrain.STREAMING_SYSTEM_CLIPBOX](VoxelLodTerrain.md#i_STREAMING_SYSTEM_CLIPBOX). In other cases, [VoxelLodTerrain.lod_distance](VoxelLodTerrain.md#i_lod_distance) is used.
+This is only used when [streaming_system](VoxelLodTerrain.md#i_streaming_system) is set to [STREAMING_SYSTEM_CLIPBOX](VoxelLodTerrain.md#i_STREAMING_SYSTEM_CLIPBOX). In other cases, [lod_distance](VoxelLodTerrain.md#i_lod_distance) is used.
 
-To control LOD 0, see [VoxelLodTerrain.lod_distance](VoxelLodTerrain.md#i_lod_distance).
+To control LOD 0, see [lod_distance](VoxelLodTerrain.md#i_lod_distance).
 
 ### [StreamingSystem](VoxelLodTerrain.md#enumerations)<span id="i_streaming_system"></span> **streaming_system** = STREAMING_SYSTEM_LEGACY_OCTREE (0)
 

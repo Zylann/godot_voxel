@@ -74,7 +74,7 @@ Only voxels at LOD 0 will be considered.
 
 ### [void](#)<span id="i_stamp_sdf"></span> **stamp_sdf**( [VoxelMeshSDF](VoxelMeshSDF.md) mesh_sdf, [Transform3D](https://docs.godotengine.org/en/stable/classes/class_transform3d.html) transform, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) isolevel, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) sdf_scale ) 
 
-*This method is deprecated. Use [VoxelToolLodTerrain.do_mesh](VoxelToolLodTerrain.md#i_do_mesh) instead.*
+*This method is deprecated. Use [do_mesh](VoxelToolLodTerrain.md#i_do_mesh) instead.*
 
 
 _Generated on Apr 27, 2025_

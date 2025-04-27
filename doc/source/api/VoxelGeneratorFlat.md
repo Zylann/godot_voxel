@@ -26,6 +26,6 @@ Altitude of the ground.
 
 ### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_voxel_type"></span> **voxel_type** = 1
 
-If [VoxelGeneratorFlat.channel](VoxelGeneratorFlat.md#i_channel) is set to any channel other than [VoxelBuffer.CHANNEL_SDF](VoxelBuffer.md#i_CHANNEL_SDF), this value will be used to fill ground voxels, while air voxels will be set to 0.
+If [channel](VoxelGeneratorFlat.md#i_channel) is set to any channel other than [VoxelBuffer.CHANNEL_SDF](VoxelBuffer.md#i_CHANNEL_SDF), this value will be used to fill ground voxels, while air voxels will be set to 0.
 
 _Generated on Apr 27, 2025_

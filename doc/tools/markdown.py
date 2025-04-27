@@ -96,21 +96,31 @@ def get_godot_enum_url(class_name, member_name):
     return get_godot_class_url(class_name) + "#enum-" + class_name.lower() + "-" + member_name.lower()
 
 
-def make_property_link(class_name, member_name, local_prefix, module_class_names):
+def make_property_link(class_name, member_name, local_prefix, module_class_names, context_class_name):
     if class_name in module_class_names:
         link = local_prefix + class_name + ".md#i_" + member_name
     else:
         link = get_godot_member_url(class_name, member_name, "property")
-    link_text = class_name + "." + member_name
+
+    if class_name == context_class_name:
+        link_text = member_name
+    else:
+        link_text = class_name + "." + member_name
+
     return make_link(link_text, link)
 
 
-def make_method_link(class_name, member_name, local_prefix, module_class_names):
+def make_method_link(class_name, member_name, local_prefix, module_class_names, context_class_name):
     if class_name in module_class_names:
         link = local_prefix + class_name + ".md#i_" + member_name
     else:
         link = get_godot_member_url(class_name, member_name, "method")
-    link_text = class_name + "." + member_name
+
+    if class_name == context_class_name:
+        link_text = member_name
+    else:
+        link_text = class_name + "." + member_name
+
     return make_link(link_text, link)
 
 
@@ -130,13 +140,18 @@ def make_enum_link(class_name, member_name, local_prefix, module_class_names, co
     return make_link(link_text, link)
 
 
-def make_constant_link(class_name, member_name, local_prefix, module_class_names):
+def make_constant_link(class_name, member_name, local_prefix, module_class_names, context_class_name):
     if class_name in module_class_names:
         # Note, that could either be a constant or an enum member
         link = local_prefix + class_name + ".md#i_" + member_name
     else:
         link = get_godot_member_url(class_name, member_name, "constant")
-    link_text = class_name + "." + member_name
+
+    if class_name == context_class_name:
+        link_text = member_name
+    else:
+        link_text = class_name + "." + member_name
+
     return make_link(link_text, link)
 
 

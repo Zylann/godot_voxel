@@ -12,7 +12,7 @@ It uses a node-based structure internally for configuration, which is however no
 
 The current integration uses FastNoise2 version 0.10.0-alpha. If you use encoded node trees made with the Noise Tool, it must match that version.
 
-After changing properties, you must call [FastNoise2.update_generator](FastNoise2.md#i_update_generator) for the internal graph to be rebuilt and changes to take effect.
+After changing properties, you must call [update_generator](FastNoise2.md#i_update_generator) for the internal graph to be rebuilt and changes to take effect.
 
 ## Properties: 
 

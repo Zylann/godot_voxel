@@ -81,7 +81,7 @@ If enabled, when generating blocks for a terrain, the generator will attempt to 
 
 ### [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_use_subdivision"></span> **use_subdivision** = true
 
-If enabled, [VoxelGeneratorGraph.subdivision_size](VoxelGeneratorGraph.md#i_subdivision_size) will be used.
+If enabled, [subdivision_size](VoxelGeneratorGraph.md#i_subdivision_size) will be used.
 
 ### [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_use_xz_caching"></span> **use_xz_caching** = true
 

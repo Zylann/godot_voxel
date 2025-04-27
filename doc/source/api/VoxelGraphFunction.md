@@ -277,7 +277,7 @@ Copies nodes into another graph, and connections between them only.
 
 Resources in node parameters will be duplicated if they don't have a file path.
 
-If `node_ids` is provided with non-zero size, defines the IDs copied nodes will have in the destination graph, in the same order as [VoxelGraphFunction.get_node_ids](VoxelGraphFunction.md#i_get_node_ids) from the source graph. The array must have the same size as the number of copied nodes and IDs must not already exist in the destination graph. If the array is empty, they will be generated instead.
+If `node_ids` is provided with non-zero size, defines the IDs copied nodes will have in the destination graph, in the same order as [get_node_ids](VoxelGraphFunction.md#i_get_node_ids) from the source graph. The array must have the same size as the number of copied nodes and IDs must not already exist in the destination graph. If the array is empty, they will be generated instead.
 
 ### [void](#)<span id="i_remove_connection"></span> **remove_connection**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) src_node_id, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) src_port_index, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) dst_node_id, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) dst_port_index ) 
 
@@ -329,6 +329,6 @@ Set a parameter of a node, using its name as it appears in the editor.
 
 ### [void](#)<span id="i_set_node_param_null"></span> **set_node_param_null**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) node_id, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) param_index ) 
 
-Set a parameter of a node to null. This method only exists to workaround an issue with Godot's UndoRedo system. Prefer using [VoxelGraphFunction.set_node_param](VoxelGraphFunction.md#i_set_node_param).
+Set a parameter of a node to null. This method only exists to workaround an issue with Godot's UndoRedo system. Prefer using [set_node_param](VoxelGraphFunction.md#i_set_node_param).
 
 _Generated on Apr 27, 2025_
