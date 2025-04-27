@@ -11,7 +11,7 @@ Base class for several basic height-based generators.
 
 Type                                                                      | Name                             | Default 
 ------------------------------------------------------------------------- | -------------------------------- | --------
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)      | [channel](#i_channel)            | 1       
+[ChannelId](VoxelBuffer.md#enumerations)                                  | [channel](#i_channel)            | 1       
 [float](https://docs.godotengine.org/en/stable/classes/class_float.html)  | [height_range](#i_height_range)  | 30.0    
 [float](https://docs.godotengine.org/en/stable/classes/class_float.html)  | [height_start](#i_height_start)  | -50.0   
 [float](https://docs.godotengine.org/en/stable/classes/class_float.html)  | [iso_scale](#i_iso_scale)        | 1.0     
@@ -19,7 +19,7 @@ Type                                                                      | Name
 
 ## Property Descriptions
 
-### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_channel"></span> **channel** = 1
+### [ChannelId](VoxelBuffer.md#enumerations)<span id="i_channel"></span> **channel** = 1
 
 Channel where voxels will be generated. If set to [VoxelBuffer.CHANNEL_SDF](VoxelBuffer.md#i_CHANNEL_SDF), voxels will be a signed distance field usable by smooth meshers. Otherwise, the value 1 will be set below ground, and the value 0 will be set above ground (blocky).
 

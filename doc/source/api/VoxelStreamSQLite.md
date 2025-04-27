@@ -10,7 +10,7 @@ Saves voxel data into a single SQLite database file.
 Type                                                                        | Name                                                           | Default 
 --------------------------------------------------------------------------- | -------------------------------------------------------------- | --------
 [String](https://docs.godotengine.org/en/stable/classes/class_string.html)  | [database_path](#i_database_path)                              | ""      
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)        | [preferred_coordinate_format](#i_preferred_coordinate_format)  | 2       
+[CoordinateFormat](VoxelStreamSQLite.md#enumerations)                       | [preferred_coordinate_format](#i_preferred_coordinate_format)  | 2       
 <p></p>
 
 ## Methods: 
@@ -39,7 +39,7 @@ enum **CoordinateFormat**:
 
 Path to the database file. `res://` and `user://` should work, however `res://` will not work after export (see [ why here](https://docs.godotengine.org/en/stable/tutorials/io/data_paths.html#accessing-persistent-user-data-user)). The path can be relative to the game's executable. Directories in the path must exist. If the file does not exist, it will be created.
 
-### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_preferred_coordinate_format"></span> **preferred_coordinate_format** = 2
+### [CoordinateFormat](VoxelStreamSQLite.md#enumerations)<span id="i_preferred_coordinate_format"></span> **preferred_coordinate_format** = 2
 
 Sets which block coordinate format will be used when creating new databases. This affects the range of supported coordinates and how quickly SQLite can execute queries (to a minor extent). When opening existing databases, this setting will be ignored, and the format of the database will be used instead. Changing the format of an existing database is currently not possible, and may require using a script to load individual blocks from one stream and save them to a new one.
 

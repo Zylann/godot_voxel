@@ -19,9 +19,9 @@ By default, if an operation overlaps a non-editable area (if not loaded yet for 
 
 Type                                                                      | Name                                   | Default 
 ------------------------------------------------------------------------- | -------------------------------------- | --------
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)      | [channel](#i_channel)                  |         
+[ChannelId](VoxelBuffer.md#enumerations)                                  | [channel](#i_channel)                  |         
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)      | [eraser_value](#i_eraser_value)        |         
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)      | [mode](#i_mode)                        |         
+[Mode](VoxelTool.md#enumerations)                                         | [mode](#i_mode)                        |         
 [float](https://docs.godotengine.org/en/stable/classes/class_float.html)  | [sdf_scale](#i_sdf_scale)              |         
 [float](https://docs.godotengine.org/en/stable/classes/class_float.html)  | [sdf_strength](#i_sdf_strength)        |         
 [float](https://docs.godotengine.org/en/stable/classes/class_float.html)  | [texture_falloff](#i_texture_falloff)  |         
@@ -75,7 +75,7 @@ enum **Mode**:
 
 ## Property Descriptions
 
-### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_channel"></span> **channel**
+### [ChannelId](VoxelBuffer.md#enumerations)<span id="i_channel"></span> **channel**
 
 Set which channel will be edited. When used on a terrain node, it will default to the first available channel, based on the stream and generator.
 
@@ -83,7 +83,7 @@ Set which channel will be edited. When used on a terrain node, it will default t
 
 Sets which value will be used to erase voxels when editing the [VoxelBuffer.CHANNEL_TYPE](VoxelBuffer.md#i_CHANNEL_TYPE) channel in [VoxelTool.MODE_REMOVE](VoxelTool.md#i_MODE_REMOVE) mode. Only relevant for blocky voxels.
 
-### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_mode"></span> **mode**
+### [Mode](VoxelTool.md#enumerations)<span id="i_mode"></span> **mode**
 
 Sets how `do_*` functions will behave. This may vary depending on the channel.
 
@@ -92,7 +92,7 @@ Sets how `do_*` functions will behave. This may vary depending on the channel.
 When working with smooth voxels, applies a scale to the signed distance field. A high scale (1 or higher) will tend to produce blocky results, and a low scale (below 1, but not too close to zero) will tend to be smoother.
 
 
-This is related to the [VoxelBuffer.Depth](VoxelBuffer.md#enumerations) configuration on voxels. For 8-bit and 16-bit, there is a limited range of values the Signed Distance Field can take, and by default it is clamped to -1..1, so the gradient can only range across 2 voxels. But when LOD is used, it is better to stretch that range over a longer distance, and this is achieved by scaling SDF values.
+This is related to the [Depth](VoxelBuffer.md#enumerations) configuration on voxels. For 8-bit and 16-bit, there is a limited range of values the Signed Distance Field can take, and by default it is clamped to -1..1, so the gradient can only range across 2 voxels. But when LOD is used, it is better to stretch that range over a longer distance, and this is achieved by scaling SDF values.
 
 ### [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_sdf_strength"></span> **sdf_strength**
 

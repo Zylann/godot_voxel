@@ -15,7 +15,7 @@ Colors will usually be stored in the `COLOR` vertex attribute and may require a 
 
 Type                                                                            | Name                                                 | Default 
 ------------------------------------------------------------------------------- | ---------------------------------------------------- | --------
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)            | [color_mode](#i_color_mode)                          | 0       
+[ColorMode](VoxelMesherCubes.md#enumerations)                                   | [color_mode](#i_color_mode)                          | 0       
 [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)          | [greedy_meshing_enabled](#i_greedy_meshing_enabled)  | true    
 [Material](https://docs.godotengine.org/en/stable/classes/class_material.html)  | [opaque_material](#i_opaque_material)                |         
 [VoxelColorPalette](VoxelColorPalette.md)                                       | [palette](#i_palette)                                |         
@@ -28,7 +28,7 @@ Type                                                                            
 Return                                                                  | Signature                                                                                                                                                                                                                              
 ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 [Mesh](https://docs.godotengine.org/en/stable/classes/class_mesh.html)  | [generate_mesh_from_image](#i_generate_mesh_from_image) ( [Image](https://docs.godotengine.org/en/stable/classes/class_image.html) image, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) voxel_size ) static 
-[void](#)                                                               | [set_material_by_index](#i_set_material_by_index) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) id, [Material](https://docs.godotengine.org/en/stable/classes/class_material.html) material )                 
+[void](#)                                                               | [set_material_by_index](#i_set_material_by_index) ( [Materials](VoxelMesherCubes.md#enumerations) id, [Material](https://docs.godotengine.org/en/stable/classes/class_material.html) material )                                        
 <p></p>
 
 ## Enumerations: 
@@ -48,7 +48,7 @@ enum **ColorMode**:
 
 ## Property Descriptions
 
-### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_color_mode"></span> **color_mode** = 0
+### [ColorMode](VoxelMesherCubes.md#enumerations)<span id="i_color_mode"></span> **color_mode** = 0
 
 Sets how voxel color is determined when building the mesh.
 
@@ -74,7 +74,7 @@ Material that will be used for transparent parts of the mesh (colors where alpha
 
 Generates a 1-voxel thick greedy mesh from pixels of an image.
 
-### [void](#)<span id="i_set_material_by_index"></span> **set_material_by_index**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) id, [Material](https://docs.godotengine.org/en/stable/classes/class_material.html) material ) 
+### [void](#)<span id="i_set_material_by_index"></span> **set_material_by_index**( [Materials](VoxelMesherCubes.md#enumerations) id, [Material](https://docs.godotengine.org/en/stable/classes/class_material.html) material ) 
 
 Sets one of the materials that will be used when building meshes. This is equivalent to using either [VoxelMesherCubes.opaque_material](VoxelMesherCubes.md#i_opaque_material) or [VoxelMesherCubes.transparent_material](VoxelMesherCubes.md#i_transparent_material).
 

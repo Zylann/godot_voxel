@@ -9,20 +9,20 @@ Base class for voxel volumes.
 ## Properties: 
 
 
-Type                                                                  | Name                                         | Default 
---------------------------------------------------------------------- | -------------------------------------------- | --------
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)  | [cast_shadow](#i_cast_shadow)                | 1       
-[VoxelFormat](VoxelFormat.md)                                         | [format](#i_format)                          |         
-[VoxelGenerator](VoxelGenerator.md)                                   | [generator](#i_generator)                    |         
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)  | [gi_mode](#i_gi_mode)                        | 0       
-[VoxelMesher](VoxelMesher.md)                                         | [mesher](#i_mesher)                          |         
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)  | [render_layers_mask](#i_render_layers_mask)  | 1       
-[VoxelStream](VoxelStream.md)                                         | [stream](#i_stream)                          |         
+Type                                                                                                                                               | Name                                         | Default 
+-------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- | --------
+[ShadowCastingSetting](https://docs.godotengine.org/en/stable/classes/class_geometryinstance3d.html#enum-geometryinstance3d-shadowcastingsetting)  | [cast_shadow](#i_cast_shadow)                | 1       
+[VoxelFormat](VoxelFormat.md)                                                                                                                      | [format](#i_format)                          |         
+[VoxelGenerator](VoxelGenerator.md)                                                                                                                | [generator](#i_generator)                    |         
+[GIMode](https://docs.godotengine.org/en/stable/classes/class_geometryinstance3d.html#enum-geometryinstance3d-gimode)                              | [gi_mode](#i_gi_mode)                        | 0       
+[VoxelMesher](VoxelMesher.md)                                                                                                                      | [mesher](#i_mesher)                          |         
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)                                                                               | [render_layers_mask](#i_render_layers_mask)  | 1       
+[VoxelStream](VoxelStream.md)                                                                                                                      | [stream](#i_stream)                          |         
 <p></p>
 
 ## Property Descriptions
 
-### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_cast_shadow"></span> **cast_shadow** = 1
+### [ShadowCastingSetting](https://docs.godotengine.org/en/stable/classes/class_geometryinstance3d.html#enum-geometryinstance3d-shadowcastingsetting)<span id="i_cast_shadow"></span> **cast_shadow** = 1
 
 Sets the shadow casting mode that meshes of the terrain will use.
 
@@ -36,7 +36,7 @@ WARNING: changing this will reload the terrain. If it has a stream attached with
 
 Procedural generator used to load voxel blocks when not present in the stream.
 
-### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_gi_mode"></span> **gi_mode** = 0
+### [GIMode](https://docs.godotengine.org/en/stable/classes/class_geometryinstance3d.html#enum-geometryinstance3d-gimode)<span id="i_gi_mode"></span> **gi_mode** = 0
 
 Sets the Global Illumination mode meshes of the terrain will use.
 

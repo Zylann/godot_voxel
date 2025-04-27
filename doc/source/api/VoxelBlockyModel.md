@@ -34,7 +34,7 @@ Return                                                                          
 [Material](https://docs.godotengine.org/en/stable/classes/class_material.html)  | [get_material_override](#i_get_material_override) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) index ) const                                                                                              
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)            | [get_mesh_ortho_rotation_index](#i_get_mesh_ortho_rotation_index) ( ) const                                                                                                                                                         
 [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)          | [is_mesh_collision_enabled](#i_is_mesh_collision_enabled) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) surface_index ) const                                                                              
-[void](#)                                                                       | [rotate_90](#i_rotate_90) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) axis, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) clockwise )                                           
+[void](#)                                                                       | [rotate_90](#i_rotate_90) ( [Axis](https://docs.godotengine.org/en/stable/classes/class_vector3i.html#enum-vector3i-axis) axis, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) clockwise )                  
 [void](#)                                                                       | [set_material_override](#i_set_material_override) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) index, [Material](https://docs.godotengine.org/en/stable/classes/class_material.html) material )           
 [void](#)                                                                       | [set_mesh_collision_enabled](#i_set_mesh_collision_enabled) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) surface_index, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) enabled )  
 [void](#)                                                                       | [set_mesh_ortho_rotation_index](#i_set_mesh_ortho_rotation_index) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) i )                                                                                        
@@ -101,7 +101,7 @@ Gets the material override for a specific surface of the model.
 
 Tells if a specific surface produces mesh-based collisions.
 
-### [void](#)<span id="i_rotate_90"></span> **rotate_90**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) axis, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) clockwise ) 
+### [void](#)<span id="i_rotate_90"></span> **rotate_90**( [Axis](https://docs.godotengine.org/en/stable/classes/class_vector3i.html#enum-vector3i-axis) axis, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) clockwise ) 
 
 *(This method has no documentation)*
 

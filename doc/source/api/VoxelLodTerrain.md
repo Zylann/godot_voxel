@@ -48,7 +48,7 @@ Type                                                                            
 [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)          | [normalmap_use_gpu](#i_normalmap_use_gpu)                                                          | false                                                                                 
 [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)          | [run_stream_in_editor](#i_run_stream_in_editor)                                                    | true                                                                                  
 [float](https://docs.godotengine.org/en/stable/classes/class_float.html)        | [secondary_lod_distance](#i_secondary_lod_distance)                                                | 48.0                                                                                  
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)            | [streaming_system](#i_streaming_system)                                                            | 0                                                                                     
+[StreamingSystem](VoxelLodTerrain.md#enumerations)                              | [streaming_system](#i_streaming_system)                                                            | 0                                                                                     
 [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)          | [threaded_update_enabled](#i_threaded_update_enabled)                                              | false                                                                                 
 [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)          | [use_gpu_generation](#i_use_gpu_generation)                                                        | false                                                                                 
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)            | [view_distance](#i_view_distance)                                                                  | 512                                                                                   
@@ -63,25 +63,25 @@ Return                                                                          
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)                | [debug_dump_as_scene](#i_debug_dump_as_scene) ( [String](https://docs.godotengine.org/en/stable/classes/class_string.html) path, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) include_instancer ) const                     
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)                | [debug_get_data_block_count](#i_debug_get_data_block_count) ( ) const                                                                                                                                                                                 
 [Dictionary](https://docs.godotengine.org/en/stable/classes/class_dictionary.html)  | [debug_get_data_block_info](#i_debug_get_data_block_info) ( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) block_pos, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) lod ) const                  
-[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)              | [debug_get_draw_flag](#i_debug_get_draw_flag) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) flag_index ) const                                                                                                               
+[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)              | [debug_get_draw_flag](#i_debug_get_draw_flag) ( [DebugDrawFlag](VoxelLodTerrain.md#enumerations) flag_index ) const                                                                                                                                   
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)                | [debug_get_mesh_block_count](#i_debug_get_mesh_block_count) ( ) const                                                                                                                                                                                 
 [Dictionary](https://docs.godotengine.org/en/stable/classes/class_dictionary.html)  | [debug_get_mesh_block_info](#i_debug_get_mesh_block_info) ( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) block_pos, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) lod ) const                  
 [Array](https://docs.godotengine.org/en/stable/classes/class_array.html)            | [debug_get_octrees_detailed](#i_debug_get_octrees_detailed) ( ) const                                                                                                                                                                                 
 [Array](https://docs.godotengine.org/en/stable/classes/class_array.html)            | [debug_print_sdf_top_down](#i_debug_print_sdf_top_down) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) center, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) extents )             
 [Array](https://docs.godotengine.org/en/stable/classes/class_array.html)            | [debug_raycast_mesh_block](#i_debug_raycast_mesh_block) ( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) origin, [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) dir ) const               
-[void](#)                                                                           | [debug_set_draw_flag](#i_debug_set_draw_flag) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) flag_index, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) enabled )                                     
+[void](#)                                                                           | [debug_set_draw_flag](#i_debug_set_draw_flag) ( [DebugDrawFlag](VoxelLodTerrain.md#enumerations) flag_index, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) enabled )                                                         
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)                | [get_data_block_region_extent](#i_get_data_block_region_extent) ( ) const                                                                                                                                                                             
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)                | [get_data_block_size](#i_get_data_block_size) ( ) const                                                                                                                                                                                               
 [VoxelGenerator](VoxelGenerator.md)                                                 | [get_normalmap_generator_override](#i_get_normalmap_generator_override) ( ) const                                                                                                                                                                     
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)                | [get_normalmap_generator_override_begin_lod_index](#i_get_normalmap_generator_override_begin_lod_index) ( ) const                                                                                                                                     
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)                | [get_process_callback](#i_get_process_callback) ( ) const                                                                                                                                                                                             
+[ProcessCallback](VoxelLodTerrain.md#enumerations)                                  | [get_process_callback](#i_get_process_callback) ( ) const                                                                                                                                                                                             
 [Dictionary](https://docs.godotengine.org/en/stable/classes/class_dictionary.html)  | [get_statistics](#i_get_statistics) ( ) const                                                                                                                                                                                                         
 [VoxelTool](VoxelTool.md)                                                           | [get_voxel_tool](#i_get_voxel_tool) ( )                                                                                                                                                                                                               
 [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)              | [is_area_meshed](#i_is_area_meshed) ( [AABB](https://docs.godotengine.org/en/stable/classes/class_aabb.html) area_in_voxels, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) lod_index ) const                                   
 [VoxelSaveCompletionTracker](VoxelSaveCompletionTracker.md)                         | [save_modified_blocks](#i_save_modified_blocks) ( )                                                                                                                                                                                                   
 [void](#)                                                                           | [set_normalmap_generator_override](#i_set_normalmap_generator_override) ( [VoxelGenerator](VoxelGenerator.md) generator_override )                                                                                                                    
 [void](#)                                                                           | [set_normalmap_generator_override_begin_lod_index](#i_set_normalmap_generator_override_begin_lod_index) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) lod_index )                                                            
-[void](#)                                                                           | [set_process_callback](#i_set_process_callback) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) mode )                                                                                                                         
+[void](#)                                                                           | [set_process_callback](#i_set_process_callback) ( [ProcessCallback](VoxelLodTerrain.md#enumerations) mode )                                                                                                                                           
 [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html)      | [voxel_to_data_block_position](#i_voxel_to_data_block_position) ( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) voxel_position, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) lod_index ) const 
 [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html)      | [voxel_to_mesh_block_position](#i_voxel_to_mesh_block_position) ( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) voxel_position, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) lod_index ) const 
 <p></p>
@@ -275,7 +275,7 @@ This is only used when [VoxelLodTerrain.streaming_system](VoxelLodTerrain.md#i_s
 
 To control LOD 0, see [VoxelLodTerrain.lod_distance](VoxelLodTerrain.md#i_lod_distance).
 
-### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_streaming_system"></span> **streaming_system** = 0
+### [StreamingSystem](VoxelLodTerrain.md#enumerations)<span id="i_streaming_system"></span> **streaming_system** = 0
 
 Selects the underlying algorithm used to determine when to load and unload chunks around viewers as they move around.
 
@@ -319,7 +319,7 @@ Gets some debug information about a specific voxel data chunk.
 }
 ```
 
-### [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_debug_get_draw_flag"></span> **debug_get_draw_flag**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) flag_index ) 
+### [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_debug_get_draw_flag"></span> **debug_get_draw_flag**( [DebugDrawFlag](VoxelLodTerrain.md#enumerations) flag_index ) 
 
 Gets whether a specific debug drawing flag is enabled.
 
@@ -392,7 +392,7 @@ The returned array contains:
 ]
 ```
 
-### [void](#)<span id="i_debug_set_draw_flag"></span> **debug_set_draw_flag**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) flag_index, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) enabled ) 
+### [void](#)<span id="i_debug_set_draw_flag"></span> **debug_set_draw_flag**( [DebugDrawFlag](VoxelLodTerrain.md#enumerations) flag_index, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) enabled ) 
 
 Sets a specific debug drawing flag. Note that debug drawing must also be enabled for it to be visible.
 
@@ -414,7 +414,7 @@ Gets the size of one cunic data block in voxels.
 
 *(This method has no documentation)*
 
-### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_get_process_callback"></span> **get_process_callback**( ) 
+### [ProcessCallback](VoxelLodTerrain.md#enumerations)<span id="i_get_process_callback"></span> **get_process_callback**( ) 
 
 Gets which callback is used to run the main thread update of this node.
 
@@ -467,7 +467,7 @@ Note that blocks getting unloaded as the viewer moves around can also trigger sa
 
 *(This method has no documentation)*
 
-### [void](#)<span id="i_set_process_callback"></span> **set_process_callback**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) mode ) 
+### [void](#)<span id="i_set_process_callback"></span> **set_process_callback**( [ProcessCallback](VoxelLodTerrain.md#enumerations) mode ) 
 
 Sets which process callback is used to run the main thread update of this node. By default, it uses `_process`.
 

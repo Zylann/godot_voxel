@@ -18,21 +18,21 @@ WARNING: it is recommended to choose a format early in development (whether it i
 Type                                                                      | Name                               | Default                     
 ------------------------------------------------------------------------- | ---------------------------------- | ----------------------------
 [Array](https://docs.godotengine.org/en/stable/classes/class_array.html)  | [_data](#i__data)                  | [0, 1, 1, 0, 1, 1, 0, 0, 0] 
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)      | [color_depth](#i_color_depth)      | 0                           
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)      | [indices_depth](#i_indices_depth)  | 1                           
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)      | [sdf_depth](#i_sdf_depth)          | 1                           
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)      | [type_depth](#i_type_depth)        | 1                           
+[Depth](VoxelBuffer.md#enumerations)                                      | [color_depth](#i_color_depth)      | 0                           
+[Depth](VoxelBuffer.md#enumerations)                                      | [indices_depth](#i_indices_depth)  | 1                           
+[Depth](VoxelBuffer.md#enumerations)                                      | [sdf_depth](#i_sdf_depth)          | 1                           
+[Depth](VoxelBuffer.md#enumerations)                                      | [type_depth](#i_type_depth)        | 1                           
 <p></p>
 
 ## Methods: 
 
 
-Return                                                                | Signature                                                                                                                                                                                                     
---------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-[void](#)                                                             | [configure_buffer](#i_configure_buffer) ( [VoxelBuffer](VoxelBuffer.md) buffer ) const                                                                                                                        
-[void](#)                                                             | [create_buffer](#i_create_buffer) ( [VoxelBuffer](VoxelBuffer.md) size ) const                                                                                                                                
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)  | [get_channel_depth](#i_get_channel_depth) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channel_index ) const                                                                        
-[void](#)                                                             | [set_channel_depth](#i_set_channel_depth) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channel_index, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) depth )  
+Return                                | Signature                                                                                                                                         
+------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------
+[void](#)                             | [configure_buffer](#i_configure_buffer) ( [VoxelBuffer](VoxelBuffer.md) buffer ) const                                                            
+[void](#)                             | [create_buffer](#i_create_buffer) ( [VoxelBuffer](VoxelBuffer.md) size ) const                                                                    
+[Depth](VoxelBuffer.md#enumerations)  | [get_channel_depth](#i_get_channel_depth) ( [ChannelId](VoxelBuffer.md#enumerations) channel_index ) const                                        
+[void](#)                             | [set_channel_depth](#i_set_channel_depth) ( [ChannelId](VoxelBuffer.md#enumerations) channel_index, [Depth](VoxelBuffer.md#enumerations) depth )  
 <p></p>
 
 ## Property Descriptions
@@ -41,19 +41,19 @@ Return                                                                | Signatur
 
 *(This property has no documentation)*
 
-### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_color_depth"></span> **color_depth** = 0
+### [Depth](VoxelBuffer.md#enumerations)<span id="i_color_depth"></span> **color_depth** = 0
 
 Depth of [VoxelBuffer.CHANNEL_COLOR](VoxelBuffer.md#i_CHANNEL_COLOR).
 
-### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_indices_depth"></span> **indices_depth** = 1
+### [Depth](VoxelBuffer.md#enumerations)<span id="i_indices_depth"></span> **indices_depth** = 1
 
 Depth of [VoxelBuffer.CHANNEL_INDICES](VoxelBuffer.md#i_CHANNEL_INDICES). Only 8-bit and 16-bit depths are supported.
 
-### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_sdf_depth"></span> **sdf_depth** = 1
+### [Depth](VoxelBuffer.md#enumerations)<span id="i_sdf_depth"></span> **sdf_depth** = 1
 
 Depth of [VoxelBuffer.CHANNEL_SDF](VoxelBuffer.md#i_CHANNEL_SDF).
 
-### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_type_depth"></span> **type_depth** = 1
+### [Depth](VoxelBuffer.md#enumerations)<span id="i_type_depth"></span> **type_depth** = 1
 
 Depth of [VoxelBuffer.CHANNEL_TYPE](VoxelBuffer.md#i_CHANNEL_TYPE). Only 8-bit and 16-bit depths are supported.
 
@@ -67,12 +67,12 @@ Clears and formats the [VoxelBuffer](VoxelBuffer.md) using properties from the c
 
 Creates a new [VoxelBuffer](VoxelBuffer.md) that has the current format.
 
-### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_get_channel_depth"></span> **get_channel_depth**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channel_index ) 
+### [Depth](VoxelBuffer.md#enumerations)<span id="i_get_channel_depth"></span> **get_channel_depth**( [ChannelId](VoxelBuffer.md#enumerations) channel_index ) 
 
-Gets the depth of a specific channel. See [VoxelBuffer.Depth](VoxelBuffer.md#enumerations) for more information.
+Gets the depth of a specific channel. See [Depth](VoxelBuffer.md#enumerations) for more information.
 
-### [void](#)<span id="i_set_channel_depth"></span> **set_channel_depth**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channel_index, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) depth ) 
+### [void](#)<span id="i_set_channel_depth"></span> **set_channel_depth**( [ChannelId](VoxelBuffer.md#enumerations) channel_index, [Depth](VoxelBuffer.md#enumerations) depth ) 
 
-Sets the depth of a specific channel. See [VoxelBuffer.Depth](VoxelBuffer.md#enumerations) for more information.
+Sets the depth of a specific channel. See [Depth](VoxelBuffer.md#enumerations) for more information.
 
 _Generated on Apr 27, 2025_

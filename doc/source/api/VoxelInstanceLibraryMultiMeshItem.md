@@ -11,26 +11,26 @@ This model is suited for rendering very large amounts of simple instances, such 
 ## Properties: 
 
 
-Type                                                                                                | Name                                                       | Default                               
---------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- | --------------------------------------
-[PackedFloat32Array](https://docs.godotengine.org/en/stable/classes/class_packedfloat32array.html)  | [_mesh_lod_distance_ratios](#i__mesh_lod_distance_ratios)  | PackedFloat32Array(0.2, 0.35, 0.6, 1) 
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)                                | [cast_shadow](#i_cast_shadow)                              | 1                                     
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)                                | [collision_layer](#i_collision_layer)                      | 1                                     
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)                                | [collision_mask](#i_collision_mask)                        | 1                                     
-[Array](https://docs.godotengine.org/en/stable/classes/class_array.html)                            | [collision_shapes](#i_collision_shapes)                    | []                                    
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)                                | [gi_mode](#i_gi_mode)                                      | 1                                     
-[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)                              | [hide_beyond_max_lod](#i_hide_beyond_max_lod)              | false                                 
-[Material](https://docs.godotengine.org/en/stable/classes/class_material.html)                      | [material_override](#i_material_override)                  |                                       
-[Mesh](https://docs.godotengine.org/en/stable/classes/class_mesh.html)                              | [mesh](#i_mesh)                                            |                                       
-[float](https://docs.godotengine.org/en/stable/classes/class_float.html)                            | [mesh_lod0_distance_ratio](#i_mesh_lod0_distance_ratio)    | 0.2                                   
-[Mesh](https://docs.godotengine.org/en/stable/classes/class_mesh.html)                              | [mesh_lod1](#i_mesh_lod1)                                  |                                       
-[float](https://docs.godotengine.org/en/stable/classes/class_float.html)                            | [mesh_lod1_distance_ratio](#i_mesh_lod1_distance_ratio)    | 0.35                                  
-[Mesh](https://docs.godotengine.org/en/stable/classes/class_mesh.html)                              | [mesh_lod2](#i_mesh_lod2)                                  |                                       
-[float](https://docs.godotengine.org/en/stable/classes/class_float.html)                            | [mesh_lod2_distance_ratio](#i_mesh_lod2_distance_ratio)    | 0.6                                   
-[Mesh](https://docs.godotengine.org/en/stable/classes/class_mesh.html)                              | [mesh_lod3](#i_mesh_lod3)                                  |                                       
-[float](https://docs.godotengine.org/en/stable/classes/class_float.html)                            | [mesh_lod3_distance_ratio](#i_mesh_lod3_distance_ratio)    | 1.0                                   
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)                                | [render_layer](#i_render_layer)                            | 1                                     
-[PackedScene](https://docs.godotengine.org/en/stable/classes/class_packedscene.html)                | [scene](#i_scene)                                          |                                       
+Type                                                                                                                                         | Name                                                       | Default                               
+-------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- | --------------------------------------
+[PackedFloat32Array](https://docs.godotengine.org/en/stable/classes/class_packedfloat32array.html)                                           | [_mesh_lod_distance_ratios](#i__mesh_lod_distance_ratios)  | PackedFloat32Array(0.2, 0.35, 0.6, 1) 
+[ShadowCastingSetting](https://docs.godotengine.org/en/stable/classes/class_renderingserver.html#enum-renderingserver-shadowcastingsetting)  | [cast_shadow](#i_cast_shadow)                              | 1                                     
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)                                                                         | [collision_layer](#i_collision_layer)                      | 1                                     
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)                                                                         | [collision_mask](#i_collision_mask)                        | 1                                     
+[Array](https://docs.godotengine.org/en/stable/classes/class_array.html)                                                                     | [collision_shapes](#i_collision_shapes)                    | []                                    
+[GIMode](https://docs.godotengine.org/en/stable/classes/class_geometryinstance3d.html#enum-geometryinstance3d-gimode)                        | [gi_mode](#i_gi_mode)                                      | 1                                     
+[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)                                                                       | [hide_beyond_max_lod](#i_hide_beyond_max_lod)              | false                                 
+[Material](https://docs.godotengine.org/en/stable/classes/class_material.html)                                                               | [material_override](#i_material_override)                  |                                       
+[Mesh](https://docs.godotengine.org/en/stable/classes/class_mesh.html)                                                                       | [mesh](#i_mesh)                                            |                                       
+[float](https://docs.godotengine.org/en/stable/classes/class_float.html)                                                                     | [mesh_lod0_distance_ratio](#i_mesh_lod0_distance_ratio)    | 0.2                                   
+[Mesh](https://docs.godotengine.org/en/stable/classes/class_mesh.html)                                                                       | [mesh_lod1](#i_mesh_lod1)                                  |                                       
+[float](https://docs.godotengine.org/en/stable/classes/class_float.html)                                                                     | [mesh_lod1_distance_ratio](#i_mesh_lod1_distance_ratio)    | 0.35                                  
+[Mesh](https://docs.godotengine.org/en/stable/classes/class_mesh.html)                                                                       | [mesh_lod2](#i_mesh_lod2)                                  |                                       
+[float](https://docs.godotengine.org/en/stable/classes/class_float.html)                                                                     | [mesh_lod2_distance_ratio](#i_mesh_lod2_distance_ratio)    | 0.6                                   
+[Mesh](https://docs.godotengine.org/en/stable/classes/class_mesh.html)                                                                       | [mesh_lod3](#i_mesh_lod3)                                  |                                       
+[float](https://docs.godotengine.org/en/stable/classes/class_float.html)                                                                     | [mesh_lod3_distance_ratio](#i_mesh_lod3_distance_ratio)    | 1.0                                   
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)                                                                         | [render_layer](#i_render_layer)                            | 1                                     
+[PackedScene](https://docs.godotengine.org/en/stable/classes/class_packedscene.html)                                                         | [scene](#i_scene)                                          |                                       
 <p></p>
 
 ## Methods: 
@@ -55,7 +55,7 @@ Return                                                                          
 
 *(This property has no documentation)*
 
-### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_cast_shadow"></span> **cast_shadow** = 1
+### [ShadowCastingSetting](https://docs.godotengine.org/en/stable/classes/class_renderingserver.html#enum-renderingserver-shadowcastingsetting)<span id="i_cast_shadow"></span> **cast_shadow** = 1
 
 *(This property has no documentation)*
 
@@ -71,7 +71,7 @@ Return                                                                          
 
 Alternating list of [CollisionShape](https://docs.godotengine.org/en/stable/classes/class_collisionshape.html) and [Transform3D](https://docs.godotengine.org/en/stable/classes/class_transform3d.html). Shape comes first, followed by its local transform relative to the instance. Setting up collision shapes in the editor may require using a scene instead.
 
-### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_gi_mode"></span> **gi_mode** = 1
+### [GIMode](https://docs.godotengine.org/en/stable/classes/class_geometryinstance3d.html#enum-geometryinstance3d-gimode)<span id="i_gi_mode"></span> **gi_mode** = 1
 
 *(This property has no documentation)*
 

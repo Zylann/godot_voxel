@@ -14,7 +14,7 @@ Type                                                                      | Name
 [float](https://docs.godotengine.org/en/stable/classes/class_float.html)  | [mesh_optimization_error_threshold](#i_mesh_optimization_error_threshold)  | 0.005   
 [float](https://docs.godotengine.org/en/stable/classes/class_float.html)  | [mesh_optimization_target_ratio](#i_mesh_optimization_target_ratio)        | 0.0     
 [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)    | [textures_ignore_air_voxels](#i_textures_ignore_air_voxels)                | false   
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)      | [texturing_mode](#i_texturing_mode)                                        | 0       
+[TexturingMode](VoxelMesherTransvoxel.md#enumerations)                    | [texturing_mode](#i_texturing_mode)                                        | 0       
 [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)    | [transitions_enabled](#i_transitions_enabled)                              | true    
 <p></p>
 
@@ -61,7 +61,7 @@ When a marching cube cell is computed, vertices may be placed anywhere on edges 
 
 *(This property has no documentation)*
 
-### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_texturing_mode"></span> **texturing_mode** = 0
+### [TexturingMode](VoxelMesherTransvoxel.md#enumerations)<span id="i_texturing_mode"></span> **texturing_mode** = 0
 
 *(This property has no documentation)*
 

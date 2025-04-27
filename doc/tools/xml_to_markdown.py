@@ -25,14 +25,14 @@ def make_text_single_line(text, module_class_names, current_class_name):
 
 
 # params: Array[ParameterDoc]
-def make_parameter_list(params, module_class_names):
+def make_parameter_list(params, module_class_names, current_class_name):
     s = "("
     param_index = 0
     for param in params:
         if param_index > 0:
             s += ","
         param_index += 1
-        s += " " + markdown.make_type(param.type, '', module_class_names) + " " + param.name
+        s += " " + markdown.make_type(param.type, '', module_class_names, current_class_name) + " " + param.name
         if param.default_value is not None:
             s += "=" + param.default_value
     s += " )"
@@ -114,7 +114,7 @@ class TutorialDoc:
 class ParameterDoc:
     def __init__(self, name):
         self.name = name
-        self.type = ""
+        self.type = "" # Variant type, class name, or enum name prefixed with class
         self.default_value = None
 
 
@@ -130,7 +130,7 @@ class MethodDoc(MemberDoc):
     def __init__(self, name):
         super().__init__(name)
         self.parameters = [] # Array[ParameterDoc]
-        self.return_type = ""
+        self.return_type = "" # Variant type, class name, or enum name prefixed with class
         self.qualifiers = ""
 
 
@@ -143,7 +143,7 @@ class SignalDoc(MemberDoc):
 class PropertyDoc(MemberDoc):
     def __init__(self, name):
         super().__init__(name)
-        self.type = ""
+        self.type = "" # Variant type, class name, or enum name prefixed with class
         self.default_value = None
 
 
@@ -207,6 +207,8 @@ def parse_class_from_xml_tree(xml_tree, xml_file_path): # -> ClassDoc
             
             if 'default' in member_xml.attrib:
                 prop.default_value = member_xml.attrib['default']
+            if 'enum' in member_xml.attrib:
+                prop.type = member_xml.attrib['enum']
             
             if member_xml.text is not None:
                 prop.description = member_xml.text
@@ -220,8 +222,12 @@ def parse_class_from_xml_tree(xml_tree, xml_file_path): # -> ClassDoc
         for param_index, param_xml in enumerate(params_xml):
             param = ParameterDoc(param_xml.attrib['name'])
             param.type = param_xml.attrib['type']
+
             if 'default' in param_xml.attrib:
                 param.default_value = param_xml.attrib['default']
+            if 'enum' in param_xml.attrib:
+                param.type = param_xml.attrib['enum']
+
             params.append(param)
         return params
     
@@ -241,6 +247,8 @@ def parse_class_from_xml_tree(xml_tree, xml_file_path): # -> ClassDoc
 
             return_xml = method_xml.find('return')
             method.return_type = return_xml.attrib['type']
+            if 'enum' in return_xml.attrib:
+                method.return_type = return_xml.attrib['enum']
 
             desc_xml = method_xml.find('description')
             if desc_xml is not None:
@@ -307,12 +315,12 @@ def class_doc_to_markdown(klass, f_out, module_class_names):
 
     # Header
     out = "# " + current_class_name + "\n\n"
-    out += "Inherits: " + markdown.make_type(klass.parent_name, '', module_class_names) + "\n\n"
+    out += "Inherits: " + markdown.make_type(klass.parent_name, '', module_class_names, current_class_name) + "\n\n"
 
     if len(klass.children) > 0:
         links = []
         for child in klass.children:
-            links.append(markdown.make_type(child.name, '', module_class_names))
+            links.append(markdown.make_type(child.name, '', module_class_names, current_class_name))
         out += "Inherited by: " + ', '.join(links) + "\n\n"
 
     if klass.is_experimental:
@@ -348,7 +356,7 @@ def class_doc_to_markdown(klass, f_out, module_class_names):
         table = [["Type", "Name", "Default"]]
         for prop in klass.properties:
             row = [
-                markdown.make_type(prop.type, '', module_class_names),
+                markdown.make_type(prop.type, '', module_class_names, current_class_name),
                 make_custom_internal_link(prop.name)
             ]
             if prop.is_deprecated:
@@ -369,14 +377,14 @@ def class_doc_to_markdown(klass, f_out, module_class_names):
         # TODO Remove from list if it's a getter/setter of a property
         for method in klass.methods:
             signature = make_custom_internal_link(method.name) + " "
-            signature += make_parameter_list(method.parameters, module_class_names)
+            signature += make_parameter_list(method.parameters, module_class_names, current_class_name)
             signature += " "
 
             if method.qualifiers != "":
                 signature += method.qualifiers
 
             row = [
-                markdown.make_type(method.return_type, '', module_class_names),
+                markdown.make_type(method.return_type, '', module_class_names, current_class_name),
                 signature
             ]
 
@@ -396,7 +404,7 @@ def class_doc_to_markdown(klass, f_out, module_class_names):
             out += "### "
             out += signal.name
 
-            out += make_parameter_list(signal.parameters, module_class_names)
+            out += make_parameter_list(signal.parameters, module_class_names, current_class_name)
             out += " \n\n"
 
             desc = ""
@@ -439,7 +447,7 @@ def class_doc_to_markdown(klass, f_out, module_class_names):
         out += "## Property Descriptions\n\n"
 
         for prop in klass.properties:
-            out += "### " + markdown.make_type(prop.type, '', module_class_names) \
+            out += "### " + markdown.make_type(prop.type, '', module_class_names, current_class_name) \
                 + make_custom_internal_anchor(prop.name) + " **" + prop.name + "**"
             if prop.default_value is not None:
                 out += " = " + prop.default_value
@@ -467,9 +475,9 @@ def class_doc_to_markdown(klass, f_out, module_class_names):
         out += "## Method Descriptions\n\n"
 
         for method in klass.methods:
-            out += "### " + markdown.make_type(method.return_type, '', module_class_names) \
+            out += "### " + markdown.make_type(method.return_type, '', module_class_names, current_class_name) \
                 + make_custom_internal_anchor(method.name) + " **" + method.name + "**"
-            out += make_parameter_list(method.parameters, module_class_names)
+            out += make_parameter_list(method.parameters, module_class_names, current_class_name)
             out += " "
             if method.qualifiers != "":
                 signature += method.qualifiers
@@ -519,7 +527,7 @@ def generate_classes_index(output_path, classes_by_name, verbose, module_class_n
             # TODO Format for abstract classes? XML files don't contain that information...
             link = klass.name
             if klass.is_module:
-                link = markdown.make_type(klass.name, '', module_class_names)
+                link = markdown.make_type(klass.name, '', module_class_names, '')
             lines.append(level * indent + "- " + link)
             
             if len(klass.children) > 0:
