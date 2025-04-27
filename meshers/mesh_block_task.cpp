@@ -339,7 +339,10 @@ void MeshBlockTask::run(zylann::ThreadedTaskContext &ctx) {
 	// end up with a huge surface at the bottom facing down, since the default for chunks outside bounds is air.
 	// We would have to somehow expose a way to set what these areas default to as well...
 
-	if (_stage == 0) {
+#ifdef VOXEL_ENABLE_GPU
+	if (_stage == 0)
+#endif
+	{
 		ZN_ASSERT(data != nullptr);
 		const VoxelFormat format = data->get_format();
 		format.configure_buffer(_voxels);
