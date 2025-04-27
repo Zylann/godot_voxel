@@ -44,11 +44,17 @@
 	<members>
 		<member name="_data" type="Array" setter="_set_data" getter="_get_data" default="[0, 1, 1, 0, 1, 1, 0, 0, 0]">
 		</member>
+		<member name="color_depth" type="int" setter="set_channel_depth" getter="get_channel_depth" enum="VoxelBuffer.Depth" default="0">
+			Depth of [constant VoxelBuffer.CHANNEL_COLOR].
+		</member>
 		<member name="indices_depth" type="int" setter="set_channel_depth" getter="get_channel_depth" enum="VoxelBuffer.Depth" default="1">
+			Depth of [constant VoxelBuffer.CHANNEL_INDICES]. Only 8-bit and 16-bit depths are supported.
 		</member>
 		<member name="sdf_depth" type="int" setter="set_channel_depth" getter="get_channel_depth" enum="VoxelBuffer.Depth" default="1">
+			Depth of [constant VoxelBuffer.CHANNEL_SDF].
 		</member>
 		<member name="type_depth" type="int" setter="set_channel_depth" getter="get_channel_depth" enum="VoxelBuffer.Depth" default="1">
+			Depth of [constant VoxelBuffer.CHANNEL_TYPE]. Only 8-bit and 16-bit depths are supported.
 		</member>
 	</members>
 </class>
