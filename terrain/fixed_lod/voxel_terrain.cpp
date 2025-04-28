@@ -982,6 +982,7 @@ void request_block_load(
 		ERR_FAIL_COND(stream_dependency->generator.is_null());
 
 		VoxelGenerator::BlockTaskParams params;
+		params.format = voxel_data->get_format();
 		params.volume_id = volume_id;
 		params.block_position = block_pos;
 		params.block_size = data_block_size;

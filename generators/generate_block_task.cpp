@@ -15,6 +15,7 @@ namespace zylann::voxel {
 GenerateBlockTask::GenerateBlockTask(const VoxelGenerator::BlockTaskParams &params) :
 		_voxels(params.voxels),
 		_position(params.block_position),
+		_format(params.format),
 		_volume_id(params.volume_id),
 		_lod_index(params.lod_index),
 		_block_size(params.block_size),
