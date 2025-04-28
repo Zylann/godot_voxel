@@ -905,6 +905,12 @@ void VoxelMesherBlocky::_bind_methods() {
 			"get_occlusion_darkness"
 	);
 
+	ADD_PROPERTY(
+			PropertyInfo(Variant::INT, "tint_mode", PROPERTY_HINT_ENUM, "None,RawColor"),
+			"set_tint_mode",
+			"get_tint_mode"
+	);
+
 	ADD_GROUP("Shadow Occluders", "shadow_occluder_");
 
 #define ADD_SHADOW_OCCLUDER_PROPERTY(m_name, m_flag)                                                                   \
