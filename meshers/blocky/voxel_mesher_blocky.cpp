@@ -819,7 +819,18 @@ Ref<Resource> VoxelMesherBlocky::duplicate(bool p_subresources) const {
 }
 
 int VoxelMesherBlocky::get_used_channels_mask() const {
-	return (1 << VoxelBuffer::CHANNEL_TYPE);
+	int mask = (1 << VoxelBuffer::CHANNEL_TYPE);
+	switch (get_tint_mode()) {
+		case TINT_NONE:
+			break;
+		case TINT_RAW_COLOR:
+			mask |= (1 << VoxelBuffer::CHANNEL_COLOR);
+			break;
+		default:
+			ZN_PRINT_ERROR_ONCE("Unknown tint mode");
+			break;
+	}
+	return mask;
 }
 
 Ref<Material> VoxelMesherBlocky::get_material_by_index(unsigned int index) const {
