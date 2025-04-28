@@ -259,30 +259,143 @@ def make_custom_internal_anchor(name):
     return '<span id="i_' + name + '"></span>'
 
 
+GODOT_CLASSES_URL = "https://docs.godotengine.org/en/stable/classes"
+
+
+def get_godot_class_url(name):
+    return GODOT_CLASSES_URL + "/class_" + name.lower() + ".html"
+
+
+def get_godot_member_url(class_name, member_name, member_type):
+    # member_type may be:
+    # "method"
+    # "property"
+    # "constant"
+
+    # For some reason there is a special case for members starting with '_'.
+    # As a result, we can't link to Godot methods that have both a version with '_' and a version without (like 
+    # Object._get and Object.get). In those cases, the link's format is `idN` where N is some kind of 
+    # incrementing number... It's hard to figure out automatically. If we have to link these, we'll have to hardcode 
+    # every case...
+    if member_name.startswith('_'):
+        member_name = member_name[1:]
+
+    return get_godot_class_url(class_name) + "#class-" + class_name.lower() + "-" + member_type + "-" \
+        + member_name.replace('_', '-')
+
+
+# Inconsistently different from methods and properties
+def get_godot_enum_url(class_name, member_name):
+    return get_godot_class_url(class_name) + "#enum-" + class_name.lower() + "-" + member_name.lower()
+
+
 class ClassFormatter:
-    def __init__(self, current_class_name, module_class_names, classes_by_name):
-        self.current_class_name = current_class_name
+    def __init__(self, current_class_name, module_class_names, classes_by_name, links_prefix):
+        self.current_class_name = current_class_name # Can be empty
         self.module_class_names = module_class_names
         self.classes_by_name = classes_by_name
-        self.local_prefix = ''
+
+        # Prefix to links.
+        # in MkDocs, by default, links are relative to the Markdown file in the project structure.
+        # It is possible to write a URL relative to the root of the MkDocs project by beginning with a '/'
+        # since https://github.com/mkdocs/mkdocs/commit/34ef3ca6d0390959080ce93a695361eea1649272.
+        # However, other Markdown renderers might not handle this the same way. For example, when viewed on Github or VSCode's 
+        # preview plugin, the "root" is not seen as the top of MkDoc's directory, but the root of the repo, or the root of
+        # the workspace. Or it might not be handled at all.
+        # So we may have to keep using relative paths and so we have to pass prefixes in some cases.
+        self.local_prefix = links_prefix
     
-    def make_type(self, type_name):
-        return markdown.make_type(type_name, self.local_prefix, self.module_class_names, self.current_class_name)
-    
-    def make_text(self, src):
-        return bbcode_to_markdown.format_text(src, self.module_class_names, self.current_class_name, '')
+
+    def make_type(self, name):
+        if '.' in name:
+            # Assume enum
+            parts = name.split('.')
+            return self.make_enum_link(parts[0], parts[1])
+        if name == "void":
+            link = "#"
+        elif name in self.module_class_names:
+            link = self.local_prefix + name + ".md"
+        else:
+            link = get_godot_class_url(name)
+        return markdown.make_link(name, link)
+
+
+    def make_enum_link(self, class_name, member_name):
+        if class_name in self.module_class_names:
+            # TODO Link to specific enum not supported yet
+            link = self.local_prefix + class_name + ".md#enumerations"
+        else:
+            link = get_godot_enum_url(class_name, member_name)
+        link_text = member_name
+        return markdown.make_link(link_text, link)
+
+
+    def make_text(self, text):
+        return bbcode_to_markdown.format_text(text, self)
+
+
+    def make_text_single_line(self, text):
+        return bbcode_to_markdown.format_text_for_table(text, self)
+
 
     def make_default_value(self, value, type_name):
         return make_default_value(value, type_name, self.classes_by_name)
 
+
     def make_parameter_list(self, parameters):
         return make_parameter_list(parameters, self.module_class_names, self.current_class_name, self.classes_by_name)
+
 
     def make_constants(self, items):
         return make_constants(items, self.module_class_names, self.current_class_name)
 
-    def make_text_single_line(self, text):
-        return bbcode_to_markdown.format_text_for_table(text, self.module_class_names, self.current_class_name, '')
+
+    def make_property_link(self, class_name, member_name):
+        if class_name in self.module_class_names:
+            link = self.local_prefix + class_name + ".md#i_" + member_name
+        else:
+            link = get_godot_member_url(class_name, member_name, "property")
+        if class_name == self.current_class_name:
+            link_text = member_name
+        else:
+            link_text = class_name + "." + member_name
+        return markdown.make_link(link_text, link)
+
+
+    def make_method_link(self, class_name, member_name):
+        if class_name in self.module_class_names:
+            link = self.local_prefix + class_name + ".md#i_" + member_name
+        else:
+            link = get_godot_member_url(class_name, member_name, "method")
+        if class_name == self.current_class_name:
+            link_text = member_name
+        else:
+            link_text = class_name + "." + member_name
+        return markdown.make_link(link_text, link)
+
+
+    def make_constant_link(self, class_name, member_name):
+        if class_name in self.module_class_names:
+            # Note, that could either be a constant or an enum member
+            link = self.local_prefix + class_name + ".md#i_" + member_name
+        else:
+            link = get_godot_member_url(class_name, member_name, "constant")
+        if class_name == self.current_class_name:
+            link_text = member_name
+        else:
+            link_text = class_name + "." + member_name
+        return markdown.make_link(link_text, link)
+
+
+    def make_signal_link(self, class_name, member_name):
+        if class_name in self.module_class_names:
+            # TODO Link to specific signals not supported yet
+            link = self.local_prefix + class_name + ".md#signals"
+        else:
+            link = get_godot_member_url(class_name, member_name, "signal")
+        link_text = class_name + "." + member_name
+        return markdown.make_link(link_text, link)
+
 
     # constants: Array[ConstantDoc]
     def make_constants(self, constants):
@@ -319,6 +432,7 @@ class ClassFormatter:
 
         return s
 
+
     # params: Array[ParameterDoc]
     def make_parameter_list(self, params):
         s = "("
@@ -332,6 +446,7 @@ class ClassFormatter:
                 s += "=" + self.make_default_value(param.default_value, param.type)
         s += " )"
         return s
+
 
     def make_referred_enum_value(self, value, enum_type):
         parts = enum_type.split('.')
@@ -350,6 +465,7 @@ class ClassFormatter:
             # ?
             return value
         return item.name + " (" + value + ")"
+
 
     def make_default_value(self, value, type_name):
         if '.' in type_name:
@@ -370,7 +486,7 @@ def class_doc_to_markdown(
 ):
     current_class_name = klass.name
 
-    fmt = ClassFormatter(current_class_name, module_class_names, classes_by_name)
+    fmt = ClassFormatter(current_class_name, module_class_names, classes_by_name, '')
 
     # Header
     out = "# " + current_class_name + "\n\n"
@@ -580,20 +696,22 @@ def generate_classes_index(output_path, classes_by_name, verbose, module_class_n
     lines = ["# All classes", ""]
     indent = "    "
 
-    def do_branch(lines, classes, level, indent, module_class_names):
+    fmt = ClassFormatter('', module_class_names, {}, '')
+
+    def do_branch(lines, classes, level, indent, fmt):
         for klass in classes:
             # TODO Format for abstract classes? XML files don't contain that information...
             link = klass.name
             if klass.is_module:
-                link = markdown.make_type(klass.name, '', module_class_names, '')
+                link = fmt.make_type(klass.name)
             lines.append(level * indent + "- " + link)
             
             if len(klass.children) > 0:
-                do_branch(lines, klass.children, level + 1, indent, module_class_names)
+                do_branch(lines, klass.children, level + 1, indent, fmt)
 
     for klass in root_classes:
         lines.append("- " + klass.name)
-        do_branch(lines, klass.children, 1, indent, module_class_names)
+        do_branch(lines, klass.children, 1, indent, fmt)
     
     out = "\n".join(lines)
 

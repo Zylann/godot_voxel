@@ -26,11 +26,13 @@ def without_empty_lines(lines):
     return [s for s in lines if s]
 
 
-def format_doc_bbcodes_for_markdown(text, multiline, module_class_names, current_class_name, local_link_prefix):
+def format_doc_bbcodes_for_markdown(text, multiline, fmt):
     bb_nodes = bbcode.parse(text)
 
     in_codeblock = False
     url = None
+
+    current_class_name = fmt.current_class_name
 
     out = ""
     for bb_node in bb_nodes:
@@ -89,27 +91,23 @@ def format_doc_bbcodes_for_markdown(text, multiline, module_class_names, current
             
             elif bb_node.name == 'member':
                 class_name, member_name = _extract_member_and_class(bb_node.get_first_option_key(), current_class_name)
-                out += markdown.make_property_link(
-                    class_name, member_name, local_link_prefix, module_class_names, current_class_name)
+                out += fmt.make_property_link(class_name, member_name)
 
             elif bb_node.name == 'method':
                 class_name, member_name = _extract_member_and_class(bb_node.get_first_option_key(), current_class_name)
-                out += markdown.make_method_link(
-                    class_name, member_name, local_link_prefix, module_class_names, current_class_name)
+                out += fmt.make_method_link(class_name, member_name)
 
             elif bb_node.name == 'enum':
                 class_name, member_name = _extract_member_and_class(bb_node.get_first_option_key(), current_class_name)
-                out += markdown.make_enum_link(
-                    class_name, member_name, local_link_prefix, module_class_names, current_class_name)
+                out += fmt.make_enum_link(class_name, member_name)
 
             elif bb_node.name == 'signal':
                 class_name, member_name = _extract_member_and_class(bb_node.get_first_option_key(), current_class_name)
-                out += markdown.make_signal_link(class_name, member_name, local_link_prefix, module_class_names)
+                out += fmt.make_signal_link(class_name, member_name)
 
             elif bb_node.name == 'constant':
                 class_name, member_name = _extract_member_and_class(bb_node.get_first_option_key(), current_class_name)
-                out += markdown.make_constant_link(
-                    class_name, member_name, local_link_prefix, module_class_names, current_class_name)
+                out += fmt.make_constant_link(class_name, member_name)
 
             elif bb_node.name == 'i':
                 # Simple emphasis, usually italic
@@ -119,7 +117,7 @@ def format_doc_bbcodes_for_markdown(text, multiline, module_class_names, current
                 # Class lookup: assuming name convention, 
                 # otherwise we need a complete list of classes and it's a bit cumbersome to obtain
                 if bb_node.name[0].isupper():
-                    out += markdown.make_type(bb_node.name, local_link_prefix, module_class_names, current_class_name)
+                    out += fmt.make_type(bb_node.name)
 
                 else:
                     # Error fallback
@@ -130,7 +128,7 @@ def format_doc_bbcodes_for_markdown(text, multiline, module_class_names, current
     return out
 
 
-def format_text_for_table(text, module_class_names, current_class_name, local_link_prefix):
+def format_text_for_table(text, formatter):
     lines = text.splitlines()
 
     for i in range(0, len(lines)):
@@ -139,14 +137,14 @@ def format_text_for_table(text, module_class_names, current_class_name, local_li
     # Newlines aren't supported, but what to replace them with depends on BBCode
     text = '\n'.join(lines)
 
-    text = format_doc_bbcodes_for_markdown(text, False, module_class_names, current_class_name, local_link_prefix)
+    text = format_doc_bbcodes_for_markdown(text, False, formatter)
 
     return text
 
 
-def format_text(text, module_class_names, current_class_name, local_link_prefix):
+def format_text(text, formatter):
     text = textwrap.dedent(text)
-    md = format_doc_bbcodes_for_markdown(text, True, module_class_names, current_class_name, local_link_prefix)
+    md = format_doc_bbcodes_for_markdown(text, True, formatter)
     # Stripping because due to some newline-related workarounds, we may have introduced extra trailing lines,
     # and there may also be unwanted leading lines. Normally Markdown renderers ignore those, but it's cleaner.
     # Note: we don't use Markdown's indentation syntax (which would break if it begins the text).
