@@ -273,7 +273,13 @@ public:
 		return _streaming_dependency;
 	}
 
-	Array get_mesh_block_surface(Vector3i block_pos, int lod_index) const;
+	Array get_mesh_block_surface(
+			const Vector3i block_pos,
+			const int lod_index,
+			int &col_vertex_max,
+			int &col_index_max
+	) const;
+
 	void get_meshed_block_positions_at_lod(int lod_index, StdVector<Vector3i> &out_positions) const;
 
 	inline VoxelData &get_storage() const {

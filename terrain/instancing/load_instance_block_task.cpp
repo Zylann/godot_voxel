@@ -12,30 +12,32 @@
 
 namespace zylann::voxel {
 
-LoadInstanceChunkTask::LoadInstanceChunkTask( //
-		std::shared_ptr<InstancerTaskOutputQueue> output_queue, //
-		Ref<VoxelStream> stream, //
+LoadInstanceChunkTask::LoadInstanceChunkTask(
+		std::shared_ptr<InstancerTaskOutputQueue> output_queue,
+		Ref<VoxelStream> stream,
 		std::shared_ptr<InstancerQuickReloadingCache> quick_reload_cache,
-		Ref<VoxelInstanceLibrary> library, //
-		Array mesh_arrays, //
-		Vector3i grid_position, //
-		uint8_t lod_index, //
-		uint8_t instance_block_size, //
-		uint8_t data_block_size, //
-		UpMode up_mode //
+		Ref<VoxelInstanceLibrary> library,
+		Array mesh_arrays,
+		const int32_t vertex_range_end,
+		const int32_t index_range_end,
+		const Vector3i grid_position,
+		const uint8_t lod_index,
+		const uint8_t instance_block_size,
+		const uint8_t data_block_size,
+		const UpMode up_mode
 ) :
-		//
-		_output_queue(output_queue), //
-		_stream(stream), //
-		_quick_reload_cache(quick_reload_cache), //
-		_library(library), //
-		_mesh_arrays(mesh_arrays), //
-		_render_grid_position(grid_position), //
-		_lod_index(lod_index), //
-		_instance_block_size(instance_block_size), //
-		_data_block_size(data_block_size), //
-		_up_mode(up_mode) //
-{
+		_output_queue(output_queue),
+		_stream(stream),
+		_quick_reload_cache(quick_reload_cache),
+		_library(library),
+		_mesh_arrays(mesh_arrays),
+		_vertex_range_end(vertex_range_end),
+		_index_range_end(index_range_end),
+		_render_grid_position(grid_position),
+		_lod_index(lod_index),
+		_instance_block_size(instance_block_size),
+		_data_block_size(data_block_size),
+		_up_mode(up_mode) {
 #ifdef DEBUG_ENABLED
 	ZN_ASSERT(_output_queue != nullptr);
 	ZN_ASSERT(_instance_block_size > 0);
@@ -236,6 +238,8 @@ void LoadInstanceChunkTask::run(ThreadedTaskContext &ctx) {
 						task->edited_mask = layer.edited_mask;
 						task->up_mode = _up_mode;
 						task->surface_arrays = _mesh_arrays;
+						task->vertex_range_end = _vertex_range_end;
+						task->index_range_end = _index_range_end;
 						task->generator = item.generator;
 						task->transforms = std::move(layer.transforms);
 						task->output_queue = _output_queue;

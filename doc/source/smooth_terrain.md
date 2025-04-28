@@ -261,6 +261,7 @@ voxel_tool.do_sphere(hit_position, radius)
 It is possible to set mixel values directly with `VoxelTool.set_voxel` but it is up to you to pack them properly. 
 
 You may use `VoxelTool` helper functions to encode/decode these values:
+
 - [vec4i_to_u16_indices](https://voxel-tools.readthedocs.io/en/latest/api/VoxelTool/#i_vec4i_to_u16_indices)
 - [color_to_u16_weights](https://voxel-tools.readthedocs.io/en/latest/api/VoxelTool/#i_color_to_u16_weights)
 - [u16_indices_to_vec4i](https://voxel-tools.readthedocs.io/en/latest/api/VoxelTool/#i_u16_indices_to_vec4i)

@@ -13,17 +13,17 @@ These algorithms are specialized to generate vectors to perturb positions, and c
 ## Properties: 
 
 
-Type                                                                      | Name                                         | Default 
-------------------------------------------------------------------------- | -------------------------------------------- | --------
-[float](https://docs.godotengine.org/en/stable/classes/class_float.html)  | [amplitude](#i_amplitude)                    | 30.0    
-[float](https://docs.godotengine.org/en/stable/classes/class_float.html)  | [fractal_gain](#i_fractal_gain)              | 0.5     
-[float](https://docs.godotengine.org/en/stable/classes/class_float.html)  | [fractal_lacunarity](#i_fractal_lacunarity)  | 2.0     
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)      | [fractal_octaves](#i_fractal_octaves)        | 3       
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)      | [fractal_type](#i_fractal_type)              | 0       
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)      | [noise_type](#i_noise_type)                  | 2       
-[float](https://docs.godotengine.org/en/stable/classes/class_float.html)  | [period](#i_period)                          | 64.0    
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)      | [rotation_type_3d](#i_rotation_type_3d)      | 0       
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)      | [seed](#i_seed)                              | 0       
+Type                                                                      | Name                                         | Default              
+------------------------------------------------------------------------- | -------------------------------------------- | ---------------------
+[float](https://docs.godotengine.org/en/stable/classes/class_float.html)  | [amplitude](#i_amplitude)                    | 30.0                 
+[float](https://docs.godotengine.org/en/stable/classes/class_float.html)  | [fractal_gain](#i_fractal_gain)              | 0.5                  
+[float](https://docs.godotengine.org/en/stable/classes/class_float.html)  | [fractal_lacunarity](#i_fractal_lacunarity)  | 2.0                  
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)      | [fractal_octaves](#i_fractal_octaves)        | 3                    
+[FractalType](ZN_FastNoiseLiteGradient.md#enumerations)                   | [fractal_type](#i_fractal_type)              | FRACTAL_NONE (0)     
+[NoiseType](ZN_FastNoiseLiteGradient.md#enumerations)                     | [noise_type](#i_noise_type)                  | TYPE_VALUE (2)       
+[float](https://docs.godotengine.org/en/stable/classes/class_float.html)  | [period](#i_period)                          | 64.0                 
+[RotationType3D](ZN_FastNoiseLiteGradient.md#enumerations)                | [rotation_type_3d](#i_rotation_type_3d)      | ROTATION_3D_NONE (0) 
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)      | [seed](#i_seed)                              | 0                    
 <p></p>
 
 ## Methods: 
@@ -74,11 +74,11 @@ enum **RotationType3D**:
 
 *(This property has no documentation)*
 
-### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_fractal_type"></span> **fractal_type** = 0
+### [FractalType](ZN_FastNoiseLiteGradient.md#enumerations)<span id="i_fractal_type"></span> **fractal_type** = FRACTAL_NONE (0)
 
 *(This property has no documentation)*
 
-### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_noise_type"></span> **noise_type** = 2
+### [NoiseType](ZN_FastNoiseLiteGradient.md#enumerations)<span id="i_noise_type"></span> **noise_type** = TYPE_VALUE (2)
 
 *(This property has no documentation)*
 
@@ -86,7 +86,7 @@ enum **RotationType3D**:
 
 *(This property has no documentation)*
 
-### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_rotation_type_3d"></span> **rotation_type_3d** = 0
+### [RotationType3D](ZN_FastNoiseLiteGradient.md#enumerations)<span id="i_rotation_type_3d"></span> **rotation_type_3d** = ROTATION_3D_NONE (0)
 
 *(This property has no documentation)*
 

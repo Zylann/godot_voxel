@@ -18,7 +18,7 @@ Nodes can also have "parameters" which are constants setup per node.
 
 Nodes come in 3 main families: inputs (only have outputs), outputs (only have inputs), and others (which have both inputs and output to do some calculation).
 
-Node types are identified with the enum [VoxelGraphFunction.NodeTypeID](VoxelGraphFunction.md#enumerations). This enum shouldn't be used in persistent contexts (such as save files) as its values may change between versions.
+Node types are identified with the enum [NodeTypeID](VoxelGraphFunction.md#enumerations). This enum shouldn't be used in persistent contexts (such as save files) as its values may change between versions.
 
 Graphs can only process 32-bit floating point values.
 
@@ -42,7 +42,7 @@ Return                                                                          
 [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)                          | [can_connect](#i_can_connect) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) src_node_id, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) src_port_index, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) dst_node_id, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) dst_port_index ) const        
 [void](#)                                                                                       | [clear](#i_clear) ( )                                                                                                                                                                                                                                                                                                                                                                       
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)                            | [create_function_node](#i_create_function_node) ( [VoxelGraphFunction](VoxelGraphFunction.md) function, [Vector2](https://docs.godotengine.org/en/stable/classes/class_vector2.html) position, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) id=0 )                                                                                                                  
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)                            | [create_node](#i_create_node) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) type_id, [Vector2](https://docs.godotengine.org/en/stable/classes/class_vector2.html) position, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) id=0 )                                                                                                            
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)                            | [create_node](#i_create_node) ( [NodeTypeID](VoxelGraphFunction.md#enumerations) type_id, [Vector2](https://docs.godotengine.org/en/stable/classes/class_vector2.html) position, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) id=0 )                                                                                                                                
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)                            | [find_node_by_name](#i_find_node_by_name) ( [StringName](https://docs.godotengine.org/en/stable/classes/class_stringname.html) name ) const                                                                                                                                                                                                                                                 
 [Array](https://docs.godotengine.org/en/stable/classes/class_array.html)                        | [get_connections](#i_get_connections) ( ) const                                                                                                                                                                                                                                                                                                                                             
 [Variant](https://docs.godotengine.org/en/stable/classes/class_variant.html)                    | [get_node_default_input](#i_get_node_default_input) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) node_id, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) input_index ) const                                                                                                                                                                
@@ -53,7 +53,7 @@ Return                                                                          
 [StringName](https://docs.godotengine.org/en/stable/classes/class_stringname.html)              | [get_node_name](#i_get_node_name) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) node_id ) const                                                                                                                                                                                                                                                                    
 [Variant](https://docs.godotengine.org/en/stable/classes/class_variant.html)                    | [get_node_param](#i_get_node_param) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) node_id, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) param_index ) const                                                                                                                                                                                
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)                            | [get_node_type_count](#i_get_node_type_count) ( ) const                                                                                                                                                                                                                                                                                                                                     
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)                            | [get_node_type_id](#i_get_node_type_id) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) node_id ) const                                                                                                                                                                                                                                                              
+[NodeTypeID](VoxelGraphFunction.md#enumerations)                                                | [get_node_type_id](#i_get_node_type_id) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) node_id ) const                                                                                                                                                                                                                                                              
 [Dictionary](https://docs.godotengine.org/en/stable/classes/class_dictionary.html)              | [get_node_type_info](#i_get_node_type_info) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) type_id ) const                                                                                                                                                                                                                                                          
 [void](#)                                                                                       | [paste_graph_with_pre_generated_ids](#i_paste_graph_with_pre_generated_ids) ( [VoxelGraphFunction](VoxelGraphFunction.md) graph, [PackedInt32Array](https://docs.godotengine.org/en/stable/classes/class_packedint32array.html) node_ids, [Vector2](https://docs.godotengine.org/en/stable/classes/class_vector2.html) gui_offset )                                                         
 [void](#)                                                                                       | [remove_connection](#i_remove_connection) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) src_node_id, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) src_port_index, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) dst_node_id, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) dst_port_index )  
@@ -172,7 +172,7 @@ Removes all nodes from the graph. Input and output definitions will not be clear
 
 Creates a node based on an existing graph (creates a "sub-graph instance").
 
-### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_create_node"></span> **create_node**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) type_id, [Vector2](https://docs.godotengine.org/en/stable/classes/class_vector2.html) position, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) id=0 ) 
+### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_create_node"></span> **create_node**( [NodeTypeID](VoxelGraphFunction.md#enumerations) type_id, [Vector2](https://docs.godotengine.org/en/stable/classes/class_vector2.html) position, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) id=0 ) 
 
 Creates a graph node of a given type at a specific visual position.
 
@@ -238,13 +238,13 @@ Get a parameter of a node. The parameter index corresponds to the position that 
 
 Get how many types of nodes exist in the graph system.
 
-### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_get_node_type_id"></span> **get_node_type_id**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) node_id ) 
+### [NodeTypeID](VoxelGraphFunction.md#enumerations)<span id="i_get_node_type_id"></span> **get_node_type_id**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) node_id ) 
 
 Get the ID of the type of a node in the graph.
 
 ### [Dictionary](https://docs.godotengine.org/en/stable/classes/class_dictionary.html)<span id="i_get_node_type_info"></span> **get_node_type_info**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) type_id ) 
 
-Gets information about a node type from [VoxelGraphFunction.NodeTypeID](VoxelGraphFunction.md#enumerations).
+Gets information about a node type from [NodeTypeID](VoxelGraphFunction.md#enumerations).
 
 The returned data has this structure:
 
@@ -277,7 +277,7 @@ Copies nodes into another graph, and connections between them only.
 
 Resources in node parameters will be duplicated if they don't have a file path.
 
-If `node_ids` is provided with non-zero size, defines the IDs copied nodes will have in the destination graph, in the same order as [VoxelGraphFunction.get_node_ids](VoxelGraphFunction.md#i_get_node_ids) from the source graph. The array must have the same size as the number of copied nodes and IDs must not already exist in the destination graph. If the array is empty, they will be generated instead.
+If `node_ids` is provided with non-zero size, defines the IDs copied nodes will have in the destination graph, in the same order as [get_node_ids](VoxelGraphFunction.md#i_get_node_ids) from the source graph. The array must have the same size as the number of copied nodes and IDs must not already exist in the destination graph. If the array is empty, they will be generated instead.
 
 ### [void](#)<span id="i_remove_connection"></span> **remove_connection**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) src_node_id, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) src_port_index, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) dst_node_id, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) dst_port_index ) 
 
@@ -329,6 +329,6 @@ Set a parameter of a node, using its name as it appears in the editor.
 
 ### [void](#)<span id="i_set_node_param_null"></span> **set_node_param_null**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) node_id, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) param_index ) 
 
-Set a parameter of a node to null. This method only exists to workaround an issue with Godot's UndoRedo system. Prefer using [VoxelGraphFunction.set_node_param](VoxelGraphFunction.md#i_set_node_param).
+Set a parameter of a node to null. This method only exists to workaround an issue with Godot's UndoRedo system. Prefer using [set_node_param](VoxelGraphFunction.md#i_set_node_param).
 
 _Generated on Apr 27, 2025_

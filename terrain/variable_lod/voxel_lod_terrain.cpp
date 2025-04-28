@@ -1987,7 +1987,13 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 
 		if (_instancer != nullptr && first_mesh_load && ob.surfaces.surfaces.size() > 0) {
 			// We would have to know if specific voxels got edited, or different from the generator
-			_instancer->on_mesh_block_enter(ob.position, ob.lod, ob.surfaces.surfaces[0].arrays);
+			_instancer->on_mesh_block_enter(
+					ob.position,
+					ob.lod,
+					ob.surfaces.surfaces[0].arrays,
+					ob.surfaces.collision_surface.submesh_vertex_end,
+					ob.surfaces.collision_surface.submesh_index_end
+			);
 		}
 #endif
 
@@ -2058,7 +2064,9 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 				get_gi_mode(),
 				RenderingServer::ShadowCastingSetting(get_shadow_casting()),
 				get_render_layers_mask(),
-				shadow_occluder_mesh
+				shadow_occluder_mesh,
+				ob.surfaces.collision_surface.submesh_vertex_end,
+				ob.surfaces.collision_surface.submesh_index_end
 #ifdef TOOLS_ENABLED
 				,
 				shadow_occluder_mode
@@ -2524,7 +2532,12 @@ void VoxelLodTerrain::set_instancer(VoxelInstancer *instancer) {
 // This function is primarily intended for editor use cases at the moment.
 // It will be slower than using the instancing generation events,
 // because it has to query VisualServer, which then allocates and decodes vertex buffers (assuming they are cached).
-Array VoxelLodTerrain::get_mesh_block_surface(Vector3i block_pos, int lod_index) const {
+Array VoxelLodTerrain::get_mesh_block_surface(
+		const Vector3i block_pos,
+		const int lod_index,
+		int &col_vertex_max,
+		int &col_index_max
+) const {
 	ZN_PROFILE_SCOPE();
 
 	const int lod_count = get_lod_count();

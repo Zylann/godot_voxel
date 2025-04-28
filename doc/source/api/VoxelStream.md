@@ -22,7 +22,7 @@ Return                                                                        | 
 [void](#)                                                                     | [flush](#i_flush) ( )                                                                                                                                                                                                                                                
 [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html)  | [get_block_size](#i_get_block_size) ( ) const                                                                                                                                                                                                                        
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)          | [get_used_channels_mask](#i_get_used_channels_mask) ( ) const                                                                                                                                                                                                        
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)          | [load_voxel_block](#i_load_voxel_block) ( [VoxelBuffer](VoxelBuffer.md) out_buffer, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) block_position, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) lod_index )  
+[ResultCode](VoxelStream.md#enumerations)                                     | [load_voxel_block](#i_load_voxel_block) ( [VoxelBuffer](VoxelBuffer.md) out_buffer, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) block_position, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) lod_index )  
 [void](#)                                                                     | [save_voxel_block](#i_save_voxel_block) ( [VoxelBuffer](VoxelBuffer.md) buffer, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) block_position, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) lod_index )      
 <p></p>
 
@@ -59,7 +59,7 @@ Note that terrains save asynchronously, so flushing might not always fulfill you
 
 *(This method has no documentation)*
 
-### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_load_voxel_block"></span> **load_voxel_block**( [VoxelBuffer](VoxelBuffer.md) out_buffer, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) block_position, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) lod_index ) 
+### [ResultCode](VoxelStream.md#enumerations)<span id="i_load_voxel_block"></span> **load_voxel_block**( [VoxelBuffer](VoxelBuffer.md) out_buffer, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) block_position, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) lod_index ) 
 
 `out_buffer`: Block of voxels to load. Must be a pre-created instance (not null).
 

@@ -17,15 +17,15 @@ Warning: methods to modify the graph should only be called from the main thread.
 ## Properties: 
 
 
-Type                                                                      | Name                                                           | Default 
-------------------------------------------------------------------------- | -------------------------------------------------------------- | --------
-[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)    | [debug_block_clipping](#i_debug_block_clipping)                | false   
-[float](https://docs.godotengine.org/en/stable/classes/class_float.html)  | [sdf_clip_threshold](#i_sdf_clip_threshold)                    | 1.5     
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)      | [subdivision_size](#i_subdivision_size)                        | 16      
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)      | [texture_mode](#i_texture_mode)                                | 0       
-[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)    | [use_optimized_execution_map](#i_use_optimized_execution_map)  | true    
-[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)    | [use_subdivision](#i_use_subdivision)                          | true    
-[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)    | [use_xz_caching](#i_use_xz_caching)                            | true    
+Type                                                                      | Name                                                           | Default                 
+------------------------------------------------------------------------- | -------------------------------------------------------------- | ------------------------
+[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)    | [debug_block_clipping](#i_debug_block_clipping)                | false                   
+[float](https://docs.godotengine.org/en/stable/classes/class_float.html)  | [sdf_clip_threshold](#i_sdf_clip_threshold)                    | 1.5                     
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)      | [subdivision_size](#i_subdivision_size)                        | 16                      
+[TextureMode](VoxelGeneratorGraph.md#enumerations)                        | [texture_mode](#i_texture_mode)                                | TEXTURE_MODE_MIXEL4 (0) 
+[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)    | [use_optimized_execution_map](#i_use_optimized_execution_map)  | true                    
+[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)    | [use_subdivision](#i_use_subdivision)                          | true                    
+[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)    | [use_xz_caching](#i_use_xz_caching)                            | true                    
 <p></p>
 
 ## Methods: 
@@ -71,7 +71,7 @@ When generating SDF blocks for a terrain, if the range analysis of a block is be
 
 When generating SDF blocks for a terrain, and if block size is divisible by this value, range analysis will operate on such subdivision. This allows to optimize away more precise areas. However, it may not be set too small otherwise overhead will outweight the benefits.
 
-### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_texture_mode"></span> **texture_mode** = 0
+### [TextureMode](VoxelGeneratorGraph.md#enumerations)<span id="i_texture_mode"></span> **texture_mode** = TEXTURE_MODE_MIXEL4 (0)
 
 Sets which voxel format will be produced by texture outputs, if present.
 
@@ -81,7 +81,7 @@ If enabled, when generating blocks for a terrain, the generator will attempt to 
 
 ### [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_use_subdivision"></span> **use_subdivision** = true
 
-If enabled, [VoxelGeneratorGraph.subdivision_size](VoxelGeneratorGraph.md#i_subdivision_size) will be used.
+If enabled, [subdivision_size](VoxelGeneratorGraph.md#i_subdivision_size) will be used.
 
 ### [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_use_xz_caching"></span> **use_xz_caching** = true
 

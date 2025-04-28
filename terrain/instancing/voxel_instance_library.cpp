@@ -129,6 +129,19 @@ const VoxelInstanceLibraryItem *VoxelInstanceLibrary::get_item_const(int id) con
 	return nullptr;
 }
 
+#ifdef TOOLS_ENABLED
+
+int VoxelInstanceLibrary::get_item_id(const VoxelInstanceLibraryItem *item) const {
+	for (auto it = _items.begin(); it != _items.end(); ++it) {
+		if (it->second == item) {
+			return it->first;
+		}
+	}
+	return -1;
+}
+
+#endif
+
 void VoxelInstanceLibrary::on_library_item_changed(int id, IInstanceLibraryItemListener::ChangeType change) {
 	switch (change) {
 		// These changes will be reported after the resource is loaded and should be rare in-game, or occur in the

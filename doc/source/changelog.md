@@ -14,6 +14,7 @@ Dev 1.4.2
 Primarily developped with Godot 4.4.1+
 
 - `VoxelBuffer`: added functions to rotate/mirror contents
+- `VoxelInstanceLibraryMultiMeshItem`: added `removal_behavior` property to trigger something when instances get removed
 - `VoxelGeneratorGraph`: implemented constant reduction, which slightly optimizes graphs running on CPU if they contain constant branches
 - `VoxelMesherBlocky`: added tint mode to modulate voxel colors using the `COLOR` channel.
 - `VoxelMesherTransvoxel`: added `Single` texturing mode, which uses only one byte per voxel to store a texture index. `VoxelGeneratorGraph` was also updated to include this mode.
@@ -23,7 +24,10 @@ Primarily developped with Godot 4.4.1+
 
 - Fixes
     - `VoxelBlockyTypeLibrary`: fixed crash when setting `types` to empty array
-    - `VoxelInstancer`: fixed instances getting generated when digging down or building up in *already meshed* chunks that had no geometry before
+    - `VoxelInstancer`: 
+        - Fixed instance removal failing randomly after at least one chunk gets unloaded
+        - Fixed instances getting generated when digging down or building up in *already meshed* chunks that had no geometry before, when using `VoxelLodTerrain`
+        - Fixed transition meshes should not be used as spawning surfaces, they caused density bias and position bias at chunk borders
     - `VoxelGeneratorGraph`: 
         - Editor: fixed error sometimes printing after closing the graph editor
         - Editor: fixed error spam `Invalid param name` after editing a graph (in some yet unknown situations)

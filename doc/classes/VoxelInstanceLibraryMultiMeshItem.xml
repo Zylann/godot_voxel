@@ -9,6 +9,15 @@
 	<tutorials>
 	</tutorials>
 	<methods>
+		<method name="_on_instance_removed" qualifiers="virtual">
+			<return type="void" />
+			<param index="0" name="instancer" type="VoxelInstancer" />
+			<param index="1" name="transform" type="Transform3D" />
+			<description>
+				This method will be called if you set [member removal_behavior] to [constant REMOVAL_BEHAVIOR_CALLBACK].
+				Note: this method can be called from within the removal of a node that is child of [VoxelInstancer]. In this context, Godot will prevent you from adding new child nodes. You can workaround that by using [method Object.call_deferred]. See also [method VoxelInstancerRigidBody.queue_free_and_notify_instancer].
+			</description>
+		</method>
 		<method name="get_collider_group_names" qualifiers="const">
 			<return type="StringName[]" />
 			<description>
@@ -76,6 +85,12 @@
 		</member>
 		<member name="mesh_lod3_distance_ratio" type="float" setter="_set_mesh_lod3_distance_ratio" getter="_get_mesh_lod3_distance_ratio" default="1.0">
 		</member>
+		<member name="removal_behavior" type="int" setter="set_removal_behavior" getter="get_removal_behavior" enum="VoxelInstanceLibraryMultiMeshItem.RemovalBehavior" default="0">
+			Specifies what should happen when instances get removed. This is useful if they should turn into more complex objects with animation or logic in them.
+		</member>
+		<member name="removal_scene" type="PackedScene" setter="set_removal_scene" getter="get_removal_scene">
+			Scene that will be used if [member removal_behavior] is set to [constant REMOVAL_BEHAVIOR_INSTANTIATE].
+		</member>
 		<member name="render_layer" type="int" setter="set_render_layer" getter="get_render_layer" default="1">
 		</member>
 		<member name="scene" type="PackedScene" setter="set_scene" getter="get_scene">
@@ -83,6 +98,16 @@
 	</members>
 	<constants>
 		<constant name="MAX_MESH_LODS" value="4">
+		</constant>
+		<constant name="REMOVAL_BEHAVIOR_NONE" value="0" enum="RemovalBehavior">
+			No extra logic will run when instances are removed.
+		</constant>
+		<constant name="REMOVAL_BEHAVIOR_INSTANTIATE" value="1" enum="RemovalBehavior">
+			Instantiates the [member removal_scene] for each instance getting removed. The scene must have a root derived from [Node3D], and will be given the same transform as the instance before being added to the scene tree. It will be added under the [VoxelInstancer] node.
+		</constant>
+		<constant name="REMOVAL_BEHAVIOR_CALLBACK" value="2" enum="RemovalBehavior">
+			Calls [method _on_instance_removed] when an instance gets removed. You should attach a script to the item in order to implement this.
+			Note: every resource can have a [member Object.script]. But in the editor, Godot currently doesn't show you that property if the resource appears in a sub-inspector. To workaround that, right-click the property in which the resource is, and choose "Edit". That will open the item in a full inspector. An alternative is to save your item as a file, and then edit it from the file browser.
 		</constant>
 	</constants>
 </class>

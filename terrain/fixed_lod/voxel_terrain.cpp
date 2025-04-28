@@ -1977,7 +1977,13 @@ void VoxelTerrain::apply_mesh_update(const VoxelEngine::BlockMeshOutput &ob) {
 		// TODO Support multi-surfaces in VoxelInstancer
 #ifdef VOXEL_ENABLE_INSTANCER
 		if (_instancer != nullptr) {
-			_instancer->on_mesh_block_enter(ob.position, ob.lod, ob.surfaces.surfaces[0].arrays);
+			_instancer->on_mesh_block_enter(
+					ob.position,
+					ob.lod,
+					ob.surfaces.surfaces[0].arrays,
+					ob.surfaces.collision_surface.submesh_vertex_end,
+					ob.surfaces.collision_surface.submesh_index_end
+			);
 		}
 #endif
 	}

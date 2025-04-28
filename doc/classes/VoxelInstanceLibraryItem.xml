@@ -8,6 +8,11 @@
 	<tutorials>
 	</tutorials>
 	<members>
+		<member name="floating_sdf_threshold" type="float" setter="set_floating_sdf_threshold" getter="get_floating_sdf_threshold" default="0.0">
+			Experimental threshold used to auto-detect when an instance becomes floating after the ground gets modified by a voxel edit.
+			An instance is determined to be floating if the SDF at its origin is greater than 0. However, in practice, SDF can be imprecise, and the way instances spawn on triangles of meshes means SDF at their position will always fluctuate a bit around 0. This can lead instances to be overly removed after an edit, or not enough. You can attempt to fix this by changing this threshold to very small values, but make sure to test the resulting behaviors.
+			WARNING: changing this too high can break instance removal entirely. While this can "turn off" automatic removal after digging ground, it is not recommended to do this when instances have no collider, because then it leaves no way of removing them.
+		</member>
 		<member name="generator" type="VoxelInstanceGenerator" setter="set_generator" getter="get_generator">
 			Generator that will be used to pick points where the item will spawn.
 		</member>

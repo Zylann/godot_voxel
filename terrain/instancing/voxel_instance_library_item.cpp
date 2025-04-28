@@ -64,6 +64,14 @@ bool VoxelInstanceLibraryItem::is_persistent() const {
 	return _persistent;
 }
 
+float VoxelInstanceLibraryItem::get_floating_sdf_threshold() const {
+	return _floating_sdf_threshold;
+}
+
+void VoxelInstanceLibraryItem::set_floating_sdf_threshold(const float new_threshold) {
+	_floating_sdf_threshold = new_threshold;
+}
+
 void VoxelInstanceLibraryItem::add_listener(IInstanceLibraryItemListener *listener, int id) {
 	ListenerSlot slot;
 	slot.listener = listener;
@@ -120,6 +128,11 @@ void VoxelInstanceLibraryItem::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_persistent", "persistent"), &VoxelInstanceLibraryItem::set_persistent);
 	ClassDB::bind_method(D_METHOD("is_persistent"), &VoxelInstanceLibraryItem::is_persistent);
 
+	ClassDB::bind_method(
+			D_METHOD("set_floating_sdf_threshold", "sd"), &VoxelInstanceLibraryItem::set_floating_sdf_threshold
+	);
+	ClassDB::bind_method(D_METHOD("get_floating_sdf_threshold"), &VoxelInstanceLibraryItem::get_floating_sdf_threshold);
+
 	ADD_PROPERTY(PropertyInfo(Variant::STRING, "name"), "set_item_name", "get_item_name");
 	ADD_PROPERTY(
 			PropertyInfo(Variant::INT, "lod_index", PROPERTY_HINT_RANGE, "0,8,1"), "set_lod_index", "get_lod_index"
@@ -130,6 +143,11 @@ void VoxelInstanceLibraryItem::_bind_methods() {
 			"get_generator"
 	);
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "persistent"), "set_persistent", "is_persistent");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::FLOAT, "floating_sdf_threshold"),
+			"set_floating_sdf_threshold",
+			"get_floating_sdf_threshold"
+	);
 }
 
 } // namespace zylann::voxel
