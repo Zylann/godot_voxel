@@ -20,6 +20,13 @@
 			<description>
 			</description>
 		</method>
+		<method name="debug_get_block_infos">
+			<return type="Dictionary" />
+			<param index="0" name="world_position" type="Vector3" />
+			<param index="1" name="item_id" type="int" />
+			<description>
+			</description>
+		</method>
 		<method name="debug_get_draw_flag" qualifiers="const">
 			<return type="bool" />
 			<param index="0" name="flag" type="int" enum="VoxelInstancer.DebugDrawFlag" />

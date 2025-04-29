@@ -25,6 +25,13 @@
 				Encodes normalized 4-float color into 16-bit integer data, for use with the WEIGHTS channel.
 			</description>
 		</method>
+		<method name="color_to_u32" qualifiers="static">
+			<return type="int" />
+			<param index="0" name="color" type="Color" />
+			<description>
+				Encodes normalized 4-float color into 32-bit integer data, for use with the COLOR channel.
+			</description>
+		</method>
 		<method name="copy">
 			<return type="void" />
 			<param index="0" name="src_pos" type="Vector3i" />

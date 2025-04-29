@@ -2,6 +2,7 @@
 // It is only in a separate header because I wanted to split things out.
 
 #include "../../util/math/vector3f.h"
+#include "blocky_tint_sampler.h"
 #include "voxel_blocky_library_base.h"
 #include "voxel_blocky_model.h"
 #include "voxel_mesher_blocky.h"
@@ -50,6 +51,7 @@ int get_side_sign(const VoxelBlockyModel::Side side) {
 template <typename TModelID>
 void append_side_skirts(
 		Span<const TModelID> buffer,
+		const TintSampler tint_sampler,
 		const Vector3T<int> jump,
 		const int z, // Coordinate of the first or last voxel (not within the padded region)
 		const int size_x,
@@ -93,7 +95,7 @@ void append_side_skirts(
 			// Check if the outer voxel occludes an inner voxel
 			// (this check is not actually accurate, maybe we'd have to do a full occlusion check using the library?)
 
-			const int nv4 = buffer[buffer_index - side_sign * jump.z];
+			const TModelID nv4 = buffer[buffer_index - side_sign * jump.z];
 			if (nv4 == AIR) {
 				continue;
 			}
@@ -123,6 +125,7 @@ void append_side_skirts(
 			}
 
 			const BakedModel::Model &model = voxel_baked_data.model;
+			const Color tint = voxel_baked_data.color * tint_sampler.evaluate(Vector3i(x, y, z));
 
 			const FixedArray<BakedModel::SideSurface, MAX_SURFACES> &side_surfaces = model.sides_surfaces[side];
 
@@ -177,7 +180,7 @@ void append_side_skirts(
 					arrays.colors.resize(arrays.colors.size() + vertex_count);
 					Color *w = arrays.colors.data() + append_index;
 					for (unsigned int i = 0; i < vertex_count; ++i) {
-						w[i] = voxel_baked_data.color;
+						w[i] = tint;
 					}
 				}
 
@@ -200,7 +203,8 @@ void append_skirts(
 		Span<const TModelID> buffer,
 		const Vector3i size,
 		StdVector<VoxelMesherBlocky::Arrays> &out_arrays_per_material,
-		const BakedLibrary &library
+		const BakedLibrary &library,
+		const TintSampler tint_sampler
 ) {
 	ZN_PROFILE_SCOPE();
 
@@ -215,12 +219,12 @@ void append_skirts(
 	constexpr VoxelBlockyModel::Side NEGATIVE_Z = VoxelBlockyModel::SIDE_NEGATIVE_Z;
 	constexpr VoxelBlockyModel::Side POSITIVE_Z = VoxelBlockyModel::SIDE_POSITIVE_Z;
 
-	append_side_skirts(buffer, jump.xyz(), 0, size.x, size.y, NEGATIVE_Z, library, out);
-	append_side_skirts(buffer, jump.xyz(), (size.z - 1), size.x, size.y, POSITIVE_Z, library, out);
-	append_side_skirts(buffer, jump.zyx(), 0, size.z, size.y, NEGATIVE_X, library, out);
-	append_side_skirts(buffer, jump.zyx(), (size.x - 1), size.z, size.y, POSITIVE_X, library, out);
-	append_side_skirts(buffer, jump.zxy(), 0, size.z, size.x, NEGATIVE_Y, library, out);
-	append_side_skirts(buffer, jump.zxy(), (size.y - 1), size.z, size.x, POSITIVE_Y, library, out);
+	append_side_skirts(buffer, tint_sampler, jump.xyz(), 0, size.x, size.y, NEGATIVE_Z, library, out);
+	append_side_skirts(buffer, tint_sampler, jump.xyz(), (size.z - 1), size.x, size.y, POSITIVE_Z, library, out);
+	append_side_skirts(buffer, tint_sampler, jump.zyx(), 0, size.z, size.y, NEGATIVE_X, library, out);
+	append_side_skirts(buffer, tint_sampler, jump.zyx(), (size.x - 1), size.z, size.y, POSITIVE_X, library, out);
+	append_side_skirts(buffer, tint_sampler, jump.zxy(), 0, size.z, size.x, NEGATIVE_Y, library, out);
+	append_side_skirts(buffer, tint_sampler, jump.zxy(), (size.y - 1), size.z, size.x, POSITIVE_Y, library, out);
 }
 
 } // namespace zylann::voxel::blocky

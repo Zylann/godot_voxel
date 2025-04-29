@@ -14,8 +14,10 @@ Dev 1.4.2
 Primarily developped with Godot 4.4.1+
 
 - `VoxelBuffer`: added functions to rotate/mirror contents
+- `VoxelInstanceLibraryItem`: Exposed `floating_sdf_*` parameters to tune how floating instances are detected after digging ground around them.
 - `VoxelInstanceLibraryMultiMeshItem`: added `removal_behavior` property to trigger something when instances get removed
 - `VoxelGeneratorGraph`: implemented constant reduction, which slightly optimizes graphs running on CPU if they contain constant branches
+- `VoxelMesherBlocky`: added tint mode to modulate voxel colors using the `COLOR` channel.
 - `VoxelMesherTransvoxel`: added `Single` texturing mode, which uses only one byte per voxel to store a texture index. `VoxelGeneratorGraph` was also updated to include this mode.
 - `VoxelTool`: added `do_mesh` to replace `stamp_sdf`. Supported on terrains only.
 - Build system: added options to turn off features when doing custom builds

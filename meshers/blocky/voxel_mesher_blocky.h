@@ -2,8 +2,10 @@
 #define VOXEL_MESHER_BLOCKY_H
 
 #include "../../util/godot/classes/mesh.h"
+#include "../../util/math/color.h"
 #include "../../util/thread/rw_lock.h"
 #include "../voxel_mesher.h"
+#include "blocky_tint_sampler.h"
 #include "voxel_blocky_library_base.h"
 
 #include <vector>
@@ -43,6 +45,15 @@ public:
 	void set_shadow_occluder_side(Side side, bool enabled);
 	bool get_shadow_occluder_side(Side side) const;
 	uint8_t get_shadow_occluder_mask() const;
+
+	enum TintMode {
+		TINT_NONE = blocky::TintSampler::MODE_NONE,
+		TINT_RAW_COLOR = blocky::TintSampler::MODE_RAW,
+		TINT_MODE_COUNT = blocky::TintSampler::MODE_COUNT
+	};
+
+	TintMode get_tint_mode() const;
+	void set_tint_mode(const TintMode new_mode);
 
 	void build(VoxelMesher::Output &output, const VoxelMesher::Input &input) override;
 
@@ -100,6 +111,7 @@ private:
 		bool bake_occlusion = true;
 		uint8_t shadow_occluders_mask = 0;
 		Ref<VoxelBlockyLibraryBase> library;
+		TintMode tint_mode = TINT_NONE;
 	};
 
 	struct Cache {
@@ -156,5 +168,6 @@ inline bool is_face_visible(
 } // namespace zylann::voxel
 
 VARIANT_ENUM_CAST(zylann::voxel::VoxelMesherBlocky::Side)
+VARIANT_ENUM_CAST(zylann::voxel::VoxelMesherBlocky::TintMode)
 
 #endif // VOXEL_MESHER_BLOCKY_H
