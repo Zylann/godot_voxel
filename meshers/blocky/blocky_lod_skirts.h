@@ -95,7 +95,7 @@ void append_side_skirts(
 			// Check if the outer voxel occludes an inner voxel
 			// (this check is not actually accurate, maybe we'd have to do a full occlusion check using the library?)
 
-			const int nv4 = buffer[buffer_index - side_sign * jump.z];
+			const TModelID nv4 = buffer[buffer_index - side_sign * jump.z];
 			if (nv4 == AIR) {
 				continue;
 			}
