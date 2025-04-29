@@ -180,7 +180,7 @@ void append_side_skirts(
 					arrays.colors.resize(arrays.colors.size() + vertex_count);
 					Color *w = arrays.colors.data() + append_index;
 					for (unsigned int i = 0; i < vertex_count; ++i) {
-						w[i] = voxel_baked_data.color;
+						w[i] = tint;
 					}
 				}
 
