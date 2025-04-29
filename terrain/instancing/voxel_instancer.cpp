@@ -15,6 +15,7 @@
 #include "../../util/godot/classes/time.h"
 #include "../../util/godot/classes/viewport.h"
 #include "../../util/godot/core/array.h"
+#include "../../util/godot/core/basis.h"
 #include "../../util/math/conv.h"
 #include "../../util/profiling.h"
 #include "../../util/string/format.h"
@@ -1677,6 +1678,38 @@ SaveBlockDataTask *VoxelInstancer::save_block(
 	return task;
 }
 
+inline bool detect_ground(
+		const Transform3D &mm_transform,
+		const Vector3i block_origin_in_voxels,
+		const float sd_threshold,
+		const float sd_offset,
+		const bool bidirectional,
+		const VoxelTool &voxel_tool
+) {
+	const Vector3 instance_up = zylann::godot::BasisUtility::get_up(mm_transform.basis);
+	const Vector3 normal_offset = sd_offset * instance_up;
+	const Vector3 instance_pos_terrain = mm_transform.origin + Vector3(block_origin_in_voxels);
+	const Vector3 instance_pos_terrain_below = instance_pos_terrain - normal_offset;
+
+	// TODO Optimize: use a transaction instead of random single queries
+	const float sdf_below = voxel_tool.get_voxel_f_interpolated(instance_pos_terrain_below);
+	if (sdf_below <= sd_threshold) {
+		// Still enough ground
+		return true;
+	}
+
+	if (bidirectional) {
+		// Attempt sampling above instead, in case the instance is flipped over
+		const Vector3 instance_pos_terrain_above = instance_pos_terrain + normal_offset;
+		const float sdf_above = voxel_tool.get_voxel_f_interpolated(instance_pos_terrain_above);
+		if (sdf_above <= sd_threshold) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
 void VoxelInstancer::remove_floating_multimesh_instances(
 		Block &block,
 		const Transform3D &parent_transform,
@@ -1684,6 +1717,8 @@ void VoxelInstancer::remove_floating_multimesh_instances(
 		const VoxelTool &voxel_tool,
 		const int block_size_po2,
 		const float sd_threshold,
+		const float sd_offset,
+		const bool bidirectional,
 		const MMRemovalCallback callback,
 		MMRemovalCallbackContext callback_context
 ) {
@@ -1715,14 +1750,7 @@ void VoxelInstancer::remove_floating_multimesh_instances(
 			continue;
 		}
 
-		const Vector3 instance_pos_terrain = mm_transform.origin + Vector3(block_origin_in_voxels);
-
-		// TODO Optimize: use a transaction instead of random single queries
-		// 1-voxel cheap check without interpolation
-		// const float sdf = voxel_tool.get_voxel_f(voxel_pos);
-		const float sdf = voxel_tool.get_voxel_f_interpolated(instance_pos_terrain);
-		if (sdf <= sd_threshold) {
-			// Still enough ground
+		if (detect_ground(mm_transform, block_origin_in_voxels, sd_threshold, sd_offset, bidirectional, voxel_tool)) {
 			continue;
 		}
 
@@ -1952,6 +1980,7 @@ void VoxelInstancer::on_area_edited(Box3i p_voxel_box) {
 
 			VoxelInstanceLibraryItem *item = nullptr;
 			VoxelInstanceLibraryMultiMeshItem *mm_item = nullptr;
+			bool bidirectional = false;
 
 			const Vector3i bmax = render_blocks_box.position + render_blocks_box.size;
 			Vector3i block_pos;
@@ -1969,6 +1998,10 @@ void VoxelInstancer::on_area_edited(Box3i p_voxel_box) {
 
 						if (item == nullptr) {
 							item = _library->get_item(layer_id);
+							Ref<VoxelInstanceGenerator> generator = item->get_generator();
+							if (generator.is_valid()) {
+								bidirectional = generator->get_random_vertical_flip();
+							}
 						}
 
 						if (block.scene_instances.size() > 0) {
@@ -1996,6 +2029,8 @@ void VoxelInstancer::on_area_edited(Box3i p_voxel_box) {
 									voxel_tool,
 									block_size_po2,
 									item->get_floating_sdf_threshold(),
+									item->get_floating_sdf_offset_along_normal(),
+									bidirectional,
 									callback,
 									callback_context
 							);
