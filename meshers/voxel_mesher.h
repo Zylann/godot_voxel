@@ -8,6 +8,7 @@
 #include "../util/godot/classes/image.h"
 #include "../util/godot/classes/mesh.h"
 #include "../util/macros.h"
+#include "voxel_processor.h"
 
 ZN_GODOT_FORWARD_DECLARE(class ShaderMaterial)
 
@@ -130,6 +131,9 @@ public:
 	// Such material is not meant to be modified.
 	virtual Ref<ShaderMaterial> get_default_lod_material() const;
 
+	void set_preprocessor(Ref<VoxelProcessor> processor);
+	Ref<VoxelProcessor> get_preprocessor() const;
+
 protected:
 	Ref<Mesh> _b_build_mesh(Ref<godot::VoxelBuffer> voxels, TypedArray<Material> materials, Dictionary additional_data);
 	static void _bind_methods();
@@ -140,6 +144,8 @@ private:
 	// Set in constructor and never changed after.
 	unsigned int _minimum_padding = 0;
 	unsigned int _maximum_padding = 0;
+
+	Ref<VoxelProcessor> _preprocessor;
 };
 
 } // namespace zylann::voxel

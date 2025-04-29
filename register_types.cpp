@@ -109,6 +109,9 @@
 #include "util/godot/classes/mesh_instance_3d.h"
 #include "util/godot/classes/sprite_2d.h"
 
+#include "meshers/voxel_processor.h"
+#include "meshers/voxel_processor_sdf_to_blocky.h"
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #ifdef TOOLS_ENABLED
 
@@ -322,6 +325,9 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_abstract_class<VoxelMesher>();
 		ClassDB::register_class<VoxelMesherBlocky>();
 		ClassDB::register_class<VoxelMesherCubes>();
+
+		ClassDB::register_class<VoxelProcessor>();
+		ClassDB::register_class<VoxelProcessorSDFToBlocky>();
 
 		// See SCsub
 #ifdef VOXEL_ENABLE_FAST_NOISE_2

@@ -450,12 +450,18 @@ void MeshBlockTask::gather_voxels_cpu() {
 	const unsigned int min_padding = mesher->get_minimum_padding();
 	const unsigned int max_padding = mesher->get_maximum_padding();
 
+	uint32_t channels_mask = mesher->get_used_channels_mask();
+	Ref<VoxelProcessor> preprocessor = mesher->get_preprocessor();
+	if (preprocessor.is_valid()) {
+		channels_mask = preprocessor->get_input_channels_mask();
+	}
+
 	copy_block_and_neighbors(
 			to_span(blocks, blocks_count),
 			_voxels,
 			min_padding,
 			max_padding,
-			mesher->get_used_channels_mask(),
+			channels_mask,
 			meshing_dependency->generator,
 			*data,
 			lod_index,
@@ -504,6 +510,11 @@ void MeshBlockTask::build_mesh() {
 			_voxels.get_size() - Vector3iUtil::create(mesher->get_minimum_padding() + mesher->get_maximum_padding());
 
 	const Vector3i origin_in_voxels = mesh_block_position * (mesh_block_size << lod_index);
+
+	Ref<VoxelProcessor> preprocessor = mesher->get_preprocessor();
+	if (preprocessor.is_valid()) {
+		preprocessor->process_block(_voxels);
+	}
 
 	const VoxelMesher::Input input{
 		_voxels,

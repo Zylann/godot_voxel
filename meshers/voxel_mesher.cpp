@@ -9,8 +9,8 @@
 #include "transvoxel/transvoxel_cell_iterator.h"
 
 #ifdef VOXEL_ENABLE_SMOOTH_MESHING
-#include "../meshers/transvoxel/voxel_mesher_transvoxel.h"
 #include "../engine/detail_rendering/detail_rendering.h"
+#include "../meshers/transvoxel/voxel_mesher_transvoxel.h"
 #endif
 
 using namespace zylann::godot;
@@ -191,6 +191,14 @@ Ref<Mesh> VoxelMesher::_b_build_mesh(
 	return build_mesh(voxels->get_buffer(), materials, additional_data);
 }
 
+void VoxelMesher::set_preprocessor(Ref<VoxelProcessor> processor) {
+	_preprocessor = processor;
+}
+
+Ref<VoxelProcessor> VoxelMesher::get_preprocessor() const {
+	return _preprocessor;
+}
+
 void VoxelMesher::_bind_methods() {
 	// Shortcut if you want to generate a mesh directly from a fixed grid of voxels.
 	// Useful for testing the different meshers.
@@ -202,6 +210,17 @@ void VoxelMesher::_bind_methods() {
 	);
 	ClassDB::bind_method(D_METHOD("get_minimum_padding"), &VoxelMesher::get_minimum_padding);
 	ClassDB::bind_method(D_METHOD("get_maximum_padding"), &VoxelMesher::get_maximum_padding);
+
+	ClassDB::bind_method(D_METHOD("set_preprocessor", "processor"), &VoxelMesher::set_preprocessor);
+	ClassDB::bind_method(D_METHOD("get_preprocessor"), &VoxelMesher::get_preprocessor);
+
+	ADD_PROPERTY(
+			PropertyInfo(
+					Variant::OBJECT, "preprocessor", PROPERTY_HINT_RESOURCE_TYPE, VoxelProcessor::get_class_static()
+			),
+			"set_preprocessor",
+			"get_preprocessor"
+	);
 }
 
 } // namespace zylann::voxel
