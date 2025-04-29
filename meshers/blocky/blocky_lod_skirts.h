@@ -104,6 +104,10 @@ void append_side_skirts(
 
 			const Vector3f pos = side_to_block_coordinates(Vector3f(x - pad, y - pad, z - (side_sign + 1)), side);
 
+			if (nv4 >= library.models.size()) {
+				// Bad ID, skip
+				continue;
+			}
 			const BakedModel &voxel_baked_data = library.models[nv4];
 
 			if (!voxel_baked_data.lod_skirts) {

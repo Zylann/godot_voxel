@@ -242,6 +242,8 @@ private:
 			const VoxelTool &voxel_tool,
 			const int block_size_po2,
 			const float sd_threshold,
+			const float sd_offset,
+			const bool bidirectional,
 			const MMRemovalCallback callback,
 			MMRemovalCallbackContext callback_context
 	);

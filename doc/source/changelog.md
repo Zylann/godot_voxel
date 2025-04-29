@@ -14,6 +14,7 @@ Dev 1.4.2
 Primarily developped with Godot 4.4.1+
 
 - `VoxelBuffer`: added functions to rotate/mirror contents
+- `VoxelInstanceLibraryItem`: Exposed `floating_sdf_*` parameters to tune how floating instances are detected after digging ground around them.
 - `VoxelInstanceLibraryMultiMeshItem`: added `removal_behavior` property to trigger something when instances get removed
 - `VoxelGeneratorGraph`: implemented constant reduction, which slightly optimizes graphs running on CPU if they contain constant branches
 - `VoxelMesherBlocky`: added tint mode to modulate voxel colors using the `COLOR` channel.
@@ -31,6 +32,7 @@ Primarily developped with Godot 4.4.1+
     - `VoxelGeneratorGraph`: 
         - Editor: fixed error sometimes printing after closing the graph editor
         - Editor: fixed error spam `Invalid param name` after editing a graph (in some yet unknown situations)
+    - `VoxelMesherBlocky`: Fixed crash when invalid model IDs are present at chunk borders with `VoxelLodTerrain`
     - `VoxelMesherTransvoxel`: Fixed some incorrect geometry changes near positive LOD borders, notably when voxel textures are used. Edge cases remain but can be fixed with a shader hack for now.
     - `VoxelStreamRegionFiles`: GDExtension: fixed error creating directories
     - `VoxelStreamSQLite`: `preferred_coordinate_format` was incorrectly exposed (fixed thanks to @beicause)
