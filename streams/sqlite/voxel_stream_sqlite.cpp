@@ -193,6 +193,8 @@ void VoxelStreamSQLite::save_voxel_blocks(Span<VoxelStream::VoxelQueryData> p_bl
 	}
 }
 
+#ifdef VOXEL_ENABLE_INSTANCER
+
 bool VoxelStreamSQLite::supports_instance_blocks() const {
 	return true;
 }
@@ -291,6 +293,8 @@ void VoxelStreamSQLite::save_instance_blocks(Span<VoxelStream::InstancesQueryDat
 	}
 }
 
+#endif
+
 void VoxelStreamSQLite::load_all_blocks(FullLoadingResult &result) {
 	ZN_PROFILE_SCOPE();
 
@@ -331,6 +335,7 @@ void VoxelStreamSQLite::load_all_blocks(FullLoadingResult &result) {
 				result_block.voxels = voxels;
 			}
 
+#ifdef VOXEL_ENABLE_INSTANCER
 			if (instances_data.size() > 0) {
 				StdVector<uint8_t> &temp_block_data = get_tls_temp_block_data();
 				if (!CompressedData::decompress(instances_data, temp_block_data)) {
@@ -343,6 +348,7 @@ void VoxelStreamSQLite::load_all_blocks(FullLoadingResult &result) {
 					return;
 				}
 			}
+#endif
 
 			ctx->result.blocks.push_back(std::move(result_block));
 		}
@@ -379,7 +385,9 @@ void VoxelStreamSQLite::flush_cache_to_connection(sqlite::Connection *p_connecti
 	ERR_FAIL_COND(p_connection == nullptr);
 	ERR_FAIL_COND(p_connection->begin_transaction() == false);
 
+#ifdef VOXEL_ENABLE_INSTANCER
 	StdVector<uint8_t> &temp_data = get_tls_temp_block_data();
+#endif
 	StdVector<uint8_t> &temp_compressed_data = get_tls_temp_compressed_block_data();
 
 	const BlockLocation::CoordinateFormat coordinate_format = p_connection->get_meta().coordinate_format;
@@ -387,9 +395,13 @@ void VoxelStreamSQLite::flush_cache_to_connection(sqlite::Connection *p_connecti
 	const unsigned int lod_count = BlockLocation::get_lod_count(coordinate_format);
 
 	// TODO Needs better error rollback handling
-	_cache.flush([p_connection, &temp_data, &temp_compressed_data, coordinate_range, lod_count](
-						 VoxelStreamCache::Block &block
-				 ) {
+	_cache.flush([p_connection,
+#ifdef VOXEL_ENABLE_INSTANCER
+				  &temp_data,
+#endif
+				  &temp_compressed_data,
+				  coordinate_range,
+				  lod_count](VoxelStreamCache::Block &block) {
 		ZN_ASSERT_RETURN(validate_range(block.position, block.lod, coordinate_range, lod_count));
 
 		BlockLocation loc;
@@ -409,6 +421,7 @@ void VoxelStreamSQLite::flush_cache_to_connection(sqlite::Connection *p_connecti
 
 		// Save instances
 		temp_compressed_data.clear();
+#ifdef VOXEL_ENABLE_INSTANCER
 		if (block.instances != nullptr) {
 			temp_data.clear();
 
@@ -418,6 +431,7 @@ void VoxelStreamSQLite::flush_cache_to_connection(sqlite::Connection *p_connecti
 					to_span_const(temp_data), temp_compressed_data, CompressedData::COMPRESSION_NONE
 			));
 		}
+#endif
 		p_connection->save_block(loc, to_span(temp_compressed_data), sqlite::Connection::INSTANCES);
 
 		// TODO Optimization: add a version of the query that can update both at once
@@ -597,8 +611,8 @@ void VoxelStreamSQLite::_bind_methods() {
 					PROPERTY_HINT_ENUM,
 					"Int64_X16_Y16_Z16_LOD16,Int64_X19_Y19_Z19_LOD7,String_CSD,Blob80_X25_Y25_Z25_LOD5"
 			),
-			"set_database_path",
-			"get_database_path"
+			"set_preferred_coordinate_format",
+			"get_preferred_coordinate_format"
 	);
 }
 

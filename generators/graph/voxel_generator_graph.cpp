@@ -87,8 +87,20 @@ int VoxelGeneratorGraph::get_used_channels_mask() const {
 		mask |= (1 << VoxelBuffer::CHANNEL_TYPE);
 	}
 	if (runtime_ptr->weight_outputs_count > 0 || runtime_ptr->single_texture_output_index != -1) {
-		mask |= (1 << VoxelBuffer::CHANNEL_INDICES);
-		mask |= (1 << VoxelBuffer::CHANNEL_WEIGHTS);
+		switch (_texture_mode) {
+			case TEXTURE_MODE_MIXEL4:
+				mask |= (1 << VoxelBuffer::CHANNEL_INDICES);
+				mask |= (1 << VoxelBuffer::CHANNEL_WEIGHTS);
+				break;
+
+			case TEXTURE_MODE_SINGLE:
+				mask |= (1 << VoxelBuffer::CHANNEL_INDICES);
+				break;
+
+			default:
+				ZN_PRINT_ERROR_ONCE("Unknown texture mode");
+				break;
+		}
 	}
 	return mask;
 }
@@ -125,17 +137,27 @@ bool VoxelGeneratorGraph::is_using_xz_caching() const {
 	return _use_xz_caching;
 }
 
+void VoxelGeneratorGraph::set_texture_mode(const TextureMode mode) {
+	ZN_ASSERT_RETURN(mode >= 0 && mode < TEXTURE_MODE_COUNT);
+	_texture_mode = mode;
+}
+
+VoxelGeneratorGraph::TextureMode VoxelGeneratorGraph::get_texture_mode() const {
+	return _texture_mode;
+}
+
 // TODO Optimization: generating indices and weights on every voxel of a block might be avoidable
 // Instead, we could only generate them near zero-crossings, because this is where materials will be seen.
 // The problem is that it's harder to manage at the moment, to support edited blocks and LOD...
-void VoxelGeneratorGraph::gather_indices_and_weights(
+void VoxelGeneratorGraph::gather_texturing_data_from_weight_outputs(
 		Span<const WeightOutput> weight_outputs,
 		const pg::Runtime::State &state,
-		Vector3i rmin,
-		Vector3i rmax,
-		int ry,
+		const Vector3i rmin,
+		const Vector3i rmax,
+		const int ry,
 		VoxelBuffer &out_voxel_buffer,
-		FixedArray<uint8_t, 4> spare_indices
+		const FixedArray<uint8_t, 4> spare_indices,
+		const VoxelGeneratorGraph::TextureMode mode
 ) {
 	ZN_PROFILE_SCOPE();
 
@@ -185,101 +207,129 @@ void VoxelGeneratorGraph::gather_indices_and_weights(
 		}
 	}
 
-	if (buffers_count <= 4) {
-		// Pick all results and fill with spare indices to keep semantic
-		size_t value_index = 0;
-		for (int rz = rmin.z; rz < rmax.z; ++rz) {
-			for (int rx = rmin.x; rx < rmax.x; ++rx) {
-				FixedArray<uint8_t, 4> weights;
-				FixedArray<uint8_t, 4> indices = spare_indices;
-				fill(weights, uint8_t(0));
-				for (unsigned int oi = 0; oi < buffers_count; ++oi) {
-					const float weight = buffers.get_weight(oi, value_index);
-					// TODO Optimization: weight output nodes could already multiply by 255 and clamp afterward
-					// so we would not need to do it here
-					weights[oi] = math::clamp(weight * 255.f, 0.f, 255.f);
-					indices[oi] = weight_outputs[oi].layer_index;
-				}
-				debug_check_texture_indices(indices);
-				const uint16_t encoded_indices =
-						encode_indices_to_packed_u16(indices[0], indices[1], indices[2], indices[3]);
-				const uint16_t encoded_weights =
-						encode_weights_to_packed_u16_lossy(weights[0], weights[1], weights[2], weights[3]);
-				// TODO Flatten this further?
-				out_voxel_buffer.set_voxel(encoded_indices, rx, ry, rz, VoxelBuffer::CHANNEL_INDICES);
-				out_voxel_buffer.set_voxel(encoded_weights, rx, ry, rz, VoxelBuffer::CHANNEL_WEIGHTS);
-				++value_index;
-			}
-		}
-
-	} else if (buffers_count == 4) {
-		// Pick all results
-		size_t value_index = 0;
-		for (int rz = rmin.z; rz < rmax.z; ++rz) {
-			for (int rx = rmin.x; rx < rmax.x; ++rx) {
-				FixedArray<uint8_t, 4> weights;
-				FixedArray<uint8_t, 4> indices;
-				for (unsigned int oi = 0; oi < buffers_count; ++oi) {
-					const float weight = buffers.get_weight(oi, value_index);
-					weights[oi] = math::clamp(weight * 255.f, 0.f, 255.f);
-					indices[oi] = weight_outputs[oi].layer_index;
-				}
-				const uint16_t encoded_indices =
-						encode_indices_to_packed_u16(indices[0], indices[1], indices[2], indices[3]);
-				const uint16_t encoded_weights =
-						encode_weights_to_packed_u16_lossy(weights[0], weights[1], weights[2], weights[3]);
-				// TODO Flatten this further?
-				out_voxel_buffer.set_voxel(encoded_indices, rx, ry, rz, VoxelBuffer::CHANNEL_INDICES);
-				out_voxel_buffer.set_voxel(encoded_weights, rx, ry, rz, VoxelBuffer::CHANNEL_WEIGHTS);
-				++value_index;
-			}
-		}
-
-	} else {
-		// More weights than we can have per voxel. Will need to pick most represented weights
-		const float pivot = 1.f / 5.f;
-		size_t value_index = 0;
-		FixedArray<uint8_t, 16> skipped_outputs;
-		for (int rz = rmin.z; rz < rmax.z; ++rz) {
-			for (int rx = rmin.x; rx < rmax.x; ++rx) {
-				FixedArray<uint8_t, 4> weights;
-				FixedArray<uint8_t, 4> indices;
-				unsigned int skipped_outputs_count = 0;
-				fill(indices, uint8_t(0));
-				weights[0] = 255;
-				weights[1] = 0;
-				weights[2] = 0;
-				weights[3] = 0;
-				unsigned int recorded_weights = 0;
-				// Pick up weights above pivot (this is not as correct as a sort but faster)
-				for (unsigned int oi = 0; oi < buffers_count && recorded_weights < indices.size(); ++oi) {
-					const float weight = buffers.get_weight(oi, value_index);
-
-					if (weight > pivot) {
-						weights[recorded_weights] = math::clamp(weight * 255.f, 0.f, 255.f);
-						indices[recorded_weights] = weight_outputs[oi].layer_index;
-						++recorded_weights;
-					} else {
-						skipped_outputs[skipped_outputs_count] = oi;
-						++skipped_outputs_count;
+	switch (mode) {
+		case TEXTURE_MODE_MIXEL4: {
+			if (buffers_count <= 4) {
+				// Pick all results and fill with spare indices to keep semantic
+				size_t value_index = 0;
+				for (int rz = rmin.z; rz < rmax.z; ++rz) {
+					for (int rx = rmin.x; rx < rmax.x; ++rx) {
+						FixedArray<uint8_t, 4> weights;
+						FixedArray<uint8_t, 4> indices = spare_indices;
+						fill(weights, uint8_t(0));
+						for (unsigned int oi = 0; oi < buffers_count; ++oi) {
+							const float weight = buffers.get_weight(oi, value_index);
+							// TODO Optimization: weight output nodes could already multiply by 255 and clamp afterward
+							// so we would not need to do it here
+							weights[oi] = math::clamp(weight * 255.f, 0.f, 255.f);
+							indices[oi] = weight_outputs[oi].layer_index;
+						}
+						debug_check_texture_indices(indices);
+						const uint16_t encoded_indices =
+								encode_indices_to_packed_u16(indices[0], indices[1], indices[2], indices[3]);
+						const uint16_t encoded_weights =
+								encode_weights_to_packed_u16_lossy(weights[0], weights[1], weights[2], weights[3]);
+						// TODO Flatten this further?
+						out_voxel_buffer.set_voxel(encoded_indices, rx, ry, rz, VoxelBuffer::CHANNEL_INDICES);
+						out_voxel_buffer.set_voxel(encoded_weights, rx, ry, rz, VoxelBuffer::CHANNEL_WEIGHTS);
+						++value_index;
 					}
 				}
-				// If we found less outputs above pivot than expected, fill with some skipped outputs.
-				// We have to do this because if an index appears twice with a different corresponding weight,
-				// then the latest weight will take precedence, which would be unwanted
-				for (unsigned int oi = recorded_weights; oi < indices.size(); ++oi) {
-					indices[oi] = skipped_outputs[oi - recorded_weights];
+
+			} else if (buffers_count == 4) {
+				// Pick all results
+				size_t value_index = 0;
+				for (int rz = rmin.z; rz < rmax.z; ++rz) {
+					for (int rx = rmin.x; rx < rmax.x; ++rx) {
+						FixedArray<uint8_t, 4> weights;
+						FixedArray<uint8_t, 4> indices;
+						for (unsigned int oi = 0; oi < buffers_count; ++oi) {
+							const float weight = buffers.get_weight(oi, value_index);
+							weights[oi] = math::clamp(weight * 255.f, 0.f, 255.f);
+							indices[oi] = weight_outputs[oi].layer_index;
+						}
+						const uint16_t encoded_indices =
+								encode_indices_to_packed_u16(indices[0], indices[1], indices[2], indices[3]);
+						const uint16_t encoded_weights =
+								encode_weights_to_packed_u16_lossy(weights[0], weights[1], weights[2], weights[3]);
+						// TODO Flatten this further?
+						out_voxel_buffer.set_voxel(encoded_indices, rx, ry, rz, VoxelBuffer::CHANNEL_INDICES);
+						out_voxel_buffer.set_voxel(encoded_weights, rx, ry, rz, VoxelBuffer::CHANNEL_WEIGHTS);
+						++value_index;
+					}
 				}
-				const uint16_t encoded_indices =
-						encode_indices_to_packed_u16(indices[0], indices[1], indices[2], indices[3]);
-				const uint16_t encoded_weights =
-						encode_weights_to_packed_u16_lossy(weights[0], weights[1], weights[2], weights[3]);
-				// TODO Flatten this further?
-				out_voxel_buffer.set_voxel(encoded_indices, rx, ry, rz, VoxelBuffer::CHANNEL_INDICES);
-				out_voxel_buffer.set_voxel(encoded_weights, rx, ry, rz, VoxelBuffer::CHANNEL_WEIGHTS);
-				++value_index;
+
+			} else {
+				// More weights than we can have per voxel. Will need to pick most represented weights
+				const float pivot = 1.f / 5.f;
+				size_t value_index = 0;
+				FixedArray<uint8_t, 16> skipped_outputs;
+				for (int rz = rmin.z; rz < rmax.z; ++rz) {
+					for (int rx = rmin.x; rx < rmax.x; ++rx) {
+						FixedArray<uint8_t, 4> weights;
+						FixedArray<uint8_t, 4> indices;
+						unsigned int skipped_outputs_count = 0;
+						fill(indices, uint8_t(0));
+						weights[0] = 255;
+						weights[1] = 0;
+						weights[2] = 0;
+						weights[3] = 0;
+						unsigned int recorded_weights = 0;
+						// Pick up weights above pivot (this is not as correct as a sort but faster)
+						for (unsigned int oi = 0; oi < buffers_count && recorded_weights < indices.size(); ++oi) {
+							const float weight = buffers.get_weight(oi, value_index);
+
+							if (weight > pivot) {
+								weights[recorded_weights] = math::clamp(weight * 255.f, 0.f, 255.f);
+								indices[recorded_weights] = weight_outputs[oi].layer_index;
+								++recorded_weights;
+							} else {
+								skipped_outputs[skipped_outputs_count] = oi;
+								++skipped_outputs_count;
+							}
+						}
+						// If we found less outputs above pivot than expected, fill with some skipped outputs.
+						// We have to do this because if an index appears twice with a different corresponding weight,
+						// then the latest weight will take precedence, which would be unwanted
+						for (unsigned int oi = recorded_weights; oi < indices.size(); ++oi) {
+							indices[oi] = skipped_outputs[oi - recorded_weights];
+						}
+						const uint16_t encoded_indices =
+								encode_indices_to_packed_u16(indices[0], indices[1], indices[2], indices[3]);
+						const uint16_t encoded_weights =
+								encode_weights_to_packed_u16_lossy(weights[0], weights[1], weights[2], weights[3]);
+						// TODO Flatten this further?
+						out_voxel_buffer.set_voxel(encoded_indices, rx, ry, rz, VoxelBuffer::CHANNEL_INDICES);
+						out_voxel_buffer.set_voxel(encoded_weights, rx, ry, rz, VoxelBuffer::CHANNEL_WEIGHTS);
+						++value_index;
+					}
+				}
 			}
-		}
+		} break;
+
+		case TEXTURE_MODE_SINGLE: {
+			size_t value_index = 0;
+			for (int rz = rmin.z; rz < rmax.z; ++rz) {
+				for (int rx = rmin.x; rx < rmax.x; ++rx) {
+					// Take highest weight as the index
+					float highest_weight = 0.f;
+					uint8_t selected_index = 0;
+					for (unsigned int oi = 0; oi < buffers_count; ++oi) {
+						const float weight = buffers.get_weight(oi, value_index);
+						if (weight > highest_weight) {
+							highest_weight = weight;
+							selected_index = weight_outputs[oi].layer_index;
+						}
+					}
+					out_voxel_buffer.set_voxel(selected_index, rx, ry, rz, VoxelBuffer::CHANNEL_INDICES);
+					++value_index;
+				}
+			}
+		} break;
+
+		default:
+			ZN_PRINT_ERROR_ONCE("Unknown texture mode");
+			break;
 	}
 }
 
@@ -304,33 +354,107 @@ constexpr inline uint16_t make_encoded_indices_for_single_texture(uint8_t index)
 	// likely for the format to change to become simpler instead
 }
 
-// TODO Optimization: this is a simplified output using a complex system.
-// We should implement a texturing system that knows each voxel has a single texture.
-void gather_indices_and_weights_from_single_texture(
-		unsigned int output_buffer_index,
+void fill_texturing_data_from_single_texture_index(
+		VoxelBuffer &out_buffer,
+		const int index,
+		const Vector3i rmin,
+		const Vector3i rmax,
+		const VoxelGeneratorGraph::TextureMode mode
+) {
+	switch (mode) {
+		case VoxelGeneratorGraph::TEXTURE_MODE_MIXEL4: {
+			const uint8_t cindex = math::clamp(index, 0, 15);
+			// Make sure other indices are different so the weights associated with them don't
+			// override the first index's weight
+			const uint16_t encoded_indices = make_encoded_indices_for_single_texture(cindex);
+			const uint16_t encoded_weights = make_encoded_weights_for_single_texture();
+			out_buffer.fill_area(encoded_indices, rmin, rmax, VoxelBuffer::CHANNEL_INDICES);
+			out_buffer.fill_area(encoded_weights, rmin, rmax, VoxelBuffer::CHANNEL_WEIGHTS);
+		} break;
+
+		case VoxelGeneratorGraph::TEXTURE_MODE_SINGLE: {
+			const uint8_t cindex = math::clamp(index, 0, 255);
+			out_buffer.fill_area(cindex, rmin, rmax, VoxelBuffer::CHANNEL_INDICES);
+		} break;
+
+		default:
+			ZN_PRINT_ERROR_ONCE("Unknown texture mode");
+			break;
+	}
+}
+
+void fill_texturing_data_from_single_texture_index(
+		VoxelBuffer &out_buffer,
+		const int index,
+		const VoxelGeneratorGraph::TextureMode mode
+) {
+	switch (mode) {
+		case VoxelGeneratorGraph::TEXTURE_MODE_MIXEL4: {
+			const uint8_t cindex = math::clamp(index, 0, 15);
+			// Make sure other indices are different so the weights associated with them don't
+			// override the first index's weight
+			const uint16_t encoded_indices = make_encoded_indices_for_single_texture(cindex);
+			const uint16_t encoded_weights = make_encoded_weights_for_single_texture();
+			out_buffer.fill(encoded_indices, VoxelBuffer::CHANNEL_INDICES);
+			out_buffer.fill(encoded_weights, VoxelBuffer::CHANNEL_WEIGHTS);
+		} break;
+
+		case VoxelGeneratorGraph::TEXTURE_MODE_SINGLE: {
+			const uint8_t cindex = math::clamp(index, 0, 255);
+			out_buffer.fill(cindex, VoxelBuffer::CHANNEL_INDICES);
+		} break;
+
+		default:
+			ZN_PRINT_ERROR_ONCE("Unknown texture mode");
+			break;
+	}
+}
+
+void gather_texturing_data_from_single_texture_output(
+		const unsigned int output_buffer_index,
 		const pg::Runtime::State &state,
-		Vector3i rmin,
-		Vector3i rmax,
-		int ry,
-		VoxelBuffer &out_voxel_buffer
+		const Vector3i rmin,
+		const Vector3i rmax,
+		const int ry,
+		VoxelBuffer &out_voxel_buffer,
+		const VoxelGeneratorGraph::TextureMode mode
 ) {
 	ZN_PROFILE_SCOPE();
 
 	const pg::Runtime::Buffer &buffer = state.get_buffer(output_buffer_index);
 	Span<const float> buffer_data = Span<const float>(buffer.data, buffer.size);
 
-	// TODO Should not really be here, but may work. Left here for now so all code for this is in one place
-	const uint16_t encoded_weights = make_encoded_weights_for_single_texture();
-	out_voxel_buffer.clear_channel(VoxelBuffer::CHANNEL_WEIGHTS, encoded_weights);
+	switch (mode) {
+		case VoxelGeneratorGraph::TEXTURE_MODE_MIXEL4: {
+			// TODO Should not really be here, but may work. Left here for now so all code for this is in one place
+			const uint16_t encoded_weights = make_encoded_weights_for_single_texture();
+			out_voxel_buffer.clear_channel(VoxelBuffer::CHANNEL_WEIGHTS, encoded_weights);
 
-	unsigned int value_index = 0;
-	for (int rz = rmin.z; rz < rmax.z; ++rz) {
-		for (int rx = rmin.x; rx < rmax.x; ++rx) {
-			const uint8_t index = math::clamp(int(Math::round(buffer_data[value_index])), 0, 15);
-			const uint16_t encoded_indices = make_encoded_indices_for_single_texture(index);
-			out_voxel_buffer.set_voxel(encoded_indices, rx, ry, rz, VoxelBuffer::CHANNEL_INDICES);
-			++value_index;
-		}
+			unsigned int value_index = 0;
+			for (int rz = rmin.z; rz < rmax.z; ++rz) {
+				for (int rx = rmin.x; rx < rmax.x; ++rx) {
+					const uint8_t index = math::clamp(int(Math::round(buffer_data[value_index])), 0, 15);
+					const uint16_t encoded_indices = make_encoded_indices_for_single_texture(index);
+					out_voxel_buffer.set_voxel(encoded_indices, rx, ry, rz, VoxelBuffer::CHANNEL_INDICES);
+					++value_index;
+				}
+			}
+		} break;
+
+		case VoxelGeneratorGraph::TEXTURE_MODE_SINGLE: {
+			unsigned int value_index = 0;
+			for (int rz = rmin.z; rz < rmax.z; ++rz) {
+				for (int rx = rmin.x; rx < rmax.x; ++rx) {
+					const uint8_t index = math::clamp(int(Math::round(buffer_data[value_index])), 0, 255);
+					out_voxel_buffer.set_voxel(index, rx, ry, rz, VoxelBuffer::CHANNEL_INDICES);
+					++value_index;
+				}
+			}
+		} break;
+
+		default:
+			ZN_PRINT_ERROR_ONCE("Unknown texture mode");
+			break;
 	}
 }
 
@@ -538,6 +662,44 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelGenerator::Voxel
 
 	VoxelBuffer &out_buffer = input.voxel_buffer;
 
+#ifdef TOOLS_ENABLED
+	switch (_texture_mode) {
+		case TEXTURE_MODE_MIXEL4: {
+			const VoxelBuffer::Depth indices_depth = out_buffer.get_channel_depth(VoxelBuffer::CHANNEL_INDICES);
+			if (indices_depth != VoxelBuffer::DEPTH_16_BIT) {
+				ZN_PRINT_ERROR_ONCE(format(
+						"The Indices channel is set to {} bits, but 16 bits are necessary to use the Mixel4 texturing "
+						"mode.",
+						VoxelBuffer::get_depth_byte_count(indices_depth)
+				));
+			}
+			const VoxelBuffer::Depth weights_depth = out_buffer.get_channel_depth(VoxelBuffer::CHANNEL_WEIGHTS);
+			if (weights_depth != VoxelBuffer::DEPTH_16_BIT) {
+				ZN_PRINT_ERROR_ONCE(format(
+						"The Weights channel is set to {} bits, but 16 bits are necessary to use the Mixel4 texturing "
+						"mode.",
+						VoxelBuffer::get_depth_byte_count(weights_depth)
+				));
+			}
+		} break;
+
+		case TEXTURE_MODE_SINGLE: {
+			const VoxelBuffer::Depth indices_depth = out_buffer.get_channel_depth(VoxelBuffer::CHANNEL_INDICES);
+			if (indices_depth != VoxelBuffer::DEPTH_8_BIT) {
+				ZN_PRINT_WARNING_ONCE(
+						format("The Indices channel is set to {} bits, but only 8 bits are required to use the Single "
+							   "texturing mode.",
+							   VoxelBuffer::get_depth_byte_count(indices_depth))
+				);
+			}
+		} break;
+
+		default:
+			ZN_PRINT_ERROR_ONCE("Unknown texture mode");
+			break;
+	}
+#endif
+
 	const Vector3i bs = out_buffer.get_size();
 	const VoxelBuffer::ChannelId sdf_channel = VoxelBuffer::CHANNEL_SDF;
 	const Vector3i origin = input.origin_in_voxels;
@@ -698,15 +860,12 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelGenerator::Voxel
 				if (runtime_ptr->single_texture_output_index != -1 && !sdf_is_air) {
 					const math::Interval index_range =
 							cache.state.get_range(runtime_ptr->single_texture_output_buffer_index);
+
 					if (index_range.is_single_value()) {
-						// Make sure other indices are different so the weights associated with them don't override the
-						// first index's weight
-						const int index = static_cast<int>(index_range.min);
-						const uint16_t encoded_indices = make_encoded_indices_for_single_texture(index);
-						const uint16_t encoded_weights = make_encoded_weights_for_single_texture();
-						out_buffer.fill_area(encoded_indices, rmin, rmax, VoxelBuffer::CHANNEL_INDICES);
-						out_buffer.fill_area(encoded_weights, rmin, rmax, VoxelBuffer::CHANNEL_WEIGHTS);
 						single_texture_is_uniform = true;
+						fill_texturing_data_from_single_texture_index(
+								out_buffer, static_cast<int>(index_range.min), rmin, rmax, _texture_mode
+						);
 					} else {
 						required_outputs.push_back(runtime_ptr->single_texture_output_index);
 					}
@@ -787,20 +946,27 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelGenerator::Voxel
 					}
 
 					if (runtime_ptr->single_texture_output_index != -1 && !single_texture_is_uniform) {
-						gather_indices_and_weights_from_single_texture(
-								runtime_ptr->single_texture_output_buffer_index, cache.state, rmin, rmax, ry, out_buffer
+						gather_texturing_data_from_single_texture_output(
+								runtime_ptr->single_texture_output_buffer_index,
+								cache.state,
+								rmin,
+								rmax,
+								ry,
+								out_buffer,
+								_texture_mode
 						);
 					}
 
 					if (runtime_ptr->weight_outputs_count > 0) {
-						gather_indices_and_weights(
+						gather_texturing_data_from_weight_outputs(
 								to_span_const(runtime_ptr->weight_outputs, runtime_ptr->weight_outputs_count),
 								cache.state,
 								rmin,
 								rmax,
 								ry,
 								out_buffer,
-								spare_texture_indices
+								spare_texture_indices,
+								_texture_mode
 						);
 					}
 				}
@@ -935,13 +1101,7 @@ bool VoxelGeneratorGraph::generate_broad_block(VoxelGenerator::VoxelQueryData in
 	if (runtime_ptr->single_texture_output_index != -1 && !sdf_is_air) {
 		const math::Interval index_range = cache.state.get_range(runtime_ptr->single_texture_output_buffer_index);
 		if (index_range.is_single_value()) {
-			// Make sure other indices are different so the weights associated with them don't override the
-			// first index's weight
-			const int index = int(index_range.min);
-			const uint16_t encoded_indices = make_encoded_indices_for_single_texture(index);
-			const uint16_t encoded_weights = make_encoded_weights_for_single_texture();
-			out_buffer.fill(encoded_indices, VoxelBuffer::CHANNEL_INDICES);
-			out_buffer.fill(encoded_weights, VoxelBuffer::CHANNEL_WEIGHTS);
+			fill_texturing_data_from_single_texture_index(out_buffer, int(index_range.min), _texture_mode);
 		} else {
 			return false;
 		}
@@ -1171,9 +1331,11 @@ pg::CompilationResult VoxelGeneratorGraph::compile(bool debug) {
 	const int64_t time_spent = Time::get_singleton()->get_ticks_usec() - time_before;
 	ZN_PRINT_VERBOSE(format("Voxel graph compiled in {} us", time_spent));
 
+#ifdef VOXEL_ENABLE_GPU
 	if (result.success) {
 		invalidate_shaders();
 	}
+#endif
 
 	return result;
 }
@@ -1244,7 +1406,7 @@ void VoxelGeneratorGraph::generate_series(
 	switch (channel) {
 		case VoxelBuffer::CHANNEL_SDF:
 			buffer_index = runtime_ptr->sdf_output_buffer_index;
-			defval = VoxelBuffer::get_default_value_static(channel);
+			defval = constants::SDF_FAR_OUTSIDE;
 			break;
 		case VoxelBuffer::CHANNEL_TYPE:
 			buffer_index = runtime_ptr->type_output_buffer_index;
@@ -1300,8 +1462,8 @@ int VoxelGeneratorGraph::get_sdf_output_port_address() const {
 }
 
 inline Vector3 get_3d_pos_from_panorama_uv(Vector2 uv) {
-	const float xa = -Math_TAU * uv.x - Math_PI;
-	const float ya = -Math_PI * (uv.y - 0.5f);
+	const float xa = -math::TAU<real_t> * uv.x - math::PI<real_t>;
+	const float ya = math::PI<real_t> * (uv.y - 0.5);
 	const float y = Math::sin(ya);
 	const float ca = Math::cos(ya);
 	const float x = Math::cos(xa) * ca;
@@ -1604,6 +1766,8 @@ void VoxelGeneratorGraph::bake_sphere_normalmap(Ref<Image> im, float ref_radius,
 	for_chunks_2d(im->get_width(), im->get_height(), 32, pc);
 }
 
+#ifdef VOXEL_ENABLE_GPU
+
 bool VoxelGeneratorGraph::get_shader_source(ShaderSourceData &out_data) const {
 	ZN_PROFILE_SCOPE();
 	ERR_FAIL_COND_V(_main_function.is_null(), false);
@@ -1654,6 +1818,8 @@ bool VoxelGeneratorGraph::get_shader_source(ShaderSourceData &out_data) const {
 	return true;
 }
 
+#endif
+
 VoxelSingleValue VoxelGeneratorGraph::generate_single(Vector3i position, unsigned int channel) {
 	// This is very slow when used multiple times, so if possible prefer using bulk queries
 
@@ -1700,7 +1866,17 @@ VoxelSingleValue VoxelGeneratorGraph::generate_single(Vector3i position, unsigne
 
 		case VoxelBuffer::CHANNEL_INDICES: {
 			const float tex_index = L::query(*runtime_ptr, position, runtime_ptr->single_texture_output_buffer_index);
-			v.i = make_encoded_indices_for_single_texture(tex_index);
+			switch (_texture_mode) {
+				case TEXTURE_MODE_MIXEL4:
+					v.i = make_encoded_indices_for_single_texture(math::clamp(int(tex_index), 0, 15));
+					break;
+				case TEXTURE_MODE_SINGLE:
+					v.i = math::clamp(int(tex_index), 0, 255);
+					break;
+				default:
+					ZN_PRINT_ERROR("Unknown texture mode");
+					break;
+			}
 		} break;
 
 		case VoxelBuffer::CHANNEL_WEIGHTS: {
@@ -1728,8 +1904,11 @@ math::Interval get_range(const Span<const float> values) {
 
 // Note, this wrapper may not be used for main generation tasks.
 // It is mostly used as a debug tool.
-math::Interval VoxelGeneratorGraph::debug_analyze_range(Vector3i min_pos, Vector3i max_pos, bool optimize_execution_map)
-		const {
+math::Interval VoxelGeneratorGraph::debug_analyze_range(
+		Vector3i min_pos,
+		Vector3i max_pos,
+		bool optimize_execution_map
+) const {
 	ZN_ASSERT_RETURN_V(max_pos.x >= min_pos.x, math::Interval());
 	ZN_ASSERT_RETURN_V(max_pos.y >= min_pos.y, math::Interval());
 	ZN_ASSERT_RETURN_V(max_pos.z >= min_pos.z, math::Interval());
@@ -2130,6 +2309,9 @@ void VoxelGeneratorGraph::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_use_xz_caching", "enabled"), &Self::set_use_xz_caching);
 	ClassDB::bind_method(D_METHOD("is_using_xz_caching"), &Self::is_using_xz_caching);
 
+	ClassDB::bind_method(D_METHOD("set_texture_mode", "mode"), &Self::set_texture_mode);
+	ClassDB::bind_method(D_METHOD("get_texture_mode"), &Self::get_texture_mode);
+
 	ClassDB::bind_method(D_METHOD("compile"), &Self::_b_compile);
 
 	// ClassDB::bind_method(D_METHOD("generate_single"), &Self::_b_generate_single);
@@ -2168,6 +2350,12 @@ void VoxelGeneratorGraph::_bind_methods() {
 			"_get_graph_data"
 	);
 
+	ADD_PROPERTY(
+			PropertyInfo(Variant::INT, "texture_mode", PROPERTY_HINT_ENUM, "Mixel4,Single"),
+			"set_texture_mode",
+			"get_texture_mode"
+	);
+
 	ADD_GROUP("Performance Tuning", "");
 
 	ADD_PROPERTY(
@@ -2186,6 +2374,9 @@ void VoxelGeneratorGraph::_bind_methods() {
 	);
 
 	ADD_SIGNAL(MethodInfo(SIGNAL_NODE_NAME_CHANGED, PropertyInfo(Variant::INT, "node_id")));
+
+	BIND_ENUM_CONSTANT(TEXTURE_MODE_MIXEL4);
+	BIND_ENUM_CONSTANT(TEXTURE_MODE_SINGLE);
 }
 
 } // namespace zylann::voxel

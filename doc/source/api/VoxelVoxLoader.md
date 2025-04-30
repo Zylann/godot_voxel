@@ -7,14 +7,14 @@ Utility class to load voxels from MagicaVoxel files
 ## Methods: 
 
 
-Return                                                                | Signature                                                                                                                                                                                                                                                                                                    
---------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)  | [load_from_file](#i_load_from_file) ( [String](https://docs.godotengine.org/en/stable/classes/class_string.html) fpath, [VoxelBuffer](VoxelBuffer.md) voxels, [VoxelColorPalette](VoxelColorPalette.md) palette, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) dst_channel=2 ) static 
+Return                                                                | Signature                                                                                                                                                                                                                                                                                        
+--------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)  | [load_from_file](#i_load_from_file) ( [String](https://docs.godotengine.org/en/stable/classes/class_string.html) fpath, [VoxelBuffer](VoxelBuffer.md) voxels, [VoxelColorPalette](VoxelColorPalette.md) palette, [ChannelId](VoxelBuffer.md#enumerations) dst_channel=CHANNEL_COLOR (2) ) static 
 <p></p>
 
 ## Method Descriptions
 
-### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_load_from_file"></span> **load_from_file**( [String](https://docs.godotengine.org/en/stable/classes/class_string.html) fpath, [VoxelBuffer](VoxelBuffer.md) voxels, [VoxelColorPalette](VoxelColorPalette.md) palette, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) dst_channel=2 ) 
+### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_load_from_file"></span> **load_from_file**( [String](https://docs.godotengine.org/en/stable/classes/class_string.html) fpath, [VoxelBuffer](VoxelBuffer.md) voxels, [VoxelColorPalette](VoxelColorPalette.md) palette, [ChannelId](VoxelBuffer.md#enumerations) dst_channel=CHANNEL_COLOR (2) ) 
 
 Loads voxels from the first model found in a vox file and stores it in a single [VoxelBuffer](VoxelBuffer.md). Other models that might be in the file are not loaded. Transform of the model is not considered.
 
@@ -28,4 +28,4 @@ Returns an [Error](https://docs.godotengine.org/en/stable/classes/class_error.ht
 
 Note: MagicaVoxel uses a different axis convention than Godot: X is right, Y is forwards and Z is up. Voxel coordinates will be the same when looked up in the buffer, but they mean different location in space.
 
-_Generated on Mar 23, 2025_
+_Generated on Apr 27, 2025_

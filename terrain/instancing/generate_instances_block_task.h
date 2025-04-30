@@ -24,6 +24,8 @@ public:
 	UpMode up_mode;
 	float mesh_block_size;
 	Array surface_arrays;
+	int32_t vertex_range_end = -1;
+	int32_t index_range_end = -1;
 	Ref<VoxelInstanceGenerator> generator;
 	Ref<VoxelGenerator> voxel_generator;
 	// Can be pre-populated by edited transforms

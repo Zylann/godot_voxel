@@ -167,7 +167,7 @@ void extract_model_instances(const Data &vox_data, StdVector<ModelInstance> &out
 			// No transformation
 			src_color_indices = to_span_const(model.color_indexes);
 		} else {
-			IntBasis basis;
+			math::OrthoBasis basis;
 			basis.x = to_vec3i(args.basis.get_column(Vector3::AXIS_X));
 			basis.y = to_vec3i(args.basis.get_column(Vector3::AXIS_Y));
 			basis.z = to_vec3i(args.basis.get_column(Vector3::AXIS_Z));

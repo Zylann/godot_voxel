@@ -149,7 +149,7 @@ void test_transform_3d_array_zxy() {
 			15, 19, 23 //
 		};
 		const Vector3i expected_dst_size(4, 3, 2);
-		IntBasis basis;
+		math::OrthoBasis basis;
 		basis.x = Vector3i(0, 1, 0);
 		basis.y = Vector3i(1, 0, 0);
 		basis.z = Vector3i(0, 0, 1);
@@ -174,7 +174,7 @@ void test_transform_3d_array_zxy() {
 			23, 22, 21, 20 //
 		};
 		const Vector3i expected_dst_size(3, 4, 2);
-		IntBasis basis;
+		math::OrthoBasis basis;
 		basis.x = Vector3i(1, 0, 0);
 		basis.y = Vector3i(0, -1, 0);
 		basis.z = Vector3i(0, 0, 1);
@@ -199,7 +199,7 @@ void test_transform_3d_array_zxy() {
 			11, 10, 9,	8 //
 		};
 		const Vector3i expected_dst_size(3, 4, 2);
-		IntBasis basis;
+		math::OrthoBasis basis;
 		basis.x = Vector3i(1, 0, 0);
 		basis.y = Vector3i(0, -1, 0);
 		basis.z = Vector3i(0, 0, -1);

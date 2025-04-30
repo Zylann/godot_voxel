@@ -8,6 +8,15 @@
 	<tutorials>
 	</tutorials>
 	<members>
+		<member name="floating_sdf_offset_along_normal" type="float" setter="set_floating_sdf_offset_along_normal" getter="get_floating_sdf_offset_along_normal" default="-0.1">
+			Offset along instances upward axis to apply when the object is tested for being floating or not.
+			An instance is determined to be floating if the SDF at its origin is greater than 0. However, in practice, SDF can be imprecise, and the way instances spawn on triangles of meshes means SDF at their position will always fluctuate a bit around 0. This can lead instances to be overly removed after digging around them, or not enough. You can attempt to fix this by increasing this offset to very small values, so SDF slightly below instances is tested instead. Make sure to test resulting behaviors. See also 
+			WARNING: changing this too high can break instance removal entirely.
+		</member>
+		<member name="floating_sdf_threshold" type="float" setter="set_floating_sdf_threshold" getter="get_floating_sdf_threshold" default="0.0">
+			Threshold used to find if SDF is air. If the SDF at the sampled location is greater, the instance is considered floating. See also [member floating_sdf_offset_along_normal] for more info.
+			WARNING: changing this too high can break instance removal entirely. While this can "turn off" automatic removal after digging ground, it is not recommended to do this when instances have no collider, because then it leaves no way of removing them.
+		</member>
 		<member name="generator" type="VoxelInstanceGenerator" setter="set_generator" getter="get_generator">
 			Generator that will be used to pick points where the item will spawn.
 		</member>

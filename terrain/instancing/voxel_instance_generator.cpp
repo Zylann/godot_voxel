@@ -190,40 +190,60 @@ void snap_surface_points_from_generator_sdf(
 
 void VoxelInstanceGenerator::generate_transforms(
 		StdVector<Transform3f> &out_transforms,
-		Vector3i grid_position,
+		const Vector3i grid_position,
 		// TODO `lod_index` has become unused, remove?
-		int lod_index,
-		int layer_id,
+		const int lod_index,
+		const int layer_id,
 		// TODO Provide arrays or offset to ignore transition meshes (transvoxel)
 		Array surface_arrays,
-		UpMode up_mode,
-		uint8_t octant_mask,
-		float block_size,
+		const int32_t vertex_range_end,
+		const int32_t index_range_end,
+		const UpMode up_mode,
+		const uint8_t octant_mask,
+		const float block_size,
 		Ref<VoxelGenerator> voxel_generator
 ) {
 	ZN_PROFILE_SCOPE();
+
+	if (vertex_range_end == 0) {
+		return;
+	}
+	if (index_range_end == 0) {
+		return;
+	}
 
 	if (surface_arrays.size() < ArrayMesh::ARRAY_VERTEX && surface_arrays.size() < ArrayMesh::ARRAY_NORMAL &&
 		surface_arrays.size() < ArrayMesh::ARRAY_INDEX) {
 		return;
 	}
 
-	PackedVector3Array vertices = surface_arrays[ArrayMesh::ARRAY_VERTEX];
-	if (vertices.size() == 0) {
+	PackedVector3Array vertices_pa = surface_arrays[ArrayMesh::ARRAY_VERTEX];
+	if (vertices_pa.size() == 0) {
 		return;
+	}
+	Span<const Vector3> vertices = to_span(vertices_pa);
+	if (vertex_range_end > 0) {
+		vertices = vertices.sub(0, vertex_range_end);
 	}
 
 	if (_density <= 0.f) {
 		return;
 	}
 
-	PackedVector3Array normals = surface_arrays[ArrayMesh::ARRAY_NORMAL];
-	ERR_FAIL_COND(normals.size() == 0);
+	PackedVector3Array normals_pa = surface_arrays[ArrayMesh::ARRAY_NORMAL];
+	ERR_FAIL_COND(normals_pa.size() == 0);
+	Span<const Vector3> normals = to_span(normals_pa);
+	if (vertex_range_end > 0) {
+		normals = normals.sub(0, vertex_range_end);
+	}
 
-	PackedInt32Array mesh_indices_pba = surface_arrays[ArrayMesh::ARRAY_INDEX];
-	ERR_FAIL_COND(mesh_indices_pba.size() == 0);
-	ERR_FAIL_COND(mesh_indices_pba.size() % 3 != 0);
-	Span<const int32_t> mesh_indices = to_span(mesh_indices_pba);
+	PackedInt32Array mesh_indices_pa = surface_arrays[ArrayMesh::ARRAY_INDEX];
+	ERR_FAIL_COND(mesh_indices_pa.size() == 0);
+	ERR_FAIL_COND(mesh_indices_pa.size() % 3 != 0);
+	Span<const int32_t> mesh_indices = to_span(mesh_indices_pa);
+	if (index_range_end > 0) {
+		mesh_indices = mesh_indices.sub(0, index_range_end);
+	}
 
 	const uint32_t block_pos_hash = Vector3iHasher::hash(grid_position);
 
@@ -516,7 +536,10 @@ void VoxelInstanceGenerator::generate_transforms(
 			uint32_t packed_weights;
 		};
 		const PackedFloat32Array src_vertex_data = surface_arrays[Mesh::ARRAY_CUSTOM1];
-		const Span<const Attrib> attrib_array = to_span(src_vertex_data).reinterpret_cast_to<const Attrib>();
+		Span<const Attrib> attrib_array = to_span(src_vertex_data).reinterpret_cast_to<const Attrib>();
+		if (vertex_range_end > 0) {
+			attrib_array = attrib_array.sub(0, vertex_range_end);
+		}
 
 		const unsigned int weight_threshold = 128;
 

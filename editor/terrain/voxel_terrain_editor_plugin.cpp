@@ -2,7 +2,6 @@
 #include "../../constants/voxel_string_names.h"
 #include "../../engine/voxel_engine_gd.h"
 #include "../../generators/voxel_generator.h"
-#include "../../modifiers/godot/voxel_modifier_gd.h"
 #include "../../terrain/fixed_lod/voxel_terrain.h"
 #include "../../terrain/variable_lod/voxel_lod_terrain.h"
 #include "../../util/godot/classes/camera_3d.h"
@@ -13,6 +12,7 @@
 #include "../../util/godot/classes/node.h"
 #include "../../util/godot/classes/popup_menu.h"
 #include "../../util/godot/core/keyboard.h"
+#include "../../util/godot/core/string.h"
 #include "../about_window.h"
 #include "../camera_cache.h"
 #include "../graph/voxel_graph_node_inspector_wrapper.h"
@@ -28,7 +28,8 @@ void VoxelTerrainEditorPlugin::init() {
 	MenuButton *menu_button = memnew(MenuButton);
 	menu_button->set_text(ZN_TTR("Terrain"));
 	menu_button->get_popup()->connect(
-			"id_pressed", callable_mp(this, &VoxelTerrainEditorPlugin::_on_menu_item_selected));
+			"id_pressed", callable_mp(this, &VoxelTerrainEditorPlugin::_on_menu_item_selected)
+	);
 	menu_button->hide();
 	add_control_to_container(CONTAINER_SPATIAL_EDITOR_MENU, menu_button);
 	_menu_button = menu_button;
@@ -46,8 +47,10 @@ void VoxelTerrainEditorPlugin::init() {
 	_save_file_dialog->set_title(ZN_TTR("Save Debug Terrain Dump As Scene"));
 	_save_file_dialog->add_filter("*.scn", "Godot Scene File");
 	_save_file_dialog->set_access(EditorFileDialog::ACCESS_RESOURCES);
-	_save_file_dialog->connect(VoxelStringNames::get_singleton().file_selected,
-			callable_mp(this, &VoxelTerrainEditorPlugin::_on_save_file_dialog_file_selected));
+	_save_file_dialog->connect(
+			VoxelStringNames::get_singleton().file_selected,
+			callable_mp(this, &VoxelTerrainEditorPlugin::_on_save_file_dialog_file_selected)
+	);
 	base_control->add_child(_save_file_dialog);
 }
 
@@ -65,15 +68,19 @@ void VoxelTerrainEditorPlugin::generate_menu_items(MenuButton *menu_button, bool
 	PopupMenu *popup = menu_button->get_popup();
 	popup->clear();
 
-	popup->add_shortcut(zylann::godot::get_or_create_editor_shortcut("voxel/regenerate_terrain", ZN_TTR("Re-generate"),
-								::godot::KEY_MASK_CMD_OR_CTRL | ::godot::KEY_R),
-			MENU_RESTART_STREAM);
+	popup->add_shortcut(
+			zylann::godot::get_or_create_editor_shortcut(
+					"voxel/regenerate_terrain", ZN_TTR("Re-generate"), ::godot::KEY_MASK_CMD_OR_CTRL | ::godot::KEY_R
+			),
+			MENU_RESTART_STREAM
+	);
 
 	popup->add_item(ZN_TTR("Re-mesh"), MENU_REMESH);
 	popup->add_separator();
 
 	add_checkable_item(
-			popup, ZN_TTR("Editor Viewer Follow Camera"), MENU_STREAM_FOLLOW_CAMERA, _editor_viewer_follows_camera);
+			popup, ZN_TTR("Editor Viewer Follow Camera"), MENU_STREAM_FOLLOW_CAMERA, _editor_viewer_follows_camera
+	);
 	add_checkable_item(popup, ZN_TTR("Enable Editor Viewer"), MENU_ENABLE_EDITOR_VIEWER, _editor_viewer_enabled);
 
 	if (is_lod_terrain) {
@@ -155,7 +162,9 @@ void VoxelTerrainEditorPlugin::_zn_make_visible(bool visible) {
 }
 
 EditorPlugin::AfterGUIInput VoxelTerrainEditorPlugin::_zn_forward_3d_gui_input(
-		Camera3D *p_camera, const Ref<InputEvent> &p_event) {
+		Camera3D *p_camera,
+		const Ref<InputEvent> &p_event
+) {
 	if (_editor_viewer_enabled) {
 		// Will be clamped by terrain max view distance
 		VoxelEngine::Viewer::Distances vd;
@@ -172,7 +181,8 @@ EditorPlugin::AfterGUIInput VoxelTerrainEditorPlugin::_zn_forward_3d_gui_input(
 			VoxelEngine::get_singleton().set_viewer_position(_editor_viewer_id, _editor_camera_last_position);
 		}
 		godot::VoxelEngine::get_singleton()->set_editor_camera_info(
-				_editor_camera_last_position, get_forward(p_camera->get_global_transform()));
+				_editor_camera_last_position, get_forward(p_camera->get_global_transform())
+		);
 	}
 
 	return EditorPlugin::AFTER_GUI_INPUT_PASS;

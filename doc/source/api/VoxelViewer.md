@@ -58,7 +58,7 @@ How far should voxels generate around this viewer.
 
 ### [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_view_distance_vertical_ratio"></span> **view_distance_vertical_ratio** = 1.0
 
-Modifies vertical view distance to be a ratio of the [VoxelViewer.view_distance](VoxelViewer.md#i_view_distance) property. For example, if [VoxelViewer.view_distance](VoxelViewer.md#i_view_distance) is 100 and this property is 0.5, then horizontal view distance will be 100 and vertical view distance will be 50.
+Modifies vertical view distance to be a ratio of the [view_distance](VoxelViewer.md#i_view_distance) property. For example, if [view_distance](VoxelViewer.md#i_view_distance) is 100 and this property is 0.5, then horizontal view distance will be 100 and vertical view distance will be 50.
 
 ## Method Descriptions
 
@@ -70,4 +70,4 @@ Modifies vertical view distance to be a ratio of the [VoxelViewer.view_distance]
 
 *(This method has no documentation)*
 
-_Generated on Mar 23, 2025_
+_Generated on Apr 27, 2025_

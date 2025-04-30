@@ -26,6 +26,8 @@ void GenerateInstancesBlockTask::run(ThreadedTaskContext &ctx) {
 			lod_index,
 			layer_id,
 			surface_arrays,
+			vertex_range_end,
+			index_range_end,
 			up_mode,
 			gen_octant_mask,
 			mesh_block_size,

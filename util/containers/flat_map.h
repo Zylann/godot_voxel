@@ -1,6 +1,7 @@
 #ifndef ZN_FLAT_MAP_H
 #define ZN_FLAT_MAP_H
 
+#include "container_funcs.h"
 #include "span.h"
 #include "std_vector.h"
 #include <algorithm>
@@ -333,6 +334,17 @@ public:
 	template <typename F>
 	inline void remove_if(F predicate) {
 		_items.erase(std::remove_if(_items.begin(), _items.end(), predicate), _items.end());
+	}
+
+	template <typename F>
+	void remap_keys_unchecked(F modifier) {
+		for (Pair &p : _items) {
+			p.key = modifier(p.key);
+		}
+#ifdef DEV_ENABLED
+		ZN_ASSERT(!has_duplicate_f(to_span_const(_items), [](const Pair &a, const Pair &b) { return a.key == b.key; }));
+#endif
+		std::sort(_items.begin(), _items.end());
 	}
 
 	void operator=(const FlatMap<K, T> &other) {

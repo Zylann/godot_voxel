@@ -37,7 +37,7 @@ Return                                                                          
 
 ### async_search_completed( [Vector3i[]](https://docs.godotengine.org/en/stable/classes/class_vector3i[].html) path ) 
 
-Emitted when searches triggered with [VoxelAStarGrid3D.find_path_async](VoxelAStarGrid3D.md#i_find_path_async) are complete.
+Emitted when searches triggered with [find_path_async](VoxelAStarGrid3D.md#i_find_path_async) are complete.
 
 ## Method Descriptions
 
@@ -55,13 +55,13 @@ The returned path will be a series of contiguous voxel positions to walk through
 
 If no path is found, or if either start or destination position is outside of the search area, an empty array will be returned.
 
-You may also use [VoxelAStarGrid3D.set_region](VoxelAStarGrid3D.md#i_set_region) to specify the search area.
+You may also use [set_region](VoxelAStarGrid3D.md#i_set_region) to specify the search area.
 
 ### [void](#)<span id="i_find_path_async"></span> **find_path_async**( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) from_position, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) to_position ) 
 
-Same as [VoxelAStarGrid3D.find_path](VoxelAStarGrid3D.md#i_find_path), but performs the calculation on a separate thread. The result will be emitted with the [VoxelAStarGrid3D.async_search_completed](VoxelAStarGrid3D.md#signals) signal.
+Same as [find_path](VoxelAStarGrid3D.md#i_find_path), but performs the calculation on a separate thread. The result will be emitted with the [VoxelAStarGrid3D.async_search_completed](VoxelAStarGrid3D.md#signals) signal.
 
-Only one asynchronous search can be active at a given time. Use [VoxelAStarGrid3D.is_running_async](VoxelAStarGrid3D.md#i_is_running_async) to check this.
+Only one asynchronous search can be active at a given time. Use [is_running_async](VoxelAStarGrid3D.md#i_is_running_async) to check this.
 
 ### [AABB](https://docs.godotengine.org/en/stable/classes/class_aabb.html)<span id="i_get_region"></span> **get_region**( ) 
 
@@ -69,11 +69,11 @@ Gets the maximum region limit that will be considered for pathfinding, in voxels
 
 ### [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_is_running_async"></span> **is_running_async**( ) 
 
-Returns true if a path is currently being calculated asynchronously. See [VoxelAStarGrid3D.find_path_async](VoxelAStarGrid3D.md#i_find_path_async).
+Returns true if a path is currently being calculated asynchronously. See [find_path_async](VoxelAStarGrid3D.md#i_find_path_async).
 
 ### [void](#)<span id="i_set_region"></span> **set_region**( [AABB](https://docs.godotengine.org/en/stable/classes/class_aabb.html) box ) 
 
-Sets the maximum region limit that will be considered for pathfinding, in voxels. You should usually set this before calling [VoxelAStarGrid3D.find_path](VoxelAStarGrid3D.md#i_find_path).
+Sets the maximum region limit that will be considered for pathfinding, in voxels. You should usually set this before calling [find_path](VoxelAStarGrid3D.md#i_find_path).
 
 The larger the region, the more expensive the search can get. Keep in mind voxel volumes scale cubically, so don't use this on large areas (for example 50 voxels is quite big).
 
@@ -81,4 +81,4 @@ The larger the region, the more expensive the search can get. Keep in mind voxel
 
 Sets the terrain that will be used to do searches in.
 
-_Generated on Mar 23, 2025_
+_Generated on Apr 27, 2025_

@@ -27,8 +27,22 @@ void VoxelInstancerRigidBody::_notification(int p_what) {
 	}
 }
 
+// This method exists to workaround not being able to add or remove children to the same parent,
+// in case this is necessary in removal behaviors. But it requires the user to explicitely call that instead of
+// queue_free().
+void VoxelInstancerRigidBody::queue_free_and_notify_instancer() {
+	queue_free();
+	if (_parent != nullptr) {
+		_parent->on_body_removed(_data_block_position, _render_block_index, _instance_index);
+		_parent = nullptr;
+	}
+}
+
 void VoxelInstancerRigidBody::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_library_item_id"), &VoxelInstancerRigidBody::get_library_item_id);
+	ClassDB::bind_method(
+			D_METHOD("queue_free_and_notify_instancer"), &VoxelInstancerRigidBody::queue_free_and_notify_instancer
+	);
 }
 
 } // namespace zylann::voxel

@@ -1,17 +1,22 @@
-#include "generate_block_gpu_task.h"
 #include "../engine/gpu/compute_shader.h"
 #include "../engine/gpu/compute_shader_parameters.h"
 #include "../engine/voxel_engine.h"
 #include "../meshers/mesh_block_task.h"
-#include "../modifiers/voxel_modifier.h"
 #include "../storage/materials_4i4w.h"
 #include "../util/dstack.h"
+#include "../util/godot/classes/rendering_device.h"
 #include "../util/godot/core/packed_arrays.h"
 #include "../util/math/conv.h"
 #include "../util/profiling.h"
 #include "../util/string/format.h"
 
-#include "../util/godot/classes/rendering_device.h"
+#ifdef VOXEL_ENABLE_MODIFIERS
+#include "../modifiers/voxel_modifier.h"
+#endif
+
+#ifdef VOXEL_ENABLE_GPU
+#include "generate_block_gpu_task.h"
+#endif
 
 namespace zylann::voxel {
 
@@ -116,6 +121,7 @@ void GenerateBlockGPUTask::prepare(GPUTaskContext &ctx) {
 	_generator_pipeline_rid = rd.compute_pipeline_create(generator_shader_rid);
 	ERR_FAIL_COND(!_generator_pipeline_rid.is_valid());
 
+#ifdef VOXEL_ENABLE_MODIFIERS
 	for (const VoxelModifier::ShaderData &modifier : modifiers) {
 		const RID modifier_shader_rid = VoxelModifier::get_block_shader(ctx.base_resources, modifier.modifier_type);
 		ERR_FAIL_COND(!modifier_shader_rid.is_valid());
@@ -123,6 +129,7 @@ void GenerateBlockGPUTask::prepare(GPUTaskContext &ctx) {
 		ERR_FAIL_COND(!rid.is_valid());
 		_modifier_pipelines.push_back(rid);
 	}
+#endif
 
 	// Make compute list
 
@@ -130,7 +137,9 @@ void GenerateBlockGPUTask::prepare(GPUTaskContext &ctx) {
 
 	// Generate
 
+#ifdef VOXEL_ENABLE_MODIFIERS
 	_uniform_sets_to_free.reserve(_boxes_data.size() * (1 + modifiers.size()));
+#endif
 
 	for (unsigned int box_index = 0; box_index < _boxes_data.size(); ++box_index) {
 		BoxData &bd = _boxes_data[box_index];
@@ -181,8 +190,8 @@ void GenerateBlockGPUTask::prepare(GPUTaskContext &ctx) {
 	// the barrier?
 	rd.compute_list_add_barrier(compute_list_id);
 
+#ifdef VOXEL_ENABLE_MODIFIERS
 	// Apply modifiers in-place
-
 	if (sd_output_index != -1) {
 		for (unsigned int box_index = 0; box_index < _boxes_data.size(); ++box_index) {
 			BoxData &bd = _boxes_data[box_index];
@@ -227,6 +236,7 @@ void GenerateBlockGPUTask::prepare(GPUTaskContext &ctx) {
 			}
 		}
 	}
+#endif
 
 	rd.compute_list_end();
 }
@@ -469,11 +479,11 @@ void GenerateBlockGPUTask::collect(GPUTaskContext &ctx) {
 
 	zylann::godot::free_rendering_device_rid(rd, _generator_pipeline_rid);
 
-	for (RID rid : _modifier_pipelines) {
+	for (const RID &rid : _modifier_pipelines) {
 		zylann::godot::free_rendering_device_rid(rd, rid);
 	}
 
-	for (const RID rid : _uniform_sets_to_free) {
+	for (const RID &rid : _uniform_sets_to_free) {
 		zylann::godot::free_rendering_device_rid(rd, rid);
 	}
 

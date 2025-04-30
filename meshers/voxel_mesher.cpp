@@ -1,14 +1,17 @@
 #include "voxel_mesher.h"
 #include "../constants/voxel_string_names.h"
-#include "../engine/detail_rendering/detail_rendering.h"
 #include "../generators/voxel_generator.h"
-#include "../meshers/transvoxel/voxel_mesher_transvoxel.h"
 #include "../storage/voxel_buffer_gd.h"
 #include "../util/godot/classes/array_mesh.h"
 #include "../util/godot/classes/mesh.h"
 #include "../util/godot/classes/shader_material.h"
 #include "../util/profiling.h"
 #include "transvoxel/transvoxel_cell_iterator.h"
+
+#ifdef VOXEL_ENABLE_SMOOTH_MESHING
+#include "../meshers/transvoxel/voxel_mesher_transvoxel.h"
+#include "../engine/detail_rendering/detail_rendering.h"
+#endif
 
 using namespace zylann::godot;
 
@@ -24,14 +27,17 @@ Ref<Mesh> VoxelMesher::build_mesh(
 	Output output;
 	Input input{ voxels, nullptr, Vector3i(), 0, false, false, false };
 
+#ifdef VOXEL_ENABLE_SMOOTH_MESHING
 	DetailRenderingSettings detail_texture_settings;
 	detail_texture_settings.begin_lod_index = 0;
+#endif
 
 	if (additional_data.size() > 0) {
 		// This is mainly for testing purposes, or small-scale meshing.
 		Ref<VoxelGenerator> generator = additional_data.get("generator", Variant());
 		input.generator = generator.ptr();
 		input.origin_in_voxels = additional_data.get("origin_in_voxels", Vector3i());
+#ifdef VOXEL_ENABLE_SMOOTH_MESHING
 		detail_texture_settings.enabled = additional_data.get("normalmap_enabled", false);
 		detail_texture_settings.octahedral_encoding_enabled =
 				additional_data.get("octahedral_normal_encoding_enabled", false);
@@ -43,6 +49,7 @@ Ref<Mesh> VoxelMesher::build_mesh(
 				int(DetailRenderingSettings::MAX_DEVIATION_DEGREES)
 		);
 		input.detail_texture_hint = detail_texture_settings.enabled;
+#endif
 	}
 
 	build(output, input);
@@ -81,6 +88,7 @@ Ref<Mesh> VoxelMesher::build_mesh(
 		++gd_surface_index;
 	}
 
+#ifdef VOXEL_ENABLE_SMOOTH_MESHING
 	if (detail_texture_settings.enabled && input.generator != nullptr) {
 		VoxelMesherTransvoxel *transvoxel_mesher = Object::cast_to<VoxelMesherTransvoxel>(this);
 
@@ -124,6 +132,7 @@ Ref<Mesh> VoxelMesher::build_mesh(
 			mesh->set_meta(VoxelStringNames::get_singleton().voxel_normalmap_lookup, textures.lookup);
 		}
 	}
+#endif
 
 	return mesh;
 }

@@ -133,8 +133,13 @@ namespace {
 // Contrary to VisualScript (for which this has to be done manually to the user), submitting the text field containing
 // the expression's code also changes dynamic inputs of the node and reconnects existing connections, all as one
 // UndoRedo action.
-void update_expression_inputs(VoxelGraphFunction &graph, uint32_t node_id, String code, EditorUndoRedoManager &ur,
-		VoxelGraphEditor &graph_editor) {
+void update_expression_inputs(
+		VoxelGraphFunction &graph,
+		uint32_t node_id,
+		String code,
+		EditorUndoRedoManager &ur,
+		VoxelGraphEditor &graph_editor
+) {
 	//
 	const CharString code_utf8 = code.utf8();
 	StdVector<std::string_view> new_input_names;
@@ -190,7 +195,8 @@ void update_expression_inputs(VoxelGraphFunction &graph, uint32_t node_id, Strin
 	for (size_t i = 0; i < to_reconnect.size(); ++i) {
 		const Connection con = to_reconnect[i];
 		ur.add_undo_method(
-				&graph, "remove_connection", con.src.node_id, con.src.port_index, node_id, con.dst_port_index);
+				&graph, "remove_connection", con.src.node_id, con.src.port_index, node_id, con.dst_port_index
+		);
 	}
 
 	ur.add_undo_method(&graph, "set_expression_node_inputs", node_id, to_godot(old_input_names));
@@ -304,16 +310,19 @@ bool VoxelGraphNodeInspectorWrapper::_get(const StringName &p_name, Variant &r_r
 	unsigned int index;
 	if (graph->get_node_param_index_by_name(_node_id, p_name, index)) {
 		r_ret = graph->get_node_param(_node_id, index);
-
-	} else if (graph->get_node_input_index_by_name(_node_id, p_name, index)) {
-		r_ret = graph->get_node_default_input(_node_id, index);
-
-	} else {
-		ERR_PRINT(String("Invalid param name {0}").format(varray(p_name)));
-		return false;
+		return true;
 	}
 
-	return true;
+	if (graph->get_node_input_index_by_name(_node_id, p_name, index)) {
+		r_ret = graph->get_node_default_input(_node_id, index);
+		return true;
+	}
+
+	// Can't error-check like that, Godot sometimes spams properties such as `script` in the editor for unknown
+	// reasons (like every frame, even when not visible in the inspector)
+	// ERR_PRINT(String("Invalid param name {0}").format(varray(p_name)));
+
+	return false;
 }
 
 // This method is an undocumented hack used in `EditorInspector::_edit_set` so we can implement UndoRedo ourselves.

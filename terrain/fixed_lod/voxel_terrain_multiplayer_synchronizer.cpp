@@ -14,6 +14,7 @@
 
 #ifdef TOOLS_ENABLED
 #include "../../util/godot/core/packed_arrays.h"
+#include "../../util/godot/core/string.h"
 #endif
 
 namespace zylann::voxel {

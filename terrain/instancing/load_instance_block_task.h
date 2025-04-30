@@ -26,11 +26,13 @@ public:
 			std::shared_ptr<InstancerQuickReloadingCache> quick_reload_cache,
 			Ref<VoxelInstanceLibrary> library,
 			Array mesh_arrays,
-			Vector3i grid_position,
-			uint8_t lod_index,
-			uint8_t instance_block_size,
-			uint8_t data_block_size,
-			UpMode up_mode
+			const int32_t vertex_range_end,
+			const int32_t index_range_end,
+			const Vector3i grid_position,
+			const uint8_t lod_index,
+			const uint8_t instance_block_size,
+			const uint8_t data_block_size,
+			const UpMode up_mode
 	);
 
 	const char *get_debug_name() const override {
@@ -46,6 +48,8 @@ private:
 	std::shared_ptr<InstancerQuickReloadingCache> _quick_reload_cache;
 	Ref<VoxelInstanceLibrary> _library;
 	Array _mesh_arrays;
+	const int32_t _vertex_range_end;
+	const int32_t _index_range_end;
 	Vector3i _render_grid_position;
 	uint8_t _lod_index;
 	uint8_t _instance_block_size;

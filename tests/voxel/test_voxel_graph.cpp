@@ -1,7 +1,8 @@
 #include "test_voxel_graph.h"
+#include "../../generators/graph/curve_utility.h"
 #include "../../generators/graph/image_range_grid.h"
+#include "../../generators/graph/image_utility.h"
 #include "../../generators/graph/node_type_db.h"
-#include "../../generators/graph/range_utility.h"
 #include "../../generators/graph/voxel_generator_graph.h"
 #include "../../storage/materials_4i4w.h"
 #include "../../storage/voxel_buffer.h"
@@ -1136,6 +1137,8 @@ void test_voxel_graph_functions_misc() {
 	}
 }
 
+#ifdef VOXEL_ENABLE_GPU
+
 void test_voxel_graph_issue461() {
 	Ref<VoxelGeneratorGraph> generator;
 	generator.instantiate();
@@ -1146,6 +1149,8 @@ void test_voxel_graph_issue461() {
 	VoxelGenerator::ShaderSourceData ssd;
 	generator->get_shader_source(ssd);
 }
+
+#endif
 
 template <typename T>
 void get_node_types(const NodeTypeDB &type_db, StdVector<VoxelGraphFunction::NodeTypeID> &types, T predicate) {
@@ -1409,6 +1414,7 @@ void test_voxel_graph_hash() {
 #endif // TOOLS_ENABLED
 #endif // VOXEL_ENABLE_FAST_NOISE_2
 
+#ifdef VOXEL_ENABLE_GPU
 void test_voxel_graph_issue471() {
 	Ref<VoxelGeneratorGraph> generator;
 	generator.instantiate();
@@ -1425,6 +1431,7 @@ void test_voxel_graph_issue471() {
 	VoxelGenerator::ShaderSourceData ssd;
 	generator->get_shader_source(ssd);
 }
+#endif
 
 // There was a bug where generating a usual height-based terrain with also a texture output, random blocks fully or
 // partially filled with air would occur underground where such blocks should have been filled with matter. It only
@@ -1899,7 +1906,7 @@ void test_voxel_graph_function_execute() {
 		function->add_connection(n_y, 0, n_add3, 1);
 		function->add_connection(n_add3, 0, n_out_sd, 0);
 
-		function->set_node_default_input(n_add1, 1, math::PI_32 / 2.f);
+		function->set_node_default_input(n_add1, 1, math::PI<float> / 2.f);
 
 		function->auto_pick_inputs_and_outputs();
 		const CompilationResult result = function->compile(false);

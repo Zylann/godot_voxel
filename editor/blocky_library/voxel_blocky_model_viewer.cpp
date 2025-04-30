@@ -216,15 +216,17 @@ VoxelBlockyModelViewer::VoxelBlockyModelViewer() {
 
 void VoxelBlockyModelViewer::set_model(Ref<VoxelBlockyModel> model) {
 	if (_model.is_valid()) {
-		_model->disconnect(VoxelStringNames::get_singleton().changed,
-				callable_mp(this, &VoxelBlockyModelViewer::_on_model_changed));
+		_model->disconnect(
+				VoxelStringNames::get_singleton().changed, callable_mp(this, &VoxelBlockyModelViewer::_on_model_changed)
+		);
 	}
 
 	_model = model;
 
 	if (_model.is_valid()) {
-		_model->connect(VoxelStringNames::get_singleton().changed,
-				callable_mp(this, &VoxelBlockyModelViewer::_on_model_changed));
+		_model->connect(
+				VoxelStringNames::get_singleton().changed, callable_mp(this, &VoxelBlockyModelViewer::_on_model_changed)
+		);
 	}
 
 	update_model();
@@ -257,9 +259,9 @@ void VoxelBlockyModelViewer::rotate_model_90(Vector3i::Axis axis) {
 
 	urm.create_action(String("Rotate {0}").format(varray(_model->get_class())));
 	urm.add_do_method(_model.ptr(), "rotate_90", axis, clockwise);
-	urm.add_do_method(this, "add_rotation_anim", Basis().rotated(axis_vec, math::PI_32 / 2.0));
+	urm.add_do_method(this, "add_rotation_anim", Basis().rotated(axis_vec, math::PI<real_t> / 2.0));
 	urm.add_undo_method(_model.ptr(), "rotate_90", axis, !clockwise);
-	urm.add_undo_method(this, "add_rotation_anim", Basis().rotated(axis_vec, -math::PI_32 / 2.0));
+	urm.add_undo_method(this, "add_rotation_anim", Basis().rotated(axis_vec, -math::PI<real_t> / 2.0));
 	urm.commit_action();
 }
 
