@@ -281,7 +281,7 @@ void generate_mesh(
 
 						VoxelMesherBlocky::Arrays &arrays = out_arrays_per_material[surface.material_id];
 
-						ZN_ASSERT(surface.material_id >= 0 && surface.material_id < index_offsets.size());
+						ZN_ASSERT(surface.material_id < index_offsets.size());
 						int &index_offset = index_offsets[surface.material_id];
 
 						const BakedModel::SideSurface &side_surface = (*side_surfaces)[surface_index];
@@ -419,7 +419,7 @@ void generate_mesh(
 
 					VoxelMesherBlocky::Arrays &arrays = out_arrays_per_material[surface.material_id];
 
-					ZN_ASSERT(surface.material_id >= 0 && surface.material_id < index_offsets.size());
+					ZN_ASSERT(surface.material_id < index_offsets.size());
 					int &index_offset = index_offsets[surface.material_id];
 
 					const StdVector<Vector3f> &positions = surface.positions;
