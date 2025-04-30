@@ -98,7 +98,9 @@ void DirectMultiMeshInstance::set_gi_mode(GeometryInstance3D::GIMode mode) {
 }
 
 void DirectMultiMeshInstance::set_interpolated(const bool enabled) {
-#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR >= 4
+	// This was added in Godot 4.4, then moved to the SceneTree in 4.5
+	// See https://github.com/godotengine/godot/pull/104269
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR == 4
 	RenderingServer &vs = *RenderingServer::get_singleton();
 	vs.instance_set_interpolated(_multimesh_instance, enabled);
 #endif
