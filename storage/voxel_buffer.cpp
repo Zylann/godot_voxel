@@ -1238,6 +1238,18 @@ void VoxelBuffer::copy_voxel_metadata(const VoxelBuffer &src_buffer) {
 	_block_metadata.copy_from(src_buffer._block_metadata);
 }
 
+#ifdef VOXEL_TESTS
+
+void VoxelBuffer::check_voxel_metadata_integrity() const {
+	for (FlatMapMoveOnly<Vector3i, VoxelMetadata>::ConstIterator it = _voxel_metadata.begin();
+		 it != _voxel_metadata.end();
+		 ++it) {
+		ZN_ASSERT(is_position_valid(it->key));
+	}
+}
+
+#endif
+
 void get_unscaled_sdf(const VoxelBuffer &voxels, Span<float> sdf) {
 	ZN_PROFILE_SCOPE();
 	ZN_DSTACK();

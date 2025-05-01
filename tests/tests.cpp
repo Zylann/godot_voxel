@@ -62,6 +62,8 @@ void run_voxel_tests(const testing::TestOptions &options) {
 	VOXEL_TEST(test_int32_to_string_base10);
 	VOXEL_TEST(test_string_base10_to_int32);
 	VOXEL_TEST(test_voxel_buffer_paste_masked);
+	VOXEL_TEST(test_voxel_buffer_paste_masked_metadata);
+	VOXEL_TEST(test_voxel_buffer_paste_masked_metadata_oob);
 	VOXEL_TEST(test_image_range_grid);
 	VOXEL_TEST(test_box3i_intersects);
 	VOXEL_TEST(test_box3i_for_inner_outline);
