@@ -64,6 +64,21 @@ public:
 	bool operator==(const CustomMetadataTest &other) const {
 		return a == other.a && b == other.b && c == other.c;
 	}
+
+	uint8_t get_type_index() const override {
+		return ID;
+	}
+
+	bool equals(const ICustomVoxelMetadata &other) const override {
+		if (other.get_type_index() != get_type_index()) {
+			return false;
+		}
+#ifdef DEBUG_ENABLED
+		ZN_ASSERT(dynamic_cast<const CustomMetadataTest *>(&other) != nullptr);
+#endif
+		const CustomMetadataTest &other_self = static_cast<const CustomMetadataTest &>(other);
+		return (*this) == other_self;
+	}
 };
 
 void test_voxel_buffer_metadata() {
@@ -170,6 +185,48 @@ void test_voxel_buffer_metadata_gd() {
 		Array read_meta = vb->get_voxel_metadata(Vector3i(1, 2, 3));
 		ZN_TEST_ASSERT(read_meta.size() == meta.size());
 		ZN_TEST_ASSERT(read_meta == meta);
+	}
+	// Comparison 1
+	{
+		Ref<godot::VoxelBuffer> vb1;
+		vb1.instantiate();
+		vb1->create(10, 10, 10);
+		vb1->set_voxel_metadata(Vector3i(1, 2, 3), 42);
+
+		Ref<godot::VoxelBuffer> vb2;
+		vb2.instantiate();
+		vb2->create(10, 10, 10);
+		vb2->set_voxel_metadata(Vector3i(1, 2, 3), 42);
+
+		ZN_TEST_ASSERT(vb1->get_buffer().equals(vb2->get_buffer()) == true);
+	}
+	// Comparison 2
+	{
+		Ref<godot::VoxelBuffer> vb1;
+		vb1.instantiate();
+		vb1->create(10, 10, 10);
+		vb1->set_voxel_metadata(Vector3i(1, 2, 3), 42);
+
+		Ref<godot::VoxelBuffer> vb2;
+		vb2.instantiate();
+		vb2->create(10, 10, 10);
+		vb2->set_voxel_metadata(Vector3i(5, 6, 7), 42);
+
+		ZN_TEST_ASSERT(vb1->get_buffer().equals(vb2->get_buffer()) == false);
+	}
+	// Duplication
+	{
+		Ref<godot::VoxelBuffer> vb1;
+		vb1.instantiate();
+		vb1->create(10, 10, 10);
+		vb1->set_voxel_metadata(Vector3i(1, 2, 3), 42);
+
+		Ref<godot::VoxelBuffer> vb2 = vb1->duplicate(true);
+
+		ZN_TEST_ASSERT(vb1->get_buffer().equals(vb2->get_buffer()));
+
+		vb2->set_voxel_metadata(Vector3i(1, 2, 3), 43);
+		ZN_TEST_ASSERT(vb1->get_buffer().equals(vb2->get_buffer()));
 	}
 	// Serialization (Godot)
 	{
@@ -406,6 +463,7 @@ void test_voxel_buffer_paste_masked_metadata() {
 	src_buffer->set_voxel_metadata(Vector3i(2, 2, 4), 200);
 
 	const VoxelBuffer::ChannelId channel = VoxelBuffer::CHANNEL_TYPE;
+	src_buffer->set_voxel(1, 0, 0, 0, channel); // Specifically to erase the metadata in dst_buffer
 	src_buffer->set_voxel(1, 1, 1, 1, channel);
 	src_buffer->set_voxel(1, 2, 1, 1, channel);
 	src_buffer->set_voxel(1, 1, 2, 1, channel);
@@ -420,6 +478,13 @@ void test_voxel_buffer_paste_masked_metadata() {
 	dst_buffer->create(8, 8, 8);
 	const int dst_default_value = 2;
 	dst_buffer->fill(dst_default_value, channel);
+	// This metadata will get overwritten, since (0,0,0) has no metadata in src_buffer
+	dst_buffer->set_voxel_metadata(Vector3i(1, 2, 3), 300);
+	// This one will not get erased because out of range of the pasted area
+	const Vector3i preserved_metadata_dst_pos(0, 2, 3);
+	dst_buffer->set_voxel_metadata(preserved_metadata_dst_pos, 301);
+
+	Ref<zylann::voxel::godot::VoxelBuffer> dst_buffer_original = dst_buffer->duplicate(true);
 
 	Ref<VoxelTool> vt = dst_buffer->get_voxel_tool();
 	const Vector3i dst_paste_origin(1, 2, 3);
@@ -431,14 +496,17 @@ void test_voxel_buffer_paste_masked_metadata() {
 	for (int z = 0; z < dst_buffer->get_size().z; ++z) {
 		for (int x = 0; x < dst_buffer->get_size().x; ++x) {
 			for (int y = 0; y < dst_buffer->get_size().y; ++y) {
+				const Vector3i dst_pos(x, y, z);
+
 				const int dst_v = dst_buffer->get_voxel(x, y, z, channel);
 				// 0 values must not have been copied
 				ZN_TEST_ASSERT(dst_v != 0);
 
 				if (dst_v == dst_default_value) {
-					// All cells not pasted onto must not have metadata
-					const Variant dst_m = dst_buffer->get_voxel_metadata(Vector3i(x, y, z));
-					ZN_TEST_ASSERT(dst_m == Variant());
+					// All cells not pasted onto must have kept their original metadata
+					const Variant dst_m = dst_buffer->get_voxel_metadata(dst_pos);
+					const Variant dst_m_original = dst_buffer_original->get_voxel_metadata(dst_pos);
+					ZN_TEST_ASSERT(dst_m == dst_m_original);
 				}
 			}
 		}
@@ -465,8 +533,11 @@ void test_voxel_buffer_paste_masked_metadata() {
 				const Variant src_m = src_buffer->get_voxel_metadata(src_pos);
 				const Variant dst_m = dst_buffer->get_voxel_metadata(dst_pos);
 				if (src_v == mask_value) {
-					ZN_TEST_ASSERT(dst_m == Variant());
+					// Preserved cell
+					const Variant dst_m_original = dst_buffer_original->get_voxel_metadata(dst_pos);
+					ZN_TEST_ASSERT(dst_m == dst_m_original);
 				} else {
+					// Overwritten
 					ZN_TEST_ASSERT(dst_m == src_m);
 				}
 			}

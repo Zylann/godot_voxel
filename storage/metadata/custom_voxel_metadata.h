@@ -22,6 +22,11 @@ public:
 	virtual bool deserialize(Span<const uint8_t> src, uint64_t &out_read_size) = 0;
 
 	virtual ICustomVoxelMetadata *duplicate() = 0;
+
+	// Returns the type index used in metadata tagging (mainly used for debug checks)
+	virtual uint8_t get_type_index() const = 0;
+
+	virtual bool equals(const ICustomVoxelMetadata &other) const = 0;
 };
 
 } // namespace zylann::voxel

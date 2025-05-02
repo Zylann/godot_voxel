@@ -36,7 +36,9 @@ Primarily developped with Godot 4.4.1+
     - `VoxelMesherTransvoxel`: Fixed some incorrect geometry changes near positive LOD borders, notably when voxel textures are used. Edge cases remain but can be fixed with a shader hack for now.
     - `VoxelStreamRegionFiles`: GDExtension: fixed error creating directories
     - `VoxelStreamSQLite`: `preferred_coordinate_format` was incorrectly exposed (fixed thanks to @beicause)
-    - `VoxelTool`: `is_area_editable` was off by one in size, and was always returning `true` if the size of the AABB had any component smaller than 1
+    - `VoxelTool`:
+        - `is_area_editable` was off by one in size, and was always returning `true` if the size of the AABB had any component smaller than 1
+        - `paste_masked` didn't check the right coordinates to clear metadata in destinations containing at least one. It also caused a spam of `get_voxel` being at invalid position
     - `VoxelViewer`: reparenting (`remove_child` followed by `add_child`) should no longer reload terrain around the viewer
     - `VoxelAStarGrid3D`: fixed crash if `find_path` is called without setting a terrain first
 

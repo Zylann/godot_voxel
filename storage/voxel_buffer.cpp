@@ -958,6 +958,26 @@ bool VoxelBuffer::equals(const VoxelBuffer &p_other) const {
 		}
 	}
 
+	if (_voxel_metadata.size() != p_other._voxel_metadata.size()) {
+		return false;
+	}
+
+	for (unsigned int i = 0; i < _voxel_metadata.size(); ++i) {
+		const Vector3i key = _voxel_metadata.get_key_at_index(i);
+		const Vector3i other_key = p_other._voxel_metadata.get_key_at_index(i);
+
+		if (key != other_key) {
+			return false;
+		}
+
+		const VoxelMetadata &meta = _voxel_metadata.get_value_at_index(i);
+		const VoxelMetadata &other_meta = _voxel_metadata.get_value_at_index(i);
+
+		if (!meta.equals(other_meta)) {
+			return false;
+		}
+	}
+
 	return true;
 }
 
@@ -1468,10 +1488,15 @@ void paste_src_masked(
 	}
 
 	if (with_metadata) {
-		dst_buffer.erase_voxel_metadata_if([dst_box, &src_buffer, src_mask_channel, src_mask_value](
+		dst_buffer.erase_voxel_metadata_if([dst_box, &src_buffer, src_mask_channel, src_mask_value, dst_base_pos](
 												   const FlatMapMoveOnly<Vector3i, VoxelMetadata>::Pair &p
 										   ) {
-			return dst_box.contains(p.key) && src_buffer.get_voxel(p.key, src_mask_channel) != src_mask_value;
+			if (!dst_box.contains(p.key)) {
+				return false;
+			}
+			const Vector3i src_pos = p.key - dst_base_pos;
+			const uint32_t src_v = src_buffer.get_voxel(src_pos, src_mask_channel);
+			return src_v != src_mask_value;
 		});
 
 		const Box3i src_box(dst_box.position - dst_base_pos, dst_box.size);
@@ -1558,16 +1583,25 @@ void paste_src_masked_dst_predicate(
 	}
 
 	if (with_metadata) {
-		dst_buffer.erase_voxel_metadata_if(
-				[&src_buffer, src_mask_channel, src_mask_value, dst_box, &dst_buffer, dst_mask_channel, &dst_predicate](
-						const FlatMapMoveOnly<Vector3i, VoxelMetadata>::Pair &p
-				) {
-					//
-					return dst_box.contains(p.key) //
-							&& src_buffer.get_voxel(p.key, src_mask_channel) != src_mask_value //
-							&& dst_predicate(dst_buffer.get_voxel(p.key, dst_mask_channel));
-				}
-		);
+		dst_buffer.erase_voxel_metadata_if([&src_buffer,
+											src_mask_channel,
+											src_mask_value,
+											dst_box,
+											&dst_buffer,
+											dst_base_pos,
+											dst_mask_channel,
+											&dst_predicate](const FlatMapMoveOnly<Vector3i, VoxelMetadata>::Pair &p) {
+			if (!dst_box.contains(p.key)) {
+				return false;
+			}
+			const Vector3i src_pos = p.key - dst_base_pos;
+			const uint32_t src_v = src_buffer.get_voxel(src_pos, src_mask_channel);
+			if (src_v == src_mask_value) {
+				return false;
+			}
+			const uint32_t dst_v = dst_buffer.get_voxel(p.key, dst_mask_channel);
+			return dst_predicate(dst_v);
+		});
 
 		const Box3i src_box(dst_box.position - dst_base_pos, dst_box.size);
 
