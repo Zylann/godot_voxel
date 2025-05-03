@@ -20,6 +20,7 @@
 		<method name="get_mesh_ortho_rotation_index" qualifiers="const">
 			<return type="int" />
 			<description>
+				Gets the 90-degree rotation ID that will be applied to the model when the library is baked.
 			</description>
 		</method>
 		<method name="is_mesh_collision_enabled" qualifiers="const">
@@ -56,6 +57,7 @@
 			<return type="void" />
 			<param index="0" name="i" type="int" />
 			<description>
+				Gets the 90-degree rotation ID that will be applied to the model when the library is baked. This is a number representing one of 24 possible 90-degree rotations. You can also use [method rotate_90].
 			</description>
 		</method>
 	</methods>
