@@ -137,14 +137,14 @@ public:
 	void set_voxel_material_filter_mask(const uint32_t mask);
 	uint32_t get_voxel_material_filter_mask() const;
 
-	void set_snap_from_generator_sdf_enabled(bool enabled);
-	bool get_snap_from_generator_sdf_enabled() const;
+	void set_snap_to_generator_sdf_enabled(bool enabled);
+	bool get_snap_to_generator_sdf_enabled() const;
 
-	void set_snap_from_generator_sdf_search_distance(float new_distance);
-	float get_snap_from_generator_sdf_search_distance() const;
+	void set_snap_to_generator_sdf_search_distance(float new_distance);
+	float get_snap_to_generator_sdf_search_distance() const;
 
-	void set_snap_from_generator_sdf_sample_count(int new_sample_count);
-	int get_snap_from_generator_sdf_sample_count() const;
+	void set_snap_to_generator_sdf_sample_count(int new_sample_count);
+	int get_snap_to_generator_sdf_sample_count() const;
 
 	static inline int get_octant_index(const Vector3f pos, float half_block_size) {
 		return get_octant_index(pos.x > half_block_size, pos.y > half_block_size, pos.z > half_block_size);

@@ -57,7 +57,7 @@ A first option to adjust placement, is to adjust the `offset_along_normal` param
 
 #### Snapping from generator SDF
 
-Another option is to enable `snap_from_generator_sdf_enabled`, at the cost of slower instance generation. This is preferably used when `lod_index` > 0, as LOD0 already has maximum precision.
+Another option is to enable `snap_to_generator_sdf_enabled`, at the cost of slower instance generation. This is preferably used when `lod_index` > 0, as LOD0 already has maximum precision.
 
 Without snapping:
 
