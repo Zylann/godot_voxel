@@ -79,6 +79,15 @@
 		<member name="scale_distribution" type="int" setter="set_scale_distribution" getter="get_scale_distribution" enum="VoxelInstanceGenerator.Distribution" default="1">
 			Sets how random scales are distributed.
 		</member>
+		<member name="snap_to_generator_sdf_enabled" type="bool" setter="set_snap_to_generator_sdf_enabled" getter="get_snap_to_generator_sdf_enabled" default="false">
+			Enables snapping to generator SDF. The generator's SDF values will be queried to move instances along their normal to be closerr to ground. Can help reduce the occurrence of "floating" or "buried" instances when moving close to them. This requires the terrain's generator to support series generation. Side-effects: instances might become floating or buried when seen from far away; spawning might become less even.
+		</member>
+		<member name="snap_to_generator_sdf_sample_count" type="int" setter="set_snap_to_generator_sdf_sample_count" getter="get_snap_to_generator_sdf_sample_count" default="2">
+			How many samples per instance will be taken from the generator in order to approach the snapping position. More samples increases precision, but is more expensive.
+		</member>
+		<member name="snap_to_generator_sdf_search_distance" type="float" setter="set_snap_to_generator_sdf_search_distance" getter="get_snap_to_generator_sdf_search_distance" default="1.0">
+			Distance up and down across which snapping will search for ground location. 
+		</member>
 		<member name="triangle_area_threshold" type="float" setter="set_triangle_area_threshold" getter="get_triangle_area_threshold" default="0.0">
 			If set greater than zero, triangles of the ground with an area lower than this threshold will be ignored.
 			Some meshing algorithms can often produce thin or small triangles that can affect distribution quality of spawned instances. If this happens, use this property to filter them out.
