@@ -1362,8 +1362,11 @@ void VoxelInstanceGenerator::_b_set_voxel_material_filter_array(PackedInt32Array
 	// Only warn when running the game, because when users add new items to the array in the editor,
 	// it is likely to have duplicates temporarily, until they set the desired values.
 	if (!Engine::get_singleton()->is_editor_hint()) {
-		if (has_duplicate(indices)) {
-			ZN_PRINT_WARNING("The array of indices contains a duplicate.");
+		const DuplicateSearchResult res = find_duplicate(indices);
+		if (res.is_valid()) {
+			ZN_PRINT_WARNING(format(
+					"The array of material indices contains a duplicate (at indices {} and {}).", res.first, res.second
+			));
 		}
 	}
 #endif
