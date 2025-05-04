@@ -332,7 +332,7 @@
 			<param index="0" name="axis" type="int" enum="Vector3i.Axis" />
 			<param index="1" name="turns" type="int" />
 			<description>
-				Rotates voxel values by 90 degrees along the specified axis. 1 turn is 90 degrees, 2 turns is 180 degrees, 3 turns is 270 degrees (or -90), 4 turns does nothing. Negative turns go in the other direction.
+				Rotates voxel values by 90 degrees along the specified axis. 1 turn is 90 degrees, 2 turns is 180 degrees, 3 turns is 270 degrees (or -90), 4 turns does nothing. Negative turns go in the other direction. This may also rotate the size of the buffer, if it isn't cubic.
 			</description>
 		</method>
 		<method name="set_block_metadata">
