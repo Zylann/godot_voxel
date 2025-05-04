@@ -3,6 +3,7 @@
 
 #include "../errors.h"
 #include "span.h"
+#include <cstdint>
 #include <memory>
 #include <new>
 #include <type_traits>

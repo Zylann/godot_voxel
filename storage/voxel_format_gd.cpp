@@ -43,6 +43,7 @@ void VoxelFormat::configure_buffer(Ref<VoxelBuffer> buffer) const {
 
 Ref<VoxelBuffer> VoxelFormat::create_buffer(const Vector3i size) const {
 	Ref<VoxelBuffer> buffer;
+	ZN_ASSERT_RETURN_V(Vector3iUtil::is_valid_size(size), buffer);
 	buffer.instantiate();
 	_internal.configure_buffer(buffer->get_buffer());
 	if (size != Vector3i()) {
@@ -82,7 +83,7 @@ void VoxelFormat::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_channel_depth", "channel_index"), &VoxelFormat::get_channel_depth);
 
 	ClassDB::bind_method(D_METHOD("configure_buffer", "buffer"), &VoxelFormat::configure_buffer);
-	ClassDB::bind_method(D_METHOD("create_buffer", "size"), &VoxelFormat::configure_buffer);
+	ClassDB::bind_method(D_METHOD("create_buffer", "size"), &VoxelFormat::create_buffer);
 
 	ClassDB::bind_method(D_METHOD("_set_data", "data"), &VoxelFormat::_b_set_data);
 	ClassDB::bind_method(D_METHOD("_get_data"), &VoxelFormat::_b_get_data);

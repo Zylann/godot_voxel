@@ -535,6 +535,10 @@ public:
 		return _voxel_metadata;
 	}
 
+#ifdef VOXEL_TESTS
+	void check_voxel_metadata_integrity() const;
+#endif
+
 private:
 	void init_channel_defaults();
 	bool create_channel_noinit(int i, Vector3i size);

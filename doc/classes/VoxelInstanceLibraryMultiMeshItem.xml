@@ -94,6 +94,7 @@
 		<member name="render_layer" type="int" setter="set_render_layer" getter="get_render_layer" default="1">
 		</member>
 		<member name="scene" type="PackedScene" setter="set_scene" getter="get_scene">
+			Scene that will be used as configuration instead of manual properties. It should have a specific node structure to be supported. See [url]https://voxel-tools.readthedocs.io/en/latest/instancing/#setting-up-a-multimesh-item-from-a-scene[/url]
 		</member>
 	</members>
 	<constants>

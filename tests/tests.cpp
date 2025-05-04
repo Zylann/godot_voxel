@@ -61,7 +61,11 @@ void run_voxel_tests(const testing::TestOptions &options) {
 	VOXEL_TEST(test_wrap);
 	VOXEL_TEST(test_int32_to_string_base10);
 	VOXEL_TEST(test_string_base10_to_int32);
+	VOXEL_TEST(test_voxel_buffer_metadata);
+	VOXEL_TEST(test_voxel_buffer_metadata_gd);
 	VOXEL_TEST(test_voxel_buffer_paste_masked);
+	VOXEL_TEST(test_voxel_buffer_paste_masked_metadata);
+	VOXEL_TEST(test_voxel_buffer_paste_masked_metadata_oob);
 	VOXEL_TEST(test_image_range_grid);
 	VOXEL_TEST(test_box3i_intersects);
 	VOXEL_TEST(test_box3i_for_inner_outline);
@@ -126,8 +130,6 @@ void run_voxel_tests(const testing::TestOptions &options) {
 	VOXEL_TEST(test_run_blocky_random_tick);
 	VOXEL_TEST(test_flat_map);
 	VOXEL_TEST(test_expression_parser);
-	VOXEL_TEST(test_voxel_buffer_metadata);
-	VOXEL_TEST(test_voxel_buffer_metadata_gd);
 	VOXEL_TEST(test_voxel_mesher_cubes);
 	VOXEL_TEST(test_threaded_task_runner_misc);
 	VOXEL_TEST(test_threaded_task_runner_debug_names);
