@@ -1694,7 +1694,7 @@ inline bool detect_ground(
 	const Vector3 instance_up = zylann::godot::BasisUtility::get_up(mm_transform.basis);
 	const Vector3 normal_offset = sd_offset * instance_up;
 	const Vector3 instance_pos_terrain = mm_transform.origin + Vector3(block_origin_in_voxels);
-	const Vector3 instance_pos_terrain_below = instance_pos_terrain - normal_offset;
+	const Vector3 instance_pos_terrain_below = instance_pos_terrain + normal_offset;
 
 	// TODO Optimize: use a transaction instead of random single queries
 	const float sdf_below = voxel_tool.get_voxel_f_interpolated(instance_pos_terrain_below);
@@ -1705,7 +1705,7 @@ inline bool detect_ground(
 
 	if (bidirectional) {
 		// Attempt sampling above instead, in case the instance is flipped over
-		const Vector3 instance_pos_terrain_above = instance_pos_terrain + normal_offset;
+		const Vector3 instance_pos_terrain_above = instance_pos_terrain - normal_offset;
 		const float sdf_above = voxel_tool.get_voxel_f_interpolated(instance_pos_terrain_above);
 		if (sdf_above <= sd_threshold) {
 			return true;
