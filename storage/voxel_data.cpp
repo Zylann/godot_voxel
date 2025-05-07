@@ -160,7 +160,7 @@ inline VoxelSingleValue get_voxel_sv(VoxelBuffer &vb, Vector3i pos, unsigned int
 
 // TODO Piggyback on `copy`? The implementation is quite complex, and it's not supposed to be an efficient use case
 VoxelSingleValue VoxelData::get_voxel(Vector3i pos, unsigned int channel_index, VoxelSingleValue defval) const {
-	ZN_PROFILE_SCOPE();
+	// ZN_PROFILE_SCOPE();
 
 	if (!_bounds_in_voxels.contains(pos)) {
 		return defval;

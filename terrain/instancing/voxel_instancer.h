@@ -21,6 +21,13 @@
 
 #include <limits>
 
+// I implemented an alternate API to customize instance queries more easily. The approach was to use virtuals and
+// temporary buffers instead of templates, because templates would cause a lot of bloat. But when used on the existing
+// floating removal function, it made it slightly slower (up to 20% longer). So this keeps the old implementation.
+// Note: if we used our own instance cache instead of grabbing it from Godot, the performance difference might be ruled
+// out.
+#define VOXEL_INSTANCER_USE_SPECIALIZED_FLOATING_INSTANCE_REMOVAL_IMPLEMENTATION
+
 ZN_GODOT_FORWARD_DECLARE(class PhysicsBody3D);
 
 namespace zylann {
@@ -79,6 +86,8 @@ public:
 			std::shared_ptr<AsyncDependencyTracker> tracker,
 			bool with_flush
 	);
+
+	void remove_instances_in_sphere(const Vector3 p_center, const float p_radius);
 
 	// Event handlers
 
@@ -189,6 +198,19 @@ private:
 			const int32_t index_range_end
 	);
 
+	struct Block;
+
+	class IAreaOperation {
+	public:
+		struct Result {
+			bool modified;
+		};
+		virtual Result execute(Block &block) = 0;
+	};
+
+	void do_area_operation(const AABB p_aabb, IAreaOperation &op);
+	void do_area_operation(const Box3i p_voxel_box, IAreaOperation &op);
+
 #ifdef TOOLS_ENABLED
 	void process_gizmos();
 #endif
@@ -221,20 +243,33 @@ private:
 
 	void on_library_item_changed(int item_id, IInstanceLibraryItemListener::ChangeType change) override;
 
-	struct Block;
+	struct MMRemovalAction {
+		struct Context {
+			VoxelInstancer *instancer = nullptr;
+			VoxelInstanceLibraryMultiMeshItem *item = nullptr;
+		};
+		Context context;
 
-	struct MMRemovalCallbackContext {
-		VoxelInstancer *instancer;
-		VoxelInstanceLibraryMultiMeshItem *item;
+		typedef void (*Callback)(Context, const Transform3D &);
+		Callback callback = nullptr;
+
+		inline bool is_valid() const {
+			return callback != nullptr;
+		}
+
+		inline void call(const Transform3D &t) const {
+#ifdef DEV_ENABLED
+			ZN_ASSERT(callback != nullptr);
+#endif
+			(*callback)(context, t);
+		}
 	};
 
-	typedef void (*MMRemovalCallback)(MMRemovalCallbackContext, const Transform3D &);
+	static MMRemovalAction get_mm_removal_action(VoxelInstancer *instancer, VoxelInstanceLibraryMultiMeshItem *mm_item);
 
-	static MMRemovalCallback get_mm_removal_callback(
-			VoxelInstancer *instancer,
-			VoxelInstanceLibraryMultiMeshItem *mm_item
-	);
+	void remove_floating_instances(const Box3i voxel_box);
 
+#ifdef VOXEL_INSTANCER_USE_SPECIALIZED_FLOATING_INSTANCE_REMOVAL_IMPLEMENTATION
 	static void remove_floating_multimesh_instances(
 			Block &block,
 			const Transform3D &parent_transform,
@@ -244,8 +279,7 @@ private:
 			const float sd_threshold,
 			const float sd_offset,
 			const bool bidirectional,
-			const MMRemovalCallback callback,
-			MMRemovalCallbackContext callback_context
+			const MMRemovalAction removal_action
 	);
 
 	static void remove_floating_scene_instances(
@@ -256,6 +290,30 @@ private:
 			const int block_size_po2,
 			const float sd_threshold
 	);
+#endif
+
+	static void get_instance_positions_local(
+			const Block &block,
+			const unsigned int base_block_size,
+			StdVector<Vector3f> &dst_positions,
+			StdVector<Vector3f> *dst_normals
+	);
+
+	static void remove_instances_by_index(
+			Block &block,
+			const uint32_t base_block_size,
+			Span<const uint32_t> ascending_indices,
+			const MMRemovalAction mm_removal_action
+	);
+
+	static void remove_scene_instances_by_index(Block &block, Span<const uint32_t> ascending_indices);
+
+	static void remove_multimesh_instances_by_index(
+			Block &block,
+			const uint32_t base_block_size,
+			Span<const uint32_t> ascending_indices,
+			const MMRemovalAction action
+	);
 
 	static void update_mesh_from_mesh_lod(
 			Block &block,
@@ -263,6 +321,8 @@ private:
 			bool hide_beyond_max_lod,
 			bool instancer_is_visible
 	);
+
+	static void get_instance_positions(const Block &block, StdVector<Vector3> &dst, const int block_size_po2);
 
 	Dictionary _b_debug_get_instance_counts() const;
 
