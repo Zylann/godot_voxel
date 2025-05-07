@@ -486,8 +486,7 @@ void VoxelInstancer::process_mesh_lods() {
 
 	const float hysteresis = 1.05;
 
-	const uint64_t mesh_lod_update_time_budget_microseconds = 500;
-	const uint64_t time_up_time = Time::get_singleton()->get_ticks_usec() + mesh_lod_update_time_budget_microseconds;
+	const uint64_t time_up_time = Time::get_singleton()->get_ticks_usec() + _mesh_lod_update_budget_microseconds;
 
 	const bool instancer_is_visible = is_visible_in_tree();
 
@@ -678,6 +677,14 @@ void VoxelInstancer::set_library(Ref<VoxelInstanceLibrary> library) {
 
 Ref<VoxelInstanceLibrary> VoxelInstancer::get_library() const {
 	return _library;
+}
+
+int VoxelInstancer::get_mesh_lod_update_budget_microseconds() const {
+	return _mesh_lod_update_budget_microseconds;
+}
+
+void VoxelInstancer::set_mesh_lod_update_budget_microseconds(const int p_micros) {
+	_mesh_lod_update_budget_microseconds = math::max(p_micros, 0);
 }
 
 void VoxelInstancer::regenerate_layer(uint16_t layer_id, bool regenerate_blocks) {
@@ -2984,6 +2991,15 @@ void VoxelInstancer::_bind_methods() {
 			D_METHOD("debug_get_block_infos", "world_position", "item_id"), &VoxelInstancer::debug_get_block_infos
 	);
 
+	ClassDB::bind_method(
+			D_METHOD("get_mesh_lod_update_budget_microseconds"),
+			&VoxelInstancer::get_mesh_lod_update_budget_microseconds
+	);
+	ClassDB::bind_method(
+			D_METHOD("set_mesh_lod_update_budget_microseconds", "micros"),
+			&VoxelInstancer::set_mesh_lod_update_budget_microseconds
+	);
+
 	ADD_PROPERTY(
 			PropertyInfo(
 					Variant::OBJECT, "library", PROPERTY_HINT_RESOURCE_TYPE, VoxelInstanceLibrary::get_class_static()
@@ -2993,6 +3009,12 @@ void VoxelInstancer::_bind_methods() {
 	);
 	ADD_PROPERTY(
 			PropertyInfo(Variant::INT, "up_mode", PROPERTY_HINT_ENUM, "PositiveY,Sphere"), "set_up_mode", "get_up_mode"
+	);
+
+	ADD_PROPERTY(
+			PropertyInfo(Variant::INT, "mesh_lod_update_budget_microseconds"),
+			"set_mesh_lod_update_budget_microseconds",
+			"get_mesh_lod_update_budget_microseconds"
 	);
 
 	BIND_CONSTANT(MAX_LOD);

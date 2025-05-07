@@ -79,6 +79,9 @@ public:
 	void set_library(Ref<VoxelInstanceLibrary> library);
 	Ref<VoxelInstanceLibrary> get_library() const;
 
+	int get_mesh_lod_update_budget_microseconds() const;
+	void set_mesh_lod_update_budget_microseconds(const int p_micros);
+
 	// Actions
 
 	void save_all_modified_blocks(
@@ -417,6 +420,7 @@ private:
 	// Vector3 _mesh_lod_last_update_camera_position;
 	// float _mesh_lod_update_camera_threshold_distance = 8.f;
 	unsigned int _mesh_lod_time_sliced_block_index = 0;
+	uint32_t _mesh_lod_update_budget_microseconds = 500;
 
 	std::shared_ptr<InstancerTaskOutputQueue> _loading_results;
 
