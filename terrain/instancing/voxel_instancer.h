@@ -219,6 +219,7 @@ private:
 		struct Result {
 			bool modified;
 		};
+		virtual ~IAreaOperation() {}
 		virtual Result execute(Block &block) = 0;
 	};
 
