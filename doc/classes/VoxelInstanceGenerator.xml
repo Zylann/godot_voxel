@@ -86,7 +86,7 @@
 			How many samples per instance will be taken from the generator in order to approach the snapping position. More samples increases precision, but is more expensive.
 		</member>
 		<member name="snap_to_generator_sdf_search_distance" type="float" setter="set_snap_to_generator_sdf_search_distance" getter="get_snap_to_generator_sdf_search_distance" default="1.0">
-			Distance up and down across which snapping will search for ground location. 
+			Distance up and down across which snapping will search for ground location.
 		</member>
 		<member name="triangle_area_threshold" type="float" setter="set_triangle_area_threshold" getter="get_triangle_area_threshold" default="0.0">
 			If set greater than zero, triangles of the ground with an area lower than this threshold will be ignored.

@@ -19,8 +19,8 @@
 			</description>
 		</method>
 		<method name="create_buffer" qualifiers="const">
-			<return type="void" />
-			<param index="0" name="size" type="VoxelBuffer" />
+			<return type="VoxelBuffer" />
+			<param index="0" name="size" type="Vector3i" />
 			<description>
 				Creates a new [VoxelBuffer] that has the current format.
 			</description>
