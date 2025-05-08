@@ -49,6 +49,11 @@ public:
 
 		return true;
 	}
+
+	T distance_squared(const Vector3T<T> p) const {
+		const Vector3T<T> d = math::max(min - p, p - max, T(0.0));
+		return d.length_squared();
+	}
 };
 
 using Box3f = Box3fT<float>;

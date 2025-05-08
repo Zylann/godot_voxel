@@ -82,6 +82,9 @@ public:
 	int get_mesh_lod_update_budget_microseconds() const;
 	void set_mesh_lod_update_budget_microseconds(const int p_micros);
 
+	int get_collision_update_budget_microseconds() const;
+	void set_collision_update_budget_microseconds(const int p_micros);
+
 	// Actions
 
 	void save_all_modified_blocks(
@@ -163,6 +166,7 @@ private:
 	void process();
 	void process_task_results();
 	void process_mesh_lods();
+	void process_collision_distances();
 
 	void add_layer(int layer_id, int lod_index);
 	void remove_layer(int layer_id);
@@ -244,6 +248,16 @@ private:
 			Vector3 block_local_position
 	);
 
+	void update_multimesh_block_colliders(
+			Block &block,
+			const uint32_t block_index,
+			const InstanceLibraryMultiMeshItemSettings &settings,
+			Span<const Transform3f> transforms,
+			const Vector3 block_local_position
+	);
+
+	void destroy_multimesh_block_colliders(Block &block);
+
 	void on_library_item_changed(int item_id, IInstanceLibraryItemListener::ChangeType change) override;
 
 	struct MMRemovalAction {
@@ -302,6 +316,8 @@ private:
 			StdVector<Vector3f> *dst_normals
 	);
 
+	static void get_instance_transforms_local(const Block &block, StdVector<Transform3f> &dst);
+
 	static void remove_instances_by_index(
 			Block &block,
 			const uint32_t base_block_size,
@@ -325,8 +341,6 @@ private:
 			bool instancer_is_visible
 	);
 
-	static void get_instance_positions(const Block &block, StdVector<Vector3> &dst, const int block_size_po2);
-
 	Dictionary _b_debug_get_instance_counts() const;
 
 	static void _bind_methods();
@@ -343,6 +357,8 @@ private:
 		// generation completes, we can check if the block is still present.
 		// TODO Unused?
 		bool pending_instances = false;
+		// Used for distance-filtered colliders feature
+		bool distance_colliders_active = false;
 		// Position in mesh block coordinate system
 		Vector3i grid_position;
 		zylann::godot::DirectMultiMeshInstance multimesh_instance;
@@ -421,6 +437,9 @@ private:
 	// float _mesh_lod_update_camera_threshold_distance = 8.f;
 	unsigned int _mesh_lod_time_sliced_block_index = 0;
 	uint32_t _mesh_lod_update_budget_microseconds = 500;
+
+	unsigned int _collision_distance_time_sliced_block_index = 0;
+	uint32_t _collision_distance_update_budget_microseconds = 500;
 
 	std::shared_ptr<InstancerTaskOutputQueue> _loading_results;
 

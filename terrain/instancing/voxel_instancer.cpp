@@ -14,6 +14,7 @@
 #include "../../util/godot/classes/resource_saver.h"
 #include "../../util/godot/classes/time.h"
 #include "../../util/godot/classes/viewport.h"
+#include "../../util/godot/core/aabb.h"
 #include "../../util/godot/core/array.h"
 #include "../../util/godot/core/basis.h"
 #include "../../util/math/conv.h"
@@ -211,11 +212,18 @@ void VoxelInstancer::_notification(int p_what) {
 }
 
 void VoxelInstancer::process() {
+	ZN_PROFILE_SCOPE();
+
 	process_task_results();
+
 	if (_parent != nullptr) {
-		if (_library.is_valid() && _mesh_lod_distances[0] > 0.f) {
-			process_mesh_lods();
+		if (_library.is_valid()) {
+			if (_mesh_lod_distances[0] > 0.f) {
+				process_mesh_lods();
+			}
+			process_collision_distances();
 		}
+
 #ifdef TOOLS_ENABLED
 		if (_gizmos_enabled && is_visible_in_tree()) {
 			process_gizmos();
@@ -321,6 +329,8 @@ void VoxelInstancer::process_task_results() {
 #ifdef TOOLS_ENABLED
 
 void VoxelInstancer::process_gizmos() {
+	ZN_PROFILE_SCOPE();
+
 	using namespace zylann::godot;
 
 	struct L {
@@ -592,6 +602,109 @@ void VoxelInstancer::process_mesh_lods() {
 	}
 }
 
+void VoxelInstancer::process_collision_distances() {
+	ZN_PROFILE_SCOPE();
+	ZN_ASSERT_RETURN(_library.is_valid());
+
+	// Godot's physics engine (including Jolt) dies in mysterious ways when users want colliders on items that may
+	// appear tens of thousands of times.
+	// They don't want to reduce the distance at which they spawn, and instead do that only on colliders, which then
+	// appears to fix the issues.
+
+	// Note, this is a client-only process at the moment. In server-authoritative scenarios, this would have to be done
+	// for every VoxelViewer, which is more expensive.
+
+	// Get viewer position
+	const Transform3D gtrans = get_global_transform();
+	const Vector3 cam_pos_global = get_global_camera_position(*this);
+	const Vector3 cam_pos_local = gtrans.affine_inverse().xform(cam_pos_global);
+
+	ERR_FAIL_COND(_parent == nullptr);
+	const unsigned int block_size = 1 << _parent_mesh_block_size_po2;
+
+	const float hysteresis = 1.05;
+
+	const uint64_t time_up_time =
+			Time::get_singleton()->get_ticks_usec() + _collision_distance_update_budget_microseconds;
+
+	// TODO Candidate for temp allocator
+	StdVector<Transform3f> transforms;
+
+	while (_collision_distance_time_sliced_block_index < _blocks.size()) {
+		// Iterate a portion of blocks, then check timing budget once after that
+		const unsigned int desired_portion_size = 64;
+
+		const unsigned int portion_begin = _collision_distance_time_sliced_block_index;
+		const unsigned int portion_end =
+				math::min(portion_begin + desired_portion_size, static_cast<unsigned int>(_blocks.size()));
+
+		Span<UniquePtr<Block>> blocks_portion =
+				to_span_from_position_and_size(_blocks, portion_begin, portion_end - portion_begin);
+
+		_collision_distance_time_sliced_block_index = portion_end;
+
+		for (unsigned int rel_block_index = 0; rel_block_index < blocks_portion.size(); ++rel_block_index) {
+			UniquePtr<Block> &block_ptr = blocks_portion[rel_block_index];
+			Block &block = *block_ptr;
+			// Early exit for empty blocks (we only do this for multimeshes so no need to check other things)
+			if (!block.multimesh_instance.is_valid()) {
+				continue;
+			}
+
+			const VoxelInstanceLibraryItem *item_base = _library->get_item_const(block.layer_id);
+			ZN_ASSERT_CONTINUE(item_base != nullptr);
+			// TODO Optimization: would be nice to not need this cast by iterating only the same item types
+			const VoxelInstanceLibraryMultiMeshItem *item =
+					Object::cast_to<VoxelInstanceLibraryMultiMeshItem>(item_base);
+			if (item == nullptr) {
+				// Not a multimesh item
+				continue;
+			}
+			const float collision_distance = item->get_collision_distance();
+			if (collision_distance <= 0.f) {
+				// Disabled, the item must have a collider at all distances
+				continue;
+			}
+
+			const int lod_block_size = block_size << block.lod_index;
+			const Vector3i block_origin = block.grid_position * lod_block_size;
+
+			const float distance_squared = zylann::distance_squared(
+					AABB(Vector3(block_origin), zylann::godot::Vector3Utility::splat(lod_block_size)), cam_pos_local
+			);
+
+			if (block.distance_colliders_active) {
+				// Exit distance is slightly higher so it has less chance to oscillate
+				// often when near the threshold
+				if (distance_squared > math::squared(collision_distance * hysteresis)) {
+					destroy_multimesh_block_colliders(block);
+					block.distance_colliders_active = false;
+				}
+			} else {
+				if (distance_squared < math::squared(collision_distance)) {
+					const unsigned int block_index = portion_begin + rel_block_index;
+
+					get_instance_transforms_local(block, transforms);
+
+					update_multimesh_block_colliders(
+							block, block_index, item->get_multimesh_settings(), to_span(transforms), block_origin
+					);
+					block.distance_colliders_active = true;
+				}
+			}
+		}
+
+		if (Time::get_singleton()->get_ticks_usec() > time_up_time) {
+			break;
+		}
+	}
+
+	// Keep restarting the update every frame for now
+	if (_collision_distance_time_sliced_block_index >= _blocks.size()) {
+		_collision_distance_time_sliced_block_index = 0;
+	}
+}
+
 // We need to do this ourselves because we don't use nodes for multimeshes
 void VoxelInstancer::update_visibility() {
 	if (!is_inside_tree()) {
@@ -687,6 +800,14 @@ void VoxelInstancer::set_mesh_lod_update_budget_microseconds(const int p_micros)
 	_mesh_lod_update_budget_microseconds = math::max(p_micros, 0);
 }
 
+int VoxelInstancer::get_collision_update_budget_microseconds() const {
+	return _collision_distance_update_budget_microseconds;
+}
+
+void VoxelInstancer::set_collision_update_budget_microseconds(const int p_micros) {
+	_collision_distance_update_budget_microseconds = math::max(p_micros, 0);
+}
+
 void VoxelInstancer::regenerate_layer(uint16_t layer_id, bool regenerate_blocks) {
 	ZN_PROFILE_SCOPE();
 	ERR_FAIL_COND(_parent == nullptr);
@@ -758,7 +879,7 @@ void VoxelInstancer::regenerate_layer(uint16_t layer_id, bool regenerate_blocks)
 			const int instance_count = zylann::godot::get_visible_instance_count(**multimesh);
 			const float h = render_block_size / 2;
 			for (int i = 0; i < instance_count; ++i) {
-				// TODO This is terrible in MT mode! Think about keeping a local copy...
+				// TODO Optimize: This is very slow the first time, and there is overhead even after that.
 				const Transform3D t = multimesh->get_instance_transform(i);
 				const uint8_t octant_index = VoxelInstanceGenerator::get_octant_index(to_vec3f(t.origin), h);
 				if ((octant_mask & (1 << octant_index)) != 0) {
@@ -1034,6 +1155,15 @@ void VoxelInstancer::remove_layer(int layer_id) {
 	_layers.erase(layer_id);
 }
 
+void VoxelInstancer::destroy_multimesh_block_colliders(Block &block) {
+	ZN_PROFILE_SCOPE();
+	for (unsigned int i = 0; i < block.bodies.size(); ++i) {
+		VoxelInstancerRigidBody *body = block.bodies[i];
+		body->detach_and_destroy();
+	}
+	block.bodies.clear();
+}
+
 void VoxelInstancer::remove_block(unsigned int block_index) {
 #ifdef DEBUG_ENABLED
 	CRASH_COND(block_index >= _blocks.size());
@@ -1054,10 +1184,7 @@ void VoxelInstancer::remove_block(unsigned int block_index) {
 
 	// Destroy objects linked to the block
 
-	for (unsigned int i = 0; i < block->bodies.size(); ++i) {
-		VoxelInstancerRigidBody *body = block->bodies[i];
-		body->detach_and_destroy();
-	}
+	destroy_multimesh_block_colliders(*block);
 
 	for (unsigned int i = 0; i < block->scene_instances.size(); ++i) {
 		SceneInstance instance = block->scene_instances[i];
@@ -1426,66 +1553,9 @@ void VoxelInstancer::update_block_from_transforms( //
 			}
 		}
 
-		// Update bodies
-		Span<const CollisionShapeInfo> collision_shapes = to_span(settings.collision_shapes);
-		if (collision_shapes.size() > 0) {
-			ZN_PROFILE_SCOPE_NAMED("Update multimesh bodies");
-
-			const int data_block_size_po2 = _parent_data_block_size_po2;
-
-			// Add new bodies
-			for (unsigned int instance_index = 0; instance_index < transforms.size(); ++instance_index) {
-				const Transform3D local_transform = to_transform3(transforms[instance_index]);
-				// Bodies are child nodes of the instancer, so we use local block coordinates
-				const Transform3D body_transform(local_transform.basis, local_transform.origin + block_local_position);
-
-				VoxelInstancerRigidBody *body;
-
-				if (instance_index < static_cast<unsigned int>(block.bodies.size())) {
-					body = block.bodies[instance_index];
-
-				} else {
-					// TODO Performance: removing nodes from the tree is slow. It causes framerate stalls.
-					// See https://github.com/godotengine/godot/issues/61929
-					// Instances with collisions can lead to the creation of thousands of nodes. While this works in
-					// practice, removal proved to be very slow. Not because of physics, but because of an issue in the
-					// node system itself. A possible workaround is to either use servers directly, or put nodes as
-					// children of more nodes acting as buckets.
-					body = memnew(VoxelInstancerRigidBody);
-					body->attach(this);
-					body->set_instance_index(instance_index);
-					body->set_render_block_index(block_index);
-					body->set_data_block_position(math::floor_to_int(body_transform.origin) >> data_block_size_po2);
-					body->set_collision_layer(settings.collision_layer);
-					body->set_collision_mask(settings.collision_mask);
-
-					for (unsigned int i = 0; i < collision_shapes.size(); ++i) {
-						const CollisionShapeInfo &shape_info = collision_shapes[i];
-						CollisionShape3D *cs = memnew(CollisionShape3D);
-						cs->set_shape(shape_info.shape);
-						cs->set_transform(shape_info.transform);
-						body->add_child(cs);
-					}
-
-					for (const StringName &group_name : settings.group_names) {
-						body->add_to_group(group_name);
-					}
-
-					add_child(body);
-					block.bodies.push_back(body);
-				}
-
-				body->set_transform(body_transform);
-			}
-
-			// Remove old bodies
-			for (unsigned int instance_index = transforms.size(); instance_index < block.bodies.size();
-				 ++instance_index) {
-				VoxelInstancerRigidBody *body = block.bodies[instance_index];
-				body->detach_and_destroy();
-			}
-
-			block.bodies.resize(transforms.size());
+		if (item->get_collision_distance() < 0.f) {
+			// Colliders always present, create them all right away
+			update_multimesh_block_colliders(block, block_index, settings, transforms, block_local_position);
 		}
 	}
 
@@ -1538,6 +1608,80 @@ void VoxelInstancer::update_block_from_transforms( //
 
 		block.scene_instances.resize(transforms.size());
 	}
+}
+
+void VoxelInstancer::update_multimesh_block_colliders(
+		Block &block,
+		const uint32_t block_index,
+		const InstanceLibraryMultiMeshItemSettings &settings,
+		Span<const Transform3f> transforms,
+		const Vector3 block_local_position
+) {
+	// Update bodies
+	Span<const CollisionShapeInfo> collision_shapes = to_span(settings.collision_shapes);
+	if (collision_shapes.size() == 0) {
+		return;
+	}
+
+	ZN_PROFILE_SCOPE();
+
+	const int data_block_size_po2 = _parent_data_block_size_po2;
+
+	// Add new bodies
+	for (unsigned int instance_index = 0; instance_index < transforms.size(); ++instance_index) {
+		const Transform3D local_transform = to_transform3(transforms[instance_index]);
+		// Bodies are child nodes of the instancer, so we use local block coordinates
+		const Transform3D body_transform(local_transform.basis, local_transform.origin + block_local_position);
+
+		VoxelInstancerRigidBody *body;
+
+		if (instance_index < block.bodies.size()) {
+			// Body already exists, we'll only update its properties
+			body = block.bodies[instance_index];
+
+		} else {
+			// Create body
+
+			// TODO Performance: removing nodes from the tree is slow. It causes framerate stalls.
+			// See https://github.com/godotengine/godot/issues/61929
+			// Instances with collisions can lead to the creation of thousands of nodes. While this works in
+			// practice, removal proved to be very slow. Not because of physics, but because of an issue in the
+			// node system itself. A possible workaround is to either use servers directly, or put nodes as
+			// children of more nodes acting as buckets.
+			body = memnew(VoxelInstancerRigidBody);
+			body->attach(this);
+			body->set_instance_index(instance_index);
+			body->set_render_block_index(block_index);
+			body->set_data_block_position(math::floor_to_int(body_transform.origin) >> data_block_size_po2);
+			body->set_collision_layer(settings.collision_layer);
+			body->set_collision_mask(settings.collision_mask);
+
+			for (unsigned int i = 0; i < collision_shapes.size(); ++i) {
+				const CollisionShapeInfo &shape_info = collision_shapes[i];
+				CollisionShape3D *cs = memnew(CollisionShape3D);
+				cs->set_shape(shape_info.shape);
+				cs->set_transform(shape_info.transform);
+				body->add_child(cs);
+			}
+
+			for (const StringName &group_name : settings.group_names) {
+				body->add_to_group(group_name);
+			}
+
+			add_child(body);
+			block.bodies.push_back(body);
+		}
+
+		body->set_transform(body_transform);
+	}
+
+	// Remove excess bodies
+	for (unsigned int instance_index = transforms.size(); instance_index < block.bodies.size(); ++instance_index) {
+		VoxelInstancerRigidBody *body = block.bodies[instance_index];
+		body->detach_and_destroy();
+	}
+
+	block.bodies.resize(transforms.size());
 }
 
 void VoxelInstancer::create_render_blocks(
@@ -1675,9 +1819,7 @@ SaveBlockDataTask *VoxelInstancer::save_block(
 
 				// TODO Optimization: it would be nice to get the whole array at once
 				for (int instance_index = 0; instance_index < instance_count; ++instance_index) {
-					// TODO This is terrible in MT mode! Think about keeping a local copy...
-					// TODO This is also terrible because it downloads the data from GPU (although Godot makes a cache
-					// by itself)
+					// TODO Optimize: This is very slow the first time, and there is overhead even after that.
 					layer_data.instances[instance_index].transform =
 							to_transform3f(multimesh->get_instance_transform(instance_index));
 				}
@@ -1932,7 +2074,7 @@ void VoxelInstancer::get_instance_positions_local(
 			}
 
 			for (unsigned int instance_index = 0; instance_index < instance_count; ++instance_index) {
-				// TODO Optimize: This is terrible in MT mode! Think about keeping a local copy...
+				// TODO Optimize: This is very slow the first time, and there is overhead even after that.
 				//      Would it be better to use `multimesh_get_buffer`? Unfortunately it ALWAYS allocates (it
 				//      isn't even benefiting from CoW), and it also doesn't cache, so to force it we'd have to do a
 				//      dummy call to `get_instance_transform`. Using our own cache and carefully avoiding Godot
@@ -1943,11 +2085,27 @@ void VoxelInstancer::get_instance_positions_local(
 			}
 		} else {
 			for (unsigned int instance_index = 0; instance_index < instance_count; ++instance_index) {
-				// TODO Optimize: This is terrible in MT mode! Think about keeping a local copy...
+				// TODO Optimize: This is very slow the first time, and there is overhead even after that.
 				const Transform3D instance_transform = multimesh->get_instance_transform(instance_index);
 				dst_positions.push_back(to_vec3f(instance_transform.origin));
 			}
 		}
+	}
+}
+
+void VoxelInstancer::get_instance_transforms_local(const Block &block, StdVector<Transform3f> &dst) {
+	ZN_PROFILE_SCOPE();
+
+	Ref<MultiMesh> multimesh = block.multimesh_instance.get_multimesh();
+	ZN_ASSERT_RETURN(multimesh.is_valid());
+	const unsigned int instance_count = zylann::godot::get_visible_instance_count(**multimesh);
+
+	dst.resize(instance_count);
+
+	for (unsigned int instance_index = 0; instance_index < instance_count; ++instance_index) {
+		// TODO Optimize: This is very slow the first time, and there is overhead even after that.
+		const Transform3D trans = multimesh->get_instance_transform(instance_index);
+		dst[instance_index] = to_transform3f(trans);
 	}
 }
 
@@ -2310,7 +2468,7 @@ void VoxelInstancer::remove_floating_multimesh_instances(
 
 		// Remove the MultiMesh instance
 		const int last_instance_index = --instance_count;
-		// TODO This is terrible in MT mode! Think about keeping a local copy...
+		// TODO Optimize: This is very slow the first time, and there is overhead even after that.
 		const Transform3D last_trans = multimesh->get_instance_transform(last_instance_index);
 		// TODO Also, SETTING transforms internally DOWNLOADS the buffer back to RAM in case it wasn't already,
 		// which Godot presumably uses to update the VRAM buffer in regions. But regions it uses are 512 items wide, so
@@ -2601,6 +2759,7 @@ void VoxelInstancer::on_body_removed(
 			Ref<VoxelInstanceLibraryMultiMeshItem> mm_item = item;
 			MMRemovalAction action = get_mm_removal_action(this, mm_item.ptr());
 			if (action.is_valid()) {
+				// TODO Optimize: This is very slow the first time, and there is overhead even after that.
 				const Transform3D ltrans = multimesh->get_instance_transform(instance_index);
 				const Vector3i block_origin_in_voxels = data_block_position
 						<< (_parent_mesh_block_size_po2 + block.lod_index);
@@ -2614,7 +2773,7 @@ void VoxelInstancer::on_body_removed(
 
 		--visible_count;
 		// Swap-remove
-		// TODO Optimize: This is terrible in MT mode! Think about keeping a local copy...
+		// TODO Optimize: This is very slow the first time, and there is overhead even after that.
 		const Transform3D last_trans = multimesh->get_instance_transform(visible_count);
 		multimesh->set_instance_transform(instance_index, last_trans);
 		multimesh->set_visible_instance_count(visible_count);
@@ -2899,6 +3058,7 @@ Dictionary VoxelInstancer::debug_get_block_infos(const Vector3 world_position, c
 			instances_array.resize(count);
 
 			for (unsigned int instance_index = 0; instance_index < count; ++instance_index) {
+				// TODO Optimize: This is very slow the first time, and there is overhead even after that.
 				const Transform3D instance_transform = mm->get_instance_transform(instance_index);
 				instances_array[instance_index] = instance_transform;
 			}
@@ -3000,6 +3160,15 @@ void VoxelInstancer::_bind_methods() {
 			&VoxelInstancer::set_mesh_lod_update_budget_microseconds
 	);
 
+	ClassDB::bind_method(
+			D_METHOD("get_collision_update_budget_microseconds"),
+			&VoxelInstancer::get_collision_update_budget_microseconds
+	);
+	ClassDB::bind_method(
+			D_METHOD("set_collision_update_budget_microseconds", "micros"),
+			&VoxelInstancer::set_collision_update_budget_microseconds
+	);
+
 	ADD_PROPERTY(
 			PropertyInfo(
 					Variant::OBJECT, "library", PROPERTY_HINT_RESOURCE_TYPE, VoxelInstanceLibrary::get_class_static()
@@ -3015,6 +3184,12 @@ void VoxelInstancer::_bind_methods() {
 			PropertyInfo(Variant::INT, "mesh_lod_update_budget_microseconds"),
 			"set_mesh_lod_update_budget_microseconds",
 			"get_mesh_lod_update_budget_microseconds"
+	);
+
+	ADD_PROPERTY(
+			PropertyInfo(Variant::INT, "collision_update_budget_microseconds"),
+			"set_collision_update_budget_microseconds",
+			"get_collision_update_budget_microseconds"
 	);
 
 	BIND_CONSTANT(MAX_LOD);

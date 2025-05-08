@@ -34,6 +34,18 @@ inline constexpr T max(const T a, const T b) {
 }
 
 template <typename T>
+inline T min(const T a, const T b, const T c) {
+	static_assert(std::is_scalar<T>::value);
+	return min(min(a, b), c);
+}
+
+template <typename T>
+inline T max(const T a, const T b, const T c) {
+	static_assert(std::is_scalar<T>::value);
+	return max(max(a, b), c);
+}
+
+template <typename T>
 inline T min(const T a, const T b, const T c, const T d) {
 	static_assert(std::is_scalar<T>::value);
 	return min(min(a, b), min(c, d));
