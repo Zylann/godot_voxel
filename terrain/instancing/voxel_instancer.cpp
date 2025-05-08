@@ -310,16 +310,16 @@ void VoxelInstancer::process_task_results() {
 		const Transform3D block_local_transform = Transform3D(Basis(), output.render_block_position * mesh_block_size);
 		const Transform3D block_global_transform = parent_transform * block_local_transform;
 
-		update_block_from_transforms( //
-				block_it->second, //
-				to_span_const(output.transforms), //
-				output.render_block_position, //
-				layer, //
-				*item, //
-				output.layer_id, //
-				world, //
-				block_global_transform, //
-				block_local_transform.origin //
+		update_block_from_transforms(
+				block_it->second,
+				to_span_const(output.transforms),
+				output.render_block_position,
+				layer,
+				*item,
+				output.layer_id,
+				world,
+				block_global_transform,
+				block_local_transform.origin
 		);
 	}
 
@@ -1464,16 +1464,16 @@ unsigned int VoxelInstancer::create_block(
 	return block_index;
 }
 
-void VoxelInstancer::update_block_from_transforms( //
-		int block_index, //
-		Span<const Transform3f> transforms, //
-		Vector3i grid_position, //
-		Layer &layer, //
-		const VoxelInstanceLibraryItem &item_base, //
-		uint16_t layer_id, //
-		World3D &world, //
-		const Transform3D &block_global_transform, //
-		Vector3 block_local_position //
+void VoxelInstancer::update_block_from_transforms(
+		int block_index,
+		Span<const Transform3f> transforms,
+		Vector3i grid_position,
+		Layer &layer,
+		const VoxelInstanceLibraryItem &item_base,
+		uint16_t layer_id,
+		World3D &world,
+		const Transform3D &block_global_transform,
+		Vector3 block_local_position
 ) {
 	ZN_PROFILE_SCOPE();
 
