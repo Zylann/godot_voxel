@@ -1467,13 +1467,13 @@ unsigned int VoxelInstancer::create_block(
 void VoxelInstancer::update_block_from_transforms(
 		int block_index,
 		Span<const Transform3f> transforms,
-		Vector3i grid_position,
+		const Vector3i grid_position,
 		Layer &layer,
 		const VoxelInstanceLibraryItem &item_base,
-		uint16_t layer_id,
+		const uint16_t layer_id,
 		World3D &world,
 		const Transform3D &block_global_transform,
-		Vector3 block_local_position
+		const Vector3 block_local_position
 ) {
 	ZN_PROFILE_SCOPE();
 
@@ -1487,126 +1487,97 @@ void VoxelInstancer::update_block_from_transforms(
 #endif
 	Block &block = *_blocks[block_index];
 
-	// TODO Split in two functions?
-
 	// Update multimesh
 	const VoxelInstanceLibraryMultiMeshItem *item = Object::cast_to<VoxelInstanceLibraryMultiMeshItem>(&item_base);
 	if (item != nullptr) {
-		const VoxelInstanceLibraryMultiMeshItem::Settings &settings = item->get_multimesh_settings();
-
-		if (transforms.size() == 0) {
-			if (block.multimesh_instance.is_valid()) {
-				block.multimesh_instance.set_multimesh(Ref<MultiMesh>());
-				block.multimesh_instance.destroy();
-			}
-
-		} else {
-			Ref<MultiMesh> multimesh = block.multimesh_instance.get_multimesh();
-			if (multimesh.is_null()) {
-				multimesh.instantiate();
-				multimesh->set_transform_format(MultiMesh::TRANSFORM_3D);
-				multimesh->set_use_colors(false);
-				multimesh->set_use_custom_data(false);
-			} else {
-				multimesh->set_visible_instance_count(-1);
-			}
-			PackedFloat32Array bulk_array;
-			zylann::godot::DirectMultiMeshInstance::make_transform_3d_bulk_array(transforms, bulk_array);
-			multimesh->set_instance_count(transforms.size());
-
-			// Setting the mesh BEFORE `multimesh_set_buffer` because otherwise Godot computes the AABB inside
-			// `multimesh_set_buffer` BY DOWNLOADING BACK THE BUFFER FROM THE GRAPHICS CARD which can incur a very harsh
-			// performance penalty
-			// TODO If we could use custom AABBs, we would not need this reordering
-			if (settings.mesh_lod_count > 0) {
-				if (block.current_mesh_lod < settings.mesh_lod_count) {
-					multimesh->set_mesh(settings.mesh_lods[block.current_mesh_lod]);
-				}
-			}
-
-			// TODO Waiting for Godot to expose the method on the resource object
-			// multimesh->set_as_bulk_array(bulk_array);
-			RenderingServer::get_singleton()->multimesh_set_buffer(multimesh->get_rid(), bulk_array);
-
-			if (!block.multimesh_instance.is_valid()) {
-				block.multimesh_instance.create();
-				block.multimesh_instance.set_interpolated(false);
-				block.multimesh_instance.set_visible(
-						is_visible() &&
-						!(item->get_hide_beyond_max_lod() && block.current_mesh_lod == settings.mesh_lod_count)
-				);
-			}
-			block.multimesh_instance.set_multimesh(multimesh);
-			block.multimesh_instance.set_render_layer(settings.render_layer);
-			block.multimesh_instance.set_world(&world);
-			block.multimesh_instance.set_transform(block_global_transform);
-			block.multimesh_instance.set_material_override(settings.material_override);
-			block.multimesh_instance.set_cast_shadows_setting(settings.shadow_casting_setting);
-			block.multimesh_instance.set_gi_mode(settings.gi_mode);
-
-			if (settings.mesh_lod_count > 1 || (settings.mesh_lod_count == 1 && item->get_hide_beyond_max_lod())) {
-				// Hide for now, let the LOD system show/hide and assign the right mesh when it runs. We do this because
-				// the LOD system doesn't necessarily update every blocks every frame, which would flicker at their full
-				// LOD when spawning
-				block.current_mesh_lod = settings.mesh_lod_count;
-				block.multimesh_instance.set_visible(false);
-			}
-		}
-
-		if (item->get_collision_distance() < 0.f) {
-			// Colliders always present, create them all right away
-			update_multimesh_block_colliders(block, block_index, settings, transforms, block_local_position);
-		}
+		update_multimesh_block_from_transforms(
+				block, block_index, block_global_transform, block_local_position, transforms, *item, world
+		);
+		return;
 	}
 
 	// Update scene instances
 	const VoxelInstanceLibrarySceneItem *scene_item = Object::cast_to<VoxelInstanceLibrarySceneItem>(&item_base);
 	if (scene_item != nullptr) {
-		ZN_PROFILE_SCOPE_NAMED("Update scene instances");
-		ERR_FAIL_COND_MSG(
-				scene_item->get_scene().is_null(),
-				String("{0} ({1}) is missing an attached scene in {2} ({3})")
-						.format(varray(VoxelInstanceLibrarySceneItem::get_class_static(),
-									   item_base.get_item_name(),
-									   VoxelInstancer::get_class_static()),
-								get_path())
-		);
+		update_scene_block_from_transforms(block, block_index, block_local_position, transforms, *scene_item);
+	}
+}
 
-		const int data_block_size_po2 = _parent_data_block_size_po2;
+void VoxelInstancer::update_multimesh_block_from_transforms(
+		Block &block,
+		const unsigned int block_index,
+		const Transform3D &block_global_transform,
+		const Vector3 block_local_position,
+		Span<const Transform3f> transforms,
+		const VoxelInstanceLibraryMultiMeshItem &item,
+		World3D &world
+) {
+	ZN_PROFILE_SCOPE();
 
-		// Add new instances
-		for (unsigned int instance_index = 0; instance_index < transforms.size(); ++instance_index) {
-			const Transform3D local_transform = to_transform3(transforms[instance_index]);
-			const Transform3D body_transform(local_transform.basis, local_transform.origin + block_local_position);
+	const VoxelInstanceLibraryMultiMeshItem::Settings &settings = item.get_multimesh_settings();
 
-			SceneInstance instance;
+	if (transforms.size() == 0) {
+		if (block.multimesh_instance.is_valid()) {
+			block.multimesh_instance.set_multimesh(Ref<MultiMesh>());
+			block.multimesh_instance.destroy();
+		}
 
-			if (instance_index < static_cast<unsigned int>(block.bodies.size())) {
-				instance = block.scene_instances[instance_index];
-				instance.root->set_transform(body_transform);
+	} else {
+		Ref<MultiMesh> multimesh = block.multimesh_instance.get_multimesh();
+		if (multimesh.is_null()) {
+			multimesh.instantiate();
+			multimesh->set_transform_format(MultiMesh::TRANSFORM_3D);
+			multimesh->set_use_colors(false);
+			multimesh->set_use_custom_data(false);
+		} else {
+			multimesh->set_visible_instance_count(-1);
+		}
+		PackedFloat32Array bulk_array;
+		zylann::godot::DirectMultiMeshInstance::make_transform_3d_bulk_array(transforms, bulk_array);
+		multimesh->set_instance_count(transforms.size());
 
-			} else {
-				instance = create_scene_instance(
-						*scene_item, instance_index, block_index, body_transform, data_block_size_po2
-				);
-				ERR_CONTINUE(instance.root == nullptr);
-				block.scene_instances.push_back(instance);
+		// Setting the mesh BEFORE `multimesh_set_buffer` because otherwise Godot computes the AABB inside
+		// `multimesh_set_buffer` BY DOWNLOADING BACK THE BUFFER FROM THE GRAPHICS CARD which can incur a very harsh
+		// performance penalty
+		// TODO If we could use custom AABBs, we would not need this reordering
+		if (settings.mesh_lod_count > 0) {
+			if (block.current_mesh_lod < settings.mesh_lod_count) {
+				multimesh->set_mesh(settings.mesh_lods[block.current_mesh_lod]);
 			}
-
-			// TODO Deserialize state
 		}
 
-		// Remove old instances
-		for (unsigned int instance_index = transforms.size(); instance_index < block.scene_instances.size();
-			 ++instance_index) {
-			SceneInstance instance = block.scene_instances[instance_index];
-			ERR_CONTINUE(instance.component == nullptr);
-			instance.component->detach();
-			ERR_CONTINUE(instance.root == nullptr);
-			instance.root->queue_free();
-		}
+		// TODO Waiting for Godot to expose the method on the resource object
+		// multimesh->set_as_bulk_array(bulk_array);
+		RenderingServer::get_singleton()->multimesh_set_buffer(multimesh->get_rid(), bulk_array);
 
-		block.scene_instances.resize(transforms.size());
+		if (!block.multimesh_instance.is_valid()) {
+			block.multimesh_instance.create();
+			block.multimesh_instance.set_interpolated(false);
+			block.multimesh_instance.set_visible(
+					is_visible() &&
+					!(item.get_hide_beyond_max_lod() && block.current_mesh_lod == settings.mesh_lod_count)
+			);
+		}
+		block.multimesh_instance.set_multimesh(multimesh);
+		block.multimesh_instance.set_render_layer(settings.render_layer);
+		block.multimesh_instance.set_world(&world);
+		block.multimesh_instance.set_transform(block_global_transform);
+		block.multimesh_instance.set_material_override(settings.material_override);
+		block.multimesh_instance.set_cast_shadows_setting(settings.shadow_casting_setting);
+		block.multimesh_instance.set_gi_mode(settings.gi_mode);
+
+		if (settings.mesh_lod_count > 1 || (settings.mesh_lod_count == 1 && item.get_hide_beyond_max_lod())) {
+			// Hide for now, let the LOD system show/hide and assign the right mesh when it runs. We do this because
+			// the LOD system doesn't necessarily update every blocks every frame, which would flicker at their full
+			// LOD when spawning
+			block.current_mesh_lod = settings.mesh_lod_count;
+			block.multimesh_instance.set_visible(false);
+		}
+	}
+
+	if (item.get_collision_distance() < 0.f) {
+		// Colliders always present, create them all right away
+		update_multimesh_block_colliders(block, block_index, settings, transforms, block_local_position);
 	}
 }
 
@@ -1682,6 +1653,60 @@ void VoxelInstancer::update_multimesh_block_colliders(
 	}
 
 	block.bodies.resize(transforms.size());
+}
+
+void VoxelInstancer::update_scene_block_from_transforms(
+		Block &block,
+		const unsigned int block_index,
+		const Vector3 block_local_position,
+		Span<const Transform3f> transforms,
+		const VoxelInstanceLibrarySceneItem &scene_item
+) {
+	ZN_PROFILE_SCOPE();
+
+	ERR_FAIL_COND_MSG(
+			scene_item.get_scene().is_null(),
+			String("{0} ({1}) is missing an attached scene in {2} ({3})")
+					.format(varray(VoxelInstanceLibrarySceneItem::get_class_static(),
+								   scene_item.get_item_name(),
+								   VoxelInstancer::get_class_static()),
+							get_path())
+	);
+
+	const int data_block_size_po2 = _parent_data_block_size_po2;
+
+	// Add new instances
+	for (unsigned int instance_index = 0; instance_index < transforms.size(); ++instance_index) {
+		const Transform3D local_transform = to_transform3(transforms[instance_index]);
+		const Transform3D body_transform(local_transform.basis, local_transform.origin + block_local_position);
+
+		SceneInstance instance;
+
+		if (instance_index < static_cast<unsigned int>(block.bodies.size())) {
+			instance = block.scene_instances[instance_index];
+			instance.root->set_transform(body_transform);
+
+		} else {
+			instance =
+					create_scene_instance(scene_item, instance_index, block_index, body_transform, data_block_size_po2);
+			ERR_CONTINUE(instance.root == nullptr);
+			block.scene_instances.push_back(instance);
+		}
+
+		// TODO Deserialize state
+	}
+
+	// Remove old instances
+	for (unsigned int instance_index = transforms.size(); instance_index < block.scene_instances.size();
+		 ++instance_index) {
+		SceneInstance instance = block.scene_instances[instance_index];
+		ERR_CONTINUE(instance.component == nullptr);
+		instance.component->detach();
+		ERR_CONTINUE(instance.root == nullptr);
+		instance.root->queue_free();
+	}
+
+	block.scene_instances.resize(transforms.size());
 }
 
 void VoxelInstancer::create_render_blocks(

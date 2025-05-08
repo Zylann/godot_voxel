@@ -239,13 +239,31 @@ private:
 	void update_block_from_transforms(
 			int block_index,
 			Span<const Transform3f> transforms,
-			Vector3i grid_position,
+			const Vector3i grid_position,
 			Layer &layer,
 			const VoxelInstanceLibraryItem &item_base,
-			uint16_t layer_id,
+			const uint16_t layer_id,
 			World3D &world,
 			const Transform3D &block_transform,
-			Vector3 block_local_position
+			const Vector3 block_local_position
+	);
+
+	void update_multimesh_block_from_transforms(
+			Block &block,
+			const unsigned int block_index,
+			const Transform3D &block_global_transform,
+			const Vector3 block_local_position,
+			Span<const Transform3f> transforms,
+			const VoxelInstanceLibraryMultiMeshItem &item,
+			World3D &world
+	);
+
+	void update_scene_block_from_transforms(
+			Block &block,
+			const unsigned int block_index,
+			const Vector3 block_local_position,
+			Span<const Transform3f> transforms,
+			const VoxelInstanceLibrarySceneItem &scene_item
 	);
 
 	void update_multimesh_block_colliders(
