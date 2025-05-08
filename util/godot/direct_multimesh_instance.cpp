@@ -7,6 +7,14 @@ namespace zylann::godot {
 
 DirectMultiMeshInstance::DirectMultiMeshInstance() {}
 
+DirectMultiMeshInstance::DirectMultiMeshInstance(DirectMultiMeshInstance &&src) {
+	_multimesh_instance = src._multimesh_instance;
+	_multimesh = src._multimesh;
+
+	src._multimesh_instance = RID();
+	src._multimesh = Ref<Mesh>();
+}
+
 DirectMultiMeshInstance::~DirectMultiMeshInstance() {
 	destroy();
 }
@@ -87,6 +95,12 @@ void DirectMultiMeshInstance::set_cast_shadows_setting(RenderingServer::ShadowCa
 	vs.instance_geometry_set_cast_shadows_setting(_multimesh_instance, mode);
 }
 
+void DirectMultiMeshInstance::set_shader_instance_parameter(const StringName &key, const Variant &value) {
+	ERR_FAIL_COND(!_multimesh_instance.is_valid());
+	RenderingServer &vs = *RenderingServer::get_singleton();
+	vs.instance_geometry_set_shader_parameter(_multimesh_instance, key, value);
+}
+
 void DirectMultiMeshInstance::set_render_layer(int render_layer) {
 	ERR_FAIL_COND(!_multimesh_instance.is_valid());
 	RenderingServer &vs = *RenderingServer::get_singleton();
@@ -104,6 +118,20 @@ void DirectMultiMeshInstance::set_interpolated(const bool enabled) {
 	RenderingServer &vs = *RenderingServer::get_singleton();
 	vs.instance_set_interpolated(_multimesh_instance, enabled);
 #endif
+}
+
+void DirectMultiMeshInstance::operator=(DirectMultiMeshInstance &&src) {
+	if (_multimesh_instance == src._multimesh_instance) {
+		return;
+	}
+
+	destroy();
+
+	_multimesh_instance = src._multimesh_instance;
+	_multimesh = src._multimesh;
+
+	src._multimesh_instance = RID();
+	src._multimesh.unref();
 }
 
 template <typename TTransform3>

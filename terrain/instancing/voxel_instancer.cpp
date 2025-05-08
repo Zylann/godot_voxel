@@ -98,7 +98,7 @@ void VoxelInstancer::clear_blocks_in_layer(int layer_id) {
 	for (size_t i = 0; i < _blocks.size(); ++i) {
 		Block &block = *_blocks[i];
 		if (block.layer_id == layer_id) {
-			remove_block(i);
+			remove_block(i, false);
 			// remove_block does a remove-at-swap so we have to re-iterate on the same slot
 			--i;
 		}
@@ -230,6 +230,8 @@ void VoxelInstancer::process() {
 		}
 #endif
 	}
+
+	process_fading();
 }
 
 void VoxelInstancer::process_task_results() {
@@ -321,6 +323,18 @@ void VoxelInstancer::process_task_results() {
 				block_global_transform,
 				block_local_transform.origin
 		);
+
+		if (_fading_enabled) {
+			const VoxelInstanceLibraryMultiMeshItem *mm_item =
+					Object::cast_to<const VoxelInstanceLibraryMultiMeshItem>(item);
+
+			if (mm_item != nullptr) {
+				FadingInBlock fb;
+				fb.grid_position = output.render_block_position;
+				fb.layer_id = output.layer_id;
+				_fading_in_blocks.push_back(fb);
+			}
+		}
 	}
 
 	results.clear();
@@ -705,6 +719,69 @@ void VoxelInstancer::process_collision_distances() {
 	}
 }
 
+void VoxelInstancer::process_fading() {
+	ZN_PROFILE_SCOPE();
+
+	const float delta_time = get_process_delta_time();
+	const float fading_delta = delta_time / math::max(_fading_duration, 0.0001f);
+
+	const StringName &shader_param_name = VoxelStringNames::get_singleton().u_lod_fade;
+
+	{
+		unsigned int i = _fading_in_blocks.size();
+		while (i > 0) {
+			--i;
+			FadingInBlock &fb = _fading_in_blocks[i];
+			fb.progress = math::min(fb.progress + fading_delta, 1.f);
+
+			auto layer_it = _layers.find(fb.layer_id);
+			if (layer_it != _layers.end()) {
+				Layer &layer = layer_it->second;
+
+				auto block_index_it = layer.blocks.find(fb.grid_position);
+				if (block_index_it != layer.blocks.end()) {
+					const unsigned int block_index = block_index_it->second;
+
+					const UniquePtr<Block> &block_ptr = _blocks[block_index];
+#ifdef DEV_ENABLED
+					ZN_ASSERT(block_ptr != nullptr);
+#endif
+					Block &block = *block_ptr.get();
+					if (block.multimesh_instance.is_valid()) {
+						const Vector2 v(fb.progress, 1.f);
+						block.multimesh_instance.set_shader_instance_parameter(shader_param_name, v);
+					}
+				}
+			}
+
+			if (fb.progress >= 1.f) {
+				unordered_remove(_fading_in_blocks, i);
+			}
+		}
+	}
+
+	{
+		unsigned int i = _fading_out_blocks.size();
+		while (i > 0) {
+			--i;
+			FadingOutBlock &fb = _fading_out_blocks[i];
+			fb.progress = math::min(fb.progress + fading_delta, 1.f);
+			const Vector2 v(fb.progress, 0.f);
+#ifdef DEV_ENABLED
+			ZN_ASSERT(fb.multimesh_instance.is_valid());
+#endif
+			fb.multimesh_instance.set_shader_instance_parameter(shader_param_name, v);
+
+			if (fb.progress >= 1.f) {
+				// fb.multimesh_instance.destroy();
+				// unordered_remove(_fading_out_blocks, i);
+				_fading_out_blocks[i] = std::move(_fading_out_blocks.back());
+				_fading_out_blocks.pop_back();
+			}
+		}
+	}
+}
+
 // We need to do this ourselves because we don't use nodes for multimeshes
 void VoxelInstancer::update_visibility() {
 	if (!is_inside_tree()) {
@@ -806,6 +883,22 @@ int VoxelInstancer::get_collision_update_budget_microseconds() const {
 
 void VoxelInstancer::set_collision_update_budget_microseconds(const int p_micros) {
 	_collision_distance_update_budget_microseconds = math::max(p_micros, 0);
+}
+
+void VoxelInstancer::set_fading_enabled(const bool enabled) {
+	_fading_enabled = enabled;
+}
+
+bool VoxelInstancer::get_fading_enabled() const {
+	return _fading_enabled;
+}
+
+void VoxelInstancer::set_fading_duration(const float duration) {
+	_fading_duration = math::clamp(duration, 0.f, 5.f);
+}
+
+float VoxelInstancer::get_fading_duration() const {
+	return _fading_duration;
 }
 
 void VoxelInstancer::regenerate_layer(uint16_t layer_id, bool regenerate_blocks) {
@@ -1164,7 +1257,7 @@ void VoxelInstancer::destroy_multimesh_block_colliders(Block &block) {
 	block.bodies.clear();
 }
 
-void VoxelInstancer::remove_block(unsigned int block_index) {
+void VoxelInstancer::remove_block(const unsigned int block_index, const bool with_fade_out) {
 #ifdef DEBUG_ENABLED
 	CRASH_COND(block_index >= _blocks.size());
 #endif
@@ -1209,6 +1302,12 @@ void VoxelInstancer::remove_block(unsigned int block_index) {
 		for (const SceneInstance &scene : moved_block.scene_instances) {
 			scene.component->set_render_block_index(block_index);
 		}
+	}
+
+	if (with_fade_out && block->multimesh_instance.is_valid()) {
+		FadingOutBlock fb;
+		fb.multimesh_instance = std::move(block->multimesh_instance);
+		_fading_out_blocks.push_back(std::move(fb));
 	}
 }
 
@@ -1283,7 +1382,7 @@ void VoxelInstancer::on_mesh_block_exit(Vector3i render_grid_position, unsigned 
 
 		auto block_it = layer.blocks.find(render_grid_position);
 		if (block_it != layer.blocks.end()) {
-			remove_block(block_it->second);
+			remove_block(block_it->second, _fading_enabled);
 		}
 	}
 }
@@ -3194,6 +3293,12 @@ void VoxelInstancer::_bind_methods() {
 			&VoxelInstancer::set_collision_update_budget_microseconds
 	);
 
+	ClassDB::bind_method(D_METHOD("set_fading_enabled", "enabled"), &VoxelInstancer::set_fading_enabled);
+	ClassDB::bind_method(D_METHOD("get_fading_enabled"), &VoxelInstancer::get_fading_enabled);
+
+	ClassDB::bind_method(D_METHOD("set_fading_duration", "duration"), &VoxelInstancer::set_fading_duration);
+	ClassDB::bind_method(D_METHOD("get_fading_duration"), &VoxelInstancer::get_fading_duration);
+
 	ADD_PROPERTY(
 			PropertyInfo(
 					Variant::OBJECT, "library", PROPERTY_HINT_RESOURCE_TYPE, VoxelInstanceLibrary::get_class_static()
@@ -3216,6 +3321,9 @@ void VoxelInstancer::_bind_methods() {
 			"set_collision_update_budget_microseconds",
 			"get_collision_update_budget_microseconds"
 	);
+
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "fading_enabled"), "set_fading_enabled", "get_fading_enabled");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "fading_duration"), "set_fading_duration", "get_fading_duration");
 
 	BIND_CONSTANT(MAX_LOD);
 

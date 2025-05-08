@@ -21,7 +21,9 @@ Primarily developped with Godot 4.4.1+
     - Added `removal_behavior` property to trigger something when instances get removed
     - Added `collision_distance` to only create colliders when below a certain distance to chunks
 - `VoxelInstanceGenerator`: Added an option to snap instances based on the voxel generator SDF (only available with `VoxelGeneratorGraph`).
-- `VoxelInstancer`: Added `remove_instances_in_sphere`
+- `VoxelInstancer`: 
+    - Added `remove_instances_in_sphere`
+    - Added fading system so a shader can be used to fade instances as they load in and out
 - `VoxelMesherBlocky`: added tint mode to modulate voxel colors using the `COLOR` channel.
 - `VoxelMesherTransvoxel`: added `Single` texturing mode, which uses only one byte per voxel to store a texture index. `VoxelGeneratorGraph` was also updated to include this mode.
 - `VoxelTool`: added `do_mesh` to replace `stamp_sdf`. Supported on terrains only.

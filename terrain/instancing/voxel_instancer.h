@@ -85,6 +85,12 @@ public:
 	int get_collision_update_budget_microseconds() const;
 	void set_collision_update_budget_microseconds(const int p_micros);
 
+	void set_fading_enabled(const bool enabled);
+	bool get_fading_enabled() const;
+
+	void set_fading_duration(const float fading);
+	float get_fading_duration() const;
+
 	// Actions
 
 	void save_all_modified_blocks(
@@ -167,6 +173,7 @@ private:
 	void process_task_results();
 	void process_mesh_lods();
 	void process_collision_distances();
+	void process_fading();
 
 	void add_layer(int layer_id, int lod_index);
 	void remove_layer(int layer_id);
@@ -176,7 +183,7 @@ private:
 			const Vector3i grid_position,
 			const bool pending_instances
 	);
-	void remove_block(unsigned int block_index);
+	void remove_block(const unsigned int block_index, const bool with_fade_out);
 	void set_world(World3D *world);
 	void clear_blocks();
 	void clear_blocks_in_layer(int layer_id);
@@ -460,6 +467,22 @@ private:
 	uint32_t _collision_distance_update_budget_microseconds = 500;
 
 	std::shared_ptr<InstancerTaskOutputQueue> _loading_results;
+
+	struct FadingInBlock {
+		uint16_t layer_id = 0;
+		Vector3i grid_position;
+		float progress = 0.f;
+	};
+
+	struct FadingOutBlock {
+		float progress = 0.f;
+		zylann::godot::DirectMultiMeshInstance multimesh_instance;
+	};
+
+	StdVector<FadingInBlock> _fading_in_blocks;
+	StdVector<FadingOutBlock> _fading_out_blocks;
+	float _fading_duration = 0.3f;
+	bool _fading_enabled = false;
 
 #ifdef TOOLS_ENABLED
 	zylann::godot::DebugRenderer _debug_renderer;
