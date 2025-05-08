@@ -61,7 +61,7 @@
 			<param index="0" name="center" type="Vector3" />
 			<param index="1" name="radius" type="float" />
 			<description>
-				Removes all instances having their origin inside the given sphere.
+				Removes all instances having their origin inside the given sphere. Coordinates are local to the instancer.
 			</description>
 		</method>
 	</methods>
