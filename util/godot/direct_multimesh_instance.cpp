@@ -12,7 +12,7 @@ DirectMultiMeshInstance::DirectMultiMeshInstance(DirectMultiMeshInstance &&src) 
 	_multimesh = src._multimesh;
 
 	src._multimesh_instance = RID();
-	src._multimesh = Ref<Mesh>();
+	src._multimesh = Ref<MultiMesh>();
 }
 
 DirectMultiMeshInstance::~DirectMultiMeshInstance() {
