@@ -24,6 +24,7 @@ public:
 	ZN_ModelViewer();
 
 	void set_camera_distance(float d);
+	void set_camera_target_position(const Vector3 pos);
 
 	// Stuff to view can be instanced under this node
 	Node *get_viewer_root_node() const;
@@ -41,6 +42,7 @@ private:
 	static void _bind_methods() {}
 
 	Camera3D *_camera = nullptr;
+	Vector3 _target_position = Vector3(0.5, 0.5, 0.5);
 	float _pitch = 0.f;
 	float _yaw = 0.f;
 	float _distance = 1.9f;

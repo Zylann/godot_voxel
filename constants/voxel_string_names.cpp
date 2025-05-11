@@ -126,6 +126,9 @@ VoxelStringNames::VoxelStringNames() {
 	noise_on_scale = StringName("noise_on_scale");
 
 	add_child = StringName("add_child");
+
+	updated = StringName("updated");
+	u_cubemap = StringName("u_cubemap");
 }
 
 } // namespace zylann::voxel

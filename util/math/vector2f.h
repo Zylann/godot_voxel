@@ -18,6 +18,10 @@ inline Vector2f floor(const Vector2f a) {
 	return Vector2f(Math::floor(a.x), Math::floor(a.y));
 }
 
+inline Vector2f ceil(const Vector2f a) {
+	return Vector2f(Math::ceil(a.x), Math::ceil(a.y));
+}
+
 inline Vector2f lerp(const Vector2f a, const Vector2f b, const float t) {
 	return Vector2f(Math::lerp(a.x, b.x, t), Math::lerp(a.y, b.y, t));
 }

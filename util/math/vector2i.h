@@ -37,6 +37,10 @@ inline unsigned int get_yx_index(const Vector2i v, const Vector2i area_size) {
 	return v.x + v.y * area_size.x;
 }
 
+inline bool is_empty_size(const Vector2i &s) {
+	return s.x == 0 || s.y == 0;
+}
+
 } // namespace Vector2iUtil
 
 namespace math {
@@ -64,6 +68,10 @@ inline int chebyshev_distance(const Vector2i &a, const Vector2i &b) {
 
 inline Vector2i min(const Vector2i a, const Vector2i b) {
 	return Vector2i(min(a.x, b.x), min(a.y, b.y));
+}
+
+inline Vector2i clamp(const Vector2i a, const Vector2i min, const Vector2i max) {
+	return Vector2i(clamp(a.x, min.x, max.x), clamp(a.y, min.y, max.y));
 }
 
 } // namespace math

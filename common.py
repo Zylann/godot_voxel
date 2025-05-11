@@ -132,6 +132,7 @@ def get_sources(env, is_editor_build):
         "util/godot/classes/resource_loader.cpp",
         "util/godot/classes/shader.cpp",
         "util/godot/classes/shape_3d.cpp",
+        "util/godot/classes/image_texture_layered.cpp",
 
         "util/godot/core/aabb.cpp",
         "util/godot/core/string.cpp",
@@ -144,6 +145,8 @@ def get_sources(env, is_editor_build):
         "util/godot/direct_static_body.cpp",
         "util/godot/file_utils.cpp",
         "util/godot/shader_material_pool.cpp",
+        "util/godot/cubemap.cpp",
+        "util/godot/image_utility.cpp",
 
         "util/io/*.cpp",
 
@@ -163,6 +166,7 @@ def get_sources(env, is_editor_build):
             "editor/blocky_library/*.cpp",
             "editor/blocky_library/types/*.cpp",
             "editor/multipass/*.cpp",
+            "editor/procedural_cubemap/*.cpp",
 
             "util/godot/debug_renderer.cpp",
             "util/godot/check_ref_ownership.cpp",

@@ -57,6 +57,12 @@ struct BoxBounds2i {
 	inline Vector2i get_size() const {
 		return max_pos - min_pos;
 	}
+
+	inline BoxBounds2i clipped(const BoxBounds2i lim) const {
+		return BoxBounds2i(
+				math::clamp(min_pos, lim.min_pos, lim.max_pos), math::clamp(max_pos, lim.min_pos, lim.max_pos)
+		);
+	}
 };
 
 StdStringStream &operator<<(StdStringStream &ss, const BoxBounds2i &box);

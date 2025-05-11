@@ -10,6 +10,7 @@
 #include "edition/voxel_tool_terrain.h"
 #include "engine/voxel_engine_gd.h"
 #include "generators/graph/node_type_db.h"
+#include "generators/graph/procedural_cubemap.h"
 #include "generators/graph/voxel_generator_graph.h"
 #include "generators/multipass/voxel_generator_multipass_cb.h"
 #include "generators/voxel_generator_script.h"
@@ -118,9 +119,11 @@
 #include "editor/graph/voxel_graph_editor_node_preview.h"
 #include "editor/graph/voxel_graph_editor_plugin.h"
 #include "editor/instance_library/control_sizer.h"
-
 #include "editor/instancer/voxel_instancer_editor_plugin.h"
 #include "editor/multipass/voxel_generator_multipass_editor_plugin.h"
+#include "editor/procedural_cubemap/procedural_cubemap_editor_plugin.h"
+#include "editor/procedural_cubemap/procedural_cubemap_inspector_plugin.h"
+#include "editor/procedural_cubemap/procedural_cubemap_viewer.h"
 #include "editor/spot_noise/spot_noise_editor_plugin.h"
 #include "editor/terrain/voxel_terrain_editor_plugin.h"
 #include "editor/vox/vox_editor_plugin.h"
@@ -317,6 +320,7 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_class<ZN_ThreadedTask>();
 		ClassDB::register_class<VoxelTerrainMultiplayerSynchronizer>();
 		ClassDB::register_class<VoxelAStarGrid3D>();
+		ClassDB::register_class<VoxelProceduralCubemap>();
 
 		// Meshers
 		ClassDB::register_abstract_class<VoxelMesher>();
@@ -495,6 +499,10 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_internal_class<VoxelGeneratorMultipassEditorInspectorPlugin>();
 		ClassDB::register_internal_class<VoxelGeneratorMultipassCacheViewer>();
 
+		ClassDB::register_internal_class<VoxelProceduralCubemapEditorPlugin>();
+		ClassDB::register_internal_class<VoxelProceduralCubemapInspectorPlugin>();
+		ClassDB::register_internal_class<VoxelProceduralCubemapViewer>();
+
 #ifdef VOXEL_ENABLE_MESH_SDF
 		ClassDB::register_internal_class<VoxelMeshSDFViewer>();
 		ClassDB::register_internal_class<VoxelMeshSDFEditorPlugin>();
@@ -526,6 +534,7 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		EditorPlugins::add_by_type<ZN_SpotNoiseEditorPlugin>();
 		EditorPlugins::add_by_type<VoxelBlockyLibraryEditorPlugin>();
 		EditorPlugins::add_by_type<VoxelGeneratorMultipassEditorPlugin>();
+		EditorPlugins::add_by_type<VoxelProceduralCubemapEditorPlugin>();
 
 #ifdef VOXEL_ENABLE_MESH_SDF
 		EditorPlugins::add_by_type<VoxelMeshSDFEditorPlugin>();

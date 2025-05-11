@@ -1,6 +1,8 @@
 #ifndef ZN_HEIGHTMAP_UTILITY_H
 #define ZN_HEIGHTMAP_UTILITY_H
 
+// TODO Deprecate in favor of util/godot/image_utility
+
 #include "../../util/godot/core/rect2i.h"
 #include "../../util/godot/macros.h"
 #include "../../util/math/interval.h"

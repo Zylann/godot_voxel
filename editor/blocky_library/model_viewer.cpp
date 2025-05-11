@@ -59,6 +59,11 @@ void ZN_ModelViewer::set_camera_distance(float d) {
 	update_camera();
 }
 
+void ZN_ModelViewer::set_camera_target_position(const Vector3 pos) {
+	_target_position = pos;
+	update_camera();
+}
+
 Node *ZN_ModelViewer::get_viewer_root_node() const {
 	return _viewport;
 }
@@ -86,7 +91,7 @@ void ZN_ModelViewer::update_camera() {
 	Basis basis;
 	basis.set_euler(Vector3(_pitch, _yaw, 0));
 	const Vector3 forward = -basis.get_column(Vector3::AXIS_Z);
-	_camera->set_transform(Transform3D(basis, Vector3(0.5, 0.5, 0.5) - _distance * forward));
+	_camera->set_transform(Transform3D(basis, _target_position - _distance * forward));
 
 	_axes_3d_control->set_basis_3d(basis.inverse());
 }

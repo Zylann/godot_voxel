@@ -114,6 +114,9 @@ public:
 	StringName noise_on_scale;
 
 	StringName add_child;
+
+	StringName updated;
+	StringName u_cubemap;
 };
 
 } // namespace zylann::voxel

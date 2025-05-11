@@ -171,6 +171,8 @@ Interval ImageRangeGrid::get_range_repeat(Interval xr, Interval yr) const {
 	interval_to_pixels_repeat(xr, pixel_min_x, pixel_max_x, _pixels_x);
 	interval_to_pixels_repeat(yr, pixel_min_y, pixel_max_y, _pixels_y);
 
+	// TODO Use the image directly in cases where the box is very small
+
 	// Find best LOD to use.
 	// Depending on the length of the largest range, we may evaluate a different LOD to save iterations
 	int lod_index = 0; // relative to _lod_base

@@ -84,6 +84,19 @@ struct IntervalT {
 		add_point(other.max);
 	}
 
+	inline bool intersects(const IntervalT &other) const {
+		// return !(min > other.max || max < other.min);
+		return (min <= other.max && max >= other.min);
+	}
+
+	inline IntervalT intersection(const IntervalT other) {
+		IntervalT res;
+		res.min = math::max(other.min, min);
+		res.max = math::min(other.max, max);
+		res.min = math::min(res.min, res.max);
+		return res;
+	}
+
 	inline T length() const {
 		return max - min;
 	}
