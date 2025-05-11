@@ -2468,6 +2468,8 @@ void VoxelInstancer::remove_floating_instances(const Box3i p_voxel_box) {
 			VoxelInstanceLibraryItem *item = nullptr;
 			VoxelInstanceLibraryMultiMeshItem *mm_item = nullptr;
 			bool bidirectional = false;
+			float sd_threshold = 0.f;
+			float sd_offset = 0.f;
 
 			const Vector3i bmax = render_blocks_box.position + render_blocks_box.size;
 			Vector3i block_pos;
@@ -2487,6 +2489,8 @@ void VoxelInstancer::remove_floating_instances(const Box3i p_voxel_box) {
 
 						if (item == nullptr) {
 							item = _library->get_item(layer_id);
+							sd_threshold = item->get_floating_sdf_threshold();
+							sd_offset = item->get_floating_sdf_offset_along_normal();
 							Ref<VoxelInstanceGenerator> generator = item->get_generator();
 							if (generator.is_valid()) {
 								bidirectional = generator->get_random_vertical_flip();
@@ -2500,7 +2504,9 @@ void VoxelInstancer::remove_floating_instances(const Box3i p_voxel_box) {
 									p_voxel_box,
 									voxel_tool,
 									block_size_po2,
-									item->get_floating_sdf_threshold()
+									sd_threshold,
+									sd_offset,
+									bidirectional
 							);
 
 						} else {
@@ -2516,8 +2522,8 @@ void VoxelInstancer::remove_floating_instances(const Box3i p_voxel_box) {
 									p_voxel_box,
 									voxel_tool,
 									block_size_po2,
-									item->get_floating_sdf_threshold(),
-									item->get_floating_sdf_offset_along_normal(),
+									sd_threshold,
+									sd_offset,
 									bidirectional,
 									action
 							);
@@ -2661,7 +2667,9 @@ void VoxelInstancer::remove_floating_scene_instances(
 		const Box3i p_voxel_box,
 		const VoxelTool &voxel_tool,
 		const int block_size_po2,
-		const float sd_threshold
+		const float sd_threshold,
+		const float sd_offset,
+		const bool bidirectional
 ) {
 	const unsigned int initial_instance_count = block.scene_instances.size();
 	unsigned int instance_count = initial_instance_count;
@@ -2683,10 +2691,15 @@ void VoxelInstancer::remove_floating_scene_instances(
 			continue;
 		}
 
-		// 1-voxel cheap check without interpolation
-		const float sdf = voxel_tool.get_voxel_f(voxel_pos);
-		if (sdf < sd_threshold) {
-			// Still enough ground
+		if (detect_ground(
+					scene_transform.origin,
+					zylann::godot::BasisUtility::get_up(scene_transform.basis),
+					Vector3(), // Little hack, scenes are already in terrain space
+					sd_threshold,
+					sd_offset,
+					bidirectional,
+					voxel_tool
+			)) {
 			continue;
 		}
 
