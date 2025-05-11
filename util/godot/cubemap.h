@@ -35,7 +35,7 @@ public:
 	};
 
 	void create(const unsigned int resolution, const Image::Format format);
-	void create_from_images(TypedArray<Image> images);
+	void create_from_images(TypedArray<Image> p_images);
 	bool is_valid() const;
 	unsigned int get_resolution() const;
 	Image::Format get_format() const;

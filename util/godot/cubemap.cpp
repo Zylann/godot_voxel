@@ -3,7 +3,9 @@
 #include "../math/box2f.h"
 #include "../math/box_bounds_2i.h"
 #include "../math/conv.h"
+#include "../math/vector2i.h"
 #include "../profiling.h"
+#include "../string/format.h"
 #include "classes/cubemap.h"
 #include "classes/image_texture_layered.h"
 #include "core/packed_arrays.h"
@@ -21,9 +23,44 @@ void ZN_Cubemap::create(const unsigned int resolution, const Image::Format forma
 	_padded = false;
 }
 
-void ZN_Cubemap::create_from_images(TypedArray<Image> images) {
-	ZN_PRINT_ERROR("Not implemented");
-	// TODO
+void ZN_Cubemap::create_from_images(TypedArray<Image> p_images) {
+	ZN_ASSERT_RETURN_MSG(p_images.size() == 6, format("6 images are required, got {}.", p_images.size()));
+
+	std::array<Ref<Image>, SIDE_COUNT> images;
+	for (unsigned int side = 0; side < images.size(); ++side) {
+		images[side] = p_images[side];
+		ZN_ASSERT_RETURN_MSG(
+				images[side].is_valid(), format("All images must be valid, null found at index {}.", side)
+		);
+	}
+
+	ZN_ASSERT_RETURN_MSG(!images[0]->is_compressed(), "Compressed formats are not supported.");
+
+	const Image::Format image_format = images[0]->get_format();
+
+	const Vector2i resolution = images[0]->get_size();
+	ZN_ASSERT_RETURN_MSG(resolution.x == resolution.y, format("All images must be square, found {}.", resolution));
+	ZN_ASSERT_RETURN_MSG(Vector2iUtil::is_empty_size(resolution), "Images must be non-empty.");
+
+	for (unsigned int side = 1; side < images.size(); ++side) {
+		ZN_ASSERT_RETURN_MSG(
+				images[side]->get_size() == resolution,
+				format("All images must have the same size. Expected {}, found {} at index {}.",
+					   resolution,
+					   images[side]->get_size(),
+					   side)
+		);
+		ZN_ASSERT_RETURN_MSG(
+				images[side]->get_format() == image_format,
+				format("All images must have the same format. Expected format {}, found format {} at index {}.",
+					   image_format,
+					   images[side]->get_format(),
+					   side)
+		);
+	}
+
+	_images = images;
+	_padded = false;
 }
 
 bool ZN_Cubemap::is_valid() const {
