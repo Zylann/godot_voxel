@@ -414,13 +414,15 @@ void sample_linear_prepad_unchecked(
 	}
 
 	const Vector2i res = gd_ims[0]->get_size();
+	const Vector2f ts = to_vec2f(res - Vector2i(2, 2));
 
 	for (unsigned int i = 0; i < x_array.size(); ++i) {
 		const Vector3f position(x_array[i], y_array[i], z_array[i]);
-		const ZN_Cubemap::UV uv = ZN_Cubemap::get_uv_from_xyz(position);
+		// const ZN_Cubemap::UV uv = ZN_Cubemap::get_uv_from_xyz(position);
+		// Use inline version. MUCH faster
+		const ZN_Cubemap::UV uv = convert_xyz_to_cube_uv(position);
 
 		const Span<const TConv::Src> im = ims[uv.side];
-		const Vector2f ts = to_vec2f(res - Vector2i(2, 2));
 		const Vector2f uv_px = uv.position * ts;
 		// We make it so linear filtering is centered on pixels to make it symetrical, otherwise sides of the cubemap
 		// don't line up (haven't fully figured out why tho)
