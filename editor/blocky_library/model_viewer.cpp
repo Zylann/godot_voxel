@@ -9,6 +9,7 @@
 #include "../../util/godot/editor_scale.h"
 #include "../../util/math/funcs.h"
 #include "axes_3d_control.h"
+#include <limits>
 
 namespace zylann {
 
@@ -64,6 +65,23 @@ void ZN_ModelViewer::set_camera_target_position(const Vector3 pos) {
 	update_camera();
 }
 
+void ZN_ModelViewer::set_zoom_level(const unsigned int i) {
+	_zoom_level = math::clamp<unsigned int>(i, 0, _zoom_max_level);
+	update_camera();
+}
+
+void ZN_ModelViewer::set_zoom_max_level(const unsigned int max) {
+	ZN_ASSERT_RETURN(max <= std::numeric_limits<uint8_t>::max());
+	_zoom_max_level = max;
+	update_camera();
+}
+
+void ZN_ModelViewer::set_zoom_range(const float min_distance, const float max_distance) {
+	_zoom_min_distance = min_distance;
+	_zoom_max_distance = max_distance;
+	update_camera();
+}
+
 Node *ZN_ModelViewer::get_viewer_root_node() const {
 	return _viewport;
 }
@@ -84,13 +102,47 @@ void ZN_ModelViewer::_gui_input(const Ref<InputEvent> &p_event) {
 			_yaw = Math::wrapf(_yaw, -math::PI<float>, math::PI<float>);
 			update_camera();
 		}
+		return;
+	}
+
+	Ref<InputEventMouseButton> mb = p_event;
+	if (mb.is_valid()) {
+		if (mb->is_pressed()) {
+			if (mb->is_ctrl_pressed()) {
+				switch (mb->get_button_index()) {
+					case ZN_GODOT_MouseButton_WHEEL_UP:
+						if (_zoom_max_level > 0 && _zoom_level < _zoom_max_level - 1) {
+							++_zoom_level;
+							update_camera();
+						}
+						// Prevent scrolling of inspector
+						get_viewport()->set_input_as_handled();
+						break;
+
+					case ZN_GODOT_MouseButton_WHEEL_DOWN:
+						if (_zoom_level > 0) {
+							--_zoom_level;
+							update_camera();
+						}
+						// Prevent scrolling of inspector
+						get_viewport()->set_input_as_handled();
+						break;
+				}
+			}
+		}
 	}
 }
 
 void ZN_ModelViewer::update_camera() {
+	if (_zoom_max_level > 0) {
+		_distance = _zoom_min_distance +
+				(_zoom_max_distance - _zoom_min_distance) * math::pow(_zoom_factor, -static_cast<float>(_zoom_level));
+	}
+
 	Basis basis;
 	basis.set_euler(Vector3(_pitch, _yaw, 0));
 	const Vector3 forward = -basis.get_column(Vector3::AXIS_Z);
+
 	_camera->set_transform(Transform3D(basis, _target_position - _distance * forward));
 
 	_axes_3d_control->set_basis_3d(basis.inverse());

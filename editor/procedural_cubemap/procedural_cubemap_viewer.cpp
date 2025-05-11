@@ -32,8 +32,9 @@ VoxelProceduralCubemapViewer::VoxelProceduralCubemapViewer() {
 	// viewer->set_h_size_flags(Container::SIZE_EXPAND_FILL);
 	viewer->set_v_size_flags(Container::SIZE_EXPAND_FILL);
 	viewer->set_custom_minimum_size(Vector2(100, 150 * editor_scale));
-	viewer->set_camera_distance(1.3f);
 	viewer->set_camera_target_position(Vector3());
+	viewer->set_zoom_max_level(8);
+	viewer->set_zoom_range(0.6f, 1.25f);
 	add_child(viewer);
 
 	Ref<Shader> shader;
