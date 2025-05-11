@@ -27,15 +27,15 @@ namespace zylann {
 // CPU implementation of a cubemap
 class Cubemap {
 public:
-	enum FaceIndex {
+	enum SideIndex {
 		// OpenGL convention
-		POSITIVE_X = 0,
-		NEGATIVE_X = 1,
-		POSITIVE_Y = 2,
-		NEGATIVE_Y = 3,
-		POSITIVE_Z = 4,
-		NEGATIVE_Z = 5,
-		FACE_COUNT = 6
+		SIDE_POSITIVE_X = 0,
+		SIDE_NEGATIVE_X = 1,
+		SIDE_POSITIVE_Y = 2,
+		SIDE_NEGATIVE_Y = 3,
+		SIDE_POSITIVE_Z = 4,
+		SIDE_NEGATIVE_Z = 5,
+		SIDE_COUNT = 6
 	};
 
 	void create(const unsigned int resolution, const Image::Format format);
@@ -71,14 +71,14 @@ public:
 
 	struct Range {
 		std::array<math::Interval, 4> combined;
-		std::array<uint8_t, FACE_COUNT> sampled_sides;
+		std::array<uint8_t, SIDE_COUNT> sampled_sides;
 		uint8_t sampled_sides_count = 0;
 	};
 
 	Range get_range(const Box3f box) const;
 
 	struct UV {
-		FaceIndex side;
+		SideIndex side;
 		// Normalized 0..1 coordinates into the side, with (0,0) being top-left
 		Vector2f position;
 	};
@@ -88,32 +88,32 @@ public:
 	// Get -1..1 position on the cube. If you need a position on a sphere, you may normalize the result.
 	template <int SIDE>
 	static Vector3f get_xyz_from_uv(const Vector2f uv) {
-		static_assert(SIDE >= 0 && SIDE < FACE_COUNT);
+		static_assert(SIDE >= 0 && SIDE < SIDE_COUNT);
 		// convert range 0 to 1 to -1 to 1
 		const float uc = 2.0f * uv.x - 1.0f;
 		const float vc = 2.0f * uv.y - 1.0f;
 		switch (SIDE) {
-			case Cubemap::POSITIVE_X:
+			case SIDE_POSITIVE_X:
 				return Vector3f(1.f, vc, -uc);
-			case Cubemap::NEGATIVE_X:
+			case SIDE_NEGATIVE_X:
 				return Vector3f(-1.f, vc, uc);
-			case Cubemap::POSITIVE_Y:
+			case SIDE_POSITIVE_Y:
 				return Vector3f(uc, 1.f, vc);
-			case Cubemap::NEGATIVE_Y:
+			case SIDE_NEGATIVE_Y:
 				return Vector3f(uc, -1.f, -vc);
-			case Cubemap::POSITIVE_Z:
+			case SIDE_POSITIVE_Z:
 				return Vector3f(uc, vc, 1.f);
-			case Cubemap::NEGATIVE_Z:
+			case SIDE_NEGATIVE_Z:
 				return Vector3f(-uc, vc, -1.f);
 			default:
 				return Vector3f();
 		}
 	}
 
-	static Vector3f get_xyz_from_uv(const Vector2f uv, const FaceIndex face);
+	static Vector3f get_xyz_from_uv(const Vector2f uv, const SideIndex face);
 
 private:
-	std::array<Ref<Image>, FACE_COUNT> _images;
+	std::array<Ref<Image>, SIDE_COUNT> _images;
 	bool _padded = false;
 };
 

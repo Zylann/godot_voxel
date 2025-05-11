@@ -63,7 +63,7 @@ Ref<GodotCubemap> Cubemap::to_texture() const {
 	TypedArray<Image> images;
 	images.resize(_images.size());
 
-	for (unsigned int side = 0; side < FACE_COUNT; ++side) {
+	for (unsigned int side = 0; side < SIDE_COUNT; ++side) {
 		Ref<Image> image = _images[side];
 		if (_padded) {
 			image = image->duplicate();
@@ -176,20 +176,20 @@ inline Cubemap::UV convert_xyz_to_cube_uv_v2(const Vector3f p) {
 	const Vector3f ap = math::abs(p);
 	float ma;
 	Vector2f uv;
-	Cubemap::FaceIndex f;
+	Cubemap::SideIndex f;
 
 	if (ap.z >= ap.x && ap.z >= ap.y) {
-		f = p.z < 0 ? Cubemap::NEGATIVE_Z : Cubemap::POSITIVE_Z;
+		f = p.z < 0 ? Cubemap::SIDE_NEGATIVE_Z : Cubemap::SIDE_POSITIVE_Z;
 		ma = 0.5f / ap.z;
 		uv = Vector2f(p.z < 0.f ? -p.x : p.x, -p.y);
 
 	} else if (ap.y >= ap.x) {
-		f = p.y < 0.f ? Cubemap::NEGATIVE_Y : Cubemap::POSITIVE_Y;
+		f = p.y < 0.f ? Cubemap::SIDE_NEGATIVE_Y : Cubemap::SIDE_POSITIVE_Y;
 		ma = 0.5f / ap.y;
 		uv = Vector2f(p.x, p.y < 0.f ? -p.z : p.z);
 
 	} else {
-		f = p.x < 0.f ? Cubemap::NEGATIVE_X : Cubemap::POSITIVE_X;
+		f = p.x < 0.f ? Cubemap::SIDE_NEGATIVE_X : Cubemap::SIDE_POSITIVE_X;
 		ma = 0.5f / ap.x;
 		uv = Vector2f(p.x < 0.f ? p.z : -p.z, -p.y);
 	}
@@ -201,20 +201,20 @@ Cubemap::UV Cubemap::get_uv_from_xyz(const Vector3f pos) {
 	return convert_xyz_to_cube_uv_v2(pos);
 }
 
-Vector3f Cubemap::get_xyz_from_uv(const Vector2f uv, const FaceIndex face) {
+Vector3f Cubemap::get_xyz_from_uv(const Vector2f uv, const SideIndex face) {
 	switch (face) {
-		case POSITIVE_X:
-			return get_xyz_from_uv<POSITIVE_X>(uv);
-		case NEGATIVE_X:
-			return get_xyz_from_uv<NEGATIVE_X>(uv);
-		case POSITIVE_Y:
-			return get_xyz_from_uv<POSITIVE_Y>(uv);
-		case NEGATIVE_Y:
-			return get_xyz_from_uv<NEGATIVE_Y>(uv);
-		case POSITIVE_Z:
-			return get_xyz_from_uv<POSITIVE_Z>(uv);
-		case NEGATIVE_Z:
-			return get_xyz_from_uv<NEGATIVE_Z>(uv);
+		case SIDE_POSITIVE_X:
+			return get_xyz_from_uv<SIDE_POSITIVE_X>(uv);
+		case SIDE_NEGATIVE_X:
+			return get_xyz_from_uv<SIDE_NEGATIVE_X>(uv);
+		case SIDE_POSITIVE_Y:
+			return get_xyz_from_uv<SIDE_POSITIVE_Y>(uv);
+		case SIDE_NEGATIVE_Y:
+			return get_xyz_from_uv<SIDE_NEGATIVE_Y>(uv);
+		case SIDE_POSITIVE_Z:
+			return get_xyz_from_uv<SIDE_POSITIVE_Z>(uv);
+		case SIDE_NEGATIVE_Z:
+			return get_xyz_from_uv<SIDE_NEGATIVE_Z>(uv);
 		default:
 			ZN_PRINT_ERROR("Invalid face");
 			return Vector3f();
@@ -289,7 +289,7 @@ void Cubemap::make_linear_filterable() {
 	}
 	_padded = true;
 
-	std::array<Ref<Image>, FACE_COUNT> &images = _images;
+	std::array<Ref<Image>, SIDE_COUNT> &images = _images;
 
 	{
 		ZN_PROFILE_SCOPE_NAMED("Pad");
@@ -304,12 +304,12 @@ void Cubemap::make_linear_filterable() {
 	{
 		ZN_PROFILE_SCOPE_NAMED("Copy edges");
 
-		Image &nx = **images[Cubemap::NEGATIVE_X];
-		Image &px = **images[Cubemap::POSITIVE_X];
-		Image &ny = **images[Cubemap::NEGATIVE_Y];
-		Image &py = **images[Cubemap::POSITIVE_Y];
-		Image &nz = **images[Cubemap::NEGATIVE_Z];
-		Image &pz = **images[Cubemap::POSITIVE_Z];
+		Image &nx = **images[Cubemap::SIDE_NEGATIVE_X];
+		Image &px = **images[Cubemap::SIDE_POSITIVE_X];
+		Image &ny = **images[Cubemap::SIDE_NEGATIVE_Y];
+		Image &py = **images[Cubemap::SIDE_POSITIVE_Y];
+		Image &nz = **images[Cubemap::SIDE_NEGATIVE_Z];
+		Image &pz = **images[Cubemap::SIDE_POSITIVE_Z];
 
 		// -X
 		copy_side_pixels_pad<IM_SIDE_POSITIVE_X, IM_SIDE_NEGATIVE_X, false>(nx, nz);
@@ -473,9 +473,9 @@ void sample_linear_prepad_unchecked(
 		Span<const float> y_array,
 		Span<const float> z_array,
 		std::array<Span<float>, 4> dst_channels,
-		const std::array<Ref<Image>, Cubemap::FACE_COUNT> &gd_ims
+		const std::array<Ref<Image>, Cubemap::SIDE_COUNT> &gd_ims
 ) {
-	std::array<Span<const TConv::Src>, Cubemap::FACE_COUNT> ims;
+	std::array<Span<const TConv::Src>, Cubemap::SIDE_COUNT> ims;
 
 	for (unsigned int side = 0; side < ims.size(); ++side) {
 		const Image &im = **gd_ims[side];
@@ -699,28 +699,28 @@ inline void combine_box_range_on_image(
 template <int SIDE>
 inline Box3f swizzle_box_to_positive_x(const Box3f box) {
 	// TODO Any nicer way to prevent the `default` branch from being compiled?
-	static_assert(SIDE >= 0 && SIDE < Cubemap::FACE_COUNT);
+	static_assert(SIDE >= 0 && SIDE < Cubemap::SIDE_COUNT);
 
 	switch (SIDE) {
-		case Cubemap::POSITIVE_X:
+		case Cubemap::SIDE_POSITIVE_X:
 			return box;
-		case Cubemap::NEGATIVE_X:
+		case Cubemap::SIDE_NEGATIVE_X:
 			return Box3f::from_min_max(
 					Vector3f(-box.max.x, box.min.y, -box.max.z), Vector3f(-box.min.x, box.max.y, -box.min.z)
 			);
-		case Cubemap::POSITIVE_Y:
+		case Cubemap::SIDE_POSITIVE_Y:
 			return Box3f::from_min_max(
 					Vector3f(box.min.y, -box.max.z, -box.max.x), Vector3f(box.max.y, -box.min.z, -box.min.x)
 			);
-		case Cubemap::NEGATIVE_Y:
+		case Cubemap::SIDE_NEGATIVE_Y:
 			return Box3f::from_min_max(
 					Vector3f(-box.max.y, box.min.z, -box.max.x), Vector3f(-box.min.y, box.max.z, -box.min.x)
 			);
-		case Cubemap::POSITIVE_Z:
+		case Cubemap::SIDE_POSITIVE_Z:
 			return Box3f::from_min_max(
 					Vector3f(box.min.z, box.min.y, -box.max.x), Vector3f(box.max.z, box.max.y, -box.min.x)
 			);
-		case Cubemap::NEGATIVE_Z:
+		case Cubemap::SIDE_NEGATIVE_Z:
 			return Box3f::from_min_max(
 					Vector3f(-box.max.z, box.min.y, box.min.x), Vector3f(-box.min.z, box.max.y, box.max.x)
 			);
@@ -734,7 +734,7 @@ template <int SIDE>
 inline void combine_box_range_on_side(
 		const Box3f box,
 		Cubemap::Range &range,
-		const std::array<Ref<Image>, Cubemap::FACE_COUNT> &images
+		const std::array<Ref<Image>, Cubemap::SIDE_COUNT> &images
 ) {
 	const Image &im = **images[SIDE];
 	const Box2f uv_box = project_box_to_positive_x_side(swizzle_box_to_positive_x<SIDE>(box));
@@ -756,19 +756,19 @@ Cubemap::Range Cubemap::get_range(const Box3f box) const {
 	if (box.contains(Vector3f())) {
 		// The box contains the center of the cubemap. So any point of any side is in range.
 		range.combined = godot::ImageUtility::get_range(**_images[0]);
-		for (unsigned int side = 1; side < FACE_COUNT; ++side) {
+		for (unsigned int side = 1; side < SIDE_COUNT; ++side) {
 			const Image &im = **_images[side];
 			range.combined = combine_ranges(range.combined, godot::ImageUtility::get_range(im));
 			range.sampled_sides[range.sampled_sides_count] = side;
 			++range.sampled_sides_count;
 		}
 	} else {
-		combine_box_range_on_side<POSITIVE_X>(box, range, _images);
-		combine_box_range_on_side<NEGATIVE_X>(box, range, _images);
-		combine_box_range_on_side<POSITIVE_Y>(box, range, _images);
-		combine_box_range_on_side<NEGATIVE_Y>(box, range, _images);
-		combine_box_range_on_side<POSITIVE_Z>(box, range, _images);
-		combine_box_range_on_side<NEGATIVE_Z>(box, range, _images);
+		combine_box_range_on_side<SIDE_POSITIVE_X>(box, range, _images);
+		combine_box_range_on_side<SIDE_NEGATIVE_X>(box, range, _images);
+		combine_box_range_on_side<SIDE_POSITIVE_Y>(box, range, _images);
+		combine_box_range_on_side<SIDE_NEGATIVE_Y>(box, range, _images);
+		combine_box_range_on_side<SIDE_POSITIVE_Z>(box, range, _images);
+		combine_box_range_on_side<SIDE_NEGATIVE_Z>(box, range, _images);
 	}
 
 	return range;

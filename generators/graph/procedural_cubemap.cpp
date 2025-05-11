@@ -107,7 +107,7 @@ void VoxelProceduralCubemap::update() {
 
 	r_array.reserve(max_chunk_length);
 
-	for (unsigned int side = 0; side < Cubemap::FACE_COUNT; ++side) {
+	for (unsigned int side = 0; side < Cubemap::SIDE_COUNT; ++side) {
 		Image &image = _cubemap.get_image(side);
 
 		const Vector2i im_size = image.get_size();
@@ -129,7 +129,7 @@ void VoxelProceduralCubemap::update() {
 			for (int x = 0; x < im_size.x; ++x, ++pixel_index) {
 				// We add 0.5 so we calculate pixel centers
 				const Vector2f uv = (Vector2f(x, y) + Vector2f(0.5f)) * inv_im_size;
-				const Vector3f cube_pos = Cubemap::get_xyz_from_uv(uv, static_cast<Cubemap::FaceIndex>(side));
+				const Vector3f cube_pos = Cubemap::get_xyz_from_uv(uv, static_cast<Cubemap::SideIndex>(side));
 				const Vector3f sphere_pos = math::normalized(cube_pos);
 				x_array.push_back(sphere_pos.x);
 				y_array.push_back(sphere_pos.y);
