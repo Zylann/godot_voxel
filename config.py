@@ -73,6 +73,7 @@ def get_doc_classes():
         "VoxelModifierMesh",
         "VoxelModifierSphere",
         "VoxelNode",
+        "VoxelProceduralCubemap",
         "VoxelRaycastResult",
         "VoxelSaveCompletionTracker",
         "VoxelStream",
@@ -91,6 +92,7 @@ def get_doc_classes():
         "VoxelVoxLoader",
         "ZN_FastNoiseLite",
         "ZN_FastNoiseLiteGradient",
+        "ZN_Cubemap",
         "ZN_SpotNoise",
         "ZN_ThreadedTask",
     ]
