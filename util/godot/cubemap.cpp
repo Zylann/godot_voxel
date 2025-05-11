@@ -185,17 +185,18 @@ inline ZN_Cubemap::UV convert_xyz_to_cube_uv_v2(const Vector3f p) {
 
 	if (ap.z >= ap.x && ap.z >= ap.y) {
 		f = p.z < 0 ? ZN_Cubemap::SIDE_NEGATIVE_Z : ZN_Cubemap::SIDE_POSITIVE_Z;
-		ma = 0.5f / ap.z;
+		// Protect from NaN when sampling at (0,0,0)
+		ma = 0.5f / math::max(ap.z, 0.0001f);
 		uv = Vector2f(p.z < 0.f ? -p.x : p.x, -p.y);
 
 	} else if (ap.y >= ap.x) {
 		f = p.y < 0.f ? ZN_Cubemap::SIDE_NEGATIVE_Y : ZN_Cubemap::SIDE_POSITIVE_Y;
-		ma = 0.5f / ap.y;
+		ma = 0.5f / math::max(ap.y, 0.0001f);
 		uv = Vector2f(p.x, p.y < 0.f ? -p.z : p.z);
 
 	} else {
 		f = p.x < 0.f ? ZN_Cubemap::SIDE_NEGATIVE_X : ZN_Cubemap::SIDE_POSITIVE_X;
-		ma = 0.5f / ap.x;
+		ma = 0.5f / math::max(ap.x, 0.0001f);
 		uv = Vector2f(p.x < 0.f ? p.z : -p.z, -p.y);
 	}
 
