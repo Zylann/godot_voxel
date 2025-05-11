@@ -54,6 +54,8 @@ public:
 		return Span<T>(_ptr + from, _size - from);
 	}
 
+	// Reinterprets the data as a span of a different type. The returned span may have a different number of elements,
+	// but the memory area must be the same number of bytes.
 	template <typename U>
 	Span<U> reinterpret_cast_to() const {
 		const size_t size_in_bytes = _size * sizeof(T);
