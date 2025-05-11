@@ -46,13 +46,13 @@ public:
 
 	Ref<Cubemap> create_texture() const;
 
-	Color sample_nearest(const Vector3f position);
-	Color sample_nearest_prepad(const Vector3f position);
+	Color sample_nearest(const Vector3f position) const;
+	Color sample_nearest_prepad(const Vector3f position) const;
 
 	// Pads each image by 1 pixel containing copies of neighbor pixels for fast linear sampling
 	void make_linear_filterable();
 
-	Color sample_linear_prepad(const Vector3f position);
+	Color sample_linear_prepad(const Vector3f position) const;
 
 	void sample_linear_prepad(
 			Span<const float> x_array,
@@ -62,7 +62,7 @@ public:
 			Span<float> out_g,
 			Span<float> out_b,
 			Span<float> out_a
-	);
+	) const;
 
 	// void compute_ranges();
 

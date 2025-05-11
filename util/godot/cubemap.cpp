@@ -226,7 +226,7 @@ Vector3f ZN_Cubemap::get_xyz_from_uv(const Vector2f uv, const SideIndex face) {
 	}
 }
 
-Color ZN_Cubemap::sample_nearest(const Vector3f position) {
+Color ZN_Cubemap::sample_nearest(const Vector3f position) const {
 	const UV uv = get_uv_from_xyz(position);
 	const Image &im = **_images[uv.side];
 	const Vector2i im_size = im.get_size();
@@ -235,7 +235,7 @@ Color ZN_Cubemap::sample_nearest(const Vector3f position) {
 	return im.get_pixelv(uv_px);
 }
 
-Color ZN_Cubemap::sample_nearest_prepad(const Vector3f position) {
+Color ZN_Cubemap::sample_nearest_prepad(const Vector3f position) const {
 	const UV uv = get_uv_from_xyz(position);
 	const Image &im = **_images[uv.side];
 	const Vector2i im_size = im.get_size();
@@ -403,7 +403,7 @@ static inline Color get_pixel_linear_unchecked(const Image &im, float x, float y
 	return cl;
 }
 
-Color ZN_Cubemap::sample_linear_prepad(const Vector3f position) {
+Color ZN_Cubemap::sample_linear_prepad(const Vector3f position) const {
 	// https://www.gamedev.net/forums/topic/572117-bilinear-sampling-of-cube-map-using-cpu/
 	// const CubemapUV uv = convert_xyz_to_cube_uv(position);
 	const UV uv = get_uv_from_xyz(position);
@@ -524,7 +524,7 @@ void ZN_Cubemap::sample_linear_prepad(
 		Span<float> out_g,
 		Span<float> out_b,
 		Span<float> out_a
-) {
+) const {
 	ZN_PROFILE_SCOPE();
 
 	// TODO Could be optimized further if we have a hint about sampling only one side
