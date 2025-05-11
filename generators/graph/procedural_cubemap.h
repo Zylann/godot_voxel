@@ -15,8 +15,8 @@ namespace zylann::voxel {
 // from editor inspection. If there is a reliable way to prevent the data from being uploaded to GPU/saved to disk based
 // on an option, that could be possible?
 
-class VoxelProceduralCubemap : public Resource {
-	GDCLASS(VoxelProceduralCubemap, Resource)
+class VoxelProceduralCubemap : public ZN_Cubemap {
+	GDCLASS(VoxelProceduralCubemap, ZN_Cubemap)
 public:
 	enum Format {
 		FORMAT_R8 = 0,
@@ -25,25 +25,22 @@ public:
 		FORMAT_COUNT,
 	};
 
-	void set_resolution(const unsigned int new_resolution);
-	int get_resolution() const;
+	void set_target_resolution(const unsigned int new_resolution);
+	int get_target_resolution() const;
 
-	void set_format(const Format format);
-	Format get_format() const;
+	void set_target_format(const Format format);
+	Format get_target_format() const;
 
 	void set_graph(Ref<pg::VoxelGraphFunction> graph);
 	Ref<pg::VoxelGraphFunction> get_graph() const;
 
 	void update();
 
-	Ref<GodotCubemap> create_texture() const;
-
 private:
 	static void _bind_methods();
 
-	unsigned int _resolution = 256;
-	Format _format = FORMAT_L8;
-	zylann::Cubemap _cubemap;
+	unsigned int _target_resolution = 256;
+	Format _target_format = FORMAT_L8;
 	Ref<pg::VoxelGraphFunction> _graph;
 };
 

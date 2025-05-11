@@ -9,24 +9,24 @@
 
 namespace zylann::voxel {
 
-void VoxelProceduralCubemap::set_resolution(const unsigned int new_resolution) {
+void VoxelProceduralCubemap::set_target_resolution(const unsigned int new_resolution) {
 	const unsigned int res = math::clamp<unsigned int>(new_resolution, 4, 4096);
-	if (res == _resolution) {
+	if (res == _target_resolution) {
 		return;
 	}
-	_resolution = res;
+	_target_resolution = res;
 }
 
-int VoxelProceduralCubemap::get_resolution() const {
-	return _resolution;
+int VoxelProceduralCubemap::get_target_resolution() const {
+	return _target_resolution;
 }
 
-void VoxelProceduralCubemap::set_format(const Format format) {
-	_format = format;
+void VoxelProceduralCubemap::set_target_format(const Format format) {
+	_target_format = format;
 }
 
-VoxelProceduralCubemap::Format VoxelProceduralCubemap::get_format() const {
-	return _format;
+VoxelProceduralCubemap::Format VoxelProceduralCubemap::get_target_format() const {
+	return _target_format;
 }
 
 void VoxelProceduralCubemap::set_graph(Ref<pg::VoxelGraphFunction> graph) {
@@ -70,12 +70,12 @@ void VoxelProceduralCubemap::update() {
 		return;
 	}
 
-	const Image::Format image_format = get_image_format(_format);
+	const Image::Format image_format = get_image_format(_target_format);
 
 	// TODO Handle CPU filtering preservation. Re-pad afterwards? Generate with padding directly?
 
-	if (!_cubemap.is_valid() || _cubemap.get_format() != image_format || _cubemap.get_resolution() != _resolution) {
-		_cubemap.create(_resolution, image_format);
+	if (!is_valid() || get_format() != image_format || get_resolution() != _target_resolution) {
+		create(_target_resolution, image_format);
 	}
 
 	{
@@ -107,8 +107,8 @@ void VoxelProceduralCubemap::update() {
 
 	r_array.reserve(max_chunk_length);
 
-	for (unsigned int side = 0; side < Cubemap::SIDE_COUNT; ++side) {
-		Image &image = _cubemap.get_image(side);
+	for (unsigned int side = 0; side < SIDE_COUNT; ++side) {
+		Image &image = get_image(side);
 
 		const Vector2i im_size = image.get_size();
 		ZN_ASSERT_RETURN(!Vector2iUtil::is_empty_size(im_size));
@@ -129,7 +129,7 @@ void VoxelProceduralCubemap::update() {
 			for (int x = 0; x < im_size.x; ++x, ++pixel_index) {
 				// We add 0.5 so we calculate pixel centers
 				const Vector2f uv = (Vector2f(x, y) + Vector2f(0.5f)) * inv_im_size;
-				const Vector3f cube_pos = Cubemap::get_xyz_from_uv(uv, static_cast<Cubemap::SideIndex>(side));
+				const Vector3f cube_pos = get_xyz_from_uv(uv, static_cast<SideIndex>(side));
 				const Vector3f sphere_pos = math::normalized(cube_pos);
 				x_array.push_back(sphere_pos.x);
 				y_array.push_back(sphere_pos.y);
@@ -186,19 +186,17 @@ void VoxelProceduralCubemap::update() {
 	emit_signal(VoxelStringNames::get_singleton().updated);
 }
 
-Ref<GodotCubemap> VoxelProceduralCubemap::create_texture() const {
-	return _cubemap.to_texture();
-}
-
 void VoxelProceduralCubemap::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_graph", "graph"), &VoxelProceduralCubemap::set_graph);
 	ClassDB::bind_method(D_METHOD("get_graph"), &VoxelProceduralCubemap::get_graph);
 
-	ClassDB::bind_method(D_METHOD("set_resolution", "resolution"), &VoxelProceduralCubemap::set_resolution);
-	ClassDB::bind_method(D_METHOD("get_resolution"), &VoxelProceduralCubemap::get_resolution);
+	ClassDB::bind_method(
+			D_METHOD("set_target_resolution", "resolution"), &VoxelProceduralCubemap::set_target_resolution
+	);
+	ClassDB::bind_method(D_METHOD("get_target_resolution"), &VoxelProceduralCubemap::get_target_resolution);
 
-	ClassDB::bind_method(D_METHOD("set_format", "format"), &VoxelProceduralCubemap::set_format);
-	ClassDB::bind_method(D_METHOD("get_format"), &VoxelProceduralCubemap::get_format);
+	ClassDB::bind_method(D_METHOD("set_target_format", "format"), &VoxelProceduralCubemap::set_target_format);
+	ClassDB::bind_method(D_METHOD("get_target_format"), &VoxelProceduralCubemap::get_target_format);
 
 	ADD_PROPERTY(
 			PropertyInfo(
@@ -208,9 +206,11 @@ void VoxelProceduralCubemap::_bind_methods() {
 			"get_graph"
 	);
 
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "resolution"), "set_resolution", "get_resolution");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "target_resolution"), "set_resolution", "get_resolution");
 
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "format", PROPERTY_HINT_ENUM, "R8,L8,RF"), "set_format", "get_format");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::INT, "target_format", PROPERTY_HINT_ENUM, "R8,L8,RF"), "set_format", "get_format"
+	);
 
 	ADD_SIGNAL(MethodInfo("updated"));
 }

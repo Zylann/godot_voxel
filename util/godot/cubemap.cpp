@@ -13,7 +13,7 @@
 
 namespace zylann {
 
-void Cubemap::create(const unsigned int resolution, const Image::Format format) {
+void ZN_Cubemap::create(const unsigned int resolution, const Image::Format format) {
 	ZN_ASSERT_RETURN_MSG(!zylann::godot::is_format_compressed(format), "Compressed formats are not supported");
 	for (Ref<Image> &im_ref : _images) {
 		im_ref = zylann::godot::create_empty_image(resolution, resolution, false, format);
@@ -21,43 +21,48 @@ void Cubemap::create(const unsigned int resolution, const Image::Format format) 
 	_padded = false;
 }
 
-bool Cubemap::is_valid() const {
+void ZN_Cubemap::create_from_images(TypedArray<Image> images) {
+	ZN_PRINT_ERROR("Not implemented");
+	// TODO
+}
+
+bool ZN_Cubemap::is_valid() const {
 	return _images[0].is_valid();
 }
 
-unsigned int Cubemap::get_resolution() const {
+unsigned int ZN_Cubemap::get_resolution() const {
 	ZN_ASSERT(is_valid());
 	return _images[0]->get_size().x;
 }
 
-Image::Format Cubemap::get_format() const {
+Image::Format ZN_Cubemap::get_format() const {
 	if (!is_valid()) {
 		return Image::FORMAT_MAX;
 	}
 	return _images[0]->get_format();
 }
 
-Image &Cubemap::get_image(const unsigned int side) {
+Image &ZN_Cubemap::get_image(const unsigned int side) {
 #ifdef DEV_ENABLED
 	ZN_ASSERT(_images[side].is_valid());
 #endif
 	return **_images[side];
 }
 
-const Image &Cubemap::get_image(const unsigned int side) const {
+const Image &ZN_Cubemap::get_image(const unsigned int side) const {
 #ifdef DEV_ENABLED
 	ZN_ASSERT(_images[side].is_valid());
 #endif
 	return **_images[side];
 }
 
-const Ref<Image> Cubemap::get_image_ref(const unsigned int side) const {
+const Ref<Image> ZN_Cubemap::get_image_ref(const unsigned int side) const {
 	return _images[side];
 }
 
-Ref<GodotCubemap> Cubemap::to_texture() const {
+Ref<Cubemap> ZN_Cubemap::create_texture() const {
 	if (!is_valid()) {
-		return Ref<GodotCubemap>();
+		return Ref<Cubemap>();
 	}
 
 	TypedArray<Image> images;
@@ -72,7 +77,7 @@ Ref<GodotCubemap> Cubemap::to_texture() const {
 		images[side] = image;
 	}
 
-	Ref<GodotCubemap> tex;
+	Ref<Cubemap> tex;
 	tex.instantiate();
 	zylann::godot::create_from_images(**tex, images);
 
@@ -171,25 +176,25 @@ CubemapUV convert_xyz_to_cube_uv(Vector3f position) {
 // Convention taken from Godot, applying a cubemap shader to a cube using the Forward+ (Vulkan) renderer.
 
 // TODO Might be faster but was ported from GLSL, therefore Y is flipped
-inline Cubemap::UV convert_xyz_to_cube_uv_v2(const Vector3f p) {
+inline ZN_Cubemap::UV convert_xyz_to_cube_uv_v2(const Vector3f p) {
 	// https://www.gamedev.net/forums/topic/687535-implementing-a-cube-map-lookup-function/
 	const Vector3f ap = math::abs(p);
 	float ma;
 	Vector2f uv;
-	Cubemap::SideIndex f;
+	ZN_Cubemap::SideIndex f;
 
 	if (ap.z >= ap.x && ap.z >= ap.y) {
-		f = p.z < 0 ? Cubemap::SIDE_NEGATIVE_Z : Cubemap::SIDE_POSITIVE_Z;
+		f = p.z < 0 ? ZN_Cubemap::SIDE_NEGATIVE_Z : ZN_Cubemap::SIDE_POSITIVE_Z;
 		ma = 0.5f / ap.z;
 		uv = Vector2f(p.z < 0.f ? -p.x : p.x, -p.y);
 
 	} else if (ap.y >= ap.x) {
-		f = p.y < 0.f ? Cubemap::SIDE_NEGATIVE_Y : Cubemap::SIDE_POSITIVE_Y;
+		f = p.y < 0.f ? ZN_Cubemap::SIDE_NEGATIVE_Y : ZN_Cubemap::SIDE_POSITIVE_Y;
 		ma = 0.5f / ap.y;
 		uv = Vector2f(p.x, p.y < 0.f ? -p.z : p.z);
 
 	} else {
-		f = p.x < 0.f ? Cubemap::SIDE_NEGATIVE_X : Cubemap::SIDE_POSITIVE_X;
+		f = p.x < 0.f ? ZN_Cubemap::SIDE_NEGATIVE_X : ZN_Cubemap::SIDE_POSITIVE_X;
 		ma = 0.5f / ap.x;
 		uv = Vector2f(p.x < 0.f ? p.z : -p.z, -p.y);
 	}
@@ -197,11 +202,11 @@ inline Cubemap::UV convert_xyz_to_cube_uv_v2(const Vector3f p) {
 	return { f, uv * ma + Vector2f(0.5f) };
 }
 
-Cubemap::UV Cubemap::get_uv_from_xyz(const Vector3f pos) {
+ZN_Cubemap::UV ZN_Cubemap::get_uv_from_xyz(const Vector3f pos) {
 	return convert_xyz_to_cube_uv_v2(pos);
 }
 
-Vector3f Cubemap::get_xyz_from_uv(const Vector2f uv, const SideIndex face) {
+Vector3f ZN_Cubemap::get_xyz_from_uv(const Vector2f uv, const SideIndex face) {
 	switch (face) {
 		case SIDE_POSITIVE_X:
 			return get_xyz_from_uv<SIDE_POSITIVE_X>(uv);
@@ -221,7 +226,7 @@ Vector3f Cubemap::get_xyz_from_uv(const Vector2f uv, const SideIndex face) {
 	}
 }
 
-Color Cubemap::sample_nearest(const Vector3f position) {
+Color ZN_Cubemap::sample_nearest(const Vector3f position) {
 	const UV uv = get_uv_from_xyz(position);
 	const Image &im = **_images[uv.side];
 	const Vector2i im_size = im.get_size();
@@ -230,7 +235,7 @@ Color Cubemap::sample_nearest(const Vector3f position) {
 	return im.get_pixelv(uv_px);
 }
 
-Color Cubemap::sample_nearest_prepad(const Vector3f position) {
+Color ZN_Cubemap::sample_nearest_prepad(const Vector3f position) {
 	const UV uv = get_uv_from_xyz(position);
 	const Image &im = **_images[uv.side];
 	const Vector2i im_size = im.get_size();
@@ -281,7 +286,7 @@ void copy_side_pixels_pad(Image &dst, const Image &src) {
 }
 
 // Pads each image by 1 pixel containing copies of neighbor pixels for fast linear sampling
-void Cubemap::make_linear_filterable() {
+void ZN_Cubemap::make_linear_filterable() {
 	ZN_PROFILE_SCOPE();
 
 	if (_padded) {
@@ -304,12 +309,12 @@ void Cubemap::make_linear_filterable() {
 	{
 		ZN_PROFILE_SCOPE_NAMED("Copy edges");
 
-		Image &nx = **images[Cubemap::SIDE_NEGATIVE_X];
-		Image &px = **images[Cubemap::SIDE_POSITIVE_X];
-		Image &ny = **images[Cubemap::SIDE_NEGATIVE_Y];
-		Image &py = **images[Cubemap::SIDE_POSITIVE_Y];
-		Image &nz = **images[Cubemap::SIDE_NEGATIVE_Z];
-		Image &pz = **images[Cubemap::SIDE_POSITIVE_Z];
+		Image &nx = **images[SIDE_NEGATIVE_X];
+		Image &px = **images[SIDE_POSITIVE_X];
+		Image &ny = **images[SIDE_NEGATIVE_Y];
+		Image &py = **images[SIDE_POSITIVE_Y];
+		Image &nz = **images[SIDE_NEGATIVE_Z];
+		Image &pz = **images[SIDE_POSITIVE_Z];
 
 		// -X
 		copy_side_pixels_pad<IM_SIDE_POSITIVE_X, IM_SIDE_NEGATIVE_X, false>(nx, nz);
@@ -398,7 +403,7 @@ static inline Color get_pixel_linear_unchecked(const Image &im, float x, float y
 	return cl;
 }
 
-Color Cubemap::sample_linear_prepad(const Vector3f position) {
+Color ZN_Cubemap::sample_linear_prepad(const Vector3f position) {
 	// https://www.gamedev.net/forums/topic/572117-bilinear-sampling-of-cube-map-using-cpu/
 	// const CubemapUV uv = convert_xyz_to_cube_uv(position);
 	const UV uv = get_uv_from_xyz(position);
@@ -473,9 +478,9 @@ void sample_linear_prepad_unchecked(
 		Span<const float> y_array,
 		Span<const float> z_array,
 		std::array<Span<float>, 4> dst_channels,
-		const std::array<Ref<Image>, Cubemap::SIDE_COUNT> &gd_ims
+		const std::array<Ref<Image>, ZN_Cubemap::SIDE_COUNT> &gd_ims
 ) {
-	std::array<Span<const TConv::Src>, Cubemap::SIDE_COUNT> ims;
+	std::array<Span<const TConv::Src>, ZN_Cubemap::SIDE_COUNT> ims;
 
 	for (unsigned int side = 0; side < ims.size(); ++side) {
 		const Image &im = **gd_ims[side];
@@ -487,7 +492,7 @@ void sample_linear_prepad_unchecked(
 
 	for (unsigned int i = 0; i < x_array.size(); ++i) {
 		const Vector3f position(x_array[i], y_array[i], z_array[i]);
-		const Cubemap::UV uv = Cubemap::get_uv_from_xyz(position);
+		const ZN_Cubemap::UV uv = ZN_Cubemap::get_uv_from_xyz(position);
 
 		const Span<const TConv::Src> im = ims[uv.side];
 		const Vector2f ts = to_vec2f(res - Vector2i(2, 2));
@@ -511,7 +516,7 @@ void sample_linear_prepad_unchecked(
 	}
 }
 
-void Cubemap::sample_linear_prepad(
+void ZN_Cubemap::sample_linear_prepad(
 		Span<const float> x_array,
 		Span<const float> y_array,
 		Span<const float> z_array,
@@ -679,7 +684,7 @@ inline Rect2i to_rect2i(const BoxBounds2i box) {
 
 inline void combine_box_range_on_image(
 		const Box2f uv_box,
-		Cubemap::Range &range,
+		ZN_Cubemap::Range &range,
 		const Image &im,
 		const uint8_t side_index
 ) {
@@ -699,28 +704,28 @@ inline void combine_box_range_on_image(
 template <int SIDE>
 inline Box3f swizzle_box_to_positive_x(const Box3f box) {
 	// TODO Any nicer way to prevent the `default` branch from being compiled?
-	static_assert(SIDE >= 0 && SIDE < Cubemap::SIDE_COUNT);
+	static_assert(SIDE >= 0 && SIDE < ZN_Cubemap::SIDE_COUNT);
 
 	switch (SIDE) {
-		case Cubemap::SIDE_POSITIVE_X:
+		case ZN_Cubemap::SIDE_POSITIVE_X:
 			return box;
-		case Cubemap::SIDE_NEGATIVE_X:
+		case ZN_Cubemap::SIDE_NEGATIVE_X:
 			return Box3f::from_min_max(
 					Vector3f(-box.max.x, box.min.y, -box.max.z), Vector3f(-box.min.x, box.max.y, -box.min.z)
 			);
-		case Cubemap::SIDE_POSITIVE_Y:
+		case ZN_Cubemap::SIDE_POSITIVE_Y:
 			return Box3f::from_min_max(
 					Vector3f(box.min.y, -box.max.z, -box.max.x), Vector3f(box.max.y, -box.min.z, -box.min.x)
 			);
-		case Cubemap::SIDE_NEGATIVE_Y:
+		case ZN_Cubemap::SIDE_NEGATIVE_Y:
 			return Box3f::from_min_max(
 					Vector3f(-box.max.y, box.min.z, -box.max.x), Vector3f(-box.min.y, box.max.z, -box.min.x)
 			);
-		case Cubemap::SIDE_POSITIVE_Z:
+		case ZN_Cubemap::SIDE_POSITIVE_Z:
 			return Box3f::from_min_max(
 					Vector3f(box.min.z, box.min.y, -box.max.x), Vector3f(box.max.z, box.max.y, -box.min.x)
 			);
-		case Cubemap::SIDE_NEGATIVE_Z:
+		case ZN_Cubemap::SIDE_NEGATIVE_Z:
 			return Box3f::from_min_max(
 					Vector3f(-box.max.z, box.min.y, box.min.x), Vector3f(-box.min.z, box.max.y, box.max.x)
 			);
@@ -733,15 +738,15 @@ inline Box3f swizzle_box_to_positive_x(const Box3f box) {
 template <int SIDE>
 inline void combine_box_range_on_side(
 		const Box3f box,
-		Cubemap::Range &range,
-		const std::array<Ref<Image>, Cubemap::SIDE_COUNT> &images
+		ZN_Cubemap::Range &range,
+		const std::array<Ref<Image>, ZN_Cubemap::SIDE_COUNT> &images
 ) {
 	const Image &im = **images[SIDE];
 	const Box2f uv_box = project_box_to_positive_x_side(swizzle_box_to_positive_x<SIDE>(box));
 	combine_box_range_on_image(uv_box, range, im, SIDE);
 }
 
-Cubemap::Range Cubemap::get_range(const Box3f box) const {
+ZN_Cubemap::Range ZN_Cubemap::get_range(const Box3f box) const {
 	ZN_PROFILE_SCOPE();
 
 	Range range;
@@ -772,6 +777,13 @@ Cubemap::Range Cubemap::get_range(const Box3f box) const {
 	}
 
 	return range;
+}
+
+void ZN_Cubemap::_bind_methods() {
+	using Self = ZN_Cubemap;
+
+	ClassDB::bind_method(D_METHOD("create_empty", "resolution", "format"), &Self::create);
+	ClassDB::bind_method(D_METHOD("create_from_images", "images"), &Self::create_from_images);
 }
 
 } // namespace zylann

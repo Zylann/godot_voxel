@@ -1,13 +1,14 @@
 #ifndef ZN_CUBEMAP_H
 #define ZN_CUBEMAP_H
 
-#include "../godot/classes/image.h"
 #include "../math/box3f.h"
 #include "../math/color.h"
 #include "../math/interval.h"
 #include "../math/vector2f.h"
 #include "../math/vector2i.h"
 #include "../math/vector3f.h"
+#include "classes/image.h"
+#include "core/typed_array.h"
 #include "macros.h"
 #include <array>
 
@@ -15,17 +16,12 @@ ZN_GODOT_NAMESPACE_BEGIN
 class Cubemap;
 ZN_GODOT_NAMESPACE_END
 
-// We have to do this because namespaces between core and GDExtension are inconsistent
-#if defined(ZN_GODOT)
-using GodotCubemap = ::Cubemap;
-#elif defined(ZN_GODOT_EXTENSION)
-using GodotCubemap = ::godot::Cubemap;
-#endif
-
 namespace zylann {
 
-// CPU implementation of a cubemap
-class Cubemap {
+// CPU implementation of a cubemap (equivalent of Image[6] but with proper API).
+// I could almost inherit Godot's Cubemap, but APIs would start to conflict in awkward ways...
+class ZN_Cubemap : public Resource {
+	GDCLASS(ZN_Cubemap, Resource)
 public:
 	enum SideIndex {
 		// OpenGL convention
@@ -39,6 +35,7 @@ public:
 	};
 
 	void create(const unsigned int resolution, const Image::Format format);
+	void create_from_images(TypedArray<Image> images);
 	bool is_valid() const;
 	unsigned int get_resolution() const;
 	Image::Format get_format() const;
@@ -47,7 +44,7 @@ public:
 	const Image &get_image(const unsigned int side) const;
 	const Ref<Image> get_image_ref(const unsigned int side) const;
 
-	Ref<GodotCubemap> to_texture() const;
+	Ref<Cubemap> create_texture() const;
 
 	Color sample_nearest(const Vector3f position);
 	Color sample_nearest_prepad(const Vector3f position);
@@ -113,6 +110,8 @@ public:
 	static Vector3f get_xyz_from_uv(const Vector2f uv, const SideIndex face);
 
 private:
+	static void _bind_methods();
+
 	std::array<Ref<Image>, SIDE_COUNT> _images;
 	bool _padded = false;
 };

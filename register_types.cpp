@@ -320,6 +320,7 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_class<ZN_ThreadedTask>();
 		ClassDB::register_class<VoxelTerrainMultiplayerSynchronizer>();
 		ClassDB::register_class<VoxelAStarGrid3D>();
+		ClassDB::register_class<ZN_Cubemap>();
 		ClassDB::register_class<VoxelProceduralCubemap>();
 
 		// Meshers

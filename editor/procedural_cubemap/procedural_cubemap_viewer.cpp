@@ -80,7 +80,7 @@ void VoxelProceduralCubemapViewer::set_cubemap(Ref<VoxelProceduralCubemap> cm) {
 }
 
 void VoxelProceduralCubemapViewer::on_cubemap_updated() {
-	Ref<GodotCubemap> texture;
+	Ref<Cubemap> texture;
 	if (_cubemap.is_valid()) {
 		texture = _cubemap->create_texture();
 	}
