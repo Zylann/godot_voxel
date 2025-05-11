@@ -37,6 +37,7 @@ void VoxelProceduralCubemap::set_graph(Ref<pg::VoxelGraphFunction> graph) {
 
 	if (_graph.is_valid()) {
 		_graph->compile(false);
+		update();
 	}
 }
 
