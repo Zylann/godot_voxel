@@ -1,6 +1,7 @@
 #include "procedural_cubemap.h"
 #include "../../constants/voxel_string_names.h"
 #include "../../generators/graph/voxel_graph_function.h"
+#include "../../util/godot/classes/cubemap.h"
 #include "../../util/godot/core/array.h"
 #include "../../util/math/conv.h"
 #include "../../util/math/vector2f.h"
