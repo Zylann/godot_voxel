@@ -1795,7 +1795,7 @@ CompilationResult Runtime::compile_preprocessed_graph(
 
 				if (res.is_null()) {
 					// duplicate() is only available in Resource,
-					// so we have to limit to this instead of Reference or Object
+					// so we have to limit to this instead of RefCounted or Object
 					CompilationResult result;
 					result.success = false;
 					result.message = ZN_TTR("A parameter is an object but does not inherit Resource");
