@@ -206,10 +206,12 @@ void VoxelProceduralCubemap::_bind_methods() {
 			"get_graph"
 	);
 
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "target_resolution"), "set_resolution", "get_resolution");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "target_resolution"), "set_target_resolution", "get_target_resolution");
 
 	ADD_PROPERTY(
-			PropertyInfo(Variant::INT, "target_format", PROPERTY_HINT_ENUM, "R8,L8,RF"), "set_format", "get_format"
+			PropertyInfo(Variant::INT, "target_format", PROPERTY_HINT_ENUM, "R8,L8,RF"),
+			"set_target_format",
+			"get_target_format"
 	);
 
 	ADD_SIGNAL(MethodInfo("updated"));
