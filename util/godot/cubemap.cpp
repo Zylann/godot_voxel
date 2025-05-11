@@ -84,81 +84,6 @@ Ref<Cubemap> ZN_Cubemap::create_texture() const {
 	return tex;
 }
 
-/*
-CubemapUV convert_xyz_to_cube_uv(Vector3f position) {
-	// https://en.wikipedia.org/wiki/Cube_mapping
-
-	const Vector3f abs_position = math::abs(position);
-
-	const bool x_positive = position.x > 0 ? 1 : 0;
-	const bool y_positive = position.y > 0 ? 1 : 0;
-	const bool z_positive = position.z > 0 ? 1 : 0;
-
-	float max_axis;
-	float uc;
-	float vc;
-
-	unsigned int out_index;
-
-	if (x_positive && abs_position.x >= abs_position.y && abs_position.x >= abs_position.z) {
-		// u (0 to 1) goes from +z to -z
-		// v (0 to 1) goes from -y to +y
-		max_axis = abs_position.x;
-		uc = -position.z;
-		vc = position.y;
-		out_index = Cubemap::POSITIVE_X;
-
-	} else if (!x_positive && abs_position.x >= abs_position.y && abs_position.x >= abs_position.z) {
-		// u (0 to 1) goes from -z to +z
-		// v (0 to 1) goes from -y to +y
-		max_axis = abs_position.x;
-		uc = position.z;
-		vc = position.y;
-		out_index = Cubemap::NEGATIVE_X;
-
-	} else if (y_positive && abs_position.y >= abs_position.x && abs_position.y >= abs_position.z) {
-		// u (0 to 1) goes from -x to +x
-		// v (0 to 1) goes from +z to -z
-		max_axis = abs_position.y;
-		uc = position.x;
-		vc = -position.z;
-		out_index = Cubemap::POSITIVE_Y;
-
-	} else if (!y_positive && abs_position.y >= abs_position.x && abs_position.y >= abs_position.z) {
-		// u (0 to 1) goes from -x to +x
-		// v (0 to 1) goes from -z to +z
-		max_axis = abs_position.y;
-		uc = position.x;
-		vc = position.z;
-		out_index = Cubemap::NEGATIVE_Y;
-
-	} else if (z_positive && abs_position.z >= abs_position.x && abs_position.z >= abs_position.y) {
-		// u (0 to 1) goes from -x to +x
-		// v (0 to 1) goes from -y to +y
-		max_axis = abs_position.z;
-		uc = position.x;
-		vc = position.y;
-		out_index = Cubemap::POSITIVE_Z;
-
-	} else { // if (!z_positive && abs_position.z >= abs_position.x && abs_position.z >= abs_position.y) {
-		// u (0 to 1) goes from +x to -x
-		// v (0 to 1) goes from -y to +y
-		max_axis = abs_position.z;
-		uc = -position.x;
-		vc = position.y;
-		out_index = Cubemap::NEGATIVE_Z;
-	}
-
-	// Convert range from -1 to 1 to 0 to 1
-	const Vector2f out_uv = Vector2f( //
-				0.5f * (uc / max_axis + 1.0f), //
-				0.5f * (vc / max_axis + 1.0f)
-		);
-
-	return { out_index, out_uv };
-}
-*/
-
 //           o--------o
 //           |        |
 //           |   +Y   |
@@ -175,8 +100,7 @@ CubemapUV convert_xyz_to_cube_uv(Vector3f position) {
 //
 // Convention taken from Godot, applying a cubemap shader to a cube using the Forward+ (Vulkan) renderer.
 
-// TODO Might be faster but was ported from GLSL, therefore Y is flipped
-inline ZN_Cubemap::UV convert_xyz_to_cube_uv_v2(const Vector3f p) {
+inline ZN_Cubemap::UV convert_xyz_to_cube_uv(const Vector3f p) {
 	// https://www.gamedev.net/forums/topic/687535-implementing-a-cube-map-lookup-function/
 	const Vector3f ap = math::abs(p);
 	float ma;
@@ -204,7 +128,7 @@ inline ZN_Cubemap::UV convert_xyz_to_cube_uv_v2(const Vector3f p) {
 }
 
 ZN_Cubemap::UV ZN_Cubemap::get_uv_from_xyz(const Vector3f pos) {
-	return convert_xyz_to_cube_uv_v2(pos);
+	return convert_xyz_to_cube_uv(pos);
 }
 
 Vector3f ZN_Cubemap::get_xyz_from_uv(const Vector2f uv, const SideIndex face) {
