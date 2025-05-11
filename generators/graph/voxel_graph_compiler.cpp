@@ -1,4 +1,5 @@
 #include "voxel_graph_compiler.h"
+#include "../../constants/voxel_string_names.h"
 #include "../../util/containers/container_funcs.h"
 #include "../../util/containers/std_unordered_map.h"
 #include "../../util/containers/std_unordered_set.h"
@@ -1803,7 +1804,15 @@ CompilationResult Runtime::compile_preprocessed_graph(
 					return result;
 				}
 
-				res = res->duplicate();
+				// Duplicate resources for thread-safety.
+				// TODO This is ok for small resources, but wasteful for large ones like images. For now we sidestep the
+				// issue by exploiting Godot's CoW in Image and doing shallow copies if image members are immutable.
+				// TODO GDX: Godot doesn't allow us to override duplicate().
+				if (res->has_method(VoxelStringNames::get_singleton().zn_duplicate)) {
+					res = res->call(VoxelStringNames::get_singleton().zn_duplicate);
+				} else {
+					res = res->duplicate();
+				}
 
 				program.ref_resources.push_back(res);
 				v = res;

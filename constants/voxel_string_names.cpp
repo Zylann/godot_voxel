@@ -129,6 +129,7 @@ VoxelStringNames::VoxelStringNames() {
 
 	updated = StringName("updated");
 	u_cubemap = StringName("u_cubemap");
+	zn_duplicate = StringName("zn_duplicate");
 }
 
 } // namespace zylann::voxel

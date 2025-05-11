@@ -74,6 +74,11 @@ public:
 
 	Range get_range(const Box3f box) const;
 
+	// TODO GDX: Godot's `Resource::duplicate` method cannot be overriden by extensions.
+	// It is necessary here, because we dont expose underlying images as properties at the moment.
+	// Initially needed because of Voxel graph compilation using duplication as thread-safety measure.
+	virtual Ref<ZN_Cubemap> zn_duplicate() const;
+
 	struct UV {
 		SideIndex side;
 		// Normalized 0..1 coordinates into the side, with (0,0) being top-left
@@ -108,6 +113,9 @@ public:
 	}
 
 	static Vector3f get_xyz_from_uv(const Vector2f uv, const SideIndex face);
+
+protected:
+	void duplicate_to(ZN_Cubemap &d) const;
 
 private:
 	static void _bind_methods();

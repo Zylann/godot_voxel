@@ -15,6 +15,7 @@ void VoxelProceduralCubemap::set_target_resolution(const unsigned int new_resolu
 		return;
 	}
 	_target_resolution = res;
+	_dirty = true;
 }
 
 int VoxelProceduralCubemap::get_target_resolution() const {
@@ -22,7 +23,11 @@ int VoxelProceduralCubemap::get_target_resolution() const {
 }
 
 void VoxelProceduralCubemap::set_target_format(const Format format) {
+	if (format == _target_format) {
+		return;
+	}
 	_target_format = format;
+	_dirty = true;
 }
 
 VoxelProceduralCubemap::Format VoxelProceduralCubemap::get_target_format() const {
@@ -34,16 +39,33 @@ void VoxelProceduralCubemap::set_graph(Ref<pg::VoxelGraphFunction> graph) {
 		return;
 	}
 
+	if (_graph.is_valid()) {
+		_graph->disconnect(
+				VoxelStringNames::get_singleton().changed, callable_mp(this, &VoxelProceduralCubemap::on_graph_changed)
+		);
+	}
+
 	_graph = graph;
 
 	if (_graph.is_valid()) {
-		_graph->compile(false);
-		update();
+		// Can't compile and update right here... because because Godot loads the resource by setting properties in an
+		// unreliable order, so we can only update only when we are sure they were all set. Using call_deferred for this
+		// is also not possible because it could be too late.
+
+		_graph->connect(
+				VoxelStringNames::get_singleton().changed, callable_mp(this, &VoxelProceduralCubemap::on_graph_changed)
+		);
 	}
+
+	_dirty = true;
 }
 
 Ref<pg::VoxelGraphFunction> VoxelProceduralCubemap::get_graph() const {
 	return _graph;
+}
+
+void VoxelProceduralCubemap::on_graph_changed() {
+	_dirty = true;
 }
 
 static Image::Format get_image_format(const VoxelProceduralCubemap::Format src) {
@@ -63,19 +85,16 @@ static Image::Format get_image_format(const VoxelProceduralCubemap::Format src) 
 void VoxelProceduralCubemap::update() {
 	ZN_PROFILE_SCOPE();
 
+	_dirty = false;
+
 	if (_graph.is_null()) {
 		return;
 	}
 	if (!_graph->is_compiled()) {
-		return;
-	}
-
-	const Image::Format image_format = get_image_format(_target_format);
-
-	// TODO Handle CPU filtering preservation. Re-pad afterwards? Generate with padding directly?
-
-	if (!is_valid() || get_format() != image_format || get_resolution() != _target_resolution) {
-		create(_target_resolution, image_format);
+		const pg::CompilationResult result = _graph->compile(false);
+		if (!result.success) {
+			return;
+		}
 	}
 
 	{
@@ -91,6 +110,14 @@ void VoxelProceduralCubemap::update() {
 				return;
 			}
 		}
+	}
+
+	const Image::Format image_format = get_image_format(_target_format);
+
+	// TODO Handle CPU filtering preservation. Re-pad afterwards? Generate with padding directly?
+
+	if (!is_valid() || get_format() != image_format || get_resolution() != _target_resolution) {
+		create(_target_resolution, image_format);
 	}
 
 	const int max_chunk_length = 256;
@@ -184,6 +211,17 @@ void VoxelProceduralCubemap::update() {
 	}
 
 	emit_signal(VoxelStringNames::get_singleton().updated);
+}
+
+Ref<ZN_Cubemap> VoxelProceduralCubemap::zn_duplicate() const {
+	Ref<VoxelProceduralCubemap> d;
+	d.instantiate();
+	ZN_Cubemap::duplicate_to(**d);
+	d->_graph = _graph;
+	d->_target_format = _target_format;
+	d->_target_resolution = _target_resolution;
+	d->_dirty = _dirty;
+	return d;
 }
 
 void VoxelProceduralCubemap::_bind_methods() {

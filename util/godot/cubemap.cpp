@@ -713,11 +713,24 @@ ZN_Cubemap::Range ZN_Cubemap::get_range(const Box3f box) const {
 	return range;
 }
 
+Ref<ZN_Cubemap> ZN_Cubemap::zn_duplicate() const {
+	Ref<ZN_Cubemap> d;
+	d.instantiate();
+	duplicate_to(**d);
+	return d;
+}
+
+void ZN_Cubemap::duplicate_to(ZN_Cubemap &d) const {
+	d._images = _images;
+	d._padded = _padded;
+}
+
 void ZN_Cubemap::_bind_methods() {
 	using Self = ZN_Cubemap;
 
 	ClassDB::bind_method(D_METHOD("create_empty", "resolution", "format"), &Self::create);
 	ClassDB::bind_method(D_METHOD("create_from_images", "images"), &Self::create_from_images);
+	ClassDB::bind_method(D_METHOD("zn_duplicate"), &Self::zn_duplicate);
 }
 
 } // namespace zylann

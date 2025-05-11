@@ -74,9 +74,11 @@ void VoxelProceduralCubemapViewer::set_cubemap(Ref<VoxelProceduralCubemap> cm) {
 				VoxelStringNames::get_singleton().updated,
 				callable_mp(this, &VoxelProceduralCubemapViewer::on_cubemap_updated)
 		);
-	}
 
-	on_cubemap_updated();
+		if (_cubemap->is_dirty()) {
+			_cubemap->update();
+		}
+	}
 }
 
 void VoxelProceduralCubemapViewer::on_cubemap_updated() {

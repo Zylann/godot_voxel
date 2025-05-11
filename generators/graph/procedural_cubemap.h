@@ -36,10 +36,19 @@ public:
 
 	void update();
 
+	bool is_dirty() const {
+		return _dirty;
+	}
+
+	Ref<ZN_Cubemap> zn_duplicate() const override;
+
 private:
+	void on_graph_changed();
+
 	static void _bind_methods();
 
 	unsigned int _target_resolution = 256;
+	bool _dirty = false;
 	Format _target_format = FORMAT_L8;
 	Ref<pg::VoxelGraphFunction> _graph;
 };

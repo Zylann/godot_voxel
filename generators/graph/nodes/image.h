@@ -4,6 +4,7 @@
 #include "../../../util/profiling.h"
 #include "../image_range_grid.h"
 #include "../node_type_db.h"
+#include "../procedural_cubemap.h"
 
 namespace zylann::voxel::pg {
 
@@ -305,6 +306,16 @@ void register_image_nodes(Span<NodeType> types) {
 			if (cubemap.is_null()) {
 				ctx.make_error(String(ZN_TTR("{0} instance is null")).format(varray(ZN_Cubemap::get_class_static())));
 				return;
+			}
+			{
+				// Not ideal. If Godot had a "post_load" after setting resource properties, we wouldn't need to do
+				// that...
+				Ref<VoxelProceduralCubemap> pc = cubemap;
+				if (pc.is_valid()) {
+					if (pc->is_dirty()) {
+						pc->update();
+					}
+				}
 			}
 			if (!cubemap->is_valid()) {
 				ctx.make_error(String(ZN_TTR("{0} is not valid")).format(varray(ZN_Cubemap::get_class_static())));

@@ -117,6 +117,7 @@ public:
 
 	StringName updated;
 	StringName u_cubemap;
+	StringName zn_duplicate;
 };
 
 } // namespace zylann::voxel
