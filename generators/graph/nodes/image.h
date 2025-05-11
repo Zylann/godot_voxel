@@ -1,5 +1,6 @@
 #include "../../../constants/voxel_constants.h"
 #include "../../../util/godot/classes/image.h"
+#include "../../../util/godot/cubemap.h"
 #include "../../../util/profiling.h"
 #include "../image_range_grid.h"
 #include "../node_type_db.h"
@@ -283,6 +284,66 @@ void register_image_nodes(Span<NodeType> types) {
 			ctx.set_output(
 					0, sdf_sphere_heightmap(x, y, z, p.radius, p.factor, p.image_range_grid, p.norm_x, p.norm_y)
 			);
+		};
+	}
+	{
+		struct Params {
+			const ZN_Cubemap *cubemap;
+		};
+
+		NodeType &t = types[VoxelGraphFunction::NODE_CUBEMAP];
+		t.name = "Cubemap";
+		t.category = CATEGORY_GENERATE;
+		t.inputs.push_back(NodeType::Port("x", 0.f, VoxelGraphFunction::AUTO_CONNECT_X));
+		t.inputs.push_back(NodeType::Port("y", 0.f, VoxelGraphFunction::AUTO_CONNECT_Y));
+		t.inputs.push_back(NodeType::Port("z", 0.f, VoxelGraphFunction::AUTO_CONNECT_Z));
+		t.outputs.push_back(NodeType::Port("r"));
+		t.params.push_back(NodeType::Param("cubemap", ZN_Cubemap::get_class_static(), nullptr));
+
+		t.compile_func = [](CompileContext &ctx) {
+			Ref<ZN_Cubemap> cubemap = ctx.get_param(0);
+			if (cubemap.is_null()) {
+				ctx.make_error(String(ZN_TTR("{0} instance is null")).format(varray(ZN_Cubemap::get_class_static())));
+				return;
+			}
+			if (!cubemap->is_valid()) {
+				ctx.make_error(String(ZN_TTR("{0} is not valid")).format(varray(ZN_Cubemap::get_class_static())));
+				return;
+			}
+			cubemap->make_linear_filterable();
+			Params p;
+			p.cubemap = cubemap.ptr();
+			ctx.set_params(p);
+		};
+
+		t.process_buffer_func = [](Runtime::ProcessBufferContext &ctx) {
+			ZN_PROFILE_SCOPE_NAMED("NODE_CUBEMAP");
+			const Runtime::Buffer &x = ctx.get_input(0);
+			const Runtime::Buffer &y = ctx.get_input(1);
+			const Runtime::Buffer &z = ctx.get_input(2);
+			Runtime::Buffer &out = ctx.get_output(0);
+			const Params p = ctx.get_params<Params>();
+			const ZN_Cubemap &cubemap = *p.cubemap;
+			cubemap.sample_linear_prepad(
+					Span<const float>(x.data, x.size),
+					Span<const float>(y.data, y.size),
+					Span<const float>(z.data, z.size),
+					Span<float>(out.data, out.size),
+					Span<float>(),
+					Span<float>(),
+					Span<float>()
+			);
+		};
+
+		t.range_analysis_func = [](Runtime::RangeAnalysisContext &ctx) {
+			const Interval x = ctx.get_input(0);
+			const Interval y = ctx.get_input(1);
+			const Interval z = ctx.get_input(2);
+			const Params p = ctx.get_params<Params>();
+			const ZN_Cubemap::Range range = p.cubemap->get_range(
+					Box3f::from_min_max(Vector3f(x.min, y.min, z.min), Vector3f(x.max, y.max, z.max))
+			);
+			ctx.set_output(0, range.combined[0]);
 		};
 	}
 }
