@@ -663,8 +663,8 @@ inline Box2f project_box_to_positive_x_side(const Box3f box) {
 // }
 
 BoxBounds2i get_pixel_rect_from_uv(const Box2f uv_box, const Vector2i res) {
-	const Vector2i minp = to_vec2i(uv_box.min * static_cast<float>(res.x));
-	const Vector2i maxp = to_vec2i(uv_box.max * static_cast<float>(res.y));
+	const Vector2i minp = to_vec2i(math::floor(uv_box.min * static_cast<float>(res.x)));
+	const Vector2i maxp = to_vec2i(math::ceil(uv_box.max * static_cast<float>(res.y)));
 	return BoxBounds2i(minp, maxp).clipped(BoxBounds2i(Vector2i(), res));
 }
 
@@ -689,13 +689,20 @@ inline void combine_box_range_on_image(
 		const Image &im,
 		const uint8_t side_index
 ) {
-	const BoxBounds2i pixel_box = get_pixel_rect_from_uv(uv_box, im.get_size());
+	const Vector2i im_size = im.get_size();
+	const BoxBounds2i pixel_box = get_pixel_rect_from_uv(uv_box, im_size);
 	if (!pixel_box.is_empty()) {
 		// TODO: use mipmap ranges to speed this up when the box is large
+
+		// We pad to account for filtering. Do this inside the `if` because otherwise it would always pass, since
+		// `uv_box` is actually clamped to edges already...
+		// TODO This is kinda shitty. There might be a better way? Also what about cases on the edges?
+		const Rect2i padded_pixel_box = to_rect2i(pixel_box.padded(1).clipped(BoxBounds2i(Vector2i(), im_size)));
+
 		if (range.sampled_sides_count == 0) {
-			range.combined = godot::ImageUtility::get_range(im, to_rect2i(pixel_box));
+			range.combined = godot::ImageUtility::get_range(im, padded_pixel_box);
 		} else {
-			range.combined = combine_ranges(range.combined, godot::ImageUtility::get_range(im, to_rect2i(pixel_box)));
+			range.combined = combine_ranges(range.combined, godot::ImageUtility::get_range(im, padded_pixel_box));
 		}
 		range.sampled_sides[range.sampled_sides_count] = side_index;
 		++range.sampled_sides_count;

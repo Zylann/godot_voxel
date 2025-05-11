@@ -63,6 +63,10 @@ struct BoxBounds2i {
 				math::clamp(min_pos, lim.min_pos, lim.max_pos), math::clamp(max_pos, lim.min_pos, lim.max_pos)
 		);
 	}
+
+	inline BoxBounds2i padded(const int d) const {
+		return BoxBounds2i(Vector2i(min_pos.x - d, min_pos.y - d), Vector2i(max_pos.x + d, max_pos.y + d));
+	}
 };
 
 StdStringStream &operator<<(StdStringStream &ss, const BoxBounds2i &box);
