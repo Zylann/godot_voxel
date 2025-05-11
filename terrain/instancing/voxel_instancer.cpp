@@ -280,7 +280,7 @@ void VoxelInstancer::process_task_results() {
 		}
 		Layer &layer = layer_it->second;
 
-		const VoxelInstanceLibraryItem *item = _library->get_item(output.layer_id);
+		VoxelInstanceLibraryItem *item = _library->get_item(output.layer_id);
 		ZN_ASSERT_CONTINUE_MSG(item != nullptr, "Item removed from library while it was loading?");
 
 		auto block_it = layer.blocks.find(output.render_block_position);
@@ -1124,6 +1124,7 @@ void VoxelInstancer::update_layer_scenes(int layer_id) {
 			block.scene_instances[instance_index] = instance;
 			// We just drop the instance without saving, because this function is supposed to occur only in editor,
 			// or in the very rare cases where library is modified in game (which would invalidate saves anyways).
+			// item->free_instance(prev_instance.root);
 			prev_instance.root->queue_free();
 		}
 	}
@@ -1279,12 +1280,24 @@ void VoxelInstancer::remove_block(const unsigned int block_index, const bool wit
 
 	destroy_multimesh_block_colliders(*block);
 
-	for (unsigned int i = 0; i < block->scene_instances.size(); ++i) {
-		SceneInstance instance = block->scene_instances[i];
-		ERR_CONTINUE(instance.component == nullptr);
-		instance.component->detach();
-		ERR_CONTINUE(instance.root == nullptr);
-		instance.root->queue_free();
+	if (block->scene_instances.size() > 0) {
+		VoxelInstanceLibrarySceneItem *scene_item = nullptr;
+		if (_library.is_valid()) {
+			scene_item = Object::cast_to<VoxelInstanceLibrarySceneItem>(_library->get_item(block->layer_id));
+		}
+
+		for (unsigned int i = 0; i < block->scene_instances.size(); ++i) {
+			SceneInstance instance = block->scene_instances[i];
+			ERR_CONTINUE(instance.component == nullptr);
+			instance.component->detach();
+			ERR_CONTINUE(instance.root == nullptr);
+
+			if (scene_item != nullptr) {
+				scene_item->free_instance(instance.root);
+			} else {
+				instance.root->queue_free();
+			}
+		}
 	}
 
 	// Update block index references, since we had to change the index of the last block during swap-remove.
@@ -1463,7 +1476,9 @@ void VoxelInstancer::remove_instances_in_sphere(const Vector3 p_center, const fl
 
 			try_update_item_cache(block.layer_id);
 
-			remove_instances_by_index(block, base_block_size, to_span(instances_to_remove), _mm_removal_action);
+			remove_instances_by_index(
+					block, base_block_size, to_span(instances_to_remove), _mm_removal_action, _instancer._library.ptr()
+			);
 
 			return { true };
 		}
@@ -1501,26 +1516,19 @@ void VoxelInstancer::remove_instances_in_sphere(const Vector3 p_center, const fl
 }
 
 VoxelInstancer::SceneInstance VoxelInstancer::create_scene_instance(
-		const VoxelInstanceLibrarySceneItem &scene_item,
-		int instance_index,
-		unsigned int block_index,
-		Transform3D transform,
-		int data_block_size_po2
+		VoxelInstanceLibrarySceneItem &scene_item,
+		const int instance_index,
+		const unsigned int block_index,
+		const Transform3D transform,
+		const int data_block_size_po2
 ) {
 	SceneInstance instance;
-	ERR_FAIL_COND_V_MSG(
-			scene_item.get_scene().is_null(),
-			instance,
-			String("{0} ({1}) is missing an attached scene in {2} ({3})")
-					.format(varray(VoxelInstanceLibrarySceneItem::get_class_static(),
-								   scene_item.get_item_name(),
-								   VoxelInstancer::get_class_static()),
-							get_path())
-	);
-	Node *root = scene_item.get_scene()->instantiate();
-	ERR_FAIL_COND_V(root == nullptr, instance);
-	instance.root = Object::cast_to<Node3D>(root);
-	ERR_FAIL_COND_V_MSG(instance.root == nullptr, instance, "Root of scene instance must be derived from Spatial");
+	instance.root = scene_item.create_instance();
+	if (instance.root == nullptr) {
+		// Fail: create placeholder.
+		// This can happen if the scene fails to instantiate due to missing resources or other kinds of errors
+		instance.root = memnew(Node3D);
+	}
 
 	instance.component = VoxelInstanceComponent::find_in(instance.root);
 	if (instance.component == nullptr) {
@@ -1568,7 +1576,7 @@ void VoxelInstancer::update_block_from_transforms(
 		Span<const Transform3f> transforms,
 		const Vector3i grid_position,
 		Layer &layer,
-		const VoxelInstanceLibraryItem &item_base,
+		VoxelInstanceLibraryItem &item_base,
 		const uint16_t layer_id,
 		World3D &world,
 		const Transform3D &block_global_transform,
@@ -1596,7 +1604,7 @@ void VoxelInstancer::update_block_from_transforms(
 	}
 
 	// Update scene instances
-	const VoxelInstanceLibrarySceneItem *scene_item = Object::cast_to<VoxelInstanceLibrarySceneItem>(&item_base);
+	VoxelInstanceLibrarySceneItem *scene_item = Object::cast_to<VoxelInstanceLibrarySceneItem>(&item_base);
 	if (scene_item != nullptr) {
 		update_scene_block_from_transforms(block, block_index, block_local_position, transforms, *scene_item);
 	}
@@ -1759,18 +1767,9 @@ void VoxelInstancer::update_scene_block_from_transforms(
 		const unsigned int block_index,
 		const Vector3 block_local_position,
 		Span<const Transform3f> transforms,
-		const VoxelInstanceLibrarySceneItem &scene_item
+		VoxelInstanceLibrarySceneItem &scene_item
 ) {
 	ZN_PROFILE_SCOPE();
-
-	ERR_FAIL_COND_MSG(
-			scene_item.get_scene().is_null(),
-			String("{0} ({1}) is missing an attached scene in {2} ({3})")
-					.format(varray(VoxelInstanceLibrarySceneItem::get_class_static(),
-								   scene_item.get_item_name(),
-								   VoxelInstancer::get_class_static()),
-							get_path())
-	);
 
 	const int data_block_size_po2 = _parent_data_block_size_po2;
 
@@ -1802,7 +1801,7 @@ void VoxelInstancer::update_scene_block_from_transforms(
 		ERR_CONTINUE(instance.component == nullptr);
 		instance.component->detach();
 		ERR_CONTINUE(instance.root == nullptr);
-		instance.root->queue_free();
+		scene_item.free_instance(instance.root);
 	}
 
 	block.scene_instances.resize(transforms.size());
@@ -2237,7 +2236,8 @@ void VoxelInstancer::remove_instances_by_index(
 		Block &block,
 		const uint32_t base_block_size,
 		Span<const uint32_t> ascending_indices,
-		const MMRemovalAction mm_removal_action
+		const MMRemovalAction mm_removal_action,
+		VoxelInstanceLibrary *library
 ) {
 #ifdef DEV_ENABLED
 	for (unsigned int i = 1; i < ascending_indices.size(); ++i) {
@@ -2246,18 +2246,27 @@ void VoxelInstancer::remove_instances_by_index(
 #endif
 
 	if (block.scene_instances.size() > 0) {
-		remove_scene_instances_by_index(block, ascending_indices);
+		remove_scene_instances_by_index(block, ascending_indices, library);
 
 	} else {
 		remove_multimesh_instances_by_index(block, base_block_size, ascending_indices, mm_removal_action);
 	}
 }
 
-void VoxelInstancer::remove_scene_instances_by_index(Block &block, Span<const uint32_t> ascending_indices) {
+void VoxelInstancer::remove_scene_instances_by_index(
+		Block &block,
+		Span<const uint32_t> ascending_indices,
+		VoxelInstanceLibrary *library
+) {
 	ZN_PROFILE_SCOPE();
 
 	const unsigned int initial_instance_count = block.scene_instances.size();
 	unsigned int instance_count = initial_instance_count;
+
+	VoxelInstanceLibrarySceneItem *item = nullptr;
+	if (library != nullptr) {
+		item = Object::cast_to<VoxelInstanceLibrarySceneItem>(library->get_item(block.layer_id));
+	}
 
 	unsigned int removal_list_index = ascending_indices.size();
 	while (removal_list_index > 0) {
@@ -2276,7 +2285,12 @@ void VoxelInstancer::remove_scene_instances_by_index(Block &block, Span<const ui
 		// Not using detach_as_removed(),
 		// this function is not marking the block as modified. It may be done by the caller.
 		instance.component->detach();
-		instance.root->queue_free();
+
+		if (item != nullptr) {
+			item->free_instance(instance.root);
+		} else {
+			instance.root->queue_free();
+		}
 
 		SceneInstance moved_instance = block.scene_instances[last_instance_index];
 		if (moved_instance.root != instance.root) {
@@ -2467,7 +2481,10 @@ void VoxelInstancer::remove_floating_instances(const Box3i p_voxel_box) {
 
 			VoxelInstanceLibraryItem *item = nullptr;
 			VoxelInstanceLibraryMultiMeshItem *mm_item = nullptr;
+			VoxelInstanceLibrarySceneItem *scene_item = nullptr;
 			bool bidirectional = false;
+			float sd_threshold = 0.f;
+			float sd_offset = 0.f;
 
 			const Vector3i bmax = render_blocks_box.position + render_blocks_box.size;
 			Vector3i block_pos;
@@ -2487,6 +2504,9 @@ void VoxelInstancer::remove_floating_instances(const Box3i p_voxel_box) {
 
 						if (item == nullptr) {
 							item = _library->get_item(layer_id);
+							sd_threshold = item->get_floating_sdf_threshold();
+							sd_offset = item->get_floating_sdf_offset_along_normal();
+
 							Ref<VoxelInstanceGenerator> generator = item->get_generator();
 							if (generator.is_valid()) {
 								bidirectional = generator->get_random_vertical_flip();
@@ -2494,13 +2514,19 @@ void VoxelInstancer::remove_floating_instances(const Box3i p_voxel_box) {
 						}
 
 						if (block.scene_instances.size() > 0) {
+							if (scene_item == nullptr) {
+								scene_item = Object::cast_to<VoxelInstanceLibrarySceneItem>(item);
+							}
 							remove_floating_scene_instances(
 									block,
 									parent_transform,
 									p_voxel_box,
 									voxel_tool,
 									block_size_po2,
-									item->get_floating_sdf_threshold()
+									sd_threshold,
+									sd_offset,
+									bidirectional,
+									scene_item
 							);
 
 						} else {
@@ -2516,8 +2542,8 @@ void VoxelInstancer::remove_floating_instances(const Box3i p_voxel_box) {
 									p_voxel_box,
 									voxel_tool,
 									block_size_po2,
-									item->get_floating_sdf_threshold(),
-									item->get_floating_sdf_offset_along_normal(),
+									sd_threshold,
+									sd_offset,
 									bidirectional,
 									action
 							);
@@ -2661,7 +2687,10 @@ void VoxelInstancer::remove_floating_scene_instances(
 		const Box3i p_voxel_box,
 		const VoxelTool &voxel_tool,
 		const int block_size_po2,
-		const float sd_threshold
+		const float sd_threshold,
+		const float sd_offset,
+		const bool bidirectional,
+		VoxelInstanceLibrarySceneItem *item
 ) {
 	const unsigned int initial_instance_count = block.scene_instances.size();
 	unsigned int instance_count = initial_instance_count;
@@ -2683,10 +2712,15 @@ void VoxelInstancer::remove_floating_scene_instances(
 			continue;
 		}
 
-		// 1-voxel cheap check without interpolation
-		const float sdf = voxel_tool.get_voxel_f(voxel_pos);
-		if (sdf < sd_threshold) {
-			// Still enough ground
+		if (detect_ground(
+					scene_transform.origin,
+					zylann::godot::BasisUtility::get_up(scene_transform.basis),
+					Vector3(), // Little hack, scenes are already in terrain space
+					sd_threshold,
+					sd_offset,
+					bidirectional,
+					voxel_tool
+			)) {
 			continue;
 		}
 
@@ -2699,7 +2733,12 @@ void VoxelInstancer::remove_floating_scene_instances(
 		// Not using detach_as_removed(),
 		// this function is not marking the block as modified. It may be done by the caller.
 		instance.component->detach();
-		instance.root->queue_free();
+
+		if (item != nullptr) {
+			item->free_instance(instance.root);
+		} else {
+			instance.root->queue_free();
+		}
 
 		SceneInstance moved_instance = block.scene_instances[last_instance_index];
 		if (moved_instance.root != instance.root) {

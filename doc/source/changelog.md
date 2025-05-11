@@ -20,6 +20,7 @@ Primarily developped with Godot 4.4.1+
 - `VoxelInstanceLibraryMultiMeshItem`: 
     - Added `removal_behavior` property to trigger something when instances get removed
     - Added `collision_distance` to only create colliders when below a certain distance to chunks
+- `VoxelInstanceLibrarySceneItem`: Added option to pool instances
 - `VoxelInstanceGenerator`: Added an option to snap instances based on the voxel generator SDF (only available with `VoxelGeneratorGraph`).
 - `VoxelInstancer`: 
     - Added `remove_instances_in_sphere`

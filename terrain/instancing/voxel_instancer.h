@@ -237,11 +237,11 @@ private:
 	};
 
 	SceneInstance create_scene_instance(
-			const VoxelInstanceLibrarySceneItem &scene_item,
-			int instance_index,
-			unsigned int block_index,
-			Transform3D transform,
-			int data_block_size_po2
+			VoxelInstanceLibrarySceneItem &scene_item,
+			const int instance_index,
+			const unsigned int block_index,
+			const Transform3D transform,
+			const int data_block_size_po2
 	);
 
 	void update_block_from_transforms(
@@ -249,7 +249,7 @@ private:
 			Span<const Transform3f> transforms,
 			const Vector3i grid_position,
 			Layer &layer,
-			const VoxelInstanceLibraryItem &item_base,
+			VoxelInstanceLibraryItem &item_base,
 			const uint16_t layer_id,
 			World3D &world,
 			const Transform3D &block_transform,
@@ -271,7 +271,7 @@ private:
 			const unsigned int block_index,
 			const Vector3 block_local_position,
 			Span<const Transform3f> transforms,
-			const VoxelInstanceLibrarySceneItem &scene_item
+			VoxelInstanceLibrarySceneItem &scene_item
 	);
 
 	void update_multimesh_block_colliders(
@@ -331,7 +331,10 @@ private:
 			const Box3i p_voxel_box,
 			const VoxelTool &voxel_tool,
 			const int block_size_po2,
-			const float sd_threshold
+			const float sd_threshold,
+			const float sd_offset,
+			const bool bidirectional,
+			VoxelInstanceLibrarySceneItem *item
 	);
 #endif
 
@@ -348,10 +351,15 @@ private:
 			Block &block,
 			const uint32_t base_block_size,
 			Span<const uint32_t> ascending_indices,
-			const MMRemovalAction mm_removal_action
+			const MMRemovalAction mm_removal_action,
+			VoxelInstanceLibrary *library
 	);
 
-	static void remove_scene_instances_by_index(Block &block, Span<const uint32_t> ascending_indices);
+	static void remove_scene_instances_by_index(
+			Block &block,
+			Span<const uint32_t> ascending_indices,
+			VoxelInstanceLibrary *library
+	);
 
 	static void remove_multimesh_instances_by_index(
 			Block &block,
