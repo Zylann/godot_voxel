@@ -230,7 +230,7 @@ void VoxelTerrainEditorPlugin::_on_menu_item_selected(int id) {
 		} break;
 
 		case MENU_DUMP_AS_SCENE:
-			_save_file_dialog->popup_centered_ratio();
+			zylann::godot::popup_file_dialog(*_save_file_dialog);
 			break;
 
 		case MENU_ABOUT:
