@@ -21,8 +21,10 @@ void VoxelInstanceLibraryMultiMeshItemEditorPlugin::init() {
 	}
 	_open_scene_dialog->set_file_mode(EditorFileDialog::FILE_MODE_OPEN_FILE);
 	base_control->add_child(_open_scene_dialog);
-	_open_scene_dialog->connect("file_selected",
-			callable_mp(this, &VoxelInstanceLibraryMultiMeshItemEditorPlugin::_on_open_scene_dialog_file_selected));
+	_open_scene_dialog->connect(
+			"file_selected",
+			callable_mp(this, &VoxelInstanceLibraryMultiMeshItemEditorPlugin::_on_open_scene_dialog_file_selected)
+	);
 }
 
 bool VoxelInstanceLibraryMultiMeshItemEditorPlugin::_zn_handles(const Object *p_object) const {
@@ -61,7 +63,8 @@ void VoxelInstanceLibraryMultiMeshItemEditorPlugin::_notification(int p_what) {
 
 #if defined(ZN_GODOT)
 void VoxelInstanceLibraryMultiMeshItemEditorPlugin::_on_update_from_scene_button_pressed(
-		VoxelInstanceLibraryMultiMeshItem *item) {
+		VoxelInstanceLibraryMultiMeshItem *item
+) {
 #elif defined(ZN_GODOT_EXTENSION)
 void VoxelInstanceLibraryMultiMeshItemEditorPlugin::_on_update_from_scene_button_pressed(Object *item_o) {
 	VoxelInstanceLibraryMultiMeshItem *item = Object::cast_to<VoxelInstanceLibraryMultiMeshItem>(item_o);
@@ -74,7 +77,10 @@ void VoxelInstanceLibraryMultiMeshItemEditorPlugin::_on_update_from_scene_button
 namespace {
 
 void update_multimesh_item_from_scene(
-		VoxelInstanceLibraryMultiMeshItem &item, String scene_file_path, EditorUndoRedoManager &ur) {
+		VoxelInstanceLibraryMultiMeshItem &item,
+		String scene_file_path,
+		EditorUndoRedoManager &ur
+) {
 	Ref<PackedScene> scene = godot::load_resource(scene_file_path);
 	ERR_FAIL_COND(scene.is_null());
 
@@ -93,7 +99,8 @@ void update_multimesh_item_from_scene(
 	ur.commit_action(
 			// We used `setup_from_template` earlier, which does the same work as `do`, so no need to run it again when
 			// committing the action.
-			false);
+			false
+	);
 }
 
 } // namespace
