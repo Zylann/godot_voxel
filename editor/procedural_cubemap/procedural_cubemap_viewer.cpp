@@ -1,10 +1,14 @@
 #include "procedural_cubemap_viewer.h"
 #include "../../constants/voxel_string_names.h"
 #include "../../util/godot/classes/cubemap.h"
+#include "../../util/godot/classes/editor_file_dialog.h"
 #include "../../util/godot/classes/mesh_instance_3d.h"
+#include "../../util/godot/classes/resource_saver.h"
 #include "../../util/godot/classes/sphere_mesh.h"
+#include "../../util/godot/core/string.h"
 #include "../../util/godot/editor_scale.h"
 #include "../blocky_library/model_viewer.h"
+#include "../instance_library/control_sizer.h"
 
 namespace zylann::voxel {
 
@@ -53,6 +57,32 @@ VoxelProceduralCubemapViewer::VoxelProceduralCubemapViewer() {
 	mesh_instance->set_mesh(mesh);
 	mesh_instance->set_material_override(mesh_material);
 	viewer->get_viewer_root_node()->add_child(mesh_instance);
+
+	ZN_ControlSizer *sizer = memnew(ZN_ControlSizer);
+	sizer->set_target_control(viewer);
+	add_child(sizer);
+
+	Button *update_button = memnew(Button);
+	update_button->set_text(ZN_TTR("Update"));
+	update_button->connect("pressed", callable_mp(this, &VoxelProceduralCubemapViewer::on_update_button_pressed));
+	add_child(update_button);
+
+	Button *save_button = memnew(Button);
+	save_button->set_text(ZN_TTR("Save to texture..."));
+	save_button->connect("pressed", callable_mp(this, &VoxelProceduralCubemapViewer::on_save_button_pressed));
+	add_child(save_button);
+
+	_save_dialog = memnew(EditorFileDialog);
+	_save_dialog->set_title("Save Cubemap Texture");
+	_save_dialog->add_filter("*.res", ZN_TTR("Binary Resource"));
+	_save_dialog->add_filter("*.tres", ZN_TTR("Text Resource (heavy)"));
+	_save_dialog->set_access(EditorFileDialog::ACCESS_RESOURCES);
+	_save_dialog->set_file_mode(EditorFileDialog::FILE_MODE_SAVE_FILE);
+	_save_dialog->connect(
+			VoxelStringNames::get_singleton().file_selected,
+			callable_mp(this, &VoxelProceduralCubemapViewer::on_save_dialog_file_selected)
+	);
+	add_child(_save_dialog);
 }
 
 void VoxelProceduralCubemapViewer::set_cubemap(Ref<VoxelProceduralCubemap> cm) {
@@ -79,6 +109,8 @@ void VoxelProceduralCubemapViewer::set_cubemap(Ref<VoxelProceduralCubemap> cm) {
 			_cubemap->update();
 		}
 	}
+
+	on_cubemap_updated();
 }
 
 void VoxelProceduralCubemapViewer::on_cubemap_updated() {
@@ -87,6 +119,23 @@ void VoxelProceduralCubemapViewer::on_cubemap_updated() {
 		texture = _cubemap->create_texture();
 	}
 	_material->set_shader_parameter(VoxelStringNames::get_singleton().u_cubemap, texture);
+}
+
+void VoxelProceduralCubemapViewer::on_update_button_pressed() {
+	ZN_ASSERT_RETURN(_cubemap.is_valid());
+	_cubemap->update();
+}
+
+void VoxelProceduralCubemapViewer::on_save_button_pressed() {
+	ZN_ASSERT_RETURN(_cubemap.is_valid());
+	_save_dialog->popup_centered_ratio();
+}
+
+void VoxelProceduralCubemapViewer::on_save_dialog_file_selected(const String &fpath) {
+	ZN_ASSERT_RETURN(_cubemap.is_valid());
+	Ref<Cubemap> texture = _cubemap->create_texture();
+	ZN_ASSERT_RETURN(texture.is_valid());
+	zylann::godot::save_resource(texture, fpath);
 }
 
 void VoxelProceduralCubemapViewer::_bind_methods() {}

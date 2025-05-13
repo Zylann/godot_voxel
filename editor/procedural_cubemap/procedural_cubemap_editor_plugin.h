@@ -2,6 +2,7 @@
 #define VOXEL_PROCEDURAL_CUBEMAP_EDITOR_PLUGIN_H
 
 #include "../../util/godot/classes/editor_plugin.h"
+#include "../../util/godot/macros.h"
 
 namespace zylann::voxel {
 
@@ -11,6 +12,9 @@ public:
 	VoxelProceduralCubemapEditorPlugin();
 
 private:
+	void init();
+	void _notification(int p_what);
+
 	static void _bind_methods();
 };
 
