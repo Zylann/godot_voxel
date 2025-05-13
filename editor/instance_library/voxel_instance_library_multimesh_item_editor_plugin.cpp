@@ -71,7 +71,7 @@ void VoxelInstanceLibraryMultiMeshItemEditorPlugin::_on_update_from_scene_button
 #endif
 	_item.reference_ptr(item);
 	ERR_FAIL_COND(_item.is_null());
-	_open_scene_dialog->popup_centered_ratio();
+	zylann::godot::popup_file_dialog(*_open_scene_dialog);
 }
 
 namespace {

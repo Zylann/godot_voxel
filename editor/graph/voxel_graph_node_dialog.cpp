@@ -377,7 +377,7 @@ void VoxelGraphNodeDialog::_on_tree_item_activated() {
 
 	} else if (id == ID_FUNCTION_BROWSE) {
 		// Browse function nodes
-		_function_file_dialog->popup();
+		zylann::godot::popup_file_dialog(*_function_file_dialog);
 
 	} else if (id == ID_FUNCTION_QUICK_OPEN) {
 #ifdef ZN_GODOT
