@@ -128,7 +128,7 @@ void VoxelProceduralCubemapViewer::on_update_button_pressed() {
 
 void VoxelProceduralCubemapViewer::on_save_button_pressed() {
 	ZN_ASSERT_RETURN(_cubemap.is_valid());
-	_save_dialog->popup_centered_ratio();
+	zylann::godot::popup_file_dialog(*_save_dialog);
 }
 
 void VoxelProceduralCubemapViewer::on_save_dialog_file_selected(const String &fpath) {
