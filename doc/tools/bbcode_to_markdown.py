@@ -62,6 +62,8 @@ def format_doc_bbcodes_for_markdown(text, multiline, fmt):
                 node_text = ''.join(lines2)
             
             if url != None:
+                if url == "TEXT":
+                    url = node_text
                 out += markdown.make_link(node_text, url)
                 url = None
 
@@ -87,7 +89,10 @@ def format_doc_bbcodes_for_markdown(text, multiline, fmt):
 
             elif bb_node.name == 'url':
                 if bb_node.is_opening():
-                    url = bb_node.value
+                    if bb_node.value == "":
+                        url = "TEXT"
+                    else:
+                        url = bb_node.value
             
             elif bb_node.name == 'member':
                 class_name, member_name = _extract_member_and_class(bb_node.get_first_option_key(), current_class_name)
