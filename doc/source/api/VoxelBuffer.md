@@ -299,11 +299,11 @@ Computes the subtraction of corresponding voxels between the current buffer and 
 
 ### [void](#)<span id="i_remap_values"></span> **remap_values**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channel, [PackedInt32Array](https://docs.godotengine.org/en/stable/classes/class_packedint32array.html) map ) 
 
-*(This method has no documentation)*
+Remaps integer values in a channel using the passed `map` lookup table. Each index in `map` corresponds to an original value, and will be replaced by `map[original]`.
 
 ### [void](#)<span id="i_rotate_90"></span> **rotate_90**( [Axis](https://docs.godotengine.org/en/stable/classes/class_vector3i.html#enum-vector3i-axis) axis, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) turns ) 
 
-Rotates voxel values by 90 degrees along the specified axis. 1 turn is 90 degrees, 2 turns is 180 degrees, 3 turns is 270 degrees (or -90), 4 turns does nothing. Negative turns go in the other direction.
+Rotates voxel values by 90 degrees along the specified axis. 1 turn is 90 degrees, 2 turns is 180 degrees, 3 turns is 270 degrees (or -90), 4 turns does nothing. Negative turns go in the other direction. This may also rotate the size of the buffer, if it isn't cubic.
 
 ### [void](#)<span id="i_set_block_metadata"></span> **set_block_metadata**( [Variant](https://docs.godotengine.org/en/stable/classes/class_variant.html) meta ) 
 
@@ -341,4 +341,4 @@ If this [VoxelBuffer](VoxelBuffer.md) is saved, this metadata will also be saved
 
 Updates an existing 3D texture from the SDF channel. See [create_3d_texture_from_sdf_zxy](VoxelBuffer.md#i_create_3d_texture_from_sdf_zxy) for more information.
 
-_Generated on Apr 27, 2025_
+_Generated on May 15, 2025_
