@@ -128,7 +128,14 @@ private:
 	// Because of this, in our use case, it might be simpler to just leave SQLite in thread-safe mode,
 	// and synchronize ourselves.
 
-	sqlite::Connection *get_connection();
+	struct ConnectionResult {
+		enum Code { SUCCESS, NOT_CONFIGURED, ERROR };
+
+		sqlite::Connection *connection = nullptr;
+		Code code = ERROR;
+	};
+
+	ConnectionResult get_connection();
 	void recycle_connection(sqlite::Connection *con);
 
 	struct ScopeRecycle {
