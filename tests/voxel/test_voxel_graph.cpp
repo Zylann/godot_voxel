@@ -509,8 +509,8 @@ void test_voxel_graph_generator_texturing() {
 			) {
 				const uint16_t encoded_indices = buffer.get_voxel(pos, VoxelBuffer::CHANNEL_INDICES);
 				const uint16_t encoded_weights = buffer.get_voxel(pos, VoxelBuffer::CHANNEL_WEIGHTS);
-				const FixedArray<uint8_t, 4> indices = decode_indices_from_packed_u16(encoded_indices);
-				const FixedArray<uint8_t, 4> weights = decode_weights_from_packed_u16(encoded_weights);
+				const FixedArray<uint8_t, 4> indices = mixel4::decode_indices_from_packed_u16(encoded_indices);
+				const FixedArray<uint8_t, 4> weights = mixel4::decode_weights_from_packed_u16(encoded_weights);
 				for (unsigned int i = 0; i < indices.size(); ++i) {
 					switch (indices[i]) {
 						case 0:
@@ -1702,8 +1702,8 @@ void test_voxel_graph_spots2d_optimized_execution_map() {
 					for (pos.y = 0; pos.y < vb.get_size().y; ++pos.y) {
 						const uint32_t encoded_indices = vb.get_voxel(pos, VoxelBuffer::CHANNEL_INDICES);
 						const uint32_t encoded_weights = vb.get_voxel(pos, VoxelBuffer::CHANNEL_WEIGHTS);
-						const FixedArray<uint8_t, 4> indices = decode_indices_from_packed_u16(encoded_indices);
-						const FixedArray<uint8_t, 4> weights = decode_weights_from_packed_u16(encoded_weights);
+						const FixedArray<uint8_t, 4> indices = mixel4::decode_indices_from_packed_u16(encoded_indices);
+						const FixedArray<uint8_t, 4> weights = mixel4::decode_weights_from_packed_u16(encoded_weights);
 						int indices_with_high_weight = 0;
 						bool has_tex1 = false;
 						for (unsigned int i = 0; i < 4; ++i) {
@@ -2279,7 +2279,7 @@ void test_voxel_graph_4_default_weights() { // Related to issue #686
 			const uint8_t test_w1b = math::clamp(static_cast<int>(255.0 * test_w1), 0, 255);
 			const uint8_t test_w2b = math::clamp(static_cast<int>(255.0 * test_w2), 0, 255);
 			const uint8_t test_w3b = math::clamp(static_cast<int>(255.0 * test_w3), 0, 255);
-			const uint32_t test_ew = encode_weights_to_packed_u16_lossy(test_w0b, test_w1b, test_w2b, test_w3b);
+			const uint32_t test_ew = mixel4::encode_weights_to_packed_u16_lossy(test_w0b, test_w1b, test_w2b, test_w3b);
 
 			Ref<VoxelGeneratorGraph> generator;
 			generator.instantiate();
@@ -2330,7 +2330,7 @@ void test_voxel_graph_4_default_weights() { // Related to issue #686
 			const uint32_t ei = buffer.get_voxel(10, 0, 0, VoxelBuffer::CHANNEL_INDICES);
 			const uint32_t ew = buffer.get_voxel(10, 0, 0, VoxelBuffer::CHANNEL_WEIGHTS);
 
-			const FixedArray<uint8_t, 4> indices = decode_indices_from_packed_u16(ei);
+			const FixedArray<uint8_t, 4> indices = mixel4::decode_indices_from_packed_u16(ei);
 			// const FixedArray<uint8_t, 4> weights = decode_weights_from_packed_u16(ew);
 
 			ZN_TEST_ASSERT(indices[0] == 0 && indices[1] == 1 && indices[2] == 2 && indices[3] == 3);

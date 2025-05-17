@@ -151,8 +151,8 @@ const char *VoxelBuffer::get_channel_name(const ChannelId id) {
 // should be possible to cast it back to the actual type with no loss of data, as long as all bits are preserved.
 static constexpr uint16_t DEFAULT_RAW_SDF_16BIT = uint16_t(snorm_to_s16(1.f));
 
-static constexpr uint16_t MIXEL4_DEFAULT_INDICES = encode_indices_to_packed_u16(0, 1, 2, 3);
-static constexpr uint16_t MIXEL4_DEFAULT_WEIGHTS = encode_weights_to_packed_u16_lossy(255, 0, 0, 0);
+static constexpr uint16_t MIXEL4_DEFAULT_INDICES = mixel4::encode_indices_to_packed_u16(0, 1, 2, 3);
+static constexpr uint16_t MIXEL4_DEFAULT_WEIGHTS = mixel4::encode_weights_to_packed_u16_lossy(255, 0, 0, 0);
 
 uint64_t VoxelBuffer::get_default_raw_value(const VoxelBuffer::ChannelId channel, const VoxelBuffer::Depth depth) {
 	switch (channel) {

@@ -224,11 +224,12 @@ void VoxelGeneratorGraph::gather_texturing_data_from_weight_outputs(
 							weights[oi] = math::clamp(weight * 255.f, 0.f, 255.f);
 							indices[oi] = weight_outputs[oi].layer_index;
 						}
-						debug_check_texture_indices(indices);
+						mixel4::debug_check_texture_indices(indices);
 						const uint16_t encoded_indices =
-								encode_indices_to_packed_u16(indices[0], indices[1], indices[2], indices[3]);
-						const uint16_t encoded_weights =
-								encode_weights_to_packed_u16_lossy(weights[0], weights[1], weights[2], weights[3]);
+								mixel4::encode_indices_to_packed_u16(indices[0], indices[1], indices[2], indices[3]);
+						const uint16_t encoded_weights = mixel4::encode_weights_to_packed_u16_lossy(
+								weights[0], weights[1], weights[2], weights[3]
+						);
 						// TODO Flatten this further?
 						out_voxel_buffer.set_voxel(encoded_indices, rx, ry, rz, VoxelBuffer::CHANNEL_INDICES);
 						out_voxel_buffer.set_voxel(encoded_weights, rx, ry, rz, VoxelBuffer::CHANNEL_WEIGHTS);
@@ -249,9 +250,10 @@ void VoxelGeneratorGraph::gather_texturing_data_from_weight_outputs(
 							indices[oi] = weight_outputs[oi].layer_index;
 						}
 						const uint16_t encoded_indices =
-								encode_indices_to_packed_u16(indices[0], indices[1], indices[2], indices[3]);
-						const uint16_t encoded_weights =
-								encode_weights_to_packed_u16_lossy(weights[0], weights[1], weights[2], weights[3]);
+								mixel4::encode_indices_to_packed_u16(indices[0], indices[1], indices[2], indices[3]);
+						const uint16_t encoded_weights = mixel4::encode_weights_to_packed_u16_lossy(
+								weights[0], weights[1], weights[2], weights[3]
+						);
 						// TODO Flatten this further?
 						out_voxel_buffer.set_voxel(encoded_indices, rx, ry, rz, VoxelBuffer::CHANNEL_INDICES);
 						out_voxel_buffer.set_voxel(encoded_weights, rx, ry, rz, VoxelBuffer::CHANNEL_WEIGHTS);
@@ -295,9 +297,10 @@ void VoxelGeneratorGraph::gather_texturing_data_from_weight_outputs(
 							indices[oi] = skipped_outputs[oi - recorded_weights];
 						}
 						const uint16_t encoded_indices =
-								encode_indices_to_packed_u16(indices[0], indices[1], indices[2], indices[3]);
-						const uint16_t encoded_weights =
-								encode_weights_to_packed_u16_lossy(weights[0], weights[1], weights[2], weights[3]);
+								mixel4::encode_indices_to_packed_u16(indices[0], indices[1], indices[2], indices[3]);
+						const uint16_t encoded_weights = mixel4::encode_weights_to_packed_u16_lossy(
+								weights[0], weights[1], weights[2], weights[3]
+						);
 						// TODO Flatten this further?
 						out_voxel_buffer.set_voxel(encoded_indices, rx, ry, rz, VoxelBuffer::CHANNEL_INDICES);
 						out_voxel_buffer.set_voxel(encoded_weights, rx, ry, rz, VoxelBuffer::CHANNEL_WEIGHTS);
@@ -347,8 +350,8 @@ void fill_texturing_data_from_single_texture_index(
 			const uint8_t cindex = math::clamp(index, 0, 15);
 			// Make sure other indices are different so the weights associated with them don't
 			// override the first index's weight
-			const uint16_t encoded_indices = make_encoded_indices_for_single_texture(cindex);
-			const uint16_t encoded_weights = make_encoded_weights_for_single_texture();
+			const uint16_t encoded_indices = mixel4::make_encoded_indices_for_single_texture(cindex);
+			const uint16_t encoded_weights = mixel4::make_encoded_weights_for_single_texture();
 			out_buffer.fill_area(encoded_indices, rmin, rmax, VoxelBuffer::CHANNEL_INDICES);
 			out_buffer.fill_area(encoded_weights, rmin, rmax, VoxelBuffer::CHANNEL_WEIGHTS);
 		} break;
@@ -374,8 +377,8 @@ void fill_texturing_data_from_single_texture_index(
 			const uint8_t cindex = math::clamp(index, 0, 15);
 			// Make sure other indices are different so the weights associated with them don't
 			// override the first index's weight
-			const uint16_t encoded_indices = make_encoded_indices_for_single_texture(cindex);
-			const uint16_t encoded_weights = make_encoded_weights_for_single_texture();
+			const uint16_t encoded_indices = mixel4::make_encoded_indices_for_single_texture(cindex);
+			const uint16_t encoded_weights = mixel4::make_encoded_weights_for_single_texture();
 			out_buffer.fill(encoded_indices, VoxelBuffer::CHANNEL_INDICES);
 			out_buffer.fill(encoded_weights, VoxelBuffer::CHANNEL_WEIGHTS);
 		} break;
@@ -408,14 +411,14 @@ void gather_texturing_data_from_single_texture_output(
 	switch (mode) {
 		case VoxelGeneratorGraph::TEXTURE_MODE_MIXEL4: {
 			// TODO Should not really be here, but may work. Left here for now so all code for this is in one place
-			const uint16_t encoded_weights = make_encoded_weights_for_single_texture();
+			const uint16_t encoded_weights = mixel4::make_encoded_weights_for_single_texture();
 			out_voxel_buffer.clear_channel(VoxelBuffer::CHANNEL_WEIGHTS, encoded_weights);
 
 			unsigned int value_index = 0;
 			for (int rz = rmin.z; rz < rmax.z; ++rz) {
 				for (int rx = rmin.x; rx < rmax.x; ++rx) {
 					const uint8_t index = math::clamp(int(Math::round(buffer_data[value_index])), 0, 15);
-					const uint16_t encoded_indices = make_encoded_indices_for_single_texture(index);
+					const uint16_t encoded_indices = mixel4::make_encoded_indices_for_single_texture(index);
 					out_voxel_buffer.set_voxel(encoded_indices, rx, ry, rz, VoxelBuffer::CHANNEL_INDICES);
 					++value_index;
 				}
@@ -1848,7 +1851,7 @@ VoxelSingleValue VoxelGeneratorGraph::generate_single(Vector3i position, unsigne
 			const float tex_index = L::query(*runtime_ptr, position, runtime_ptr->single_texture_output_buffer_index);
 			switch (_texture_mode) {
 				case TEXTURE_MODE_MIXEL4:
-					v.i = make_encoded_indices_for_single_texture(math::clamp(int(tex_index), 0, 15));
+					v.i = mixel4::make_encoded_indices_for_single_texture(math::clamp(int(tex_index), 0, 15));
 					break;
 				case TEXTURE_MODE_SINGLE:
 					v.i = math::clamp(int(tex_index), 0, 255);
@@ -1860,7 +1863,7 @@ VoxelSingleValue VoxelGeneratorGraph::generate_single(Vector3i position, unsigne
 		} break;
 
 		case VoxelBuffer::CHANNEL_WEIGHTS: {
-			v.i = make_encoded_weights_for_single_texture();
+			v.i = mixel4::make_encoded_weights_for_single_texture();
 		} break;
 
 		default:

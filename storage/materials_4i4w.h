@@ -6,11 +6,12 @@
 #include <cstdint>
 
 // Functions to encode, decode and blend voxel materials using 4 indices and 4 weights.
-// TODO Namespace with ::mixel4
 
 namespace zylann::voxel {
 
 class VoxelBuffer;
+
+namespace mixel4 {
 
 inline FixedArray<uint8_t, 4> decode_weights_from_packed_u16(uint16_t packed_weights) {
 	FixedArray<uint8_t, 4> weights;
@@ -198,6 +199,7 @@ constexpr inline uint16_t make_encoded_indices_for_single_texture(uint8_t index)
 	// likely for the format to change to become simpler instead
 }
 
+} // namespace mixel4
 } // namespace zylann::voxel
 
 #endif // VOXEL_MATERIAL_FUNCS_4I4W_H

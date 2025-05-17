@@ -301,7 +301,7 @@ void convert_gpu_output_sdf(VoxelBuffer &dst, Span<const float> src_data_f, cons
 
 void convert_gpu_output_single_texture(VoxelBuffer &dst, Span<const float> src_data_f, const Box3i &box) {
 	ZN_PROFILE_SCOPE();
-	const uint16_t encoded_weights = make_encoded_weights_for_single_texture();
+	const uint16_t encoded_weights = mixel4::make_encoded_weights_for_single_texture();
 	dst.fill_area(encoded_weights, box.position, box.position + box.size, VoxelBuffer::CHANNEL_WEIGHTS);
 
 	// Little hack: the destination type is smaller than float, so we can convert in place.
@@ -309,7 +309,7 @@ void convert_gpu_output_single_texture(VoxelBuffer &dst, Span<const float> src_d
 
 	for (unsigned int value_index = 0; value_index < src_data_f.size(); ++value_index) {
 		const uint8_t index = math::clamp(int(Math::round(src_data_f[value_index])), 0, 15);
-		const uint16_t encoded_indices = make_encoded_indices_for_single_texture(index);
+		const uint16_t encoded_indices = mixel4::make_encoded_indices_for_single_texture(index);
 		src_data_u16[value_index] = encoded_indices;
 	}
 

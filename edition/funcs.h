@@ -465,7 +465,7 @@ struct TextureBlendSphereOp {
 			const float distance_from_radius = radius - math::sqrt(distance_squared);
 			const float target_weight =
 					tp.opacity * math::clamp(tp.sharpness * (distance_from_radius / radius), 0.f, 1.f);
-			blend_texture_packed_u16(tp.index, target_weight, indices, weights);
+			mixel4::blend_texture_packed_u16(tp.index, target_weight, indices, weights);
 		}
 	}
 };
@@ -480,7 +480,7 @@ struct TextureBlendOp {
 		if (sd <= 0) {
 			// TODO We don't know the full size of the shape so sharpness may be adjusted
 			const float target_weight = texture_params.opacity * math::clamp(-sd * texture_params.sharpness, 0.f, 1.f);
-			blend_texture_packed_u16(texture_params.index, target_weight, indices, weights);
+			mixel4::blend_texture_packed_u16(texture_params.index, target_weight, indices, weights);
 		}
 	}
 };
