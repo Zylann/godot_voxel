@@ -896,7 +896,9 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelGenerator::Voxel
 
 					// Full query (unless using execution map)
 					{
-						QueryInputs query_inputs(*runtime_ptr, x_cache, y_cache, z_cache, input_sdf_slice_cache);
+						QueryInputs<Span<const float>> query_inputs(
+								*runtime_ptr, x_cache, y_cache, z_cache, input_sdf_slice_cache
+						);
 						runtime.generate_set(
 								cache.state,
 								query_inputs.get(),
@@ -1328,7 +1330,7 @@ bool VoxelGeneratorGraph::is_good() const {
 }
 
 // TODO Rename `generate_series`
-void VoxelGeneratorGraph::generate_set(Span<float> in_x, Span<float> in_y, Span<float> in_z) {
+void VoxelGeneratorGraph::generate_set(Span<const float> in_x, Span<const float> in_y, Span<const float> in_z) {
 	RWLockRead rlock(_runtime_lock);
 	ERR_FAIL_COND(_runtime == nullptr);
 	Cache &cache = get_tls_cache();
@@ -1342,7 +1344,7 @@ void VoxelGeneratorGraph::generate_set(Span<float> in_x, Span<float> in_y, Span<
 		in_sdf.fill(0.f);
 	}
 
-	QueryInputs inputs(*_runtime, in_x, in_y, in_z, in_sdf);
+	QueryInputs<Span<const float>> inputs(*_runtime, in_x, in_y, in_z, in_sdf);
 
 	runtime.prepare_state(cache.state, in_x.size(), false);
 	runtime.generate_set(cache.state, inputs.get(), false, nullptr);
@@ -1350,7 +1352,12 @@ void VoxelGeneratorGraph::generate_set(Span<float> in_x, Span<float> in_y, Span<
 	// matters if we are storing it inside 16-bit or 8-bit VoxelBuffer.
 }
 
-void VoxelGeneratorGraph::generate_series(Span<float> in_x, Span<float> in_y, Span<float> in_z, Span<float> in_sdf) {
+void VoxelGeneratorGraph::generate_series(
+		Span<const float> in_x,
+		Span<const float> in_y,
+		Span<const float> in_z,
+		Span<const float> in_sdf
+) {
 	RWLockRead rlock(_runtime_lock);
 	ERR_FAIL_COND(_runtime == nullptr);
 	Cache &cache = get_tls_cache();
@@ -1553,7 +1560,9 @@ void VoxelGeneratorGraph::bake_sphere_bumpmap(Ref<Image> im, float ref_radius, f
 				in_sdf.fill(0.f);
 			}
 
-			QueryInputs inputs(runtime_wrapper, to_span(x_coords), to_span(y_coords), to_span(z_coords), in_sdf);
+			QueryInputs<Span<const float>> inputs(
+					runtime_wrapper, to_span(x_coords), to_span(y_coords), to_span(z_coords), in_sdf
+			);
 
 			runtime_wrapper.runtime.generate_set(state, inputs.get(), false, nullptr);
 			const pg::Runtime::Buffer &buffer = state.get_buffer(runtime_wrapper.sdf_output_buffer_index);
@@ -1672,7 +1681,9 @@ void VoxelGeneratorGraph::bake_sphere_normalmap(Ref<Image> im, float ref_radius,
 				}
 			}
 
-			QueryInputs inputs(runtime_wrapper, to_span(x_coords), to_span(y_coords), to_span(z_coords), in_sdf);
+			QueryInputs<Span<const float>> inputs(
+					runtime_wrapper, to_span(x_coords), to_span(y_coords), to_span(z_coords), in_sdf
+			);
 
 			// TODO Perform range analysis on the range of coordinates, it might still yield performance benefits
 			runtime_wrapper.runtime.generate_set(state, inputs.get(), false, nullptr);
@@ -1752,32 +1763,20 @@ void VoxelGeneratorGraph::bake_sphere_normalmap(Ref<Image> im, float ref_radius,
 bool VoxelGeneratorGraph::get_shader_source(ShaderSourceData &out_data) const {
 	ZN_PROFILE_SCOPE();
 	ERR_FAIL_COND_V(_main_function.is_null(), false);
-	const ProgramGraph &graph = _main_function->get_graph();
+	pg::VoxelGraphFunction::ShaderResult shader_res = _main_function->get_shader_source();
 
-	StdString code_utf8;
-	StdVector<pg::ShaderParameter> params;
-	StdVector<pg::ShaderOutput> outputs;
-	pg::CompilationResult result = pg::generate_shader(
-			graph,
-			_main_function->get_input_definitions(),
-			code_utf8,
-			params,
-			outputs,
-			Span<const pg::VoxelGraphFunction::NodeTypeID>()
-	);
+	ERR_FAIL_COND_V_MSG(!shader_res.compilation.success, false, shader_res.compilation.message);
 
-	ERR_FAIL_COND_V_MSG(!result.success, false, result.message);
-
-	if (params.size() > 0) {
-		out_data.parameters.reserve(params.size());
-		for (pg::ShaderParameter &p : params) {
+	if (shader_res.params.size() > 0) {
+		out_data.parameters.reserve(shader_res.params.size());
+		for (pg::ShaderParameter &p : shader_res.params) {
 			out_data.parameters.push_back(ShaderParameter{ String::utf8(p.name.c_str()), p.resource });
 		}
 	}
 
-	out_data.glsl = String(code_utf8.c_str());
+	out_data.glsl = String(shader_res.code_utf8.c_str());
 
-	for (const pg::ShaderOutput &output : outputs) {
+	for (const pg::ShaderOutput &output : shader_res.outputs) {
 		ShaderOutput out;
 		switch (output.type) {
 			case pg::ShaderOutput::TYPE_SDF:
@@ -1790,7 +1789,7 @@ bool VoxelGeneratorGraph::get_shader_source(ShaderSourceData &out_data) const {
 				out.type = ShaderOutput::TYPE_TYPE;
 				break;
 			default:
-				ZN_PRINT_ERROR(format("Unsupported output for generator shader generation ({})", output.type));
+				ZN_PRINT_ERROR(format("Unsupported output for voxel generator shader generation ({})", output.type));
 				return false;
 		}
 		out_data.outputs.push_back(out);
@@ -2086,10 +2085,10 @@ float VoxelGeneratorGraph::debug_measure_microseconds_per_voxel(
 		src_y.resize(cube_volume);
 		src_z.resize(cube_volume);
 		src_sdf.resize(cube_volume);
-		Span<float> sx = to_span(src_x);
-		Span<float> sy = to_span(src_y);
-		Span<float> sz = to_span(src_z);
-		Span<float> ssdf = to_span(src_sdf);
+		Span<const float> sx = to_span(src_x);
+		Span<const float> sy = to_span(src_y);
+		Span<const float> sz = to_span(src_z);
+		Span<const float> ssdf = to_span(src_sdf);
 
 		QueryInputs inputs(*runtime_ptr, sx, sy, sz, ssdf);
 

@@ -1586,26 +1586,63 @@ bool VoxelGraphFunction::equals(const VoxelGraphFunction &other) {
 	return true;
 }
 
-void VoxelGraphFunction::execute(Span<Span<float>> inputs, Span<Span<float>> outputs) {
+void VoxelGraphFunction::debug_analyze_range(
+		Span<const math::Interval> input_ranges,
+		const bool optimize_execution_map
+) {
+	if (input_ranges.size() == 0) {
+		return;
+	}
+
+	for (const math::Interval input_range : input_ranges) {
+		ZN_ASSERT_RETURN(input_range.is_valid());
+	}
+
+	std::shared_ptr<CompiledGraph> compiled_graph = get_compiled_graph();
+
+	if (_compiled_graph == nullptr) {
+		return;
+	}
+
+	RuntimeCache &cache = get_runtime_cache_tls();
+
+	const pg::Runtime &runtime = compiled_graph->runtime;
+
+	// Note, buffer size is irrelevant here, because range analysis doesn't use buffers
+	runtime.prepare_state(cache.state, 1, false);
+	runtime.analyze_range(cache.state, input_ranges);
+	if (optimize_execution_map) {
+		runtime.generate_optimized_execution_map(cache.state, cache.optimized_execution_map, true);
+	}
+}
+
+void VoxelGraphFunction::execute(
+		Span<const Span<const float>> inputs,
+		Span<Span<float>> outputs,
+		const unsigned int max_processing_chunk_size,
+		const bool dummy_output
+) {
 	ZN_PROFILE_SCOPE();
 
 	if (inputs.size() == 0) {
 		return;
 	}
-	if (outputs.size() == 0) {
+	if (outputs.size() == 0 && !dummy_output) {
 		return;
 	}
 
 	const unsigned int total_buffer_size = inputs[0].size();
 
 #ifdef DEBUG_ENABLED
-	for (Span<float> &s : inputs) {
+	for (const Span<const float> &s : inputs) {
 		ZN_ASSERT_RETURN(s.size() == total_buffer_size);
 	}
-	for (Span<float> &s : outputs) {
-		ZN_ASSERT_RETURN(s.size() == total_buffer_size);
+	if (!dummy_output) {
+		for (const Span<float> &s : outputs) {
+			ZN_ASSERT_RETURN(s.size() == total_buffer_size);
+		}
+		ZN_ASSERT_RETURN(_compiled_graph->runtime.get_output_count() >= outputs.size());
 	}
-	ZN_ASSERT_RETURN(_compiled_graph->runtime.get_output_count() >= outputs.size());
 #endif
 
 	std::shared_ptr<CompiledGraph> compiled_graph = get_compiled_graph();
@@ -1621,9 +1658,8 @@ void VoxelGraphFunction::execute(Span<Span<float>> inputs, Span<Span<float>> out
 
 	// If the input length is too big, run multiple passes so we don't allocate too much memory, which might help
 	// reducing space occupied in CPU cache
-	const unsigned int max_buffer_size = 256;
-	const unsigned int chunk_count = math::ceildiv(total_buffer_size, max_buffer_size);
-	const unsigned int chunk_size = math::min(total_buffer_size, max_buffer_size);
+	const unsigned int chunk_count = math::ceildiv(total_buffer_size, max_processing_chunk_size);
+	const unsigned int chunk_size = math::min(total_buffer_size, max_processing_chunk_size);
 
 	RuntimeCache &cache = get_runtime_cache_tls();
 
@@ -1650,20 +1686,22 @@ void VoxelGraphFunction::execute(Span<Span<float>> inputs, Span<Span<float>> out
 			cache.input_chunks[input_index] = inputs[input_index].sub(buffer_begin, buffer_chunk_size);
 		}
 
-		_compiled_graph->runtime.generate_set(cache.state, to_span(cache.input_chunks), false, nullptr);
+		_compiled_graph->runtime.generate_set(cache.state, to_span_const(cache.input_chunks), false, nullptr);
 
-		// Copy outputs
-		for (unsigned int output_index = 0; output_index < outputs.size(); ++output_index) {
-			Span<float> output = outputs[output_index].sub(buffer_begin, buffer_chunk_size);
-			const pg::Runtime::OutputInfo &oi = _compiled_graph->runtime.get_output_info(output_index);
-			const pg::Runtime::Buffer &b = cache.state.get_buffer(oi.buffer_address);
-			if (b.data == nullptr) {
-				for (float &dst : output) {
-					dst = b.constant_value;
+		if (!dummy_output) {
+			// Copy outputs
+			for (unsigned int output_index = 0; output_index < outputs.size(); ++output_index) {
+				Span<float> output = outputs[output_index].sub(buffer_begin, buffer_chunk_size);
+				const pg::Runtime::OutputInfo &oi = _compiled_graph->runtime.get_output_info(output_index);
+				const pg::Runtime::Buffer &b = cache.state.get_buffer(oi.buffer_address);
+				if (b.data == nullptr) {
+					for (float &dst : output) {
+						dst = b.constant_value;
+					}
+				} else {
+					ZN_ASSERT_CONTINUE(b.size >= output.size());
+					Span<float>(b.data, output.size()).copy_to(output);
 				}
-			} else {
-				ZN_ASSERT_CONTINUE(b.size >= output.size());
-				Span<float>(b.data, output.size()).copy_to(output);
 			}
 		}
 	}
@@ -1788,6 +1826,21 @@ void VoxelGraphFunction::paste_graph(
 	src_graph.duplicate_subgraph(
 			to_span(src_node_ids).reinterpret_cast_to<const uint32_t>(), dst_node_ids, *this, gui_offset
 	);
+}
+
+VoxelGraphFunction::ShaderResult VoxelGraphFunction::get_shader_source() const {
+	ShaderResult res;
+
+	res.compilation = pg::generate_shader(
+			_graph,
+			get_input_definitions(),
+			res.code_utf8,
+			res.params,
+			res.outputs,
+			Span<const pg::VoxelGraphFunction::NodeTypeID>()
+	);
+
+	return res;
 }
 
 Array serialize_io_definitions(Span<const VoxelGraphFunction::Port> ports) {

@@ -8,6 +8,7 @@
 #include "../../util/godot/core/array.h"
 #include "../../util/godot/editor_scale.h"
 #include "../../util/math/color.h"
+#include "graph_editor_adapter.h"
 #include "voxel_graph_editor_node_preview.h"
 
 namespace zylann::voxel {
@@ -304,7 +305,7 @@ void VoxelGraphEditorNode::poll_params(const VoxelGraphFunction &graph) {
 }
 
 void VoxelGraphEditorNode::update_range_analysis_tooltips(
-		const VoxelGeneratorGraph &generator,
+		const GraphEditorAdapter &adapter,
 		const pg::Runtime::State &state
 ) {
 	for (unsigned int port_index = 0; port_index < _output_labels.size(); ++port_index) {
@@ -312,7 +313,7 @@ void VoxelGraphEditorNode::update_range_analysis_tooltips(
 		loc.node_id = get_generator_node_id();
 		loc.port_index = port_index;
 		uint32_t address;
-		if (!generator.try_get_output_port_address(loc, address)) {
+		if (!adapter.try_get_output_port_address(loc, address)) {
 			continue;
 		}
 		const math::Interval range = state.get_range(address);

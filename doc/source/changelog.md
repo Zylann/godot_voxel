@@ -16,6 +16,7 @@ Primarily developped with Godot 4.4.1+
 - `VoxelBuffer`: added functions to rotate/mirror contents
 - `VoxelGeneratorGraph`: implemented constant reduction, which slightly optimizes graphs running on CPU if they contain constant branches
 - `VoxelGeneratorHeightmap`: added `offset` property
+- `VoxelGraphFunction`: Editor: preview nodes should now work
 - `VoxelInstanceLibraryItem`: Exposed `floating_sdf_*` parameters to tune how floating instances are detected after digging ground around them.
 - `VoxelInstanceLibraryMultiMeshItem`: 
     - Added `removal_behavior` property to trigger something when instances get removed

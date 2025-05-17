@@ -690,7 +690,7 @@ void VoxelInstanceGenerator::generate_transforms(
 						z_buffer[i] = pos.z;
 					}
 
-					FixedArray<Span<float>, 2> inputs;
+					FixedArray<Span<const float>, 2> inputs;
 					inputs[0] = to_span(x_buffer);
 					inputs[1] = to_span(z_buffer);
 
@@ -708,7 +708,7 @@ void VoxelInstanceGenerator::generate_transforms(
 						z_buffer[i] = pos.z;
 					}
 
-					FixedArray<Span<float>, 3> inputs;
+					FixedArray<Span<const float>, 3> inputs;
 					inputs[0] = to_span(x_buffer);
 					inputs[1] = to_span(y_buffer);
 					inputs[2] = to_span(z_buffer);

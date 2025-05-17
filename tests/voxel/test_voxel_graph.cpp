@@ -1940,9 +1940,9 @@ void test_voxel_graph_function_execute() {
 		}
 	}
 
-	Span<float> inputs[3] = { to_span(x_buffer), to_span(y_buffer), to_span(z_buffer) };
+	Span<const float> inputs[3] = { to_span(x_buffer), to_span(y_buffer), to_span(z_buffer) };
 	Span<float> outputs = to_span(sd_buffer);
-	function->execute(Span<Span<float>>(inputs, 3), Span<Span<float>>(&outputs, 1));
+	function->execute(Span<const Span<const float>>(inputs, 3), Span<Span<float>>(&outputs, 1));
 
 	for (size_t i = 0; i < volume; ++i) {
 		const float obtained_result = sd_buffer[i];
