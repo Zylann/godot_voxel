@@ -293,7 +293,7 @@ void VoxelGraphNodeDialog::update_tree(bool autoselect) {
 	StdVector<TreeItem *> category_tree_items;
 	category_tree_items.resize(_category_names.size(), nullptr);
 
-	bool autoselected = true;
+	bool autoselected = false;
 
 	for (const unsigned int item_index : filtered_items) {
 		const Item &item = _items[item_index];
