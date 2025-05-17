@@ -440,7 +440,7 @@ void VoxelGraphNodeDialog::on_function_file_dialog_file_selected(String fpath) {
 }
 
 #if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR <= 3
-void VoxelGraphNodeDialog::_on_function_quick_open_dialog_quick_open() {
+void VoxelGraphNodeDialog::on_function_quick_open_dialog_quick_open() {
 #ifdef ZN_GODOT
 	String fpath = _function_quick_open_dialog->get_selected();
 	on_function_quick_open_dialog_item_selected(fpath);
