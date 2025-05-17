@@ -1,5 +1,7 @@
 #include "../../../constants/voxel_constants.h"
 #include "../../../util/godot/classes/image.h"
+#include "../../../util/math/vector2f.h"
+#include "../../../util/math/vector2i.h"
 #include "../../../util/profiling.h"
 #include "../image_range_grid.h"
 #include "../node_type_db.h"
@@ -26,6 +28,74 @@ inline float get_pixel_repeat_linear(const Image &im, float x, float y, int im_w
 	const float h = Math::lerp(Math::lerp(h00, h10, xf), Math::lerp(h01, h11, xf), yf);
 
 	return h;
+}
+
+enum Filter : uint32_t {
+	FILTER_NEAREST = 0,
+	FILTER_BILINEAR,
+};
+
+enum CoordinateMode : uint32_t {
+	COORD_PIXEL = 0,
+	COORD_UNORM,
+	// COORD_SNORM,
+};
+
+struct CoordinateTransform {
+	Vector2f scale;
+	Vector2f origin;
+};
+
+CoordinateTransform get_coordinate_transform(const CoordinateMode coordinate_mode, const Vector2i im_size) {
+	switch (coordinate_mode) {
+		case COORD_PIXEL:
+			return { Vector2f(1.f), Vector2f(0.f) };
+		case COORD_UNORM:
+			return { Vector2f(im_size.x, im_size.y), Vector2f(0.f) };
+		// case COORD_SNORM:
+		// 	return { Vector2f(im_size.x, im_size.y) * 2.f, Vector2f(-1.f) };
+		default:
+			return { Vector2f(), Vector2f() };
+	}
+}
+
+void sample_pixels(
+		const Image &image,
+		const Filter filter,
+		const CoordinateMode coordinate_mode,
+		Span<const float> x_array,
+		Span<const float> y_array,
+		Span<float> out_r
+) {
+	ZN_ASSERT_RETURN(
+			x_array.size() == y_array.size() && y_array.size() == x_array.size() && out_r.size() == x_array.size()
+	);
+
+	const Vector2i im_size = image.get_size();
+	const CoordinateTransform trans = get_coordinate_transform(coordinate_mode, im_size);
+
+	// TODO Optimized path for most used formats, `get_pixel` is kinda slow
+	if (filter == FILTER_NEAREST) {
+		for (uint32_t i = 0; i < out_r.size(); ++i) {
+			out_r[i] = get_pixel_repeat(
+					image,
+					math::floor(x_array[i] * trans.scale.x + trans.origin.x),
+					math::floor(y_array[i] * trans.scale.y + trans.origin.y),
+					im_size.x,
+					im_size.y
+			);
+		}
+	} else {
+		for (uint32_t i = 0; i < out_r.size(); ++i) {
+			out_r[i] = get_pixel_repeat_linear(
+					image,
+					x_array[i] * trans.scale.x + trans.origin.x,
+					y_array[i] * trans.scale.y + trans.origin.y,
+					im_size.x,
+					im_size.y
+			);
+		}
+	}
 }
 
 inline float skew3(float x) {
@@ -118,11 +188,11 @@ void register_image_nodes(Span<NodeType> types) {
 	using namespace math;
 
 	{
-		enum Filter : uint32_t { FILTER_NEAREST = 0, FILTER_BILINEAR };
 		struct Params {
 			const Image *image;
 			const ImageRangeGrid *image_range_grid;
 			Filter filter;
+			CoordinateMode coordinate_mode;
 		};
 		NodeType &t = types[VoxelGraphFunction::NODE_IMAGE_2D];
 		t.name = "Image";
@@ -132,7 +202,14 @@ void register_image_nodes(Span<NodeType> types) {
 		t.outputs.push_back(NodeType::Port("out"));
 		t.params.push_back(NodeType::Param("image", Image::get_class_static(), nullptr));
 
+		NodeType::Param coord_mode_param("coordinate_mode", Variant::INT, COORD_PIXEL);
+		coord_mode_param.enum_items.push_back("Pixels");
+		coord_mode_param.enum_items.push_back("UNorm");
+		coord_mode_param.enum_items.push_back("SNorm");
+		t.params.push_back(coord_mode_param);
+
 		t.params.push_back(NodeType::Param("filter", Variant::INT, FILTER_NEAREST));
+
 		NodeType::Param &filter_param = t.params.back();
 		filter_param.enum_items.push_back("Nearest");
 		filter_param.enum_items.push_back("Bilinear");
@@ -158,6 +235,7 @@ void register_image_nodes(Span<NodeType> types) {
 			p.image = *image;
 			p.image_range_grid = im_range;
 			p.filter = static_cast<Filter>(static_cast<int>(ctx.get_param(1)));
+			p.coordinate_mode = static_cast<CoordinateMode>(ctx.get_param(2));
 			ctx.set_params(p);
 			ctx.add_delete_cleanup(im_range);
 		};
@@ -169,33 +247,38 @@ void register_image_nodes(Span<NodeType> types) {
 			const Params p = ctx.get_params<Params>();
 			const Image &im = *p.image;
 			// Cache image size to reduce API calls in GDExtension
-			const int w = im.get_width();
-			const int h = im.get_height();
+			const Vector2i im_size = im.get_size();
 #ifdef DEBUG_ENABLED
-			if (w == 0 || h == 0) {
+			if (!Vector2iUtil::is_empty_size(im_size)) {
 				ZN_PRINT_ERROR_ONCE("Image is empty");
 				return;
 			}
 #endif
-			// TODO Optimized path for most used formats, `get_pixel` is kinda slow
-			if (p.filter == FILTER_NEAREST) {
-				for (uint32_t i = 0; i < out.size; ++i) {
-					out.data[i] = get_pixel_repeat(im, x.data[i], y.data[i], w, h);
-				}
-			} else {
-				for (uint32_t i = 0; i < out.size; ++i) {
-					out.data[i] = get_pixel_repeat_linear(im, x.data[i], y.data[i], w, h);
-				}
-			}
+			sample_pixels(
+					im,
+					p.filter,
+					p.coordinate_mode,
+					Span<const float>(x.data, x.size),
+					Span<const float>(y.data, y.size),
+					Span<float>(out.data, out.size)
+			);
 		};
 		t.range_analysis_func = [](Runtime::RangeAnalysisContext &ctx) {
 			const Interval x = ctx.get_input(0);
 			const Interval y = ctx.get_input(1);
 			const Params p = ctx.get_params<Params>();
+
+			const Image &im = *p.image;
+			const Vector2i im_size = im.get_size();
+			const CoordinateTransform trans = get_coordinate_transform(p.coordinate_mode, im_size);
+
+			const Interval tx = x * trans.scale.x + trans.origin.x;
+			const Interval ty = y * trans.scale.y + trans.origin.y;
+
 			if (p.filter == FILTER_NEAREST) {
-				ctx.set_output(0, p.image_range_grid->get_range_repeat(x, y));
+				ctx.set_output(0, p.image_range_grid->get_range_repeat(tx, ty));
 			} else {
-				ctx.set_output(0, p.image_range_grid->get_range_repeat({ x.min, x.max + 1 }, { y.min, y.max + 1 }));
+				ctx.set_output(0, p.image_range_grid->get_range_repeat({ tx.min, tx.max + 1 }, { ty.min, ty.max + 1 }));
 			}
 		};
 	}

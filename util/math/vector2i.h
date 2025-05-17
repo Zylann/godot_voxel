@@ -37,6 +37,10 @@ inline unsigned int get_yx_index(const Vector2i v, const Vector2i area_size) {
 	return v.x + v.y * area_size.x;
 }
 
+inline bool is_empty_size(const Vector2i &s) {
+	return s.x == 0 || s.y == 0;
+}
+
 } // namespace Vector2iUtil
 
 namespace math {
