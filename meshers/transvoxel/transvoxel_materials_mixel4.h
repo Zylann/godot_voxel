@@ -1,7 +1,7 @@
 #ifndef VOXEL_TRANSVOXEL_MATERIALS_MIXEL4_H
 #define VOXEL_TRANSVOXEL_MATERIALS_MIXEL4_H
 
-#include "../../storage/materials_4i4w.h"
+#include "../../storage/mixel4.h"
 #include "../../util/containers/fixed_array.h"
 #include "../../util/containers/std_vector.h"
 #include "transvoxel.h"

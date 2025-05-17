@@ -1,6 +1,6 @@
 #include "test_storage_funcs.h"
 #include "../../storage/funcs.h"
-#include "../../storage/materials_4i4w.h"
+#include "../../storage/mixel4.h"
 #include "../../util/containers/std_vector.h"
 #include "../../util/testing/test_macros.h"
 

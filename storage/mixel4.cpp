@@ -1,4 +1,4 @@
-#include "materials_4i4w.h"
+#include "mixel4.h"
 #include "voxel_buffer.h"
 
 namespace zylann::voxel::mixel4 {

@@ -2,7 +2,7 @@
 #include "../engine/gpu/compute_shader_parameters.h"
 #include "../engine/voxel_engine.h"
 #include "../meshers/mesh_block_task.h"
-#include "../storage/materials_4i4w.h"
+#include "../storage/mixel4.h"
 #include "../util/dstack.h"
 #include "../util/godot/classes/rendering_device.h"
 #include "../util/godot/core/packed_arrays.h"

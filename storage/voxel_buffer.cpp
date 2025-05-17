@@ -5,7 +5,7 @@
 #include "../util/dstack.h"
 #include "../util/profiling.h"
 #include "../util/string/format.h"
-#include "materials_4i4w.h"
+#include "mixel4.h"
 #include "voxel_format.h"
 #include "voxel_memory_pool.h"
 #include <cstring>

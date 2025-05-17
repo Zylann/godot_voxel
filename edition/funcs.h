@@ -2,7 +2,7 @@
 #define VOXEL_EDITION_FUNCS_H
 
 #include "../storage/funcs.h"
-#include "../storage/materials_4i4w.h"
+#include "../storage/mixel4.h"
 #include "../storage/voxel_data_grid.h"
 #include "../util/containers/dynamic_bitset.h"
 #include "../util/containers/fixed_array.h"

@@ -4,7 +4,7 @@
 #include "../../generators/graph/image_utility.h"
 #include "../../generators/graph/node_type_db.h"
 #include "../../generators/graph/voxel_generator_graph.h"
-#include "../../storage/materials_4i4w.h"
+#include "../../storage/mixel4.h"
 #include "../../storage/voxel_buffer.h"
 #include "../../util/containers/container_funcs.h"
 #include "../../util/containers/std_vector.h"

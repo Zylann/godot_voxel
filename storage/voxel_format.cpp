@@ -1,5 +1,5 @@
 #include "voxel_format.h"
-#include "materials_4i4w.h"
+#include "mixel4.h"
 
 namespace zylann::voxel {
 

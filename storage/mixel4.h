@@ -1,5 +1,5 @@
-#ifndef VOXEL_MATERIAL_FUNCS_4I4W_H
-#define VOXEL_MATERIAL_FUNCS_4I4W_H
+#ifndef VOXEL_MIXEL4_H
+#define VOXEL_MIXEL4_H
 
 #include "../util/containers/fixed_array.h"
 #include "../util/math/funcs.h"
@@ -202,4 +202,4 @@ constexpr inline uint16_t make_encoded_indices_for_single_texture(uint8_t index)
 } // namespace mixel4
 } // namespace zylann::voxel
 
-#endif // VOXEL_MATERIAL_FUNCS_4I4W_H
+#endif // VOXEL_MIXEL4_H
