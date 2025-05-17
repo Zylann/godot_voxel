@@ -59,7 +59,7 @@ public:
 	}
 
 	template <typename TPredicate>
-	int find_item(TPredicate pred) {
+	int find_item(TPredicate pred) const {
 		for (auto it = _items.begin(); it != _items.end(); ++it) {
 			ZN_ASSERT(it->second.is_valid());
 			if (pred(**it->second)) {
