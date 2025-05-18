@@ -168,7 +168,7 @@ void VoxelProceduralCubemap::update() {
 
 				r_array.resize(x_array.size());
 
-				std::array<Span<float>, 3> inputs;
+				std::array<Span<const float>, 3> inputs;
 				inputs[0] = to_span(x_array);
 				inputs[1] = to_span(y_array);
 				inputs[2] = to_span(z_array);
