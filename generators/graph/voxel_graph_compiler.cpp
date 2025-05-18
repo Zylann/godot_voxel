@@ -1533,7 +1533,7 @@ void compute_node_execution_order(
 
 	if (!debug) {
 		// Exclude debug nodes
-		unordered_remove_if(terminal_nodes, [&graph, &type_db](uint32_t node_id) {
+		unordered_remove_all_if(terminal_nodes, [&graph, &type_db](uint32_t node_id) {
 			const ProgramGraph::Node &node = graph.get_node(node_id);
 			const NodeType &type = type_db.get_type(node.type_id);
 			return type.debug_only;

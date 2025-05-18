@@ -94,7 +94,7 @@ void process_unload_data_blocks_sliding_box(
 				mesh_box = padded_new_box;
 			}
 
-			unordered_remove_if(
+			unordered_remove_all_if(
 					lod.mesh_blocks_pending_update,
 					[&lod, mesh_box](const VoxelLodTerrainUpdateData::MeshToUpdate &mtl) {
 						if (mesh_box.contains(mtl.position)) {
@@ -175,7 +175,7 @@ void process_unload_mesh_blocks_sliding_box(
 		{
 			ZN_PROFILE_SCOPE_NAMED("Cancel updates");
 			// Cancel block updates that are not within the new region
-			unordered_remove_if(
+			unordered_remove_all_if(
 					lod.mesh_blocks_pending_update,
 					[new_box](const VoxelLodTerrainUpdateData::MeshToUpdate &mtu) { //
 						return !new_box.contains(mtu.position);

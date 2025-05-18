@@ -1187,7 +1187,7 @@ void VoxelInstancer::on_library_item_changed(int item_id, IInstanceLibraryItemLi
 			Layer &layer = get_layer(item_id);
 
 			Lod &prev_lod = _lods[layer.lod_index];
-			unordered_remove_value(prev_lod.layers, item_id);
+			unordered_remove_first_value(prev_lod.layers, item_id);
 
 			layer.lod_index = item->get_lod_index();
 

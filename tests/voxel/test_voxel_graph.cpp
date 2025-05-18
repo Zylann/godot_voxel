@@ -1202,8 +1202,8 @@ void test_voxel_graph_fuzzing() {
 			);
 
 			if (!allow_custom_io) {
-				unordered_remove_value(input_types, VoxelGraphFunction::NODE_CUSTOM_INPUT);
-				unordered_remove_value(output_types, VoxelGraphFunction::NODE_CUSTOM_OUTPUT);
+				unordered_remove_first_value(input_types, VoxelGraphFunction::NODE_CUSTOM_INPUT);
+				unordered_remove_first_value(output_types, VoxelGraphFunction::NODE_CUSTOM_OUTPUT);
 			}
 
 			for (int i = 0; i < input_count; ++i) {

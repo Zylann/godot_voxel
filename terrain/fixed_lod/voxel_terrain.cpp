@@ -519,7 +519,7 @@ void VoxelTerrain::unload_mesh_block(Vector3i bpos) {
 		if (block.is_in_update_list) {
 			// That block was in the list of blocks to update later in the process loop, we'll need to unregister
 			// it. We expect that block to be in that list. If it isn't, something wrong happened with its state.
-			ERR_FAIL_COND(!unordered_remove_value(blocks_pending_update, block.position));
+			ERR_FAIL_COND(!unordered_remove_first_value(blocks_pending_update, block.position));
 		}
 		was_loaded = block.is_loaded;
 	});

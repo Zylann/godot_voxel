@@ -30,7 +30,7 @@ void unordered_remove(std::vector<T, TAllocator> &v, unsigned int pos) {
 // Removes all items satisfying the given predicate.
 // This can change the size of the container, and original order of items is not preserved.
 template <typename T, typename TAllocator, typename F>
-inline void unordered_remove_if(std::vector<T, TAllocator> &vec, F predicate) {
+inline void unordered_remove_all_if(std::vector<T, TAllocator> &vec, F predicate) {
 	for (unsigned int i = 0; i < vec.size(); ++i) {
 		if (predicate(vec[i])) {
 			vec[i] = vec.back();
@@ -43,7 +43,7 @@ inline void unordered_remove_if(std::vector<T, TAllocator> &vec, F predicate) {
 }
 
 template <typename T, typename TAllocator>
-inline bool unordered_remove_value(std::vector<T, TAllocator> &vec, T v) {
+inline bool unordered_remove_first_value(std::vector<T, TAllocator> &vec, T v) {
 	for (size_t i = 0; i < vec.size(); ++i) {
 		if (vec[i] == v) {
 			vec[i] = vec.back();

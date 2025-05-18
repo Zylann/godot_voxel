@@ -263,7 +263,7 @@ void AStarGrid3D::get_neighbor_positions(Vector3i pos, StdVector<Vector3i> &out_
 		// ZN_PROFILE_SCOPE_NAMED("Agent fitting checks");
 		// TODO This takes half of time in profiled results
 
-		unordered_remove_if(out_positions, [this, pos](Vector3i npos) {
+		unordered_remove_all_if(out_positions, [this, pos](Vector3i npos) {
 			// Check if fits the target cell
 			if (!fits(to_vec3f(npos) + Vector3f(0.5f) + _fitting_offset, _agent_size * 0.5f)) {
 				return true;

@@ -1640,7 +1640,7 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 	} // for each lod
 
 	// Remove completed async edits
-	unordered_remove_if(state.running_async_edits, [this](VoxelLodTerrainUpdateData::RunningAsyncEdit &e) {
+	unordered_remove_all_if(state.running_async_edits, [this](VoxelLodTerrainUpdateData::RunningAsyncEdit &e) {
 		if (e.tracker->is_complete()) {
 			if (e.tracker->has_next_tasks()) {
 				ERR_PRINT("Completed async edit had next tasks?");
