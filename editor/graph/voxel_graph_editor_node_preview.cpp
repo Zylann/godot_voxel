@@ -79,9 +79,11 @@ void VoxelGraphEditorNodePreview::update_from_buffer(const pg::Runtime::Buffer &
 	ERR_FAIL_COND(RESOLUTION * RESOLUTION != static_cast<int>(buffer.size));
 
 	// TODO Support debugging inputs
-	ERR_FAIL_COND_MSG(buffer.data == nullptr,
+	ERR_FAIL_COND_MSG(
+			buffer.data == nullptr,
 			buffer.is_binding ? "Plugging a debug view on an input is not supported yet."
-							  : "Didn't expect buffer to be null");
+							  : "Didn't expect buffer to be null"
+	);
 
 	PackedByteArray image_data;
 	image_data.resize(buffer.size * sizeof(float));
