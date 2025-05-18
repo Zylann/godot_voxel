@@ -76,7 +76,7 @@ void ZN_ModelViewer::set_zoom_max_level(const unsigned int max) {
 	update_camera();
 }
 
-void ZN_ModelViewer::set_zoom_range(const float min_distance, const float max_distance) {
+void ZN_ModelViewer::set_zoom_distance_range(const float min_distance, const float max_distance) {
 	_zoom_min_distance = min_distance;
 	_zoom_max_distance = max_distance;
 	update_camera();

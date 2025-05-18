@@ -28,7 +28,7 @@ public:
 	void set_camera_target_position(const Vector3 pos);
 	void set_zoom_level(const unsigned int i);
 	void set_zoom_max_level(const unsigned int max);
-	void set_zoom_range(const float min_distance, const float max_distance);
+	void set_zoom_distance_range(const float min_distance, const float max_distance);
 
 	// Stuff to view can be instanced under this node
 	Node *get_viewer_root_node() const;
