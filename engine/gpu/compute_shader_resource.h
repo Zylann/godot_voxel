@@ -15,6 +15,10 @@ ZN_GODOT_FORWARD_DECLARE(class Image);
 ZN_GODOT_FORWARD_DECLARE(class Curve);
 ZN_GODOT_FORWARD_DECLARE(class RenderingDevice);
 
+namespace zylann {
+class ZN_Cubemap;
+}
+
 namespace zylann::voxel {
 
 // This is our own thin wrapper for resources created with RenderingDevice. We can't use Godot's regular resources
@@ -38,6 +42,7 @@ struct ComputeShaderResourceInternal {
 	enum Type {
 		TYPE_TEXTURE_2D,
 		TYPE_TEXTURE_3D,
+		TYPE_TEXTURE_CUBEMAP,
 		TYPE_STORAGE_BUFFER,
 		TYPE_UNINITIALIZED,
 		TYPE_DEINITIALIZED //
@@ -53,6 +58,7 @@ struct ComputeShaderResourceInternal {
 	void create_texture_2d(RenderingDevice &rd, const Image &image);
 	void create_texture_2d(RenderingDevice &rd, const Curve &curve);
 	void create_texture_3d_float32(RenderingDevice &rd, const PackedByteArray &data, const Vector3i size);
+	void create_texture_cubemap(RenderingDevice &rd, const ZN_Cubemap &cubemap);
 	void create_storage_buffer(RenderingDevice &rd, const PackedByteArray &data);
 	void update_storage_buffer(RenderingDevice &rd, const PackedByteArray &data);
 
@@ -75,6 +81,9 @@ struct ComputeShaderResourceFactory {
 
 	[[nodiscard]]
 	static std::shared_ptr<ComputeShaderResource> create_texture_2d(const Ref<Curve> &curve);
+
+	[[nodiscard]]
+	static std::shared_ptr<ComputeShaderResource> create_texture_cubemap(const Ref<ZN_Cubemap> &cubemap);
 
 	[[nodiscard]]
 	static std::shared_ptr<ComputeShaderResource> create_texture_3d_zxy(

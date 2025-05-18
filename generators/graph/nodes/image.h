@@ -356,6 +356,39 @@ void register_image_nodes(Span<NodeType> types) {
 			);
 			ctx.set_output(0, range.combined[0]);
 		};
+
+#ifdef VOXEL_ENABLE_GPU
+		t.shader_gen_func = [](ShaderGenContext &ctx) {
+			Ref<ZN_Cubemap> cubemap = ctx.get_param(0);
+			if (cubemap.is_null()) {
+				ctx.make_error(String(ZN_TTR("{0} instance is null")).format(varray(ZN_Cubemap::get_class_static())));
+				return;
+			}
+
+			{
+				// Not ideal. If Godot had a "post_load" after setting resource properties, we wouldn't need to do
+				// that...
+				Ref<VoxelProceduralCubemap> pc = cubemap;
+				if (pc.is_valid()) {
+					if (pc->is_dirty()) {
+						pc->update();
+					}
+				}
+			}
+
+			std::shared_ptr<ComputeShaderResource> res = ComputeShaderResourceFactory::create_texture_cubemap(cubemap);
+			const StdString uniform_texture = ctx.add_uniform(std::move(res));
+
+			ctx.add_format(
+					"{} = texture({}, vec3({}, {}, {})).r;\n",
+					ctx.get_output_name(0),
+					uniform_texture,
+					ctx.get_input_name(0),
+					ctx.get_input_name(1),
+					ctx.get_input_name(2)
+			);
+		};
+#endif
 	}
 }
 

@@ -121,9 +121,23 @@ void append_generator_parameter_uniforms(
 	for (unsigned int i = 0; i < shader_data.parameters.size(); ++i) {
 		VoxelGenerator::ShaderParameter &p = shader_data.parameters[i];
 		const unsigned int binding = bindings_start + i;
-		ZN_ASSERT(p.resource->get_type() == ComputeShaderResourceInternal::TYPE_TEXTURE_2D);
-		source_text +=
-				String("layout (set = 0, binding = {0}) uniform sampler2D {1};\n").format(varray(binding, p.name));
+
+		switch (p.resource->get_type()) {
+			case ComputeShaderResourceInternal::TYPE_TEXTURE_2D:
+				source_text += String("layout (set = 0, binding = {0}) uniform sampler2D {1};\n")
+									   .format(varray(binding, p.name));
+				break;
+
+			case ComputeShaderResourceInternal::TYPE_TEXTURE_CUBEMAP:
+				source_text += String("layout (set = 0, binding = {0}) uniform samplerCube {1};\n")
+									   .format(varray(binding, p.name));
+				break;
+
+			default:
+				ZN_CRASH_MSG("Unsupported GPU resource type");
+				break;
+		}
+
 		out_params.params.push_back(ComputeShaderParameter{ binding, p.resource });
 	}
 	source_text += "\n";

@@ -6,6 +6,7 @@
 #include "../../util/godot/classes/rd_texture_view.h"
 #include "../../util/godot/classes/rendering_device.h"
 #include "../../util/godot/core/array.h" // for `varray` in GDExtension builds
+#include "../../util/godot/cubemap.h"
 #include "../../util/profiling.h"
 #include "../../util/string/format.h"
 #include "../voxel_engine.h"
@@ -157,6 +158,50 @@ void ComputeShaderResourceInternal::create_texture_2d(RenderingDevice &rd, const
 
 	Ref<Image> image = Image::create_from_data(width, 1, false, image_format, data);
 	create_texture_2d(rd, **image);
+}
+
+void ComputeShaderResourceInternal::create_texture_cubemap(RenderingDevice &rd, const ZN_Cubemap &src_cubemap) {
+	ZN_PROFILE_SCOPE();
+	ZN_ASSERT_RETURN(src_cubemap.is_valid());
+
+	ZN_PRINT_VERBOSE(
+			format("Creating VoxelRD cubemap {}^2 format {}", src_cubemap.get_resolution(), src_cubemap.get_format())
+	);
+	clear(rd);
+
+	RenderingDevice::DataFormat data_format;
+	ERR_FAIL_COND_MSG(
+			!image_to_normalized_rd_format(src_cubemap.get_format(), data_format), "Image format not handled"
+	);
+
+	type = TYPE_TEXTURE_CUBEMAP;
+
+	// Size can vary each time so we have to recreate the format...
+	Ref<RDTextureFormat> texture_format;
+	texture_format.instantiate();
+	texture_format->set_width(src_cubemap.get_resolution());
+	texture_format->set_height(src_cubemap.get_resolution());
+	texture_format->set_array_layers(ZN_Cubemap::SIDE_COUNT);
+	texture_format->set_format(data_format);
+	texture_format->set_usage_bits(
+			RenderingDevice::TEXTURE_USAGE_STORAGE_BIT | RenderingDevice::TEXTURE_USAGE_CAN_UPDATE_BIT |
+			RenderingDevice::TEXTURE_USAGE_CAN_COPY_FROM_BIT | RenderingDevice::TEXTURE_USAGE_SAMPLING_BIT
+	);
+	texture_format->set_texture_type(RenderingDevice::TEXTURE_TYPE_CUBE);
+	// TODO Do I need multisample if I want filtering?
+
+	Ref<RDTextureView> texture_view;
+	texture_view.instantiate();
+
+	TypedArray<PackedByteArray> data_array;
+	for (unsigned int side = 0; side < ZN_Cubemap::SIDE_COUNT; ++side) {
+		const Image &im = src_cubemap.get_image(side);
+		data_array.append(im.get_data());
+	}
+
+	rid = zylann::godot::texture_create(rd, **texture_format, **texture_view, data_array);
+	// RID::is_null() is not available in GDExtension
+	ERR_FAIL_COND_MSG(!rid.is_valid(), "Failed to create texture");
 }
 
 template <typename T>
@@ -311,6 +356,21 @@ std::shared_ptr<ComputeShaderResource> ComputeShaderResourceFactory::create_text
 	return res;
 }
 
+std::shared_ptr<ComputeShaderResource> ComputeShaderResourceFactory::create_texture_cubemap(
+		const Ref<ZN_Cubemap> &cubemap
+) {
+	ZN_ASSERT(cubemap.is_valid());
+	ZN_ASSERT(cubemap->is_valid());
+
+	std::shared_ptr<ComputeShaderResource> res = make_shared_instance<ComputeShaderResource>();
+	res->_type = ComputeShaderResourceInternal::TYPE_TEXTURE_CUBEMAP;
+
+	VoxelEngine::get_singleton().push_gpu_task_f([res, cubemap](GPUTaskContext &ctx) {
+		res->_internal.create_texture_cubemap(ctx.rendering_device, **cubemap);
+	});
+	return res;
+}
+
 std::shared_ptr<ComputeShaderResource> ComputeShaderResourceFactory::create_texture_3d_zxy(
 		Span<const float> fdata_zxy,
 		const Vector3i size
@@ -332,7 +392,8 @@ std::shared_ptr<ComputeShaderResource> ComputeShaderResourceFactory::create_text
 	return res;
 }
 
-std::shared_ptr<ComputeShaderResource> ComputeShaderResourceFactory::create_storage_buffer(const PackedByteArray &data
+std::shared_ptr<ComputeShaderResource> ComputeShaderResourceFactory::create_storage_buffer(
+		const PackedByteArray &data
 ) {
 	std::shared_ptr<ComputeShaderResource> res = make_shared_instance<ComputeShaderResource>();
 	res->_type = ComputeShaderResourceInternal::TYPE_STORAGE_BUFFER;
