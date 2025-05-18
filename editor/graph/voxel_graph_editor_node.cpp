@@ -146,6 +146,8 @@ void VoxelGraphEditorNode::update_layout(const VoxelGraphFunction &graph) {
 			Label *hint_label = memnew(Label);
 			hint_label->set_h_size_flags(Control::SIZE_EXPAND_FILL);
 			hint_label->set_modulate(hint_label_modulate);
+			// Pass filter is required to allow tooltips to work
+			hint_label->set_mouse_filter(Control::MOUSE_FILTER_PASS);
 			// hint_label->set_clip_text(true);
 			// hint_label->set_custom_minimum_size(Vector2(middle_min_width, 0));
 			property_control->add_child(hint_label);
@@ -290,7 +292,24 @@ void VoxelGraphEditorNode::poll_default_inputs(const VoxelGraphFunction &graph) 
 			const Variant current_value = graph.get_node_default_input(loc.node_id, loc.port_index);
 			// Only update when it changes so we don't spam editor redraws
 			if (input_hint.last_value != current_value) {
-				input_hint.label->set_text(prefix + String(current_value));
+				String s;
+				String tooltip;
+				if (current_value.get_type() == Variant::FLOAT) {
+					// Cast to float because that's what the graph actually uses under the hood, even in
+					// double-precision builds
+					const float fv = current_value;
+					// Round decimals, because otherwise setting values like `0.2` ends up being formatted as
+					// `0.19999999999709`, it widens nodes and it's very annoying.
+					String fs = String(Variant(fv));
+					s = String::num(fv, 7);
+					if (fs != s) {
+						s += "*";
+						tooltip = fs;
+					}
+				}
+
+				input_hint.label->set_text(prefix + s);
+				input_hint.label->set_tooltip_text(tooltip);
 				input_hint.last_value = current_value;
 			}
 		}
