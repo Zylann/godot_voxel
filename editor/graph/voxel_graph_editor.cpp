@@ -754,13 +754,13 @@ void VoxelGraphEditor::_on_menu_id_pressed(int id) {
 			break;
 
 		case MENU_PREVIEW_AXES_XY:
-			_preview_axes = PREVIEW_AXES_XY;
+			_node_preview_mode = GraphEditorPreview::VIEW_SLICE_XY;
 			schedule_preview_update();
 			update_preview_axes_menu();
 			break;
 
 		case MENU_PREVIEW_AXES_XZ:
-			_preview_axes = PREVIEW_AXES_XZ;
+			_node_preview_mode = GraphEditorPreview::VIEW_SLICE_XZ;
 			schedule_preview_update();
 			update_preview_axes_menu();
 			break;
@@ -1120,18 +1120,8 @@ void VoxelGraphEditor::update_range_analysis_gizmo() {
 }
 
 void VoxelGraphEditor::update_slice_previews() {
-	// TODO Use a thread?
-	ZN_PRINT_VERBOSE("Updating slice previews");
-
 	GraphEditorAdapter adapter(_generator, _graph);
-
-	struct PreviewInfo {
-		VoxelGraphEditorNodePreview *control;
-		uint32_t address;
-		uint32_t node_id;
-	};
-
-	StdVector<PreviewInfo> previews;
+	StdVector<VoxelGraphEditorNodePreview::PreviewInfo> previews;
 
 	// Gather preview nodes
 	for (int i = 0; i < _graph_edit->get_child_count(); ++i) {
@@ -1147,7 +1137,7 @@ void VoxelGraphEditor::update_slice_previews() {
 			// Not connected?
 			continue;
 		}
-		PreviewInfo info;
+		VoxelGraphEditorNodePreview::PreviewInfo info;
 		info.control = node->get_preview();
 		if (!adapter.try_get_output_port_address(src, info.address)) {
 			// Not part of the compiled result
@@ -1157,60 +1147,9 @@ void VoxelGraphEditor::update_slice_previews() {
 		previews.push_back(info);
 	}
 
-	// Generate data
-	{
-		const int preview_size_x = VoxelGraphEditorNodePreview::RESOLUTION;
-		const int preview_size_y = VoxelGraphEditorNodePreview::RESOLUTION;
-		// TODO This might be too big for buffer size?
-		const int buffer_size = preview_size_x * preview_size_y;
-		StdVector<float> x_vec;
-		StdVector<float> y_vec;
-		StdVector<float> z_vec;
-		x_vec.resize(buffer_size);
-		y_vec.resize(buffer_size);
-		z_vec.resize(buffer_size);
-
-		const float view_size_x = _preview_scale * float(preview_size_x);
-		const float view_size_y = _preview_scale * float(preview_size_x);
-		const Vector3f min_pos =
-				Vector3f(-view_size_x * 0.5f + _preview_offset.x, -view_size_y * 0.5f + _preview_offset.y, 0);
-		const Vector3f max_pos = min_pos + Vector3f(view_size_x, view_size_y, 0);
-
-		int i = 0;
-		for (int iy = 0; iy < preview_size_x; ++iy) {
-			const float y = Math::lerp(min_pos.y, max_pos.y, static_cast<float>(iy) / preview_size_y);
-			for (int ix = 0; ix < preview_size_y; ++ix) {
-				const float x = Math::lerp(min_pos.x, max_pos.x, static_cast<float>(ix) / preview_size_x);
-				x_vec[i] = x;
-				y_vec[i] = y;
-				z_vec[i] = min_pos.z;
-				++i;
-			}
-		}
-
-		Span<float> x_coords = to_span(x_vec);
-		Span<float> y_coords;
-		Span<float> z_coords;
-		if (_preview_axes == PREVIEW_AXES_XY) {
-			y_coords = to_span(y_vec);
-			z_coords = to_span(z_vec);
-		} else {
-			y_coords = to_span(z_vec);
-			z_coords = to_span(y_vec);
-		}
-
-		adapter.generate_set(x_coords, y_coords, z_coords);
-	}
-
-	const pg::Runtime::State &last_state = adapter.get_last_state_from_current_thread();
-
-	// Update previews
-	for (size_t preview_index = 0; preview_index < previews.size(); ++preview_index) {
-		PreviewInfo &info = previews[preview_index];
-		const pg::Runtime::Buffer &buffer = last_state.get_buffer(info.address);
-		info.control->update_from_buffer(buffer);
-		info.control->update_display_settings(**_graph, info.node_id);
-	}
+	VoxelGraphEditorNodePreview::update_previews(
+			adapter, to_span(previews), _node_preview_mode, _preview_scale, _preview_offset
+	);
 }
 
 void VoxelGraphEditor::clear_range_analysis_tooltips() {
@@ -1306,11 +1245,11 @@ void VoxelGraphEditor::update_preview_axes_menu() {
 	// Update menu state from current settings
 	ERR_FAIL_COND(_preview_axes_menu == nullptr);
 	ToolbarMenuIDs id;
-	switch (_preview_axes) {
-		case PREVIEW_AXES_XY:
+	switch (_node_preview_mode) {
+		case GraphEditorPreview::VIEW_SLICE_XY:
 			id = MENU_PREVIEW_AXES_XY;
 			break;
-		case PREVIEW_AXES_XZ:
+		case GraphEditorPreview::VIEW_SLICE_XZ:
 			id = MENU_PREVIEW_AXES_XZ;
 			break;
 		default:

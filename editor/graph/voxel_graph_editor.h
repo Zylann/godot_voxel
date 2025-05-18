@@ -7,6 +7,7 @@
 #include "../../util/godot/debug_renderer.h"
 #include "../../util/godot/object_weak_ref.h"
 #include "../../util/math/vector2f.h"
+#include "graph_preview_mode.h"
 
 ZN_GODOT_NAMESPACE_BEGIN
 class GraphEdit;
@@ -158,13 +159,7 @@ private:
 	PopupMenu *_preview_axes_menu = nullptr;
 	VoxelGraphNodeDialog *_node_dialog = nullptr;
 
-	enum PreviewAxes { //
-		PREVIEW_AXES_XY = 0,
-		PREVIEW_AXES_XZ,
-		PREVIEW_AXES_OPTIONS_COUNT
-	};
-
-	PreviewAxes _preview_axes = PREVIEW_AXES_XY;
+	GraphEditorPreview::ViewMode _node_preview_mode = GraphEditorPreview::VIEW_SLICE_XY;
 	Vector2f _preview_offset;
 	float _preview_scale = 1.f;
 
