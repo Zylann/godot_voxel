@@ -93,16 +93,16 @@ public:
 		static_assert(SIDE >= 0 && SIDE < SIDE_COUNT);
 		// convert range 0 to 1 to -1 to 1
 		const float uc = 2.0f * uv.x - 1.0f;
-		const float vc = 2.0f * uv.y - 1.0f;
+		const float vc = -(2.0f * uv.y - 1.0f);
 		switch (SIDE) {
 			case SIDE_POSITIVE_X:
 				return Vector3f(1.f, vc, -uc);
 			case SIDE_NEGATIVE_X:
 				return Vector3f(-1.f, vc, uc);
 			case SIDE_POSITIVE_Y:
-				return Vector3f(uc, 1.f, vc);
+				return Vector3f(uc, 1.f, -vc);
 			case SIDE_NEGATIVE_Y:
-				return Vector3f(uc, -1.f, -vc);
+				return Vector3f(uc, -1.f, vc);
 			case SIDE_POSITIVE_Z:
 				return Vector3f(uc, vc, 1.f);
 			case SIDE_NEGATIVE_Z:
