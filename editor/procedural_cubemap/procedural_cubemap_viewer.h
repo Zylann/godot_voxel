@@ -9,7 +9,11 @@ ZN_GODOT_NAMESPACE_BEGIN
 class EditorFileDialog;
 ZN_GODOT_NAMESPACE_END
 
-namespace zylann::voxel {
+namespace zylann {
+
+class ZN_ModelViewer;
+
+namespace voxel {
 
 class VoxelProceduralCubemapViewer : public VBoxContainer {
 	GDCLASS(VoxelProceduralCubemapViewer, VBoxContainer)
@@ -17,6 +21,7 @@ public:
 	VoxelProceduralCubemapViewer();
 
 	void set_cubemap(Ref<VoxelProceduralCubemap> cm);
+	void set_ctrl_to_zoom(const bool enable);
 
 private:
 	void on_cubemap_updated();
@@ -29,8 +34,10 @@ private:
 	Ref<VoxelProceduralCubemap> _cubemap;
 	Ref<ShaderMaterial> _material;
 	EditorFileDialog *_save_dialog = nullptr;
+	ZN_ModelViewer *_viewer = nullptr;
 };
 
-} // namespace zylann::voxel
+} // namespace voxel
+} // namespace zylann
 
 #endif // VOXEL_PROCEDURAL_CUBEMAP_VIEWER_H

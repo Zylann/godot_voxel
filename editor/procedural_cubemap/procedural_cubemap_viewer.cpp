@@ -40,6 +40,7 @@ VoxelProceduralCubemapViewer::VoxelProceduralCubemapViewer() {
 	viewer->set_zoom_max_level(8);
 	viewer->set_zoom_distance_range(0.6f, 1.25f);
 	add_child(viewer);
+	_viewer = viewer;
 
 	Ref<Shader> shader;
 	shader.instantiate();
@@ -83,6 +84,10 @@ VoxelProceduralCubemapViewer::VoxelProceduralCubemapViewer() {
 			callable_mp(this, &VoxelProceduralCubemapViewer::on_save_dialog_file_selected)
 	);
 	add_child(_save_dialog);
+}
+
+void VoxelProceduralCubemapViewer::set_ctrl_to_zoom(const bool enable) {
+	_viewer->set_ctrl_to_zoom(enable);
 }
 
 void VoxelProceduralCubemapViewer::set_cubemap(Ref<VoxelProceduralCubemap> cm) {

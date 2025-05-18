@@ -82,6 +82,10 @@ void ZN_ModelViewer::set_zoom_distance_range(const float min_distance, const flo
 	update_camera();
 }
 
+void ZN_ModelViewer::set_ctrl_to_zoom(const bool ctrl_to_zoom) {
+	_ctrl_to_zoom = ctrl_to_zoom;
+}
+
 Node *ZN_ModelViewer::get_viewer_root_node() const {
 	return _viewport;
 }
@@ -108,7 +112,7 @@ void ZN_ModelViewer::_gui_input(const Ref<InputEvent> &p_event) {
 	Ref<InputEventMouseButton> mb = p_event;
 	if (mb.is_valid()) {
 		if (mb->is_pressed()) {
-			if (mb->is_ctrl_pressed()) {
+			if (!_ctrl_to_zoom || mb->is_ctrl_pressed()) {
 				switch (mb->get_button_index()) {
 					case ZN_GODOT_MouseButton_WHEEL_UP:
 						if (_zoom_max_level > 0 && _zoom_level < _zoom_max_level - 1) {

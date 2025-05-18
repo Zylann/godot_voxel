@@ -853,6 +853,18 @@ uint64_t VoxelGraphFunction::get_output_graph_hash() const {
 	return hash;
 }
 
+void VoxelGraphFunction::editor_add_user(const ObjectID user_id) {
+	_editor_users.push_back(user_id);
+}
+
+void VoxelGraphFunction::editor_remove_user(const ObjectID user_id) {
+	unordered_remove_first_value(_editor_users, user_id);
+}
+
+Span<const ObjectID> VoxelGraphFunction::editor_get_users() const {
+	return to_span_const(_editor_users);
+}
+
 #endif
 
 void VoxelGraphFunction::find_dependencies(uint32_t node_id, StdVector<uint32_t> &out_dependencies) const {

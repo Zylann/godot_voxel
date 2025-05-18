@@ -228,6 +228,10 @@ public:
 	bool can_load_default_graph() const {
 		return _can_load_default_graph;
 	}
+
+	void editor_add_user(const ObjectID user_id);
+	void editor_remove_user(const ObjectID user_id);
+	Span<const ObjectID> editor_get_users() const;
 #endif
 
 	// Internal
@@ -373,6 +377,7 @@ private:
 	// creating a new graph in the editor. True by default after being created, but will become false if cleared (which
 	// means it's not a brand new instance).
 	bool _can_load_default_graph = true;
+	StdVector<ObjectID> _editor_users;
 #endif
 	pg::CompilationResult _last_compiling_result;
 

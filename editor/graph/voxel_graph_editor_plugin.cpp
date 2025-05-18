@@ -52,6 +52,10 @@ void VoxelGraphEditorPlugin::init() {
 			VoxelGraphEditor::SIGNAL_POPOUT_REQUESTED,
 			callable_mp(this, &VoxelGraphEditorPlugin::_on_graph_editor_popout_requested)
 	);
+	_graph_editor->connect(
+			VoxelGraphEditor::SIGNAL_INSPECT_USER_REQUESTED,
+			callable_mp(this, &VoxelGraphEditorPlugin::on_graph_editor_inspect_user_requested)
+	);
 	_bottom_panel_button = add_control_to_bottom_panel(_graph_editor, ZN_TTR("Voxel Graph"));
 	_bottom_panel_button->hide();
 
@@ -224,6 +228,10 @@ void VoxelGraphEditorPlugin::_on_graph_editor_node_selected(uint32_t node_id) {
 	// I don't understand what's the point of that parameter then... so we have to ignore these calls, which works for
 	// now luckily, because they are not using `call_deferred`.
 	// https://github.com/godotengine/godot/issues/40166
+}
+
+void VoxelGraphEditorPlugin::on_graph_editor_inspect_user_requested(Ref<Resource> resource) {
+	get_editor_interface()->inspect_object(resource.ptr());
 }
 
 void VoxelGraphEditorPlugin::inspect_graph_or_generator(const VoxelGraphEditor &graph_editor) {

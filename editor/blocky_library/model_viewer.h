@@ -29,6 +29,7 @@ public:
 	void set_zoom_level(const unsigned int i);
 	void set_zoom_max_level(const unsigned int max);
 	void set_zoom_distance_range(const float min_distance, const float max_distance);
+	void set_ctrl_to_zoom(const bool ctrl_to_zoom);
 
 	// Stuff to view can be instanced under this node
 	Node *get_viewer_root_node() const;
@@ -56,6 +57,7 @@ private:
 	float _zoom_factor = 1.5f;
 	uint8_t _zoom_level = 0; // The higher, the more zoomed in.
 	uint8_t _zoom_max_level = 0;
+	bool _ctrl_to_zoom = false;
 
 	ZN_Axes3DControl *_axes_3d_control = nullptr;
 	SubViewport *_viewport;

@@ -19,6 +19,8 @@ class Label;
 class OptionButton;
 class CheckBox;
 class MenuButton;
+class HSplitContainer;
+class VBoxContainer;
 ZN_GODOT_NAMESPACE_END
 
 namespace zylann::voxel {
@@ -37,6 +39,7 @@ public:
 	static const char *SIGNAL_NODES_DELETED;
 	static const char *SIGNAL_REGENERATE_REQUESTED;
 	static const char *SIGNAL_POPOUT_REQUESTED;
+	static const char *SIGNAL_INSPECT_USER_REQUESTED;
 
 	VoxelGraphEditor();
 
@@ -125,6 +128,7 @@ private:
 	void _on_graph_node_preview_gui_input(Ref<InputEvent> event);
 	void _on_graph_edit_copy_nodes_request();
 	void _on_graph_edit_paste_nodes_request();
+	void on_inspect_user(Ref<Resource> user);
 
 	void _check_nothing_selected();
 
@@ -158,6 +162,9 @@ private:
 	MenuButton *_debug_menu_button = nullptr;
 	PopupMenu *_preview_axes_menu = nullptr;
 	VoxelGraphNodeDialog *_node_dialog = nullptr;
+
+	HSplitContainer *_hsplit_container = nullptr;
+	VBoxContainer *_output_panel = nullptr;
 
 	GraphEditorPreview::ViewMode _node_preview_mode = GraphEditorPreview::VIEW_SLICE_XY;
 	Vector2f _preview_offset;

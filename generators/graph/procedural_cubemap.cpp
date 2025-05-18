@@ -43,6 +43,9 @@ void VoxelProceduralCubemap::set_graph(Ref<pg::VoxelGraphFunction> graph) {
 		_graph->disconnect(
 				VoxelStringNames::get_singleton().changed, callable_mp(this, &VoxelProceduralCubemap::on_graph_changed)
 		);
+#ifdef TOOLS_ENABLED
+		_graph->editor_remove_user(get_instance_id());
+#endif
 	}
 
 	_graph = graph;
@@ -55,6 +58,9 @@ void VoxelProceduralCubemap::set_graph(Ref<pg::VoxelGraphFunction> graph) {
 		_graph->connect(
 				VoxelStringNames::get_singleton().changed, callable_mp(this, &VoxelProceduralCubemap::on_graph_changed)
 		);
+#ifdef TOOLS_ENABLED
+		_graph->editor_add_user(get_instance_id());
+#endif
 	}
 
 	_dirty = true;

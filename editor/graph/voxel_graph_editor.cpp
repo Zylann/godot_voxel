@@ -1,6 +1,7 @@
 #include "voxel_graph_editor.h"
 #include "../../constants/voxel_string_names.h"
 #include "../../generators/graph/node_type_db.h"
+#include "../../generators/graph/procedural_cubemap.h"
 #include "../../generators/graph/voxel_generator_graph.h"
 #include "../../terrain/voxel_node.h"
 #include "../../util/containers/std_vector.h"
@@ -12,6 +13,7 @@
 #include "../../util/godot/classes/editor_quick_open.h"
 #include "../../util/godot/classes/graph_edit.h"
 #include "../../util/godot/classes/h_box_container.h"
+#include "../../util/godot/classes/h_split_container.h"
 #include "../../util/godot/classes/input_event_mouse_button.h"
 #include "../../util/godot/classes/input_event_mouse_motion.h"
 #include "../../util/godot/classes/label.h"
@@ -32,6 +34,7 @@
 #include "../../util/math/conv.h"
 #include "../../util/profiling.h"
 #include "../../util/string/format.h"
+#include "../procedural_cubemap/procedural_cubemap_viewer.h"
 #include "graph_editor_adapter.h"
 #include "voxel_graph_editor_node.h"
 #include "voxel_graph_editor_node_preview.h"
@@ -49,6 +52,7 @@ const char *VoxelGraphEditor::SIGNAL_NOTHING_SELECTED = "nothing_selected";
 const char *VoxelGraphEditor::SIGNAL_NODES_DELETED = "nodes_deleted";
 const char *VoxelGraphEditor::SIGNAL_REGENERATE_REQUESTED = "regenerate_requested";
 const char *VoxelGraphEditor::SIGNAL_POPOUT_REQUESTED = "popout_requested";
+const char *VoxelGraphEditor::SIGNAL_INSPECT_USER_REQUESTED = "inspect_user_requested";
 
 enum ToolbarMenuIDs {
 	MENU_UPDATE_PREVIEWS = 0,
@@ -185,8 +189,12 @@ VoxelGraphEditor::VoxelGraphEditor() {
 		vbox_container->add_child(toolbar);
 	}
 
+	_hsplit_container = memnew(HSplitContainer);
+	_hsplit_container->set_v_size_flags(Control::SIZE_EXPAND_FILL);
+
 	_graph_edit = memnew(GraphEdit);
 	_graph_edit->set_anchors_preset(Control::PRESET_FULL_RECT);
+	_graph_edit->set_h_size_flags(Control::SIZE_EXPAND_FILL);
 	_graph_edit->set_right_disconnects(true);
 	// TODO Performance: sorry, had to turn off AA because Godot's current implementation is incredibly slow.
 	// It slows down the editor a lot when a graph has lots of connections. Because despite Godot 4 now supporting
@@ -204,7 +212,13 @@ VoxelGraphEditor::VoxelGraphEditor() {
 	_graph_edit->connect("node_deselected", callable_mp(this, &Self::_on_graph_edit_node_deselected));
 	_graph_edit->connect("copy_nodes_request", callable_mp(this, &Self::_on_graph_edit_copy_nodes_request));
 	_graph_edit->connect("paste_nodes_request", callable_mp(this, &Self::_on_graph_edit_paste_nodes_request));
-	vbox_container->add_child(_graph_edit);
+	_hsplit_container->add_child(_graph_edit);
+
+	_output_panel = memnew(VBoxContainer);
+	_output_panel->set_visible(false);
+	_hsplit_container->add_child(_output_panel);
+
+	vbox_container->add_child(_hsplit_container);
 
 	add_child(vbox_container);
 
@@ -262,6 +276,17 @@ void VoxelGraphEditor::set_generator(Ref<VoxelGeneratorGraph> generator) {
 	update_buttons_availability();
 }
 
+static void clear_children_now(Node &node) {
+	const int child_count = node.get_child_count();
+	int i = child_count;
+	while (i > 0) {
+		--i;
+		Node *child = node.get_child(i);
+		node.remove_child(child);
+		child->queue_free();
+	}
+}
+
 void VoxelGraphEditor::set_graph(Ref<VoxelGraphFunction> graph) {
 	using Self = VoxelGraphEditor;
 
@@ -276,6 +301,8 @@ void VoxelGraphEditor::set_graph(Ref<VoxelGraphFunction> graph) {
 		);
 	}
 
+	clear_children_now(*_output_panel);
+
 	_graph = graph;
 
 	if (_graph.is_valid()) {
@@ -284,9 +311,40 @@ void VoxelGraphEditor::set_graph(Ref<VoxelGraphFunction> graph) {
 				VoxelGeneratorGraph::SIGNAL_NODE_NAME_CHANGED, callable_mp(this, &Self::_on_graph_node_name_changed)
 		);
 
+		// HACK
+		// The graph can contain sub-resources, but to edit them, they require the Godot inspector. If the graph is used
+		// by a resource we originally had in the inspector (which may also be where our final preview is!), then we
+		// would loose track of it.
+		// We can't add a second inspector to our graph editor. Godot doesn't expose it, and I'm not even sure it would
+		// work. So to workaround that, we add a side-panel directly to the graph editor, which can show a custom editor
+		// that has a reference to the using resource. We can use that to show the final preview as well.
+		Span<const ObjectID> users = _graph->editor_get_users();
+		for (const ObjectID user_id : users) {
+			Object *obj = ObjectDB::get_instance(user_id);
+			if (obj != nullptr) {
+				Ref<VoxelProceduralCubemap> cubemap = Object::cast_to<VoxelProceduralCubemap>(obj);
+				if (cubemap.is_valid()) {
+					VoxelProceduralCubemapViewer *viewer = memnew(VoxelProceduralCubemapViewer);
+					viewer->set_cubemap(cubemap);
+					_output_panel->add_child(viewer);
+
+					Button *inspect_button = memnew(Button);
+					inspect_button->set_text(ZN_TTR("Inspect"));
+					inspect_button->set_tooltip_text(ZN_TTR("Open in Inspector"));
+					inspect_button->connect(
+							"pressed", callable_mp(this, &VoxelGraphEditor::on_inspect_user).bind(cubemap)
+					);
+					_output_panel->add_child(inspect_button);
+					break;
+				}
+			}
+		}
+
 	} else {
 		_graph = Ref<VoxelGraphFunction>();
 	}
+
+	_output_panel->set_visible(_output_panel->get_child_count() > 0);
 
 	_debug_renderer.clear();
 
@@ -299,6 +357,10 @@ void VoxelGraphEditor::set_graph(Ref<VoxelGraphFunction> graph) {
 	_no_graph_open_label->set_visible(!_graph.is_valid());
 
 	// schedule_preview_update();
+}
+
+void VoxelGraphEditor::on_inspect_user(Ref<Resource> user) {
+	emit_signal(SIGNAL_INSPECT_USER_REQUESTED, user);
 }
 
 Ref<VoxelGraphFunction> VoxelGraphEditor::get_graph() const {
@@ -1514,6 +1576,7 @@ void VoxelGraphEditor::_bind_methods() {
 	ADD_SIGNAL(MethodInfo(SIGNAL_NODES_DELETED));
 	ADD_SIGNAL(MethodInfo(SIGNAL_REGENERATE_REQUESTED));
 	ADD_SIGNAL(MethodInfo(SIGNAL_POPOUT_REQUESTED));
+	ADD_SIGNAL(MethodInfo(SIGNAL_INSPECT_USER_REQUESTED));
 }
 
 } // namespace zylann::voxel

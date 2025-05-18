@@ -14,6 +14,7 @@ void VoxelProceduralCubemapInspectorPlugin::_zn_parse_begin(Object *p_object) {
 
 	VoxelProceduralCubemapViewer *viewer = memnew(VoxelProceduralCubemapViewer);
 	viewer->set_cubemap(cubemap);
+	viewer->set_ctrl_to_zoom(true); // To avoid clashing with inspector scrolling
 	add_custom_control(viewer);
 }
 
