@@ -6,6 +6,7 @@
 #include "../../util/math/conv.h"
 #include "../../util/math/vector2f.h"
 #include "../../util/profiling.h"
+#include "../../util/string/format.h"
 
 namespace zylann::voxel {
 
@@ -94,11 +95,13 @@ void VoxelProceduralCubemap::update() {
 	_dirty = false;
 
 	if (_graph.is_null()) {
+		ZN_PRINT_VERBOSE("Procedural cubemap didn't update because the graph is null");
 		return;
 	}
 	if (!_graph->is_compiled()) {
 		const pg::CompilationResult result = _graph->compile(false);
 		if (!result.success) {
+			ZN_PRINT_VERBOSE("Procedural cubemap didn't update because the graph doesn't compile");
 			return;
 		}
 	}
@@ -110,9 +113,15 @@ void VoxelProceduralCubemap::update() {
 			const int output_count = compiled_graph->runtime.get_output_count();
 
 			if (input_count != 3) {
+				ZN_PRINT_VERBOSE(format(
+						"Procedural cubemap didn't update because input count is not 3, found {} instead", input_count
+				));
 				return;
 			}
 			if (output_count != 1) {
+				ZN_PRINT_VERBOSE(format(
+						"Procedural cubemap didn't update because output count is not 1, found {} instead", output_count
+				));
 				return;
 			}
 		}
