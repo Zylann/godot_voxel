@@ -107,8 +107,13 @@ public:
 	pg::CompilationResult compile(bool debug);
 	bool is_good() const;
 
-	void generate_set(Span<float> in_x, Span<float> in_y, Span<float> in_z);
-	void generate_series(Span<float> in_x, Span<float> in_y, Span<float> in_z, Span<float> in_sdf);
+	void generate_set(Span<const float> in_x, Span<const float> in_y, Span<const float> in_z);
+	void generate_series(
+			Span<const float> in_x,
+			Span<const float> in_y,
+			Span<const float> in_z,
+			Span<const float> in_sdf
+	);
 
 	// Returns state from the last generator used in the current thread
 	static const pg::Runtime::State &get_last_state_from_current_thread();
@@ -258,7 +263,7 @@ private:
 			input_count = runtime_wrapper.runtime.get_input_count();
 		}
 
-		inline Span<T> get() {
+		inline Span<const T> get() {
 			return to_span(query_inputs, input_count);
 		}
 	};

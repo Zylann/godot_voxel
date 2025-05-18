@@ -30,7 +30,7 @@ Type                                                                      | Name
 Return                                | Signature                                                                                                                                         
 ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------
 [void](#)                             | [configure_buffer](#i_configure_buffer) ( [VoxelBuffer](VoxelBuffer.md) buffer ) const                                                            
-[void](#)                             | [create_buffer](#i_create_buffer) ( [VoxelBuffer](VoxelBuffer.md) size ) const                                                                    
+[VoxelBuffer](VoxelBuffer.md)         | [create_buffer](#i_create_buffer) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) size ) const                   
 [Depth](VoxelBuffer.md#enumerations)  | [get_channel_depth](#i_get_channel_depth) ( [ChannelId](VoxelBuffer.md#enumerations) channel_index ) const                                        
 [void](#)                             | [set_channel_depth](#i_set_channel_depth) ( [ChannelId](VoxelBuffer.md#enumerations) channel_index, [Depth](VoxelBuffer.md#enumerations) depth )  
 <p></p>
@@ -63,7 +63,7 @@ Depth of [VoxelBuffer.CHANNEL_TYPE](VoxelBuffer.md#i_CHANNEL_TYPE). Only 8-bit a
 
 Clears and formats the [VoxelBuffer](VoxelBuffer.md) using properties from the current format. Should be used on a buffer that hasn't been modified yet.
 
-### [void](#)<span id="i_create_buffer"></span> **create_buffer**( [VoxelBuffer](VoxelBuffer.md) size ) 
+### [VoxelBuffer](VoxelBuffer.md)<span id="i_create_buffer"></span> **create_buffer**( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) size ) 
 
 Creates a new [VoxelBuffer](VoxelBuffer.md) that has the current format.
 
@@ -75,4 +75,4 @@ Gets the depth of a specific channel. See [Depth](VoxelBuffer.md#enumerations) f
 
 Sets the depth of a specific channel. See [Depth](VoxelBuffer.md#enumerations) for more information.
 
-_Generated on Apr 27, 2025_
+_Generated on May 15, 2025_

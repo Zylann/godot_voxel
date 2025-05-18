@@ -1,6 +1,7 @@
 #ifndef VOXEL_GRAPH_FUNCTION_H
 #define VOXEL_GRAPH_FUNCTION_H
 
+#include "../../engine/gpu/compute_shader_resource.h"
 #include "../../util/containers/std_vector.h"
 #include "../../util/godot/classes/resource.h"
 #include "../../util/string/std_string.h"
@@ -10,6 +11,20 @@
 #include <memory>
 
 namespace zylann::voxel::pg {
+
+struct ShaderParameter {
+	StdString name;
+	std::shared_ptr<ComputeShaderResource> resource;
+};
+
+struct ShaderOutput {
+	enum Type {
+		TYPE_SDF,
+		TYPE_SINGLE_TEXTURE,
+		TYPE_TYPE,
+	};
+	Type type;
+};
 
 // Generic processing graph made of operation nodes.
 // TODO This class had to be prefixed `VoxelGraph` but I wished it was just `pg::Function`.
@@ -271,10 +286,24 @@ public:
 
 	void paste_graph(const VoxelGraphFunction &src_graph, Span<const uint32_t> dst_node_ids, Vector2 gui_offset);
 
+	struct ShaderResult {
+		StdString code_utf8;
+		StdVector<pg::ShaderParameter> params;
+		StdVector<pg::ShaderOutput> outputs;
+		CompilationResult compilation;
+	};
+
+	ShaderResult get_shader_source() const;
+
 	// Compiling and running
 
 	pg::CompilationResult compile(bool debug);
-	void execute(Span<Span<float>> inputs, Span<Span<float>> outputs);
+	void execute(
+			Span<const Span<const float>> inputs,
+			Span<Span<float>> outputs,
+			const unsigned int max_processing_chunk_size = 256,
+			const bool dummy_output = false
+	);
 
 	bool is_compiled() const;
 
@@ -289,7 +318,8 @@ public:
 	// Per-thread re-used memory for runtime executions
 	struct RuntimeCache {
 		pg::Runtime::State state;
-		StdVector<Span<float>> input_chunks;
+		StdVector<Span<const float>> input_chunks;
+		pg::Runtime::ExecutionMap optimized_execution_map;
 	};
 
 	static RuntimeCache &get_runtime_cache_tls();
@@ -299,6 +329,8 @@ public:
 	// Tests if two graphs are the same, considering their output branches. Object parameters are first compared by
 	// reference, and then compared by their properties. Nodes that the outputs don't depend on will be ignored.
 	bool equals(const VoxelGraphFunction &other);
+
+	void debug_analyze_range(Span<const math::Interval> input_ranges, const bool optimize_execution_map);
 
 private:
 	void register_subresource(Resource &resource);

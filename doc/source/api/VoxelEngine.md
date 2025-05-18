@@ -93,4 +93,4 @@ Gets the major (x), minor (y) and patch (z) version numbers of the voxel engine 
 
 Runs internal unit tests. This function is only available if the voxel engine is compiled with `voxel_tests=true`.
 
-_Generated on Apr 27, 2025_
+_Generated on May 15, 2025_

@@ -16,6 +16,7 @@ Primarily developped with Godot 4.4.1+
 - `VoxelBuffer`: added functions to rotate/mirror contents
 - `VoxelGeneratorGraph`: implemented constant reduction, which slightly optimizes graphs running on CPU if they contain constant branches
 - `VoxelGeneratorHeightmap`: added `offset` property
+- `VoxelGraphFunction`: Editor: preview nodes should now work
 - `VoxelInstanceLibraryItem`: Exposed `floating_sdf_*` parameters to tune how floating instances are detected after digging ground around them.
 - `VoxelInstanceLibraryMultiMeshItem`: 
     - Added `removal_behavior` property to trigger something when instances get removed
@@ -39,10 +40,15 @@ Primarily developped with Godot 4.4.1+
     - `VoxelGeneratorGraph`: 
         - Editor: fixed error sometimes printing after closing the graph editor
         - Editor: fixed error spam `Invalid param name` after editing a graph (in some yet unknown situations)
+        - Editor: fixed node dialog didn't auto-select the first item when searching
+        - Editor: decimal numbers that have no exact float representation are now displayed rounded instead of widening nodes excessively. Instead, the exact value is shown with a tooltip.
+        - Fixed incorrect texture painting leading to black triangles when using Mixel4 with OutputSingleTexture and GPU generation
     - `VoxelMesherBlocky`: Fixed crash when invalid model IDs are present at chunk borders with `VoxelLodTerrain`
     - `VoxelMesherTransvoxel`: Fixed some incorrect geometry changes near positive LOD borders, notably when voxel textures are used. Edge cases remain but can be fixed with a shader hack for now.
     - `VoxelStreamRegionFiles`: GDExtension: fixed error creating directories
-    - `VoxelStreamSQLite`: `preferred_coordinate_format` was incorrectly exposed (fixed thanks to @beicause)
+    - `VoxelStreamSQLite`: 
+        - `preferred_coordinate_format` was incorrectly exposed (fixed thanks to @beicause)
+        - Replaced error spam with a single warning when the stream has no path configured, notably when assigning a new stream in the editor
     - `VoxelTool`:
         - `is_area_editable` was off by one in size, and was always returning `true` if the size of the AABB had any component smaller than 1
         - `paste_masked` didn't check the right coordinates to clear metadata in destinations containing at least one. It also caused a spam of `get_voxel` being at invalid position

@@ -147,6 +147,6 @@ The node ID will be -1 if the error is not about a particular node.
 
 ### [VoxelGraphFunction](VoxelGraphFunction.md)<span id="i_get_main_function"></span> **get_main_function**( ) 
 
-*(This method has no documentation)*
+Gets the graph used for generation.
 
-_Generated on Apr 27, 2025_
+_Generated on May 15, 2025_

@@ -67,6 +67,10 @@ struct IntervalT {
 		return min == max;
 	}
 
+	inline bool is_valid() const {
+		return min <= max;
+	}
+
 	inline void add_point(T x) {
 		if (x < min) {
 			min = x;

@@ -30,6 +30,7 @@ def format_doc_bbcodes_for_markdown(text, multiline, fmt):
     bb_nodes = bbcode.parse(text)
 
     in_codeblock = False
+    in_code = False
     url = None
 
     current_class_name = fmt.current_class_name
@@ -62,6 +63,8 @@ def format_doc_bbcodes_for_markdown(text, multiline, fmt):
                 node_text = ''.join(lines2)
             
             if url != None:
+                if url == "TEXT":
+                    url = node_text
                 out += markdown.make_link(node_text, url)
                 url = None
 
@@ -84,10 +87,14 @@ def format_doc_bbcodes_for_markdown(text, multiline, fmt):
             
             elif bb_node.name == 'code':
                 out += '`'
+                in_code = bb_node.is_opening()
 
             elif bb_node.name == 'url':
                 if bb_node.is_opening():
-                    url = bb_node.value
+                    if bb_node.value == "":
+                        url = "TEXT"
+                    else:
+                        url = bb_node.value
             
             elif bb_node.name == 'member':
                 class_name, member_name = _extract_member_and_class(bb_node.get_first_option_key(), current_class_name)
@@ -112,6 +119,10 @@ def format_doc_bbcodes_for_markdown(text, multiline, fmt):
             elif bb_node.name == 'i':
                 # Simple emphasis, usually italic
                 out += '*'
+
+            elif in_code:
+                # Code can contain stuff that looks like unknown BBCodes.
+                out += bb_node.to_string()
 
             else:
                 # Class lookup: assuming name convention, 
