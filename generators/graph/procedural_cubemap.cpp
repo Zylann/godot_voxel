@@ -35,6 +35,18 @@ VoxelProceduralCubemap::Format VoxelProceduralCubemap::get_target_format() const
 	return _target_format;
 }
 
+void VoxelProceduralCubemap::set_derivatives_enabled(const bool enabled) {
+	if (enabled == _derivatives_enabled) {
+		return;
+	}
+	_derivatives_enabled = true;
+	_dirty = true;
+}
+
+bool VoxelProceduralCubemap::get_derivatives_enabled() const {
+	return _derivatives_enabled;
+}
+
 void VoxelProceduralCubemap::set_graph(Ref<pg::VoxelGraphFunction> graph) {
 	if (_graph == graph) {
 		return;
@@ -75,17 +87,17 @@ void VoxelProceduralCubemap::on_graph_changed() {
 	_dirty = true;
 }
 
-static Image::Format get_image_format(const VoxelProceduralCubemap::Format src) {
+static Image::Format get_image_format(const VoxelProceduralCubemap::Format src, const bool with_derivatives) {
 	switch (src) {
 		case VoxelProceduralCubemap::FORMAT_L8:
-			return Image::FORMAT_L8;
+			return with_derivatives ? Image::FORMAT_RGB8 : Image::FORMAT_L8;
 		case VoxelProceduralCubemap::FORMAT_R8:
-			return Image::FORMAT_R8;
+			return with_derivatives ? Image::FORMAT_RGB8 : Image::FORMAT_R8;
 		case VoxelProceduralCubemap::FORMAT_RF:
-			return Image::FORMAT_RF;
+			return with_derivatives ? Image::FORMAT_RGBF : Image::FORMAT_RF;
 		default:
 			ZN_PRINT_ERROR("Unhandled format");
-			return Image::FORMAT_L8;
+			return Image::FORMAT_MAX;
 	}
 }
 
@@ -127,7 +139,10 @@ void VoxelProceduralCubemap::update() {
 		}
 	}
 
-	const Image::Format image_format = get_image_format(_target_format);
+	const Image::Format image_format = get_image_format(_target_format, _derivatives_enabled);
+	if (image_format == Image::FORMAT_MAX) {
+		return;
+	}
 
 	// TODO Handle CPU filtering preservation. Re-pad afterwards? Generate with padding directly?
 
@@ -136,6 +151,14 @@ void VoxelProceduralCubemap::update() {
 	}
 
 	const int max_chunk_length = 256;
+
+	ZN_ASSERT_RETURN(_target_resolution > 0);
+	const float inv_res = 1.f / static_cast<float>(_target_resolution);
+	const float derivative_step_pixels = 0.1f;
+	const float derivative_step_uv = derivative_step_pixels * inv_res;
+	const float inv_derivative_step_pixels = 1.f / derivative_step_pixels;
+	const float derivative_quantization_a = _target_format == FORMAT_RF ? 1.f : 0.5f;
+	const float derivative_quantization_b = _target_format == FORMAT_RF ? 0.f : 0.5f;
 
 	StdVector<float> x_array;
 	StdVector<float> y_array;
@@ -171,13 +194,34 @@ void VoxelProceduralCubemap::update() {
 			for (int x = 0; x < im_size.x; ++x, ++pixel_index) {
 				// We add 0.5 so we calculate pixel centers
 				const Vector2f uv = (Vector2f(x, y) + Vector2f(0.5f)) * inv_im_size;
-				const Vector3f cube_pos = get_xyz_from_uv(uv, static_cast<SideIndex>(side));
-				const Vector3f sphere_pos = math::normalized(cube_pos);
-				x_array.push_back(sphere_pos.x);
-				y_array.push_back(sphere_pos.y);
-				z_array.push_back(sphere_pos.z);
+				{
+					const Vector3f cube_pos = get_xyz_from_uv(uv, static_cast<SideIndex>(side));
+					const Vector3f sphere_pos = math::normalized(cube_pos);
+					x_array.push_back(sphere_pos.x);
+					y_array.push_back(sphere_pos.y);
+					z_array.push_back(sphere_pos.z);
+				}
 
-				if (x_array.size() != max_chunk_length && pixel_index != last_pixel_index) {
+				if (_derivatives_enabled) {
+					{
+						const Vector2f uv2(uv.x + derivative_step_uv, uv.y);
+						const Vector3f cube_pos2 = get_xyz_from_uv(uv2, static_cast<SideIndex>(side));
+						const Vector3f sphere_pos2 = math::normalized(cube_pos2);
+						x_array.push_back(sphere_pos2.x);
+						y_array.push_back(sphere_pos2.y);
+						z_array.push_back(sphere_pos2.z);
+					}
+					{
+						const Vector2f uv3(uv.x, uv.y + derivative_step_uv);
+						const Vector3f cube_pos3 = get_xyz_from_uv(uv3, static_cast<SideIndex>(side));
+						const Vector3f sphere_pos3 = math::normalized(cube_pos3);
+						x_array.push_back(sphere_pos3.x);
+						y_array.push_back(sphere_pos3.y);
+						z_array.push_back(sphere_pos3.z);
+					}
+				}
+
+				if (x_array.size() < max_chunk_length && pixel_index != last_pixel_index) {
 					continue;
 				}
 
@@ -198,21 +242,33 @@ void VoxelProceduralCubemap::update() {
 				// 	default:
 				// Slow generic
 				unsigned int i = 0;
-				for (int y2 = y0; y2 <= y; ++y2) {
-					for (int x2 = x0; x2 <= x; ++x2, ++i) {
-						const float v = r_array[i];
-						const Color color(v, v, v);
-						image.set_pixel(x2, y2, color);
+				while (y0 <= y) {
+					const int xend = y0 < y ? _target_resolution : x + 1;
+					for (; x0 < xend; ++x0, ++i) {
+						if (_derivatives_enabled) {
+							const float v = r_array[i++];
+							const float v2 = r_array[i++];
+							const float v3 = r_array[i];
+							const float dx = (v2 - v) * inv_derivative_step_pixels;
+							const float dy = (v3 - v) * inv_derivative_step_pixels;
+							const float dx_norm = dx * derivative_quantization_a + derivative_quantization_b;
+							const float dy_norm = dy * derivative_quantization_a + derivative_quantization_b;
+							const Color color(v, dx_norm, dy_norm);
+							image.set_pixel(x0, y0, color);
+						} else {
+							const float v = r_array[i];
+							const Color color(v, v, v);
+							image.set_pixel(x0, y0, color);
+						}
+					}
+					if (x0 == static_cast<int>(_target_resolution)) {
+						++y0;
+						x0 = 0;
+					} else {
+						break;
 					}
 				}
 				// }
-
-				x0 = x + 1;
-				y0 = y;
-				if (x0 == im_size.x) {
-					x0 = 0;
-					++y0;
-				}
 
 				pixel_start_index = pixel_index + 1;
 
@@ -236,6 +292,7 @@ Ref<ZN_Cubemap> VoxelProceduralCubemap::zn_duplicate() const {
 	d->_target_format = _target_format;
 	d->_target_resolution = _target_resolution;
 	d->_dirty = _dirty;
+	d->_derivatives_enabled = _derivatives_enabled;
 	return d;
 }
 
@@ -246,6 +303,10 @@ void VoxelProceduralCubemap::_bind_methods() {
 	ClassDB::bind_method(
 			D_METHOD("set_target_resolution", "resolution"), &VoxelProceduralCubemap::set_target_resolution
 	);
+	ClassDB::bind_method(
+			D_METHOD("set_derivatives_enabled", "enabled"), &VoxelProceduralCubemap::set_derivatives_enabled
+	);
+	ClassDB::bind_method(D_METHOD("get_derivatives_enabled"), &VoxelProceduralCubemap::get_derivatives_enabled);
 	ClassDB::bind_method(D_METHOD("get_target_resolution"), &VoxelProceduralCubemap::get_target_resolution);
 
 	ClassDB::bind_method(D_METHOD("set_target_format", "format"), &VoxelProceduralCubemap::set_target_format);
@@ -265,6 +326,10 @@ void VoxelProceduralCubemap::_bind_methods() {
 			PropertyInfo(Variant::INT, "target_format", PROPERTY_HINT_ENUM, "R8,L8,RF"),
 			"set_target_format",
 			"get_target_format"
+	);
+
+	ADD_PROPERTY(
+			PropertyInfo(Variant::BOOL, "derivatives_enabled"), "set_derivatives_enabled", "get_derivatives_enabled"
 	);
 
 	ADD_SIGNAL(MethodInfo("updated"));

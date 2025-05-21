@@ -64,6 +64,15 @@ public:
 			Span<float> out_a
 	) const;
 
+	void sample_hermite_prepad(
+			Span<const float> x_array,
+			Span<const float> y_array,
+			Span<const float> z_array,
+			Span<float> out_r
+	) const;
+
+	const bool can_use_hermite_interpolation() const;
+
 	// void compute_ranges();
 
 	struct Range {

@@ -3,6 +3,7 @@
 #include "../math/box2f.h"
 #include "../math/box_bounds_2i.h"
 #include "../math/conv.h"
+#include "../math/hermite.h"
 #include "../math/vector2i.h"
 #include "../profiling.h"
 #include "../string/format.h"
@@ -111,6 +112,30 @@ Ref<Cubemap> ZN_Cubemap::create_texture() const {
 			image = image->duplicate();
 			image->crop_from_point(1, 1, image->get_width() - 2, image->get_height() - 2);
 		}
+
+		switch (get_format()) {
+			case Image::FORMAT_RGB8: {
+				// Workaround Godot warning `Image format RGB8 not supported by hardware, converting to RGBA8.`
+				// That wastes a bit of memory, but currently it's the simplest option.
+				// An alternative is to use a secondary RG8 cubemap, but that requires more sampling in shader code.
+				if (image == _images[side]) {
+					image = image->duplicate();
+				}
+				image->convert(Image::FORMAT_RGBA8);
+			} break;
+			case Image::FORMAT_RGBF: {
+				// Workaround Godot warning `Image format RGBF not supported by hardware, converting to RGBAF.`
+				// That wastes a bit of memory, but currently it's the simplest option.
+				// An alternative is to use a secondary RGF cubemap, but that requires more sampling in shader code.
+				if (image == _images[side]) {
+					image = image->duplicate();
+				}
+				image->convert(Image::FORMAT_RGBAF);
+			} break;
+			default:
+				break;
+		}
+
 		images[side] = image;
 	}
 
@@ -346,7 +371,13 @@ void ZN_Cubemap::make_linear_filterable() {
 	}
 }
 
-static inline Color get_pixel_linear_unchecked(const Image &im, float x, float y, int im_w, int im_h) {
+static inline Color get_pixel_linear_unchecked(
+		const Image &im,
+		const float x,
+		const float y,
+		const int im_w,
+		const int im_h
+) {
 	const int x0 = static_cast<int>(math::floor(x));
 	const int y0 = static_cast<int>(math::floor(y));
 	const int x1 = math::min(x0 + 1, im_w - 1);
@@ -420,10 +451,10 @@ static inline typename TConv::Dst get_pixel_linear_unchecked(
 	const float xf = x - x0;
 	const float yf = y - y0;
 
-	const TConv::Dst c00 = TConv::convert(im[x0 + y0 * im_w]);
-	const TConv::Dst c10 = TConv::convert(im[x1 + y0 * im_w]);
-	const TConv::Dst c01 = TConv::convert(im[x0 + y1 * im_w]);
-	const TConv::Dst c11 = TConv::convert(im[x1 + y1 * im_w]);
+	const typename TConv::Dst c00 = TConv::convert(im[x0 + y0 * im_w]);
+	const typename TConv::Dst c10 = TConv::convert(im[x1 + y0 * im_w]);
+	const typename TConv::Dst c01 = TConv::convert(im[x0 + y1 * im_w]);
+	const typename TConv::Dst c11 = TConv::convert(im[x1 + y1 * im_w]);
 
 	// const TConv::Dst cl = math::lerp(math::lerp(c00, c10, xf), math::lerp(c01, c11, xf), yf);
 	typename TConv::Dst cl;
@@ -463,7 +494,8 @@ void sample_linear_prepad_unchecked(
 		const Vector2f uv_px = uv.position * ts;
 		// We make it so linear filtering is centered on pixels to make it symetrical, otherwise sides of the cubemap
 		// don't line up (haven't fully figured out why tho)
-		const TConv::Dst c = get_pixel_linear_unchecked<TConv>(im, uv_px.x + 0.5f, uv_px.y + 0.5f, res.x, res.y);
+		const typename TConv::Dst c =
+				get_pixel_linear_unchecked<TConv>(im, uv_px.x + 0.5f, uv_px.y + 0.5f, res.x, res.y);
 
 		for (unsigned int ci = 0; ci < c.size(); ++ci) {
 			if (dst_channels[ci].size() != 0) {
@@ -544,6 +576,148 @@ void ZN_Cubemap::sample_linear_prepad(
 				}
 			}
 		} break;
+	}
+}
+
+template <typename TConv, typename TDecodeDerivative>
+static inline typename float get_pixel_hermite_unchecked(
+		const Span<const typename TConv::Src> im,
+		const float x,
+		const float y,
+		const int im_w,
+		const int im_h,
+		const TDecodeDerivative decode_derivative
+) {
+	const int x0 = static_cast<int>(math::floor(x));
+	const int y0 = static_cast<int>(math::floor(y));
+	const int x1 = math::min(x0 + 1, im_w - 1);
+	const int y1 = math::min(y0 + 1, im_h - 1);
+
+	const float xf = x - x0;
+	const float yf = y - y0;
+
+	const typename TConv::Dst c00 = TConv::convert(im[x0 + y0 * im_w]);
+	const typename TConv::Dst c10 = TConv::convert(im[x1 + y0 * im_w]);
+	const typename TConv::Dst c01 = TConv::convert(im[x0 + y1 * im_w]);
+	const typename TConv::Dst c11 = TConv::convert(im[x1 + y1 * im_w]);
+
+	const float c = math::interpolate_hermite_2d(
+			Vector2f(xf, yf),
+			Vector2f(1.f, 1.f),
+			Vector3f(c00[0], decode_derivative(c00[1]), decode_derivative(c00[2])),
+			Vector3f(c10[0], decode_derivative(c10[1]), decode_derivative(c10[2])),
+			Vector3f(c01[0], decode_derivative(c01[1]), decode_derivative(c01[2])),
+			Vector3f(c11[0], decode_derivative(c11[1]), decode_derivative(c11[2]))
+	);
+
+	return c;
+}
+
+template <typename TConv, typename TDecodeDerivative>
+inline void sample_hermite_prepad_unchecked(
+		Span<const float> x_array,
+		Span<const float> y_array,
+		Span<const float> z_array,
+		Span<float> r_out,
+		const std::array<Ref<Image>, ZN_Cubemap::SIDE_COUNT> &gd_ims,
+		const TDecodeDerivative decode_derivative
+) {
+	std::array<Span<const TConv::Src>, ZN_Cubemap::SIDE_COUNT> ims;
+
+	for (unsigned int side = 0; side < ims.size(); ++side) {
+		const Image &im = **gd_ims[side];
+		const PackedByteArray pba = im.get_data();
+		ims[side] = to_span(pba).reinterpret_cast_to<const TConv::Src>();
+	}
+
+	const Vector2i res = gd_ims[0]->get_size();
+	const Vector2f ts = to_vec2f(res - Vector2i(2, 2));
+
+	for (unsigned int i = 0; i < x_array.size(); ++i) {
+		const Vector3f position(x_array[i], y_array[i], z_array[i]);
+		// const ZN_Cubemap::UV uv = ZN_Cubemap::get_uv_from_xyz(position);
+		// Use inline version. MUCH faster
+		const ZN_Cubemap::UV uv = convert_xyz_to_cube_uv(position);
+
+		const Span<const TConv::Src> im = ims[uv.side];
+		const Vector2f uv_px = uv.position * ts;
+		// We make it so linear filtering is centered on pixels to make it symetrical, otherwise sides of the cubemap
+		// don't line up (haven't fully figured out why tho)
+		const float c = get_pixel_hermite_unchecked<TConv, TDecodeDerivative>(
+				im, uv_px.x + 0.5f, uv_px.y + 0.5f, res.x, res.y, decode_derivative
+		);
+
+		r_out[i] = c;
+	}
+}
+
+inline float u8_to_snorm(const uint8_t i) {
+	const int j = i - 128;
+	return math::max(static_cast<float>(j) / 127.f, -1.f);
+}
+
+const bool ZN_Cubemap::can_use_hermite_interpolation() const {
+	if (!is_valid()) {
+		return false;
+	}
+	switch (get_format()) {
+		case Image::FORMAT_RGB8:
+		case Image::FORMAT_RGBF:
+			return true;
+		default:
+			return false;
+	}
+}
+
+void ZN_Cubemap::sample_hermite_prepad(
+		Span<const float> x_array,
+		Span<const float> y_array,
+		Span<const float> z_array,
+		Span<float> out_r
+) const {
+	ZN_PROFILE_SCOPE();
+
+	// TODO Could be optimized further if we have a hint about sampling only one side
+
+#ifdef DEV_ENABLED
+	ZN_ASSERT(is_valid());
+	ZN_ASSERT(x_array.size() == y_array.size() && y_array.size() == z_array.size());
+	ZN_ASSERT(out_r.size() == x_array.size());
+#endif
+
+	if (x_array.size() == 0) {
+		return;
+	}
+
+	const Image::Format format = get_format();
+
+	switch (format) {
+		case Image::FORMAT_RGB8: {
+			struct UNormToDeriv {
+				inline float operator()(const float f) const {
+					// return u8_to_snorm(i);
+					return 2.f * f - 1.f;
+				}
+			};
+			sample_hermite_prepad_unchecked<pixelconv::U8ToFloat<3>, UNormToDeriv>(
+					x_array, y_array, z_array, out_r, _images, UNormToDeriv{}
+			);
+		} break;
+
+		case Image::FORMAT_RGBF: {
+			struct F32ToDeriv {
+				inline float operator()(const float f) const {
+					return f;
+				}
+			};
+			sample_hermite_prepad_unchecked<pixelconv::Direct<float, 3>, F32ToDeriv>(
+					x_array, y_array, z_array, out_r, _images, F32ToDeriv{}
+			);
+		} break;
+
+		default:
+			ZN_PRINT_ERROR_ONCE("Unhandled format");
+			break;
 	}
 }
 

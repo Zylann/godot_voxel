@@ -4,6 +4,7 @@
 #include "../containers/span.h"
 #include "../errors.h"
 #include "funcs.h"
+#include "vector2t.h"
 
 namespace zylann {
 
@@ -152,6 +153,10 @@ struct Vector3T {
 	inline Vector3T<T> yzx() const {
 		return Vector3T<T>(y, z, x);
 	}
+
+	inline Vector2T<T> yz() const {
+		return Vector2T<T>(y, z);
+	}
 };
 
 template <typename T>
@@ -198,11 +203,12 @@ inline T distance(const Vector3T<T> &a, const Vector3T<T> &b) {
 
 template <typename T>
 inline Vector3T<T> cross(const Vector3T<T> &a, const Vector3T<T> &b) {
-	const Vector3T<T> ret( //
-			(a.y * b.z) - (a.z * b.y), //
-			(a.z * b.x) - (a.x * b.z), //
-			(a.x * b.y) - (a.y * b.x)
-	);
+	const Vector3T<T>
+			ret( //
+					(a.y * b.z) - (a.z * b.y), //
+					(a.z * b.x) - (a.x * b.z), //
+					(a.x * b.y) - (a.y * b.x)
+			);
 	return ret;
 }
 

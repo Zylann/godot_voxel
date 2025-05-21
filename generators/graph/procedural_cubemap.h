@@ -31,6 +31,9 @@ public:
 	void set_target_format(const Format format);
 	Format get_target_format() const;
 
+	void set_derivatives_enabled(const bool enabled);
+	bool get_derivatives_enabled() const;
+
 	void set_graph(Ref<pg::VoxelGraphFunction> graph);
 	Ref<pg::VoxelGraphFunction> get_graph() const;
 
@@ -49,6 +52,7 @@ private:
 
 	unsigned int _target_resolution = 256;
 	bool _dirty = false;
+	bool _derivatives_enabled = false;
 	Format _target_format = FORMAT_L8;
 	Ref<pg::VoxelGraphFunction> _graph;
 };

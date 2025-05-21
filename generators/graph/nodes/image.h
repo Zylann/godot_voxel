@@ -288,8 +288,15 @@ void register_image_nodes(Span<NodeType> types) {
 		};
 	}
 	{
+		enum Filter : uint32_t {
+			FILTER_LINEAR = 0,
+			FILTER_HERMITE,
+			FILTER_COUNT,
+		};
+
 		struct Params {
 			const ZN_Cubemap *cubemap;
+			Filter filter;
 		};
 
 		NodeType &t = types[VoxelGraphFunction::NODE_CUBEMAP];
@@ -301,12 +308,18 @@ void register_image_nodes(Span<NodeType> types) {
 		t.outputs.push_back(NodeType::Port("r"));
 		t.params.push_back(NodeType::Param("cubemap", ZN_Cubemap::get_class_static(), nullptr));
 
+		t.params.push_back(NodeType::Param("filter", Variant::INT, FILTER_LINEAR));
+		NodeType::Param &filter_param = t.params.back();
+		filter_param.enum_items.push_back("Bilinear");
+		filter_param.enum_items.push_back("Hermite");
+
 		t.compile_func = [](CompileContext &ctx) {
 			Ref<ZN_Cubemap> cubemap = ctx.get_param(0);
 			if (cubemap.is_null()) {
 				ctx.make_error(String(ZN_TTR("{0} instance is null")).format(varray(ZN_Cubemap::get_class_static())));
 				return;
 			}
+			const Filter filter = static_cast<Filter>(int(ctx.get_param(1)));
 			{
 				// Not ideal. If Godot had a "post_load" after setting resource properties, we wouldn't need to do
 				// that...
@@ -321,9 +334,19 @@ void register_image_nodes(Span<NodeType> types) {
 				ctx.make_error(String(ZN_TTR("{0} is not valid")).format(varray(ZN_Cubemap::get_class_static())));
 				return;
 			}
+			if (filter == FILTER_HERMITE) {
+				if (!cubemap->can_use_hermite_interpolation()) {
+					ctx.make_error(
+							String(ZN_TTR("Can't use Hermite interpolation because {0} does not contain derivatives.")
+										   .format(varray(ZN_Cubemap::get_class_static())))
+					);
+					return;
+				}
+			}
 			cubemap->make_linear_filterable();
 			Params p;
 			p.cubemap = cubemap.ptr();
+			p.filter = filter;
 			ctx.set_params(p);
 		};
 
@@ -335,15 +358,33 @@ void register_image_nodes(Span<NodeType> types) {
 			Runtime::Buffer &out = ctx.get_output(0);
 			const Params p = ctx.get_params<Params>();
 			const ZN_Cubemap &cubemap = *p.cubemap;
-			cubemap.sample_linear_prepad(
-					Span<const float>(x.data, x.size),
-					Span<const float>(y.data, y.size),
-					Span<const float>(z.data, z.size),
-					Span<float>(out.data, out.size),
-					Span<float>(),
-					Span<float>(),
-					Span<float>()
-			);
+
+			switch (p.filter) {
+				case FILTER_LINEAR:
+					cubemap.sample_linear_prepad(
+							Span<const float>(x.data, x.size),
+							Span<const float>(y.data, y.size),
+							Span<const float>(z.data, z.size),
+							Span<float>(out.data, out.size),
+							Span<float>(),
+							Span<float>(),
+							Span<float>()
+					);
+					break;
+
+				case FILTER_HERMITE:
+					cubemap.sample_hermite_prepad(
+							Span<const float>(x.data, x.size),
+							Span<const float>(y.data, y.size),
+							Span<const float>(z.data, z.size),
+							Span<float>(out.data, out.size)
+					);
+					break;
+
+				default:
+					ZN_PRINT_ERROR_ONCE("Unhandled filter");
+					break;
+			}
 		};
 
 		t.range_analysis_func = [](Runtime::RangeAnalysisContext &ctx) {
@@ -362,6 +403,17 @@ void register_image_nodes(Span<NodeType> types) {
 			Ref<ZN_Cubemap> cubemap = ctx.get_param(0);
 			if (cubemap.is_null()) {
 				ctx.make_error(String(ZN_TTR("{0} instance is null")).format(varray(ZN_Cubemap::get_class_static())));
+				return;
+			}
+
+			const Filter filter = static_cast<Filter>(int(ctx.get_param(1)));
+			if (filter == FILTER_HERMITE) {
+				// TODO Figure out cubemap Hermite sampling in GLSL
+				// Probably needs to be done manually, which isn't too fancy on a 2D texture, but on a cubemap?
+				// A smooth brain approach could be to litterally mimick what we do in ZN_Cubemap on the CPU: instead of
+				// a "cubemap", create a texture array with 6 texture for 6 sides, fill it with padded pixels, and use
+				// texelFetch
+				ctx.make_error("GPU cubemap Hermite interpolation is not implemented yet.");
 				return;
 			}
 
