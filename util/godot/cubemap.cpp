@@ -947,6 +947,11 @@ void ZN_Cubemap::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("create_empty", "resolution", "format"), &Self::create);
 	ClassDB::bind_method(D_METHOD("create_from_images", "images"), &Self::create_from_images);
 	ClassDB::bind_method(D_METHOD("get_image", "side"), &Self::_b_get_image);
+	ClassDB::bind_method(D_METHOD("create_texture"), &Self::create_texture);
+	ClassDB::bind_method(D_METHOD("get_resolution"), &Self::get_resolution);
+	ClassDB::bind_method(D_METHOD("get_format"), &Self::get_format);
+	ClassDB::bind_method(D_METHOD("is_valid"), &Self::is_valid);
+	ClassDB::bind_method(D_METHOD("make_linear_filterable"), &Self::make_linear_filterable);
 	ClassDB::bind_method(D_METHOD("zn_duplicate"), &Self::zn_duplicate);
 
 	BIND_ENUM_CONSTANT(SIDE_POSITIVE_X);
