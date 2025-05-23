@@ -942,6 +942,14 @@ void ZN_Cubemap::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("create_empty", "resolution", "format"), &Self::create);
 	ClassDB::bind_method(D_METHOD("create_from_images", "images"), &Self::create_from_images);
 	ClassDB::bind_method(D_METHOD("zn_duplicate"), &Self::zn_duplicate);
+
+	BIND_ENUM_CONSTANT(SIDE_POSITIVE_X);
+	BIND_ENUM_CONSTANT(SIDE_NEGATIVE_X);
+	BIND_ENUM_CONSTANT(SIDE_POSITIVE_Y);
+	BIND_ENUM_CONSTANT(SIDE_NEGATIVE_Y);
+	BIND_ENUM_CONSTANT(SIDE_POSITIVE_Z);
+	BIND_ENUM_CONSTANT(SIDE_NEGATIVE_Z);
+	BIND_ENUM_CONSTANT(SIDE_COUNT);
 }
 
 } // namespace zylann

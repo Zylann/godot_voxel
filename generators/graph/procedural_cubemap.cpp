@@ -338,6 +338,10 @@ void VoxelProceduralCubemap::_bind_methods() {
 	);
 
 	ADD_SIGNAL(MethodInfo("updated"));
+
+	BIND_ENUM_CONSTANT(FORMAT_L8);
+	BIND_ENUM_CONSTANT(FORMAT_R8);
+	BIND_ENUM_CONSTANT(FORMAT_RF);
 }
 
 } // namespace zylann::voxel

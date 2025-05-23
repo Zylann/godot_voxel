@@ -135,4 +135,6 @@ private:
 
 } // namespace zylann
 
+VARIANT_ENUM_CAST(zylann::ZN_Cubemap::SideIndex);
+
 #endif // ZN_CUBEMAP_H
