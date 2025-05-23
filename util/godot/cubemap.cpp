@@ -936,11 +936,17 @@ void ZN_Cubemap::duplicate_to(ZN_Cubemap &d) const {
 	d._padded = _padded;
 }
 
+Ref<Image> ZN_Cubemap::_b_get_image(const SideIndex side) const {
+	ZN_ASSERT_RETURN_V(side >= 0 && side < SIDE_COUNT, Ref<Image>());
+	return _images[side];
+}
+
 void ZN_Cubemap::_bind_methods() {
 	using Self = ZN_Cubemap;
 
 	ClassDB::bind_method(D_METHOD("create_empty", "resolution", "format"), &Self::create);
 	ClassDB::bind_method(D_METHOD("create_from_images", "images"), &Self::create_from_images);
+	ClassDB::bind_method(D_METHOD("get_image", "side"), &Self::_b_get_image);
 	ClassDB::bind_method(D_METHOD("zn_duplicate"), &Self::zn_duplicate);
 
 	BIND_ENUM_CONSTANT(SIDE_POSITIVE_X);

@@ -127,6 +127,8 @@ protected:
 	void duplicate_to(ZN_Cubemap &d) const;
 
 private:
+	Ref<Image> _b_get_image(const SideIndex side) const;
+
 	static void _bind_methods();
 
 	std::array<Ref<Image>, SIDE_COUNT> _images;
