@@ -9,6 +9,7 @@
 #include "../string/format.h"
 #include "classes/cubemap.h"
 #include "classes/image_texture_layered.h"
+#include "classes/texture_2d_array.h"
 #include "core/packed_arrays.h"
 #include "image_utility.h"
 #include <array>
@@ -98,6 +99,32 @@ const Ref<Image> ZN_Cubemap::get_image_ref(const unsigned int side) const {
 	return _images[side];
 }
 
+Ref<Image> ZN_Cubemap::workaround_rgb_limitation(Ref<Image> image, const SideIndex side) const {
+	switch (get_format()) {
+		case Image::FORMAT_RGB8: {
+			// Workaround Godot warning `Image format RGB8 not supported by hardware, converting to RGBA8.`
+			// That wastes a bit of memory, but currently it's the simplest option.
+			// An alternative is to use a secondary RG8 cubemap, but that requires more sampling in shader code.
+			if (image == _images[side]) {
+				image = image->duplicate();
+			}
+			image->convert(Image::FORMAT_RGBA8);
+		} break;
+		case Image::FORMAT_RGBF: {
+			// Workaround Godot warning `Image format RGBF not supported by hardware, converting to RGBAF.`
+			// That wastes a bit of memory, but currently it's the simplest option.
+			// An alternative is to use a secondary RGF cubemap, but that requires more sampling in shader code.
+			if (image == _images[side]) {
+				image = image->duplicate();
+			}
+			image->convert(Image::FORMAT_RGBAF);
+		} break;
+		default:
+			break;
+	}
+	return image;
+}
+
 Ref<Cubemap> ZN_Cubemap::create_texture() const {
 	if (!is_valid()) {
 		return Ref<Cubemap>();
@@ -113,33 +140,33 @@ Ref<Cubemap> ZN_Cubemap::create_texture() const {
 			image->crop_from_point(1, 1, image->get_width() - 2, image->get_height() - 2);
 		}
 
-		switch (get_format()) {
-			case Image::FORMAT_RGB8: {
-				// Workaround Godot warning `Image format RGB8 not supported by hardware, converting to RGBA8.`
-				// That wastes a bit of memory, but currently it's the simplest option.
-				// An alternative is to use a secondary RG8 cubemap, but that requires more sampling in shader code.
-				if (image == _images[side]) {
-					image = image->duplicate();
-				}
-				image->convert(Image::FORMAT_RGBA8);
-			} break;
-			case Image::FORMAT_RGBF: {
-				// Workaround Godot warning `Image format RGBF not supported by hardware, converting to RGBAF.`
-				// That wastes a bit of memory, but currently it's the simplest option.
-				// An alternative is to use a secondary RGF cubemap, but that requires more sampling in shader code.
-				if (image == _images[side]) {
-					image = image->duplicate();
-				}
-				image->convert(Image::FORMAT_RGBAF);
-			} break;
-			default:
-				break;
-		}
+		image = workaround_rgb_limitation(image, static_cast<SideIndex>(side));
 
 		images[side] = image;
 	}
 
 	Ref<Cubemap> tex;
+	tex.instantiate();
+	zylann::godot::create_from_images(**tex, images);
+
+	return tex;
+}
+
+Ref<Texture2DArray> ZN_Cubemap::create_texture_array() const {
+	if (!is_valid()) {
+		return Ref<Texture2DArray>();
+	}
+
+	TypedArray<Image> images;
+	images.resize(_images.size());
+
+	for (unsigned int side = 0; side < SIDE_COUNT; ++side) {
+		Ref<Image> image = _images[side];
+		image = workaround_rgb_limitation(image, static_cast<SideIndex>(side));
+		images[side] = image;
+	}
+
+	Ref<Texture2DArray> tex;
 	tex.instantiate();
 	zylann::godot::create_from_images(**tex, images);
 
@@ -948,10 +975,12 @@ void ZN_Cubemap::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("create_from_images", "images"), &Self::create_from_images);
 	ClassDB::bind_method(D_METHOD("get_image", "side"), &Self::_b_get_image);
 	ClassDB::bind_method(D_METHOD("create_texture"), &Self::create_texture);
+	ClassDB::bind_method(D_METHOD("create_texture_array"), &Self::create_texture_array);
 	ClassDB::bind_method(D_METHOD("get_resolution"), &Self::get_resolution);
 	ClassDB::bind_method(D_METHOD("get_format"), &Self::get_format);
 	ClassDB::bind_method(D_METHOD("is_valid"), &Self::is_valid);
 	ClassDB::bind_method(D_METHOD("make_linear_filterable"), &Self::make_linear_filterable);
+
 	ClassDB::bind_method(D_METHOD("zn_duplicate"), &Self::zn_duplicate);
 
 	BIND_ENUM_CONSTANT(SIDE_POSITIVE_X);

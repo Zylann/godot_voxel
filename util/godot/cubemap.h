@@ -14,6 +14,7 @@
 
 ZN_GODOT_NAMESPACE_BEGIN
 class Cubemap;
+class Texture2DArray;
 ZN_GODOT_NAMESPACE_END
 
 namespace zylann {
@@ -45,6 +46,7 @@ public:
 	const Ref<Image> get_image_ref(const unsigned int side) const;
 
 	Ref<Cubemap> create_texture() const;
+	Ref<Texture2DArray> create_texture_array() const;
 
 	Color sample_nearest(const Vector3f position) const;
 	Color sample_nearest_prepad(const Vector3f position) const;
@@ -124,6 +126,8 @@ public:
 	static Vector3f get_xyz_from_uv(const Vector2f uv, const SideIndex face);
 
 protected:
+	Ref<Image> workaround_rgb_limitation(Ref<Image> im, const SideIndex side) const;
+
 	void duplicate_to(ZN_Cubemap &d) const;
 
 private:
