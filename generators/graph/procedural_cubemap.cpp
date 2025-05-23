@@ -50,6 +50,20 @@ bool VoxelProceduralCubemap::get_derivatives_enabled() const {
 	return _derivatives_enabled;
 }
 
+void VoxelProceduralCubemap::set_derivative_pixel_step(const float step) {
+	const float checked_step = math::clamp(step, 0.00001f, 1.f);
+	if (checked_step == _derivative_pixel_step) {
+		return;
+	}
+	_derivative_pixel_step = checked_step;
+	_dirty = true;
+	emit_changed();
+}
+
+float VoxelProceduralCubemap::get_derivative_pixel_step() const {
+	return _derivative_pixel_step;
+}
+
 void VoxelProceduralCubemap::set_graph(Ref<pg::VoxelGraphFunction> graph) {
 	if (_graph == graph) {
 		return;
@@ -159,7 +173,7 @@ void VoxelProceduralCubemap::update() {
 
 	ZN_ASSERT_RETURN(_target_resolution > 0);
 	const float inv_res = 1.f / static_cast<float>(_target_resolution);
-	const float derivative_step_pixels = 0.1f;
+	const float derivative_step_pixels = _derivative_pixel_step;
 	const float derivative_step_uv = derivative_step_pixels * inv_res;
 	const float inv_derivative_step_pixels = 1.f / derivative_step_pixels;
 	const float derivative_quantization_a = _target_format == FORMAT_RF ? 1.f : 0.5f;
@@ -314,6 +328,11 @@ void VoxelProceduralCubemap::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_derivatives_enabled"), &VoxelProceduralCubemap::get_derivatives_enabled);
 	ClassDB::bind_method(D_METHOD("get_target_resolution"), &VoxelProceduralCubemap::get_target_resolution);
 
+	ClassDB::bind_method(D_METHOD("get_derivative_pixel_step"), &VoxelProceduralCubemap::get_derivative_pixel_step);
+	ClassDB::bind_method(
+			D_METHOD("set_derivative_pixel_step", "step"), &VoxelProceduralCubemap::set_derivative_pixel_step
+	);
+
 	ClassDB::bind_method(D_METHOD("set_target_format", "format"), &VoxelProceduralCubemap::set_target_format);
 	ClassDB::bind_method(D_METHOD("get_target_format"), &VoxelProceduralCubemap::get_target_format);
 
@@ -335,6 +354,12 @@ void VoxelProceduralCubemap::_bind_methods() {
 
 	ADD_PROPERTY(
 			PropertyInfo(Variant::BOOL, "derivatives_enabled"), "set_derivatives_enabled", "get_derivatives_enabled"
+	);
+
+	ADD_PROPERTY(
+			PropertyInfo(Variant::FLOAT, "derivative_pixel_step"),
+			"set_derivative_pixel_step",
+			"get_derivative_pixel_step"
 	);
 
 	ADD_SIGNAL(MethodInfo("updated"));

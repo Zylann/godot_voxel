@@ -34,6 +34,9 @@ public:
 	void set_derivatives_enabled(const bool enabled);
 	bool get_derivatives_enabled() const;
 
+	void set_derivative_pixel_step(const float step);
+	float get_derivative_pixel_step() const;
+
 	void set_graph(Ref<pg::VoxelGraphFunction> graph);
 	Ref<pg::VoxelGraphFunction> get_graph() const;
 
@@ -53,6 +56,7 @@ private:
 	unsigned int _target_resolution = 256;
 	bool _dirty = false;
 	bool _derivatives_enabled = false;
+	float _derivative_pixel_step = 0.1f;
 	Format _target_format = FORMAT_L8;
 	Ref<pg::VoxelGraphFunction> _graph;
 };
