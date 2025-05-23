@@ -17,6 +17,7 @@ void VoxelProceduralCubemap::set_target_resolution(const unsigned int new_resolu
 	}
 	_target_resolution = res;
 	_dirty = true;
+	emit_changed();
 }
 
 int VoxelProceduralCubemap::get_target_resolution() const {
@@ -29,6 +30,7 @@ void VoxelProceduralCubemap::set_target_format(const Format format) {
 	}
 	_target_format = format;
 	_dirty = true;
+	emit_changed();
 }
 
 VoxelProceduralCubemap::Format VoxelProceduralCubemap::get_target_format() const {
@@ -41,6 +43,7 @@ void VoxelProceduralCubemap::set_derivatives_enabled(const bool enabled) {
 	}
 	_derivatives_enabled = true;
 	_dirty = true;
+	emit_changed();
 }
 
 bool VoxelProceduralCubemap::get_derivatives_enabled() const {
@@ -77,6 +80,7 @@ void VoxelProceduralCubemap::set_graph(Ref<pg::VoxelGraphFunction> graph) {
 	}
 
 	_dirty = true;
+	emit_changed();
 }
 
 Ref<pg::VoxelGraphFunction> VoxelProceduralCubemap::get_graph() const {
@@ -85,6 +89,7 @@ Ref<pg::VoxelGraphFunction> VoxelProceduralCubemap::get_graph() const {
 
 void VoxelProceduralCubemap::on_graph_changed() {
 	_dirty = true;
+	emit_changed();
 }
 
 static Image::Format get_image_format(const VoxelProceduralCubemap::Format src, const bool with_derivatives) {
