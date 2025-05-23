@@ -336,6 +336,8 @@ void VoxelProceduralCubemap::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_target_format", "format"), &VoxelProceduralCubemap::set_target_format);
 	ClassDB::bind_method(D_METHOD("get_target_format"), &VoxelProceduralCubemap::get_target_format);
 
+	ClassDB::bind_method(D_METHOD("update"), &VoxelProceduralCubemap::update);
+
 	ADD_PROPERTY(
 			PropertyInfo(
 					Variant::OBJECT, "graph", PROPERTY_HINT_RESOURCE_TYPE, pg::VoxelGraphFunction::get_class_static()
