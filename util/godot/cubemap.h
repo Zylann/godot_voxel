@@ -52,7 +52,7 @@ public:
 	Color sample_nearest_prepad(const Vector3f position) const;
 
 	// Pads each image by 1 pixel containing copies of neighbor pixels for fast linear sampling
-	void make_linear_filterable();
+	void make_linear_filterable(const bool with_derivatives);
 
 	Color sample_linear_prepad(const Vector3f position) const;
 

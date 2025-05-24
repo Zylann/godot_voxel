@@ -448,32 +448,42 @@ inline float deg_to_rad(float p_y) {
 	return p_y * PI<float> / 180.f;
 }
 
-// a*x+b
-struct LinearFuncParams {
-	float a;
-	float b;
-};
+struct LinearFunc {
+	float a = 0.f;
+	float b = 0.f;
 
-// Given source and destination intervals, returns parameters to use in an `a*x+b` formula to apply such remap.
-// If the source interval is approximatively empty, returns zero values.
-inline LinearFuncParams remap_intervals_to_linear_params(float min0, float max0, float min1, float max1) {
-	// min1 + (max1 - min1) * (x - min0) / (max0 - min0)
-	// min1 + (max1 - min1) * (x - min0) * (1/(max0 - min0))
-	// min1 +       A       * (x - min0) *        B
-	// min1 + A * B * (x - min0)
-	// min1 + A * B * x - A * B * min0
-	// min1 +   C   * x -   C   * min0
-	// min1 - C * min0 + C * x
-	// (min1 - C * min0) + C * x
-	//         b         + a * x
-	// a * x + b
-	if (Math::is_equal_approx(max0, min0)) {
-		return { 0.f, 0.f };
+	inline float eval(const float x) const {
+		return a * x + b;
 	}
-	const float a = (max1 - min1) / (max0 - min0);
-	const float b = min1 - a * min0;
-	return { a, b };
-}
+
+	inline LinearFunc invert() const {
+#ifdef DEV_ENABLED
+		ZN_ASSERT(a > 0.00001f);
+#endif
+		return { 1.f / a, -b / a };
+	}
+
+	// Given source and destination intervals, returns parameters to use in an `a*x+b` formula to apply such remap.
+	// If the source interval is approximatively empty, returns zero values.
+	static inline LinearFunc from_remap(float min0, float max0, float min1, float max1) {
+		// min1 + (max1 - min1) * (x - min0) / (max0 - min0)
+		// min1 + (max1 - min1) * (x - min0) * (1/(max0 - min0))
+		// min1 +       A       * (x - min0) *        B
+		// min1 + A * B * (x - min0)
+		// min1 + A * B * x - A * B * min0
+		// min1 +   C   * x -   C   * min0
+		// min1 - C * min0 + C * x
+		// (min1 - C * min0) + C * x
+		//         b         + a * x
+		// a * x + b
+		if (Math::is_equal_approx(max0, min0)) {
+			return { 0.f, 0.f };
+		}
+		const float a = (max1 - min1) / (max0 - min0);
+		const float b = min1 - a * min0;
+		return { a, b };
+	}
+};
 
 // The result of the right-shift operator `>>` is implementation-defined until C++20, where it performs arithmetic
 // shift. This function makes it explicit to handle eventual issues before C++20.

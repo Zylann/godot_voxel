@@ -299,8 +299,139 @@ void copy_side_pixels_pad(Image &dst, const Image &src) {
 	}
 }
 
+static math::LinearFunc get_derivative_decoder(const Image::Format format) {
+	switch (format) {
+		case Image::FORMAT_RGB8:
+			return math::LinearFunc::from_remap(0.f, 1.f, -1.f, 1.f);
+		case Image::FORMAT_RGBF:
+			return { 1.f, 0.f };
+		default:
+			ZN_PRINT_ERROR_ONCE("Unhandled format");
+			return { 1.f, 0.f };
+	}
+}
+
+// When we pad each image with border pixels of their neighbors, some pairs of sides have different orientations, which
+// would break Hermite interpolation. So we need to rotate derivatives accordingly.
+static void fix_border_derivatives(std::array<Ref<Image>, ZN_Cubemap::SIDE_COUNT> &images) {
+	Image &nx = **images[ZN_Cubemap::SIDE_NEGATIVE_X];
+	Image &px = **images[ZN_Cubemap::SIDE_POSITIVE_X];
+	Image &ny = **images[ZN_Cubemap::SIDE_NEGATIVE_Y];
+	Image &py = **images[ZN_Cubemap::SIDE_POSITIVE_Y];
+	Image &nz = **images[ZN_Cubemap::SIDE_NEGATIVE_Z];
+
+	const int res = images[0]->get_size().x;
+
+	const math::LinearFunc decoder = get_derivative_decoder(images[0]->get_format());
+	const math::LinearFunc encoder = decoder.invert();
+
+	struct Pixel {
+		float v;
+		float dx;
+		float dy;
+
+		inline Pixel(const float pv, const float pdx, const float pdy) : v(pv), dx(pdx), dy(pdy) {}
+
+		static inline Pixel unpack(const Color c, const math::LinearFunc decoder) {
+			return { c.r, decoder.eval(c.g), decoder.eval(c.b) };
+		}
+
+		inline Color pack(const math::LinearFunc encoder) const {
+			return Color(v, encoder.eval(dx), encoder.eval(dy));
+		}
+	};
+
+	// -X
+	{
+		// top (+Y)
+		for (int i = 0; i < res; ++i) {
+			const Pixel c = Pixel::unpack(nx.get_pixel(i, 0), decoder);
+			const Pixel c2(c.v, c.dy, -c.dx);
+			nx.set_pixel(i, 0, c2.pack(encoder));
+		}
+		// bottom (-Y)
+		for (int i = 0; i < res; ++i) {
+			const Pixel c = Pixel::unpack(nx.get_pixel(i, res - 1), decoder);
+			const Pixel c2(c.v, -c.dy, c.dx);
+			nx.set_pixel(i, res - 1, c2.pack(encoder));
+		}
+	}
+	// +X
+	{
+		// Top (+Y)
+		for (int i = 0; i < res; ++i) {
+			const Pixel c = Pixel::unpack(px.get_pixel(i, 0), decoder);
+			const Pixel c2(c.v, -c.dy, c.dx);
+			px.set_pixel(i, 0, c2.pack(encoder));
+		}
+		// Bottom (-Y)
+		for (int i = 0; i < res; ++i) {
+			const Pixel c = Pixel::unpack(px.get_pixel(i, res - 1), decoder);
+			const Pixel c2(c.v, c.dy, -c.dx);
+			px.set_pixel(i, res - 1, c2.pack(encoder));
+		}
+	}
+	// +Y
+	{
+		// Left (-X)
+		for (int i = 0; i < res; ++i) {
+			const Pixel c = Pixel::unpack(py.get_pixel(0, i), decoder);
+			const Pixel c2(c.v, -c.dy, c.dx);
+			py.set_pixel(0, i, c2.pack(encoder));
+		}
+		// Right (+X)
+		for (int i = 0; i < res; ++i) {
+			const Pixel c = Pixel::unpack(py.get_pixel(res - 1, i), decoder);
+			const Pixel c2(c.v, c.dy, -c.dx);
+			py.set_pixel(res - 1, i, c2.pack(encoder));
+		}
+		// Top (-Z)
+		for (int i = 0; i < res; ++i) {
+			const Pixel c = Pixel::unpack(py.get_pixel(i, 0), decoder);
+			const Pixel c2(c.v, -c.dx, -c.dy);
+			py.set_pixel(i, 0, c2.pack(encoder));
+		}
+	}
+	// -Y
+	{
+		// left (-X)
+		for (int i = 0; i < res; ++i) {
+			const Color cy = ny.get_pixel(0, i);
+			const Color cy2(cy.r, cy.b, -cy.g);
+			ny.set_pixel(0, i, cy2);
+		}
+		// right (+X)
+		for (int i = 0; i < res; ++i) {
+			const Color cy = ny.get_pixel(res - 1, i);
+			const Color cy2(cy.r, -cy.b, cy.g);
+			ny.set_pixel(res - 1, i, cy2);
+		}
+		// bottom (-Z)
+		for (int i = 0; i < res; ++i) {
+			const Color cy = ny.get_pixel(i, res - 1);
+			const Color cy2(cy.r, -cy.g, -cy.b);
+			ny.set_pixel(i, res - 1, cy2);
+		}
+	}
+	// -Z
+	{
+		// Top (+Y)
+		for (int i = 0; i < res; ++i) {
+			const Pixel c = Pixel::unpack(nz.get_pixel(i, 0), decoder);
+			const Pixel c2(c.v, -c.dx, -c.dy);
+			nz.set_pixel(i, 0, c2.pack(encoder));
+		}
+		// Bottom (-Y)
+		for (int i = 0; i < res; ++i) {
+			const Pixel c = Pixel::unpack(nz.get_pixel(i, res - 1), decoder);
+			const Pixel c2(c.v, -c.dx, -c.dy);
+			nz.set_pixel(i, res - 1, c2.pack(encoder));
+		}
+	}
+}
+
 // Pads each image by 1 pixel containing copies of neighbor pixels for fast linear sampling
-void ZN_Cubemap::make_linear_filterable() {
+void ZN_Cubemap::make_linear_filterable(const bool with_derivatives) {
 	ZN_PROFILE_SCOPE();
 
 	if (_padded) {
@@ -395,6 +526,10 @@ void ZN_Cubemap::make_linear_filterable() {
 			const Color cc = (c0 + c1 + c2) / 3.f;
 			im.set_pixelv(Vector2i(0, res.y - 1), cc);
 		}
+	}
+
+	if (with_derivatives) {
+		fix_border_derivatives(_images);
 	}
 }
 

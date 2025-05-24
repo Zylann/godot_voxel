@@ -404,7 +404,7 @@ void register_math_func_nodes(Span<NodeType> types) {
 			float b;
 
 			static Params from_intervals(float min0, float max0, float min1, float max1) {
-				const math::LinearFuncParams lin = math::remap_intervals_to_linear_params(min0, max0, min1, max1);
+				const math::LinearFunc lin = math::LinearFunc::from_remap(min0, max0, min1, max1);
 				return { lin.a, lin.b };
 			}
 		};

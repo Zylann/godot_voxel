@@ -110,7 +110,7 @@ void VoxelGraphEditorNodePreview::update_display_settings(const pg::VoxelGraphFu
 
 	// Note, remap is only used with greyscale display mode, such that min is black and max is white.
 	// When using SDF it's more useful to keep -1..1 to measure distortions of the field.
-	const math::LinearFuncParams remap = math::remap_intervals_to_linear_params(min_value, max_value, 0.f, 1.f);
+	const math::LinearFunc remap = math::LinearFunc::from_remap(min_value, max_value, 0.f, 1.f);
 
 	ERR_FAIL_COND(_material.is_null());
 	_material->set_shader(g_mode_shaders[mode]);

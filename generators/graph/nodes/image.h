@@ -320,6 +320,7 @@ void register_image_nodes(Span<NodeType> types) {
 				return;
 			}
 			const Filter filter = static_cast<Filter>(int(ctx.get_param(1)));
+			bool with_derivatives = false;
 			{
 				// Not ideal. If Godot had a "post_load" after setting resource properties, we wouldn't need to do
 				// that...
@@ -327,6 +328,7 @@ void register_image_nodes(Span<NodeType> types) {
 				if (pc.is_valid()) {
 					if (pc->is_dirty()) {
 						pc->update();
+						with_derivatives = pc->get_derivatives_enabled();
 					}
 				}
 			}
@@ -343,7 +345,7 @@ void register_image_nodes(Span<NodeType> types) {
 					return;
 				}
 			}
-			cubemap->make_linear_filterable();
+			cubemap->make_linear_filterable(with_derivatives);
 			Params p;
 			p.cubemap = cubemap.ptr();
 			p.filter = filter;
