@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="ZN_Cubemap" inherits="Resource" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Cubemap image data.
+	</brief_description>
+	<description>
+		Contains 6 images wrapped into a cube to represent data on a sphere. This class is a utility similar to an array of 6 images used to create a Godot [Cubemap], except it has functions to work with it on the CPU, and can still be used to create a texture for the GPU.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="create_empty">
+			<return type="void" />
+			<param index="0" name="resolution" type="int" />
+			<param index="1" name="format" type="int" enum="Image.Format" />
+			<description>
+				Creates a cubemap where each image is empty.
+			</description>
+		</method>
+		<method name="create_from_images">
+			<return type="void" />
+			<param index="0" name="images" type="Image[]" />
+			<description>
+				Creates a cubemap from 6 existing images. They must be in a specific order, refer to [enum SideIndex].
+			</description>
+		</method>
+		<method name="create_texture" qualifiers="const">
+			<return type="Cubemap" />
+			<description>
+				Creates a [Cubemap] texture from this cubemap for use on the GPU.
+			</description>
+		</method>
+		<method name="create_texture_array" qualifiers="const">
+			<return type="Texture2DArray" />
+			<description>
+				Creates a [Texture2DArray] texture from this cubemap for use on the GPU. Each layer is in the same order as specified in [enum SideIndex]. If the cubemap has been made linear-filterable, each layer will include an extra 1-pixel border containing pixels of its neighbor side.
+			</description>
+		</method>
+		<method name="get_format" qualifiers="const">
+			<return type="int" enum="Image.Format" />
+			<description>
+				Gets the image format used by this cubemap.
+			</description>
+		</method>
+		<method name="get_image" qualifiers="const">
+			<return type="Image" />
+			<param index="0" name="side" type="int" enum="ZN_Cubemap.SideIndex" />
+			<description>
+				Gets an image from a side of the cubemap.
+			</description>
+		</method>
+		<method name="get_resolution" qualifiers="const">
+			<return type="int" />
+			<description>
+				Gets the resolution of sides. Each side is square.
+			</description>
+		</method>
+		<method name="is_valid" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Tests if the cubemap contains valid data.
+			</description>
+		</method>
+		<method name="make_linear_filterable">
+			<return type="void" />
+			<param index="0" name="_unnamed_arg0" type="bool" />
+			<description>
+				Modifies each side image with a 1-pixel border containing the same values as neighbor sides. This is used to simplify interpolation when sampling pixels at floating point coordinates.
+			</description>
+		</method>
+		<method name="zn_duplicate" qualifiers="const">
+			<return type="ZN_Cubemap" />
+			<description>
+				Creates a copy of this cubemap. Prefer using this function instead of [method Resource.duplicate].
+			</description>
+		</method>
+	</methods>
+	<constants>
+		<constant name="SIDE_POSITIVE_X" value="0" enum="SideIndex">
+		</constant>
+		<constant name="SIDE_NEGATIVE_X" value="1" enum="SideIndex">
+		</constant>
+		<constant name="SIDE_POSITIVE_Y" value="2" enum="SideIndex">
+		</constant>
+		<constant name="SIDE_NEGATIVE_Y" value="3" enum="SideIndex">
+		</constant>
+		<constant name="SIDE_POSITIVE_Z" value="4" enum="SideIndex">
+		</constant>
+		<constant name="SIDE_NEGATIVE_Z" value="5" enum="SideIndex">
+		</constant>
+		<constant name="SIDE_COUNT" value="6" enum="SideIndex">
+		</constant>
+	</constants>
+</class>

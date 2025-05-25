@@ -425,11 +425,11 @@
 		</constant>
 		<constant name="NODE_SPOTS_3D" value="56" enum="NodeTypeID">
 		</constant>
-		<constant name="NODE_TYPE_COUNT" value="59" enum="NodeTypeID">
+		<constant name="NODE_TYPE_COUNT" value="60" enum="NodeTypeID">
 		</constant>
-		<constant name="NODE_FAST_NOISE_2_2D" value="57" enum="NodeTypeID">
+		<constant name="NODE_FAST_NOISE_2_2D" value="58" enum="NodeTypeID">
 		</constant>
-		<constant name="NODE_FAST_NOISE_2_3D" value="58" enum="NodeTypeID">
+		<constant name="NODE_FAST_NOISE_2_3D" value="59" enum="NodeTypeID">
 		</constant>
 	</constants>
 </class>
