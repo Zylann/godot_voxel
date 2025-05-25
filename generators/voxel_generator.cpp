@@ -133,6 +133,11 @@ void append_generator_parameter_uniforms(
 									   .format(varray(binding, p.name));
 				break;
 
+			case ComputeShaderResourceInternal::TYPE_TEXTURE_2D_ARRAY:
+				source_text += String("layout (set = 0, binding = {0}) uniform sampler2DArray {1};\n")
+									   .format(varray(binding, p.name));
+				break;
+
 			default:
 				ZN_CRASH_MSG("Unsupported GPU resource type");
 				break;

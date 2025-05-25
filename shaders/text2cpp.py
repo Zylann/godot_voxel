@@ -182,4 +182,5 @@ if __name__ == '__main__':
 	process_file("dev/modifier_sphere_snippet.glsl",                  "modifier_sphere_shader_snippet.h")
 	process_file("dev/transvoxel_minimal.gdshader",                   "transvoxel_minimal_shader.h")
 	process_file("dev/fast_noise_lite/fast_noise_lite.gdshaderinc",   "fast_noise_lite_shader.h")
+	process_file("dev/cubemap/cubemap.gdshaderinc",                   "cubemap_shader.h")
 

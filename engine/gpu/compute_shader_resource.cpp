@@ -43,7 +43,7 @@ bool ComputeShaderResourceInternal::is_valid() const {
 // 	return _type;
 // }
 
-bool image_to_normalized_rd_format(Image::Format image_format, RenderingDevice::DataFormat &out_rd_format) {
+bool image_to_normalized_rd_format(const Image::Format image_format, RenderingDevice::DataFormat &out_rd_format) {
 	// TODO Setup swizzles for unused components
 	// but for now the module's internal shaders don't rely on that
 
@@ -93,6 +93,32 @@ bool image_to_normalized_rd_format(Image::Format image_format, RenderingDevice::
 			// More formats may be added if we need them
 	}
 	return true;
+}
+
+static Ref<Image> workaround_rgb_limitation(const Ref<Image> &p_image) {
+	Ref<Image> image = p_image;
+	ZN_ASSERT(image.is_valid());
+	switch (image->get_format()) {
+		case Image::FORMAT_RGB8: {
+			ZN_PRINT_VERBOSE("Converting RGB8 to RGBA8 for GPU compatibility");
+			// Workaround Godot warning `Image format RGB8 not supported by hardware, converting to RGBA8.`
+			// That wastes a bit of memory, but currently it's the simplest option.
+			// An alternative is to use a secondary RG8 cubemap, but that requires more sampling in shader code.
+			image = image->duplicate();
+			image->convert(Image::FORMAT_RGBA8);
+		} break;
+		case Image::FORMAT_RGBF: {
+			ZN_PRINT_VERBOSE("Converting RGB8 to RGBAF for GPU compatibility");
+			// Workaround Godot warning `Image format RGBF not supported by hardware, converting to RGBAF.`
+			// That wastes a bit of memory, but currently it's the simplest option.
+			// An alternative is to use a secondary RGF cubemap, but that requires more sampling in shader code.
+			image = image->duplicate();
+			image->convert(Image::FORMAT_RGBAF);
+		} break;
+		default:
+			break;
+	}
+	return image;
 }
 
 void ComputeShaderResourceInternal::create_texture_2d(RenderingDevice &rd, const Image &image) {
@@ -160,6 +186,54 @@ void ComputeShaderResourceInternal::create_texture_2d(RenderingDevice &rd, const
 	create_texture_2d(rd, **image);
 }
 
+void ComputeShaderResourceInternal::create_texture_2d_array(RenderingDevice &rd, const Span<const Ref<Image>> images) {
+	ZN_PROFILE_SCOPE();
+	ZN_ASSERT_RETURN(images.size() > 0);
+
+	for (const Ref<Image> &im : images) {
+		ZN_ASSERT_RETURN(im.is_valid());
+	}
+
+	Image::Format im_format = images[0]->get_format();
+	const Vector2i res = images[0]->get_size();
+
+	ZN_PRINT_VERBOSE(format("Creating VoxelRD texture 2D array {}x{} format {}", res.x, res.y, im_format));
+	clear(rd);
+
+	TypedArray<PackedByteArray> data_array;
+	for (const Ref<Image> &im : images) {
+		Ref<Image> im2 = workaround_rgb_limitation(im);
+		im_format = im2->get_format();
+		data_array.append(im2->get_data());
+	}
+
+	RenderingDevice::DataFormat data_format;
+	ERR_FAIL_COND_MSG(!image_to_normalized_rd_format(im_format, data_format), "Image format not handled");
+
+	type = TYPE_TEXTURE_2D_ARRAY;
+
+	// Size can vary each time so we have to recreate the format...
+	Ref<RDTextureFormat> texture_format;
+	texture_format.instantiate();
+	texture_format->set_width(res.x);
+	texture_format->set_height(res.y);
+	texture_format->set_array_layers(images.size());
+	texture_format->set_format(data_format);
+	texture_format->set_usage_bits(
+			RenderingDevice::TEXTURE_USAGE_STORAGE_BIT | RenderingDevice::TEXTURE_USAGE_CAN_UPDATE_BIT |
+			RenderingDevice::TEXTURE_USAGE_CAN_COPY_FROM_BIT | RenderingDevice::TEXTURE_USAGE_SAMPLING_BIT
+	);
+	texture_format->set_texture_type(RenderingDevice::TEXTURE_TYPE_2D_ARRAY);
+	// TODO Do I need multisample if I want filtering?
+
+	Ref<RDTextureView> texture_view;
+	texture_view.instantiate();
+
+	rid = zylann::godot::texture_create(rd, **texture_format, **texture_view, data_array);
+	// RID::is_null() is not available in GDExtension
+	ERR_FAIL_COND_MSG(!rid.is_valid(), "Failed to create texture");
+}
+
 void ComputeShaderResourceInternal::create_texture_cubemap(RenderingDevice &rd, const ZN_Cubemap &src_cubemap) {
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT_RETURN(src_cubemap.is_valid());
@@ -169,10 +243,17 @@ void ComputeShaderResourceInternal::create_texture_cubemap(RenderingDevice &rd, 
 	);
 	clear(rd);
 
+	Image::Format im_format = src_cubemap.get_format();
+
+	TypedArray<PackedByteArray> data_array;
+	for (unsigned int side = 0; side < ZN_Cubemap::SIDE_COUNT; ++side) {
+		Ref<Image> im2 = workaround_rgb_limitation(src_cubemap.get_image_ref(side));
+		im_format = im2->get_format();
+		data_array.append(im2->get_data());
+	}
+
 	RenderingDevice::DataFormat data_format;
-	ERR_FAIL_COND_MSG(
-			!image_to_normalized_rd_format(src_cubemap.get_format(), data_format), "Image format not handled"
-	);
+	ERR_FAIL_COND_MSG(!image_to_normalized_rd_format(im_format, data_format), "Image format not handled");
 
 	type = TYPE_TEXTURE_CUBEMAP;
 
@@ -192,12 +273,6 @@ void ComputeShaderResourceInternal::create_texture_cubemap(RenderingDevice &rd, 
 
 	Ref<RDTextureView> texture_view;
 	texture_view.instantiate();
-
-	TypedArray<PackedByteArray> data_array;
-	for (unsigned int side = 0; side < ZN_Cubemap::SIDE_COUNT; ++side) {
-		const Image &im = src_cubemap.get_image(side);
-		data_array.append(im.get_data());
-	}
 
 	rid = zylann::godot::texture_create(rd, **texture_format, **texture_view, data_array);
 	// RID::is_null() is not available in GDExtension
@@ -368,6 +443,34 @@ std::shared_ptr<ComputeShaderResource> ComputeShaderResourceFactory::create_text
 	VoxelEngine::get_singleton().push_gpu_task_f([res, cubemap](GPUTaskContext &ctx) {
 		res->_internal.create_texture_cubemap(ctx.rendering_device, **cubemap);
 	});
+	return res;
+}
+
+std::shared_ptr<ComputeShaderResource> ComputeShaderResourceFactory::create_texture_2d_array(
+		const Span<const Ref<Image>> images
+) {
+	ZN_ASSERT(images.size() > 0);
+
+	std::shared_ptr<ComputeShaderResource> res = make_shared_instance<ComputeShaderResource>();
+	res->_type = ComputeShaderResourceInternal::TYPE_TEXTURE_2D_ARRAY;
+
+	struct Cb {
+		StdVector<Ref<Image>> images;
+		std::shared_ptr<ComputeShaderResource> res;
+
+		void operator()(GPUTaskContext &ctx) {
+			res->_internal.create_texture_2d_array(ctx.rendering_device, to_span(images));
+		}
+	};
+
+	Cb cb;
+	cb.images.reserve(images.size());
+	for (const Ref<Image> &im : images) {
+		cb.images.push_back(im);
+	}
+	cb.res = res;
+
+	VoxelEngine::get_singleton().push_gpu_task_f(cb);
 	return res;
 }
 

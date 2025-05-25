@@ -41,6 +41,7 @@ namespace zylann::voxel {
 struct ComputeShaderResourceInternal {
 	enum Type {
 		TYPE_TEXTURE_2D,
+		TYPE_TEXTURE_2D_ARRAY,
 		TYPE_TEXTURE_3D,
 		TYPE_TEXTURE_CUBEMAP,
 		TYPE_STORAGE_BUFFER,
@@ -57,6 +58,7 @@ struct ComputeShaderResourceInternal {
 	Type get_type() const;
 	void create_texture_2d(RenderingDevice &rd, const Image &image);
 	void create_texture_2d(RenderingDevice &rd, const Curve &curve);
+	void create_texture_2d_array(RenderingDevice &rd, const Span<const Ref<Image>> images);
 	void create_texture_3d_float32(RenderingDevice &rd, const PackedByteArray &data, const Vector3i size);
 	void create_texture_cubemap(RenderingDevice &rd, const ZN_Cubemap &cubemap);
 	void create_storage_buffer(RenderingDevice &rd, const PackedByteArray &data);
@@ -84,6 +86,9 @@ struct ComputeShaderResourceFactory {
 
 	[[nodiscard]]
 	static std::shared_ptr<ComputeShaderResource> create_texture_cubemap(const Ref<ZN_Cubemap> &cubemap);
+
+	[[nodiscard]]
+	static std::shared_ptr<ComputeShaderResource> create_texture_2d_array(const Span<const Ref<Image>> images);
 
 	[[nodiscard]]
 	static std::shared_ptr<ComputeShaderResource> create_texture_3d_zxy(

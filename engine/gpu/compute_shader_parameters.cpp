@@ -16,6 +16,7 @@ void add_uniform_params(const StdVector<ComputeShaderParameter> &params, Array &
 
 		switch (p.resource->get_type()) {
 			case ComputeShaderResourceInternal::TYPE_TEXTURE_2D:
+			case ComputeShaderResourceInternal::TYPE_TEXTURE_2D_ARRAY:
 			case ComputeShaderResourceInternal::TYPE_TEXTURE_3D:
 			case ComputeShaderResourceInternal::TYPE_TEXTURE_CUBEMAP:
 				uniform->set_uniform_type(RenderingDevice::UNIFORM_TYPE_SAMPLER_WITH_TEXTURE);

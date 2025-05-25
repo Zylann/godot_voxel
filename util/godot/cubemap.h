@@ -1,6 +1,7 @@
 #ifndef ZN_CUBEMAP_H
 #define ZN_CUBEMAP_H
 
+#include "../containers/span.h"
 #include "../math/box3f.h"
 #include "../math/color.h"
 #include "../math/interval.h"
@@ -44,6 +45,7 @@ public:
 	Image &get_image(const unsigned int side);
 	const Image &get_image(const unsigned int side) const;
 	const Ref<Image> get_image_ref(const unsigned int side) const;
+	const std::array<Ref<Image>, ZN_Cubemap::SIDE_COUNT> &get_images() const;
 
 	Ref<Cubemap> create_texture() const;
 	Ref<Texture2DArray> create_texture_array() const;

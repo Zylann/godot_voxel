@@ -99,6 +99,10 @@ const Ref<Image> ZN_Cubemap::get_image_ref(const unsigned int side) const {
 	return _images[side];
 }
 
+const std::array<Ref<Image>, ZN_Cubemap::SIDE_COUNT> &ZN_Cubemap::get_images() const {
+	return _images;
+}
+
 Ref<Image> ZN_Cubemap::workaround_rgb_limitation(Ref<Image> image, const SideIndex side) const {
 	switch (get_format()) {
 		case Image::FORMAT_RGB8: {

@@ -41,7 +41,7 @@ void VoxelProceduralCubemap::set_derivatives_enabled(const bool enabled) {
 	if (enabled == _derivatives_enabled) {
 		return;
 	}
-	_derivatives_enabled = true;
+	_derivatives_enabled = enabled;
 	_dirty = true;
 	emit_changed();
 }

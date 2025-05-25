@@ -1,4 +1,5 @@
 #include "../../../constants/voxel_constants.h"
+#include "../../../shaders/cubemap_shader.h"
 #include "../../../util/godot/classes/image.h"
 #include "../../../util/godot/cubemap.h"
 #include "../../../util/profiling.h"
@@ -409,15 +410,6 @@ void register_image_nodes(Span<NodeType> types) {
 			}
 
 			const Filter filter = static_cast<Filter>(int(ctx.get_param(1)));
-			if (filter == FILTER_HERMITE) {
-				// TODO Figure out cubemap Hermite sampling in GLSL
-				// Probably needs to be done manually, which isn't too fancy on a 2D texture, but on a cubemap?
-				// A smooth brain approach could be to litterally mimick what we do in ZN_Cubemap on the CPU: instead of
-				// a "cubemap", create a texture array with 6 texture for 6 sides, fill it with padded pixels, and use
-				// texelFetch
-				ctx.make_error("GPU cubemap Hermite interpolation is not implemented yet.");
-				return;
-			}
 
 			{
 				// Not ideal. If Godot had a "post_load" after setting resource properties, we wouldn't need to do
@@ -430,17 +422,58 @@ void register_image_nodes(Span<NodeType> types) {
 				}
 			}
 
-			std::shared_ptr<ComputeShaderResource> res = ComputeShaderResourceFactory::create_texture_cubemap(cubemap);
-			const StdString uniform_texture = ctx.add_uniform(std::move(res));
+			switch (filter) {
+				case FILTER_LINEAR: {
+					std::shared_ptr<ComputeShaderResource> res =
+							ComputeShaderResourceFactory::create_texture_cubemap(cubemap);
+					const StdString uniform_texture = ctx.add_uniform(std::move(res));
 
-			ctx.add_format(
-					"{} = texture({}, vec3({}, {}, {})).r;\n",
-					ctx.get_output_name(0),
-					uniform_texture,
-					ctx.get_input_name(0),
-					ctx.get_input_name(1),
-					ctx.get_input_name(2)
-			);
+					ctx.add_format(
+							"{} = texture({}, vec3({}, {}, {})).r;\n",
+							ctx.get_output_name(0),
+							uniform_texture,
+							ctx.get_input_name(0),
+							ctx.get_input_name(1),
+							ctx.get_input_name(2)
+					);
+				} break;
+
+				case FILTER_HERMITE: {
+					const std::array<Ref<Image>, ZN_Cubemap::SIDE_COUNT> &images = cubemap->get_images();
+
+					const char *fmt;
+					switch (images[0]->get_format()) {
+						case Image::FORMAT_RGB8:
+							fmt = "{} = cm_sample_hermite({}, vec3({}, {}, {}), vec2(2.0, -1.0)).r;\n";
+							break;
+						case Image::FORMAT_RGBF:
+							fmt = "{} = cm_sample_hermite({}, vec3({}, {}, {}), vec2(1.0, 0.0)).r;\n";
+							break;
+						default:
+							ctx.make_error(String(ZN_TTR("Invalid image format for shader generation"))
+												   .format(varray(ZN_Cubemap::get_class_static())));
+							return;
+					}
+
+					std::shared_ptr<ComputeShaderResource> res =
+							ComputeShaderResourceFactory::create_texture_2d_array(to_span(images));
+					const StdString uniform_texture = ctx.add_uniform(std::move(res));
+
+					ctx.require_lib_code("cubemap", g_cubemap_shader);
+					ctx.add_format(
+							fmt,
+							ctx.get_output_name(0),
+							uniform_texture,
+							ctx.get_input_name(0),
+							ctx.get_input_name(1),
+							ctx.get_input_name(2)
+					);
+				} break;
+
+				default:
+					ZN_PRINT_ERROR_ONCE("Unhandled filter");
+					break;
+			}
 		};
 #endif
 	}
