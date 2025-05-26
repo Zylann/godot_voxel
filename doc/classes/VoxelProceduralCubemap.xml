@@ -4,7 +4,7 @@
 		Procedurally-generated cubemap using a noise graph.
 	</brief_description>
 	<description>
-	This cubemap is procedurally generated using a noise graph. Changing properties does not automatically update it to avoid unnecessary calculations upon loading. Use the [method update] function if you need to do it manually. Editor tools and other classes using it may also automatically call it.
+		This cubemap is procedurally generated using a noise graph. Changing properties does not automatically update it to avoid unnecessary calculations upon loading. Use the [method update] function if you need to do it manually. Editor tools and other classes using it may also automatically call it.
 	</description>
 	<tutorials>
 	</tutorials>
@@ -18,7 +18,7 @@
 	</methods>
 	<members>
 		<member name="derivative_pixel_step" type="float" setter="set_derivative_pixel_step" getter="get_derivative_pixel_step" default="0.1">
-			When [member derivatives_enabled] is active, configures which step will be used to calculate derivatives. The shorter it is, the more precise it gets, but floating point precision errors become more likely. The value is specified in pixels, so 0.1 means for each pixel, its derivative will be calculated by measuring the difference between the center of the pixel and values 0.1 pixels away from it.
+			When [member derivatives_enabled] is active, configures which step will be used to calculate derivatives. The smaller it is, the more precise it gets, but floating point precision errors become more likely. The value is specified in pixels, so 0.1 means for each pixel, its derivative will be calculated by measuring the difference between the center of the pixel and values 0.1 pixels away from it.
 		</member>
 		<member name="derivatives_enabled" type="bool" setter="set_derivatives_enabled" getter="get_derivatives_enabled" default="false">
 			If active, derivatives will also be generated. This allows to use features like Hermite interpolation for better quality. Generation will be slower and the output format will be added 2 extra channels to accomodate for the extra data.
@@ -27,7 +27,7 @@
 			Graph that will be used to generate the noise. It must have 3 inputs ([code]X[/code], [code]Y[/code], [code]Z[/code]) and 1 output ([code]OutputSDF[/code]).
 		</member>
 		<member name="target_format" type="int" setter="set_target_format" getter="get_target_format" enum="VoxelProceduralCubemap.Format" default="1">
-			Image format that will be generated. Note, extra channels will be added if [member derivatives_enabled] is active.
+			Image format that will be generated. Extra channels will be added if [member derivatives_enabled] is active.
 		</member>
 		<member name="target_resolution" type="int" setter="set_target_resolution" getter="get_target_resolution" default="256">
 			Resolution of sides of the generated cubemap, in pixels. Each side is square.
@@ -43,11 +43,11 @@
 	<constants>
 		<constant name="FORMAT_L8" value="1" enum="Format">
 			Pixels will contain 8-bit values. Equivalent in data to [constant FORMAT_R8], but is interpreted by the renderer as a "grayscale" image.
-			When [member derivatives_enabled] is active, only values in -1..1 will be stored.
+			When [member derivatives_enabled] is active, only values in -1..1 will be stored in additional channels.
 		</constant>
 		<constant name="FORMAT_R8" value="0" enum="Format">
 			Pixels will contain 8-bit values. Equivalent in data to [constant FORMAT_L8], but is interpreted by the renderer as a "red" image.
-			When [member derivatives_enabled] is active, only values in -1..1 will be stored.
+			When [member derivatives_enabled] is active, only values in -1..1 will be stored in additional channels.
 		</constant>
 		<constant name="FORMAT_RF" value="2" enum="Format">
 			Pixels will contain 32-bit floats.
