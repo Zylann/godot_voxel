@@ -60,6 +60,7 @@ private:
 	int get_tile_list_index_from_tile_id(const int tile_id_to_find) const;
 	void set_selected_tile_id(const int tile_id_to_select, const bool update_list);
 	void open_rename_dialog();
+	void remove_selected_tile();
 
 	enum Mode {
 		MODE_SELECT,

@@ -137,6 +137,7 @@ VoxelBlockyTextureAtlasEditor::VoxelBlockyTextureAtlasEditor() {
 						sn.gui_input, callable_mp(this, &VoxelBlockyTextureAtlasEditor::on_texture_rect_gui_input)
 				);
 				// _texture_rect->set_stretch_mode(TextureRect::STRETCH_KEEP);
+				_texture_rect->set_focus_mode(FOCUS_ALL);
 				_pan_zoom_container->add_child(_texture_rect);
 
 				mid_container->add_child(_pan_zoom_container);
@@ -560,18 +561,22 @@ void VoxelBlockyTextureAtlasEditor::on_context_menu_id_pressed(int id) {
 			break;
 
 		case MENU_REMOVE_TILE: {
-			const int tile_id = get_selected_tile_id();
-			ZN_ASSERT_RETURN(tile_id >= 0);
-
-			// TODO UndoRedo
-			_atlas->remove_tile(tile_id);
-			on_atlas_changed();
+			remove_selected_tile();
 		} break;
 
 		default:
 			ZN_PRINT_ERROR("Unhandled menu item");
 			break;
 	}
+}
+
+void VoxelBlockyTextureAtlasEditor::remove_selected_tile() {
+	const int tile_id = get_selected_tile_id();
+	ZN_ASSERT_RETURN(tile_id >= 0);
+
+	// TODO UndoRedo
+	_atlas->remove_tile(tile_id);
+	on_atlas_changed();
 }
 
 void VoxelBlockyTextureAtlasEditor::on_tile_list_item_selected(int item_index) {
@@ -858,6 +863,17 @@ void VoxelBlockyTextureAtlasEditor::on_texture_rect_gui_input(Ref<InputEvent> ev
 					}
 				}
 				return;
+			}
+
+			Ref<InputEventKey> key_event = event;
+			if (key_event.is_valid()) {
+				if (key_event->is_pressed()) {
+					// TODO Does Godot have anything better to detect the Delete key?? Why is it specific to GraphEdit?
+					if (key_event->is_action("ui_graph_delete", true)) {
+						remove_selected_tile();
+						accept_event();
+					}
+				}
 			}
 		} break;
 
