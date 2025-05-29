@@ -280,22 +280,6 @@ std::array<uint8_t, 5> get_blob9_reference_cases_for_compact5() {
 
 void generate_atlas_from_compact5(
 		const Image &input_image,
-		const Rect2i input_rect,
-		Image &output_image,
-		const Vector2i output_position
-) {
-	const Vector2i tile_res = Vector2i(input_rect.size.x / 5, input_rect.size.y);
-
-	std::array<Vector2i, 5> input_positions;
-	for (unsigned int i = 0; i < input_positions.size(); ++i) {
-		input_positions[i] = input_rect.position + tile_res * Vector2i(i, 0);
-	}
-
-	generate_atlas_from_compact5(input_image, tile_res, input_positions, tile_res / 3, output_image, output_position);
-}
-
-void generate_atlas_from_compact5(
-		const Image &input_image,
 		const Vector2i tile_res,
 		const std::array<Vector2i, 5> &input_positions,
 		const Vector2i margin,

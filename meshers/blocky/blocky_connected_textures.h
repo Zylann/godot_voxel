@@ -25,13 +25,6 @@ enum Compact5Index {
 
 void generate_atlas_from_compact5(
 		const Image &input_image,
-		const Rect2i input_rect,
-		Image &output_image,
-		const Vector2i output_position
-);
-
-void generate_atlas_from_compact5(
-		const Image &input_image,
 		const Vector2i tile_res,
 		const std::array<Vector2i, Compact5Index::COMPACT5_TILE_COUNT> &input_positions,
 		const Vector2i margin,
