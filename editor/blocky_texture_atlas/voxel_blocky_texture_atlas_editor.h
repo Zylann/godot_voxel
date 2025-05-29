@@ -72,6 +72,7 @@ private:
 	void open_blob9_gen();
 	void update_blob9_gen();
 	void close_blob9_gen();
+	Vector2i get_tile_blob9_margin(const int tile_id) const;
 
 	enum Mode {
 		MODE_SELECT,

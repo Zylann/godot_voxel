@@ -397,29 +397,53 @@ void VoxelBlockyTextureAtlasEditor::_notification(int p_what) {
 
 static void draw_blob9_connection_mask(
 		CanvasItem &ci,
-		const Vector2 origin,
-		const Vector2 ts,
+		const Vector2i origin,
+		const Vector2i ts,
+		const Vector2i margin,
 		const uint16_t mask,
 		const Color color0,
 		const Color color1
 ) {
-	const Vector2 tstv = ts / 3.0;
 	unsigned int i = 0;
 	for (unsigned int sy = 0; sy < 3; ++sy) {
 		for (unsigned int sx = 0; sx < 3; ++sx) {
-			const Vector2 pos = Vector2(sx, sy) * tstv;
-			const Rect2 rect(origin + pos, tstv);
 			if (sx == 1 && sy == 1) {
 				continue;
 			}
+			// clang-format off
+			const Vector2i pos(
+					sx == 0 ? 0 : sx == 1 ? margin.x : ts.x - margin.x,
+					sy == 0 ? 0 : sy == 1 ? margin.y : ts.y - margin.y
+			);
+			const Vector2i size(
+					sx == 1 ? ts.x - 2 * margin.x : margin.x, 
+					sy == 1 ? ts.y - 2 * margin.y : margin.y
+			);
+			// clang-format on
+			const Rect2 rect(origin + pos, size);
 			const Color color = (mask & (1 << i)) != 0 ? color1 : color0;
 			ci.draw_rect(rect, color, true);
 			i += 1;
 		}
 	}
-	// if (mask == 0) {
-	ci.draw_rect(Rect2(origin + tstv, tstv), color1, true);
-	// }
+
+	ci.draw_rect(Rect2(origin + margin, ts - 2 * margin), color1, true);
+}
+
+Vector2i VoxelBlockyTextureAtlasEditor::get_tile_blob9_margin(const int tile_id) const {
+	ZN_ASSERT_RETURN_V(_atlas.is_valid(), Vector2i());
+	if (_blob9_gen.container->is_visible()) {
+		const int selected_tile_id = get_selected_tile_id();
+		if (tile_id == selected_tile_id) {
+			return Vector2i(_blob9_gen.margin_x_spinbox->get_value(), _blob9_gen.margin_y_spinbox->get_value());
+		}
+	}
+	const Vector2i saved_margin = _atlas->editor_get_tile_blob9_margin(tile_id);
+	if (saved_margin != Vector2i()) {
+		return saved_margin;
+	}
+	const Vector2i ts = _atlas->get_default_tile_resolution();
+	return ts / 3;
 }
 
 void VoxelBlockyTextureAtlasEditor::on_texture_rect_draw() {
@@ -438,21 +462,25 @@ void VoxelBlockyTextureAtlasEditor::on_texture_rect_draw() {
 	const Vector2i res = _atlas->get_resolution();
 	const Vector2i num_tiles = res / ts;
 
+	const int selected_tile_id = get_selected_tile_id();
+
 	const Color grid_color(0, 0, 0, 0.15);
 	const Color group_color(1, 1, 1, 0.25);
 	const Color hover_color(0.5, 0.5, 1.0, 0.5);
 	const Color selection_color(0.5, 0.5, 1.0, 0.5);
 	const Color connection_mask_0_color(0.0, 0.0, 0.0, 0.2);
 	const Color connection_mask_1_color(1.0, 1.0, 1.0, 0.2);
-	const Color connection_mask_0_compact5_overlay_color(1.0, 1.0, 0.0, 0.1);
-	const Color connection_mask_0_compact5_border_color(1.0, 1.0, 0.0, 0.8);
+	const Color connection_mask_compact5_overlay_color(1.0, 1.0, 0.0, 0.1);
+	const Color connection_mask_compact5_border_color(1.0, 1.0, 0.0, 0.8);
+	const Color connection_mask_compact5_margin_color(1.0, 1.0, 0.0, 0.5);
 
 	draw_grid(ci, Vector2(), num_tiles, Vector2(ts), grid_color);
 
 	const Span<const VoxelBlockyTextureAtlas::Tile> tiles = _atlas->get_tiles();
 
 	if (_connectivity_button->is_pressed()) {
-		for (const VoxelBlockyTextureAtlas::Tile &tile : tiles) {
+		for (unsigned int tile_id = 0; tile_id < tiles.size(); ++tile_id) {
+			const VoxelBlockyTextureAtlas::Tile &tile = tiles[tile_id];
 			if (tile.is_tombstone()) {
 				continue;
 			}
@@ -464,6 +492,8 @@ void VoxelBlockyTextureAtlasEditor::on_texture_rect_draw() {
 				const std::array<uint8_t, blocky::COMPACT5_TILE_COUNT> compact5_ref_cases =
 						blocky::get_blob9_reference_cases_for_compact5();
 
+				const Vector2i margin = get_tile_blob9_margin(tile_id);
+
 				for (unsigned int gy = 0; gy < tile.group_size_y; ++gy) {
 					for (unsigned int gx = 0; gx < tile.group_size_x; ++gx) {
 						const uint8_t case_index = gx + gy * blocky::BLOB9_DEFAULT_LAYOUT_SIZE_X;
@@ -474,11 +504,11 @@ void VoxelBlockyTextureAtlasEditor::on_texture_rect_draw() {
 						const unsigned int mask = blocky::get_connection_mask_from_case_index(case_index);
 						const Vector2i pos = layout_origin + Vector2i(gx, gy) * ts;
 						draw_blob9_connection_mask(
-								ci, Vector2(pos), Vector2(ts), mask, connection_mask_0_color, connection_mask_1_color
+								ci, Vector2(pos), ts, margin, mask, connection_mask_0_color, connection_mask_1_color
 						);
 
 						if (contains(compact5_ref_cases, case_index)) {
-							ci.draw_rect(Rect2(pos, ts), connection_mask_0_compact5_overlay_color, true);
+							ci.draw_rect(Rect2(pos, ts), connection_mask_compact5_overlay_color, true);
 						}
 					}
 				}
@@ -486,7 +516,8 @@ void VoxelBlockyTextureAtlasEditor::on_texture_rect_draw() {
 		}
 	}
 
-	for (const VoxelBlockyTextureAtlas::Tile &tile : tiles) {
+	for (unsigned int tile_id = 0; tile_id < tiles.size(); ++tile_id) {
+		const VoxelBlockyTextureAtlas::Tile &tile = tiles[tile_id];
 		if (tile.is_tombstone()) {
 			continue;
 		}
@@ -497,18 +528,35 @@ void VoxelBlockyTextureAtlasEditor::on_texture_rect_draw() {
 				false
 		);
 
-		if (_connectivity_button->is_pressed()) {
+		if (_connectivity_button->is_pressed() || _blob9_gen.container->is_visible()) {
 			if (tile.type == VoxelBlockyTextureAtlas::TILE_TYPE_BLOB9) {
 				const Vector2i layout_origin(tile.position_x, tile.position_y);
 
 				const std::array<uint8_t, blocky::COMPACT5_TILE_COUNT> compact5_ref_cases =
 						blocky::get_blob9_reference_cases_for_compact5();
 
+				const Vector2i margin = get_tile_blob9_margin(tile_id);
+
 				for (const uint8_t case_index : compact5_ref_cases) {
 					const int tx = case_index % blocky::BLOB9_DEFAULT_LAYOUT_SIZE_X;
 					const int ty = case_index / blocky::BLOB9_DEFAULT_LAYOUT_SIZE_X;
 					const Vector2i pos = layout_origin + Vector2i(tx, ty) * ts;
-					ci.draw_rect(Rect2(pos, ts), connection_mask_0_compact5_border_color, false);
+					ci.draw_rect(Rect2(pos, ts), connection_mask_compact5_border_color, false);
+
+					PackedVector2Array points;
+					points.resize(8);
+					Span<Vector2> points_s = to_span(points);
+
+					points_s[0] = pos + Vector2i(margin.x, 0);
+					points_s[1] = pos + Vector2i(margin.x, ts.y);
+					points_s[2] = pos + Vector2i(ts.x - margin.x, 0);
+					points_s[3] = pos + Vector2i(ts.x - margin.x, ts.y);
+					points_s[4] = pos + Vector2i(0, margin.y);
+					points_s[5] = pos + Vector2i(ts.x, margin.y);
+					points_s[6] = pos + Vector2i(0, ts.y - margin.y);
+					points_s[7] = pos + Vector2i(ts.x, ts.y - margin.y);
+
+					ci.draw_multiline(points, connection_mask_compact5_margin_color);
 				}
 			}
 		}
@@ -516,9 +564,8 @@ void VoxelBlockyTextureAtlasEditor::on_texture_rect_draw() {
 
 	switch (_mode) {
 		case MODE_SELECT: {
-			const int tile_id = get_selected_tile_id();
-			if (tile_id != -1) {
-				const VoxelBlockyTextureAtlas::Tile &tile = _atlas->get_tile(tile_id);
+			if (selected_tile_id != -1) {
+				const VoxelBlockyTextureAtlas::Tile &tile = _atlas->get_tile(selected_tile_id);
 				ci.draw_rect(
 						Rect2(Vector2(tile.position_x, tile.position_y),
 							  Vector2(tile.group_size_x, tile.group_size_y) * Vector2(ts)),
@@ -1211,6 +1258,9 @@ void VoxelBlockyTextureAtlasEditor::update_blob9_gen() {
 	} else {
 		_blob9_gen.texture->update(image);
 	}
+
+	// Save for later to improve UX
+	_atlas->editor_set_tile_blob9_margin(tile_id, margin);
 
 	update_texture_rect();
 }
