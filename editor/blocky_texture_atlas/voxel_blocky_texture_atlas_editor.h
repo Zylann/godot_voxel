@@ -7,14 +7,16 @@
 #include "../../util/godot/macros.h"
 #include <array>
 
-ZN_GODOT_FORWARD_DECLARE(class TextureRect);
-ZN_GODOT_FORWARD_DECLARE(class PopupMenu);
-ZN_GODOT_FORWARD_DECLARE(class ItemList);
-ZN_GODOT_FORWARD_DECLARE(class ConfirmationDialog);
-ZN_GODOT_FORWARD_DECLARE(class Button);
-ZN_GODOT_FORWARD_DECLARE(class BaseButton);
-ZN_GODOT_FORWARD_DECLARE(class LineEdit);
-ZN_GODOT_FORWARD_DECLARE(class HBoxContainer);
+ZN_GODOT_NAMESPACE_BEGIN
+class TextureRect;
+class PopupMenu;
+class ItemList;
+class ConfirmationDialog;
+class Button;
+class BaseButton;
+class LineEdit;
+class HBoxContainer;
+ZN_GODOT_NAMESPACE_END
 
 namespace zylann {
 

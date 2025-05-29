@@ -6,8 +6,10 @@
 #include "../macros.h"
 #include "inspector_property_listener.h"
 
-ZN_GODOT_FORWARD_DECLARE(class GridContainer);
-ZN_GODOT_FORWARD_DECLARE(class VBoxContainer);
+ZN_GODOT_NAMESPACE_BEGIN
+class GridContainer;
+class VBoxContainer;
+ZN_GODOT_NAMESPACE_END
 
 namespace zylann {
 
