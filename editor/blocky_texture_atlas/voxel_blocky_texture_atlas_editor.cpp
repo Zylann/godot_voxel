@@ -982,10 +982,11 @@ void VoxelBlockyTextureAtlasEditor::on_texture_rect_gui_input(Ref<InputEvent> ev
 						case ZN_GODOT_MouseButton_RIGHT: {
 							if (_hovered_tile_id != -1) {
 								set_selected_tile_id(_hovered_tile_id, true);
-							}
-							if (!_read_only) {
-								update_select_context_menu();
-								open_popup_at_mouse(_select_context_menu, _texture_rect);
+
+								if (!_read_only) {
+									update_select_context_menu();
+									open_popup_at_mouse(_select_context_menu, _texture_rect);
+								}
 							}
 						} break;
 
