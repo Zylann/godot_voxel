@@ -265,7 +265,10 @@ void VoxelBlockyTextureAtlasEditor::set_atlas(Ref<VoxelBlockyTextureAtlas> atlas
 		_atlas->connect(sn.changed, callable_mp(this, &VoxelBlockyTextureAtlasEditor::on_atlas_changed));
 	}
 
-	on_atlas_changed();
+	const Vector2i size(_atlas->get_resolution());
+	_pan_zoom_container->set_content_rect(Rect2(Vector2(), Vector2(size)));
+
+	update_tile_list();
 	update_texture_rect();
 	set_selected_tile_id(-1, true);
 	set_tile_selection_rect(Rect2i());
