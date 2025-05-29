@@ -263,15 +263,27 @@ Vector2i get_layout_tile_coordinates_from_connection_mask(const uint8_t connecti
 	return Vector2i(case_index % BLOB9_DEFAULT_LAYOUT_SIZE_X, case_index / BLOB9_DEFAULT_LAYOUT_SIZE_X);
 }
 
+// Compact5 tiles layout:
+// - - -   - - -   - o -   - o -   o o o
+// - x -   o x o   - x -   o x o   o x o
+// - - -   - - -   - o -   - o -   o o o
+
+std::array<uint8_t, 5> get_blob9_reference_cases_for_compact5() {
+	std::array<uint8_t, 5> cases;
+	cases[0] = 0;
+	cases[1] = 2;
+	cases[2] = 24;
+	cases[3] = 46;
+	cases[4] = 26;
+	return cases;
+}
+
 void generate_atlas_from_compact5(
 		const Image &input_image,
 		const Rect2i input_rect,
 		Image &output_image,
 		const Vector2i output_position
 ) {
-	// - - -   - - -   - o -   - o -   o o o
-	// - x -   o x o   - x -   o x o   o x o
-	// - - -   - - -   - o -   - o -   o o o
 	const Vector2i tile_res = Vector2i(input_rect.size.x / 5, input_rect.size.y);
 	const Vector2i output_image_size = tile_res * Vector2i(BLOB9_DEFAULT_LAYOUT_SIZE_X, BLOB9_DEFAULT_LAYOUT_SIZE_Y);
 

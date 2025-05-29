@@ -3,6 +3,7 @@
 
 #include "span.h"
 #include "std_vector.h"
+#include <array>
 #include <cstdint>
 
 namespace zylann {
@@ -218,6 +219,16 @@ bool find(const std::vector<T, TAllocator> &vec, size_t &out_index, TPredicate p
 template <typename T, typename TAllocator>
 bool find(const std::vector<T, TAllocator> &vec, const T &v, size_t &out_index) {
 	return find(to_span_const(vec), v, out_index);
+}
+
+template <typename T, size_t N>
+bool contains(const std::array<T, N> &items, const T &v) {
+	for (const T &item : items) {
+		if (item == v) {
+			return true;
+		}
+	}
+	return false;
 }
 
 template <typename T>

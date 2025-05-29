@@ -14,12 +14,23 @@ static constexpr unsigned int BLOB9_TILE_COUNT = 47;
 static constexpr unsigned int BLOB9_DEFAULT_LAYOUT_SIZE_X = 12;
 static constexpr unsigned int BLOB9_DEFAULT_LAYOUT_SIZE_Y = 4;
 
+enum Compact5Index {
+	COMPACT5_POINT = 0,
+	COMPACT5_HORIZONTAL = 1,
+	COMPACT5_VERTICAL = 2,
+	COMPACT5_CROSS = 3,
+	COMPACT5_FULL = 4,
+	COMPACT5_TILE_COUNT = 5
+};
+
 void generate_atlas_from_compact5(
 		const Image &input_image,
 		const Rect2i input_rect,
 		Image &output_image,
 		const Vector2i output_position
 );
+
+std::array<uint8_t, COMPACT5_TILE_COUNT> get_blob9_reference_cases_for_compact5();
 
 uint8_t get_connection_mask_from_case_index(const uint8_t case_index);
 uint8_t get_case_index_from_connection_mask(const uint8_t cm);

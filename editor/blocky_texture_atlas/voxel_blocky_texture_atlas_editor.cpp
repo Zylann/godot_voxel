@@ -320,9 +320,9 @@ static void draw_blob9_connection_mask(
 			i += 1;
 		}
 	}
-	if (mask == 0) {
-		ci.draw_rect(Rect2(origin + tstv, tstv), color1, true);
-	}
+	// if (mask == 0) {
+	ci.draw_rect(Rect2(origin + tstv, tstv), color1, true);
+	// }
 }
 
 void VoxelBlockyTextureAtlasEditor::on_texture_rect_draw() {
@@ -341,6 +341,8 @@ void VoxelBlockyTextureAtlasEditor::on_texture_rect_draw() {
 	const Color selection_color(0.5, 0.5, 1.0, 0.5);
 	const Color connection_mask_0_color(0.0, 0.0, 0.0, 0.2);
 	const Color connection_mask_1_color(1.0, 1.0, 1.0, 0.2);
+	const Color connection_mask_0_compact5_overlay_color(1.0, 1.0, 0.0, 0.1);
+	const Color connection_mask_0_compact5_border_color(1.0, 1.0, 0.0, 0.8);
 
 	draw_grid(ci, Vector2(), num_tiles, Vector2(ts), grid_color);
 
@@ -356,6 +358,9 @@ void VoxelBlockyTextureAtlasEditor::on_texture_rect_draw() {
 
 				// This assumes the default layout!
 
+				const std::array<uint8_t, blocky::COMPACT5_TILE_COUNT> compact5_ref_cases =
+						blocky::get_blob9_reference_cases_for_compact5();
+
 				for (unsigned int gy = 0; gy < tile.group_size_y; ++gy) {
 					for (unsigned int gx = 0; gx < tile.group_size_x; ++gx) {
 						const uint8_t case_index = gx + gy * blocky::BLOB9_DEFAULT_LAYOUT_SIZE_X;
@@ -368,6 +373,10 @@ void VoxelBlockyTextureAtlasEditor::on_texture_rect_draw() {
 						draw_blob9_connection_mask(
 								ci, Vector2(pos), Vector2(ts), mask, connection_mask_0_color, connection_mask_1_color
 						);
+
+						if (contains(compact5_ref_cases, case_index)) {
+							ci.draw_rect(Rect2(pos, ts), connection_mask_0_compact5_overlay_color, true);
+						}
 					}
 				}
 			}
@@ -384,6 +393,22 @@ void VoxelBlockyTextureAtlasEditor::on_texture_rect_draw() {
 				group_color,
 				false
 		);
+
+		if (_connectivity_button->is_pressed()) {
+			if (tile.type == VoxelBlockyTextureAtlas::TILE_TYPE_BLOB9) {
+				const Vector2i layout_origin(tile.position_x, tile.position_y);
+
+				const std::array<uint8_t, blocky::COMPACT5_TILE_COUNT> compact5_ref_cases =
+						blocky::get_blob9_reference_cases_for_compact5();
+
+				for (const uint8_t case_index : compact5_ref_cases) {
+					const int tx = case_index % blocky::BLOB9_DEFAULT_LAYOUT_SIZE_X;
+					const int ty = case_index / blocky::BLOB9_DEFAULT_LAYOUT_SIZE_X;
+					const Vector2i pos = layout_origin + Vector2i(tx, ty) * ts;
+					ci.draw_rect(Rect2(pos, ts), connection_mask_0_compact5_border_color, false);
+				}
+			}
+		}
 	}
 
 	switch (_mode) {
