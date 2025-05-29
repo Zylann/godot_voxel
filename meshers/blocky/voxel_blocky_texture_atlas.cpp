@@ -200,20 +200,32 @@ Array VoxelBlockyTextureAtlas::_b_get_tiles_data() const {
 	tiles_data.resize(1 + _tiles.size());
 
 	// Version tag
-	tiles_data.append(1);
+	tiles_data[0] = 1;
 
 	for (unsigned int tile_index = 0; tile_index < _tiles.size(); ++tile_index) {
 		const Tile &tile = _tiles[tile_index];
+		if (tile.is_tombstone()) {
+			continue;
+		}
 
-		Array tile_data;
-		tile_data.resize(5);
-		tile_data[0] = tile.type;
-		tile_data[1] = Vector2i(tile.position_x, tile.position_y);
-		tile_data[2] = Vector2i(tile.group_size_x, tile.group_size_y);
-		tile_data[3] = String(tile.name.c_str());
-		tile_data[4] = tile.random_rotation;
+		Dictionary dict;
 
-		tiles_data[tile_index] = tile_data;
+		dict["type"] = tile.type;
+		dict["position"] = Vector2i(tile.position_x, tile.position_y);
+
+		if (tile.group_size_x > 1 || tile.group_size_y > 1) {
+			dict["group_size"] = Vector2i(tile.group_size_x, tile.group_size_y);
+		}
+
+		if (!tile.name.empty()) {
+			dict["name"] = godot::to_godot(tile.name);
+		}
+
+		if (tile.random_rotation) {
+			dict["random_rotation"] = true;
+		}
+
+		tiles_data[tile_index + 1] = dict;
 	}
 
 	return tiles_data;
@@ -223,33 +235,52 @@ void VoxelBlockyTextureAtlas::_b_set_tiles_data(Array tiles_data) {
 	ERR_FAIL_COND(tiles_data.size() < 1);
 
 	const int version = tiles_data[0];
-	ERR_FAIL_COND(version != 1);
 
-	_tiles.resize(tiles_data.size() - 1);
-	for (unsigned int tile_index = 0; tile_index < _tiles.size(); ++tile_index) {
-		const Array tile_data = tiles_data[tile_index];
-		ZN_ASSERT_CONTINUE(tile_data.size() == 5);
+	switch (version) {
+		case 1: {
+			_tiles.resize(tiles_data.size() - 1);
 
-		Tile &tile = _tiles[tile_index];
+			const String type_key("type");
+			const String position_key("position");
+			const String group_size_key("group_size");
+			const String name_key("name");
+			const String random_rotation_key("random_rotation");
 
-		const int type = tile_data[0];
-		ZN_ASSERT_CONTINUE(type >= 0 && type < blocky::TILE_MAX);
-		tile.type = static_cast<blocky::TileType>(type);
+			for (unsigned int tile_index = 0; tile_index < _tiles.size(); ++tile_index) {
+				const Variant tile_data_v = tiles_data[tile_index + 1];
+				if (tile_data_v == Variant()) {
+					continue;
+				}
 
-		const Vector2i position = tile_data[1];
-		ZN_ASSERT_CONTINUE(position.x >= 0 && position.y >= 0);
-		tile.position_x = position.x;
-		tile.position_y = position.y;
+				const Dictionary tile_data = tile_data_v;
 
-		const Vector2i group_size = tile_data[2];
-		ZN_ASSERT_CONTINUE(group_size.x >= 1 && group_size.y >= 1);
-		tile.group_size_x = group_size.x;
-		tile.group_size_y = group_size.y;
+				Tile &tile = _tiles[tile_index];
 
-		const String tile_name = tile_data[3];
-		tile.name = godot::to_std_string(tile_name);
+				const int type = tile_data[type_key];
+				ZN_ASSERT_CONTINUE(type >= 0 && type < blocky::TILE_MAX);
+				tile.type = static_cast<blocky::TileType>(type);
 
-		tile.random_rotation = tile_data[4];
+				const Vector2i position = tile_data[position_key];
+				ZN_ASSERT_CONTINUE(position.x >= 0 && position.y >= 0);
+				tile.position_x = position.x;
+				tile.position_y = position.y;
+
+				const Vector2i group_size = tile_data.get(group_size_key, Vector2i(1, 1));
+				ZN_ASSERT_CONTINUE(group_size.x >= 1 && group_size.y >= 1);
+				tile.group_size_x = group_size.x;
+				tile.group_size_y = group_size.y;
+
+				const String tile_name = tile_data.get(name_key, "");
+				tile.name = godot::to_std_string(tile_name);
+
+				tile.random_rotation = tile_data.get(random_rotation_key, false);
+			}
+
+		} break;
+
+		default:
+			ZN_PRINT_ERROR("Invalid version");
+			break;
 	}
 }
 
@@ -360,8 +391,8 @@ void VoxelBlockyTextureAtlas::_bind_methods() {
 
 	ADD_PROPERTY(
 			PropertyInfo(Variant::ARRAY, "_tiles_data", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE),
-			"set_texture",
-			"get_texture"
+			"_set_tiles_data",
+			"_get_tiles_data"
 	);
 
 	BIND_ENUM_CONSTANT(TILE_TYPE_SINGLE);
