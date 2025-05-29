@@ -236,6 +236,7 @@ void VoxelBlockyTextureAtlasEditor::set_atlas(Ref<VoxelBlockyTextureAtlas> atlas
 	}
 
 	on_atlas_changed();
+	update_texture_rect();
 	set_selected_tile_id(-1, true);
 	set_tile_selection_rect(Rect2i());
 }
