@@ -225,6 +225,12 @@ Array VoxelBlockyTextureAtlas::_b_get_tiles_data() const {
 			dict["random_rotation"] = true;
 		}
 
+#ifdef TOOLS_ENABLED
+		if (tile.blob9_margin_x > 0 || tile.blob9_margin_y > 0) {
+			dict["blob9_margin"] = Vector2i(tile.blob9_margin_x, tile.blob9_margin_y);
+		}
+#endif
+
 		tiles_data[tile_index + 1] = dict;
 	}
 
@@ -245,6 +251,9 @@ void VoxelBlockyTextureAtlas::_b_set_tiles_data(Array tiles_data) {
 			const String group_size_key("group_size");
 			const String name_key("name");
 			const String random_rotation_key("random_rotation");
+#ifdef TOOLS_ENABLED
+			const String blob9_margin_key("blob9_margin");
+#endif
 
 			for (unsigned int tile_index = 0; tile_index < _tiles.size(); ++tile_index) {
 				const Variant tile_data_v = tiles_data[tile_index + 1];
@@ -274,6 +283,12 @@ void VoxelBlockyTextureAtlas::_b_set_tiles_data(Array tiles_data) {
 				tile.name = godot::to_std_string(tile_name);
 
 				tile.random_rotation = tile_data.get(random_rotation_key, false);
+
+#ifdef TOOLS_ENABLED
+				const Vector2i blob9_margin = tile_data.get(blob9_margin_key, Vector2i());
+				tile.blob9_margin_x = blob9_margin.x;
+				tile.blob9_margin_y = blob9_margin.y;
+#endif
 			}
 
 		} break;
@@ -332,6 +347,19 @@ int VoxelBlockyTextureAtlas::get_tile_id_at_pixel_position(const Vector2i pos) {
 void VoxelBlockyTextureAtlas::get_configuration_warnings(PackedStringArray &out_warnings) const {
 	// TODO Check if there are tiles out of bounds
 	// TODO Check if tiles have the same name
+}
+
+void VoxelBlockyTextureAtlas::editor_set_tile_blob9_margin(const int tile_id, const Vector2i margin) {
+	ZN_ASSERT_RETURN(is_valid_tile_id(tile_id));
+	Tile &tile = _tiles[tile_id];
+	tile.blob9_margin_x = margin.x;
+	tile.blob9_margin_y = margin.y;
+}
+
+Vector2i VoxelBlockyTextureAtlas::editor_get_tile_blob9_margin(const int tile_id) const {
+	ZN_ASSERT_RETURN_V(is_valid_tile_id(tile_id), Vector2i());
+	const Tile &tile = _tiles[tile_id];
+	return Vector2i(tile.blob9_margin_x, tile.blob9_margin_y);
 }
 
 #endif

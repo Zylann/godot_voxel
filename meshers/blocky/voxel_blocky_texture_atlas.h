@@ -30,6 +30,10 @@ public:
 		blocky::TileType type = blocky::TILE_SINGLE;
 		bool random_rotation = false;
 
+		// Editor data
+		uint16_t blob9_margin_x = 0;
+		uint16_t blob9_margin_y = 0;
+
 		inline bool is_tombstone() const {
 			return group_size_x == 0;
 		}
@@ -89,6 +93,9 @@ public:
 	int get_tile_id_at_pixel_position(const Vector2i pos);
 
 	void get_configuration_warnings(PackedStringArray &out_warnings) const;
+
+	void editor_set_tile_blob9_margin(const int tile_id, const Vector2i margin);
+	Vector2i editor_get_tile_blob9_margin(const int tile_id) const;
 #endif
 
 	String get_tile_name_or_default(const uint32_t id) const;

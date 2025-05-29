@@ -14,7 +14,7 @@
 #include "../../util/godot/classes/item_list.h"
 #include "../../util/godot/classes/line_edit.h"
 #include "../../util/godot/classes/popup_menu.h"
-#include "../../util/godot/classes/texture_rect.h"
+#include "../../util/godot/classes/spin_box.h"
 #include "../../util/godot/classes/v_box_container.h"
 #include "../../util/godot/classes/v_separator.h"
 #include "../../util/godot/core/array.h"
@@ -128,11 +128,8 @@ VoxelBlockyTextureAtlasEditor::VoxelBlockyTextureAtlasEditor() {
 				_pan_zoom_container = memnew(ZN_PanZoomContainer);
 				_pan_zoom_container->set_v_size_flags(Control::SIZE_EXPAND_FILL);
 
-				Ref<Image> empty_image = zylann::godot::create_empty_image(16, 16, false, Image::FORMAT_L8);
-				empty_image->fill(Color(0.3, 0.3, 0.3));
-				_empty_texture = ImageTexture::create_from_image(empty_image);
-
-				_texture_rect = memnew(TextureRect);
+				_texture_rect = memnew(Control);
+				_texture_rect->set_mouse_filter(MOUSE_FILTER_PASS);
 				_texture_rect->set_texture_filter(CanvasItem::TEXTURE_FILTER_NEAREST);
 				_texture_rect->connect(
 						sn.draw, callable_mp(this, &VoxelBlockyTextureAtlasEditor::on_texture_rect_draw)
@@ -145,6 +142,59 @@ VoxelBlockyTextureAtlasEditor::VoxelBlockyTextureAtlasEditor() {
 				_pan_zoom_container->add_child(_texture_rect);
 
 				mid_container->add_child(_pan_zoom_container);
+			}
+			{
+				_blob9_gen.container = memnew(HBoxContainer);
+
+				{
+					Label *label = memnew(Label);
+					label->set_text("Margins: ");
+					_blob9_gen.container->add_child(label);
+				}
+
+				_blob9_gen.margin_x_spinbox = memnew(SpinBox);
+				_blob9_gen.margin_x_spinbox->set_step(1.f);
+				_blob9_gen.margin_x_spinbox->connect(
+						"value_changed",
+						callable_mp(this, &VoxelBlockyTextureAtlasEditor::on_blob9_gen_margin_spinbox_value_changed)
+				);
+				_blob9_gen.container->add_child(_blob9_gen.margin_x_spinbox);
+
+				_blob9_gen.margin_y_spinbox = memnew(SpinBox);
+				_blob9_gen.margin_y_spinbox->set_step(1.f);
+				_blob9_gen.margin_y_spinbox->connect(
+						"value_changed",
+						callable_mp(this, &VoxelBlockyTextureAtlasEditor::on_blob9_gen_margin_spinbox_value_changed)
+				);
+				_blob9_gen.container->add_child(_blob9_gen.margin_y_spinbox);
+
+				{
+					Control *spacer = memnew(Control);
+					spacer->set_h_size_flags(Control::SIZE_EXPAND_FILL);
+					_blob9_gen.container->add_child(spacer);
+				}
+
+				{
+					Button *button = memnew(Button);
+					button->set_text(ZN_TTR("Apply (no undo)"));
+					button->connect(
+							sn.pressed,
+							callable_mp(this, &VoxelBlockyTextureAtlasEditor::on_blob9_gen_apply_button_pressed)
+					);
+					_blob9_gen.container->add_child(button);
+				}
+				{
+					Button *button = memnew(Button);
+					button->set_text(ZN_TTR("Cancel"));
+					button->connect(
+							sn.pressed,
+							callable_mp(this, &VoxelBlockyTextureAtlasEditor::on_blob9_gen_cancel_button_pressed)
+					);
+					_blob9_gen.container->add_child(button);
+				}
+
+				_blob9_gen.container->hide();
+				mid_container->add_child(_blob9_gen.container);
 			}
 
 			split_container2->add_child(mid_container);
@@ -180,14 +230,14 @@ VoxelBlockyTextureAtlasEditor::VoxelBlockyTextureAtlasEditor() {
 	}
 
 	add_child(split_container);
+
+	// set_process(true);
 }
 
 void VoxelBlockyTextureAtlasEditor::update_select_context_menu() {
 	_select_context_menu->clear();
 
 	_select_context_menu->add_item("Rename Tile", MENU_RENAME_TILE);
-	_select_context_menu->add_separator();
-	_select_context_menu->add_item("Remove Tile", MENU_REMOVE_TILE);
 
 	const int tid = get_selected_tile_id();
 	if (tid != -1) {
@@ -195,7 +245,7 @@ void VoxelBlockyTextureAtlasEditor::update_select_context_menu() {
 			const VoxelBlockyTextureAtlas::TileType tt = _atlas->get_tile_type(tid);
 			if (tt == VoxelBlockyTextureAtlas::TILE_TYPE_BLOB9) {
 				const int idx = _select_context_menu->get_item_count();
-				_select_context_menu->add_item("Generate tiles (no undo)", MENU_GENERATE_FROM_COMPACT5);
+				_select_context_menu->add_item("Generate tiles...", MENU_GENERATE_FROM_COMPACT5);
 				_select_context_menu->set_item_tooltip(
 						idx,
 						ZN_TTR("Generates Blob9 tiles from 5 reference tiles (point, horizontal, vertical, cross, "
@@ -204,6 +254,9 @@ void VoxelBlockyTextureAtlasEditor::update_select_context_menu() {
 			}
 		}
 	}
+
+	_select_context_menu->add_separator();
+	_select_context_menu->add_item("Remove Tile", MENU_REMOVE_TILE);
 }
 
 void VoxelBlockyTextureAtlasEditor::make_read_only() {
@@ -213,7 +266,13 @@ void VoxelBlockyTextureAtlasEditor::make_read_only() {
 }
 
 void VoxelBlockyTextureAtlasEditor::set_godot_editor_interface(EditorInterface *editor_interface) {
+	ZN_ASSERT_RETURN(editor_interface != nullptr);
+	ZN_ASSERT_RETURN(_godot_editor_interface == nullptr);
+
 	_godot_editor_interface = editor_interface;
+
+	EditorFileSystem *efs = _godot_editor_interface->get_resource_file_system();
+	efs->connect("resources_reimported", callable_mp(this, &VoxelBlockyTextureAtlasEditor::on_resources_reimported));
 }
 
 // I'd like rename by clicking on the item like with scene tree nodes, but ItemList doesn't provide that functionality,
@@ -309,6 +368,9 @@ static void draw_grid(
 
 void VoxelBlockyTextureAtlasEditor::_notification(int p_what) {
 	switch (p_what) {
+			// case NOTIFICATION_ENTER_TREE: {
+			// } break;
+
 		case NOTIFICATION_THEME_CHANGED: {
 			const VoxelStringNames &sn = VoxelStringNames::get_singleton();
 			{
@@ -324,6 +386,9 @@ void VoxelBlockyTextureAtlasEditor::_notification(int p_what) {
 				_connectivity_button->set_button_icon(icon);
 			}
 		} break;
+
+			// case NOTIFICATION_PROCESS: {
+			// } break;
 
 		default:
 			break;
@@ -362,6 +427,12 @@ void VoxelBlockyTextureAtlasEditor::on_texture_rect_draw() {
 		return;
 	}
 	CanvasItem &ci = *_texture_rect;
+
+	if (_blob9_gen.container->is_visible()) {
+		ci.draw_texture(_blob9_gen.texture, Vector2i());
+	} else {
+		ci.draw_texture(_atlas->get_texture(), Vector2());
+	}
 
 	const Vector2i ts = math::max(_atlas->get_default_tile_resolution(), Vector2i(1, 1));
 	const Vector2i res = _atlas->get_resolution();
@@ -500,6 +571,10 @@ void VoxelBlockyTextureAtlasEditor::on_atlas_changed() {
 			_pan_zoom_container->set_content_rect(Rect2(Vector2(), Vector2(size)));
 
 			update_texture_rect();
+
+			if (_blob9_gen.container->is_visible()) {
+				update_blob9_gen();
+			}
 		} break;
 
 		case VoxelBlockyTextureAtlas::CHANGE_TILE_ADDED:
@@ -622,62 +697,13 @@ void VoxelBlockyTextureAtlasEditor::on_context_menu_id_pressed(int id) {
 		} break;
 
 		case MENU_GENERATE_FROM_COMPACT5: {
-			generate_tiles_from_compact5();
+			open_blob9_gen();
 		} break;
 
 		default:
 			ZN_PRINT_ERROR("Unhandled menu item");
 			break;
 	}
-}
-
-void VoxelBlockyTextureAtlasEditor::generate_tiles_from_compact5() {
-	ZN_ASSERT_RETURN(_atlas.is_valid());
-	ZN_ASSERT_RETURN(_godot_editor_interface != nullptr);
-
-	const int tile_id = get_selected_tile_id();
-	ZN_ASSERT_RETURN(tile_id != -1);
-	Ref<Texture2D> texture = _atlas->get_texture();
-	ZN_ASSERT_RETURN(texture.is_valid());
-	const String res_path = texture->get_path();
-	ZN_ASSERT_RETURN(res_path != "");
-	// Workaround Godot's annoying warning that "loading images from res:// is bad". It is NOT bad, editor
-	// plugins should be able to do it all the time
-	String fpath = res_path;
-	if (fpath.begins_with("res://")) {
-		fpath = res_path.substr(6);
-	}
-
-	const String extension = fpath.get_extension();
-	ZN_ASSERT_RETURN_MSG(extension == "png" || extension == "webp", "Image file format not supported");
-
-	Ref<Image> image = Image::load_from_file(fpath);
-	ZN_ASSERT_RETURN(image.is_valid());
-	const Vector2i layout_origin = _atlas->get_tile_position(tile_id);
-	const Vector2i ts = _atlas->get_default_tile_resolution();
-
-	std::array<Vector2i, blocky::COMPACT5_TILE_COUNT> ref_positions;
-	const std::array<uint8_t, blocky::COMPACT5_TILE_COUNT> ref_cases = blocky::get_blob9_reference_cases_for_compact5();
-	for (size_t i = 0; i < ref_cases.size(); ++i) {
-		const int tx = ref_cases[i] % blocky::BLOB9_DEFAULT_LAYOUT_SIZE_X;
-		const int ty = ref_cases[i] / blocky::BLOB9_DEFAULT_LAYOUT_SIZE_X;
-		ref_positions[i] = layout_origin + Vector2i(tx, ty) * ts;
-	}
-
-	blocky::generate_atlas_from_compact5(**image, ts, ref_positions, **image, layout_origin);
-
-	if (extension == "png") {
-		image->save_png(fpath);
-	} else if (extension == "webp") {
-		image->save_webp(fpath);
-	}
-
-	PackedStringArray to_reimport;
-	// Note, `res://` paths are required here, otherwise the texture won't update properly
-	to_reimport.push_back(res_path);
-	EditorFileSystem *efs = zylann::godot::EditorInterfaceShims::get_resource_file_system(*_godot_editor_interface);
-	ZN_ASSERT_RETURN(efs != nullptr);
-	efs->reimport_files(to_reimport);
 }
 
 void VoxelBlockyTextureAtlasEditor::remove_selected_tile() {
@@ -807,14 +833,7 @@ void VoxelBlockyTextureAtlasEditor::update_inspector(const int tile_index) {
 
 void VoxelBlockyTextureAtlasEditor::update_texture_rect() {
 	if (_atlas.is_valid()) {
-		Ref<Texture2D> texture = _atlas->get_texture();
-		if (texture.is_null()) {
-			texture = _empty_texture;
-		}
-		_texture_rect->set_texture(texture);
 		_texture_rect->set_size(Vector2(_atlas->get_resolution()));
-	} else {
-		_texture_rect->set_texture(Ref<Texture>());
 	}
 	_texture_rect->queue_redraw();
 }
@@ -1077,6 +1096,159 @@ void VoxelBlockyTextureAtlasEditor::on_rename_popup_confirmed() {
 
 void VoxelBlockyTextureAtlasEditor::on_connectivity_button_toggled(bool pressed) {
 	_texture_rect->queue_redraw();
+}
+
+void VoxelBlockyTextureAtlasEditor::on_blob9_gen_margin_spinbox_value_changed(float val) {
+	update_blob9_gen();
+}
+
+void VoxelBlockyTextureAtlasEditor::on_blob9_gen_apply_button_pressed() {
+	ZN_ASSERT_RETURN(_atlas.is_valid());
+	ZN_ASSERT_RETURN(_godot_editor_interface != nullptr);
+
+	Ref<Image> image = _blob9_gen.image;
+	ZN_ASSERT_RETURN(image.is_valid());
+
+	Ref<Texture2D> texture = _atlas->get_texture();
+	ZN_ASSERT_RETURN(texture.is_valid());
+	const String res_path = texture->get_path();
+	ZN_ASSERT_RETURN(res_path != "");
+	// Workaround Godot's annoying warning that "loading images from res:// is bad". It is NOT bad, editor
+	// plugins should be able to do it all the time
+	String fpath = res_path;
+	if (fpath.begins_with("res://")) {
+		fpath = res_path.substr(6);
+	}
+
+	const String extension = fpath.get_extension();
+	ZN_ASSERT_RETURN_MSG(extension == "png" || extension == "webp", "Image file format not supported");
+
+	if (extension == "png") {
+		image->save_png(fpath);
+	} else if (extension == "webp") {
+		image->save_webp(fpath);
+	}
+
+	PackedStringArray to_reimport;
+	// Note, `res://` paths are required here, otherwise the texture won't update properly
+	to_reimport.push_back(res_path);
+	EditorFileSystem *efs = zylann::godot::EditorInterfaceShims::get_resource_file_system(*_godot_editor_interface);
+	ZN_ASSERT_RETURN(efs != nullptr);
+	efs->reimport_files(to_reimport);
+
+	close_blob9_gen();
+}
+
+void VoxelBlockyTextureAtlasEditor::on_blob9_gen_cancel_button_pressed() {
+	close_blob9_gen();
+}
+
+void VoxelBlockyTextureAtlasEditor::open_blob9_gen() {
+	ZN_ASSERT_RETURN(_blob9_gen.container->is_visible() == false);
+	ZN_ASSERT_RETURN(_atlas.is_valid());
+
+	_blob9_gen.container->show();
+
+	const Vector2i ts = _atlas->get_default_tile_resolution();
+
+	const int tile_id = get_selected_tile_id();
+	ZN_ASSERT_RETURN(tile_id != -1);
+	const Vector2i saved_margin = _atlas->editor_get_tile_blob9_margin(tile_id);
+	const Vector2i margin = saved_margin != Vector2i() ? saved_margin : ts / 3;
+
+	_blob9_gen.margin_x_spinbox->set_min(1);
+	_blob9_gen.margin_x_spinbox->set_max(ts.x / 2);
+	_blob9_gen.margin_x_spinbox->set_value_no_signal(margin.x);
+
+	_blob9_gen.margin_y_spinbox->set_min(1);
+	_blob9_gen.margin_y_spinbox->set_max(ts.y / 2);
+	_blob9_gen.margin_y_spinbox->set_value_no_signal(margin.y);
+
+	update_blob9_gen();
+}
+
+void VoxelBlockyTextureAtlasEditor::update_blob9_gen() {
+	ZN_ASSERT_RETURN(_atlas.is_valid());
+
+	Ref<Texture2D> texture = _atlas->get_texture();
+	ZN_ASSERT_RETURN(texture.is_valid());
+	const String res_path = texture->get_path();
+	ZN_ASSERT_RETURN(res_path != "");
+	// Workaround Godot's annoying warning that "loading images from res:// is bad". It is NOT bad, editor
+	// plugins should be able to do it all the time
+	String fpath = res_path;
+	if (fpath.begins_with("res://")) {
+		fpath = res_path.substr(6);
+	}
+
+	// We reload each time because the workflow can involve the user changing the image too in an external editor
+	Ref<Image> image = Image::load_from_file(fpath);
+	ZN_ASSERT_RETURN(image.is_valid());
+
+	const int tile_id = get_selected_tile_id();
+	ZN_ASSERT_RETURN(tile_id != -1);
+
+	const Vector2i layout_origin = _atlas->get_tile_position(tile_id);
+	const Vector2i ts = _atlas->get_default_tile_resolution();
+
+	std::array<Vector2i, blocky::COMPACT5_TILE_COUNT> ref_positions;
+	const std::array<uint8_t, blocky::COMPACT5_TILE_COUNT> ref_cases = blocky::get_blob9_reference_cases_for_compact5();
+	for (size_t i = 0; i < ref_cases.size(); ++i) {
+		const int tx = ref_cases[i] % blocky::BLOB9_DEFAULT_LAYOUT_SIZE_X;
+		const int ty = ref_cases[i] / blocky::BLOB9_DEFAULT_LAYOUT_SIZE_X;
+		ref_positions[i] = layout_origin + Vector2i(tx, ty) * ts;
+	}
+
+	const Vector2i margin(_blob9_gen.margin_x_spinbox->get_value(), _blob9_gen.margin_y_spinbox->get_value());
+
+	blocky::generate_atlas_from_compact5(**image, ts, ref_positions, margin, **image, layout_origin);
+
+	_blob9_gen.image = image;
+
+	if (_blob9_gen.texture.is_null() || _blob9_gen.texture->get_size() != image->get_size()) {
+		_blob9_gen.texture = ImageTexture::create_from_image(image);
+	} else {
+		_blob9_gen.texture->update(image);
+	}
+
+	update_texture_rect();
+}
+
+void VoxelBlockyTextureAtlasEditor::close_blob9_gen() {
+	ZN_ASSERT_RETURN(_blob9_gen.container->is_visible() == true);
+	_blob9_gen.image.unref();
+	_blob9_gen.texture.unref();
+	_blob9_gen.container->hide();
+	update_texture_rect();
+}
+
+void VoxelBlockyTextureAtlasEditor::on_resources_reimported(PackedStringArray resource_paths) {
+	if (_atlas.is_null()) {
+		return;
+	}
+	Ref<Texture> texture = _atlas->get_texture();
+	if (texture.is_null()) {
+		return;
+	}
+	if (_blob9_gen.container->is_visible() == false) {
+		return;
+	}
+	const String tex_path = texture->get_path();
+
+	bool changed = false;
+
+	const int count = resource_paths.size();
+	for (int i = 0; i < count; ++i) {
+		const String path = resource_paths[i];
+		if (path == tex_path) {
+			changed = true;
+			break;
+		}
+	}
+
+	if (changed) {
+		update_blob9_gen();
+	}
 }
 
 void VoxelBlockyTextureAtlasEditor::_bind_methods() {

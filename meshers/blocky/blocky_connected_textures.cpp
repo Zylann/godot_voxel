@@ -291,20 +291,21 @@ void generate_atlas_from_compact5(
 		input_positions[i] = input_rect.position + tile_res * Vector2i(i, 0);
 	}
 
-	generate_atlas_from_compact5(input_image, tile_res, input_positions, output_image, output_position);
+	generate_atlas_from_compact5(input_image, tile_res, input_positions, tile_res / 3, output_image, output_position);
 }
 
 void generate_atlas_from_compact5(
 		const Image &input_image,
 		const Vector2i tile_res,
 		const std::array<Vector2i, 5> &input_positions,
+		const Vector2i margin,
 		Image &output_image,
 		const Vector2i output_position
 ) {
 	const Vector2i output_image_size = tile_res * Vector2i(BLOB9_DEFAULT_LAYOUT_SIZE_X, BLOB9_DEFAULT_LAYOUT_SIZE_Y);
 
-	const int xc_len = tile_res.x / 3;
-	const int yc_len = tile_res.y / 3;
+	const int xc_len = margin.x;
+	const int yc_len = margin.y;
 
 	const int xm_len = tile_res.x - 2 * xc_len;
 	const int ym_len = tile_res.y - 2 * yc_len;

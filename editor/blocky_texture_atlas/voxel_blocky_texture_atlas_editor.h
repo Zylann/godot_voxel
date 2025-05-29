@@ -8,7 +8,6 @@
 #include <array>
 
 ZN_GODOT_NAMESPACE_BEGIN
-class TextureRect;
 class PopupMenu;
 class ItemList;
 class ConfirmationDialog;
@@ -17,6 +16,7 @@ class BaseButton;
 class LineEdit;
 class HBoxContainer;
 class EditorInterface;
+class SpinBox;
 ZN_GODOT_NAMESPACE_END
 
 namespace zylann {
@@ -51,6 +51,10 @@ private:
 	void on_mode_button_group_pressed(BaseButton *pressed_button);
 	void on_rename_popup_confirmed();
 	void on_connectivity_button_toggled(bool pressed);
+	void on_blob9_gen_margin_spinbox_value_changed(float val);
+	void on_blob9_gen_apply_button_pressed();
+	void on_blob9_gen_cancel_button_pressed();
+	void on_resources_reimported(PackedStringArray resource_paths);
 
 	void update_texture_rect();
 	void update_tile_list();
@@ -65,7 +69,9 @@ private:
 	void open_rename_dialog();
 	void remove_selected_tile();
 	void update_select_context_menu();
-	void generate_tiles_from_compact5();
+	void open_blob9_gen();
+	void update_blob9_gen();
+	void close_blob9_gen();
 
 	enum Mode {
 		MODE_SELECT,
@@ -75,11 +81,10 @@ private:
 
 	Ref<VoxelBlockyTextureAtlas> _atlas;
 	ZN_PanZoomContainer *_pan_zoom_container = nullptr;
-	TextureRect *_texture_rect = nullptr;
+	Control *_texture_rect = nullptr;
 	Vector2i _hovered_tile_position;
 	Rect2i _tile_selection_rect;
 	int _hovered_tile_id = -1;
-	Ref<ImageTexture> _empty_texture;
 	PopupMenu *_select_context_menu = nullptr;
 	PopupMenu *_create_context_menu = nullptr;
 	ConfirmationDialog *_rename_popup = nullptr;
@@ -94,6 +99,16 @@ private:
 	HBoxContainer *_toolbar_container = nullptr;
 	bool _read_only = false;
 	EditorInterface *_godot_editor_interface = nullptr;
+
+	struct Blob9Generation {
+		SpinBox *margin_x_spinbox = nullptr;
+		SpinBox *margin_y_spinbox = nullptr;
+		HBoxContainer *container = nullptr;
+		Ref<ImageTexture> texture;
+		Ref<Image> image;
+	};
+
+	Blob9Generation _blob9_gen;
 };
 
 } // namespace voxel
