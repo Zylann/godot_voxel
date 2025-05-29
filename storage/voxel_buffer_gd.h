@@ -40,6 +40,18 @@ public:
 		MAX_CHANNELS = zylann::voxel::VoxelBuffer::MAX_CHANNELS,
 	};
 
+	enum ChannelMask {
+		CHANNEL_TYPE_BIT = 1 << CHANNEL_TYPE,
+		CHANNEL_SDF_BIT = 1 << CHANNEL_SDF,
+		CHANNEL_COLOR_BIT = 1 << CHANNEL_COLOR,
+		CHANNEL_INDICES_BIT = 1 << CHANNEL_INDICES,
+		CHANNEL_WEIGHTS_BIT = 1 << CHANNEL_WEIGHTS,
+		CHANNEL_DATA5_BIT = 1 << CHANNEL_DATA5,
+		CHANNEL_DATA6_BIT = 1 << CHANNEL_DATA6,
+		CHANNEL_DATA7_BIT = 1 << CHANNEL_DATA7,
+		ALL_CHANNELS_MASK = (1 << MAX_CHANNELS) - 1,
+	};
+
 	// TODO use C++17 inline to initialize right here...
 	static const char *CHANNEL_ID_HINT_STRING;
 
@@ -147,6 +159,9 @@ public:
 
 	void downscale_to(Ref<VoxelBuffer> dst, Vector3i src_min, Vector3i src_max, Vector3i dst_min) const;
 
+	void rotate_90(Vector3i::Axis axis, int turns);
+	void mirror(Vector3i::Axis axis);
+
 	Ref<VoxelBuffer> duplicate(bool include_metadata) const;
 
 	Ref<VoxelTool> get_voxel_tool();
@@ -229,10 +244,14 @@ private:
 	std::shared_ptr<zylann::voxel::VoxelBuffer> _buffer;
 };
 
+Variant get_voxel_metadata(zylann::voxel::VoxelBuffer &vb, const Vector3i pos);
+void set_voxel_metadata(zylann::voxel::VoxelBuffer &vb, const Vector3i pos, const Variant meta);
+
 } // namespace godot
 } // namespace zylann::voxel
 
 VARIANT_ENUM_CAST(zylann::voxel::godot::VoxelBuffer::ChannelId)
+VARIANT_ENUM_CAST(zylann::voxel::godot::VoxelBuffer::ChannelMask)
 VARIANT_ENUM_CAST(zylann::voxel::godot::VoxelBuffer::Depth)
 VARIANT_ENUM_CAST(zylann::voxel::godot::VoxelBuffer::Compression)
 VARIANT_ENUM_CAST(zylann::voxel::godot::VoxelBuffer::Allocator)

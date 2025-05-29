@@ -241,12 +241,9 @@ public:
 	}
 
 	void merge_with(const Box2i &other) {
-		const Vector2i min_pos( //
-				math::min(position.x, other.position.x), //
-				math::min(position.y, other.position.y)
-		);
-		const Vector2i max_pos( //
-				math::max(position.x + size.x, other.position.x + other.size.x), //
+		const Vector2i min_pos(math::min(position.x, other.position.x), math::min(position.y, other.position.y));
+		const Vector2i max_pos(
+				math::max(position.x + size.x, other.position.x + other.size.x),
 				math::max(position.y + size.y, other.position.y + other.size.y)
 		);
 		position = min_pos;

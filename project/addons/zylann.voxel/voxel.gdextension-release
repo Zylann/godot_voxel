@@ -1,0 +1,44 @@
+[configuration]
+
+entry_symbol = "voxel_library_init"
+compatibility_minimum = "4.4.1"
+
+[libraries]
+; Relative paths ensure that our GDExtension can be placed anywhere in the project directory.
+
+macos.debug = "./bin/libvoxel.macos.editor.universal.framework/libvoxel.macos.editor.universal"
+macos.release = "./bin/libvoxel.macos.template_release.universal.framework/libvoxel.macos.template_release.universal"
+
+ios.debug = "./bin/libvoxel.ios.editor.arm64.dylib"
+ios.release = "./bin/libvoxel.ios.template_release.arm64.dylib"
+
+windows.debug.x86_64 = "./bin/libvoxel.windows.editor.x86_64.dll"
+windows.release.x86_64 = "./bin/libvoxel.windows.template_release.x86_64.dll"
+
+linux.debug.x86_64 = "./bin/libvoxel.linux.editor.x86_64.so"
+linux.release.x86_64 = "./bin/libvoxel.linux.template_release.x86_64.so"
+
+android.debug.x86_64 = "./bin/libvoxel.android.editor.x86_64.so"
+android.release.x86_64 = "./bin/libvoxel.android.template_release.x86_64.so"
+android.debug.arm64 = "./bin/libvoxel.android.editor.arm64.so"
+android.release.arm64 = "./bin/libvoxel.android.template_release.arm64.so"
+
+[icons]
+
+;<generated-icons>
+FastNoise2 = "./editor/icons/FastNoise2.svg"
+VoxelBlockyLibrary = "./editor/icons/VoxelBlockyLibrary.svg"
+VoxelBlockyModel = "./editor/icons/VoxelBlockyModel.svg"
+VoxelInstanceLibrary = "./editor/icons/VoxelInstanceLibrary.svg"
+VoxelInstanceLibraryItem = "./editor/icons/VoxelInstanceLibraryItem.svg"
+VoxelInstanceLibraryMultiMeshItem = "./editor/icons/VoxelInstanceLibraryMultiMeshItem.svg"
+VoxelInstanceLibrarySceneItem = "./editor/icons/VoxelInstanceLibrarySceneItem.svg"
+VoxelInstancer = "./editor/icons/VoxelInstancer.svg"
+VoxelLodTerrain = "./editor/icons/VoxelLodTerrain.svg"
+VoxelMesher = "./editor/icons/VoxelMesher.svg"
+VoxelNode = "./editor/icons/VoxelNode.svg"
+VoxelTerrain = "./editor/icons/VoxelTerrain.svg"
+VoxelTerrainLarge = "./editor/icons/VoxelTerrainLarge.svg"
+VoxelViewer = "./editor/icons/VoxelViewer.svg"
+ZN_FastNoiseLite = "./editor/icons/ZN_FastNoiseLite.svg"
+;</generated-icons>

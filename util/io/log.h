@@ -13,14 +13,17 @@
 #define ZN_PRINT_WARNING(msg) zylann::print_warning(msg, __FUNCTION__, __FILE__, __LINE__)
 #define ZN_PRINT_ERROR(msg) zylann::print_error(msg, __FUNCTION__, __FILE__, __LINE__)
 
-#define ZN_PRINT_ERROR_ONCE(msg)                                                                                       \
+#define ZN_DO_ONCE(stuff)                                                                                              \
 	{                                                                                                                  \
-		static bool s_first_print = true;                                                                              \
-		if (s_first_print) {                                                                                           \
-			s_first_print = false;                                                                                     \
-			zylann::print_error(msg, __FUNCTION__, __FILE__, __LINE__);                                                \
+		static bool s_first = true;                                                                                    \
+		if (s_first) {                                                                                                 \
+			s_first = false;                                                                                           \
+			stuff;                                                                                                     \
 		}                                                                                                              \
 	}
+
+#define ZN_PRINT_WARNING_ONCE(msg) ZN_DO_ONCE(ZN_PRINT_WARNING(msg));
+#define ZN_PRINT_ERROR_ONCE(msg) ZN_DO_ONCE(ZN_PRINT_ERROR(msg));
 
 namespace zylann {
 

@@ -2,11 +2,15 @@
 #define VOXEL_DATA_H
 
 #include "../generators/voxel_generator.h"
-#include "../modifiers/voxel_modifier_stack.h"
 #include "../streams/voxel_stream.h"
 #include "../util/thread/mutex.h"
 #include "../util/thread/spatial_lock_3d.h"
 #include "voxel_data_map.h"
+#include "voxel_format.h"
+
+#ifdef VOXEL_ENABLE_MODIFIERS
+#include "../modifiers/voxel_modifier_stack.h"
+#endif
 
 namespace zylann::voxel {
 
@@ -59,6 +63,9 @@ public:
 		return _bounds_in_voxels;
 	}
 
+	VoxelFormat get_format() const;
+	void set_format(const VoxelFormat format);
+
 	void set_generator(Ref<VoxelGenerator> generator);
 
 	inline Ref<VoxelGenerator> get_generator() const {
@@ -73,6 +80,7 @@ public:
 		return _stream;
 	}
 
+#ifdef VOXEL_ENABLE_MODIFIERS
 	inline VoxelModifierStack &get_modifiers() {
 		return _modifiers;
 	}
@@ -80,6 +88,7 @@ public:
 	inline const VoxelModifierStack &get_modifiers() const {
 		return _modifiers;
 	}
+#endif
 
 	void set_streaming_enabled(bool enabled);
 
@@ -123,14 +132,14 @@ public:
 	);
 
 	void paste_masked_writable_list(
-			Vector3i min_pos, //
-			const VoxelBuffer &src_buffer, //
-			unsigned int channels_mask, //
-			uint8_t src_mask_channel, //
-			uint64_t src_mask_value, //
-			uint8_t dst_mask_channel, //
-			Span<const int32_t> dst_writable_values, //
-			bool create_new_blocks //
+			Vector3i min_pos,
+			const VoxelBuffer &src_buffer,
+			unsigned int channels_mask,
+			uint8_t src_mask_channel,
+			uint64_t src_mask_value,
+			uint8_t dst_mask_channel,
+			Span<const int32_t> dst_writable_values,
+			bool create_new_blocks
 	);
 
 	// Tests if the given area is loaded at LOD0.
@@ -374,7 +383,10 @@ private:
 			bool streaming,
 			unsigned int lod_count,
 			Ref<VoxelGenerator> generator,
-			VoxelModifierStack &modifiers
+#ifdef VOXEL_ENABLE_MODIFIERS
+			VoxelModifierStack &modifiers,
+#endif
+			const VoxelFormat format
 	);
 
 	static inline std::shared_ptr<VoxelBuffer> try_get_voxel_buffer_with_lock(
@@ -432,11 +444,15 @@ private:
 	bool _full_load_completed = false;
 
 	// Procedural generation stack
+#ifdef VOXEL_ENABLE_MODIFIERS
 	VoxelModifierStack _modifiers;
+#endif
 	Ref<VoxelGenerator> _generator;
 
 	// Persistent storage (file(s)).
 	Ref<VoxelStream> _stream;
+
+	VoxelFormat _format;
 
 	// This should be locked when accessing settings members.
 	// If other locks are needed simultaneously such as voxel maps, they should always be locked AFTER, to prevent

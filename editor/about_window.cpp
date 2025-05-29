@@ -260,8 +260,14 @@ VoxelAboutWindow::VoxelAboutWindow() {
 	{
 		Dictionary d;
 
-		String version_string =
-				String("{0}.{1}.{2}").format(varray(VOXEL_VERSION_MAJOR, VOXEL_VERSION_MINOR, VOXEL_VERSION_PATCH));
+		String version_string = String("{0}.{1}.{2} {3} ({4})")
+										.format(
+												varray(VOXEL_VERSION_MAJOR,
+													   VOXEL_VERSION_MINOR,
+													   VOXEL_VERSION_PATCH,
+													   VOXEL_VERSION_EDITION,
+													   VOXEL_VERSION_STATUS)
+										);
 		if (VOXEL_VERSION_STATUS[0] != '\0') {
 			version_string += ".";
 			version_string += VOXEL_VERSION_STATUS;

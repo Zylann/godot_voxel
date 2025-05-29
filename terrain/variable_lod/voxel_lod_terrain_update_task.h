@@ -24,15 +24,15 @@ class BufferedTaskScheduler;
 //
 class VoxelLodTerrainUpdateTask : public IThreadedTask {
 public:
-	VoxelLodTerrainUpdateTask( //
-			std::shared_ptr<VoxelData> p_data, //
-			std::shared_ptr<VoxelLodTerrainUpdateData> p_update_data, //
-			std::shared_ptr<StreamingDependency> p_streaming_dependency, //
-			std::shared_ptr<MeshingDependency> p_meshing_dependency, //
-			std::shared_ptr<PriorityDependency::ViewersData> p_shared_viewers_data, //
-			Vector3 p_viewer_pos, //
-			VolumeID p_volume_id, //
-			Transform3D p_volume_transform //
+	VoxelLodTerrainUpdateTask( 
+			std::shared_ptr<VoxelData> p_data, 
+			std::shared_ptr<VoxelLodTerrainUpdateData> p_update_data, 
+			std::shared_ptr<StreamingDependency> p_streaming_dependency, 
+			std::shared_ptr<MeshingDependency> p_meshing_dependency, 
+			std::shared_ptr<PriorityDependency::ViewersData> p_shared_viewers_data, 
+			const Vector3 p_viewer_pos, 
+			const VolumeID p_volume_id, 
+			const Transform3D p_volume_transform 
 			) :
 			_data(p_data),
 			_update_data(p_update_data),
@@ -51,25 +51,25 @@ public:
 
 	// Functions also used outside of this task
 
-	static void flush_pending_lod_edits( //
-			VoxelLodTerrainUpdateData::State &state, //
-			VoxelData &data, //
-			const int mesh_block_size //
+	static void flush_pending_lod_edits(
+			VoxelLodTerrainUpdateData::State &state,
+			VoxelData &data,
+			const int mesh_block_size
 	);
 
-	static uint8_t get_transition_mask( //
-			const VoxelLodTerrainUpdateData::State &state, //
-			Vector3i block_pos, //
-			unsigned int lod_index, //
-			unsigned int lod_count //
+	static uint8_t get_transition_mask(
+			const VoxelLodTerrainUpdateData::State &state,
+			const Vector3i block_pos,
+			unsigned int lod_index,
+			unsigned int lod_count
 	);
 
 	// To use on loaded blocks
-	static inline void schedule_mesh_update( //
-			VoxelLodTerrainUpdateData::MeshBlockState &block, //
-			Vector3i bpos, //
-			StdVector<VoxelLodTerrainUpdateData::MeshToUpdate> &blocks_pending_update, //
-			bool require_visual //
+	static inline void schedule_mesh_update(
+			VoxelLodTerrainUpdateData::MeshBlockState &block,
+			const Vector3i bpos,
+			StdVector<VoxelLodTerrainUpdateData::MeshToUpdate> &blocks_pending_update,
+			const bool require_visual
 	) {
 		if (block.state != VoxelLodTerrainUpdateData::MESH_UPDATE_NOT_SENT) {
 			if (block.visual_active || block.collision_active) {
@@ -77,7 +77,8 @@ public:
 				block.state = VoxelLodTerrainUpdateData::MESH_UPDATE_NOT_SENT;
 				block.update_list_index = blocks_pending_update.size();
 				blocks_pending_update.push_back(
-						VoxelLodTerrainUpdateData::MeshToUpdate{ bpos, TaskCancellationToken(), require_visual });
+						VoxelLodTerrainUpdateData::MeshToUpdate{ bpos, TaskCancellationToken(), require_visual }
+				);
 			} else {
 				// Just mark it as needing update, so the visibility system will schedule its update when needed.
 				block.state = VoxelLodTerrainUpdateData::MESH_NEED_UPDATE;
@@ -85,13 +86,13 @@ public:
 		}
 	}
 
-	static void send_block_save_requests( //
-			VolumeID volume_id, //
-			Span<VoxelData::BlockToSave> blocks_to_save, //
-			std::shared_ptr<StreamingDependency> &stream_dependency, //
-			BufferedTaskScheduler &task_scheduler, //
-			std::shared_ptr<AsyncDependencyTracker> tracker, //
-			bool with_flush //
+	static void send_block_save_requests(
+			const VolumeID volume_id,
+			const Span<VoxelData::BlockToSave> blocks_to_save,
+			const std::shared_ptr<StreamingDependency> &stream_dependency,
+			BufferedTaskScheduler &task_scheduler,
+			const std::shared_ptr<AsyncDependencyTracker> tracker,
+			const bool with_flush
 	);
 
 private:
@@ -105,11 +106,11 @@ private:
 	Transform3D _volume_transform;
 };
 
-void update_transition_masks( //
-		VoxelLodTerrainUpdateData::State &state, //
-		uint32_t lods_to_update_transitions, //
-		unsigned int lod_count, //
-		bool use_refcounts //
+void update_transition_masks(
+		VoxelLodTerrainUpdateData::State &state,
+		const uint32_t lods_to_update_transitions,
+		const unsigned int lod_count,
+		const bool use_refcounts
 );
 
 void add_unloaded_saving_blocks(VoxelLodTerrainUpdateData::Lod &lod, Span<const VoxelData::BlockToSave> src);

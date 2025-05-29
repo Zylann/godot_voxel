@@ -7,21 +7,19 @@ Saves voxel data into a single SQLite database file.
 ## Properties: 
 
 
-Type                                                                        | Name                                                           | Default 
---------------------------------------------------------------------------- | -------------------------------------------------------------- | --------
-[String](https://docs.godotengine.org/en/stable/classes/class_string.html)  | [database_path](#i_database_path)                              | ""      
-[String](https://docs.godotengine.org/en/stable/classes/class_string.html)  | [preferred_coordinate_format](#i_preferred_coordinate_format)  | ""      
+Type                                                                        | Name                                                           | Default                          
+--------------------------------------------------------------------------- | -------------------------------------------------------------- | ---------------------------------
+[String](https://docs.godotengine.org/en/stable/classes/class_string.html)  | [database_path](#i_database_path)                              | ""                               
+[CoordinateFormat](VoxelStreamSQLite.md#enumerations)                       | [preferred_coordinate_format](#i_preferred_coordinate_format)  | COORDINATE_FORMAT_STRING_CSD (2) 
 <p></p>
 
 ## Methods: 
 
 
-Return                                                                  | Signature                                                                                                                                              
------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)    | [get_preferred_coordinate_format](#i_get_preferred_coordinate_format) ( ) const                                                                        
-[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)  | [is_key_cache_enabled](#i_is_key_cache_enabled) ( ) const                                                                                              
-[void](#)                                                               | [set_key_cache_enabled](#i_set_key_cache_enabled) ( [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) enabled )                   
-[void](#)                                                               | [set_preferred_coordinate_format](#i_set_preferred_coordinate_format) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) format )  
+Return                                                                  | Signature                                                                                                                             
+----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------
+[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)  | [is_key_cache_enabled](#i_is_key_cache_enabled) ( ) const                                                                             
+[void](#)                                                               | [set_key_cache_enabled](#i_set_key_cache_enabled) ( [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) enabled )  
 <p></p>
 
 ## Enumerations: 
@@ -39,17 +37,13 @@ enum **CoordinateFormat**:
 
 ### [String](https://docs.godotengine.org/en/stable/classes/class_string.html)<span id="i_database_path"></span> **database_path** = ""
 
-Path to the database file. `res://` and `user://` are not supported at the moment. The path can be relative to the game's executable. Directories in the path must exist. If the file does not exist, it will be created.
+Path to the database file. `res://` and `user://` should work, however `res://` will not work after export (see [ why here](https://docs.godotengine.org/en/stable/tutorials/io/data_paths.html#accessing-persistent-user-data-user)). The path can be relative to the game's executable. Directories in the path must exist. If the file does not exist, it will be created.
 
-### [String](https://docs.godotengine.org/en/stable/classes/class_string.html)<span id="i_preferred_coordinate_format"></span> **preferred_coordinate_format** = ""
+### [CoordinateFormat](VoxelStreamSQLite.md#enumerations)<span id="i_preferred_coordinate_format"></span> **preferred_coordinate_format** = COORDINATE_FORMAT_STRING_CSD (2)
 
 Sets which block coordinate format will be used when creating new databases. This affects the range of supported coordinates and how quickly SQLite can execute queries (to a minor extent). When opening existing databases, this setting will be ignored, and the format of the database will be used instead. Changing the format of an existing database is currently not possible, and may require using a script to load individual blocks from one stream and save them to a new one.
 
 ## Method Descriptions
-
-### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_get_preferred_coordinate_format"></span> **get_preferred_coordinate_format**( ) 
-
-*(This method has no documentation)*
 
 ### [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_is_key_cache_enabled"></span> **is_key_cache_enabled**( ) 
 
@@ -61,8 +55,4 @@ Enables caching keys of the database to speed up loading queries in terrains tha
 
 This must be called before any call to `load_voxel_block` (before the terrain starts using it), otherwise it won't work properly. You may use a script to do this.
 
-### [void](#)<span id="i_set_preferred_coordinate_format"></span> **set_preferred_coordinate_format**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) format ) 
-
-*(This method has no documentation)*
-
-_Generated on Aug 27, 2024_
+_Generated on May 15, 2025_

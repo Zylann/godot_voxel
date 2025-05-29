@@ -29,7 +29,7 @@ inline Error stream_peer_get_data(StreamPeer &peer, Span<uint8_t> dst) {
 #elif defined(ZN_GODOT_EXTENSION)
 	PackedByteArray bytes = peer.get_data(dst.size());
 	copy_to(dst, bytes);
-	if (dst.size() != bytes.size()) {
+	if (int64_t(dst.size()) != bytes.size()) {
 		// That's what Godot returns in core
 		return ERR_INVALID_PARAMETER;
 	}

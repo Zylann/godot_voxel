@@ -14,7 +14,9 @@ void VoxelModifierSphere::set_radius(float radius) {
 		return;
 	}
 	_radius = radius;
+#ifdef VOXEL_ENABLE_GPU
 	_shader_data_need_update = true;
+#endif
 	update_aabb();
 }
 
@@ -57,6 +59,8 @@ void VoxelModifierSphere::apply(VoxelModifierContext ctx) const {
 	}
 }
 
+#ifdef VOXEL_ENABLE_GPU
+
 void VoxelModifierSphere::get_shader_data(ShaderData &out_shader_data) {
 	struct SphereParams {
 		float radius;
@@ -73,23 +77,21 @@ void VoxelModifierSphere::get_shader_data(ShaderData &out_shader_data) {
 		zylann::godot::copy_bytes_to(pba, sphere_params);
 
 		if (_shader_data->params.size() < 2) {
-			std::shared_ptr<ComputeShaderResource> res = make_shared_instance<ComputeShaderResource>();
-			res->create_storage_buffer(pba);
+			std::shared_ptr<ComputeShaderResource> res = ComputeShaderResourceFactory::create_storage_buffer(pba);
 			_shader_data->params.push_back(ComputeShaderParameter{ 5, res });
 
 		} else if (_shader_data_need_update) {
 			ZN_ASSERT(_shader_data->params.size() == 2);
-			_shader_data->params[1].resource->update_storage_buffer(pba);
+			ComputeShaderResource::update_storage_buffer(_shader_data->params[1].resource, pba);
 		}
 
 		_shader_data_need_update = false;
 	}
 
-	out_shader_data.shader_rids[ShaderData::TYPE_DETAIL] =
-			VoxelEngine::get_singleton().get_detail_modifier_sphere_shader().get_rid();
-	out_shader_data.shader_rids[ShaderData::TYPE_BLOCK] =
-			VoxelEngine::get_singleton().get_block_modifier_sphere_shader().get_rid();
+	out_shader_data.modifier_type = get_type();
 	out_shader_data.params = _shader_data;
 }
+
+#endif
 
 } // namespace zylann::voxel

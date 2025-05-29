@@ -9,6 +9,7 @@
 #include "../util/profiling.h"
 #include "voxel_buffer.h" // Used in template methods
 #include "voxel_data_block.h"
+#include "voxel_format.h"
 
 namespace zylann::voxel {
 
@@ -53,6 +54,8 @@ public:
 
 	void create(unsigned int lod_index);
 
+	void set_format(const VoxelFormat format);
+
 	inline unsigned int get_block_size() const {
 		return BLOCK_SIZE;
 	}
@@ -81,23 +84,23 @@ public:
 			Vector3i min_pos,
 			VoxelBuffer &dst_buffer,
 			unsigned int channels_mask,
-			void *,
+			void *callback_data,
 			void (*gen_func)(void *, VoxelBuffer &, Vector3i)
 	) const;
 
 	void paste(Vector3i min_pos, const VoxelBuffer &src_buffer, unsigned int channels_mask, bool create_new_blocks);
 
-	void paste_masked( //
-			Vector3i min_pos, //
-			const VoxelBuffer &src_buffer, //
-			unsigned int channels_mask, //
-			bool use_src_mask, //
-			uint8_t src_mask_channel, //
-			uint64_t src_mask_value, //
-			bool use_dst_mask, //
-			uint8_t dst_mask_channel, //
-			Span<const int32_t> dst_writable_values, //
-			bool create_new_blocks //
+	void paste_masked(
+			Vector3i min_pos,
+			const VoxelBuffer &src_buffer,
+			unsigned int channels_mask,
+			bool use_src_mask,
+			uint8_t src_mask_channel,
+			uint64_t src_mask_value,
+			bool use_dst_mask,
+			uint8_t dst_mask_channel,
+			Span<const int32_t> dst_writable_values,
+			bool create_new_blocks
 	);
 
 	// Moves the given buffer into a block of the map. The buffer is referenced, no copy is made.
@@ -229,6 +232,7 @@ private:
 	// mutable VoxelDataBlock *_last_accessed_block = nullptr;
 
 	unsigned int _lod_index = 0;
+	VoxelFormat _format;
 };
 
 } // namespace zylann::voxel

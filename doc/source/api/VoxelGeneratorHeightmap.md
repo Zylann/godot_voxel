@@ -4,22 +4,25 @@ Inherits: [VoxelGenerator](VoxelGenerator.md)
 
 Inherited by: [VoxelGeneratorImage](VoxelGeneratorImage.md), [VoxelGeneratorNoise2D](VoxelGeneratorNoise2D.md), [VoxelGeneratorWaves](VoxelGeneratorWaves.md)
 
+Base class for several basic height-based generators.
+
 ## Properties: 
 
 
-Type                                                                      | Name                             | Default 
-------------------------------------------------------------------------- | -------------------------------- | --------
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)      | [channel](#i_channel)            | 1       
-[float](https://docs.godotengine.org/en/stable/classes/class_float.html)  | [height_range](#i_height_range)  | 30.0    
-[float](https://docs.godotengine.org/en/stable/classes/class_float.html)  | [height_start](#i_height_start)  | -50.0   
-[float](https://docs.godotengine.org/en/stable/classes/class_float.html)  | [iso_scale](#i_iso_scale)        | 1.0     
+Type                                                                            | Name                             | Default         
+------------------------------------------------------------------------------- | -------------------------------- | ----------------
+[ChannelId](VoxelBuffer.md#enumerations)                                        | [channel](#i_channel)            | CHANNEL_SDF (1) 
+[float](https://docs.godotengine.org/en/stable/classes/class_float.html)        | [height_range](#i_height_range)  | 30.0            
+[float](https://docs.godotengine.org/en/stable/classes/class_float.html)        | [height_start](#i_height_start)  | -50.0           
+[float](https://docs.godotengine.org/en/stable/classes/class_float.html)        | [iso_scale](#i_iso_scale)        | 1.0             
+[Vector2i](https://docs.godotengine.org/en/stable/classes/class_vector2i.html)  | [offset](#i_offset)              | Vector2i(0, 0)  
 <p></p>
 
 ## Property Descriptions
 
-### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_channel"></span> **channel** = 1
+### [ChannelId](VoxelBuffer.md#enumerations)<span id="i_channel"></span> **channel** = CHANNEL_SDF (1)
 
-*(This property has no documentation)*
+Channel where voxels will be generated. If set to [VoxelBuffer.CHANNEL_SDF](VoxelBuffer.md#i_CHANNEL_SDF), voxels will be a signed distance field usable by smooth meshers. Otherwise, the value 1 will be set below ground, and the value 0 will be set above ground (blocky).
 
 ### [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_height_range"></span> **height_range** = 30.0
 
@@ -33,6 +36,10 @@ Minimum height where the surface will generate.
 
 ### [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_iso_scale"></span> **iso_scale** = 1.0
 
-Scale applied to the signed distance field. This is useful when smooth voxels are used, to reduce blockyness over large distances.
+Scale applied to the signed distance field when using a smooth terrain configuration.
 
-_Generated on Aug 27, 2024_
+### [Vector2i](https://docs.godotengine.org/en/stable/classes/class_vector2i.html)<span id="i_offset"></span> **offset** = Vector2i(0, 0)
+
+Offsets height generation along the X and Z axes.
+
+_Generated on May 15, 2025_

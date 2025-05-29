@@ -17,7 +17,9 @@ void test_voxel_graph_functions_nested_pass_through();
 void test_voxel_graph_functions_autoconnect();
 void test_voxel_graph_functions_io_mismatch();
 void test_voxel_graph_functions_misc();
+#ifdef VOXEL_ENABLE_GPU
 void test_voxel_graph_issue461();
+#endif
 void test_voxel_graph_fuzzing();
 #ifdef VOXEL_ENABLE_FAST_NOISE_2
 void test_voxel_graph_issue427();
@@ -25,7 +27,9 @@ void test_voxel_graph_issue427();
 void test_voxel_graph_hash();
 #endif
 #endif
+#ifdef VOXEL_ENABLE_GPU
 void test_voxel_graph_issue471();
+#endif
 void test_voxel_graph_unused_single_texture_output();
 void test_voxel_graph_spots2d_optimized_execution_map();
 void test_voxel_graph_unused_inner_output();
@@ -37,6 +41,7 @@ void test_voxel_graph_many_subdivisions();
 void test_voxel_graph_non_square_image();
 void test_voxel_graph_4_default_weights();
 void test_voxel_graph_empty_image();
+void test_voxel_graph_constant_reduction();
 
 } // namespace zylann::voxel::tests
 

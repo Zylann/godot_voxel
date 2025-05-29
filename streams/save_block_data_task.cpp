@@ -2,6 +2,7 @@
 #include "../engine/voxel_engine.h"
 #include "../generators/generate_block_task.h"
 #include "../storage/voxel_buffer.h"
+#include "../util/godot/core/string.h"
 #include "../util/io/log.h"
 #include "../util/profiling.h"
 #include "../util/string/format.h"
@@ -35,6 +36,8 @@ SaveBlockDataTask::SaveBlockDataTask(
 	++g_debug_save_block_tasks_count;
 }
 
+#ifdef VOXEL_ENABLE_INSTANCER
+
 SaveBlockDataTask::SaveBlockDataTask(
 		VolumeID p_volume_id,
 		Vector3i p_block_pos,
@@ -56,6 +59,8 @@ SaveBlockDataTask::SaveBlockDataTask(
 	//
 	++g_debug_save_block_tasks_count;
 }
+
+#endif
 
 SaveBlockDataTask::~SaveBlockDataTask() {
 	--g_debug_save_block_tasks_count;
@@ -92,21 +97,30 @@ void SaveBlockDataTask::run(zylann::ThreadedTaskContext &ctx) {
 		stream->save_voxel_block(q);
 	}
 
-	if (_save_instances && stream->supports_instance_blocks()) {
-		// If the provided data is null, it means this instance block was never modified.
-		// Since we are in a save request, the saved data will revert to unmodified.
-		// On the other hand, if we want to represent the fact that "everything was deleted here",
-		// this should not be null.
+#ifdef VOXEL_ENABLE_INSTANCER
+	if (_save_instances) {
+		if (stream->supports_instance_blocks()) {
+			// If the provided data is null, it means this instance block was never modified.
+			// Since we are in a save request, the saved data will revert to unmodified.
+			// On the other hand, if we want to represent the fact that "everything was deleted here",
+			// this should not be null.
 
-		ZN_PRINT_VERBOSE(format(
-				"Saving instance block {} lod {} with data {}", _position, static_cast<int>(_lod), _instances.get()
-		));
+			ZN_PRINT_VERBOSE(format(
+					"Saving instance block {} lod {} with data {}", _position, static_cast<int>(_lod), _instances.get()
+			));
 
-		VoxelStream::InstancesQueryData instances_query{
-			std::move(_instances), _position, _lod, VoxelStream::RESULT_ERROR
-		};
-		stream->save_instance_blocks(Span<VoxelStream::InstancesQueryData>(&instances_query, 1));
+			VoxelStream::InstancesQueryData instances_query{
+				std::move(_instances), _position, _lod, VoxelStream::RESULT_ERROR
+			};
+			stream->save_instance_blocks(Span<VoxelStream::InstancesQueryData>(&instances_query, 1));
+
+		} else {
+			ZN_PRINT_WARNING_ONCE(
+					format("Tried to save instance block, but {} does not support them.", String(stream->get_class()))
+			);
+		}
 	}
+#endif
 
 	if (_tracker != nullptr) {
 		if (_flush_on_last_tracked_task && _tracker->get_remaining_count() == 1) {

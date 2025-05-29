@@ -7,6 +7,14 @@ namespace zylann::godot {
 
 DirectMultiMeshInstance::DirectMultiMeshInstance() {}
 
+DirectMultiMeshInstance::DirectMultiMeshInstance(DirectMultiMeshInstance &&src) {
+	_multimesh_instance = src._multimesh_instance;
+	_multimesh = src._multimesh;
+
+	src._multimesh_instance = RID();
+	src._multimesh = Ref<MultiMesh>();
+}
+
 DirectMultiMeshInstance::~DirectMultiMeshInstance() {
 	destroy();
 }
@@ -87,6 +95,12 @@ void DirectMultiMeshInstance::set_cast_shadows_setting(RenderingServer::ShadowCa
 	vs.instance_geometry_set_cast_shadows_setting(_multimesh_instance, mode);
 }
 
+void DirectMultiMeshInstance::set_shader_instance_parameter(const StringName &key, const Variant &value) {
+	ERR_FAIL_COND(!_multimesh_instance.is_valid());
+	RenderingServer &vs = *RenderingServer::get_singleton();
+	vs.instance_geometry_set_shader_parameter(_multimesh_instance, key, value);
+}
+
 void DirectMultiMeshInstance::set_render_layer(int render_layer) {
 	ERR_FAIL_COND(!_multimesh_instance.is_valid());
 	RenderingServer &vs = *RenderingServer::get_singleton();
@@ -95,6 +109,29 @@ void DirectMultiMeshInstance::set_render_layer(int render_layer) {
 
 void DirectMultiMeshInstance::set_gi_mode(GeometryInstance3D::GIMode mode) {
 	set_geometry_instance_gi_mode(_multimesh_instance, mode);
+}
+
+void DirectMultiMeshInstance::set_interpolated(const bool enabled) {
+	// This was added in Godot 4.4, then moved to the SceneTree in 4.5
+	// See https://github.com/godotengine/godot/pull/104269
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR == 4
+	RenderingServer &vs = *RenderingServer::get_singleton();
+	vs.instance_set_interpolated(_multimesh_instance, enabled);
+#endif
+}
+
+void DirectMultiMeshInstance::operator=(DirectMultiMeshInstance &&src) {
+	if (_multimesh_instance == src._multimesh_instance) {
+		return;
+	}
+
+	destroy();
+
+	_multimesh_instance = src._multimesh_instance;
+	_multimesh = src._multimesh;
+
+	src._multimesh_instance = RID();
+	src._multimesh.unref();
 }
 
 template <typename TTransform3>

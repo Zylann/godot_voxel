@@ -44,9 +44,10 @@ struct NodeType {
 		bool require_input_buffer_when_constant = true;
 		// PortType port_type;
 
-		Port(String p_name, float p_default_value = 0.f,
-				VoxelGraphFunction::AutoConnect ac = VoxelGraphFunction::AUTO_CONNECT_NONE,
-				bool p_require_input_buffer_when_constant = true) :
+		Port(String p_name,
+			 float p_default_value = 0.f,
+			 VoxelGraphFunction::AutoConnect ac = VoxelGraphFunction::AUTO_CONNECT_NONE,
+			 bool p_require_input_buffer_when_constant = true) :
 				name(p_name),
 				default_value(p_default_value),
 				auto_connect(ac),

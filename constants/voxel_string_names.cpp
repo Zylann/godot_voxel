@@ -139,6 +139,8 @@ VoxelStringNames::VoxelStringNames() {
 	confirmed = StringName("confirmed");
 	toggled = StringName("toggled");
 	TerrainMatchCornersAndSides = StringName("TerrainMatchCornersAndSides");
+
+	add_child = StringName("add_child");
 }
 
 } // namespace zylann::voxel

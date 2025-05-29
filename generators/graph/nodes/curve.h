@@ -1,7 +1,7 @@
 #include "../../../util/godot/classes/curve.h"
 #include "../../../util/profiling.h"
+#include "../curve_utility.h"
 #include "../node_type_db.h"
-#include "../range_utility.h"
 
 namespace zylann::voxel::pg {
 
@@ -67,14 +67,14 @@ void register_curve_node(Span<NodeType> types) {
 				ctx.set_output(0, r);
 			}
 		};
+#ifdef VOXEL_ENABLE_GPU
 		t.shader_gen_func = [](ShaderGenContext &ctx) {
 			Ref<Curve> curve = ctx.get_param(0);
 			if (curve.is_null()) {
 				ctx.make_error(String(ZN_TTR("{0} instance is null")).format(varray(Curve::get_class_static())));
 				return;
 			}
-			ComputeShaderResource res;
-			res.create_texture_2d(**curve);
+			std::shared_ptr<ComputeShaderResource> res = ComputeShaderResourceFactory::create_texture_2d(curve);
 			const StdString uniform_texture = ctx.add_uniform(std::move(res));
 
 			// In Godot 4.4 Curves can be defined beyond 0..1
@@ -95,6 +95,7 @@ void register_curve_node(Span<NodeType> types) {
 					uniform_texture
 			);
 		};
+#endif
 	}
 }
 

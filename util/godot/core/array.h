@@ -33,12 +33,50 @@ inline godot::Array varray(const godot::Variant &a0, const godot::Variant &a1, c
 }
 
 inline godot::Array varray(
-		const godot::Variant &a0, const godot::Variant &a1, const godot::Variant &a2, const godot::Variant &a3) {
+		const godot::Variant &a0,
+		const godot::Variant &a1,
+		const godot::Variant &a2,
+		const godot::Variant &a3
+) {
 	godot::Array a;
 	a.append(a0);
 	a.append(a1);
 	a.append(a2);
 	a.append(a3);
+	return a;
+}
+
+inline godot::Array varray(
+		const godot::Variant &a0,
+		const godot::Variant &a1,
+		const godot::Variant &a2,
+		const godot::Variant &a3,
+		const godot::Variant &a4
+) {
+	godot::Array a;
+	a.append(a0);
+	a.append(a1);
+	a.append(a2);
+	a.append(a3);
+	a.append(a4);
+	return a;
+}
+
+inline godot::Array varray(
+		const godot::Variant &a0,
+		const godot::Variant &a1,
+		const godot::Variant &a2,
+		const godot::Variant &a3,
+		const godot::Variant &a4,
+		const godot::Variant &a5
+) {
+	godot::Array a;
+	a.append(a0);
+	a.append(a1);
+	a.append(a2);
+	a.append(a3);
+	a.append(a4);
+	a.append(a5);
 	return a;
 }
 

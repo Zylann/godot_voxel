@@ -5,6 +5,7 @@
 #include <core/variant/dictionary.h>
 #elif defined(ZN_GODOT_EXTENSION)
 #include <godot_cpp/variant/dictionary.hpp>
+#include <godot_cpp/variant/variant.hpp>
 using namespace godot;
 #endif
 

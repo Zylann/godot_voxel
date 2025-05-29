@@ -7,8 +7,6 @@
 
 namespace zylann::godot {
 
-#ifdef TOOLS_ENABLED
-
 void get_property_list(const Object &obj, StdVector<PropertyInfoWrapper> &out_properties) {
 #if defined(ZN_GODOT)
 	List<PropertyInfo> properties;
@@ -68,6 +66,8 @@ uint64_t get_deep_hash(const Object &obj, uint32_t property_usage, uint64_t hash
 
 	return hash;
 }
+
+#ifdef TOOLS_ENABLED
 
 void set_object_edited(Object &obj) {
 #if defined(ZN_GODOT)

@@ -214,11 +214,11 @@ public:
 
 	// Convenience for set generation with only one value
 	// TODO Evaluate needs for double-precision in pg::Runtime
-	void generate_single(State &state, Span<float> inputs, const ExecutionMap *execution_map) const;
+	void generate_single(State &state, Span<const float> inputs, const ExecutionMap *execution_map) const;
 
 	void generate_set(
 			State &state,
-			Span<Span<float>> p_inputs,
+			Span<const Span<const float>> p_inputs,
 			bool skip_outer_group,
 			const ExecutionMap *p_execution_map
 	) const;
@@ -244,7 +244,7 @@ public:
 	// Analyzes a specific region of inputs to find out what ranges of outputs we can expect.
 	// It can be used to speed up calls to `generate_set` thanks to execution mapping,
 	// so that operations can be optimized out if they don't contribute to the result.
-	void analyze_range(State &state, Span<math::Interval> p_inputs) const;
+	void analyze_range(State &state, Span<const math::Interval> p_inputs) const;
 
 	// Call this after `analyze_range` if you intend to actually generate a set or single values in the area.
 	// This allows to use the execution map optimization, until you choose another area.
@@ -266,9 +266,30 @@ public:
 
 	uint64_t get_program_hash() const;
 
+	static inline Span<const uint8_t> read_params(Span<const uint16_t> operations, unsigned int &pc) {
+		const uint16_t params_size_in_words = operations[pc];
+		++pc;
+		Span<const uint8_t> params;
+		if (params_size_in_words > 0) {
+			const size_t params_offset_in_words = operations[pc];
+			// Seek to aligned position where params start
+			pc += params_offset_in_words;
+			params = operations.sub(pc, params_size_in_words).reinterpret_cast_to<const uint8_t>();
+			pc += params_size_in_words;
+		}
+		return params;
+	}
+
 	struct HeapResource {
 		void *ptr;
 		void (*deleter)(void *p);
+
+		void free() {
+			ZN_ASSERT(deleter != nullptr);
+			ZN_ASSERT(ptr != nullptr);
+			deleter(ptr);
+			ptr = nullptr;
+		}
 	};
 
 	class _ProcessContext {
@@ -394,9 +415,9 @@ private:
 	static CompilationResult compile_preprocessed_graph(
 			Program &program,
 			const ProgramGraph &graph,
-			unsigned int input_count,
+			const unsigned int input_count,
 			Span<const uint32_t> input_node_ids,
-			bool debug,
+			const bool debug,
 			const NodeTypeDB &type_db
 	);
 
@@ -528,11 +549,8 @@ private:
 			inputs.clear();
 			outputs_count = 0;
 			compilation_result = CompilationResult();
-			for (auto it = heap_resources.begin(); it != heap_resources.end(); ++it) {
-				HeapResource &r = *it;
-				CRASH_COND(r.deleter == nullptr);
-				CRASH_COND(r.ptr == nullptr);
-				r.deleter(r.ptr);
+			for (HeapResource &r : heap_resources) {
+				r.free();
 			}
 			heap_resources.clear();
 			ref_resources.clear();

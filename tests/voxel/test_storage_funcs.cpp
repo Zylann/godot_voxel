@@ -1,8 +1,8 @@
 #include "test_storage_funcs.h"
 #include "../../storage/funcs.h"
-#include "../../storage/materials_4i4w.h"
+#include "../../storage/mixel4.h"
 #include "../../util/containers/std_vector.h"
-#include "../testing.h"
+#include "../../util/testing/test_macros.h"
 
 namespace zylann::voxel::tests {
 
@@ -15,8 +15,9 @@ void test_encode_weights_packed_u16() {
 	weights[1] = 5 << 4;
 	weights[2] = 10 << 4;
 	weights[3] = 15 << 4;
-	const uint16_t encoded_weights = encode_weights_to_packed_u16_lossy(weights[0], weights[1], weights[2], weights[3]);
-	FixedArray<uint8_t, 4> decoded_weights = decode_weights_from_packed_u16(encoded_weights);
+	const uint16_t encoded_weights =
+			mixel4::encode_weights_to_packed_u16_lossy(weights[0], weights[1], weights[2], weights[3]);
+	FixedArray<uint8_t, 4> decoded_weights = mixel4::decode_weights_from_packed_u16(encoded_weights);
 	ZN_TEST_ASSERT(weights == decoded_weights);
 }
 
@@ -149,7 +150,7 @@ void test_transform_3d_array_zxy() {
 			15, 19, 23 //
 		};
 		const Vector3i expected_dst_size(4, 3, 2);
-		IntBasis basis;
+		math::OrthoBasis basis;
 		basis.x = Vector3i(0, 1, 0);
 		basis.y = Vector3i(1, 0, 0);
 		basis.z = Vector3i(0, 0, 1);
@@ -174,7 +175,7 @@ void test_transform_3d_array_zxy() {
 			23, 22, 21, 20 //
 		};
 		const Vector3i expected_dst_size(3, 4, 2);
-		IntBasis basis;
+		math::OrthoBasis basis;
 		basis.x = Vector3i(1, 0, 0);
 		basis.y = Vector3i(0, -1, 0);
 		basis.z = Vector3i(0, 0, 1);
@@ -199,7 +200,7 @@ void test_transform_3d_array_zxy() {
 			11, 10, 9,	8 //
 		};
 		const Vector3i expected_dst_size(3, 4, 2);
-		IntBasis basis;
+		math::OrthoBasis basis;
 		basis.x = Vector3i(1, 0, 0);
 		basis.y = Vector3i(0, -1, 0);
 		basis.z = Vector3i(0, 0, -1);

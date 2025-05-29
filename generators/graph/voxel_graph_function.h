@@ -1,6 +1,7 @@
 #ifndef VOXEL_GRAPH_FUNCTION_H
 #define VOXEL_GRAPH_FUNCTION_H
 
+#include "../../engine/gpu/compute_shader_resource.h"
 #include "../../util/containers/std_vector.h"
 #include "../../util/godot/classes/resource.h"
 #include "../../util/string/std_string.h"
@@ -10,6 +11,20 @@
 #include <memory>
 
 namespace zylann::voxel::pg {
+
+struct ShaderParameter {
+	StdString name;
+	std::shared_ptr<ComputeShaderResource> resource;
+};
+
+struct ShaderOutput {
+	enum Type {
+		TYPE_SDF,
+		TYPE_SINGLE_TEXTURE,
+		TYPE_TYPE,
+	};
+	Type type;
+};
 
 // Generic processing graph made of operation nodes.
 // TODO This class had to be prefixed `VoxelGraph` but I wished it was just `pg::Function`.
@@ -135,8 +150,12 @@ public:
 	);
 
 	// Checks if the specified connection can be created
-	bool can_connect(uint32_t src_node_id, uint32_t src_port_index, uint32_t dst_node_id, uint32_t dst_port_index)
-			const;
+	bool can_connect(
+			uint32_t src_node_id,
+			uint32_t src_port_index,
+			uint32_t dst_node_id,
+			uint32_t dst_port_index
+	) const;
 
 	// Checks if the specified connection is valid (without considering existing connections)
 	bool is_valid_connection(
@@ -167,6 +186,8 @@ public:
 
 	Variant get_node_param(uint32_t node_id, int param_index) const;
 	void set_node_param(uint32_t node_id, int param_index, Variant value);
+	void set_node_param_by_name(const uint32_t node_id, const String &param_name, const Variant &value);
+	void set_node_param_unchecked(ProgramGraph::Node &node, const int param_index, const Variant &value);
 
 	static bool get_expression_variables(std::string_view code, StdVector<std::string_view> &vars);
 	void get_expression_node_inputs(uint32_t node_id, StdVector<StdString> &out_names) const;
@@ -174,6 +195,7 @@ public:
 
 	Variant get_node_default_input(uint32_t node_id, int input_index) const;
 	void set_node_default_input(uint32_t node_id, int input_index, Variant value);
+	void set_node_default_input_by_name(const uint32_t node_id, const String &input_name, const Variant &value);
 
 	bool get_node_default_inputs_autoconnect(uint32_t node_id) const;
 	void set_node_default_inputs_autoconnect(uint32_t node_id, bool enabled);
@@ -199,6 +221,7 @@ public:
 
 	// Gets a hash that attempts to only change if the output of the graph is different.
 	// This is computed from the editable graph data, not the compiled result.
+	// Note: this is not guaranteed to work when comparing two graphs. This was designed initially to detect changes.
 	uint64_t get_output_graph_hash() const;
 
 	bool can_load_default_graph() const {
@@ -227,8 +250,12 @@ public:
 	static bool try_get_node_type_id_from_auto_connect(AutoConnect ac, NodeTypeID &out_node_type);
 	static bool try_get_auto_connect_from_node_type_id(NodeTypeID node_type, AutoConnect &out_ac);
 
-	void get_node_input_info(uint32_t node_id, unsigned int input_index, String *out_name, AutoConnect *out_autoconnect)
-			const;
+	void get_node_input_info(
+			uint32_t node_id,
+			unsigned int input_index,
+			String *out_name,
+			AutoConnect *out_autoconnect
+	) const;
 	String get_node_output_name(uint32_t node_id, unsigned int output_index) const;
 	Span<const Port> get_input_definitions() const;
 	Span<const Port> get_output_definitions() const;
@@ -258,10 +285,24 @@ public:
 
 	void paste_graph(const VoxelGraphFunction &src_graph, Span<const uint32_t> dst_node_ids, Vector2 gui_offset);
 
+	struct ShaderResult {
+		StdString code_utf8;
+		StdVector<pg::ShaderParameter> params;
+		StdVector<pg::ShaderOutput> outputs;
+		CompilationResult compilation;
+	};
+
+	ShaderResult get_shader_source() const;
+
 	// Compiling and running
 
 	pg::CompilationResult compile(bool debug);
-	void execute(Span<Span<float>> inputs, Span<Span<float>> outputs);
+	void execute(
+			Span<const Span<const float>> inputs,
+			Span<Span<float>> outputs,
+			const unsigned int max_processing_chunk_size = 256,
+			const bool dummy_output = false
+	);
 
 	bool is_compiled() const;
 
@@ -276,10 +317,19 @@ public:
 	// Per-thread re-used memory for runtime executions
 	struct RuntimeCache {
 		pg::Runtime::State state;
-		StdVector<Span<float>> input_chunks;
+		StdVector<Span<const float>> input_chunks;
+		pg::Runtime::ExecutionMap optimized_execution_map;
 	};
 
 	static RuntimeCache &get_runtime_cache_tls();
+
+	CompilationResult expand_and_reduce();
+
+	// Tests if two graphs are the same, considering their output branches. Object parameters are first compared by
+	// reference, and then compared by their properties. Nodes that the outputs don't depend on will be ignored.
+	bool equals(const VoxelGraphFunction &other);
+
+	void debug_analyze_range(Span<const math::Interval> input_ranges, const bool optimize_execution_map);
 
 private:
 	void register_subresource(Resource &resource);

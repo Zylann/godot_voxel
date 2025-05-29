@@ -7,7 +7,9 @@ namespace zylann::voxel {
 void VoxelModifierSdf::set_operation(Operation op) {
 	RWLockWrite wlock(_rwlock);
 	_operation = op;
+#ifdef VOXEL_ENABLE_GPU
 	_shader_data_need_update = true;
+#endif
 }
 
 void VoxelModifierSdf::set_smoothness(float p_smoothness) {
@@ -17,13 +19,17 @@ void VoxelModifierSdf::set_smoothness(float p_smoothness) {
 		return;
 	}
 	_smoothness = smoothness;
+#ifdef VOXEL_ENABLE_GPU
 	_shader_data_need_update = true;
+#endif
 	update_aabb();
 }
 
 inline float get_largest_coord(Vector3 v) {
 	return math::max(math::max(v.x, v.y), v.z);
 }
+
+#ifdef VOXEL_ENABLE_GPU
 
 void VoxelModifierSdf::update_base_shader_data_no_lock() {
 	struct BaseModifierParams {
@@ -44,14 +50,15 @@ void VoxelModifierSdf::update_base_shader_data_no_lock() {
 	if (_shader_data == nullptr) {
 		_shader_data = make_shared_instance<ComputeShaderParameters>();
 
-		std::shared_ptr<ComputeShaderResource> res0 = make_shared_instance<ComputeShaderResource>();
-		res0->create_storage_buffer(pba0);
+		std::shared_ptr<ComputeShaderResource> res0 = ComputeShaderResourceFactory::create_storage_buffer(pba0);
 		_shader_data->params.push_back(ComputeShaderParameter{ 4, res0 });
 
 	} else {
 		ZN_ASSERT(_shader_data->params.size() >= 1);
-		_shader_data->params[0].resource->update_storage_buffer(pba0);
+		ComputeShaderResource::update_storage_buffer(_shader_data->params[0].resource, pba0);
 	}
 }
+
+#endif
 
 } // namespace zylann::voxel

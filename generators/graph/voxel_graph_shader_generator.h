@@ -1,7 +1,6 @@
 #ifndef VOXEL_GRAPH_SHADER_GENERATOR_H
 #define VOXEL_GRAPH_SHADER_GENERATOR_H
 
-#include "../../engine/gpu/compute_shader_resource.h"
 #include "../../util/containers/span.h"
 #include "../../util/containers/std_vector.h"
 #include "../../util/errors.h"
@@ -13,26 +12,26 @@
 
 namespace zylann::voxel::pg {
 
-struct ShaderParameter {
-	StdString name;
-	ComputeShaderResource resource;
-};
-
-struct ShaderOutput {
-	enum Type { TYPE_SDF, TYPE_SINGLE_TEXTURE, TYPE_TYPE };
-	Type type;
-};
-
 // Generates GLSL code from the given graph.
-CompilationResult generate_shader(const ProgramGraph &p_graph, Span<const VoxelGraphFunction::Port> input_defs,
-		FwdMutableStdString source_code, StdVector<ShaderParameter> &uniforms, StdVector<ShaderOutput> &outputs,
-		Span<const VoxelGraphFunction::NodeTypeID> restricted_outputs);
+CompilationResult generate_shader(
+		const ProgramGraph &p_graph,
+		Span<const VoxelGraphFunction::Port> input_defs,
+		FwdMutableStdString source_code,
+		StdVector<ShaderParameter> &uniforms,
+		StdVector<ShaderOutput> &outputs,
+		Span<const VoxelGraphFunction::NodeTypeID> restricted_outputs
+);
 
 // Sent as argument to functions implementing generator nodes, in order to generate shader code.
 class ShaderGenContext {
 public:
-	ShaderGenContext(const StdVector<Variant> &params, Span<const char *> input_names, Span<const char *> output_names,
-			CodeGenHelper &code_gen, StdVector<ShaderParameter> &uniforms) :
+	ShaderGenContext(
+			const StdVector<Variant> &params,
+			Span<const char *> input_names,
+			Span<const char *> output_names,
+			CodeGenHelper &code_gen,
+			StdVector<ShaderParameter> &uniforms
+	) :
 			_params(params),
 			_input_names(input_names),
 			_output_names(output_names),
@@ -74,7 +73,7 @@ public:
 	// If the code is too long for a string constant, it can be provided as a list of strings
 	void require_lib_code(const char *lib_name, const char **code);
 
-	StdString add_uniform(ComputeShaderResource &&res);
+	StdString add_uniform(std::shared_ptr<ComputeShaderResource> res);
 
 private:
 	const StdVector<Variant> &_params;

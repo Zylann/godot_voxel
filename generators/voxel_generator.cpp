@@ -1,12 +1,15 @@
 #include "voxel_generator.h"
 #include "../constants/voxel_string_names.h"
-#include "../engine/gpu/compute_shader.h"
-#include "../engine/gpu/compute_shader_parameters.h"
 #include "../shaders/shaders.h"
 #include "../storage/voxel_buffer_gd.h"
 #include "../util/godot/core/array.h" // for `varray` in GDExtension builds
 #include "../util/profiling.h"
 #include "generate_block_task.h"
+
+#ifdef VOXEL_ENABLE_GPU
+#include "../engine/gpu/compute_shader.h"
+#include "../engine/gpu/compute_shader_parameters.h"
+#endif
 
 namespace zylann::voxel {
 
@@ -65,6 +68,8 @@ void VoxelGenerator::_b_generate_block(Ref<godot::VoxelBuffer> out_buffer, Vecto
 	generate_block(q);
 }
 
+#ifdef VOXEL_ENABLE_GPU
+
 bool VoxelGenerator::get_shader_source(ShaderSourceData &out_params) const {
 	ZN_PRINT_ERROR("Not implemented");
 	return false;
@@ -111,17 +116,15 @@ void append_generator_parameter_uniforms(
 		String &source_text,
 		ComputeShaderParameters &out_params,
 		VoxelGenerator::ShaderSourceData &shader_data,
-		unsigned int bindings_start
+		const unsigned int bindings_start
 ) {
 	for (unsigned int i = 0; i < shader_data.parameters.size(); ++i) {
 		VoxelGenerator::ShaderParameter &p = shader_data.parameters[i];
 		const unsigned int binding = bindings_start + i;
-		ZN_ASSERT(p.resource.get_type() == ComputeShaderResource::TYPE_TEXTURE_2D);
+		ZN_ASSERT(p.resource->get_type() == ComputeShaderResourceInternal::TYPE_TEXTURE_2D);
 		source_text +=
 				String("layout (set = 0, binding = {0}) uniform sampler2D {1};\n").format(varray(binding, p.name));
-		std::shared_ptr<ComputeShaderResource> res = make_unique_instance<ComputeShaderResource>();
-		*res = std::move(p.resource);
-		out_params.params.push_back(ComputeShaderParameter{ binding, res });
+		out_params.params.push_back(ComputeShaderParameter{ binding, p.resource });
 	}
 	source_text += "\n";
 }
@@ -135,7 +138,7 @@ std::shared_ptr<ComputeShader> compile_detail_rendering_compute_shader(
 	ZN_PROFILE_SCOPE();
 	ERR_FAIL_COND_V_MSG(
 			!generator.supports_shaders(),
-			ComputeShader::create_invalid(),
+			ComputeShaderFactory::create_invalid(),
 			String("Can't use the provided {0} with compute shaders, it does not support GLSL.")
 					.format(varray(VoxelGenerator::get_class_static()))
 	);
@@ -143,7 +146,7 @@ std::shared_ptr<ComputeShader> compile_detail_rendering_compute_shader(
 	VoxelGenerator::ShaderSourceData shader_data;
 	ERR_FAIL_COND_V_MSG(
 			!generator.get_shader_source(shader_data),
-			ComputeShader::create_invalid(),
+			ComputeShaderFactory::create_invalid(),
 			"Failed to get shader source code."
 	);
 
@@ -173,7 +176,7 @@ std::shared_ptr<ComputeShader> compile_detail_rendering_compute_shader(
 			}
 			ERR_FAIL_COND_V_MSG(
 					sdf_output_index == -1,
-					ComputeShader::create_invalid(),
+					ComputeShaderFactory::create_invalid(),
 					"Can't generate detail generator shader, SDF output not found"
 			);
 			// Call the generator shader function
@@ -191,7 +194,7 @@ std::shared_ptr<ComputeShader> compile_detail_rendering_compute_shader(
 
 	// TODO Pick different name somehow for different generators
 	std::shared_ptr<ComputeShader> shader =
-			ComputeShader::create_from_glsl(source_text, "zylann.voxel.detail_generator.gen");
+			ComputeShaderFactory::create_from_glsl(source_text, "zylann.voxel.detail_generator.gen");
 
 	return shader;
 }
@@ -204,7 +207,7 @@ std::shared_ptr<ComputeShader> compile_block_rendering_compute_shader(
 	ZN_PROFILE_SCOPE();
 	ERR_FAIL_COND_V_MSG(
 			!generator.supports_shaders(),
-			ComputeShader::create_invalid(),
+			ComputeShaderFactory::create_invalid(),
 			String("Can't use the provided {0} with compute shaders, it does not support GLSL.")
 					.format(varray(VoxelGenerator::get_class_static()))
 	);
@@ -212,7 +215,7 @@ std::shared_ptr<ComputeShader> compile_block_rendering_compute_shader(
 	VoxelGenerator::ShaderSourceData shader_data;
 	ERR_FAIL_COND_V_MSG(
 			!generator.get_shader_source(shader_data),
-			ComputeShader::create_invalid(),
+			ComputeShaderFactory::create_invalid(),
 			"Failed to get shader source code."
 	);
 
@@ -250,7 +253,7 @@ std::shared_ptr<ComputeShader> compile_block_rendering_compute_shader(
 
 	// TODO Pick different name somehow for different generators
 	std::shared_ptr<ComputeShader> shader =
-			ComputeShader::create_from_glsl(source_text, "zylann.voxel.block_generator.gen");
+			ComputeShaderFactory::create_from_glsl(source_text, "zylann.voxel.block_generator.gen");
 
 	return shader;
 }
@@ -293,6 +296,8 @@ void VoxelGenerator::invalidate_shaders() {
 		_block_rendering_shader_outputs.reset();
 	}
 }
+
+#endif
 
 bool VoxelGenerator::generate_broad_block(VoxelQueryData input) {
 	// By default, generators don't support this separately and just do it inside `generate_block`.

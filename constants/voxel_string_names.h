@@ -127,6 +127,8 @@ public:
 	StringName confirmed;
 	StringName toggled;
 	StringName TerrainMatchCornersAndSides;
+
+	StringName add_child;
 };
 
 } // namespace zylann::voxel

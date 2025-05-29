@@ -13,10 +13,19 @@ class VoxelData;
 
 class LoadBlockDataTask : public IThreadedTask {
 public:
-	LoadBlockDataTask(VolumeID p_volume_id, Vector3i p_block_pos, uint8_t p_lod, uint8_t p_block_size,
-			bool p_request_instances, std::shared_ptr<StreamingDependency> p_stream_dependency,
-			PriorityDependency p_priority_dependency, bool generate_cache_data, bool generator_use_gpu,
-			const std::shared_ptr<VoxelData> &vdata, TaskCancellationToken cancellation_token);
+	LoadBlockDataTask(
+			VolumeID p_volume_id,
+			Vector3i p_block_pos,
+			uint8_t p_lod,
+			uint8_t p_block_size,
+			bool p_request_instances,
+			std::shared_ptr<StreamingDependency> p_stream_dependency,
+			PriorityDependency p_priority_dependency,
+			bool generate_cache_data,
+			bool generator_use_gpu,
+			const std::shared_ptr<VoxelData> &vdata,
+			TaskCancellationToken cancellation_token
+	);
 
 	~LoadBlockDataTask();
 
@@ -34,19 +43,25 @@ public:
 private:
 	PriorityDependency _priority_dependency;
 	std::shared_ptr<VoxelBuffer> _voxels;
+#ifdef VOXEL_ENABLE_INSTANCER
 	UniquePtr<InstanceBlockData> _instances;
+#endif
 	Vector3i _position; // In data blocks of the specified lod
 	VolumeID _volume_id;
 	uint8_t _lod_index;
 	uint8_t _block_size;
 	bool _has_run = false;
 	bool _too_far = false;
+#ifdef VOXEL_ENABLE_INSTANCER
 	bool _request_instances = false;
+#endif
 	// bool _request_voxels = false;
 	bool _max_lod_hint = false;
 	bool _generate_cache_data = true;
 	bool _requested_generator_task = false;
+#ifdef VOXEL_ENABLE_GPU
 	bool _generator_use_gpu = false;
+#endif
 	std::shared_ptr<StreamingDependency> _stream_dependency;
 	std::shared_ptr<VoxelData> _voxel_data;
 	TaskCancellationToken _cancellation_token;

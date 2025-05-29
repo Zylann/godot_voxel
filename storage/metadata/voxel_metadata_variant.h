@@ -22,6 +22,8 @@ public:
 	size_t serialize(Span<uint8_t> dst) const override;
 	bool deserialize(Span<const uint8_t> src, uint64_t &out_read_size) override;
 	ICustomVoxelMetadata *duplicate() override;
+	uint8_t get_type_index() const override;
+	bool equals(const ICustomVoxelMetadata &other) const override;
 };
 
 Variant get_as_variant(const VoxelMetadata &meta);

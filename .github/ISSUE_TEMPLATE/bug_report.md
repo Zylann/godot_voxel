@@ -16,12 +16,14 @@ Steps to reproduce the behavior:
 3. Scroll down to '....'
 4. See error
 
-Linking a minimal project that reproduces the issue may help:
+Linking a minimal project that reproduces the issue may help.
+Important rules when making such project:
 - Keep it to a minimum, if possible no steps required after launching, or just press one key or button to trigger the test. The more complicated a project is, the more effort it takes to inspect, understand and isolate the issue.
 - Remove any scripts, nodes and assets that aren't necessary to reproduce the issue.
 - Don't use fullscreen or large screen size.
 - If scripts are needed, prefer GDScript, as C# is harder to setup
 - Don't embed scripts or shaders inside resource or scenes, save them as their own files
+- Prefer resources in text format (.tres, .tscn) instead of binary
 
 If you see any errors in the console, that may also help.
 

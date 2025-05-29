@@ -1,10 +1,14 @@
 #include "test_voxel_buffer.h"
+#include "../../edition/voxel_tool_buffer.h"
 #include "../../storage/metadata/voxel_metadata_factory.h"
 #include "../../storage/metadata/voxel_metadata_variant.h"
 #include "../../storage/voxel_buffer_gd.h"
 #include "../../streams/voxel_block_serializer.h"
+#include "../../util/io/log.h"
+#include "../../util/string/format.h"
+#include "../../util/string/std_string.h"
 #include "../../util/string/std_stringstream.h"
-#include "../testing.h"
+#include "../../util/testing/test_macros.h"
 #include <sstream>
 
 namespace zylann::voxel::tests {
@@ -59,6 +63,21 @@ public:
 
 	bool operator==(const CustomMetadataTest &other) const {
 		return a == other.a && b == other.b && c == other.c;
+	}
+
+	uint8_t get_type_index() const override {
+		return ID;
+	}
+
+	bool equals(const ICustomVoxelMetadata &other) const override {
+		if (other.get_type_index() != get_type_index()) {
+			return false;
+		}
+#ifdef DEBUG_ENABLED
+		ZN_ASSERT(dynamic_cast<const CustomMetadataTest *>(&other) != nullptr);
+#endif
+		const CustomMetadataTest &other_self = static_cast<const CustomMetadataTest &>(other);
+		return (*this) == other_self;
 	}
 };
 
@@ -166,6 +185,48 @@ void test_voxel_buffer_metadata_gd() {
 		Array read_meta = vb->get_voxel_metadata(Vector3i(1, 2, 3));
 		ZN_TEST_ASSERT(read_meta.size() == meta.size());
 		ZN_TEST_ASSERT(read_meta == meta);
+	}
+	// Comparison 1
+	{
+		Ref<godot::VoxelBuffer> vb1;
+		vb1.instantiate();
+		vb1->create(10, 10, 10);
+		vb1->set_voxel_metadata(Vector3i(1, 2, 3), 42);
+
+		Ref<godot::VoxelBuffer> vb2;
+		vb2.instantiate();
+		vb2->create(10, 10, 10);
+		vb2->set_voxel_metadata(Vector3i(1, 2, 3), 42);
+
+		ZN_TEST_ASSERT(vb1->get_buffer().equals(vb2->get_buffer()) == true);
+	}
+	// Comparison 2
+	{
+		Ref<godot::VoxelBuffer> vb1;
+		vb1.instantiate();
+		vb1->create(10, 10, 10);
+		vb1->set_voxel_metadata(Vector3i(1, 2, 3), 42);
+
+		Ref<godot::VoxelBuffer> vb2;
+		vb2.instantiate();
+		vb2->create(10, 10, 10);
+		vb2->set_voxel_metadata(Vector3i(5, 6, 7), 42);
+
+		ZN_TEST_ASSERT(vb1->get_buffer().equals(vb2->get_buffer()) == false);
+	}
+	// Duplication
+	{
+		Ref<godot::VoxelBuffer> vb1;
+		vb1.instantiate();
+		vb1->create(10, 10, 10);
+		vb1->set_voxel_metadata(Vector3i(1, 2, 3), 42);
+
+		Ref<godot::VoxelBuffer> vb2 = vb1->duplicate(true);
+
+		ZN_TEST_ASSERT(vb1->get_buffer().equals(vb2->get_buffer()));
+
+		vb2->set_voxel_metadata(Vector3i(1, 2, 3), 43);
+		ZN_TEST_ASSERT(vb1->get_buffer().equals(vb2->get_buffer()));
 	}
 	// Serialization (Godot)
 	{
@@ -382,6 +443,142 @@ void test_voxel_buffer_paste_masked() {
 	}
 
 	ZN_TEST_ASSERT(dst.equals(expected));
+}
+
+void test_voxel_buffer_paste_masked_metadata() {
+	Ref<zylann::voxel::godot::VoxelBuffer> src_buffer;
+	src_buffer.instantiate();
+	src_buffer->create(3, 4, 5);
+
+	src_buffer->set_voxel_metadata(Vector3i(1, 1, 1), 100);
+	src_buffer->set_voxel_metadata(Vector3i(2, 1, 1), 101);
+	src_buffer->set_voxel_metadata(Vector3i(1, 2, 1), 102);
+	src_buffer->set_voxel_metadata(Vector3i(2, 2, 1), 103);
+	src_buffer->set_voxel_metadata(Vector3i(1, 1, 2), 104);
+	src_buffer->set_voxel_metadata(Vector3i(2, 1, 2), 105);
+	src_buffer->set_voxel_metadata(Vector3i(1, 2, 2), 106);
+	src_buffer->set_voxel_metadata(Vector3i(2, 2, 2), 107);
+
+	// This should not get copied due to masking
+	src_buffer->set_voxel_metadata(Vector3i(2, 2, 4), 200);
+
+	const VoxelBuffer::ChannelId channel = VoxelBuffer::CHANNEL_TYPE;
+	src_buffer->set_voxel(1, 0, 0, 0, channel); // Specifically to erase the metadata in dst_buffer
+	src_buffer->set_voxel(1, 1, 1, 1, channel);
+	src_buffer->set_voxel(1, 2, 1, 1, channel);
+	src_buffer->set_voxel(1, 1, 2, 1, channel);
+	src_buffer->set_voxel(1, 2, 2, 1, channel);
+	src_buffer->set_voxel(1, 1, 1, 2, channel);
+	src_buffer->set_voxel(1, 2, 1, 2, channel);
+	src_buffer->set_voxel(1, 1, 2, 2, channel);
+	src_buffer->set_voxel(1, 2, 2, 2, channel);
+
+	Ref<zylann::voxel::godot::VoxelBuffer> dst_buffer;
+	dst_buffer.instantiate();
+	dst_buffer->create(8, 8, 8);
+	const int dst_default_value = 2;
+	dst_buffer->fill(dst_default_value, channel);
+	// This metadata will get overwritten, since (0,0,0) has no metadata in src_buffer
+	dst_buffer->set_voxel_metadata(Vector3i(1, 2, 3), 300);
+	// This one will not get erased because out of range of the pasted area
+	const Vector3i preserved_metadata_dst_pos(0, 2, 3);
+	dst_buffer->set_voxel_metadata(preserved_metadata_dst_pos, 301);
+
+	Ref<zylann::voxel::godot::VoxelBuffer> dst_buffer_original = dst_buffer->duplicate(true);
+
+	Ref<VoxelTool> vt = dst_buffer->get_voxel_tool();
+	const Vector3i dst_paste_origin(1, 2, 3);
+	const int mask_value = 0;
+	vt->paste_masked(dst_paste_origin, src_buffer, VoxelBuffer::ALL_CHANNELS_MASK, channel, mask_value);
+
+	dst_buffer->get_buffer().check_voxel_metadata_integrity();
+
+	for (int z = 0; z < dst_buffer->get_size().z; ++z) {
+		for (int x = 0; x < dst_buffer->get_size().x; ++x) {
+			for (int y = 0; y < dst_buffer->get_size().y; ++y) {
+				const Vector3i dst_pos(x, y, z);
+
+				const int dst_v = dst_buffer->get_voxel(x, y, z, channel);
+				// 0 values must not have been copied
+				ZN_TEST_ASSERT(dst_v != 0);
+
+				if (dst_v == dst_default_value) {
+					// All cells not pasted onto must have kept their original metadata
+					const Variant dst_m = dst_buffer->get_voxel_metadata(dst_pos);
+					const Variant dst_m_original = dst_buffer_original->get_voxel_metadata(dst_pos);
+					ZN_TEST_ASSERT(dst_m == dst_m_original);
+				}
+			}
+		}
+	}
+
+	// print_channel_as_ascii(dst_buffer->get_buffer(), channel);
+
+	for (int z = 0; z < src_buffer->get_size().z; ++z) {
+		for (int x = 0; x < src_buffer->get_size().x; ++x) {
+			for (int y = 0; y < src_buffer->get_size().y; ++y) {
+				const Vector3i src_pos(x, y, z);
+				const Vector3i dst_pos = dst_paste_origin + src_pos;
+
+				// Voxel values in the copied area must be equal
+				const int src_v = src_buffer->get_voxel(src_pos.x, src_pos.y, src_pos.z, channel);
+				const int dst_v = dst_buffer->get_voxel(dst_pos.x, dst_pos.y, dst_pos.z, channel);
+				if (src_v == mask_value) {
+					ZN_TEST_ASSERT(dst_v == dst_default_value);
+				} else {
+					ZN_TEST_ASSERT(dst_v == src_v);
+				}
+
+				// Metadata in copied area must be equal
+				const Variant src_m = src_buffer->get_voxel_metadata(src_pos);
+				const Variant dst_m = dst_buffer->get_voxel_metadata(dst_pos);
+				if (src_v == mask_value) {
+					// Preserved cell
+					const Variant dst_m_original = dst_buffer_original->get_voxel_metadata(dst_pos);
+					ZN_TEST_ASSERT(dst_m == dst_m_original);
+				} else {
+					// Overwritten
+					ZN_TEST_ASSERT(dst_m == src_m);
+				}
+			}
+		}
+	}
+}
+
+void test_voxel_buffer_paste_masked_metadata_oob() {
+	Ref<zylann::voxel::godot::VoxelBuffer> src_buffer;
+	src_buffer.instantiate();
+	src_buffer->create(3, 1, 1);
+
+	src_buffer->set_voxel_metadata(Vector3i(0, 0, 0), 100);
+	src_buffer->set_voxel_metadata(Vector3i(1, 0, 0), 101);
+	src_buffer->set_voxel_metadata(Vector3i(2, 0, 0), 101);
+
+	const VoxelBuffer::ChannelId channel = VoxelBuffer::CHANNEL_TYPE;
+	src_buffer->set_voxel(1, 0, 0, 0, channel);
+	src_buffer->set_voxel(1, 1, 0, 0, channel);
+	src_buffer->set_voxel(1, 2, 0, 0, channel);
+
+	Ref<zylann::voxel::godot::VoxelBuffer> dst_buffer;
+	dst_buffer.instantiate();
+	dst_buffer->create(4, 4, 4);
+	dst_buffer->fill(2);
+
+	// Paste it out of bounds, only one cell overlaps
+	Ref<VoxelTool> vt = dst_buffer->get_voxel_tool();
+	vt->paste_masked(Vector3i(3, 2, 2), src_buffer, (1 << VoxelBuffer::CHANNEL_TYPE), channel, 0);
+
+	dst_buffer->get_buffer().check_voxel_metadata_integrity();
+
+	const FlatMapMoveOnly<Vector3i, VoxelMetadata> &vm = dst_buffer->get_buffer().get_voxel_metadata();
+	ZN_TEST_ASSERT(vm.size() == 1);
+
+	const Variant dst_m = dst_buffer->get_voxel_metadata(Vector3i(3, 2, 2));
+	ZN_TEST_ASSERT(dst_m == Variant(100));
+
+	// for (FlatMapMoveOnly<Vector3i, VoxelMetadata>::ConstIterator it = vm.begin(); it != vm.end(); ++it) {
+	// 	ZN_PRINT_VERBOSE(format("Metadata found at {}", it->key));
+	// }
 }
 
 void test_voxel_buffer_set_channel_bytes() {

@@ -1,12 +1,7 @@
-#ifndef ZN_COLOR_H
-#define ZN_COLOR_H
+#ifndef ZN_MATH_COLOR_H
+#define ZN_MATH_COLOR_H
 
-#if defined(ZN_GODOT)
-#include <core/math/color.h>
-#elif defined(ZN_GODOT_EXTENSION)
-#include <godot_cpp/variant/color.hpp>
-using namespace godot;
-#endif
+#include "../godot/core/color.h"
 
 namespace zylann::math {
 
@@ -16,4 +11,4 @@ inline Color lerp(const Color a, const Color b, float t) {
 
 } // namespace zylann::math
 
-#endif // ZN_COLOR_H
+#endif // ZN_MATH_COLOR_H

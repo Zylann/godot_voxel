@@ -46,11 +46,9 @@ public:
 			Vector3f max_pos
 	) const;
 
-	void apply_for_gpu_rendering(
-			StdVector<VoxelModifier::ShaderData> &out_data,
-			AABB aabb,
-			VoxelModifier::ShaderData::Type type
-	) const;
+#ifdef VOXEL_ENABLE_GPU
+	void apply_for_gpu_rendering(StdVector<VoxelModifier::ShaderData> &out_data, const AABB aabb) const;
+#endif
 
 	void clear();
 

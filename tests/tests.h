@@ -1,12 +1,25 @@
 #ifndef VOXEL_TESTS_H
 #define VOXEL_TESTS_H
 
-namespace zylann::voxel::tests {
-void run_voxel_tests();
-} // namespace zylann::voxel::tests
+#include "../util/godot/macros.h"
 
-namespace zylann::voxel::noise_tests {
+namespace zylann {
+
+namespace testing {
+class TestOptions;
+}
+
+namespace voxel {
+
+namespace tests {
+void run_voxel_tests(const testing::TestOptions &options);
+}
+
+namespace noise_tests {
 void run_noise_tests();
-} // namespace zylann::voxel::noise_tests
+}
+
+} // namespace voxel
+} // namespace zylann
 
 #endif // VOXEL_TESTS_H

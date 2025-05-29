@@ -18,9 +18,9 @@ using namespace godot;
 #include "variant.h"
 #endif
 
-#include "../macros.h"
-
 #include "../../containers/span.h"
+#include "../core/version.h"
+#include "../macros.h"
 
 namespace zylann::godot {
 
@@ -62,7 +62,11 @@ inline StdString to_std_string(const String &godot_string) {
 
 inline Error parse_utf8(String &s, Span<const char> utf8) {
 #if defined(ZN_GODOT)
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR >= 5
+	return s.append_utf8(utf8.data(), utf8.size());
+#else
 	return s.parse_utf8(utf8.data(), utf8.size());
+#endif
 #elif defined(ZN_GODOT_EXTENSION)
 	s.parse_utf8(utf8.data(), utf8.size());
 	// The Godot API doesn't return anything, impossible to tell if parsing succeeded.

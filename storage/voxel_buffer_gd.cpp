@@ -299,6 +299,24 @@ namespace zylann::voxel::godot {
 const char *VoxelBuffer::CHANNEL_ID_HINT_STRING = "Type,Sdf,Color,Indices,Weights,Data5,Data6,Data7";
 static thread_local bool s_create_shared = false;
 
+Variant get_voxel_metadata(zylann::voxel::VoxelBuffer &vb, const Vector3i pos) {
+	VoxelMetadata *meta = vb.get_voxel_metadata(pos);
+	if (meta == nullptr) {
+		return Variant();
+	}
+	return get_as_variant(*meta);
+}
+
+void set_voxel_metadata(zylann::voxel::VoxelBuffer &vb, const Vector3i pos, const Variant meta) {
+	if (meta.get_type() == Variant::NIL) {
+		vb.erase_voxel_metadata(pos);
+	} else {
+		VoxelMetadata *mv = vb.get_or_create_voxel_metadata(pos);
+		ZN_ASSERT_RETURN(mv != nullptr);
+		set_as_variant(*mv, meta);
+	}
+}
+
 VoxelBuffer::VoxelBuffer() {
 	if (!s_create_shared) {
 		_buffer = make_shared_instance<zylann::voxel::VoxelBuffer>(zylann::voxel::VoxelBuffer::ALLOCATOR_DEFAULT);
@@ -407,6 +425,28 @@ void VoxelBuffer::downscale_to(Ref<VoxelBuffer> dst, Vector3i src_min, Vector3i 
 	ZN_DSTACK();
 	ERR_FAIL_COND(dst.is_null());
 	_buffer->downscale_to(dst->get_buffer(), src_min, src_max, dst_min);
+}
+
+void VoxelBuffer::rotate_90(Vector3i::Axis axis, int turns) {
+	_buffer->transform(math::OrthoBasis::from_axis_turns(axis, turns));
+}
+
+static math::OrthoBasis mirror_axis_to_basis(const Vector3i::Axis axis) {
+	switch (axis) {
+		case Vector3i::AXIS_X:
+			return math::OrthoBasis(Vector3i(-1, 0, 0), Vector3i(0, 1, 0), Vector3i(0, 0, 1));
+		case Vector3i::AXIS_Y:
+			return math::OrthoBasis(Vector3i(1, 0, 0), Vector3i(0, -1, 0), Vector3i(0, 0, 1));
+		case Vector3i::AXIS_Z:
+			return math::OrthoBasis(Vector3i(1, 0, 0), Vector3i(0, 1, 0), Vector3i(0, 0, -1));
+		default:
+			ZN_PRINT_ERROR("Invalid axis");
+			return math::OrthoBasis();
+	}
+}
+
+void VoxelBuffer::mirror(Vector3i::Axis axis) {
+	_buffer->transform(mirror_axis_to_basis(axis));
 }
 
 Ref<VoxelBuffer> VoxelBuffer::duplicate(bool include_metadata) const {
@@ -627,21 +667,11 @@ void VoxelBuffer::set_block_metadata(Variant meta) {
 }
 
 Variant VoxelBuffer::get_voxel_metadata(Vector3i pos) const {
-	VoxelMetadata *meta = _buffer->get_voxel_metadata(pos);
-	if (meta == nullptr) {
-		return Variant();
-	}
-	return get_as_variant(*meta);
+	return zylann::voxel::godot::get_voxel_metadata(*_buffer, pos);
 }
 
 void VoxelBuffer::set_voxel_metadata(Vector3i pos, Variant meta) {
-	if (meta.get_type() == Variant::NIL) {
-		_buffer->erase_voxel_metadata(pos);
-	} else {
-		VoxelMetadata *mv = _buffer->get_or_create_voxel_metadata(pos);
-		ZN_ASSERT_RETURN(mv != nullptr);
-		set_as_variant(*mv, meta);
-	}
+	zylann::voxel::godot::set_voxel_metadata(*_buffer, pos, meta);
 }
 
 void VoxelBuffer::for_each_voxel_metadata(const Callable &callback) const {
@@ -693,10 +723,8 @@ void VoxelBuffer::for_each_voxel_metadata_in_area(const Callable &callback, Vect
 		);
 
 #elif defined(ZN_GODOT_EXTENSION)
-		// TODO Error reporting? GodotCpp doesn't expose anything
-		//callback.call(rel_pos, v);
-		// TODO GodotCpp is missing the implementation of `Callable::call`.
-		ZN_PRINT_ERROR("Unable to call Callable, go moan at https://github.com/godotengine/godot-cpp/issues/802");
+		// Can't do error-reporting the same way we do in modules.
+		callback.call(rel_pos, v);
 #endif
 	});
 }
@@ -862,6 +890,8 @@ void VoxelBuffer::_bind_methods() {
 			&VoxelBuffer::copy_channel_from_area
 	);
 	ClassDB::bind_method(D_METHOD("downscale_to", "dst", "src_min", "src_max", "dst_min"), &VoxelBuffer::downscale_to);
+	ClassDB::bind_method(D_METHOD("rotate_90", "axis", "turns"), &VoxelBuffer::rotate_90);
+	ClassDB::bind_method(D_METHOD("mirror", "axis"), &VoxelBuffer::mirror);
 
 	ClassDB::bind_method(D_METHOD("is_uniform", "channel"), &VoxelBuffer::is_uniform);
 	ClassDB::bind_method(D_METHOD("compress_uniform_channels"), &VoxelBuffer::compress_uniform_channels);
@@ -931,6 +961,16 @@ void VoxelBuffer::_bind_methods() {
 	BIND_ENUM_CONSTANT(CHANNEL_DATA6);
 	BIND_ENUM_CONSTANT(CHANNEL_DATA7);
 	BIND_ENUM_CONSTANT(MAX_CHANNELS);
+
+	BIND_ENUM_CONSTANT(CHANNEL_TYPE_BIT);
+	BIND_ENUM_CONSTANT(CHANNEL_SDF_BIT);
+	BIND_ENUM_CONSTANT(CHANNEL_COLOR_BIT);
+	BIND_ENUM_CONSTANT(CHANNEL_INDICES_BIT);
+	BIND_ENUM_CONSTANT(CHANNEL_WEIGHTS_BIT);
+	BIND_ENUM_CONSTANT(CHANNEL_DATA5_BIT);
+	BIND_ENUM_CONSTANT(CHANNEL_DATA6_BIT);
+	BIND_ENUM_CONSTANT(CHANNEL_DATA7_BIT);
+	BIND_ENUM_CONSTANT(ALL_CHANNELS_MASK);
 
 	BIND_ENUM_CONSTANT(DEPTH_8_BIT);
 	BIND_ENUM_CONSTANT(DEPTH_16_BIT);

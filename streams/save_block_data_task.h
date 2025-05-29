@@ -25,6 +25,7 @@ public:
 			bool flush_on_last_tracked_task
 	);
 
+#ifdef VOXEL_ENABLE_INSTANCER
 	// For saving instances only
 	SaveBlockDataTask(
 			VolumeID p_volume_id,
@@ -35,6 +36,7 @@ public:
 			std::shared_ptr<AsyncDependencyTracker> p_tracker,
 			bool flush_on_last_tracked_task
 	);
+#endif
 
 	~SaveBlockDataTask();
 
@@ -51,7 +53,9 @@ public:
 
 private:
 	std::shared_ptr<VoxelBuffer> _voxels;
+#ifdef VOXEL_ENABLE_INSTANCER
 	UniquePtr<InstanceBlockData> _instances;
+#endif
 	Vector3i _position; // In data blocks of the specified lod
 	VolumeID _volume_id;
 	uint8_t _lod;

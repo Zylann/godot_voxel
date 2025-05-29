@@ -9,9 +9,15 @@
 #include "../../util/godot/classes/packed_scene.h"
 #include "../../util/godot/classes/rendering_server.h"
 #include "../../util/godot/classes/shape_3d.h"
+#include "../../util/godot/core/gdvirtual.h"
 #include "voxel_instance_library_item.h"
 
+// I had to include this because of GDVIRTUAL, otherwise it complains with a narrowing conversion warning
+#include "voxel_instancer.h"
+
 namespace zylann::voxel {
+
+class VoxelInstancer;
 
 struct CollisionShapeInfo {
 	Transform3D transform;
@@ -53,6 +59,13 @@ public:
 	// Can be higher than 1 because when used with VoxelTerrain it is based on the half-extents of the visible area,
 	// which is square, so the circular area covered by mesh lods can actually extend a bit further if desired.
 	static constexpr float MAX_DISTANCE_RATIO = 2.f;
+
+	enum RemovalBehavior {
+		REMOVAL_BEHAVIOR_NONE,
+		REMOVAL_BEHAVIOR_INSTANTIATE,
+		REMOVAL_BEHAVIOR_CALLBACK,
+		REMOVAL_BEHAVIOR_COUNT
+	};
 
 	VoxelInstanceLibraryMultiMeshItem();
 
@@ -98,7 +111,18 @@ public:
 	bool get_hide_beyond_max_lod() const;
 	void set_hide_beyond_max_lod(bool enabled);
 
+	void set_removal_behavior(const RemovalBehavior rb);
+	RemovalBehavior get_removal_behavior() const;
+
+	void set_removal_scene(Ref<PackedScene> scene);
+	Ref<PackedScene> get_removal_scene() const;
+
+	void set_collision_distance(const float distance);
+	float get_collision_distance() const;
+
 	// Internal
+
+	void trigger_removal_callback(VoxelInstancer *instancer, const Transform3D &trans);
 
 	// If a scene is assigned to the item, returns settings converted from it.
 	// If no scene is assigned, returns manual settings.
@@ -114,6 +138,13 @@ public:
 
 	Array serialize_multimesh_item_properties() const;
 	void deserialize_multimesh_item_properties(Array a);
+
+#ifdef TOOLS_ENABLED
+	void get_configuration_warnings(PackedStringArray &warnings) const override;
+#endif
+
+private:
+	GDVIRTUAL2(_on_instance_removed, VoxelInstancer *, Transform3D)
 
 private:
 	// bool _set(const StringName &p_name, const Variant &p_value);
@@ -197,8 +228,15 @@ private:
 	// This may be used if the terrain has no LOD or the item is on its last LOD
 	bool _hide_beyond_max_lod = false;
 	FixedArray<float, MAX_MESH_LODS> _mesh_lod_max_distance_ratios;
+
+	RemovalBehavior _removal_behavior = REMOVAL_BEHAVIOR_NONE;
+	Ref<PackedScene> _removal_scene;
+
+	float _collision_distance = -1.f;
 };
 
 } // namespace zylann::voxel
+
+VARIANT_ENUM_CAST(zylann::voxel::VoxelInstanceLibraryMultiMeshItem::RemovalBehavior)
 
 #endif // VOXEL_INSTANCE_LIBRARY_MULTIMESH_ITEM_H

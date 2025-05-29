@@ -404,9 +404,8 @@ void register_math_func_nodes(Span<NodeType> types) {
 			float b;
 
 			static Params from_intervals(float min0, float max0, float min1, float max1) {
-				Params p;
-				math::remap_intervals_to_linear_params(min0, max0, min1, max1, p.a, p.b);
-				return p;
+				const math::LinearFuncParams lin = math::remap_intervals_to_linear_params(min0, max0, min1, max1);
+				return { lin.a, lin.b };
 			}
 		};
 		NodeType &t = types[VoxelGraphFunction::NODE_REMAP];

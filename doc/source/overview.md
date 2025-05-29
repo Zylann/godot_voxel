@@ -83,7 +83,6 @@ There are several ways to produce polygons from voxel data, and the engine provi
 - [VoxelMesherCubes](api/VoxelMesherCubes.md): the color of voxels is used to produce colored cubes. This is the simplest way to polygonize voxels.
 - [VoxelMesherBlocky](api/VoxelMesherBlocky.md): the type of voxels is used to batch together meshes corresponding to that type. This can also use cubes, but any shape will do if custom meshes are provided. This is a similar technique as the one used in Minecraft, and has a wide range of options.
 - [VoxelMesherTransvoxel](api/VoxelMesherTransvoxel.md): instead of making cubes, this one uses the SDF value to produce a smooth surface, based on the [Transvoxel](https://transvoxel.org/) algorithm. It can also produce transition meshes, which is useful to stitch together two meshes of different level of detail.
-- [VoxelMesherDMC](api/VoxelMesherDMC.md): variant using dual marching cubes to produce a smooth surface, [as explained in these articles](https://www.volume-gfx.com/volume-rendering/). However this implementation is no longer maintained.
 
 
 Putting it together with nodes
@@ -98,13 +97,38 @@ Turning a bunch of voxels into a mesh is ok for a model or a small piece of land
 !!! note
     In this engine, "Chunks" are actually called "Blocks". They typically represent cubes of 16x16x16 voxels. Some options are specified in blocks, rather than spatial units.
 
-There are two main types of terrains supported by the engine:
+### Terrain types
+
+There are two main types of terrains supported by the engine. They have a lot in common, but also handle blocks in a very different way.
 
 - [VoxelTerrain](api/VoxelTerrain.md): this one uses a simple grid of blocks, and takes care of loading and unloading blocks as the viewer moves around. Its view distance is limited in similar ways to Minecraft, so it is better used with blocky voxels or moderate-size smooth volumes.
 
-- [VoxelLodTerrain](api/VoxelLodTerrain.md): this one uses an octree of blocks. Contrary to a simple grid, this allows to store voxels at multiple levels of detail, allowing to render much larger distances. It only supports smooth voxels though, and has different limitations compared to the other.
+- [VoxelLodTerrain](api/VoxelLodTerrain.md): this one uses an octree of blocks. Contrary to a simple grid, this allows to store voxels at multiple levels of detail, allowing to render much larger distances. It currently works a bit differently compared to the other.
 
 Both kinds of terrains can be edited in real time, and only the edited parts will be re-meshed dynamically. A helper class [VoxelTool](api/VoxelTool.md) is exposed to the script API to simplify the process of editing voxels, which can be obtained by using `get_voxel_tool()` methods. It allows to set single voxels, dig around or blend simple shapes such as spheres or boxes. The same concept of channels seen earlier is available on this API, so depending on the type of mesher you are using, you may want to edit either `TYPE`, `SDF` or `COLOR` channels.
 
 Finally, for these terrains to load, it is required to place at least one [VoxelViewer](api/VoxelViewer.md) node in the world. These may be placed typically as child of the player, or the main `Camera3D`. They tell the voxel engine where to load voxels, how far, and give priority to mesh updates happening near them.
+
+
+### Common properties
+
+#### Voxel properties
+
+Each voxel node inherits `VoxelNode`, which defines properties they all have in common.
+
+- `stream`: a `VoxelStream` resource, which allows to load and save voxels. See [Voxel Streams](streams.md)
+- `generator`: a `VoxelGenerator` resource, which allows to populate the volume with generated voxels. See [Generators](generators.md)
+- `mesher`: a `VoxelMesher` resource, which defines how the voxels will look like. It also defines collision meshes if enabled.
+
+
+#### Collisions
+
+Physics based collisions are enabled by default, and behave like a static body. It provides both raycasting and collision detection. You can turn it on or off by setting the `generate_collisions` option on any of the terrain nodes. Or you can enable or disable it in code.
+
+The collision is built along with the mesh. So any blocks that have already been built will not be affected by this setting unless they are regenerated.
+
+You can also turn on the collision wire mesh for debugging. In the editor, look under the Debug menu for `Visible Collision Shapes`.
+
+![Collision shapes](images/debug-collision-shapes.gif)
+
 

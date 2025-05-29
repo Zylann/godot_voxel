@@ -14,9 +14,9 @@
 #include <sstream>
 #include <unordered_set>
 
-//#ifdef DEBUG_ENABLED
-//#define VOXEL_DEBUG_GRAPH_PROG_SENTINEL uint16_t(12345) // 48, 57 (base 10)
-//#endif
+// #ifdef DEBUG_ENABLED
+// #define VOXEL_DEBUG_GRAPH_PROG_SENTINEL uint16_t(12345) // 48, 57 (base 10)
+// #endif
 
 namespace zylann::voxel::pg {
 
@@ -53,8 +53,9 @@ bool Runtime::is_operation_constant(const State &state, uint16_t op_address) con
 	for (unsigned int i = 0; i < outputs.size(); ++i) {
 		const uint16_t output_address = outputs[i];
 		const Buffer &buffer = state.get_buffer(output_address);
-		if (!(buffer.is_constant || state.get_range(output_address).is_single_value() ||
-					buffer.local_users_count == 0)) {
+		if (!(buffer.is_constant //
+			  || state.get_range(output_address).is_single_value() //
+			  || buffer.local_users_count == 0)) {
 			// At least one of the outputs cannot be predicted in the current area
 			return false;
 		}
@@ -81,7 +82,11 @@ const Runtime::ExecutionMap &Runtime::get_default_execution_map() const {
 // This has the effect of optimizing locally at runtime without relying on explicit conditionals.
 // It can be useful for biomes, where some branches become constant when not used in the final blending.
 void Runtime::generate_optimized_execution_map(
-		const State &state, ExecutionMap &execution_map, Span<const unsigned int> required_outputs, bool debug) const {
+		const State &state,
+		ExecutionMap &execution_map,
+		Span<const unsigned int> required_outputs,
+		bool debug
+) const {
 	ZN_PROFILE_SCOPE();
 
 	// Range analysis results must have been computed
@@ -235,7 +240,8 @@ void Runtime::generate_optimized_execution_map(
 				}
 
 				execution_map.operations.push_back(
-						ExecutionMap::OperationInfo{ node.op_address, uint16_t(tls_constant_fills.size()) });
+						ExecutionMap::OperationInfo{ node.op_address, uint16_t(tls_constant_fills.size()) }
+				);
 
 				// TODO Only do constant fills that actually get used
 				// The following approach isn't optimal. If 50% of a graph gets skipped and the remaining nodes don't
@@ -258,11 +264,11 @@ void Runtime::generate_optimized_execution_map(
 	}
 }
 
-void Runtime::generate_single(State &state, Span<float> inputs, const ExecutionMap *execution_map) const {
-	FixedArray<Span<float>, MAX_INPUTS> input_bindings;
+void Runtime::generate_single(State &state, Span<const float> inputs, const ExecutionMap *execution_map) const {
+	FixedArray<Span<const float>, MAX_INPUTS> input_bindings;
 	ZN_ASSERT_RETURN_MSG(inputs.size() < input_bindings.size(), "Too many inputs, not supported");
 	for (unsigned int i = 0; i < inputs.size(); ++i) {
-		input_bindings[i] = Span<float>(&inputs[i], 1);
+		input_bindings[i] = Span<const float>(&inputs[i], 1);
 	}
 	generate_set(state, to_span(input_bindings, inputs.size()), false, execution_map);
 }
@@ -384,32 +390,20 @@ void Runtime::prepare_state(State &state, unsigned int buffer_size, bool with_pr
 	}
 }
 
-namespace {
-
-inline Span<const uint8_t> read_params(Span<const uint16_t> operations, unsigned int &pc) {
-	const uint16_t params_size_in_words = operations[pc];
-	++pc;
-	Span<const uint8_t> params;
-	if (params_size_in_words > 0) {
-		const size_t params_offset_in_words = operations[pc];
-		// Seek to aligned position where params start
-		pc += params_offset_in_words;
-		params = operations.sub(pc, params_size_in_words).reinterpret_cast_to<const uint8_t>();
-		pc += params_size_in_words;
-	}
-	return params;
-}
-
-} // namespace
-
 void Runtime::generate_set(
-		State &state, Span<Span<float>> p_inputs, bool skip_outer_group, const ExecutionMap *p_execution_map) const {
+		State &state,
+		Span<const Span<const float>> p_inputs,
+		bool skip_outer_group,
+		const ExecutionMap *p_execution_map
+) const {
 	// I don't like putting private helper functions in headers.
 	struct L {
-		static inline void bind_buffer(Span<Buffer> buffers, int a, Span<float> d) {
+		static inline void bind_input_buffer(Span<Buffer> buffers, int a, Span<const float> d) {
 			Buffer &buffer = buffers[a];
 			ZN_ASSERT(buffer.is_binding);
-			buffer.data = d.data();
+			// TODO This is unfortunate but with the current design we can't guarantee constness at compile time.
+			// Inputs should never be written to.
+			buffer.data = const_cast<float *>(d.data());
 			buffer.size = d.size();
 		}
 
@@ -456,7 +450,7 @@ void Runtime::generate_set(
 
 	// Bind inputs
 	for (unsigned int i = 0; i < p_inputs.size(); ++i) {
-		L::bind_buffer(buffers, _program.inputs[i].buffer_address, p_inputs[i]);
+		L::bind_input_buffer(buffers, _program.inputs[i].buffer_address, p_inputs[i]);
 	}
 
 	const Span<const uint16_t> operations(_program.operations.data(), 0, _program.operations.size());
@@ -524,12 +518,14 @@ void Runtime::generate_set(
 	}
 }
 
-void Runtime::analyze_range(State &state, Span<math::Interval> p_inputs) const {
+void Runtime::analyze_range(State &state, Span<const math::Interval> p_inputs) const {
 	ZN_PROFILE_SCOPE();
 
 #ifdef TOOLS_ENABLED
 	ERR_FAIL_COND(state.ranges.size() != _program.buffer_count);
 #endif
+
+	ZN_ASSERT_RETURN(p_inputs.size() == _program.inputs.size());
 
 	Span<math::Interval> ranges = to_span(state.ranges);
 	Span<Buffer> buffers = to_span(state.buffers);

@@ -3,6 +3,8 @@
 
 #include "../math/conv.h"
 #include "../math/interval.h"
+#include "../math/vector2i.h"
+#include "../math/vector3i.h"
 
 namespace zylann::SpotNoise {
 

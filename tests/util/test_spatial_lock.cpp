@@ -1,13 +1,14 @@
 #include "test_spatial_lock.h"
 #include "../../util/containers/std_vector.h"
 #include "../../util/godot/classes/time.h"
+#include "../../util/godot/core/random_pcg.h"
 #include "../../util/math/conv.h"
 #include "../../util/memory/memory.h"
 #include "../../util/profiling.h"
 #include "../../util/string/format.h"
 #include "../../util/tasks/threaded_task_runner.h"
+#include "../../util/testing/test_macros.h"
 #include "../../util/thread/spatial_lock_3d.h"
-#include "../testing.h"
 
 // #define VOXEL_TEST_TASK_POSTPONING_DUMP_EVENTS
 #ifdef VOXEL_TEST_TASK_POSTPONING_DUMP_EVENTS
@@ -300,8 +301,8 @@ void test_spatial_lock_dependent_map_chunks() {
 		void run(ThreadedTaskContext &ctx) override {
 			ZN_PROFILE_SCOPE();
 
-			const BoxBounds3i box( //
-					Vector3i(column_pos.x - 1, 0, column_pos.y - 1), //
+			const BoxBounds3i box(
+					Vector3i(column_pos.x - 1, 0, column_pos.y - 1),
 					Vector3i(column_pos.x + 1, 24, column_pos.y + 1) + Vector3i(1, 1, 1)
 			);
 

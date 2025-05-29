@@ -2,15 +2,16 @@
 #define VOXEL_EDITION_FUNCS_H
 
 #include "../storage/funcs.h"
-#include "../storage/materials_4i4w.h"
+#include "../storage/mixel4.h"
 #include "../storage/voxel_data_grid.h"
 #include "../util/containers/dynamic_bitset.h"
 #include "../util/containers/fixed_array.h"
+#include "../util/godot/core/transform_3d.h"
 #include "../util/godot/macros.h"
 #include "../util/math/box3f.h"
 #include "../util/math/conv.h"
 #include "../util/math/sdf.h"
-#include "../util/math/transform_3d.h"
+#include "../util/math/vector3.h"
 #include "../util/profiling.h"
 
 ZN_GODOT_FORWARD_DECLARE(class Callable);
@@ -384,6 +385,10 @@ struct SdfBufferShape {
 		return interpolate_trilinear(buffer, buffer_size, lpos) * sdf_scale - isolevel;
 	}
 
+	inline bool is_inside(Vector3f pos) const {
+		return (*this)(pos) < 0;
+	}
+
 	inline const char *name() const {
 		return "SdfBufferShape";
 	}
@@ -460,7 +465,7 @@ struct TextureBlendSphereOp {
 			const float distance_from_radius = radius - math::sqrt(distance_squared);
 			const float target_weight =
 					tp.opacity * math::clamp(tp.sharpness * (distance_from_radius / radius), 0.f, 1.f);
-			blend_texture_packed_u16(tp.index, target_weight, indices, weights);
+			mixel4::blend_texture_packed_u16(tp.index, target_weight, indices, weights);
 		}
 	}
 };
@@ -475,7 +480,7 @@ struct TextureBlendOp {
 		if (sd <= 0) {
 			// TODO We don't know the full size of the shape so sharpness may be adjusted
 			const float target_weight = texture_params.opacity * math::clamp(-sd * texture_params.sharpness, 0.f, 1.f);
-			blend_texture_packed_u16(texture_params.index, target_weight, indices, weights);
+			mixel4::blend_texture_packed_u16(texture_params.index, target_weight, indices, weights);
 		}
 	}
 };

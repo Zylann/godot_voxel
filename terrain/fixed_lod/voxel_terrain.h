@@ -26,10 +26,13 @@ class AsyncDependencyTracker;
 namespace voxel {
 
 class VoxelTool;
-class VoxelInstancer;
 class VoxelSaveCompletionTracker;
 class VoxelTerrainMultiplayerSynchronizer;
 class BufferedTaskScheduler;
+
+#ifdef VOXEL_ENABLE_INSTANCER
+class VoxelInstancer;
+#endif
 
 // Infinite paged terrain made of voxel blocks all with the same level of detail.
 // Voxels are polygonized around the viewer by distance in a large cubic space.
@@ -95,8 +98,10 @@ public:
 	void set_material_override(Ref<Material> material);
 	Ref<Material> get_material_override() const;
 
+#ifdef VOXEL_ENABLE_GPU
 	void set_generator_use_gpu(bool enabled);
 	bool get_generator_use_gpu() const;
+#endif
 
 	VoxelData &get_storage() const {
 		ZN_ASSERT(_data != nullptr);
@@ -167,7 +172,9 @@ public:
 
 	// Internal
 
+#ifdef VOXEL_ENABLE_INSTANCER
 	void set_instancer(VoxelInstancer *instancer);
+#endif
 	void get_meshed_block_positions(StdVector<Vector3i> &out_positions) const;
 	Array get_mesh_block_surface(Vector3i block_pos) const;
 
@@ -188,6 +195,8 @@ public:
 	void get_configuration_warnings(PackedStringArray &warnings) const override;
 #endif // TOOLS_ENABLED
 
+	void on_format_changed() override;
+
 protected:
 	void _notification(int p_what);
 
@@ -199,10 +208,10 @@ private:
 	void process();
 	void process_viewers();
 	void process_viewer_data_box_change(
-			ViewerID viewer_id,
-			Box3i prev_data_box,
-			Box3i new_data_box,
-			bool can_load_blocks
+			const ViewerID viewer_id,
+			const Box3i prev_data_box,
+			const Box3i new_data_box,
+			const bool can_load_blocks
 	);
 	// void process_received_data_blocks();
 	void process_meshing();
@@ -363,7 +372,9 @@ private:
 	zylann::godot::ObjectUniquePtr<VoxelDataBlockEnterInfo> _data_block_enter_info_obj;
 
 	// References to external nodes.
+#ifdef VOXEL_ENABLE_INSTANCER
 	VoxelInstancer *_instancer = nullptr;
+#endif
 	VoxelTerrainMultiplayerSynchronizer *_multiplayer_synchronizer = nullptr;
 
 	Stats _stats;

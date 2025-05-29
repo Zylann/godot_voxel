@@ -10,6 +10,10 @@
 #include "../util/memory/memory.h"
 #include "../util/tasks/threaded_task.h"
 
+#ifdef VOXEL_ENABLE_MODIFIERS
+#include "../modifiers/voxel_modifier.h"
+#endif
+
 namespace zylann::voxel {
 
 class GenerateBlockGPUTaskResult {
@@ -71,11 +75,9 @@ public:
 	std::shared_ptr<ComputeShaderParameters> generator_shader_params;
 	std::shared_ptr<VoxelGenerator::ShaderOutputs> generator_shader_outputs;
 
-	struct ModifierData {
-		RID shader_rid;
-		std::shared_ptr<ComputeShaderParameters> params;
-	};
-	StdVector<ModifierData> modifiers;
+#ifdef VOXEL_ENABLE_MODIFIERS
+	StdVector<VoxelModifier::ShaderData> modifiers;
+#endif
 
 private:
 	struct BoxData {
@@ -87,6 +89,7 @@ private:
 	StdVector<BoxData> _boxes_data;
 	RID _generator_pipeline_rid;
 	StdVector<RID> _modifier_pipelines;
+	StdVector<RID> _uniform_sets_to_free;
 };
 
 } // namespace zylann::voxel

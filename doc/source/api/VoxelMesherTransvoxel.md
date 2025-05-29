@@ -7,15 +7,15 @@ Implements isosurface generation (smooth voxels) using the [Transvoxel](https://
 ## Properties: 
 
 
-Type                                                                      | Name                                                                       | Default 
-------------------------------------------------------------------------- | -------------------------------------------------------------------------- | --------
-[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)    | [deep_sampling_enabled](#i_deep_sampling_enabled)                          | false   
-[float](https://docs.godotengine.org/en/stable/classes/class_float.html)  | [edge_clamp_margin](#i_edge_clamp_margin)                                  | 0.02    
-[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)    | [mesh_optimization_enabled](#i_mesh_optimization_enabled)                  | false   
-[float](https://docs.godotengine.org/en/stable/classes/class_float.html)  | [mesh_optimization_error_threshold](#i_mesh_optimization_error_threshold)  | 0.005   
-[float](https://docs.godotengine.org/en/stable/classes/class_float.html)  | [mesh_optimization_target_ratio](#i_mesh_optimization_target_ratio)        | 0.0     
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)      | [texturing_mode](#i_texturing_mode)                                        | 0       
-[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)    | [transitions_enabled](#i_transitions_enabled)                              | true    
+Type                                                                      | Name                                                                       | Default           
+------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ------------------
+[float](https://docs.godotengine.org/en/stable/classes/class_float.html)  | [edge_clamp_margin](#i_edge_clamp_margin)                                  | 0.02              
+[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)    | [mesh_optimization_enabled](#i_mesh_optimization_enabled)                  | false             
+[float](https://docs.godotengine.org/en/stable/classes/class_float.html)  | [mesh_optimization_error_threshold](#i_mesh_optimization_error_threshold)  | 0.005             
+[float](https://docs.godotengine.org/en/stable/classes/class_float.html)  | [mesh_optimization_target_ratio](#i_mesh_optimization_target_ratio)        | 0.0               
+[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)    | [textures_ignore_air_voxels](#i_textures_ignore_air_voxels)                | false             
+[TexturingMode](VoxelMesherTransvoxel.md#enumerations)                    | [texturing_mode](#i_texturing_mode)                                        | TEXTURES_NONE (0) 
+[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)    | [transitions_enabled](#i_transitions_enabled)                              | true              
 <p></p>
 
 ## Methods: 
@@ -30,15 +30,16 @@ Return                                                                          
 
 enum **TexturingMode**: 
 
-- <span id="i_TEXTURES_NONE"></span>**TEXTURES_NONE** = **0**
-- <span id="i_TEXTURES_BLEND_4_OVER_16"></span>**TEXTURES_BLEND_4_OVER_16** = **1**
+- <span id="i_TEXTURES_NONE"></span>**TEXTURES_NONE** = **0** --- Disables texturing information. This mode is the fastest if you can use a shader to apply textures procedurally.
+- <span id="i_TEXTURES_MIXEL4_S4"></span>**TEXTURES_MIXEL4_S4** = **1** --- Expects voxels to have 4 4-bit indices packed in 16-bit values in [VoxelBuffer.CHANNEL_INDICES](VoxelBuffer.md#i_CHANNEL_INDICES), and 4 4-bit weights in [VoxelBuffer.CHANNEL_WEIGHTS](VoxelBuffer.md#i_CHANNEL_WEIGHTS). Adds texturing information as 4 texture indices and 4 weights, encoded in `CUSTOM1.xy` in Godot fragment shaders, where x and y contain 4 packed 8-bit values. In cases where more than 4 textures cross each other in a 2x2x2 voxel area, triangles in that area will only use the 4 indices with the highest weights. A custom shader is required to render this, usually with texture arrays to index textures easily.
+- <span id="i_TEXTURES_SINGLE_S4"></span>**TEXTURES_SINGLE_S4** = **2** --- Expects voxels to have a 8-bit texture index in the [VoxelBuffer.CHANNEL_INDICES](VoxelBuffer.md#i_CHANNEL_INDICES) channel. Adds texturing information as 4 texture indices and 4 weights, encoded in `CUSTOM1.xy` in Godot fragment shaders, where x and y contain 4 packed 8-bit values. In cases where more than 4 textures cross each other in a 2x2x2 voxel area, triangles in that area will only use the 4 indices with the highest weights. A custom shader is required to render this, usually with texture arrays to index textures easily.
 
+
+## Constants: 
+
+- <span id="i_TEXTURES_BLEND_4_OVER_16"></span>**TEXTURES_BLEND_4_OVER_16** = **1** --- *This constant is deprecated. Use TEXTURES_MIXEL4_S4* Legacy alias for [TEXTURES_MIXEL4_S4](VoxelMesherTransvoxel.md#i_TEXTURES_MIXEL4_S4).
 
 ## Property Descriptions
-
-### [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_deep_sampling_enabled"></span> **deep_sampling_enabled** = false
-
-*(This property has no documentation)*
 
 ### [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_edge_clamp_margin"></span> **edge_clamp_margin** = 0.02
 
@@ -56,7 +57,11 @@ When a marching cube cell is computed, vertices may be placed anywhere on edges 
 
 *(This property has no documentation)*
 
-### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_texturing_mode"></span> **texturing_mode** = 0
+### [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_textures_ignore_air_voxels"></span> **textures_ignore_air_voxels** = false
+
+*(This property has no documentation)*
+
+### [TexturingMode](VoxelMesherTransvoxel.md#enumerations)<span id="i_texturing_mode"></span> **texturing_mode** = TEXTURES_NONE (0)
 
 *(This property has no documentation)*
 
@@ -68,6 +73,6 @@ When a marching cube cell is computed, vertices may be placed anywhere on edges 
 
 ### [ArrayMesh](https://docs.godotengine.org/en/stable/classes/class_arraymesh.html)<span id="i_build_transition_mesh"></span> **build_transition_mesh**( [VoxelBuffer](VoxelBuffer.md) voxel_buffer, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) direction ) 
 
-*(This method has no documentation)*
+Generates only the part of the mesh that Transvoxel uses to connect surfaces with different level of detail. This method is mainly for testing purposes.
 
-_Generated on Aug 27, 2024_
+_Generated on May 15, 2025_

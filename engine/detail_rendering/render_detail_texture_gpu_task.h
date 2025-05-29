@@ -9,6 +9,10 @@
 #include "../ids.h"
 #include "detail_rendering.h"
 
+#ifdef VOXEL_ENABLE_MODIFIERS
+#include "../../modifiers/voxel_modifier.h"
+#endif
+
 namespace zylann::voxel {
 
 class ComputeShader;
@@ -56,11 +60,9 @@ public:
 	std::shared_ptr<ComputeShader> shader;
 	std::shared_ptr<ComputeShaderParameters> shader_params;
 
-	struct ModifierData {
-		RID shader_rid;
-		std::shared_ptr<ComputeShaderParameters> params;
-	};
-	StdVector<ModifierData> modifiers;
+#ifdef VOXEL_ENABLE_MODIFIERS
+	StdVector<VoxelModifier::ShaderData> modifiers;
+#endif
 
 	// Stuff to carry over for the second CPU pass
 	std::shared_ptr<DetailTextureOutput> output;
@@ -69,6 +71,9 @@ public:
 	Vector3i block_size;
 	VolumeID volume_id;
 	uint8_t lod_index;
+#ifdef VOXEL_TESTS
+	PackedByteArray *testing_output = nullptr;
+#endif
 
 	void prepare(GPUTaskContext &ctx) override;
 	void collect(GPUTaskContext &ctx) override;
@@ -85,6 +90,7 @@ private:
 	RID _detail_normalmap_pipeline_rid;
 	RID _normalmap_dilation_pipeline_rid;
 	StdVector<RID> _detail_modifier_pipelines;
+	StdVector<RID> _uniform_sets_to_free;
 
 	GPUStorageBuffer _mesh_vertices_sb;
 	GPUStorageBuffer _mesh_indices_sb;

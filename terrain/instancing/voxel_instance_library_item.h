@@ -23,6 +23,12 @@ public:
 	void set_persistent(bool persistent);
 	bool is_persistent() const;
 
+	float get_floating_sdf_threshold() const;
+	void set_floating_sdf_threshold(const float new_threshold);
+
+	float get_floating_sdf_offset_along_normal() const;
+	void set_floating_sdf_offset_along_normal(const float new_offset);
+
 	// Internal
 
 	void add_listener(IInstanceLibraryItemListener *listener, int id);
@@ -65,6 +71,8 @@ private:
 	};
 
 	StdVector<ListenerSlot> _listeners;
+	float _floating_sdf_threshold = 0.0f;
+	float _floating_sdf_offset_along_normal = -0.1f;
 };
 
 } // namespace zylann::voxel

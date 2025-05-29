@@ -1,4 +1,4 @@
-SQLite format
+SQLite format v1
 ================
 
 This page describes the database schema used by `VoxelStreamSQLite`.

@@ -23,10 +23,6 @@ using namespace godot;
 
 namespace zylann::godot {
 
-// Turns out these functions are only used in editor for now.
-// They are generic, but I have to wrap them, otherwise GCC throws warnings-as-errors for them being unused.
-#ifdef TOOLS_ENABLED
-
 // Gets a hash of a given object from its properties. If properties are objects too, they are recursively
 // parsed. Note that restricting to editable properties is important to avoid costly properties with objects
 // such as textures or meshes.
@@ -43,6 +39,10 @@ struct PropertyInfoWrapper {
 	uint32_t usage;
 };
 void get_property_list(const Object &obj, StdVector<PropertyInfoWrapper> &out_properties);
+
+// Turns out these functions are only used in editor for now.
+// They are generic, but I have to wrap them, otherwise GCC throws warnings-as-errors for them being unused.
+#ifdef TOOLS_ENABLED
 
 void set_object_edited(Object &obj);
 

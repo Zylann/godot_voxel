@@ -33,7 +33,7 @@ void update_image_texture_3d(ImageTexture3D &p_texture, const TypedArray<Image> 
 	p_texture.update(images);
 
 #elif defined(ZN_GODOT_EXTENSION)
-	p_texture.update(p_format, resolution.x, resolution.y, resolution.z, p_mipmaps, p_data);
+	p_texture.update(p_data);
 #endif
 }
 

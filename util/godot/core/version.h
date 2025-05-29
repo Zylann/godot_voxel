@@ -5,10 +5,17 @@
 
 #include <core/version.h>
 
-// Redefining so we can use the same macros as in extension builds, and I prefer when it's prefixed so it's clear what
-// the macro is referring to.
+// In Godot versions prior to 4.5, version macros were mismatching with GodotCpp.
+// We define them so we can use the same macros as in extension builds, 
+// and I prefer when it's prefixed so it's clear what the macro is referring to.
+
+#ifndef GODOT_VERSION_MAJOR
 #define GODOT_VERSION_MAJOR VERSION_MAJOR
+#endif
+
+#ifndef GODOT_VERSION_MINOR
 #define GODOT_VERSION_MINOR VERSION_MINOR
+#endif
 
 #elif defined(ZN_GODOT_EXTENSION)
 

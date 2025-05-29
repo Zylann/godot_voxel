@@ -3,7 +3,6 @@
 #include "../../engine/voxel_engine.h"
 #include "../../generators/generate_block_task.h"
 #include "../../meshers/mesh_block_task.h"
-#include "../../meshers/transvoxel/voxel_mesher_transvoxel.h"
 #include "../../storage/voxel_data.h"
 #include "../../streams/load_block_data_task.h"
 #include "../../streams/save_block_data_task.h"
@@ -18,6 +17,10 @@
 #include "voxel_lod_terrain_update_clipbox_streaming.h"
 #include "voxel_lod_terrain_update_octree_streaming.h"
 
+#ifdef VOXEL_ENABLE_SMOOTH_MESHING
+#include "../../meshers/transvoxel/voxel_mesher_transvoxel.h"
+#endif
+
 namespace zylann::voxel {
 
 namespace {
@@ -26,16 +29,15 @@ inline Vector3i get_block_center(Vector3i pos, int bs, int lod) {
 	return (pos << lod) * bs + Vector3iUtil::create(bs / 2);
 }
 
-void init_sparse_octree_priority_dependency( //
-		PriorityDependency &dep, //
-		Vector3i block_position, //
-		uint8_t lod, //
-		int data_block_size, //
-		std::shared_ptr<PriorityDependency::ViewersData> &shared_viewers_data, //
-		const Transform3D &volume_transform, //
-		float octree_lod_distance //
+void init_sparse_octree_priority_dependency(
+		PriorityDependency &dep,
+		const Vector3i block_position,
+		const uint8_t lod,
+		const int data_block_size,
+		const std::shared_ptr<PriorityDependency::ViewersData> &shared_viewers_data,
+		const Transform3D &volume_transform,
+		const float octree_lod_distance
 ) {
-	//
 	const Vector3i voxel_pos = get_block_center(block_position, data_block_size, lod);
 	const float block_radius = (data_block_size << lod) / 2;
 	dep.shared = shared_viewers_data;
@@ -53,22 +55,21 @@ void init_sparse_octree_priority_dependency( //
 }
 
 // This is only if we want to cache voxel data
-void request_block_generate( //
-		VolumeID volume_id, //
-		unsigned int data_block_size, //
-		std::shared_ptr<StreamingDependency> &stream_dependency, //
-		const std::shared_ptr<VoxelData> &data, //
-		Vector3i block_pos, //
-		int lod_index, //
-		std::shared_ptr<PriorityDependency::ViewersData> &shared_viewers_data, //
-		const Transform3D &volume_transform, //
-		const VoxelLodTerrainUpdateData::Settings &settings, //
-		std::shared_ptr<AsyncDependencyTracker> tracker, //
-		bool allow_drop, //
-		BufferedTaskScheduler &task_scheduler, //
-		TaskCancellationToken cancellation_token //
+void request_block_generate(
+		const VolumeID volume_id,
+		const unsigned int data_block_size,
+		const std::shared_ptr<StreamingDependency> &stream_dependency,
+		const std::shared_ptr<VoxelData> &data,
+		const Vector3i block_pos,
+		const int lod_index,
+		const std::shared_ptr<PriorityDependency::ViewersData> &shared_viewers_data,
+		const Transform3D &volume_transform,
+		const VoxelLodTerrainUpdateData::Settings &settings,
+		const std::shared_ptr<AsyncDependencyTracker> tracker,
+		const bool allow_drop,
+		BufferedTaskScheduler &task_scheduler,
+		const TaskCancellationToken cancellation_token
 ) {
-	//
 	CRASH_COND(data_block_size > 255);
 	CRASH_COND(stream_dependency == nullptr);
 
@@ -78,13 +79,16 @@ void request_block_generate( //
 	VoxelGenerator::BlockTaskParams params;
 	params.volume_id = volume_id;
 	params.block_position = block_pos;
+	params.format = data->get_format();
 	params.lod_index = lod_index;
 	params.block_size = data_block_size;
 	params.stream_dependency = stream_dependency;
 	params.tracker = tracker;
 	params.drop_beyond_max_distance = allow_drop;
 	params.data = data;
+#ifdef VOXEL_ENABLE_GPU
 	params.use_gpu = settings.generator_use_gpu;
+#endif
 	params.cancellation_token = cancellation_token;
 
 	init_sparse_octree_priority_dependency(
@@ -103,21 +107,20 @@ void request_block_generate( //
 }
 
 // Used only when streaming block by block
-void request_block_load( //
-		VolumeID volume_id, //
-		unsigned int data_block_size, //
-		std::shared_ptr<StreamingDependency> &stream_dependency, //
-		const std::shared_ptr<VoxelData> &data, //
-		Vector3i block_pos, //
-		int lod_index, //
-		std::shared_ptr<PriorityDependency::ViewersData> &shared_viewers_data, //
-		const Transform3D &volume_transform, //
-		const VoxelLodTerrainUpdateData::Settings &settings, //
-		BufferedTaskScheduler &task_scheduler, //
-		TaskCancellationToken cancellation_token, //
-		VoxelLodTerrainUpdateData::State &state //
+void request_block_load(
+		const VolumeID volume_id,
+		const unsigned int data_block_size,
+		const std::shared_ptr<StreamingDependency> &stream_dependency,
+		const std::shared_ptr<VoxelData> &data,
+		const Vector3i block_pos,
+		const int lod_index,
+		const std::shared_ptr<PriorityDependency::ViewersData> &shared_viewers_data,
+		const Transform3D &volume_transform,
+		const VoxelLodTerrainUpdateData::Settings &settings,
+		BufferedTaskScheduler &task_scheduler,
+		const TaskCancellationToken cancellation_token,
+		VoxelLodTerrainUpdateData::State &state
 ) {
-	//
 	ZN_ASSERT(data_block_size < 256);
 	ZN_ASSERT(stream_dependency != nullptr);
 
@@ -189,34 +192,33 @@ void request_block_load( //
 	}
 }
 
-void send_block_data_requests( //
-		VolumeID volume_id, //
-		Span<const VoxelLodTerrainUpdateData::BlockToLoad> blocks_to_load, //
-		std::shared_ptr<StreamingDependency> &stream_dependency, //
-		const std::shared_ptr<VoxelData> &data, //
-		std::shared_ptr<PriorityDependency::ViewersData> &shared_viewers_data, //
-		unsigned int data_block_size, //
-		const Transform3D &volume_transform, //
-		const VoxelLodTerrainUpdateData::Settings &settings, //
-		BufferedTaskScheduler &task_scheduler, //
-		VoxelLodTerrainUpdateData::State &state //
+void send_block_data_requests(
+		const VolumeID volume_id,
+		const Span<const VoxelLodTerrainUpdateData::BlockToLoad> blocks_to_load,
+		const std::shared_ptr<StreamingDependency> &stream_dependency,
+		const std::shared_ptr<VoxelData> &data,
+		const std::shared_ptr<PriorityDependency::ViewersData> &shared_viewers_data,
+		const unsigned int data_block_size,
+		const Transform3D &volume_transform,
+		const VoxelLodTerrainUpdateData::Settings &settings,
+		BufferedTaskScheduler &task_scheduler,
+		VoxelLodTerrainUpdateData::State &state
 ) {
-	//
 	for (unsigned int i = 0; i < blocks_to_load.size(); ++i) {
 		const VoxelLodTerrainUpdateData::BlockToLoad btl = blocks_to_load[i];
-		request_block_load( //
-				volume_id, //
-				data_block_size, //
-				stream_dependency, //
-				data, //
-				btl.loc.position, //
-				btl.loc.lod, //
-				shared_viewers_data, //
-				volume_transform, //
-				settings, //
-				task_scheduler, //
-				btl.cancellation_token, //
-				state //
+		request_block_load(
+				volume_id,
+				data_block_size,
+				stream_dependency,
+				data,
+				btl.loc.position,
+				btl.loc.lod,
+				shared_viewers_data,
+				volume_transform,
+				settings,
+				task_scheduler,
+				btl.cancellation_token,
+				state
 		);
 	}
 }
@@ -224,11 +226,11 @@ void send_block_data_requests( //
 // This is used when streaming is enabled, yet the terrain has no stream and no generator (There can only be empty
 // blocks when moving around), or generating is configured to happen on the fly during meshing.
 // So we have to simulate a VoxelStream that returns empty blocks immediately.
-void apply_block_data_requests_as_empty( //
-		Span<const VoxelLodTerrainUpdateData::BlockToLoad> blocks_to_load, //
-		VoxelData &data, //
-		VoxelLodTerrainUpdateData::State &state, //
-		const VoxelLodTerrainUpdateData::Settings &settings //
+void apply_block_data_requests_as_empty(
+		const Span<const VoxelLodTerrainUpdateData::BlockToLoad> blocks_to_load,
+		VoxelData &data,
+		VoxelLodTerrainUpdateData::State &state,
+		const VoxelLodTerrainUpdateData::Settings &settings
 ) {
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT_RETURN(data.is_streaming_enabled());
@@ -266,15 +268,15 @@ void apply_block_data_requests_as_empty( //
 	}
 }
 
-void request_voxel_block_save( //
-		VolumeID volume_id, //
-		std::shared_ptr<VoxelBuffer> &voxels, //
-		Vector3i block_pos, //
-		int lod_index, //
-		std::shared_ptr<StreamingDependency> &stream_dependency, //
-		BufferedTaskScheduler &task_scheduler, //
-		std::shared_ptr<AsyncDependencyTracker> tracker, //
-		bool with_flush //
+void request_voxel_block_save(
+		const VolumeID volume_id,
+		const std::shared_ptr<VoxelBuffer> &voxels,
+		const Vector3i block_pos,
+		const int lod_index,
+		const std::shared_ptr<StreamingDependency> &stream_dependency,
+		BufferedTaskScheduler &task_scheduler,
+		const std::shared_ptr<AsyncDependencyTracker> tracker,
+		const bool with_flush
 ) {
 	CRASH_COND(stream_dependency == nullptr);
 	ERR_FAIL_COND(stream_dependency->stream.is_null());
@@ -287,15 +289,15 @@ void request_voxel_block_save( //
 	task_scheduler.push_io_task(task);
 }
 
-void send_mesh_requests( //
-		VolumeID volume_id, //
-		VoxelLodTerrainUpdateData::State &state, //
-		const VoxelLodTerrainUpdateData::Settings &settings, //
-		const std::shared_ptr<VoxelData> &data_ptr, //
-		std::shared_ptr<MeshingDependency> meshing_dependency, //
-		std::shared_ptr<PriorityDependency::ViewersData> &shared_viewers_data, //
-		const Transform3D &volume_transform, //
-		BufferedTaskScheduler &task_scheduler //
+void send_mesh_requests(
+		const VolumeID volume_id,
+		VoxelLodTerrainUpdateData::State &state,
+		const VoxelLodTerrainUpdateData::Settings &settings,
+		const std::shared_ptr<VoxelData> &data_ptr,
+		const std::shared_ptr<MeshingDependency> meshing_dependency,
+		const std::shared_ptr<PriorityDependency::ViewersData> &shared_viewers_data,
+		const Transform3D &volume_transform,
+		BufferedTaskScheduler &task_scheduler
 ) {
 	ZN_PROFILE_SCOPE();
 
@@ -337,14 +339,17 @@ void send_mesh_requests( //
 			task->data = data_ptr;
 			task->require_visual = mesh_to_update.require_visual;
 			task->collision_hint = settings.collision_enabled;
+#ifdef VOXEL_ENABLE_SMOOTH_MESHING
 			task->detail_texture_settings = settings.detail_texture_settings;
 			task->detail_texture_generator_override = settings.detail_texture_generator_override;
 			task->detail_texture_generator_override_begin_lod_index =
 					settings.detail_texture_generator_override_begin_lod_index;
 			task->detail_texture_use_gpu = settings.detail_textures_use_gpu;
+#endif
 			task->block_generation_use_gpu = settings.generator_use_gpu;
 			task->cancellation_token = mesh_to_update.cancellation_token;
 
+#ifdef VOXEL_ENABLE_SMOOTH_MESHING
 			// Don't update a detail texture if one update is already processing
 			if (settings.detail_texture_settings.enabled &&
 				lod_index >= settings.detail_texture_settings.begin_lod_index &&
@@ -352,6 +357,7 @@ void send_mesh_requests( //
 				mesh_block.detail_texture_state = VoxelLodTerrainUpdateData::DETAIL_TEXTURE_PENDING;
 				task->require_detail_texture = true;
 			}
+#endif
 
 			const Box3i data_box =
 					Box3i(render_to_data_factor * mesh_to_update.position, Vector3iUtil::create(render_to_data_factor))
@@ -390,17 +396,17 @@ void send_mesh_requests( //
 // This function schedules one parallel task for every block.
 // The returned tracker may be polled to detect when it is complete.
 // Only used in full load mode, because in streaming mode blocks must be present already.
-std::shared_ptr<AsyncDependencyTracker> preload_boxes_async( //
-		VoxelLodTerrainUpdateData::State &state, //
-		const VoxelLodTerrainUpdateData::Settings &settings, //
-		const std::shared_ptr<VoxelData> data_ptr, //
-		Span<const Box3i> voxel_boxes, //
-		Span<IThreadedTask *> next_tasks, //
-		VolumeID volume_id, //
-		std::shared_ptr<StreamingDependency> &stream_dependency, //
-		std::shared_ptr<PriorityDependency::ViewersData> &shared_viewers_data, //
-		const Transform3D &volume_transform, //
-		BufferedTaskScheduler &task_scheduler //
+std::shared_ptr<AsyncDependencyTracker> preload_boxes_async(
+		VoxelLodTerrainUpdateData::State &state,
+		const VoxelLodTerrainUpdateData::Settings &settings,
+		const std::shared_ptr<VoxelData> data_ptr,
+		const Span<const Box3i> voxel_boxes,
+		const Span<IThreadedTask *> next_tasks,
+		const VolumeID volume_id,
+		const std::shared_ptr<StreamingDependency> &stream_dependency,
+		const std::shared_ptr<PriorityDependency::ViewersData> &shared_viewers_data,
+		const Transform3D &volume_transform,
+		BufferedTaskScheduler &task_scheduler
 ) {
 	ZN_PROFILE_SCOPE();
 
@@ -473,20 +479,20 @@ std::shared_ptr<AsyncDependencyTracker> preload_boxes_async( //
 
 		for (unsigned int i = 0; i < todo.size(); ++i) {
 			const TaskArguments args = todo[i];
-			request_block_generate( //
-					volume_id, //
-					data_block_size, //
-					stream_dependency, //
-					data_ptr, //
-					args.block_pos, //
-					args.lod_index, //
-					shared_viewers_data, //
-					volume_transform, //
-					settings, //
-					tracker, //
-					false, //
-					task_scheduler, //
-					TaskCancellationToken() //
+			request_block_generate(
+					volume_id,
+					data_block_size,
+					stream_dependency,
+					data_ptr,
+					args.block_pos,
+					args.lod_index,
+					shared_viewers_data,
+					volume_transform,
+					settings,
+					tracker,
+					false,
+					task_scheduler,
+					TaskCancellationToken()
 			);
 		}
 
@@ -498,15 +504,15 @@ std::shared_ptr<AsyncDependencyTracker> preload_boxes_async( //
 	return tracker;
 }
 
-void process_async_edits( //
-		VoxelLodTerrainUpdateData::State &state, //
-		const VoxelLodTerrainUpdateData::Settings &settings, //
-		const std::shared_ptr<VoxelData> &data, //
-		VolumeID volume_id, //
-		std::shared_ptr<StreamingDependency> &stream_dependency, //
-		std::shared_ptr<PriorityDependency::ViewersData> &shared_viewers_data, //
-		const Transform3D &volume_transform, //
-		BufferedTaskScheduler &task_scheduler //
+void process_async_edits(
+		VoxelLodTerrainUpdateData::State &state,
+		const VoxelLodTerrainUpdateData::Settings &settings,
+		const std::shared_ptr<VoxelData> &data,
+		const VolumeID volume_id,
+		const std::shared_ptr<StreamingDependency> &stream_dependency,
+		const std::shared_ptr<PriorityDependency::ViewersData> &shared_viewers_data,
+		const Transform3D &volume_transform,
+		BufferedTaskScheduler &task_scheduler
 ) {
 	ZN_PROFILE_SCOPE();
 
@@ -536,17 +542,17 @@ void process_async_edits( //
 		}
 
 		if (boxes_to_preload.size() > 0) {
-			preload_boxes_async( //
-					state, //
-					settings, //
-					data, //
-					to_span_const(boxes_to_preload), //
-					to_span(tasks_to_schedule), //
-					volume_id, //
-					stream_dependency, //
-					shared_viewers_data, //
-					volume_transform, //
-					task_scheduler //
+			preload_boxes_async(
+					state,
+					settings,
+					data,
+					to_span_const(boxes_to_preload),
+					to_span(tasks_to_schedule),
+					volume_id,
+					stream_dependency,
+					shared_viewers_data,
+					volume_transform,
+					task_scheduler
 			);
 		}
 
@@ -554,10 +560,10 @@ void process_async_edits( //
 	}
 }
 
-void process_changed_generated_areas( //
-		VoxelLodTerrainUpdateData::State &state, //
-		const VoxelLodTerrainUpdateData::Settings &settings, //
-		unsigned int lod_count //
+void process_changed_generated_areas(
+		VoxelLodTerrainUpdateData::State &state,
+		const VoxelLodTerrainUpdateData::Settings &settings,
+		const unsigned int lod_count
 ) {
 	const unsigned int mesh_block_size = 1 << settings.mesh_block_size_po2;
 
@@ -597,35 +603,27 @@ void process_changed_generated_areas( //
 
 } // namespace
 
-void VoxelLodTerrainUpdateTask::send_block_save_requests( //
-		VolumeID volume_id, //
-		Span<VoxelData::BlockToSave> blocks_to_save, //
-		std::shared_ptr<StreamingDependency> &stream_dependency, //
-		BufferedTaskScheduler &task_scheduler, //
-		std::shared_ptr<AsyncDependencyTracker> tracker, //
-		bool with_flush //
+void VoxelLodTerrainUpdateTask::send_block_save_requests(
+		const VolumeID volume_id,
+		const Span<VoxelData::BlockToSave> blocks_to_save,
+		const std::shared_ptr<StreamingDependency> &stream_dependency,
+		BufferedTaskScheduler &task_scheduler,
+		const std::shared_ptr<AsyncDependencyTracker> tracker,
+		const bool with_flush
 ) {
-	//
 	for (unsigned int i = 0; i < blocks_to_save.size(); ++i) {
-		VoxelData::BlockToSave &b = blocks_to_save[i];
+		const VoxelData::BlockToSave &b = blocks_to_save[i];
 		ZN_PRINT_VERBOSE(format("Requesting save of block {} lod {}", b.position, b.lod_index));
-		request_voxel_block_save( //
-				volume_id, //
-				b.voxels, //
-				b.position, //
-				b.lod_index, //
-				stream_dependency, //
-				task_scheduler, //
-				tracker, //
-				with_flush //
+		request_voxel_block_save(
+				volume_id, b.voxels, b.position, b.lod_index, stream_dependency, task_scheduler, tracker, with_flush
 		);
 	}
 }
 
-void VoxelLodTerrainUpdateTask::flush_pending_lod_edits( //
-		VoxelLodTerrainUpdateData::State &state, //
-		VoxelData &data, //
-		const int mesh_block_size //
+void VoxelLodTerrainUpdateTask::flush_pending_lod_edits(
+		VoxelLodTerrainUpdateData::State &state,
+		VoxelData &data,
+		const int mesh_block_size
 ) {
 	ZN_DSTACK();
 	ZN_PROFILE_SCOPE();
@@ -699,11 +697,11 @@ void VoxelLodTerrainUpdateTask::flush_pending_lod_edits( //
 	// }
 }
 
-uint8_t VoxelLodTerrainUpdateTask::get_transition_mask( //
-		const VoxelLodTerrainUpdateData::State &state, //
-		Vector3i block_pos, //
-		unsigned int lod_index, //
-		unsigned int lod_count //
+uint8_t VoxelLodTerrainUpdateTask::get_transition_mask(
+		const VoxelLodTerrainUpdateData::State &state,
+		const Vector3i block_pos,
+		const unsigned int lod_index,
+		const unsigned int lod_count
 ) {
 	uint8_t transition_mask = 0;
 
@@ -793,12 +791,12 @@ uint8_t VoxelLodTerrainUpdateTask::get_transition_mask( //
 	return transition_mask;
 }
 
-void update_transition_masks( //
-		VoxelLodTerrainUpdateData::State &state, //
-		uint32_t lods_to_update_transitions, //
-		unsigned int lod_count, //
+void update_transition_masks(
+		VoxelLodTerrainUpdateData::State &state,
+		uint32_t lods_to_update_transitions,
+		const unsigned int lod_count,
 		// Currently needed to keep supporting the old octree streaming system, which doesn't support multiple viewers
-		bool use_refcounts //
+		const bool use_refcounts
 ) {
 	// TODO Optimize: this works but it's not smart.
 	// It doesn't take too long (100 microseconds when octrees update with lod distance 60).
@@ -945,41 +943,35 @@ void VoxelLodTerrainUpdateTask::run(ThreadedTaskContext &ctx) {
 
 	profiling_clock.restart();
 	if (settings.streaming_system == VoxelLodTerrainUpdateData::STREAMING_SYSTEM_LEGACY_OCTREE) {
-		process_octree_streaming( //
-				state, //
-				data, //
-				_viewer_pos, //
-				data_blocks_to_save, //
-				data_blocks_to_load, //
-				settings, //
-				stream_enabled //
+		process_octree_streaming(
+				state, data, _viewer_pos, data_blocks_to_save, data_blocks_to_load, settings, stream_enabled
 		);
 	} else {
-		process_clipbox_streaming( //
-				state, //
-				data, //
-				to_span(update_data.viewers), //
-				_volume_transform, //
-				data_blocks_to_save, //
-				data_blocks_to_load, //
-				settings, //
-				stream_enabled, //
-				_meshing_dependency->mesher.is_valid() //
+		process_clipbox_streaming(
+				state,
+				data,
+				to_span(update_data.viewers),
+				_volume_transform,
+				data_blocks_to_save,
+				data_blocks_to_load,
+				settings,
+				stream_enabled,
+				_meshing_dependency->mesher.is_valid()
 		);
 	}
 	state.stats.time_detect_required_blocks = profiling_clock.restart();
 
 	BufferedTaskScheduler &task_scheduler = BufferedTaskScheduler::get_for_current_thread();
 
-	process_async_edits( //
-			state, //
-			settings, //
-			_data, //
-			_volume_id, //
-			_streaming_dependency, //
-			_shared_viewers_data, //
-			_volume_transform, //
-			task_scheduler //
+	process_async_edits(
+			state,
+			settings,
+			_data,
+			_volume_id,
+			_streaming_dependency,
+			_shared_viewers_data,
+			_volume_transform,
+			task_scheduler
 	);
 
 	profiling_clock.restart();
@@ -999,29 +991,24 @@ void VoxelLodTerrainUpdateTask::run(ThreadedTaskContext &ctx) {
 					apply_block_data_requests_as_empty(to_span(data_blocks_to_load), data, state, settings);
 
 				} else {
-					send_block_data_requests( //
-							_volume_id, //
-							to_span(data_blocks_to_load), //
-							_streaming_dependency, //
-							_data, //
-							_shared_viewers_data, //
-							data_block_size, //
-							_volume_transform, //
-							settings, //
-							task_scheduler, //
-							state //
+					send_block_data_requests(
+							_volume_id,
+							to_span(data_blocks_to_load),
+							_streaming_dependency,
+							_data,
+							_shared_viewers_data,
+							data_block_size,
+							_volume_transform,
+							settings,
+							task_scheduler,
+							state
 					);
 				}
 			}
 
 			if (data_blocks_to_save != nullptr) {
-				send_block_save_requests( //
-						_volume_id, //
-						to_span(*data_blocks_to_save), //
-						_streaming_dependency, //
-						task_scheduler, //
-						nullptr, //
-						false //
+				send_block_save_requests(
+						_volume_id, to_span(*data_blocks_to_save), _streaming_dependency, task_scheduler, nullptr, false
 				);
 			}
 		}
@@ -1035,15 +1022,15 @@ void VoxelLodTerrainUpdateTask::run(ThreadedTaskContext &ctx) {
 	// TODO When no mesher is assigned, mesh requests are still accumulated but not being sent. A better way to support
 	// this is by allowing voxels-only/mesh-less viewers, similar to VoxelTerrain
 	if (_meshing_dependency->mesher.is_valid()) {
-		send_mesh_requests( //
-				_volume_id, //
-				state, //
-				settings, //
-				_data, //
-				_meshing_dependency, //
-				_shared_viewers_data, //
-				_volume_transform, //
-				task_scheduler //
+		send_mesh_requests(
+				_volume_id,
+				state,
+				settings,
+				_data,
+				_meshing_dependency,
+				_shared_viewers_data,
+				_volume_transform,
+				task_scheduler
 		);
 	}
 
