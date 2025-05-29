@@ -18,6 +18,8 @@ protected:
 	void _zn_make_visible(bool visible) override;
 
 private:
+	void _notification(int p_what);
+
 	static void _bind_methods() {}
 
 	VoxelBlockyTextureAtlasEditor *_editor = nullptr;

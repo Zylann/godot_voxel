@@ -4,6 +4,8 @@
 #include "../../util/containers/container_funcs.h"
 #include "../../util/godot/classes/button.h"
 #include "../../util/godot/classes/confirmation_dialog.h"
+#include "../../util/godot/classes/editor_file_system.h"
+#include "../../util/godot/classes/editor_interface.h"
 #include "../../util/godot/classes/h_box_container.h"
 #include "../../util/godot/classes/h_split_container.h"
 #include "../../util/godot/classes/image.h"
@@ -18,6 +20,7 @@
 #include "../../util/godot/core/array.h"
 #include "../../util/godot/core/mouse_button.h"
 #include "../../util/godot/core/packed_arrays.h"
+#include "../../util/godot/core/string.h"
 #include "../../util/godot/editor_scale.h"
 #include "../../util/godot/inspector/inspector.h"
 #include "../../util/godot/pan_zoom_container.h"
@@ -39,7 +42,8 @@ enum ContextMenuID {
 	MENU_CREATE_RANDOM_TILE,
 	MENU_CREATE_EXTENDED_TILE,
 	MENU_REMOVE_TILE,
-	MENU_RENAME_TILE
+	MENU_RENAME_TILE,
+	MENU_GENERATE_FROM_COMPACT5
 };
 }
 
@@ -157,9 +161,6 @@ VoxelBlockyTextureAtlasEditor::VoxelBlockyTextureAtlasEditor() {
 
 	{
 		_select_context_menu = memnew(PopupMenu);
-		_select_context_menu->add_item("Rename Tile", MENU_RENAME_TILE);
-		_select_context_menu->add_separator();
-		_select_context_menu->add_item("Remove Tile", MENU_REMOVE_TILE);
 		_select_context_menu->connect(
 				sn.id_pressed, callable_mp(this, &VoxelBlockyTextureAtlasEditor::on_context_menu_id_pressed)
 		);
@@ -181,10 +182,38 @@ VoxelBlockyTextureAtlasEditor::VoxelBlockyTextureAtlasEditor() {
 	add_child(split_container);
 }
 
+void VoxelBlockyTextureAtlasEditor::update_select_context_menu() {
+	_select_context_menu->clear();
+
+	_select_context_menu->add_item("Rename Tile", MENU_RENAME_TILE);
+	_select_context_menu->add_separator();
+	_select_context_menu->add_item("Remove Tile", MENU_REMOVE_TILE);
+
+	const int tid = get_selected_tile_id();
+	if (tid != -1) {
+		if (_atlas.is_valid()) {
+			const VoxelBlockyTextureAtlas::TileType tt = _atlas->get_tile_type(tid);
+			if (tt == VoxelBlockyTextureAtlas::TILE_TYPE_BLOB9) {
+				const int idx = _select_context_menu->get_item_count();
+				_select_context_menu->add_item("Generate tiles (no undo)", MENU_GENERATE_FROM_COMPACT5);
+				_select_context_menu->set_item_tooltip(
+						idx,
+						ZN_TTR("Generates Blob9 tiles from 5 reference tiles (point, horizontal, vertical, cross, "
+							   "full).\nThis operation will modify the image file. Undo is not implemented.")
+				);
+			}
+		}
+	}
+}
+
 void VoxelBlockyTextureAtlasEditor::make_read_only() {
 	_inspector->hide();
 	_toolbar_container->hide();
 	_read_only = true;
+}
+
+void VoxelBlockyTextureAtlasEditor::set_godot_editor_interface(EditorInterface *editor_interface) {
+	_godot_editor_interface = editor_interface;
 }
 
 // I'd like rename by clicking on the item like with scene tree nodes, but ItemList doesn't provide that functionality,
@@ -589,10 +618,63 @@ void VoxelBlockyTextureAtlasEditor::on_context_menu_id_pressed(int id) {
 			remove_selected_tile();
 		} break;
 
+		case MENU_GENERATE_FROM_COMPACT5: {
+			generate_tiles_from_compact5();
+		} break;
+
 		default:
 			ZN_PRINT_ERROR("Unhandled menu item");
 			break;
 	}
+}
+
+void VoxelBlockyTextureAtlasEditor::generate_tiles_from_compact5() {
+	ZN_ASSERT_RETURN(_atlas.is_valid());
+	ZN_ASSERT_RETURN(_godot_editor_interface != nullptr);
+
+	const int tile_id = get_selected_tile_id();
+	ZN_ASSERT_RETURN(tile_id != -1);
+	Ref<Texture2D> texture = _atlas->get_texture();
+	ZN_ASSERT_RETURN(texture.is_valid());
+	const String res_path = texture->get_path();
+	ZN_ASSERT_RETURN(res_path != "");
+	// Workaround Godot's annoying warning that "loading images from res:// is bad". It is NOT bad, editor
+	// plugins should be able to do it all the time
+	String fpath = res_path;
+	if (fpath.begins_with("res://")) {
+		fpath = res_path.substr(6);
+	}
+
+	const String extension = fpath.get_extension();
+	ZN_ASSERT_RETURN_MSG(extension == "png" || extension == "webp", "Image file format not supported");
+
+	Ref<Image> image = Image::load_from_file(fpath);
+	ZN_ASSERT_RETURN(image.is_valid());
+	const Vector2i layout_origin = _atlas->get_tile_position(tile_id);
+	const Vector2i ts = _atlas->get_default_tile_resolution();
+
+	std::array<Vector2i, blocky::COMPACT5_TILE_COUNT> ref_positions;
+	const std::array<uint8_t, blocky::COMPACT5_TILE_COUNT> ref_cases = blocky::get_blob9_reference_cases_for_compact5();
+	for (size_t i = 0; i < ref_cases.size(); ++i) {
+		const int tx = ref_cases[i] % blocky::BLOB9_DEFAULT_LAYOUT_SIZE_X;
+		const int ty = ref_cases[i] / blocky::BLOB9_DEFAULT_LAYOUT_SIZE_X;
+		ref_positions[i] = layout_origin + Vector2i(tx, ty) * ts;
+	}
+
+	blocky::generate_atlas_from_compact5(**image, ts, ref_positions, **image, layout_origin);
+
+	if (extension == "png") {
+		image->save_png(fpath);
+	} else if (extension == "webp") {
+		image->save_webp(fpath);
+	}
+
+	PackedStringArray to_reimport;
+	// Note, `res://` paths are required here, otherwise the texture won't update properly
+	to_reimport.push_back(res_path);
+	EditorFileSystem *efs = zylann::godot::EditorInterfaceShims::get_resource_file_system(*_godot_editor_interface);
+	ZN_ASSERT_RETURN(efs != nullptr);
+	efs->reimport_files(to_reimport);
 }
 
 void VoxelBlockyTextureAtlasEditor::remove_selected_tile() {
@@ -630,6 +712,7 @@ void VoxelBlockyTextureAtlasEditor::on_tile_list_item_clicked(
 		ERR_FAIL_COND(_atlas.is_null());
 		const int tile_id = _tile_list->get_item_metadata(item_index);
 		set_selected_tile_id(tile_id, false);
+		update_select_context_menu();
 		open_popup_at_mouse(_select_context_menu, _tile_list);
 	}
 }
@@ -879,6 +962,7 @@ void VoxelBlockyTextureAtlasEditor::on_texture_rect_gui_input(Ref<InputEvent> ev
 								set_selected_tile_id(_hovered_tile_id, true);
 							}
 							if (!_read_only) {
+								update_select_context_menu();
 								open_popup_at_mouse(_select_context_menu, _texture_rect);
 							}
 						} break;

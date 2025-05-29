@@ -30,6 +30,14 @@ void generate_atlas_from_compact5(
 		const Vector2i output_position
 );
 
+void generate_atlas_from_compact5(
+		const Image &input_image,
+		const Vector2i tile_res,
+		const std::array<Vector2i, Compact5Index::COMPACT5_TILE_COUNT> &input_positions,
+		Image &output_image,
+		const Vector2i output_position
+);
+
 std::array<uint8_t, COMPACT5_TILE_COUNT> get_blob9_reference_cases_for_compact5();
 
 uint8_t get_connection_mask_from_case_index(const uint8_t case_index);

@@ -15,4 +15,18 @@
 using namespace godot;
 #endif
 
+namespace zylann::godot {
+namespace EditorInterfaceShims {
+
+inline EditorFileSystem *get_resource_file_system(EditorInterface &self) {
+#if defined(ZN_GODOT)
+	return self.get_resource_file_system();
+#elif defined(ZN_GODOT_EXTENSION)
+	return self.get_resource_filesystem();
+#endif
+}
+
+} // namespace EditorInterfaceShims
+} // namespace zylann::godot
+
 #endif // ZN_GODOT_EDITOR_INTERFACE_H

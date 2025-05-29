@@ -285,6 +285,22 @@ void generate_atlas_from_compact5(
 		const Vector2i output_position
 ) {
 	const Vector2i tile_res = Vector2i(input_rect.size.x / 5, input_rect.size.y);
+
+	std::array<Vector2i, 5> input_positions;
+	for (unsigned int i = 0; i < input_positions.size(); ++i) {
+		input_positions[i] = input_rect.position + tile_res * Vector2i(i, 0);
+	}
+
+	generate_atlas_from_compact5(input_image, tile_res, input_positions, output_image, output_position);
+}
+
+void generate_atlas_from_compact5(
+		const Image &input_image,
+		const Vector2i tile_res,
+		const std::array<Vector2i, 5> &input_positions,
+		Image &output_image,
+		const Vector2i output_position
+) {
 	const Vector2i output_image_size = tile_res * Vector2i(BLOB9_DEFAULT_LAYOUT_SIZE_X, BLOB9_DEFAULT_LAYOUT_SIZE_Y);
 
 	const int xc_len = tile_res.x / 3;
@@ -307,384 +323,383 @@ void generate_atlas_from_compact5(
 
 	struct TileBuilder {
 		const Image &input_image;
-		const Vector2i input_layout_origin;
+		const std::array<Vector2i, 5> &input_tile_positions;
 		Image &output_image;
 		const Vector2i output_layout_origin;
 		const Vector2i tile_res;
 
-		void blit(const Vector2i dst_tile, const Vector2i src_tile, const Rect2i src_tile_relative_rect) {
+		void blit(const Vector2i dst_tile, const unsigned int compact5_case, const Rect2i src_tile_relative_rect) {
 			const Rect2i src_rect(
-					input_layout_origin + src_tile * tile_res + src_tile_relative_rect.position,
-					src_tile_relative_rect.size
+					input_tile_positions[compact5_case] + src_tile_relative_rect.position, src_tile_relative_rect.size
 			);
 			const Vector2i dst_pos = output_layout_origin + dst_tile * tile_res + src_tile_relative_rect.position;
 			output_image.blit_rect(Ref<Image>(&input_image), src_rect, dst_pos);
 		}
 	};
 
-	TileBuilder tb{ input_image, input_rect.position, output_image, output_position, tile_res };
+	TileBuilder tb{ input_image, input_positions, output_image, output_position, tile_res };
 
 	// Case 0
 	// - - -
 	// - x -
 	// - - -
-	tb.blit(Vector2i(0, 0), Vector2i(0, 0), Rect2i(Vector2i(), tile_res));
+	tb.blit(Vector2i(0, 0), COMPACT5_POINT, Rect2i(Vector2i(), tile_res));
 
 	// Case 1
 	// - - -
 	// - x o
 	// - - -
-	tb.blit(Vector2i(1, 0), Vector2i(0, 0), sr00.merge(sr02));
-	tb.blit(Vector2i(1, 0), Vector2i(1, 0), sr10.merge(sr22));
+	tb.blit(Vector2i(1, 0), COMPACT5_POINT, sr00.merge(sr02));
+	tb.blit(Vector2i(1, 0), COMPACT5_HORIZONTAL, sr10.merge(sr22));
 
 	// Case 2
 	// - - -
 	// o x o
 	// - - -
-	tb.blit(Vector2i(2, 0), Vector2i(1, 0), Rect2i(Vector2i(), tile_res));
+	tb.blit(Vector2i(2, 0), COMPACT5_HORIZONTAL, Rect2i(Vector2i(), tile_res));
 
 	// Case 3
 	// - - -
 	// o x -
 	// - - -
-	tb.blit(Vector2i(3, 0), Vector2i(1, 0), sr00.merge(sr12));
-	tb.blit(Vector2i(3, 0), Vector2i(0, 0), sr20.merge(sr22));
+	tb.blit(Vector2i(3, 0), COMPACT5_HORIZONTAL, sr00.merge(sr12));
+	tb.blit(Vector2i(3, 0), COMPACT5_POINT, sr20.merge(sr22));
 
 	// Case 4
 	// - - -
 	// - x o
 	// - o -
-	tb.blit(Vector2i(4, 0), Vector2i(3, 0), sr11.merge(sr22));
-	tb.blit(Vector2i(4, 0), Vector2i(2, 0), sr01.merge(sr02));
-	tb.blit(Vector2i(4, 0), Vector2i(1, 0), sr10.merge(sr20));
-	tb.blit(Vector2i(4, 0), Vector2i(0, 0), sr00);
+	tb.blit(Vector2i(4, 0), COMPACT5_CROSS, sr11.merge(sr22));
+	tb.blit(Vector2i(4, 0), COMPACT5_VERTICAL, sr01.merge(sr02));
+	tb.blit(Vector2i(4, 0), COMPACT5_HORIZONTAL, sr10.merge(sr20));
+	tb.blit(Vector2i(4, 0), COMPACT5_POINT, sr00);
 
 	// Case 5
 	// - - -
 	// o x -
 	// - o -
-	tb.blit(Vector2i(5, 0), Vector2i(3, 0), sr01.merge(sr12));
-	tb.blit(Vector2i(5, 0), Vector2i(2, 0), sr21.merge(sr22));
-	tb.blit(Vector2i(5, 0), Vector2i(1, 0), sr00.merge(sr10));
-	tb.blit(Vector2i(5, 0), Vector2i(0, 0), sr20);
+	tb.blit(Vector2i(5, 0), COMPACT5_CROSS, sr01.merge(sr12));
+	tb.blit(Vector2i(5, 0), COMPACT5_VERTICAL, sr21.merge(sr22));
+	tb.blit(Vector2i(5, 0), COMPACT5_HORIZONTAL, sr00.merge(sr10));
+	tb.blit(Vector2i(5, 0), COMPACT5_POINT, sr20);
 
 	// Case 6
 	// - o -
 	// - x o
 	// - o -
-	tb.blit(Vector2i(6, 0), Vector2i(2, 0), sr00.merge(sr12));
-	tb.blit(Vector2i(6, 0), Vector2i(3, 0), sr20.merge(sr22));
+	tb.blit(Vector2i(6, 0), COMPACT5_VERTICAL, sr00.merge(sr12));
+	tb.blit(Vector2i(6, 0), COMPACT5_CROSS, sr20.merge(sr22));
 
 	// Case 7
 	// - - -
 	// o x o
 	// - o -
-	tb.blit(Vector2i(7, 0), Vector2i(1, 0), sr00.merge(sr20));
-	tb.blit(Vector2i(7, 0), Vector2i(3, 0), sr01.merge(sr22));
+	tb.blit(Vector2i(7, 0), COMPACT5_HORIZONTAL, sr00.merge(sr20));
+	tb.blit(Vector2i(7, 0), COMPACT5_CROSS, sr01.merge(sr22));
 
 	// Case 8
 	// - o o
 	// o x o
 	// - o -
-	tb.blit(Vector2i(8, 0), Vector2i(3, 0), sr02.merge(sr22));
-	tb.blit(Vector2i(8, 0), Vector2i(3, 0), sr00.merge(sr01));
-	tb.blit(Vector2i(8, 0), Vector2i(4, 0), sr10.merge(sr21));
+	tb.blit(Vector2i(8, 0), COMPACT5_CROSS, sr02.merge(sr22));
+	tb.blit(Vector2i(8, 0), COMPACT5_CROSS, sr00.merge(sr01));
+	tb.blit(Vector2i(8, 0), COMPACT5_FULL, sr10.merge(sr21));
 
 	// Case 9
 	// - o -
 	// o x o
 	// - o o
-	tb.blit(Vector2i(9, 0), Vector2i(3, 0), sr00.merge(sr20));
-	tb.blit(Vector2i(9, 0), Vector2i(3, 0), sr01.merge(sr02));
-	tb.blit(Vector2i(9, 0), Vector2i(4, 0), sr11.merge(sr22));
+	tb.blit(Vector2i(9, 0), COMPACT5_CROSS, sr00.merge(sr20));
+	tb.blit(Vector2i(9, 0), COMPACT5_CROSS, sr01.merge(sr02));
+	tb.blit(Vector2i(9, 0), COMPACT5_FULL, sr11.merge(sr22));
 
 	// Case 10
 	// o o -
 	// o x o
 	// o o -
-	tb.blit(Vector2i(10, 0), Vector2i(4, 0), sr00.merge(sr12));
-	tb.blit(Vector2i(10, 0), Vector2i(3, 0), sr20.merge(sr22));
+	tb.blit(Vector2i(10, 0), COMPACT5_FULL, sr00.merge(sr12));
+	tb.blit(Vector2i(10, 0), COMPACT5_CROSS, sr20.merge(sr22));
 
 	// Case 11
 	// o o o
 	// o x o
 	// - o -
-	tb.blit(Vector2i(11, 0), Vector2i(4, 0), sr00.merge(sr21));
-	tb.blit(Vector2i(11, 0), Vector2i(3, 0), sr02.merge(sr22));
+	tb.blit(Vector2i(11, 0), COMPACT5_FULL, sr00.merge(sr21));
+	tb.blit(Vector2i(11, 0), COMPACT5_CROSS, sr02.merge(sr22));
 
 	// Case 12
 	// - - -
 	// - x -
 	// - o -
-	tb.blit(Vector2i(0, 1), Vector2i(0, 0), sr00.merge(sr20));
-	tb.blit(Vector2i(0, 1), Vector2i(2, 0), sr01.merge(sr22));
+	tb.blit(Vector2i(0, 1), COMPACT5_POINT, sr00.merge(sr20));
+	tb.blit(Vector2i(0, 1), COMPACT5_VERTICAL, sr01.merge(sr22));
 
 	// Case 13
 	// - - -
 	// - x o
 	// - o o
-	tb.blit(Vector2i(1, 1), Vector2i(0, 0), sr00.merge(sr11));
-	tb.blit(Vector2i(1, 1), Vector2i(1, 0), sr20.merge(sr21));
-	tb.blit(Vector2i(1, 1), Vector2i(2, 0), sr02.merge(sr12));
-	tb.blit(Vector2i(1, 1), Vector2i(4, 0), sr22);
+	tb.blit(Vector2i(1, 1), COMPACT5_POINT, sr00);
+	tb.blit(Vector2i(1, 1), COMPACT5_HORIZONTAL, sr10.merge(sr20));
+	tb.blit(Vector2i(1, 1), COMPACT5_VERTICAL, sr01.merge(sr02));
+	tb.blit(Vector2i(1, 1), COMPACT5_FULL, sr11.merge(sr22));
 
 	// Case 14
 	// - - -
 	// o x o
 	// o o o
-	tb.blit(Vector2i(2, 1), Vector2i(1, 0), sr00.merge(sr20));
-	tb.blit(Vector2i(2, 1), Vector2i(4, 0), sr01.merge(sr22));
+	tb.blit(Vector2i(2, 1), COMPACT5_HORIZONTAL, sr00.merge(sr20));
+	tb.blit(Vector2i(2, 1), COMPACT5_FULL, sr01.merge(sr22));
 
 	// Case 15
 	// - - -
 	// o x -
 	// o o -
-	tb.blit(Vector2i(3, 1), Vector2i(0, 0), sr10.merge(sr21));
-	tb.blit(Vector2i(3, 1), Vector2i(1, 0), sr00.merge(sr01));
-	tb.blit(Vector2i(3, 1), Vector2i(2, 0), sr12.merge(sr22));
-	tb.blit(Vector2i(3, 1), Vector2i(4, 0), sr02);
+	tb.blit(Vector2i(3, 1), COMPACT5_POINT, sr20);
+	tb.blit(Vector2i(3, 1), COMPACT5_HORIZONTAL, sr00.merge(sr10));
+	tb.blit(Vector2i(3, 1), COMPACT5_VERTICAL, sr21.merge(sr22));
+	tb.blit(Vector2i(3, 1), COMPACT5_FULL, sr01.merge(sr12));
 
 	// Case 16
 	// - o -
 	// - x o
 	// - - -
-	tb.blit(Vector2i(4, 1), Vector2i(3, 0), sr10.merge(sr21));
-	tb.blit(Vector2i(4, 1), Vector2i(2, 0), sr00.merge(sr01));
-	tb.blit(Vector2i(4, 1), Vector2i(1, 0), sr12.merge(sr22));
-	tb.blit(Vector2i(4, 1), Vector2i(0, 0), sr02);
+	tb.blit(Vector2i(4, 1), COMPACT5_CROSS, sr10.merge(sr21));
+	tb.blit(Vector2i(4, 1), COMPACT5_VERTICAL, sr00.merge(sr01));
+	tb.blit(Vector2i(4, 1), COMPACT5_HORIZONTAL, sr12.merge(sr22));
+	tb.blit(Vector2i(4, 1), COMPACT5_POINT, sr02);
 
 	// Case 17
 	// - o -
 	// o x -
 	// - - -
-	tb.blit(Vector2i(5, 1), Vector2i(3, 0), sr00.merge(sr11));
-	tb.blit(Vector2i(5, 1), Vector2i(2, 0), sr20.merge(sr21));
-	tb.blit(Vector2i(5, 1), Vector2i(1, 0), sr02.merge(sr12));
-	tb.blit(Vector2i(5, 1), Vector2i(0, 0), sr22);
+	tb.blit(Vector2i(5, 1), COMPACT5_CROSS, sr00.merge(sr11));
+	tb.blit(Vector2i(5, 1), COMPACT5_VERTICAL, sr20.merge(sr21));
+	tb.blit(Vector2i(5, 1), COMPACT5_HORIZONTAL, sr02.merge(sr12));
+	tb.blit(Vector2i(5, 1), COMPACT5_POINT, sr22);
 
 	// Case 18
 	// - o -
 	// o x o
 	// - - -
-	tb.blit(Vector2i(6, 1), Vector2i(3, 0), sr00.merge(sr21));
-	tb.blit(Vector2i(6, 1), Vector2i(1, 0), sr02.merge(sr22));
+	tb.blit(Vector2i(6, 1), COMPACT5_CROSS, sr00.merge(sr21));
+	tb.blit(Vector2i(6, 1), COMPACT5_HORIZONTAL, sr02.merge(sr22));
 
 	// Case 19
 	// - o -
 	// o x -
 	// - o -
-	tb.blit(Vector2i(7, 1), Vector2i(3, 0), sr00.merge(sr12));
-	tb.blit(Vector2i(7, 1), Vector2i(2, 0), sr20.merge(sr22));
+	tb.blit(Vector2i(7, 1), COMPACT5_CROSS, sr00.merge(sr12));
+	tb.blit(Vector2i(7, 1), COMPACT5_VERTICAL, sr20.merge(sr22));
 
 	// Case 20
 	// o o -
 	// o x o
 	// - o -
-	tb.blit(Vector2i(8, 1), Vector2i(4, 0), sr00.merge(sr11));
-	tb.blit(Vector2i(8, 1), Vector2i(3, 0), sr02.merge(sr22));
-	tb.blit(Vector2i(8, 1), Vector2i(3, 0), sr20.merge(sr21));
+	tb.blit(Vector2i(8, 1), COMPACT5_FULL, sr00.merge(sr11));
+	tb.blit(Vector2i(8, 1), COMPACT5_CROSS, sr02.merge(sr22));
+	tb.blit(Vector2i(8, 1), COMPACT5_CROSS, sr20.merge(sr21));
 
 	// Case 21
 	// - o -
 	// o x o
 	// o o -
-	tb.blit(Vector2i(9, 1), Vector2i(4, 0), sr01.merge(sr12));
-	tb.blit(Vector2i(9, 1), Vector2i(3, 0), sr00.merge(sr20));
-	tb.blit(Vector2i(9, 1), Vector2i(3, 0), sr21.merge(sr22));
+	tb.blit(Vector2i(9, 1), COMPACT5_FULL, sr01.merge(sr12));
+	tb.blit(Vector2i(9, 1), COMPACT5_CROSS, sr00.merge(sr20));
+	tb.blit(Vector2i(9, 1), COMPACT5_CROSS, sr21.merge(sr22));
 
 	// Case 22
 	// - o -
 	// o x o
 	// o o o
-	tb.blit(Vector2i(10, 1), Vector2i(4, 0), sr01.merge(sr22));
-	tb.blit(Vector2i(10, 1), Vector2i(3, 0), sr00.merge(sr20));
+	tb.blit(Vector2i(10, 1), COMPACT5_FULL, sr01.merge(sr22));
+	tb.blit(Vector2i(10, 1), COMPACT5_CROSS, sr00.merge(sr20));
 
 	// Case 23
 	// - o o
 	// o x o
 	// - o o
-	tb.blit(Vector2i(11, 1), Vector2i(4, 0), sr10.merge(sr22));
-	tb.blit(Vector2i(11, 1), Vector2i(3, 0), sr00.merge(sr02));
+	tb.blit(Vector2i(11, 1), COMPACT5_FULL, sr10.merge(sr22));
+	tb.blit(Vector2i(11, 1), COMPACT5_CROSS, sr00.merge(sr02));
 
 	// Case 24
 	// - o -
 	// - x -
 	// - o -
-	tb.blit(Vector2i(0, 2), Vector2i(2, 0), sr00.merge(sr22));
+	tb.blit(Vector2i(0, 2), COMPACT5_VERTICAL, sr00.merge(sr22));
 
 	// Case 25
 	// - o o
 	// - x o
 	// - o o
-	tb.blit(Vector2i(1, 2), Vector2i(2, 0), sr00.merge(sr02));
-	tb.blit(Vector2i(1, 2), Vector2i(4, 0), sr10.merge(sr22));
+	tb.blit(Vector2i(1, 2), COMPACT5_VERTICAL, sr00.merge(sr02));
+	tb.blit(Vector2i(1, 2), COMPACT5_FULL, sr10.merge(sr22));
 
 	// Case 26
 	// o o o
 	// o x o
 	// o o o
-	tb.blit(Vector2i(2, 2), Vector2i(4, 0), sr00.merge(sr22));
+	tb.blit(Vector2i(2, 2), COMPACT5_FULL, sr00.merge(sr22));
 
 	// Case 27
 	// o o -
 	// o x -
 	// o o -
-	tb.blit(Vector2i(3, 2), Vector2i(4, 0), sr00.merge(sr12));
-	tb.blit(Vector2i(3, 2), Vector2i(2, 0), sr20.merge(sr22));
+	tb.blit(Vector2i(3, 2), COMPACT5_FULL, sr00.merge(sr12));
+	tb.blit(Vector2i(3, 2), COMPACT5_VERTICAL, sr20.merge(sr22));
 
 	// Case 28
 	// - o -
 	// - x o
 	// - o o
-	tb.blit(Vector2i(4, 2), Vector2i(2, 0), sr00.merge(sr02));
-	tb.blit(Vector2i(4, 2), Vector2i(3, 0), sr10.merge(sr20));
-	tb.blit(Vector2i(4, 2), Vector2i(4, 0), sr11.merge(sr22));
+	tb.blit(Vector2i(4, 2), COMPACT5_VERTICAL, sr00.merge(sr02));
+	tb.blit(Vector2i(4, 2), COMPACT5_CROSS, sr10.merge(sr20));
+	tb.blit(Vector2i(4, 2), COMPACT5_FULL, sr11.merge(sr22));
 
 	// Case 29
 	// - - -
 	// o x o
 	// o o -
-	tb.blit(Vector2i(5, 2), Vector2i(1, 0), sr00.merge(sr20));
-	tb.blit(Vector2i(5, 2), Vector2i(3, 0), sr21.merge(sr22));
-	tb.blit(Vector2i(5, 2), Vector2i(4, 0), sr01.merge(sr12));
+	tb.blit(Vector2i(5, 2), COMPACT5_HORIZONTAL, sr00.merge(sr20));
+	tb.blit(Vector2i(5, 2), COMPACT5_CROSS, sr21.merge(sr22));
+	tb.blit(Vector2i(5, 2), COMPACT5_FULL, sr01.merge(sr12));
 
 	// Case 30
 	// - o o
 	// - x o
 	// - o -
-	tb.blit(Vector2i(6, 2), Vector2i(2, 0), sr00.merge(sr02));
-	tb.blit(Vector2i(6, 2), Vector2i(3, 0), sr12.merge(sr22));
-	tb.blit(Vector2i(6, 2), Vector2i(4, 0), sr10.merge(sr21));
+	tb.blit(Vector2i(6, 2), COMPACT5_VERTICAL, sr00.merge(sr02));
+	tb.blit(Vector2i(6, 2), COMPACT5_CROSS, sr12.merge(sr22));
+	tb.blit(Vector2i(6, 2), COMPACT5_FULL, sr10.merge(sr21));
 
 	// Case 31
 	// - - -
 	// o x o
 	// - o o
-	tb.blit(Vector2i(7, 2), Vector2i(1, 0), sr00.merge(sr20));
-	tb.blit(Vector2i(7, 2), Vector2i(3, 0), sr01.merge(sr02));
-	tb.blit(Vector2i(7, 2), Vector2i(4, 0), sr11.merge(sr22));
+	tb.blit(Vector2i(7, 2), COMPACT5_HORIZONTAL, sr00.merge(sr20));
+	tb.blit(Vector2i(7, 2), COMPACT5_CROSS, sr01.merge(sr02));
+	tb.blit(Vector2i(7, 2), COMPACT5_FULL, sr11.merge(sr22));
 
 	// Case 32
 	// o o o
 	// o x o
 	// o o -
-	tb.blit(Vector2i(8, 2), Vector2i(4, 0), sr00.merge(sr21));
-	tb.blit(Vector2i(8, 2), Vector2i(4, 0), sr02.merge(sr12));
-	tb.blit(Vector2i(8, 2), Vector2i(3, 0), sr22);
+	tb.blit(Vector2i(8, 2), COMPACT5_FULL, sr00.merge(sr21));
+	tb.blit(Vector2i(8, 2), COMPACT5_FULL, sr02.merge(sr12));
+	tb.blit(Vector2i(8, 2), COMPACT5_CROSS, sr22);
 
 	// Case 33
 	// o o o
 	// o x o
 	// - o o
-	tb.blit(Vector2i(9, 2), Vector2i(4, 0), sr00.merge(sr21));
-	tb.blit(Vector2i(9, 2), Vector2i(4, 0), sr12.merge(sr22));
-	tb.blit(Vector2i(9, 2), Vector2i(3, 0), sr02);
+	tb.blit(Vector2i(9, 2), COMPACT5_FULL, sr00.merge(sr21));
+	tb.blit(Vector2i(9, 2), COMPACT5_FULL, sr12.merge(sr22));
+	tb.blit(Vector2i(9, 2), COMPACT5_CROSS, sr02);
 
 	// Case 34
 	// - o o
 	// o x o
 	// o o -
-	tb.blit(Vector2i(10, 2), Vector2i(3, 0), sr00);
-	tb.blit(Vector2i(10, 2), Vector2i(4, 0), sr10.merge(sr20));
-	tb.blit(Vector2i(10, 2), Vector2i(4, 0), sr01.merge(sr21));
-	tb.blit(Vector2i(10, 2), Vector2i(4, 0), sr02.merge(sr12));
-	tb.blit(Vector2i(10, 2), Vector2i(3, 0), sr22);
+	tb.blit(Vector2i(10, 2), COMPACT5_CROSS, sr00);
+	tb.blit(Vector2i(10, 2), COMPACT5_FULL, sr10.merge(sr20));
+	tb.blit(Vector2i(10, 2), COMPACT5_FULL, sr01.merge(sr21));
+	tb.blit(Vector2i(10, 2), COMPACT5_FULL, sr02.merge(sr12));
+	tb.blit(Vector2i(10, 2), COMPACT5_CROSS, sr22);
 
 	// Case 35
 	// o o -
 	// o x o
 	// - o o
-	tb.blit(Vector2i(11, 2), Vector2i(3, 0), sr20);
-	tb.blit(Vector2i(11, 2), Vector2i(4, 0), sr00.merge(sr10));
-	tb.blit(Vector2i(11, 2), Vector2i(4, 0), sr01.merge(sr21));
-	tb.blit(Vector2i(11, 2), Vector2i(4, 0), sr12.merge(sr22));
-	tb.blit(Vector2i(11, 2), Vector2i(3, 0), sr02);
+	tb.blit(Vector2i(11, 2), COMPACT5_CROSS, sr20);
+	tb.blit(Vector2i(11, 2), COMPACT5_FULL, sr00.merge(sr10));
+	tb.blit(Vector2i(11, 2), COMPACT5_FULL, sr01.merge(sr21));
+	tb.blit(Vector2i(11, 2), COMPACT5_FULL, sr12.merge(sr22));
+	tb.blit(Vector2i(11, 2), COMPACT5_CROSS, sr02);
 
 	// Case 36
 	// - o -
 	// - x -
 	// - - -
-	tb.blit(Vector2i(0, 3), Vector2i(2, 0), sr00.merge(sr21));
-	tb.blit(Vector2i(0, 3), Vector2i(0, 0), sr02.merge(sr22));
+	tb.blit(Vector2i(0, 3), COMPACT5_VERTICAL, sr00.merge(sr21));
+	tb.blit(Vector2i(0, 3), COMPACT5_POINT, sr02.merge(sr22));
 
 	// Case 37
 	// - o o
 	// - x o
 	// - - -
-	tb.blit(Vector2i(1, 3), Vector2i(2, 0), sr00.merge(sr02));
-	tb.blit(Vector2i(1, 3), Vector2i(1, 0), sr12.merge(sr22));
-	tb.blit(Vector2i(1, 3), Vector2i(0, 0), sr02);
-	tb.blit(Vector2i(1, 3), Vector2i(4, 0), sr10.merge(sr21));
+	tb.blit(Vector2i(1, 3), COMPACT5_VERTICAL, sr00.merge(sr01));
+	tb.blit(Vector2i(1, 3), COMPACT5_HORIZONTAL, sr12.merge(sr22));
+	tb.blit(Vector2i(1, 3), COMPACT5_POINT, sr02);
+	tb.blit(Vector2i(1, 3), COMPACT5_FULL, sr10.merge(sr21));
 
 	// Case 38
 	// o o o
 	// o x o
 	// - - -
-	tb.blit(Vector2i(2, 3), Vector2i(4, 0), sr00.merge(sr21));
-	tb.blit(Vector2i(2, 3), Vector2i(1, 0), sr02.merge(sr22));
+	tb.blit(Vector2i(2, 3), COMPACT5_FULL, sr00.merge(sr21));
+	tb.blit(Vector2i(2, 3), COMPACT5_HORIZONTAL, sr02.merge(sr22));
 
 	// Case 39
 	// o o -
 	// o x -
 	// - - -
-	tb.blit(Vector2i(3, 3), Vector2i(4, 0), sr00.merge(sr11));
-	tb.blit(Vector2i(3, 3), Vector2i(1, 0), sr02.merge(sr12));
-	tb.blit(Vector2i(3, 3), Vector2i(2, 0), sr20.merge(sr21));
-	tb.blit(Vector2i(3, 3), Vector2i(0, 0), sr22);
+	tb.blit(Vector2i(3, 3), COMPACT5_FULL, sr00.merge(sr11));
+	tb.blit(Vector2i(3, 3), COMPACT5_HORIZONTAL, sr02.merge(sr12));
+	tb.blit(Vector2i(3, 3), COMPACT5_VERTICAL, sr20.merge(sr21));
+	tb.blit(Vector2i(3, 3), COMPACT5_POINT, sr22);
 
 	// Case 40
 	// - o o
 	// o x o
 	// - - -
-	tb.blit(Vector2i(4, 3), Vector2i(3, 0), sr00.merge(sr01));
-	tb.blit(Vector2i(4, 3), Vector2i(4, 0), sr10.merge(sr21));
-	tb.blit(Vector2i(4, 3), Vector2i(1, 0), sr02.merge(sr22));
+	tb.blit(Vector2i(4, 3), COMPACT5_CROSS, sr00.merge(sr01));
+	tb.blit(Vector2i(4, 3), COMPACT5_FULL, sr10.merge(sr21));
+	tb.blit(Vector2i(4, 3), COMPACT5_HORIZONTAL, sr02.merge(sr22));
 
 	// Case 41
 	// o o -
 	// o x -
 	// - o -
-	tb.blit(Vector2i(5, 3), Vector2i(4, 0), sr00.merge(sr11));
-	tb.blit(Vector2i(5, 3), Vector2i(2, 0), sr20.merge(sr22));
-	tb.blit(Vector2i(5, 3), Vector2i(3, 0), sr02.merge(sr12));
+	tb.blit(Vector2i(5, 3), COMPACT5_FULL, sr00.merge(sr11));
+	tb.blit(Vector2i(5, 3), COMPACT5_VERTICAL, sr20.merge(sr22));
+	tb.blit(Vector2i(5, 3), COMPACT5_CROSS, sr02.merge(sr12));
 
 	// Case 42
 	// o o -
 	// o x o
 	// - - -
-	tb.blit(Vector2i(6, 3), Vector2i(4, 0), sr00.merge(sr11));
-	tb.blit(Vector2i(6, 3), Vector2i(3, 0), sr20.merge(sr21));
-	tb.blit(Vector2i(6, 3), Vector2i(1, 0), sr02.merge(sr22));
+	tb.blit(Vector2i(6, 3), COMPACT5_FULL, sr00.merge(sr11));
+	tb.blit(Vector2i(6, 3), COMPACT5_CROSS, sr20.merge(sr21));
+	tb.blit(Vector2i(6, 3), COMPACT5_HORIZONTAL, sr02.merge(sr22));
 
 	// Case 43
 	// - o -
 	// o x -
 	// o o -
-	tb.blit(Vector2i(7, 3), Vector2i(3, 0), sr00.merge(sr10));
-	tb.blit(Vector2i(7, 3), Vector2i(4, 0), sr01.merge(sr12));
-	tb.blit(Vector2i(7, 3), Vector2i(2, 0), sr20.merge(sr22));
+	tb.blit(Vector2i(7, 3), COMPACT5_CROSS, sr00.merge(sr10));
+	tb.blit(Vector2i(7, 3), COMPACT5_FULL, sr01.merge(sr12));
+	tb.blit(Vector2i(7, 3), COMPACT5_VERTICAL, sr20.merge(sr22));
 
 	// Case 44
 	// o o -
 	// o x o
 	// o o o
-	tb.blit(Vector2i(8, 3), Vector2i(4, 0), sr00.merge(sr10));
-	tb.blit(Vector2i(8, 3), Vector2i(3, 0), sr20);
-	tb.blit(Vector2i(8, 3), Vector2i(4, 0), sr01.merge(sr22));
+	tb.blit(Vector2i(8, 3), COMPACT5_FULL, sr00.merge(sr10));
+	tb.blit(Vector2i(8, 3), COMPACT5_CROSS, sr20);
+	tb.blit(Vector2i(8, 3), COMPACT5_FULL, sr01.merge(sr22));
 
 	// Case 45
 	// - o o
 	// o x o
 	// o o o
-	tb.blit(Vector2i(9, 3), Vector2i(3, 0), sr00);
-	tb.blit(Vector2i(9, 3), Vector2i(4, 0), sr10.merge(sr20));
-	tb.blit(Vector2i(9, 3), Vector2i(4, 0), sr01.merge(sr22));
+	tb.blit(Vector2i(9, 3), COMPACT5_CROSS, sr00);
+	tb.blit(Vector2i(9, 3), COMPACT5_FULL, sr10.merge(sr20));
+	tb.blit(Vector2i(9, 3), COMPACT5_FULL, sr01.merge(sr22));
 
 	// Case 46
 	// - o -
 	// o x o
 	// - o -
-	tb.blit(Vector2i(10, 3), Vector2i(3, 0), sr00.merge(sr22));
+	tb.blit(Vector2i(10, 3), COMPACT5_CROSS, sr00.merge(sr22));
 }
 
 } // namespace zylann::voxel::blocky

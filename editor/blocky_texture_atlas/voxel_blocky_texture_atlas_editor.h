@@ -16,6 +16,7 @@ class Button;
 class BaseButton;
 class LineEdit;
 class HBoxContainer;
+class EditorInterface;
 ZN_GODOT_NAMESPACE_END
 
 namespace zylann {
@@ -33,6 +34,8 @@ public:
 	void set_atlas(Ref<VoxelBlockyTextureAtlas> atlas);
 	int get_selected_tile_id() const;
 	void make_read_only();
+
+	void set_godot_editor_interface(EditorInterface *editor_interface);
 
 private:
 	static void _bind_methods();
@@ -61,6 +64,8 @@ private:
 	void set_selected_tile_id(const int tile_id_to_select, const bool update_list);
 	void open_rename_dialog();
 	void remove_selected_tile();
+	void update_select_context_menu();
+	void generate_tiles_from_compact5();
 
 	enum Mode {
 		MODE_SELECT,
@@ -88,6 +93,7 @@ private:
 	ZN_Inspector *_inspector = nullptr;
 	HBoxContainer *_toolbar_container = nullptr;
 	bool _read_only = false;
+	EditorInterface *_godot_editor_interface = nullptr;
 };
 
 } // namespace voxel
