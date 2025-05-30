@@ -317,7 +317,7 @@ void bake_cube_geometry(
 				}
 			} else {
 				// Assigning some kind of default? This is not really a good case
-				for (unsigned int i = 0; i < 4; ++i) {
+				for (unsigned int i = 0; i < uv_norm.size(); ++i) {
 					uvs[i] = uv_norm[i];
 				}
 			}
