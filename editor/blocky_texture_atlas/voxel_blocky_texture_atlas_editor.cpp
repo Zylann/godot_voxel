@@ -6,6 +6,7 @@
 #include "../../util/godot/classes/confirmation_dialog.h"
 #include "../../util/godot/classes/editor_file_system.h"
 #include "../../util/godot/classes/editor_interface.h"
+#include "../../util/godot/classes/editor_undo_redo_manager.h"
 #include "../../util/godot/classes/h_box_container.h"
 #include "../../util/godot/classes/h_split_container.h"
 #include "../../util/godot/classes/image.h"
@@ -273,6 +274,13 @@ void VoxelBlockyTextureAtlasEditor::set_godot_editor_interface(EditorInterface *
 
 	EditorFileSystem *efs = _godot_editor_interface->get_resource_file_system();
 	efs->connect("resources_reimported", callable_mp(this, &VoxelBlockyTextureAtlasEditor::on_resources_reimported));
+}
+
+void VoxelBlockyTextureAtlasEditor::set_undo_redo(EditorUndoRedoManager *ur) {
+	ZN_ASSERT_RETURN(ur != nullptr);
+	ZN_ASSERT_RETURN(_undo_redo == nullptr);
+	_undo_redo = ur;
+	_inspector->set_undo_redo(ur);
 }
 
 // I'd like rename by clicking on the item like with scene tree nodes, but ItemList doesn't provide that functionality,
@@ -647,6 +655,21 @@ inline bool is_tile_rect_valid(const Rect2i rect) {
 	return rect != Rect2i() && rect.position.x >= 0 && rect.position.y >= 0 && rect.size.x >= 1 && rect.size.y >= 1;
 }
 
+static void create_tile(
+		VoxelBlockyTextureAtlas *atlas,
+		EditorUndoRedoManager *ur,
+		const VoxelBlockyTextureAtlas::Tile &tile
+) {
+	const int tile_id = atlas->get_next_available_id();
+
+	ur->add_do_method(atlas, "add_tile", tile_id);
+	ur->add_do_method(atlas, "set_tile_type", tile_id, tile.type);
+	ur->add_do_method(atlas, "set_tile_position", tile_id, Vector2i(tile.position_x, tile.position_y));
+	ur->add_do_method(atlas, "set_tile_group_size", tile_id, Vector2i(tile.group_size_x, tile.group_size_y));
+
+	ur->add_undo_method(atlas, "remove_tile", tile_id);
+}
+
 void VoxelBlockyTextureAtlasEditor::on_context_menu_id_pressed(int id) {
 	ERR_FAIL_COND(_atlas.is_null());
 	const Vector2i ts = _atlas->get_default_tile_resolution();
@@ -663,13 +686,17 @@ void VoxelBlockyTextureAtlasEditor::on_context_menu_id_pressed(int id) {
 			tile.group_size_x = 1;
 			tile.group_size_y = 1;
 
-			// TODO UndoRedo
-			_atlas->add_tile(tile);
-			on_atlas_changed();
+			_undo_redo->create_action("Create Single Tile");
+			create_tile(_atlas.ptr(), _undo_redo, tile);
+			_undo_redo->commit_action();
+
+			// on_atlas_changed();
 		} break;
 
 		case MENU_CREATE_GRID_OF_TILES: {
 			ZN_ASSERT_RETURN(is_tile_rect_valid(_tile_selection_rect));
+
+			_undo_redo->create_action("Create Grid of Tiles");
 
 			Vector2i tpos;
 			const Vector2i origin = _tile_selection_rect.position * ts;
@@ -682,12 +709,13 @@ void VoxelBlockyTextureAtlasEditor::on_context_menu_id_pressed(int id) {
 					tile.group_size_x = 1;
 					tile.group_size_y = 1;
 
-					// TODO UndoRedo
-					_atlas->add_tile(tile);
+					create_tile(_atlas.ptr(), _undo_redo, tile);
 				}
 			}
 
-			on_atlas_changed();
+			_undo_redo->commit_action();
+
+			// on_atlas_changed();
 		} break;
 
 		case MENU_CREATE_BLOB9_TILE: {
@@ -700,10 +728,10 @@ void VoxelBlockyTextureAtlasEditor::on_context_menu_id_pressed(int id) {
 			tile.group_size_x = blocky::BLOB9_DEFAULT_LAYOUT_SIZE_X;
 			tile.group_size_y = blocky::BLOB9_DEFAULT_LAYOUT_SIZE_Y;
 
-			// TODO UndoRedo
-			_atlas->add_tile(tile);
-			on_atlas_changed();
-
+			_undo_redo->create_action("Create Single Tile");
+			create_tile(_atlas.ptr(), _undo_redo, tile);
+			_undo_redo->commit_action();
+			// on_atlas_changed();
 		} break;
 
 		case MENU_CREATE_RANDOM_TILE: {
@@ -716,10 +744,10 @@ void VoxelBlockyTextureAtlasEditor::on_context_menu_id_pressed(int id) {
 			tile.group_size_x = _tile_selection_rect.size.x;
 			tile.group_size_y = _tile_selection_rect.size.y;
 
-			// TODO UndoRedo
-			_atlas->add_tile(tile);
-			on_atlas_changed();
-
+			_undo_redo->create_action("Create Random Tile");
+			create_tile(_atlas.ptr(), _undo_redo, tile);
+			_undo_redo->commit_action();
+			// on_atlas_changed();
 		} break;
 
 		case MENU_CREATE_EXTENDED_TILE: {
@@ -732,10 +760,10 @@ void VoxelBlockyTextureAtlasEditor::on_context_menu_id_pressed(int id) {
 			tile.group_size_x = _tile_selection_rect.size.x;
 			tile.group_size_y = _tile_selection_rect.size.y;
 
-			// TODO UndoRedo
-			_atlas->add_tile(tile);
-			on_atlas_changed();
-
+			_undo_redo->create_action("Create Extended Tile");
+			create_tile(_atlas.ptr(), _undo_redo, tile);
+			_undo_redo->commit_action();
+			// on_atlas_changed();
 		} break;
 
 		case MENU_RENAME_TILE:
@@ -760,9 +788,25 @@ void VoxelBlockyTextureAtlasEditor::remove_selected_tile() {
 	const int tile_id = get_selected_tile_id();
 	ZN_ASSERT_RETURN(tile_id >= 0);
 
-	// TODO UndoRedo
-	_atlas->remove_tile(tile_id);
-	on_atlas_changed();
+	ZN_ASSERT_RETURN(_atlas.is_valid());
+
+	const VoxelBlockyTextureAtlas::Tile tile = _atlas->get_tile(tile_id);
+
+	EditorUndoRedoManager &ur = *_undo_redo;
+
+	ur.create_action("Remove tile");
+
+	ur.add_do_method(_atlas.ptr(), "remove_tile", tile_id);
+
+	ur.add_undo_method(_atlas.ptr(), "add_tile", tile_id);
+	ur.add_undo_method(_atlas.ptr(), "set_tile_type", tile_id, tile.type);
+	ur.add_undo_method(_atlas.ptr(), "set_tile_position", tile_id, Vector2i(tile.position_x, tile.position_y));
+	ur.add_undo_method(_atlas.ptr(), "set_tile_group_size", tile_id, Vector2i(tile.group_size_x, tile.group_size_y));
+	ur.add_undo_method(_atlas.ptr(), "set_tile_random_rotation", tile_id, tile.random_rotation);
+
+	ur.commit_action();
+
+	// on_atlas_changed();
 }
 
 void VoxelBlockyTextureAtlasEditor::on_tile_list_item_selected(int item_index) {
@@ -888,6 +932,14 @@ void VoxelBlockyTextureAtlasEditor::update_texture_rect() {
 	_texture_rect->queue_redraw();
 }
 
+static String get_tile_name_displayed(const String &name, const unsigned int id) {
+	if (name.size() == 0) {
+		return String("<unnamed{0}>").format(varray(id));
+	} else {
+		return name;
+	}
+}
+
 void VoxelBlockyTextureAtlasEditor::update_tile_list() {
 	if (_atlas.is_null()) {
 		_tile_list->clear();
@@ -915,12 +967,7 @@ void VoxelBlockyTextureAtlasEditor::update_tile_list() {
 			continue;
 		}
 
-		String item_title;
-		if (tile.name.size() == 0) {
-			item_title = String("<unnamed{0}>").format(varray(tile_index));
-		} else {
-			item_title = tile.name.c_str();
-		}
+		const String item_title = get_tile_name_displayed(tile.name.c_str(), tile_index);
 
 		const int item_index = _tile_list->add_item(item_title);
 		_tile_list->set_item_metadata(item_index, tile_index);
@@ -1140,11 +1187,17 @@ void VoxelBlockyTextureAtlasEditor::on_rename_popup_confirmed() {
 	const int tile_id = get_selected_tile_id();
 	ZN_ASSERT_RETURN(tile_id >= 0);
 
-	// TODO UndoRedo
-	_atlas->set_tile_name(tile_id, new_name);
+	const String previous_name = _atlas->get_tile_name(tile_id);
 
-	const int item_index = get_tile_list_index_from_tile_id(tile_id);
-	_tile_list->set_item_text(item_index, new_name);
+	_undo_redo->create_action("Rename tile");
+
+	_undo_redo->add_do_method(_atlas.ptr(), "set_tile_name", tile_id, new_name);
+	_undo_redo->add_do_method(this, "update_tile_name_in_list", tile_id, new_name);
+
+	_undo_redo->add_undo_method(_atlas.ptr(), "set_tile_name", tile_id, previous_name);
+	_undo_redo->add_undo_method(this, "update_tile_name_in_list", tile_id, previous_name);
+
+	_undo_redo->commit_action();
 }
 
 void VoxelBlockyTextureAtlasEditor::on_connectivity_button_toggled(bool pressed) {
@@ -1307,8 +1360,17 @@ void VoxelBlockyTextureAtlasEditor::on_resources_reimported(PackedStringArray re
 	}
 }
 
+// Binding land, mainly because of EditorUndoRedoManager
+
+void VoxelBlockyTextureAtlasEditor::update_tile_name_in_list(int tile_id, String new_name) {
+	const int item_index = get_tile_list_index_from_tile_id(tile_id);
+	_tile_list->set_item_text(item_index, get_tile_name_displayed(new_name, tile_id));
+}
+
 void VoxelBlockyTextureAtlasEditor::_bind_methods() {
-	//
+	using Self = VoxelBlockyTextureAtlasEditor;
+
+	ClassDB::bind_method(D_METHOD("update_tile_name_in_list", "tile_id", "new_name"), &Self::update_tile_name_in_list);
 }
 
 } // namespace zylann::voxel

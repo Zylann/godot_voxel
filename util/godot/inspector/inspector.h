@@ -9,6 +9,7 @@
 ZN_GODOT_NAMESPACE_BEGIN
 class GridContainer;
 class VBoxContainer;
+class EditorUndoRedoManager;
 ZN_GODOT_NAMESPACE_END
 
 namespace zylann {
@@ -18,6 +19,8 @@ class ZN_InspectorProperty;
 // Custom implementation of a key/value object inspector, with only what I need, and custom tweaks.
 // See also https://github.com/godotengine/godot-proposals/issues/7010
 class ZN_Inspector : public ScrollContainer, public IInspectorPropertyListener {
+	GDCLASS(ZN_Inspector, ScrollContainer);
+
 public:
 	ZN_Inspector();
 
@@ -33,8 +36,15 @@ public:
 	);
 	// void set_property_editable(const unsigned int i, const bool editable);
 
+	void set_undo_redo(EditorUndoRedoManager *ur);
+
 private:
+	void _notification(int p_what);
+
 	void on_property_value_changed(const unsigned int index, const Variant &value) override;
+
+	void update_property_value(const unsigned int property_index, const Variant value);
+	void poll_properties();
 
 	static void _bind_methods();
 
@@ -50,6 +60,7 @@ private:
 	StdVector<Property> _properties;
 	ObjectID _target_object;
 	int _target_index = 0;
+	EditorUndoRedoManager *_undo_redo = nullptr;
 };
 
 } // namespace zylann

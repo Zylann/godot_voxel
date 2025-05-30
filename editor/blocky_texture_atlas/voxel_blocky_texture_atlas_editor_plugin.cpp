@@ -46,6 +46,7 @@ void VoxelBlockyTextureAtlasEditorPlugin::_notification(int p_what) {
 	switch (p_what) {
 		case NOTIFICATION_ENTER_TREE:
 			_editor->set_godot_editor_interface(get_editor_interface());
+			_editor->set_undo_redo(get_undo_redo());
 			break;
 		default:
 			break;

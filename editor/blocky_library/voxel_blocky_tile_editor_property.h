@@ -3,9 +3,11 @@
 
 #include "../../util/godot/classes/editor_property.h"
 #include "../../util/godot/macros.h"
-//
-ZN_GODOT_FORWARD_DECLARE(class Button);
-ZN_GODOT_FORWARD_DECLARE(class ConfirmationDialog);
+
+ZN_GODOT_NAMESPACE_BEGIN
+class Button;
+class ConfirmationDialog;
+ZN_GODOT_NAMESPACE_END
 
 namespace zylann::voxel {
 

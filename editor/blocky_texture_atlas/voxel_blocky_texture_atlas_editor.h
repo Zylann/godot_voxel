@@ -17,6 +17,7 @@ class LineEdit;
 class HBoxContainer;
 class EditorInterface;
 class SpinBox;
+class EditorUndoRedoManager;
 ZN_GODOT_NAMESPACE_END
 
 namespace zylann {
@@ -36,6 +37,7 @@ public:
 	void make_read_only();
 
 	void set_godot_editor_interface(EditorInterface *editor_interface);
+	void set_undo_redo(EditorUndoRedoManager *ur);
 
 private:
 	static void _bind_methods();
@@ -74,6 +76,8 @@ private:
 	void close_blob9_gen();
 	Vector2i get_tile_blob9_margin(const int tile_id) const;
 
+	void update_tile_name_in_list(int tile_id, String new_name);
+
 	enum Mode {
 		MODE_SELECT,
 		MODE_CREATE,
@@ -100,6 +104,7 @@ private:
 	HBoxContainer *_toolbar_container = nullptr;
 	bool _read_only = false;
 	EditorInterface *_godot_editor_interface = nullptr;
+	EditorUndoRedoManager *_undo_redo = nullptr;
 
 	struct Blob9Generation {
 		SpinBox *margin_x_spinbox = nullptr;

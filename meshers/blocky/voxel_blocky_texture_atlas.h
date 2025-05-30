@@ -63,6 +63,9 @@ public:
 	void set_texture(Ref<Texture2D> texture);
 	Ref<Texture2D> get_texture();
 
+	int add_tile(int p_tile_id);
+	void remove_tile(const uint32_t id);
+
 	bool is_valid_tile_id(int tile_id) const;
 
 	void set_tile_type(int tile_id, TileType type);
@@ -84,10 +87,7 @@ public:
 
 	Span<const Tile> get_tiles() const;
 
-	Tile &get_tile(const uint32_t id);
-
-	uint32_t add_tile(const Tile &tile);
-	void remove_tile(const uint32_t id);
+	const Tile &get_tile(const uint32_t id) const;
 
 #ifdef TOOLS_ENABLED
 	int get_tile_id_at_pixel_position(const Vector2i pos);
@@ -111,13 +111,15 @@ public:
 
 	Ref<AtlasTexture> get_tile_preview_texture(const uint32_t id) const;
 
+	uint32_t get_next_available_id() const;
+
 	static Rect2i get_supported_tile_position_range();
 	static Rect2i get_supported_tile_group_size_range();
 
 private:
-	uint32_t allocate_tile();
 	void emit_changed(const ChangeType change);
 
+	int _b_add_tile(int p_tile_id);
 	Array _b_get_tiles_data() const;
 	void _b_set_tiles_data(Array tiles_data);
 

@@ -14,7 +14,9 @@ public:
 
 	void set_listener(IInspectorPropertyListener *listener, const unsigned int index);
 
+	// Sets the value shown by the control, without triggering change signals.
 	virtual void set_value(Variant value);
+	// Gets the value shown by the control.
 	virtual Variant get_value() const;
 
 	virtual void set_enabled(bool enabled);

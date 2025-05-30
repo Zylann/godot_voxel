@@ -1,9 +1,11 @@
 #include "inspector.h"
 #include "../../containers/std_vector.h"
 #include "../classes/editor_spin_slider.h"
+#include "../classes/editor_undo_redo_manager.h"
 #include "../classes/h_box_container.h"
 #include "../classes/label.h"
 #include "../classes/v_box_container.h"
+#include "../core/array.h"
 #include "inspector_property_bool.h"
 #include "inspector_property_enum.h"
 #include "inspector_property_string.h"
@@ -18,6 +20,8 @@ ZN_Inspector::ZN_Inspector() {
 	_vb_container = memnew(VBoxContainer);
 	_vb_container->set_h_size_flags(Control::SIZE_EXPAND_FILL);
 	add_child(_vb_container);
+
+	set_process(true);
 }
 
 static void clear_children_now(Node &parent) {
@@ -152,6 +156,10 @@ void ZN_Inspector::add_indexed_property(
 	_properties.push_back(p);
 }
 
+void ZN_Inspector::set_undo_redo(EditorUndoRedoManager *ur) {
+	_undo_redo = ur;
+}
+
 // void ZN_Inspector::set_property_editable(const unsigned int i, const bool editable) {
 // 	ZN_ASSERT_RETURN(i >= _properties.size());
 // 	Property &p = _properties[i];
@@ -162,10 +170,69 @@ void ZN_Inspector::on_property_value_changed(const unsigned int index, const Var
 	Property &p = _properties[index];
 	Object *obj = ObjectDB::get_instance(_target_object);
 	ZN_ASSERT_RETURN(obj != nullptr);
+
+	const Variant prev_value = p.indexed ? obj->call(p.getter, _target_index) : obj->call(p.getter);
+	if (prev_value == value) {
+		return;
+	}
+
 	if (p.indexed) {
-		obj->call(p.setter, _target_index, value);
+		if (_undo_redo != nullptr) {
+			_undo_redo->create_action(
+					String("{0}.{1} [{2}]").format(varray(obj->get_class(), p.setter, _target_index, value)),
+					UndoRedo::MERGE_ENDS
+			);
+
+			_undo_redo->add_do_method(obj, p.setter, _target_index, value);
+			_undo_redo->add_undo_method(obj, p.setter, _target_index, prev_value);
+			// Note: undo/redo don't trigger changes in the inspector. It will update by polling, IF the changed object
+			// is still the selected one. This also handles other kinds of external changes.
+
+			_undo_redo->commit_action();
+
+		} else {
+			obj->call(p.setter, _target_index, value);
+		}
+
 	} else {
-		obj->call(p.setter, value);
+		if (_undo_redo != nullptr) {
+			_undo_redo->create_action(
+					String("{0}.{1}").format(varray(obj->get_class(), p.setter, value)), UndoRedo::MERGE_ENDS
+			);
+
+			_undo_redo->add_do_method(obj, p.setter, value);
+			_undo_redo->add_undo_method(obj, p.setter, prev_value);
+
+			_undo_redo->commit_action();
+
+		} else {
+			obj->call(p.setter, value);
+		}
+	}
+}
+
+void ZN_Inspector::_notification(int p_what) {
+	switch (p_what) {
+		case NOTIFICATION_PROCESS: {
+			poll_properties();
+		} break;
+
+		default:
+			break;
+	}
+}
+
+void ZN_Inspector::poll_properties() {
+	Object *obj = ObjectDB::get_instance(_target_object);
+	if (obj == nullptr) {
+		return;
+	}
+
+	for (const Property &prop : _properties) {
+		const Variant value = prop.indexed ? obj->call(prop.getter, _target_index) : obj->call(prop.getter);
+		if (prop.control->get_value() != value) {
+			prop.control->set_value(value);
+		}
 	}
 }
 

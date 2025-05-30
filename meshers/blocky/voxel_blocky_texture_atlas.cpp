@@ -166,24 +166,11 @@ Span<const VoxelBlockyTextureAtlas::Tile> VoxelBlockyTextureAtlas::get_tiles() c
 	return to_span_const(_tiles);
 }
 
-VoxelBlockyTextureAtlas::Tile &VoxelBlockyTextureAtlas::get_tile(const uint32_t id) {
+const VoxelBlockyTextureAtlas::Tile &VoxelBlockyTextureAtlas::get_tile(const uint32_t id) const {
 	return _tiles[id];
 }
 
-uint32_t VoxelBlockyTextureAtlas::add_tile(const Tile &tile) {
-	const uint32_t i = allocate_tile();
-	_tiles[i] = tile;
-	emit_changed(CHANGE_TILE_ADDED);
-	return i;
-}
-
-void VoxelBlockyTextureAtlas::remove_tile(const uint32_t id) {
-	ZN_ASSERT_RETURN(is_valid_tile_id(id));
-	_tiles[id].clear();
-	emit_changed(CHANGE_TILE_REMOVED);
-}
-
-uint32_t VoxelBlockyTextureAtlas::allocate_tile() {
+uint32_t VoxelBlockyTextureAtlas::get_next_available_id() const {
 	for (unsigned int i = 0; i < _tiles.size(); ++i) {
 		const Tile &tile = _tiles[i];
 		if (tile.is_tombstone()) {
@@ -191,8 +178,52 @@ uint32_t VoxelBlockyTextureAtlas::allocate_tile() {
 		}
 	}
 	const uint32_t i = _tiles.size();
-	_tiles.push_back(Tile());
 	return i;
+}
+
+int VoxelBlockyTextureAtlas::add_tile(int p_tile_id) {
+	uint32_t tile_id;
+
+	if (p_tile_id == -1) {
+		tile_id = get_next_available_id();
+
+	} else if (p_tile_id == _tiles.size()) {
+		tile_id = _tiles.size();
+
+	} else if (p_tile_id >= 0 && p_tile_id < static_cast<int>(_tiles.size())) {
+		const Tile &tile = _tiles[p_tile_id];
+		if (!tile.is_tombstone()) {
+			ZN_PRINT_ERROR("Tile ID is already used");
+			return -1;
+		}
+		tile_id = p_tile_id;
+
+	} else {
+		ZN_PRINT_ERROR("Invalid tile ID");
+		return -1;
+	}
+
+	if (tile_id == _tiles.size()) {
+		_tiles.push_back(Tile());
+
+	} else if (tile_id > _tiles.size()) {
+		ZN_PRINT_ERROR("Bug?");
+		return -1;
+	}
+
+	Tile &tile = _tiles[tile_id];
+	tile.group_size_x = 1;
+	tile.group_size_y = 1;
+
+	emit_changed(CHANGE_TILE_ADDED);
+
+	return tile_id;
+}
+
+void VoxelBlockyTextureAtlas::remove_tile(const uint32_t id) {
+	ZN_ASSERT_RETURN(is_valid_tile_id(id));
+	_tiles[id].clear();
+	emit_changed(CHANGE_TILE_REMOVED);
 }
 
 Array VoxelBlockyTextureAtlas::_b_get_tiles_data() const {
@@ -372,8 +403,15 @@ Rect2i VoxelBlockyTextureAtlas::get_supported_tile_group_size_range() {
 	return Rect2i(Vector2i(1, 1), Vector2i(std::numeric_limits<uint8_t>::max(), std::numeric_limits<uint8_t>::max()));
 }
 
+int VoxelBlockyTextureAtlas::_b_add_tile(int p_tile_id) {
+	return add_tile(p_tile_id);
+}
+
 void VoxelBlockyTextureAtlas::_bind_methods() {
 	using Self = VoxelBlockyTextureAtlas;
+
+	ClassDB::bind_method(D_METHOD("add_tile", "id"), &Self::_b_add_tile, DEFVAL(-1));
+	ClassDB::bind_method(D_METHOD("remove_tile", "id"), &Self::remove_tile);
 
 	ClassDB::bind_method(D_METHOD("set_texture", "texture"), &Self::set_texture);
 	ClassDB::bind_method(D_METHOD("get_texture"), &Self::get_texture);
