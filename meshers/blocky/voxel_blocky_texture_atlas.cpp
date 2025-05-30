@@ -79,7 +79,7 @@ void VoxelBlockyTextureAtlas::set_tile_type(int tile_id, VoxelBlockyTextureAtlas
 	if (checked_tile_type == tile.type) {
 		return;
 	}
-	tile.type = tile.type;
+	tile.type = checked_tile_type;
 	emit_changed(CHANGE_TILE_MODIFIED);
 }
 
