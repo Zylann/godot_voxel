@@ -390,15 +390,15 @@ void VoxelBlockyTextureAtlasEditor::_notification(int p_what) {
 			const VoxelStringNames &sn = VoxelStringNames::get_singleton();
 			{
 				Ref<Texture2D> icon = get_theme_icon(sn.ToolSelect, sn.EditorIcons);
-				_mode_buttons[MODE_SELECT]->set_button_icon(icon);
+				zylann::godot::set_button_icon(*_mode_buttons[MODE_SELECT], icon);
 			}
 			{
 				Ref<Texture2D> icon = get_theme_icon(sn.RegionEdit, sn.EditorIcons);
-				_mode_buttons[MODE_CREATE]->set_button_icon(icon);
+				zylann::godot::set_button_icon(*_mode_buttons[MODE_CREATE], icon);
 			}
 			{
 				Ref<Texture2D> icon = get_theme_icon(sn.TerrainMatchCornersAndSides, sn.EditorIcons);
-				_connectivity_button->set_button_icon(icon);
+				zylann::godot::set_button_icon(*_connectivity_button, icon);
 			}
 		} break;
 
