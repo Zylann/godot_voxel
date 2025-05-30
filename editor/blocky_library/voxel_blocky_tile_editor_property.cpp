@@ -62,7 +62,7 @@ void VoxelBlockyTileEditorProperty::update_button(const Object &obj, const int t
 	// TODO Button icon showing a preview of the tile?
 
 	_button->set_text(title);
-	_button->set_button_icon(icon);
+	zylann::godot::set_button_icon(*_button, icon);
 	_button->set_tooltip_text(tooltip);
 }
 
