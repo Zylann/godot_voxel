@@ -27,6 +27,7 @@ private:
 	void init();
 
 	void on_inspector_atlas_picker_dialog_confirmed();
+	void on_atlas_tile_picker_double_clicked();
 
 	void _notification(int p_what);
 

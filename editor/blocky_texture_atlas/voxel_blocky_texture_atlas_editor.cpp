@@ -67,6 +67,9 @@ VoxelBlockyTextureAtlasEditor::VoxelBlockyTextureAtlasEditor() {
 		_tile_list->connect(
 				sn.item_clicked, callable_mp(this, &VoxelBlockyTextureAtlasEditor::on_tile_list_item_clicked)
 		);
+		_tile_list->connect(
+				"item_activated", callable_mp(this, &VoxelBlockyTextureAtlasEditor::on_tile_list_item_activated)
+		);
 		vb->add_child(_tile_list);
 		split_container->add_child(vb);
 	}
@@ -841,6 +844,10 @@ void VoxelBlockyTextureAtlasEditor::on_tile_list_item_clicked(
 	}
 }
 
+void VoxelBlockyTextureAtlasEditor::on_tile_list_item_activated(int item_index) {
+	emit_signal("tile_double_clicked");
+}
+
 int VoxelBlockyTextureAtlasEditor::get_tile_list_index_from_tile_id(const int tile_id_to_find) const {
 	const int item_count = _tile_list->get_item_count();
 	for (int i = 0; i < item_count; ++i) {
@@ -1074,6 +1081,9 @@ void VoxelBlockyTextureAtlasEditor::on_texture_rect_gui_input(Ref<InputEvent> ev
 						case ZN_GODOT_MouseButton_LEFT: {
 							if (_hovered_tile_id != -1) {
 								set_selected_tile_id(_hovered_tile_id, true);
+								if (mouse_button_event->is_double_click()) {
+									emit_signal("tile_double_clicked");
+								}
 							}
 						} break;
 
@@ -1373,6 +1383,8 @@ void VoxelBlockyTextureAtlasEditor::_bind_methods() {
 	using Self = VoxelBlockyTextureAtlasEditor;
 
 	ClassDB::bind_method(D_METHOD("update_tile_name_in_list", "tile_id", "new_name"), &Self::update_tile_name_in_list);
+
+	ADD_SIGNAL(MethodInfo("tile_double_clicked"));
 }
 
 } // namespace zylann::voxel

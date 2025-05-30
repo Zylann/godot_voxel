@@ -50,6 +50,7 @@ private:
 	void on_context_menu_id_pressed(int id);
 	void on_tile_list_item_selected(int item_index);
 	void on_tile_list_item_clicked(int item_index, Vector2 at_position, int mouse_button_index);
+	void on_tile_list_item_activated(int item_index);
 	void on_mode_button_group_pressed(BaseButton *pressed_button);
 	void on_rename_popup_confirmed();
 	void on_connectivity_button_toggled(bool pressed);

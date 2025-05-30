@@ -42,6 +42,10 @@ void VoxelBlockyLibraryEditorPlugin::init() {
 	// Tiles
 	{
 		_inspector_atlas_picker = memnew(VoxelBlockyTextureAtlasEditor);
+		_inspector_atlas_picker->connect(
+				"tile_double_clicked",
+				callable_mp(this, &VoxelBlockyLibraryEditorPlugin::on_atlas_tile_picker_double_clicked)
+		);
 		_inspector_atlas_picker->make_read_only();
 
 		const float edscale = EDSCALE;
@@ -94,6 +98,11 @@ void VoxelBlockyLibraryEditorPlugin::on_inspector_atlas_picker_dialog_confirmed(
 	ZN_ASSERT_RETURN(property != nullptr);
 	const int selected_tile = _inspector_atlas_picker->get_selected_tile_id();
 	property->on_atlas_tile_picker_confirmed(selected_tile);
+}
+
+void VoxelBlockyLibraryEditorPlugin::on_atlas_tile_picker_double_clicked() {
+	_inspector_atlas_picker_dialog->hide();
+	on_inspector_atlas_picker_dialog_confirmed();
 }
 
 } // namespace zylann::voxel
