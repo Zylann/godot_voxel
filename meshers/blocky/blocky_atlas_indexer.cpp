@@ -34,7 +34,7 @@ uint16_t AtlasIndexer::get_or_create_tile_index(const unsigned int atlas_index, 
 
 	const Ref<VoxelBlockyTextureAtlas> &atlas = atlases[atlas_index];
 	const Vector2i atlas_res = atlas->get_resolution();
-	ZN_ASSERT_RETURN_V(atlas_res.x == 0 || atlas_res.y == 0, 0);
+	ZN_ASSERT_RETURN_V(atlas_res.x > 0 && atlas_res.y > 0, 0);
 
 	if (src_tile_id >= map.size()) {
 		map.resize(src_tile_id + 1, std::numeric_limits<uint16_t>::max());

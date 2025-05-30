@@ -281,7 +281,7 @@ void bake_cube_geometry(
 	Ref<VoxelBlockyTextureAtlas> atlas = config.get_atlas();
 	if (atlas.is_valid()) {
 		const Vector2i atlas_res = atlas->get_resolution();
-		ZN_ASSERT_RETURN(atlas_res.x == 0 || atlas_res.y == 0);
+		ZN_ASSERT_RETURN(atlas_res.x > 0 && atlas_res.y > 0);
 
 		const Vector2f atlas_pixel_step_norm = Vector2f(1) / to_vec2f(atlas_res);
 
