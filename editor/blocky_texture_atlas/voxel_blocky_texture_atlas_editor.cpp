@@ -972,6 +972,7 @@ void VoxelBlockyTextureAtlasEditor::update_tile_list() {
 
 		const int item_index = _tile_list->add_item(item_title);
 		_tile_list->set_item_metadata(item_index, tile_index);
+		_tile_list->set_item_tooltip(item_index, String("{0} ({1})").format(varray(item_title, tile_index)));
 	}
 
 	// Restore selection
