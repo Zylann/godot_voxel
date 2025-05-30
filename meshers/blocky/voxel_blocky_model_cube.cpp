@@ -304,8 +304,8 @@ void bake_cube_geometry(
 				const Vector2f uv00 = Vector2f(tile.position_x, tile.position_y) * atlas_pixel_step_norm;
 				const Vector2f tile_step_norm = atlas_pixel_step_norm * to_vec2f(atlas->get_default_tile_resolution());
 
-				for (Vector2f &uv : uvs) {
-					uv = uv00 + uv * tile_step_norm;
+				for (unsigned int i = 0; i < uv_norm.size(); ++i) {
+					uvs[i] = uv00 + uv_norm[i] * tile_step_norm;
 				}
 
 				// We don't do special baking for Single tiles, it is equivalent to fixed UVs.
