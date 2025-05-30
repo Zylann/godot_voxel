@@ -333,6 +333,7 @@ void VoxelBlockyTextureAtlasEditor::set_atlas(Ref<VoxelBlockyTextureAtlas> atlas
 
 		const Vector2i size(_atlas->get_resolution());
 		_pan_zoom_container->set_content_rect(Rect2(Vector2(), Vector2(size)));
+		// _pan_zoom_container->center_view();
 	}
 
 	update_tile_list();

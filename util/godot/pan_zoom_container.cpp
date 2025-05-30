@@ -68,6 +68,16 @@ void ZN_PanZoomContainer::set_content_rect(const Rect2 rect) {
 	clamp_view_rect();
 }
 
+void ZN_PanZoomContainer::center_view() {
+	// TODO Unfortunately doesn't work the first time...
+	// Because Godot calculates the size of the Control AFTER we set it up to show the first time...
+	const Vector2 center = get_boundary_rect().get_center();
+	const Rect2 view_rect = get_view_rect();
+	_view_pos = center - view_rect.size * 0.5;
+	update_scrollbars();
+	update_content_root_transform();
+}
+
 void ZN_PanZoomContainer::_notification(int p_what) {
 	switch (p_what) {
 		case NOTIFICATION_RESIZED: {

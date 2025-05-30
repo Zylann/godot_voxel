@@ -19,6 +19,7 @@ public:
 	ZN_PanZoomContainer();
 
 	void set_content_rect(const Rect2 rect);
+	void center_view();
 
 private:
 	void _notification(int p_what);
