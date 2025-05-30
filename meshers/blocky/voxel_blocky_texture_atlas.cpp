@@ -162,6 +162,24 @@ bool VoxelBlockyTextureAtlas::get_tile_random_rotation(int tile_id) const {
 	return tile.random_rotation;
 }
 
+int VoxelBlockyTextureAtlas::get_tile_id_from_name(String p_name) const {
+	if (p_name.is_empty()) {
+		return -1;
+	}
+
+	for (unsigned int i = 0; i < _tiles.size(); ++i) {
+		const Tile &tile = _tiles[i];
+		if (tile.is_tombstone()) {
+			continue;
+		}
+		if (p_name == tile.name.c_str()) {
+			return i;
+		}
+	}
+
+	return -1;
+}
+
 Span<const VoxelBlockyTextureAtlas::Tile> VoxelBlockyTextureAtlas::get_tiles() const {
 	return to_span_const(_tiles);
 }
@@ -412,6 +430,8 @@ void VoxelBlockyTextureAtlas::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("add_tile", "id"), &Self::_b_add_tile, DEFVAL(-1));
 	ClassDB::bind_method(D_METHOD("remove_tile", "id"), &Self::remove_tile);
+
+	ClassDB::bind_method(D_METHOD("get_tile_id_from_name", "name"), &Self::get_tile_id_from_name);
 
 	ClassDB::bind_method(D_METHOD("set_texture", "texture"), &Self::set_texture);
 	ClassDB::bind_method(D_METHOD("get_texture"), &Self::get_texture);

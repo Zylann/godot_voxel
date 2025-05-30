@@ -83,6 +83,8 @@ public:
 	void set_tile_random_rotation(int tile_id, bool enabled);
 	bool get_tile_random_rotation(int tile_id) const;
 
+	int get_tile_id_from_name(String p_name) const;
+
 	// Internal
 
 	Span<const Tile> get_tiles() const;
