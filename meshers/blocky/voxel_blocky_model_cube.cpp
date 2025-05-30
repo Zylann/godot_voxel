@@ -479,12 +479,7 @@ void VoxelBlockyModelCube::_bind_methods() {
 	ADD_GROUP("Atlas tiles", "atlas_tile_id_");
 
 #define ADD_ATLAS_TILE_ID_PROPERTY(m_name, m_side)                                                                     \
-	ADD_PROPERTYI(                                                                                                     \
-			PropertyInfo(Variant::INT, m_name, PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR),                         \
-			"set_atlas_tile_id",                                                                                       \
-			"get_atlas_tile_id",                                                                                       \
-			m_side                                                                                                     \
-	);
+	ADD_PROPERTYI(PropertyInfo(Variant::INT, m_name), "set_atlas_tile_id", "get_atlas_tile_id", m_side);
 
 	ADD_ATLAS_TILE_ID_PROPERTY("atlas_tile_id_left", Cube::SIDE_LEFT);
 	ADD_ATLAS_TILE_ID_PROPERTY("atlas_tile_id_right", Cube::SIDE_RIGHT);
