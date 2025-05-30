@@ -36,6 +36,7 @@ def get_doc_classes():
         "VoxelBlockyModelFluid",
         "VoxelBlockyModelMesh",
         "VoxelBlockyFluid",
+        "VoxelBlockyTextureAtlas",
         "VoxelBlockyType",
         "VoxelBlockyTypeLibrary",
         "VoxelBoxMover",
