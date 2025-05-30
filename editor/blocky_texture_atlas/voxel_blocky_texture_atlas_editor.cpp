@@ -28,6 +28,7 @@
 
 namespace zylann::voxel {
 
+//
 // TODO Figure out a generic approach to blob tilesets.
 // Instead of expecting our own 12x4 layout (as seen from OptiFine CTM), allow the user to multi-select tiles, create a
 // Blob9 tile, then allow to define the layout by drawing a pattern of connections over the existing layout, so we can
@@ -911,8 +912,7 @@ void VoxelBlockyTextureAtlasEditor::update_tile_list() {
 	_tile_list->clear();
 	for (unsigned int tile_index = 0; tile_index < tiles.size(); ++tile_index) {
 		const VoxelBlockyTextureAtlas::Tile &tile = tiles[tile_index];
-		if (tile.group_size_x == 0) {
-			// Tombstone
+		if (tile.is_tombstone()) {
 			continue;
 		}
 
