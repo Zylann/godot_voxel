@@ -42,14 +42,16 @@ uint8_t fetch_connection_mask(
 		const Span<const TModelID> model_buffer,
 		const uint32_t current_model_index,
 		const uint32_t voxel_index,
-		const uint32_t jump_x,
-		const uint32_t jump_y
-		// const uint32_t jump_z
+		// How much to move in `model_buffer` in order to go towards +X or +Y in the tile referential (X right Y down)
+		const Vector2i jump
 ) {
-	const std::array<uint32_t, 8> neighbor_indices = { voxel_index - jump_y - jump_x, voxel_index - jump_y,
-													   voxel_index - jump_y + jump_x, voxel_index - jump_x,
-													   voxel_index + jump_x,		  voxel_index + jump_y - jump_x,
-													   voxel_index + jump_y,		  voxel_index + jump_y + jump_x };
+	// 0 1 2   o---x
+	// 3 x 4   |
+	// 5 6 7   y
+	const std::array<uint32_t, 8> neighbor_indices = { voxel_index - jump.y - jump.x, voxel_index - jump.y,
+													   voxel_index - jump.y + jump.x, voxel_index - jump.x,
+													   voxel_index + jump.x,		  voxel_index + jump.y - jump.x,
+													   voxel_index + jump.y,		  voxel_index + jump.y + jump.x };
 
 	uint8_t connection_mask = 0;
 	for (unsigned int i = 0; i < neighbor_indices.size(); ++i) {

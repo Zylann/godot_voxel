@@ -33,14 +33,64 @@ namespace zylann::voxel::Cube {
 
 // Ordered as per the cube corners diagram
 const Vector3f g_corner_position[CORNER_COUNT] = {
-	Vector3f(1, 0, 0), //
-	Vector3f(0, 0, 0), //
-	Vector3f(0, 0, 1), //
-	Vector3f(1, 0, 1), //
-	Vector3f(1, 1, 0), //
-	Vector3f(0, 1, 0), //
-	Vector3f(0, 1, 1), //
-	Vector3f(1, 1, 1)
+	Vector3f(1, 0, 0), // 0
+	Vector3f(0, 0, 0), // 1
+	Vector3f(0, 0, 1), // 2
+	Vector3f(1, 0, 1), // 3
+	Vector3f(1, 1, 0), // 4
+	Vector3f(0, 1, 0), // 5
+	Vector3f(0, 1, 1), // 6
+	Vector3f(1, 1, 1) // 7
+};
+
+// 3---2   o---x
+// |   |   |
+// 0---1   y
+// Ordered by `g_side_corners`
+const Vector2f g_side_uvs[SIDE_COUNT][4] = {
+	// +X
+	{
+		Vector2f(0.f, 1.f),
+		Vector2f(1.f, 1.f),
+		Vector2f(1.f, 0.f),
+		Vector2f(0.f, 0.f),
+	},
+	// -X
+	{
+		Vector2f(0.f, 1.f),
+		Vector2f(1.f, 1.f),
+		Vector2f(1.f, 0.f),
+		Vector2f(0.f, 0.f),
+	},
+	// -Y
+	{
+		Vector2f(0.f, 1.f),
+		Vector2f(1.f, 1.f),
+		Vector2f(1.f, 0.f),
+		Vector2f(0.f, 0.f),
+	},
+	// TODO +Y is flipped, which is why we end up needing this table...
+	// +Y
+	{
+		Vector2f(1.f, 0.f),
+		Vector2f(0.f, 0.f),
+		Vector2f(0.f, 1.f),
+		Vector2f(1.f, 1.f),
+	},
+	// -Z
+	{
+		Vector2f(0.f, 1.f),
+		Vector2f(1.f, 1.f),
+		Vector2f(1.f, 0.f),
+		Vector2f(0.f, 0.f),
+	},
+	// +Z
+	{
+		Vector2f(0.f, 1.f),
+		Vector2f(1.f, 1.f),
+		Vector2f(1.f, 0.f),
+		Vector2f(0.f, 0.f),
+	},
 };
 
 // 3---2
@@ -87,12 +137,12 @@ const float g_side_tangents[SIDE_COUNT][4] = { //
 // Corners have same winding, relative to the face's normal.
 // X and Z sides have their top corners coming last.
 const unsigned int g_side_corners[SIDE_COUNT][4] = {
-	{ 3, 0, 4, 7 }, //
-	{ 1, 2, 6, 5 }, //
-	{ 1, 0, 3, 2 }, //
-	{ 4, 5, 6, 7 }, //
-	{ 0, 1, 5, 4 }, //
-	{ 2, 3, 7, 6 } //
+	{ 3, 0, 4, 7 }, // +X
+	{ 1, 2, 6, 5 }, // -X
+	{ 1, 0, 3, 2 }, // -Y
+	{ 4, 5, 6, 7 }, // +Y
+	{ 0, 1, 5, 4 }, // -Z
+	{ 2, 3, 7, 6 } // +Z
 };
 
 const unsigned int g_side_edges[SIDE_COUNT][4] = { //

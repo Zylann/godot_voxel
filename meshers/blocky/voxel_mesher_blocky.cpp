@@ -63,6 +63,8 @@ void generate_mesh(
 	const int row_size = block_size.y;
 	const int deck_size = block_size.x * row_size;
 
+	const Vector3i jump(block_size.y, 1, block_size.x * block_size.y);
+
 	// Data must be padded, hence the off-by-one
 	const Vector3i min = Vector3iUtil::create(VoxelMesherBlocky::PADDING);
 	const Vector3i max = block_size - Vector3iUtil::create(VoxelMesherBlocky::PADDING);
@@ -126,16 +128,15 @@ void generate_mesh(
 	corner_neighbor_lut[Cube::CORNER_TOP_FRONT_LEFT] = side_neighbor_lut[Cube::SIDE_TOP] +
 			side_neighbor_lut[Cube::SIDE_FRONT] + side_neighbor_lut[Cube::SIDE_LEFT];
 
-	std::array<std::array<uint32_t, 2>, 3> tile_jumps_per_side_axis;
-	// X axis
-	tile_jumps_per_side_axis[0][0] = deck_size;
-	tile_jumps_per_side_axis[0][1] = 1;
-	// Y axis
-	tile_jumps_per_side_axis[1][0] = row_size;
-	tile_jumps_per_side_axis[1][1] = deck_size;
-	// Z axis
-	tile_jumps_per_side_axis[2][0] = row_size;
-	tile_jumps_per_side_axis[2][1] = 1;
+	std::array<Vector2i, 6> tile_jumps_per_side;
+	// Tile coordinates are Y-down.
+	// This depends on side UVs defined in Cube tables
+	tile_jumps_per_side[Cube::SIDE_NEGATIVE_X] = Vector2i(jump.z, -jump.y);
+	tile_jumps_per_side[Cube::SIDE_POSITIVE_X] = Vector2i(-jump.z, -jump.y);
+	tile_jumps_per_side[Cube::SIDE_NEGATIVE_Y] = Vector2i(jump.x, -jump.z);
+	tile_jumps_per_side[Cube::SIDE_POSITIVE_Y] = Vector2i(jump.x, jump.z);
+	tile_jumps_per_side[Cube::SIDE_NEGATIVE_Z] = Vector2i(-jump.x, -jump.y);
+	tile_jumps_per_side[Cube::SIDE_POSITIVE_Z] = Vector2i(jump.x, -jump.y);
 
 	// uint64_t time_prep = Time::get_singleton()->get_ticks_usec() - time_before;
 	// time_before = Time::get_singleton()->get_ticks_usec();
@@ -255,12 +256,9 @@ void generate_mesh(
 								break;
 
 							case TILE_BLOB9: {
-								const uint32_t axis = Cube::side_to_axis(side);
-								const uint32_t tile_jump_x = tile_jumps_per_side_axis[axis][0];
-								const uint32_t tile_jump_y = tile_jumps_per_side_axis[axis][1];
-								const uint32_t connection_mask = fetch_connection_mask(
-										type_buffer, voxel_id, voxel_index, tile_jump_x, tile_jump_y
-								);
+								const Vector2i tile_jump = tile_jumps_per_side[side];
+								const uint32_t connection_mask =
+										fetch_connection_mask(type_buffer, voxel_id, voxel_index, tile_jump);
 								const uint32_t case_index = get_case_index_from_connection_mask(connection_mask);
 								ltpos.x = case_index % BLOB9_DEFAULT_LAYOUT_SIZE_X;
 								ltpos.y = case_index / BLOB9_DEFAULT_LAYOUT_SIZE_X;

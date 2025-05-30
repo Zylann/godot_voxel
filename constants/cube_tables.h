@@ -1,6 +1,7 @@
 #ifndef CUBE_TABLES_H
 #define CUBE_TABLES_H
 
+#include "../util/math/vector2f.h"
 #include "../util/math/vector3f.h"
 #include "../util/math/vector3i.h"
 
@@ -70,6 +71,8 @@ enum Corner {
 };
 
 extern const Vector3f g_corner_position[CORNER_COUNT];
+
+extern const Vector2f g_side_uvs[SIDE_COUNT][4];
 
 extern const int g_side_quad_triangles[SIDE_COUNT][6];
 

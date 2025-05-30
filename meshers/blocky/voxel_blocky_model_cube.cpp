@@ -259,24 +259,33 @@ void bake_cube_geometry(
 			to_span(baked_data.model.sides_surfaces), config.get_height(), baking_context.tangents_enabled
 	);
 
-	const float e = 0.001;
-	// Winding is the same as the one chosen in Cube:: vertices
-	// I am confused. I read in at least 3 OpenGL tutorials that texture coordinates start at bottom-left (0,0).
-	// But even though Godot is said to follow OpenGL's convention, the engine starts at top-left!
-	// And now in Godot 4 it's flipped again?
-	const std::array<Vector2f, 4> uv_norm_top_bottom = {
-		Vector2f(e, 1.f - e),
-		Vector2f(1.f - e, 1.f - e),
-		Vector2f(1.f - e, e),
-		Vector2f(e, e),
-	};
-	const float uv_top_y = Math::lerp(1.f - e, e, height);
-	const std::array<Vector2f, 4> uv_norm_side = {
-		Vector2f(e, 1.f - e),
-		Vector2f(1.f - e, 1.f - e),
-		Vector2f(1.f - e, uv_top_y),
-		Vector2f(e, uv_top_y),
-	};
+	std::array<std::array<Vector2f, 4>, 6> sides_uvs;
+
+	const float inset_amount = 0.001;
+	const float uv_top_y = Math::lerp(1.f - inset_amount, inset_amount, height);
+
+	// Unit quad
+	for (unsigned int side = 0; side < Cube::SIDE_COUNT; ++side) {
+		std::array<Vector2f, 4> &side_uvs = sides_uvs[side];
+		for (unsigned int i = 0; i < 4; ++i) {
+			Vector2f uv = Cube::g_side_uvs[side][i];
+			if (uv.x < 0.1f) {
+				uv.x += inset_amount;
+			} else {
+				uv.x -= inset_amount;
+			}
+			if (uv.y < 0.1f) {
+				if (side == Cube::SIDE_POSITIVE_Y || side == Cube::SIDE_NEGATIVE_Y) {
+					uv.y = uv_top_y;
+				} else {
+					uv.y += inset_amount;
+				}
+			} else {
+				uv.y -= inset_amount;
+			}
+			side_uvs[i] = uv;
+		}
+	}
 
 	Ref<VoxelBlockyTextureAtlas> atlas = config.get_atlas();
 	if (atlas.is_valid()) {
@@ -292,8 +301,7 @@ void bake_cube_geometry(
 			StdVector<Vector2f> &uvs = side_surface.uvs;
 			uvs.resize(4);
 
-			const std::array<Vector2f, 4> &uv_norm =
-					Cube::g_side_normals[side].y != 0 ? uv_norm_top_bottom : uv_norm_side;
+			const std::array<Vector2f, 4> &uv_norm = sides_uvs[side];
 
 			const int tile_id = config.get_atlas_tile_id(static_cast<VoxelBlockyModel::Side>(side));
 			if (tile_id >= 0) {
@@ -336,8 +344,7 @@ void bake_cube_geometry(
 			StdVector<Vector2f> &uvs = side_surface.uvs;
 			uvs.resize(4);
 
-			const std::array<Vector2f, 4> &uv_norm =
-					Cube::g_side_normals[side].y != 0 ? uv_norm_top_bottom : uv_norm_side;
+			const std::array<Vector2f, 4> &uv_norm = sides_uvs[side];
 
 			for (unsigned int i = 0; i < 4; ++i) {
 				uvs[i] = (to_vec2f(config.get_tile(VoxelBlockyModel::Side(side))) + uv_norm[i]) * s;
