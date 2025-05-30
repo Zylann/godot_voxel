@@ -1,6 +1,7 @@
 #include "voxel_blocky_tile_editor_property.h"
 #include "../../meshers/blocky/voxel_blocky_texture_atlas.h"
 #include "../../util/godot/classes/atlas_texture.h"
+#include "../../util/godot/classes/button.h"
 #include "../../util/godot/editor_scale.h"
 #include "../blocky_texture_atlas/voxel_blocky_texture_atlas_editor.h"
 #include "voxel_blocky_library_editor_plugin.h"
