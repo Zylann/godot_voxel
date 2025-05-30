@@ -1049,10 +1049,13 @@ void VoxelBlockyTextureAtlasEditor::on_texture_rect_gui_input(Ref<InputEvent> ev
 			Ref<InputEventKey> key_event = event;
 			if (key_event.is_valid()) {
 				if (key_event->is_pressed()) {
-					// TODO Does Godot have anything better to detect the Delete key?? Why is it specific to GraphEdit?
-					if (key_event->is_action("ui_graph_delete", true)) {
-						remove_selected_tile();
-						accept_event();
+					if (!_read_only) {
+						// TODO Does Godot have anything better to detect the Delete key?? Why is it specific to
+						// GraphEdit?
+						if (key_event->is_action("ui_graph_delete", true)) {
+							remove_selected_tile();
+							accept_event();
+						}
 					}
 				}
 			}
