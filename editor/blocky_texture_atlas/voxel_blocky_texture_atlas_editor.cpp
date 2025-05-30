@@ -615,6 +615,10 @@ void VoxelBlockyTextureAtlasEditor::on_texture_rect_draw() {
 				);
 			}
 		} break;
+
+		default:
+			ZN_PRINT_ERROR("Invalid mode");
+			break;
 	}
 }
 
