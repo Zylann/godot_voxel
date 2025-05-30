@@ -143,7 +143,11 @@ Rect2 ZN_PanZoomContainer::get_view_rect() const {
 }
 
 Rect2 ZN_PanZoomContainer::get_boundary_rect() const {
-	return _content_rect.grow(_content_margin);
+	const float zoom_scale = _zoom_scales[_zoom_level];
+	const Vector2 size = get_size();
+	const Vector2 zsize = size / zoom_scale;
+	// Extend boundary to half the size of the container so we can scroll past, but not loose track of content
+	return Rect2(_content_rect.position - (0.5 * zsize), _content_rect.size + zsize);
 }
 
 inline bool is_range_full(const Range &range) {
@@ -154,14 +158,20 @@ void ZN_PanZoomContainer::update_scrollbars() {
 	const Rect2 boundary_rect = get_boundary_rect();
 	const Rect2 view_rect = get_view_rect();
 
+	// Despite `set_value_no_signal` existing, `set_*` methods sometimes internally set the value, which emits a signal
+	// anyways...
+	_ignore_scroll_signals = true;
 	_h_scroll_bar->set_min(boundary_rect.position.x);
 	_h_scroll_bar->set_max(boundary_rect.position.x + boundary_rect.size.x);
 	_h_scroll_bar->set_page(view_rect.size.x);
+	_ignore_scroll_signals = false;
 	_h_scroll_bar->set_value_no_signal(view_rect.position.x);
 
+	_ignore_scroll_signals = true;
 	_v_scroll_bar->set_min(boundary_rect.position.y);
 	_v_scroll_bar->set_max(boundary_rect.position.y + boundary_rect.size.y);
 	_v_scroll_bar->set_page(view_rect.size.y);
+	_ignore_scroll_signals = false;
 	_v_scroll_bar->set_value_no_signal(view_rect.position.y);
 
 	// TODO Figure out how to hide scrollbars without screwing up the layout because of GridContainer
@@ -170,11 +180,17 @@ void ZN_PanZoomContainer::update_scrollbars() {
 }
 
 void ZN_PanZoomContainer::on_h_scroll_bar_value_changed(float new_value) {
+	if (_ignore_scroll_signals) {
+		return;
+	}
 	_view_pos.x = new_value;
 	update_content_root_transform();
 }
 
 void ZN_PanZoomContainer::on_v_scroll_bar_value_changed(float new_value) {
+	if (_ignore_scroll_signals) {
+		return;
+	}
 	_view_pos.y = new_value;
 	update_content_root_transform();
 }

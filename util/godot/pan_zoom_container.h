@@ -43,12 +43,11 @@ private:
 
 	StdVector<float> _zoom_scales;
 	uint8_t _zoom_level = 0;
-	// Margin around the content to allow scrolling past
-	float _content_margin = 1.f;
 	// Area occupied by the content in world coordinates (not affected by zoom)
 	Rect2 _content_rect;
 	// Position of the top-left corner of the viewer in world coordinates
 	Vector2 _view_pos;
+	bool _ignore_scroll_signals = false;
 	// Scrollbar values are `_view_pos`
 	HScrollBar *_h_scroll_bar = nullptr;
 	VScrollBar *_v_scroll_bar = nullptr;
