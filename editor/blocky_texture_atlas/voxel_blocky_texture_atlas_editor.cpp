@@ -499,7 +499,7 @@ void VoxelBlockyTextureAtlasEditor::on_texture_rect_draw() {
 			if (tile.is_tombstone()) {
 				continue;
 			}
-			if (tile.type == VoxelBlockyTextureAtlas::TILE_TYPE_BLOB9) {
+			if (tile.type == blocky::TILE_BLOB9) {
 				const Vector2i layout_origin(tile.position_x, tile.position_y);
 
 				// This assumes the default layout!
@@ -544,7 +544,7 @@ void VoxelBlockyTextureAtlasEditor::on_texture_rect_draw() {
 		);
 
 		if (_connectivity_button->is_pressed() || _blob9_gen.container->is_visible()) {
-			if (tile.type == VoxelBlockyTextureAtlas::TILE_TYPE_BLOB9) {
+			if (tile.type == blocky::TILE_BLOB9) {
 				const Vector2i layout_origin(tile.position_x, tile.position_y);
 
 				const std::array<uint8_t, blocky::COMPACT5_TILE_COUNT> compact5_ref_cases =
