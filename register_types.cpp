@@ -476,6 +476,7 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_internal_class<ZN_InspectorPropertyEnum>();
 		ClassDB::register_internal_class<ZN_InspectorPropertyString>();
 		ClassDB::register_internal_class<ZN_InspectorPropertyUnhandled>();
+		ClassDB::register_internal_class<ZN_TooltipArea>();
 
 		ClassDB::register_internal_class<ZN_FastNoiseLiteEditorPlugin>();
 		ClassDB::register_internal_class<ZN_FastNoiseLiteEditorInspectorPlugin>();

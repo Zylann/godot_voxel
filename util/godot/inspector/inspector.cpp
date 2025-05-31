@@ -5,13 +5,16 @@
 #include "../classes/editor_undo_redo_manager.h"
 #include "../classes/h_box_container.h"
 #include "../classes/label.h"
+#include "../classes/rich_text_label.h"
 #include "../classes/v_box_container.h"
 #include "../core/array.h"
+#include "../editor_scale.h"
 #include "inspector_property_bool.h"
 #include "inspector_property_enum.h"
 #include "inspector_property_string.h"
 #include "inspector_property_unhandled.h"
 #include "inspector_property_vector2i.h"
+#include "tooltip_area.h"
 
 namespace zylann {
 
@@ -132,8 +135,23 @@ void ZN_Inspector::add_indexed_property(
 	p.label->set_vertical_alignment(VERTICAL_ALIGNMENT_TOP);
 	p.label->set_text(name + ": ");
 
-	const String description = zylann::godot::EditorHelpUtility::get_method_description(obj->get_class(), p.setter);
-	p.label->set_tooltip_text(description);
+	const String description = zylann::godot::EditorHelpUtility::get_method_description(obj->get_class(), setter);
+	{
+		// Doc description can have BBCode in it, so we have to use a custom tooltip to display it properly.
+		ZN_TooltipArea *tooltip_area = memnew(ZN_TooltipArea);
+		tooltip_area->set_tooltip_text(description);
+		tooltip_area->set_factory([](const ZN_TooltipArea &self, const String &text) -> Control * {
+			RichTextLabel *rtl = memnew(RichTextLabel);
+			rtl->set_use_bbcode(true);
+			rtl->set_text(text);
+			const float edscale = EDSCALE;
+			rtl->set_custom_minimum_size(Vector2(edscale * 300.f, 32.f));
+			rtl->set_fit_content(true);
+			return rtl;
+		});
+		p.label->add_child(tooltip_area);
+	}
+	// p.label->set_mouse_filter(Control::MOUSE_FILTER_PASS);
 
 	ZN_ASSERT_RETURN(p.control != nullptr);
 	p.control->set_value(value);
