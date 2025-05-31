@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VoxelBlockyTextureAtlas" inherits="Resource" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Collection of tiles arranged in the same texture.
+	</brief_description>
+	<description>
+		Contains a list of tiles representing sub-regions of a texture. Each tile can be either a single rectangle, or have multiple sub-tiles that are used differently depending on its type.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="add_tile">
+			<return type="int" />
+			<param index="0" name="id" type="int" default="-1" />
+			<description>
+				Adds a new empty tile. If [code]id[/code] is specified, it must either be -1 (generate a new ID), or be equal to the maximum tile ID + 1, or correspond to an ID that is currently unused (like a tile formerly removed). Returns the ID of the tile.
+			</description>
+		</method>
+		<method name="get_tile_connect_to_covered" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="_unnamed_arg0" type="int" />
+			<description>
+				Gets whether a tile should connect to others even if they are covered. See [method set_tile_connect_to_covered] for more details.
+			</description>
+		</method>
+		<method name="get_tile_group_size" qualifiers="const">
+			<return type="Vector2i" />
+			<param index="0" name="_unnamed_arg0" type="int" />
+			<description>
+				Gets how many sub-tiles a specific tile has.
+			</description>
+		</method>
+		<method name="get_tile_id_from_name" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="name" type="String" />
+			<description>
+				Finds the first tile having the specified name and returns its ID. If no tile is found, returns -1.
+			</description>
+		</method>
+		<method name="get_tile_name" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="_unnamed_arg0" type="int" />
+			<description>
+				Gets the name of a tile.
+			</description>
+		</method>
+		<method name="get_tile_position" qualifiers="const">
+			<return type="Vector2i" />
+			<param index="0" name="_unnamed_arg0" type="int" />
+			<description>
+				Gets the position of a tile within the atlas, in pixels.
+			</description>
+		</method>
+		<method name="get_tile_random_rotation" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="_unnamed_arg0" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_tile_type" qualifiers="const">
+			<return type="int" enum="VoxelBlockyTextureAtlas.TileType" />
+			<param index="0" name="_unnamed_arg0" type="int" />
+			<description>
+				Gets the type of a tile.
+			</description>
+		</method>
+		<method name="remove_tile">
+			<return type="void" />
+			<param index="0" name="id" type="int" />
+			<description>
+				Removes a tile, marking its ID as "unused". The ID of other tiles will not be affected.
+			</description>
+		</method>
+		<method name="set_tile_connect_to_covered">
+			<return type="void" />
+			<param index="0" name="tile_id" type="int" />
+			<param index="1" name="enabled" type="bool" />
+			<description>
+				Sets whether a tile should still connect to its neighbors even when they are covered by something. This is a consideration in 3D space: while tiles work in 2D, there can be voxels covering them.
+			</description>
+		</method>
+		<method name="set_tile_group_size">
+			<return type="void" />
+			<param index="0" name="tile_id" type="int" />
+			<param index="1" name="size" type="Vector2i" />
+			<description>
+				Sets how many sub-tiles a tile has, starting from its position. [code]size[/code] is specified in tiles. All sub-tiles have the same pixel size. This is only relevant for tiles with type [constant TILE_TYPE_RANDOM] or [constant TILE_TYPE_EXTENDED].
+			</description>
+		</method>
+		<method name="set_tile_name">
+			<return type="void" />
+			<param index="0" name="tile_id" type="int" />
+			<param index="1" name="name" type="String" />
+			<description>
+				Sets the name of a tile. Having multiple tiles with the same name is not forbidden, but it is recommended to keep them unique.
+			</description>
+		</method>
+		<method name="set_tile_position">
+			<return type="void" />
+			<param index="0" name="tile_id" type="int" />
+			<param index="1" name="pos" type="Vector2i" />
+			<description>
+				Sets the position of the top-left corner of a tile, in pixels.
+			</description>
+		</method>
+		<method name="set_tile_random_rotation">
+			<return type="void" />
+			<param index="0" name="tile_id" type="int" />
+			<param index="1" name="enabled" type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="set_tile_type">
+			<return type="void" />
+			<param index="0" name="tile_id" type="int" />
+			<param index="1" name="type" type="int" enum="VoxelBlockyTextureAtlas.TileType" />
+			<description>
+				Sets the type of a tile. If you set a tile to be [constant TYPE_BLOB9], its group size must be set to 12x4.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="_tiles_data" type="Array" setter="_set_tiles_data" getter="_get_tiles_data" default="[1]">
+		</member>
+		<member name="default_tile_resolution" type="Vector2i" setter="set_default_tile_resolution" getter="get_default_tile_resolution" default="Vector2i(16, 16)">
+			Resolution tiles will take by default.
+		</member>
+		<member name="texture" type="Texture2D" setter="set_texture" getter="get_texture">
+			Optional texture serving as atlas, for convenience when using editors. In order for [VoxelMesherBlocky] to use the right texture, you must configure a material in your models.
+		</member>
+	</members>
+	<constants>
+		<constant name="TILE_TYPE_SINGLE" value="0" enum="TileType">
+			The tile does not have additional sub-tiles, it is always the same.
+		</constant>
+		<constant name="TILE_TYPE_BLOB9" value="1" enum="TileType">
+			The tile has 47 sub-tiles representing each connection states with neighbors.
+		</constant>
+		<constant name="TILE_TYPE_RANDOM" value="2" enum="TileType">
+			The tile will be picked at random between one of its subtiles.
+		</constant>
+		<constant name="TILE_TYPE_EXTENDED" value="3" enum="TileType">
+			The tile extends into a larger repeating pattern represented by its sub-tiles.
+		</constant>
+		<constant name="TILE_TYPE_MAX" value="4" enum="TileType">
+		</constant>
+	</constants>
+</class>

@@ -8,10 +8,24 @@
 	<tutorials>
 	</tutorials>
 	<methods>
+		<method name="get_atlas_tile_id" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="_unnamed_arg0" type="int" enum="VoxelBlockyModel.Side" />
+			<description>
+			</description>
+		</method>
 		<method name="get_tile" qualifiers="const">
 			<return type="Vector2i" />
 			<param index="0" name="side" type="int" enum="VoxelBlockyModel.Side" />
 			<description>
+			</description>
+		</method>
+		<method name="set_atlas_tile_id">
+			<return type="void" />
+			<param index="0" name="tile_id" type="int" enum="VoxelBlockyModel.Side" />
+			<param index="1" name="_unnamed_arg1" type="int" />
+			<description>
+				Sets the atlas tile ID used by a side. This tile must correspond to one inside [member atlas].
 			</description>
 		</method>
 		<method name="set_tile">
@@ -19,13 +33,30 @@
 			<param index="0" name="side" type="int" enum="VoxelBlockyModel.Side" />
 			<param index="1" name="position" type="Vector2i" />
 			<description>
+				Only relevant if [member atlas] is not used.
+				Sets coordinates of the tile used by a side. Will affect how texture coordinates are generated, based on [member atlas_size_in_tiles].
 			</description>
 		</method>
 	</methods>
 	<members>
+		<member name="atlas" type="VoxelBlockyTextureAtlas" setter="set_atlas" getter="get_atlas">
+		</member>
 		<member name="atlas_size_in_tiles" type="Vector2i" setter="set_atlas_size_in_tiles" getter="get_atlas_size_in_tiles" default="Vector2i(16, 16)">
+			Only relevant if [member atlas] is not used.
 			Sets a reference size of texture atlas, in tiles. It must be set so the model generates correct texture coordinates from specified tile positions.
 			If you are not using an atlas and every side uses the same full texture, use (1,1).
+		</member>
+		<member name="atlas_tile_id_back" type="int" setter="set_atlas_tile_id" getter="get_atlas_tile_id" default="-1">
+		</member>
+		<member name="atlas_tile_id_bottom" type="int" setter="set_atlas_tile_id" getter="get_atlas_tile_id" default="-1">
+		</member>
+		<member name="atlas_tile_id_front" type="int" setter="set_atlas_tile_id" getter="get_atlas_tile_id" default="-1">
+		</member>
+		<member name="atlas_tile_id_left" type="int" setter="set_atlas_tile_id" getter="get_atlas_tile_id" default="-1">
+		</member>
+		<member name="atlas_tile_id_right" type="int" setter="set_atlas_tile_id" getter="get_atlas_tile_id" default="-1">
+		</member>
+		<member name="atlas_tile_id_top" type="int" setter="set_atlas_tile_id" getter="get_atlas_tile_id" default="-1">
 		</member>
 		<member name="collision_aabbs" type="AABB[]" setter="set_collision_aabbs" getter="get_collision_aabbs" overrides="VoxelBlockyModel" default="[AABB(0, 0, 0, 1, 1, 1)]" />
 		<member name="height" type="float" setter="set_height" getter="get_height" default="1.0">
