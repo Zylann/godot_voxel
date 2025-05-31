@@ -801,22 +801,22 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 	output.primitive_type = Mesh::PRIMITIVE_TRIANGLES;
 }
 
-Ref<Resource> VoxelMesherBlocky::duplicate(bool p_subresources) const {
-	Parameters params;
-	{
-		RWLockRead rlock(_parameters_lock);
-		params = _parameters;
-	}
+// Ref<Resource> VoxelMesherBlocky::duplicate(bool p_subresources) const {
+// 	Parameters params;
+// 	{
+// 		RWLockRead rlock(_parameters_lock);
+// 		params = _parameters;
+// 	}
 
-	if (p_subresources && params.library.is_valid()) {
-		params.library = params.library->duplicate(true);
-	}
+// 	if (p_subresources && params.library.is_valid()) {
+// 		params.library = params.library->duplicate(true);
+// 	}
 
-	Ref<VoxelMesherBlocky> c;
-	c.instantiate();
-	c->_parameters = params;
-	return c;
-}
+// 	Ref<VoxelMesherBlocky> c;
+// 	c.instantiate();
+// 	c->_parameters = params;
+// 	return c;
+// }
 
 int VoxelMesherBlocky::get_used_channels_mask() const {
 	int mask = (1 << VoxelBuffer::CHANNEL_TYPE);
