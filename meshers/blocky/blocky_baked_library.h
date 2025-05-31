@@ -197,6 +197,9 @@ struct BakedLibrary {
 		uint8_t atlas_id;
 		uint8_t group_size_x;
 		uint8_t group_size_y;
+		// For blob tiles, when true, if the neighbor voxel exists but its face is covered, it will still be considered
+		// connecting.
+		bool connect_to_covered = false;
 		Vector2f atlas_uv_origin;
 		// Size of 1 tile in the atlas in texture normalized coordinates
 		Vector2f atlas_uv_step;

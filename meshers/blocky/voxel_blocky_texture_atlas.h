@@ -29,6 +29,7 @@ public:
 		uint8_t group_size_y = 0;
 		blocky::TileType type = blocky::TILE_SINGLE;
 		bool random_rotation = false;
+		bool connect_to_covered = false;
 
 		// Editor data
 		uint16_t blob9_margin_x = 0;
@@ -82,6 +83,9 @@ public:
 
 	void set_tile_random_rotation(int tile_id, bool enabled);
 	bool get_tile_random_rotation(int tile_id) const;
+
+	void set_tile_connect_to_covered(int tile_id, bool enabled);
+	bool get_tile_connect_to_covered(int tile_id) const;
 
 	int get_tile_id_from_name(String p_name) const;
 

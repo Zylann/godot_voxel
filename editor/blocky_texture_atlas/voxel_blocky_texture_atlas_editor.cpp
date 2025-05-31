@@ -935,6 +935,12 @@ void VoxelBlockyTextureAtlasEditor::update_inspector(const int tile_index) {
 	if (type == VoxelBlockyTextureAtlas::TILE_TYPE_RANDOM) {
 		_inspector->add_indexed_property("Random Rotation", "set_tile_random_rotation", "get_tile_random_rotation");
 	}
+
+	if (type == VoxelBlockyTextureAtlas::TILE_TYPE_BLOB9) {
+		_inspector->add_indexed_property(
+				"Connect To Covered", "set_tile_connect_to_covered", "get_tile_connect_to_covered"
+		);
+	}
 }
 
 void VoxelBlockyTextureAtlasEditor::update_texture_rect() {

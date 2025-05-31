@@ -162,6 +162,18 @@ bool VoxelBlockyTextureAtlas::get_tile_random_rotation(int tile_id) const {
 	return tile.random_rotation;
 }
 
+void VoxelBlockyTextureAtlas::set_tile_connect_to_covered(int tile_id, bool enabled) {
+	ZN_ASSERT_RETURN(is_valid_tile_id(tile_id));
+	Tile &tile = _tiles[tile_id];
+	tile.connect_to_covered = enabled;
+}
+
+bool VoxelBlockyTextureAtlas::get_tile_connect_to_covered(int tile_id) const {
+	ZN_ASSERT_RETURN_V(is_valid_tile_id(tile_id), false);
+	const Tile &tile = _tiles[tile_id];
+	return tile.connect_to_covered;
+}
+
 int VoxelBlockyTextureAtlas::get_tile_id_from_name(String p_name) const {
 	if (p_name.is_empty()) {
 		return -1;
@@ -274,6 +286,10 @@ Array VoxelBlockyTextureAtlas::_b_get_tiles_data() const {
 			dict["random_rotation"] = true;
 		}
 
+		if (tile.connect_to_covered) {
+			dict["connect_to_covered"] = true;
+		}
+
 #ifdef TOOLS_ENABLED
 		if (tile.blob9_margin_x > 0 || tile.blob9_margin_y > 0) {
 			dict["blob9_margin"] = Vector2i(tile.blob9_margin_x, tile.blob9_margin_y);
@@ -300,6 +316,7 @@ void VoxelBlockyTextureAtlas::_b_set_tiles_data(Array tiles_data) {
 			const String group_size_key("group_size");
 			const String name_key("name");
 			const String random_rotation_key("random_rotation");
+			const String connect_to_covered_key("connect_to_covered");
 #ifdef TOOLS_ENABLED
 			const String blob9_margin_key("blob9_margin");
 #endif
@@ -332,6 +349,8 @@ void VoxelBlockyTextureAtlas::_b_set_tiles_data(Array tiles_data) {
 				tile.name = godot::to_std_string(tile_name);
 
 				tile.random_rotation = tile_data.get(random_rotation_key, false);
+
+				tile.connect_to_covered = tile_data.get(connect_to_covered_key, false);
 
 #ifdef TOOLS_ENABLED
 				const Vector2i blob9_margin = tile_data.get(blob9_margin_key, Vector2i());
@@ -453,6 +472,11 @@ void VoxelBlockyTextureAtlas::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("set_tile_random_rotation", "tile_id", "enabled"), &Self::set_tile_random_rotation);
 	ClassDB::bind_method(D_METHOD("get_tile_random_rotation"), &Self::get_tile_random_rotation);
+
+	ClassDB::bind_method(
+			D_METHOD("set_tile_connect_to_covered", "tile_id", "enabled"), &Self::set_tile_connect_to_covered
+	);
+	ClassDB::bind_method(D_METHOD("get_tile_connect_to_covered"), &Self::get_tile_connect_to_covered);
 
 	ClassDB::bind_method(D_METHOD("_get_tiles_data"), &Self::_b_get_tiles_data);
 	ClassDB::bind_method(D_METHOD("_set_tiles_data", "data"), &Self::_b_set_tiles_data);

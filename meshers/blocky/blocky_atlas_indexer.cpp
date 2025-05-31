@@ -52,6 +52,7 @@ uint16_t AtlasIndexer::get_or_create_tile_index(const unsigned int atlas_index, 
 	const Vector2f pixel_step_norm = Vector2f(1.f) / to_vec2f(atlas_res);
 	baked_tile.atlas_uv_origin = pixel_step_norm * Vector2f(src_tile.position_x, src_tile.position_y);
 	baked_tile.atlas_uv_step = pixel_step_norm * to_vec2f(atlas->get_default_tile_resolution());
+	baked_tile.connect_to_covered = src_tile.connect_to_covered;
 	baked_tiles.push_back(baked_tile);
 
 	return baked_tile_index;

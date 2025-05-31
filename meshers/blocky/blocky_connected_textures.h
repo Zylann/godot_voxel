@@ -48,7 +48,8 @@ uint8_t fetch_connection_mask(
 		// +Z may also be used to check the voxel above.
 		const Vector3i jump,
 		const Cube::Side side,
-		const BakedLibrary &library
+		const BakedLibrary &library,
+		const bool connect_to_covered
 ) {
 	// 0 1 2   o---x
 	// 3 x 4   |
@@ -61,79 +62,57 @@ uint8_t fetch_connection_mask(
 	uint8_t connection_mask = 0;
 	const uint32_t air_id = 0;
 
-	for (unsigned int i = 0; i < neighbor_indices.size(); ++i) {
-		const uint32_t ni = neighbor_indices[i];
-		const TModelID nv = model_buffer[ni];
+	if (connect_to_covered) {
+		for (unsigned int i = 0; i < neighbor_indices.size(); ++i) {
+			const uint32_t ni = neighbor_indices[i];
+			const TModelID nv = model_buffer[ni];
 
-		// Try to check most common cases first
+			// Try to check most common cases first
 
-		if (nv == current_model_index) {
-			const uint32_t ani = ni + jump.z;
-			const uint32_t anv = model_buffer[ani];
-
-			if (anv == air_id || is_face_visible(library, current_model, anv, side)) {
+			if (nv == current_model_index) {
 				connection_mask |= (1 << i);
-			}
 
-		} else if (nv != air_id && nv < library.models.size()) {
-			const BakedModel &neighbor_model = library.models[nv];
+			} else if (nv != air_id && nv < library.models.size()) {
+				const BakedModel &neighbor_model = library.models[nv];
 
-			const uint32_t current_tile = current_model.model.side_tiles[side];
-			const uint32_t neighbor_tile = neighbor_model.model.side_tiles[side];
+				const uint32_t current_tile = current_model.model.side_tiles[side];
+				const uint32_t neighbor_tile = neighbor_model.model.side_tiles[side];
 
-			if (current_tile == neighbor_tile) {
-				const uint32_t ani = ni + jump.z;
-				const TModelID anv = model_buffer[ani];
-
-				if (anv == air_id || is_face_visible(library, current_model, anv, side)) {
+				if (current_tile == neighbor_tile) {
 					connection_mask |= (1 << i);
 				}
 			}
 		}
-	}
 
-	return connection_mask;
-}
+	} else {
+		for (unsigned int i = 0; i < neighbor_indices.size(); ++i) {
+			const uint32_t ni = neighbor_indices[i];
+			const TModelID nv = model_buffer[ni];
 
-template <typename TModelID>
-uint8_t fetch_connection_mask_connecting_to_culled(
-		const Span<const TModelID> model_buffer,
-		const BakedModel &current_model,
-		const TModelID current_model_index,
-		const uint32_t voxel_index,
-		// How much to move in `model_buffer` in order to go towards +X or +Y in the tile referential (X right Y down).
-		const Vector2i jump,
-		const Cube::Side side,
-		const BakedLibrary &library
-) {
-	// 0 1 2   o---x
-	// 3 x 4   |
-	// 5 6 7   y
-	const std::array<uint32_t, 8> neighbor_indices = { voxel_index - jump.y - jump.x, voxel_index - jump.y,
-													   voxel_index - jump.y + jump.x, voxel_index - jump.x,
-													   voxel_index + jump.x,		  voxel_index + jump.y - jump.x,
-													   voxel_index + jump.y,		  voxel_index + jump.y + jump.x };
+			// Try to check most common cases first
 
-	uint8_t connection_mask = 0;
-	const uint32_t air_id = 0;
+			if (nv == current_model_index) {
+				const uint32_t ani = ni + jump.z;
+				const uint32_t anv = model_buffer[ani];
 
-	for (unsigned int i = 0; i < neighbor_indices.size(); ++i) {
-		const uint32_t ni = neighbor_indices[i];
-		const TModelID nv = model_buffer[ni];
+				if (anv == air_id || is_face_visible(library, current_model, anv, side)) {
+					connection_mask |= (1 << i);
+				}
 
-		// Try to check most common cases first
+			} else if (nv != air_id && nv < library.models.size()) {
+				const BakedModel &neighbor_model = library.models[nv];
 
-		if (nv == current_model_index) {
-			connection_mask |= (1 << i);
+				const uint32_t current_tile = current_model.model.side_tiles[side];
+				const uint32_t neighbor_tile = neighbor_model.model.side_tiles[side];
 
-		} else if (nv != air_id && nv < library.models.size()) {
-			const BakedModel &neighbor_model = library.models[nv];
+				if (current_tile == neighbor_tile) {
+					const uint32_t ani = ni + jump.z;
+					const TModelID anv = model_buffer[ani];
 
-			const uint32_t current_tile = current_model.model.side_tiles[side];
-			const uint32_t neighbor_tile = neighbor_model.model.side_tiles[side];
-
-			if (current_tile == neighbor_tile) {
-				connection_mask |= (1 << i);
+					if (anv == air_id || is_face_visible(library, current_model, anv, side)) {
+						connection_mask |= (1 << i);
+					}
+				}
 			}
 		}
 	}

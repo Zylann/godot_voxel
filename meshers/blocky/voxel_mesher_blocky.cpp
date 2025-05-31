@@ -254,7 +254,8 @@ void generate_mesh(
 										voxel_index,
 										tile_jump,
 										static_cast<Cube::Side>(side),
-										library
+										library,
+										tile.connect_to_covered
 								);
 								const uint32_t case_index = get_case_index_from_connection_mask(connection_mask);
 								ltpos.x = case_index % BLOB9_DEFAULT_LAYOUT_SIZE_X;
