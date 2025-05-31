@@ -1079,7 +1079,6 @@ void VoxelBlockyTextureAtlasEditor::on_texture_rect_gui_input(Ref<InputEvent> ev
 			if (mouse_motion_event.is_valid()) {
 				const Vector2 pos = mouse_motion_event->get_position();
 				const Vector2i posi = Vector2i(pos);
-				const Vector2i ts = _atlas->get_default_tile_resolution();
 				set_hovered_tile_id(_atlas->get_tile_id_at_pixel_position(posi));
 				return;
 			}
