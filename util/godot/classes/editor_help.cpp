@@ -5,7 +5,10 @@ namespace EditorHelpUtility {
 
 String get_method_description(const String &class_name, const String &method_name) {
 #if defined(ZN_GODOT)
-	const DocData::ClassDoc *class_doc = EditorHelp::get_doc(class_name);
+	const DocTools *doc = EditorHelp::get_doc_data();
+	ERR_FAIL_COND_V(doc == nullptr, "<Error>");
+
+	const DocData::ClassDoc *class_doc = doc->class_list.getptr(class_name);
 	if (class_doc == nullptr) {
 		return "<Class not found>";
 	}
