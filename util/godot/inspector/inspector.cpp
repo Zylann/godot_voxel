@@ -1,5 +1,6 @@
 #include "inspector.h"
 #include "../../containers/std_vector.h"
+#include "../classes/editor_help.h"
 #include "../classes/editor_spin_slider.h"
 #include "../classes/editor_undo_redo_manager.h"
 #include "../classes/h_box_container.h"
@@ -130,6 +131,9 @@ void ZN_Inspector::add_indexed_property(
 	p.label = memnew(Label);
 	p.label->set_vertical_alignment(VERTICAL_ALIGNMENT_TOP);
 	p.label->set_text(name + ": ");
+
+	const String description = zylann::godot::EditorHelpUtility::get_method_description(obj->get_class(), p.setter);
+	p.label->set_tooltip_text(description);
 
 	ZN_ASSERT_RETURN(p.control != nullptr);
 	p.control->set_value(value);

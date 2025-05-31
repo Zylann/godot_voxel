@@ -173,6 +173,7 @@ def get_sources(env, is_editor_build):
 
             "util/godot/classes/editor_plugin.cpp",
             "util/godot/classes/editor_file_dialog.cpp",
+            "util/godot/classes/editor_help.cpp",
             "util/godot/classes/editor_import_plugin.cpp",
             "util/godot/classes/editor_inspector_plugin.cpp",
             "util/godot/classes/editor_property.cpp",
