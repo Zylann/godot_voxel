@@ -1096,22 +1096,22 @@ bool VoxelMesherCubes::get_store_colors_in_texture() const {
 	return _parameters.store_colors_in_texture;
 }
 
-Ref<Resource> VoxelMesherCubes::duplicate(bool p_subresources) const {
-	Parameters params;
-	{
-		RWLockRead rlock(_parameters_lock);
-		params = _parameters;
-	}
+// Ref<Resource> VoxelMesherCubes::duplicate(bool p_subresources) const {
+// 	Parameters params;
+// 	{
+// 		RWLockRead rlock(_parameters_lock);
+// 		params = _parameters;
+// 	}
 
-	if (p_subresources && params.palette.is_valid()) {
-		params.palette = params.palette->duplicate(true);
-	}
-	Ref<VoxelMesherCubes> d;
-	d.instantiate();
-	d->_parameters = params;
+// 	if (p_subresources && params.palette.is_valid()) {
+// 		params.palette = params.palette->duplicate(true);
+// 	}
+// 	Ref<VoxelMesherCubes> d;
+// 	d.instantiate();
+// 	d->_parameters = params;
 
-	return d;
-}
+// 	return d;
+// }
 
 int VoxelMesherCubes::get_used_channels_mask() const {
 	return (1 << VoxelBuffer::CHANNEL_COLOR);
