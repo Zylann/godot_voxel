@@ -4,6 +4,7 @@
 #include "../../util/containers/span.h"
 #include "../../util/godot/core/rect2i.h"
 #include "../../util/godot/macros.h"
+#include "blocky_baked_library.h"
 
 ZN_GODOT_FORWARD_DECLARE(class Image);
 
@@ -40,10 +41,14 @@ uint8_t get_case_index_from_connection_mask(const uint8_t cm);
 template <typename TModelID>
 uint8_t fetch_connection_mask(
 		const Span<const TModelID> model_buffer,
-		const uint32_t current_model_index,
+		const BakedModel &current_model,
+		const TModelID current_model_index,
 		const uint32_t voxel_index,
-		// How much to move in `model_buffer` in order to go towards +X or +Y in the tile referential (X right Y down)
-		const Vector2i jump
+		// How much to move in `model_buffer` in order to go towards +X or +Y in the tile referential (X right Y down).
+		// +Z may also be used to check the voxel above.
+		const Vector3i jump,
+		const Cube::Side side,
+		const BakedLibrary &library
 ) {
 	// 0 1 2   o---x
 	// 3 x 4   |
@@ -54,18 +59,82 @@ uint8_t fetch_connection_mask(
 													   voxel_index + jump.y,		  voxel_index + jump.y + jump.x };
 
 	uint8_t connection_mask = 0;
+	const uint32_t air_id = 0;
+
 	for (unsigned int i = 0; i < neighbor_indices.size(); ++i) {
 		const uint32_t ni = neighbor_indices[i];
-		const uint32_t nv = model_buffer[ni];
+		const TModelID nv = model_buffer[ni];
 
-		// TODO If the neighbor face is culled, it should not be considered present
-		// We could add 8 side checks here, but that makes things a lot more expensive.
-		// It raises the question, may we calculate side culling as a previous pass over the chunk?
+		// Try to check most common cases first
 
-		// TODO We might have to check more than just the current model
+		if (nv == current_model_index) {
+			const uint32_t ani = ni + jump.z;
+			const uint32_t anv = model_buffer[ani];
+
+			if (anv == air_id || is_face_visible(library, current_model, anv, side)) {
+				connection_mask |= (1 << i);
+			}
+
+		} else if (nv != air_id && nv < library.models.size()) {
+			const BakedModel &neighbor_model = library.models[nv];
+
+			const uint32_t current_tile = current_model.model.side_tiles[side];
+			const uint32_t neighbor_tile = neighbor_model.model.side_tiles[side];
+
+			if (current_tile == neighbor_tile) {
+				const uint32_t ani = ni + jump.z;
+				const TModelID anv = model_buffer[ani];
+
+				if (anv == air_id || is_face_visible(library, current_model, anv, side)) {
+					connection_mask |= (1 << i);
+				}
+			}
+		}
+	}
+
+	return connection_mask;
+}
+
+template <typename TModelID>
+uint8_t fetch_connection_mask_connecting_to_culled(
+		const Span<const TModelID> model_buffer,
+		const BakedModel &current_model,
+		const TModelID current_model_index,
+		const uint32_t voxel_index,
+		// How much to move in `model_buffer` in order to go towards +X or +Y in the tile referential (X right Y down).
+		const Vector2i jump,
+		const Cube::Side side,
+		const BakedLibrary &library
+) {
+	// 0 1 2   o---x
+	// 3 x 4   |
+	// 5 6 7   y
+	const std::array<uint32_t, 8> neighbor_indices = { voxel_index - jump.y - jump.x, voxel_index - jump.y,
+													   voxel_index - jump.y + jump.x, voxel_index - jump.x,
+													   voxel_index + jump.x,		  voxel_index + jump.y - jump.x,
+													   voxel_index + jump.y,		  voxel_index + jump.y + jump.x };
+
+	uint8_t connection_mask = 0;
+	const uint32_t air_id = 0;
+
+	for (unsigned int i = 0; i < neighbor_indices.size(); ++i) {
+		const uint32_t ni = neighbor_indices[i];
+		const TModelID nv = model_buffer[ni];
+
+		// Try to check most common cases first
 
 		if (nv == current_model_index) {
 			connection_mask |= (1 << i);
+
+		} else if (nv != air_id && nv < library.models.size()) {
+			const BakedModel &neighbor_model = library.models[nv];
+
+			const uint32_t current_tile = current_model.model.side_tiles[side];
+			const uint32_t neighbor_tile = neighbor_model.model.side_tiles[side];
+
+			if (current_tile == neighbor_tile) {
+				connection_mask |= (1 << i);
+			}
 		}
 	}
 

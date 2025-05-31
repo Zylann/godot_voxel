@@ -7,7 +7,8 @@
 #include "../../util/profiling.h"
 // #include "../../util/string/format.h" // DEBUG
 #include "voxel_blocky_model.h"
-#include "voxel_mesher_blocky.h"
+// #include "voxel_mesher_blocky.h"
+#include "blocky_baked_library.h"
 #include <bitset>
 
 namespace zylann::voxel {
@@ -505,7 +506,7 @@ void generate_model_cutout_sides(BakedModel &model_data, const uint16_t model_id
 
 		for (uint16_t side = 0; side < Cube::SIDE_COUNT; ++side) {
 			// Test if the face is totally occluded first
-			if (!is_face_visible(lib, model_data, other_model_id, side)) {
+			if (!is_face_visible(lib, model_data, other_model_id, static_cast<Cube::Side>(side))) {
 				continue;
 			}
 			if (is_face_visible_regardless_of_shape(model_data, other_model_data)) {

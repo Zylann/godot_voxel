@@ -128,15 +128,15 @@ void generate_mesh(
 	corner_neighbor_lut[Cube::CORNER_TOP_FRONT_LEFT] = side_neighbor_lut[Cube::SIDE_TOP] +
 			side_neighbor_lut[Cube::SIDE_FRONT] + side_neighbor_lut[Cube::SIDE_LEFT];
 
-	std::array<Vector2i, 6> tile_jumps_per_side;
+	std::array<Vector3i, 6> tile_jumps_per_side;
 	// Tile coordinates are Y-down.
 	// This depends on side UVs defined in Cube tables
-	tile_jumps_per_side[Cube::SIDE_NEGATIVE_X] = Vector2i(jump.z, -jump.y);
-	tile_jumps_per_side[Cube::SIDE_POSITIVE_X] = Vector2i(-jump.z, -jump.y);
-	tile_jumps_per_side[Cube::SIDE_NEGATIVE_Y] = Vector2i(jump.x, -jump.z);
-	tile_jumps_per_side[Cube::SIDE_POSITIVE_Y] = Vector2i(jump.x, jump.z);
-	tile_jumps_per_side[Cube::SIDE_NEGATIVE_Z] = Vector2i(-jump.x, -jump.y);
-	tile_jumps_per_side[Cube::SIDE_POSITIVE_Z] = Vector2i(jump.x, -jump.y);
+	tile_jumps_per_side[Cube::SIDE_NEGATIVE_X] = Vector3i(jump.z, -jump.y, -jump.x);
+	tile_jumps_per_side[Cube::SIDE_POSITIVE_X] = Vector3i(-jump.z, -jump.y, jump.x);
+	tile_jumps_per_side[Cube::SIDE_NEGATIVE_Y] = Vector3i(jump.x, -jump.z, -jump.y);
+	tile_jumps_per_side[Cube::SIDE_POSITIVE_Y] = Vector3i(jump.x, jump.z, jump.y);
+	tile_jumps_per_side[Cube::SIDE_NEGATIVE_Z] = Vector3i(-jump.x, -jump.y, -jump.z);
+	tile_jumps_per_side[Cube::SIDE_POSITIVE_Z] = Vector3i(jump.x, -jump.y, jump.z);
 
 	// uint64_t time_prep = Time::get_singleton()->get_ticks_usec() - time_before;
 	// time_before = Time::get_singleton()->get_ticks_usec();
@@ -148,7 +148,7 @@ void generate_mesh(
 				// check
 
 				const unsigned int voxel_index = y + x * row_size + z * deck_size;
-				const unsigned int voxel_id = type_buffer[voxel_index];
+				const Type_T voxel_id = type_buffer[voxel_index];
 
 				// TODO Don't assume air is 0?
 				if (voxel_id == AIR_ID || !library.has_model(voxel_id)) {
@@ -168,19 +168,9 @@ void generate_mesh(
 
 					const uint32_t neighbor_voxel_id = type_buffer[voxel_index + side_neighbor_lut[side]];
 
-					// Invalid voxels are treated like air
-					if (neighbor_voxel_id < library.models.size()) {
-						const BakedModel &other_vt = library.models[neighbor_voxel_id];
-						if (!is_face_visible_regardless_of_shape(voxel, other_vt)) {
-							// Visibility depends on the shape
-							if (!is_face_visible_according_to_shape(library, voxel, other_vt, side)) {
-								// Completely occluded
-								continue;
-							}
-						}
+					if (is_face_visible(library, voxel, neighbor_voxel_id, static_cast<Cube::Side>(side))) {
+						visible_sides_mask |= (1 << side);
 					}
-
-					visible_sides_mask |= (1 << side);
 				}
 
 				uint8_t model_surface_count = model.surface_count;
@@ -227,7 +217,7 @@ void generate_mesh(
 					const uint16_t tile_index = model.side_tiles[side];
 					if (tile_index != std::numeric_limits<uint16_t>::max()) {
 						// Note: tiles we handle here are expected to be non-single.
-						// Single tiles may bake into regular surfaces.
+						// Single tiles are suppoed to bake into regular surfaces.
 
 						// Tile orientation:
 						// - -X, +X, -Z, +Z sides: Y up, X right
@@ -256,9 +246,16 @@ void generate_mesh(
 								break;
 
 							case TILE_BLOB9: {
-								const Vector2i tile_jump = tile_jumps_per_side[side];
-								const uint32_t connection_mask =
-										fetch_connection_mask(type_buffer, voxel_id, voxel_index, tile_jump);
+								const Vector3i tile_jump = tile_jumps_per_side[side];
+								const uint32_t connection_mask = fetch_connection_mask(
+										type_buffer,
+										voxel,
+										voxel_id,
+										voxel_index,
+										tile_jump,
+										static_cast<Cube::Side>(side),
+										library
+								);
 								const uint32_t case_index = get_case_index_from_connection_mask(connection_mask);
 								ltpos.x = case_index % BLOB9_DEFAULT_LAYOUT_SIZE_X;
 								ltpos.y = case_index / BLOB9_DEFAULT_LAYOUT_SIZE_X;
