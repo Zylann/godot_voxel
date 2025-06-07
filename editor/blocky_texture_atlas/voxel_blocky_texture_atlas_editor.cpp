@@ -783,6 +783,10 @@ void VoxelBlockyTextureAtlasEditor::on_context_menu_id_pressed(int id) {
 		} break;
 
 		case MENU_GENERATE_FROM_COMPACT5: {
+			// Reset in case we selected another tile
+			if (_blob9_gen.container->is_visible()) {
+				close_blob9_gen();
+			}
 			open_blob9_gen();
 		} break;
 
