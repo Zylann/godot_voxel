@@ -48,6 +48,18 @@
 				Tells if the voxel engine is able to create graphics resources from different threads. This will usually be true if the current renderer's thread model is safe or multi-threaded, but might also be false if the renderer would poorly benefit from this (such as legacy OpenGL).
 			</description>
 		</method>
+		<method name="get_version_edition" qualifiers="const">
+			<return type="String" />
+			<description>
+				Tells the edition of the voxel engine, which is either of the following: [code]module[/code], [code]extension[/code]
+			</description>
+		</method>
+		<method name="get_version_git_hash" qualifiers="const">
+			<return type="String" />
+			<description>
+				Gets the Git hash that was used to compile the voxel engine.
+			</description>
+		</method>
 		<method name="get_version_major" qualifiers="const">
 			<return type="int" />
 			<description>
@@ -64,6 +76,18 @@
 			<return type="int" />
 			<description>
 				Gets the patch version number of the voxel engine. For example, in [code]1.2.0[/code], [code]0[/code] is the patch version.
+			</description>
+		</method>
+		<method name="get_version_status" qualifiers="const">
+			<return type="String" />
+			<description>
+				Gets the version status, which may be one of the following: [code]dev[/code], [code]release[/code]
+			</description>
+		</method>
+		<method name="get_version_v" qualifiers="const">
+			<return type="Vector3i" />
+			<description>
+				Gets the major (x), minor (y) and patch (z) version numbers of the voxel engine as a single vector. May be useful for comparisons.
 			</description>
 		</method>
 		<method name="run_tests">

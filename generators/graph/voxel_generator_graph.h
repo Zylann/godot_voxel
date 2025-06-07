@@ -30,6 +30,15 @@ class VoxelGeneratorGraph : public VoxelGenerator {
 public:
 	static const char *SIGNAL_NODE_NAME_CHANGED;
 
+	// Selects the format produced by texture outputs
+	enum TextureMode {
+		// Voxels contain 4 indices and 4 weights encoded in 16-bit channels INDICES and WEIGHTS
+		TEXTURE_MODE_MIXEL4,
+		// Voxels contain 1 index in 8-bit channel INDICES
+		TEXTURE_MODE_SINGLE,
+		TEXTURE_MODE_COUNT
+	};
+
 	VoxelGeneratorGraph();
 	~VoxelGeneratorGraph();
 
@@ -57,6 +66,9 @@ public:
 
 	void set_use_xz_caching(bool enabled);
 	bool is_using_xz_caching() const;
+
+	void set_texture_mode(const TextureMode mode);
+	TextureMode get_texture_mode() const;
 
 	// VoxelGenerator implementation
 
@@ -97,8 +109,13 @@ public:
 	pg::CompilationResult compile(bool debug);
 	bool is_good() const;
 
-	void generate_set(Span<float> in_x, Span<float> in_y, Span<float> in_z);
-	void generate_series(Span<float> in_x, Span<float> in_y, Span<float> in_z, Span<float> in_sdf);
+	void generate_set(Span<const float> in_x, Span<const float> in_y, Span<const float> in_z);
+	void generate_series(
+			Span<const float> in_x,
+			Span<const float> in_y,
+			Span<const float> in_z,
+			Span<const float> in_sdf
+	);
 
 	// Returns state from the last generator used in the current thread
 	static const pg::Runtime::State &get_last_state_from_current_thread();
@@ -107,6 +124,7 @@ public:
 	bool try_get_output_port_address(ProgramGraph::PortLocation port, uint32_t &out_address) const;
 	int get_sdf_output_port_address() const;
 
+#ifdef VOXEL_ENABLE_GPU
 	// GPU support
 
 	bool supports_shaders() const override {
@@ -115,6 +133,7 @@ public:
 	}
 
 	bool get_shader_source(ShaderSourceData &out_data) const override;
+#endif
 
 	// Debug
 
@@ -156,14 +175,15 @@ private:
 		unsigned int output_buffer_index;
 	};
 
-	static void gather_indices_and_weights(
+	static void gather_texturing_data_from_weight_outputs(
 			Span<const WeightOutput> weight_outputs,
 			const pg::Runtime::State &state,
-			Vector3i rmin,
-			Vector3i rmax,
-			int ry,
+			const Vector3i rmin,
+			const Vector3i rmax,
+			const int ry,
 			VoxelBuffer &out_voxel_buffer,
-			FixedArray<uint8_t, 4> spare_indices
+			const FixedArray<uint8_t, 4> spare_indices,
+			const TextureMode mode
 	);
 
 	static void _bind_methods();
@@ -190,6 +210,7 @@ private:
 	bool _use_xz_caching = true;
 	// If true, inverts clipped blocks so they create visual artifacts making the clipped area visible.
 	bool _debug_clipped_blocks = false;
+	TextureMode _texture_mode = TEXTURE_MODE_MIXEL4;
 
 	// Only compiling and generation methods are thread-safe.
 
@@ -244,7 +265,7 @@ private:
 			input_count = runtime_wrapper.runtime.get_input_count();
 		}
 
-		inline Span<T> get() {
+		inline Span<const T> get() {
 			return to_span(query_inputs, input_count);
 		}
 	};
@@ -267,5 +288,7 @@ private:
 };
 
 } // namespace zylann::voxel
+
+VARIANT_ENUM_CAST(zylann::voxel::VoxelGeneratorGraph::TextureMode)
 
 #endif // VOXEL_GENERATOR_GRAPH_H

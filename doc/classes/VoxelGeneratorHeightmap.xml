@@ -21,5 +21,8 @@
 		<member name="iso_scale" type="float" setter="set_iso_scale" getter="get_iso_scale" default="1.0">
 			Scale applied to the signed distance field when using a smooth terrain configuration.
 		</member>
+		<member name="offset" type="Vector2i" setter="set_offset" getter="get_offset" default="Vector2i(0, 0)">
+			Offsets height generation along the X and Z axes.
+		</member>
 	</members>
 </class>

@@ -14,21 +14,36 @@ namespace zylann::math {
 static const int ORTHOGONAL_BASIS_COUNT = 24;
 static const int ORTHOGONAL_BASIS_IDENTITY_INDEX = 0;
 
-typedef Vector3T<int8_t> Vector3i8;
-
-// TODO Not sure if I should just wrap Basis instead of rewriting it with 8-bit members...
-
 // Basis where every axis is a unit vector pointing at either -X, +X, -Y, +Y, -Z or +Z, and every axis is perpendicular
 // to each other.
 // There is no loss of precision when operating such basis, and equality comparison can be used safely.
 struct OrthoBasis {
 	// Axes
-	Vector3i8 x;
-	Vector3i8 y;
-	Vector3i8 z;
+	Vector3i x;
+	Vector3i y;
+	Vector3i z;
 
 	OrthoBasis() : x(1, 0, 0), y(0, 1, 0), z(0, 0, 1) {}
-	OrthoBasis(Vector3i8 p_x, Vector3i8 p_y, Vector3i8 p_z) : x(p_x), y(p_y), z(p_z) {}
+	OrthoBasis(Vector3i p_x, Vector3i p_y, Vector3i p_z) : x(p_x), y(p_y), z(p_z) {}
+
+	static OrthoBasis from_axis_turns(const Vector3i::Axis axis, const int turns);
+
+	bool is_orthonormal() const;
+
+	Vector3i get_axis(const int i) const {
+		// TODO Optimization: could use a union with an array
+		switch (i) {
+			case Vector3i::AXIS_X:
+				return x;
+			case Vector3i::AXIS_Y:
+				return y;
+			case Vector3i::AXIS_Z:
+				return z;
+			default:
+				ZN_CRASH();
+		}
+		return Vector3i();
+	}
 
 	inline bool operator==(const OrthoBasis &other) const {
 		return x == other.x && y == other.y && z == other.z;
@@ -57,10 +72,6 @@ struct OrthoBasis {
 	}
 
 	inline Vector3i xform(const Vector3i p) const {
-		return p.x * to_vec3i(x) + p.y * to_vec3i(y) + p.z * to_vec3i(z);
-	}
-
-	inline Vector3i8 xform(const Vector3i8 p) const {
 		return p.x * x + p.y * y + p.z * z;
 	}
 
@@ -104,8 +115,8 @@ struct OrthoBasis {
 		z = math::rotate_z_90_ccw(z);
 	}
 
-	void rotate_90(Axis axis, bool clockwise) {
-		zylann::math::rotate_90(Span<Vector3i8>(&x, 3), axis, clockwise);
+	void rotate_90(const Axis axis, const bool clockwise) {
+		zylann::math::rotate_90(Span<Vector3i>(&x, 3), axis, clockwise);
 	}
 };
 

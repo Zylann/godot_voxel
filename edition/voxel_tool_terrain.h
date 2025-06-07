@@ -17,8 +17,12 @@ public:
 	VoxelToolTerrain(VoxelTerrain *terrain);
 
 	bool is_area_editable(const Box3i &box) const override;
-	Ref<VoxelRaycastResult> raycast(Vector3 p_pos, Vector3 p_dir, float p_max_distance, uint32_t p_collision_mask)
-			override;
+	Ref<VoxelRaycastResult> raycast(
+			Vector3 p_pos,
+			Vector3 p_dir,
+			float p_max_distance,
+			uint32_t p_collision_mask
+	) override;
 
 	void set_voxel_metadata(Vector3i pos, Variant meta) override;
 	Variant get_voxel_metadata(Vector3i pos) const override;
@@ -46,6 +50,9 @@ public:
 	void do_box(Vector3i begin, Vector3i end) override;
 	void do_sphere(Vector3 center, float radius) override;
 	void do_path(Span<const Vector3> positions, Span<const float> radii) override;
+#ifdef VOXEL_ENABLE_MESH_SDF
+	void do_mesh(const VoxelMeshSDF &mesh_sdf, const Transform3D &transform, const float isolevel) override;
+#endif
 
 	// Specialized API
 
@@ -54,6 +61,8 @@ public:
 	void run_blocky_random_tick(AABB voxel_area, int voxel_count, const Callable &callback, int block_batch_count);
 
 	void for_each_voxel_metadata_in_area(AABB voxel_area, const Callable &callback);
+
+	VoxelFormat get_format() const override;
 
 protected:
 	uint64_t _get_voxel(Vector3i pos) const override;

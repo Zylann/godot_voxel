@@ -23,6 +23,22 @@ ICustomVoxelMetadata *VoxelMetadataVariant::duplicate() {
 	return d;
 }
 
+uint8_t VoxelMetadataVariant::get_type_index() const {
+	return METADATA_TYPE_VARIANT;
+}
+
+bool VoxelMetadataVariant::equals(const ICustomVoxelMetadata &other) const {
+	if (other.get_type_index() != get_type_index()) {
+		return false;
+	}
+#ifdef DEBUG_ENABLED
+	ZN_ASSERT(dynamic_cast<const VoxelMetadataVariant *>(&other) != nullptr);
+#endif
+	const VoxelMetadataVariant &other_v = static_cast<const VoxelMetadataVariant &>(other);
+	// TODO Implement deep comparison?
+	return data == other_v.data;
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 Variant get_as_variant(const VoxelMetadata &meta) {

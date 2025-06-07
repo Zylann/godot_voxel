@@ -112,6 +112,8 @@ public:
 	StringName density;
 	StringName noise_dimension;
 	StringName noise_on_scale;
+
+	StringName add_child;
 };
 
 } // namespace zylann::voxel

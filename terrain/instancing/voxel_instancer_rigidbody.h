@@ -41,6 +41,8 @@ public:
 	// 	//...
 	// }
 
+	void queue_free_and_notify_instancer();
+
 protected:
 	static void _bind_methods();
 

@@ -63,6 +63,16 @@ float VoxelGeneratorHeightmap::get_iso_scale() const {
 	return _parameters.iso_scale;
 }
 
+void VoxelGeneratorHeightmap::set_offset(const Vector2i offset) {
+	RWLockWrite wlock(_parameters_lock);
+	_parameters.offset = offset;
+}
+
+Vector2i VoxelGeneratorHeightmap::get_offset() const {
+	RWLockRead rlock(_parameters_lock);
+	return _parameters.offset;
+}
+
 void VoxelGeneratorHeightmap::_b_set_channel(godot::VoxelBuffer::ChannelId p_channel) {
 	set_channel(VoxelBuffer::ChannelId(p_channel));
 }
@@ -84,6 +94,9 @@ void VoxelGeneratorHeightmap::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_iso_scale", "scale"), &VoxelGeneratorHeightmap::set_iso_scale);
 	ClassDB::bind_method(D_METHOD("get_iso_scale"), &VoxelGeneratorHeightmap::get_iso_scale);
 
+	ClassDB::bind_method(D_METHOD("set_offset", "offset"), &VoxelGeneratorHeightmap::set_offset);
+	ClassDB::bind_method(D_METHOD("get_offset"), &VoxelGeneratorHeightmap::get_offset);
+
 	ADD_PROPERTY(
 			PropertyInfo(Variant::INT, "channel", PROPERTY_HINT_ENUM, godot::VoxelBuffer::CHANNEL_ID_HINT_STRING),
 			"set_channel",
@@ -91,6 +104,9 @@ void VoxelGeneratorHeightmap::_bind_methods() {
 	);
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "height_start"), "set_height_start", "get_height_start");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "height_range"), "set_height_range", "get_height_range");
+
+	ADD_PROPERTY(PropertyInfo(Variant::VECTOR2I, "offset"), "set_offset", "get_offset");
+
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "iso_scale"), "set_iso_scale", "get_iso_scale");
 }
 

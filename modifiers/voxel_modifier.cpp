@@ -9,9 +9,13 @@ void VoxelModifier::set_transform(Transform3D t) {
 		return;
 	}
 	_transform = t;
+#ifdef VOXEL_ENABLE_GPU
 	_shader_data_need_update = true;
+#endif
 	update_aabb();
 }
+
+#ifdef VOXEL_ENABLE_GPU
 
 RID VoxelModifier::get_detail_shader(const BaseGPUResources &base_resources, const Type type) {
 	switch (type) {
@@ -36,5 +40,7 @@ RID VoxelModifier::get_block_shader(const BaseGPUResources &base_resources, cons
 			return RID();
 	}
 }
+
+#endif
 
 } // namespace zylann::voxel

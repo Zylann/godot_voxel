@@ -1058,7 +1058,7 @@ CompilationResult expand_functions(ProgramGraph &graph, const NodeTypeDB &type_d
 	return result;
 }
 
-void remove_relay(ProgramGraph &graph, uint32_t node_id, GraphRemappingInfo *remap_info) {
+void remove_relay(ProgramGraph &graph, const uint32_t node_id, GraphRemappingInfo *remap_info) {
 	const ProgramGraph::Node &node = graph.get_node(node_id);
 	ZN_ASSERT(node.inputs.size() == 1);
 	ZN_ASSERT(node.outputs.size() == 1);
@@ -1080,6 +1080,7 @@ void remove_relay(ProgramGraph &graph, uint32_t node_id, GraphRemappingInfo *rem
 		graph.remove_node(node_id);
 		return;
 	}
+
 	ZN_ASSERT(node_input.connections.size() == 1);
 	const ProgramGraph::PortLocation src = node_input.connections[0];
 
@@ -1110,6 +1111,8 @@ void remove_relay(ProgramGraph &graph, uint32_t node_id, GraphRemappingInfo *rem
 			}
 		}
 	}
+
+	graph.remove_node(node_id);
 }
 
 void remove_relays(ProgramGraph &graph, GraphRemappingInfo *remap_info) {

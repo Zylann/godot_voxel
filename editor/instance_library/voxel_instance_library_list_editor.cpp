@@ -171,7 +171,7 @@ void VoxelInstanceLibraryListEditor::on_button_pressed(int button_id) {
 			break;
 
 		case BUTTON_ADD_SCENE_ITEM:
-			_open_scene_dialog->popup_centered_ratio();
+			zylann::godot::popup_file_dialog(*_open_scene_dialog);
 			break;
 
 		case BUTTON_REMOVE_ITEM: {

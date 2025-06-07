@@ -13,7 +13,10 @@ public:
 	void set_radius(float radius);
 	float get_radius() const;
 	void apply(VoxelModifierContext ctx) const override;
+
+#ifdef VOXEL_ENABLE_GPU
 	void get_shader_data(ShaderData &out_shader_data) override;
+#endif
 
 protected:
 	void update_aabb() override;

@@ -5,7 +5,8 @@
 #include "../util/dstack.h"
 #include "../util/profiling.h"
 #include "../util/string/format.h"
-#include "materials_4i4w.h"
+#include "mixel4.h"
+#include "voxel_format.h"
 #include "voxel_memory_pool.h"
 #include <cstring>
 
@@ -121,29 +122,79 @@ inline real_t raw_voxel_to_real(uint64_t value, VoxelBuffer::Depth depth) {
 	}
 }
 
-namespace {
-const uint64_t g_default_values[VoxelBuffer::MAX_CHANNELS] = {
-	0, // TYPE
-
-	// Casted explicitly to avoid warning about narrowing conversion, the intent is to store all bits of the value
-	// as-is in a type that can store them all. The interpretation of the type is meaningless (depends on its use). It
-	// should be possible to cast it back to the actual type with no loss of data, as long as all bits are preserved.
-	uint16_t(snorm_to_s16(1.f)), // SDF
-
-	0, // COLOR
-
-	encode_indices_to_packed_u16(0, 1, 2, 3), // INDICES
-	encode_weights_to_packed_u16_lossy(255, 0, 0, 0), // WEIGHTS
-
-	0,
-	0,
-	0 //
-};
+const char *VoxelBuffer::get_channel_name(const ChannelId id) {
+	switch (id) {
+		case CHANNEL_TYPE:
+			return "type";
+		case CHANNEL_SDF:
+			return "sdf";
+		case CHANNEL_COLOR:
+			return "color";
+		case CHANNEL_INDICES:
+			return "indices";
+		case CHANNEL_WEIGHTS:
+			return "weights";
+		case CHANNEL_DATA5:
+			return "data5";
+		case CHANNEL_DATA6:
+			return "data6";
+		case CHANNEL_DATA7:
+			return "data7";
+		default:
+			ZN_PRINT_ERROR("Unknown channel ID");
+			return "<error>";
+	}
 }
 
-uint64_t VoxelBuffer::get_default_value_static(unsigned int channel_index) {
-	ZN_ASSERT(channel_index < MAX_CHANNELS);
-	return g_default_values[channel_index];
+// Casted explicitly to avoid warning about narrowing conversion, the intent is to store all bits of the value
+// as-is in a type that can store them all. The interpretation of the type is meaningless (depends on its use). It
+// should be possible to cast it back to the actual type with no loss of data, as long as all bits are preserved.
+static constexpr uint16_t DEFAULT_RAW_SDF_16BIT = uint16_t(snorm_to_s16(1.f));
+
+static constexpr uint16_t MIXEL4_DEFAULT_INDICES = mixel4::encode_indices_to_packed_u16(0, 1, 2, 3);
+static constexpr uint16_t MIXEL4_DEFAULT_WEIGHTS = mixel4::encode_weights_to_packed_u16_lossy(255, 0, 0, 0);
+
+uint64_t VoxelBuffer::get_default_raw_value(const VoxelBuffer::ChannelId channel, const VoxelBuffer::Depth depth) {
+	switch (channel) {
+		case CHANNEL_TYPE:
+			return 0;
+		case CHANNEL_SDF:
+			return get_default_sdf_raw_value(depth);
+		case CHANNEL_COLOR:
+			return 0;
+		case CHANNEL_INDICES:
+			return get_default_indices_raw_value(depth);
+		case CHANNEL_WEIGHTS:
+			return MIXEL4_DEFAULT_WEIGHTS;
+		default:
+			return 0;
+	}
+}
+
+uint64_t VoxelBuffer::get_default_sdf_raw_value(const Depth depth) {
+	switch (depth) {
+		case DEPTH_8_BIT:
+			return uint8_t(snorm_to_s8(1.f));
+		case DEPTH_16_BIT:
+			return uint16_t(snorm_to_s16(1.f));
+		case DEPTH_32_BIT:
+			return constants::SDF_FAR_OUTSIDE;
+		default:
+			ZN_PRINT_ERROR("Unsupported depth");
+			return 0;
+	}
+}
+
+uint64_t VoxelBuffer::get_default_indices_raw_value(const Depth depth) {
+	switch (depth) {
+		case DEPTH_8_BIT:
+			return 0;
+		case DEPTH_16_BIT:
+			return MIXEL4_DEFAULT_INDICES;
+		default:
+			ZN_PRINT_ERROR("Unsupported depth");
+			return 0;
+	}
 }
 
 // VoxelBuffer::VoxelBuffer() {
@@ -172,13 +223,13 @@ void VoxelBuffer::init_channel_defaults() {
 
 	// 16-bit is better on average to handle large worlds
 	_channels[CHANNEL_SDF].depth = DEFAULT_SDF_CHANNEL_DEPTH;
-	_channels[CHANNEL_SDF].defval = g_default_values[CHANNEL_SDF];
+	_channels[CHANNEL_SDF].defval = DEFAULT_RAW_SDF_16BIT;
 
-	_channels[CHANNEL_INDICES].depth = DEPTH_16_BIT;
-	_channels[CHANNEL_INDICES].defval = g_default_values[CHANNEL_INDICES];
+	_channels[CHANNEL_INDICES].depth = DEFAULT_INDICES_CHANNEL_DEPTH;
+	_channels[CHANNEL_INDICES].defval = MIXEL4_DEFAULT_INDICES;
 
-	_channels[CHANNEL_WEIGHTS].depth = DEPTH_16_BIT;
-	_channels[CHANNEL_WEIGHTS].defval = g_default_values[CHANNEL_WEIGHTS];
+	_channels[CHANNEL_WEIGHTS].depth = DEFAULT_WEIGHTS_CHANNEL_DEPTH;
+	_channels[CHANNEL_WEIGHTS].defval = MIXEL4_DEFAULT_WEIGHTS;
 }
 
 VoxelBuffer &VoxelBuffer::operator=(VoxelBuffer &&src) {
@@ -186,14 +237,14 @@ VoxelBuffer &VoxelBuffer::operator=(VoxelBuffer &&src) {
 	return *this;
 }
 
-void VoxelBuffer::create(unsigned int sx, unsigned int sy, unsigned int sz) {
+void VoxelBuffer::create(unsigned int sx, unsigned int sy, unsigned int sz, const VoxelFormat *new_format) {
 	ZN_DSTACK();
 	ZN_ASSERT_RETURN(sx <= MAX_SIZE && sy <= MAX_SIZE && sz <= MAX_SIZE);
 
 	// Always clear everything even if size doesn't change, because at least we want to start from default.
 	// If one day we really want some hypothetic performance trying to re-use previously allocated data,
 	// we could add a `create_no_reset` method.
-	clear();
+	clear(new_format);
 
 #ifdef TOOLS_ENABLED
 	if (sx == 0 || sy == 0 || sz == 0) {
@@ -214,11 +265,11 @@ void VoxelBuffer::create(unsigned int sx, unsigned int sy, unsigned int sz) {
 	// _allocator = allocator;
 }
 
-void VoxelBuffer::create(Vector3i size) {
-	create(size.x, size.y, size.z);
+void VoxelBuffer::create(const Vector3i size, const VoxelFormat *new_format) {
+	create(size.x, size.y, size.z, new_format);
 }
 
-void VoxelBuffer::clear() {
+void VoxelBuffer::clear(const VoxelFormat *new_format) {
 	for (unsigned int channel_index = 0; channel_index < MAX_CHANNELS; ++channel_index) {
 		Channel &channel = _channels[channel_index];
 		if (channel.compression != COMPRESSION_UNIFORM) {
@@ -227,9 +278,23 @@ void VoxelBuffer::clear() {
 #ifdef DEV_ENABLED
 		ZN_ASSERT(channel.compression == COMPRESSION_UNIFORM);
 #endif
-		// Reset voxel values to defaults
-		channel.defval = g_default_values[channel_index];
 	}
+
+	if (new_format != nullptr) {
+		for (unsigned int ci = 0; ci < new_format->depths.size(); ++ci) {
+			_channels[ci].depth = new_format->depths[ci];
+		}
+	}
+
+	_channels[CHANNEL_TYPE].defval = 0;
+	_channels[CHANNEL_SDF].defval = get_default_sdf_raw_value(_channels[CHANNEL_SDF].depth);
+	_channels[CHANNEL_COLOR].defval = 0;
+	_channels[CHANNEL_INDICES].defval = get_default_indices_raw_value(_channels[CHANNEL_INDICES].depth);
+	_channels[CHANNEL_WEIGHTS].defval = MIXEL4_DEFAULT_WEIGHTS;
+	_channels[CHANNEL_DATA5].defval = 0;
+	_channels[CHANNEL_DATA6].defval = 0;
+	_channels[CHANNEL_DATA7].defval = 0;
+
 	_size = Vector3i();
 	clear_voxel_metadata();
 }
@@ -253,10 +318,13 @@ void VoxelBuffer::clear_channel_f(unsigned int channel_index, real_t clear_value
 	clear_channel(channel_index, real_to_raw_voxel(clear_value, channel.depth));
 }
 
-void VoxelBuffer::set_default_values(FixedArray<uint64_t, VoxelBuffer::MAX_CHANNELS> values) {
-	for (unsigned int i = 0; i < MAX_CHANNELS; ++i) {
-		_channels[i].defval = values[i];
+bool VoxelBuffer::has_format(const VoxelFormat &p_format) const {
+	for (unsigned int ci = 0; ci < p_format.depths.size(); ++ci) {
+		if (_channels[ci].depth != p_format.depths[ci]) {
+			return false;
+		}
 	}
+	return true;
 }
 
 uint64_t VoxelBuffer::get_voxel(int x, int y, int z, unsigned int channel_index) const {
@@ -890,6 +958,26 @@ bool VoxelBuffer::equals(const VoxelBuffer &p_other) const {
 		}
 	}
 
+	if (_voxel_metadata.size() != p_other._voxel_metadata.size()) {
+		return false;
+	}
+
+	for (unsigned int i = 0; i < _voxel_metadata.size(); ++i) {
+		const Vector3i key = _voxel_metadata.get_key_at_index(i);
+		const Vector3i other_key = p_other._voxel_metadata.get_key_at_index(i);
+
+		if (key != other_key) {
+			return false;
+		}
+
+		const VoxelMetadata &meta = _voxel_metadata.get_value_at_index(i);
+		const VoxelMetadata &other_meta = _voxel_metadata.get_value_at_index(i);
+
+		if (!meta.equals(other_meta)) {
+			return false;
+		}
+	}
+
 	return true;
 }
 
@@ -982,6 +1070,76 @@ void VoxelBuffer::get_range_f(float &out_min, float &out_max, ChannelId channel_
 	const float q = get_sdf_quantization_scale(channel.depth);
 	out_min = min_value * q;
 	out_max = max_value * q;
+}
+
+inline bool is_orthogonal_to(const Vector3i a, const Vector3i b) {
+	return math::dot(a, b) == 0;
+}
+
+template <typename T>
+Vector3i transform_channel(
+		Span<T> channel_data,
+		const Vector3i src_size,
+		const math::OrthoBasis &basis,
+		Vector3i &out_trans_origin
+) {
+	// TODO Candidate for temp allocator
+	StdVector<T> temp;
+	temp.resize(channel_data.size());
+	Span<T> temp_s = to_span(temp);
+	const Vector3i transformed_size =
+			transform_3d_array_zxy(channel_data.to_const(), temp_s, src_size, basis, &out_trans_origin);
+	temp_s.copy_to(channel_data);
+	return transformed_size;
+}
+
+void VoxelBuffer::transform(const math::OrthoBasis &basis) {
+	ZN_ASSERT_RETURN(basis.is_orthonormal());
+
+	if (Vector3iUtil::is_empty_size(_size)) {
+		return;
+	}
+
+	const size_t volume = get_volume();
+	Vector3i trans_origin;
+
+	for (Channel &channel : _channels) {
+		if (channel.compression == VoxelBuffer::COMPRESSION_UNIFORM) {
+			continue;
+		}
+#ifdef DEV_ENABLED
+		ZN_ASSERT(channel.data != nullptr);
+#endif
+		switch (channel.depth) {
+			case VoxelBuffer::DEPTH_8_BIT:
+				_size = transform_channel<uint8_t>(Span<uint8_t>(channel.data, volume), _size, basis, trans_origin);
+				break;
+			case VoxelBuffer::DEPTH_16_BIT:
+				_size = transform_channel<uint16_t>(
+						Span<uint16_t>(reinterpret_cast<uint16_t *>(channel.data), volume), _size, basis, trans_origin
+				);
+				break;
+			case VoxelBuffer::DEPTH_32_BIT:
+				_size = transform_channel<uint32_t>(
+						Span<uint32_t>(reinterpret_cast<uint32_t *>(channel.data), volume), _size, basis, trans_origin
+				);
+				break;
+			case VoxelBuffer::DEPTH_64_BIT:
+				_size = transform_channel<uint64_t>(
+						Span<uint64_t>(reinterpret_cast<uint64_t *>(channel.data), volume), _size, basis, trans_origin
+				);
+				break;
+			default:
+				ZN_CRASH();
+				break;
+		}
+	}
+
+	if (_voxel_metadata.size() > 0) {
+		_voxel_metadata.remap_keys_unchecked([basis, trans_origin](Vector3i pos) {
+			return trans_origin + basis.xform(pos);
+		});
+	}
 }
 
 const VoxelMetadata *VoxelBuffer::get_voxel_metadata(Vector3i pos) const {
@@ -1099,6 +1257,18 @@ void VoxelBuffer::copy_voxel_metadata(const VoxelBuffer &src_buffer) {
 
 	_block_metadata.copy_from(src_buffer._block_metadata);
 }
+
+#ifdef VOXEL_TESTS
+
+void VoxelBuffer::check_voxel_metadata_integrity() const {
+	for (FlatMapMoveOnly<Vector3i, VoxelMetadata>::ConstIterator it = _voxel_metadata.begin();
+		 it != _voxel_metadata.end();
+		 ++it) {
+		ZN_ASSERT(is_position_valid(it->key));
+	}
+}
+
+#endif
 
 void get_unscaled_sdf(const VoxelBuffer &voxels, Span<float> sdf) {
 	ZN_PROFILE_SCOPE();
@@ -1318,10 +1488,15 @@ void paste_src_masked(
 	}
 
 	if (with_metadata) {
-		dst_buffer.erase_voxel_metadata_if([dst_box, &src_buffer, src_mask_channel, src_mask_value](
+		dst_buffer.erase_voxel_metadata_if([dst_box, &src_buffer, src_mask_channel, src_mask_value, dst_base_pos](
 												   const FlatMapMoveOnly<Vector3i, VoxelMetadata>::Pair &p
 										   ) {
-			return dst_box.contains(p.key) && src_buffer.get_voxel(p.key, src_mask_channel) != src_mask_value;
+			if (!dst_box.contains(p.key)) {
+				return false;
+			}
+			const Vector3i src_pos = p.key - dst_base_pos;
+			const uint32_t src_v = src_buffer.get_voxel(src_pos, src_mask_channel);
+			return src_v != src_mask_value;
 		});
 
 		const Box3i src_box(dst_box.position - dst_base_pos, dst_box.size);
@@ -1408,16 +1583,25 @@ void paste_src_masked_dst_predicate(
 	}
 
 	if (with_metadata) {
-		dst_buffer.erase_voxel_metadata_if(
-				[&src_buffer, src_mask_channel, src_mask_value, dst_box, &dst_buffer, dst_mask_channel, &dst_predicate](
-						const FlatMapMoveOnly<Vector3i, VoxelMetadata>::Pair &p
-				) {
-					//
-					return dst_box.contains(p.key) //
-							&& src_buffer.get_voxel(p.key, src_mask_channel) != src_mask_value //
-							&& dst_predicate(dst_buffer.get_voxel(p.key, dst_mask_channel));
-				}
-		);
+		dst_buffer.erase_voxel_metadata_if([&src_buffer,
+											src_mask_channel,
+											src_mask_value,
+											dst_box,
+											&dst_buffer,
+											dst_base_pos,
+											dst_mask_channel,
+											&dst_predicate](const FlatMapMoveOnly<Vector3i, VoxelMetadata>::Pair &p) {
+			if (!dst_box.contains(p.key)) {
+				return false;
+			}
+			const Vector3i src_pos = p.key - dst_base_pos;
+			const uint32_t src_v = src_buffer.get_voxel(src_pos, src_mask_channel);
+			if (src_v == src_mask_value) {
+				return false;
+			}
+			const uint32_t dst_v = dst_buffer.get_voxel(p.key, dst_mask_channel);
+			return dst_predicate(dst_v);
+		});
 
 		const Box3i src_box(dst_box.position - dst_base_pos, dst_box.size);
 

@@ -53,11 +53,11 @@ public:
 
 	// TODO GDX: Resource::duplicate() cannot be overriden (while it can in modules).
 	// This will lead to performance degradation and maybe unexpected behavior
-#if defined(ZN_GODOT)
-	Ref<Resource> duplicate(bool p_subresources = false) const override;
-#elif defined(ZN_GODOT_EXTENSION)
-	Ref<Resource> duplicate(bool p_subresources = false) const;
-#endif
+	// #if defined(ZN_GODOT)
+	// 	Ref<Resource> duplicate(bool p_subresources = false) const override;
+	// #elif defined(ZN_GODOT_EXTENSION)
+	// 	Ref<Resource> duplicate(bool p_subresources = false) const;
+	// #endif
 
 	int get_used_channels_mask() const override;
 

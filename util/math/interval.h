@@ -17,7 +17,12 @@ void check_range_once(double min, double max);
 // For interval arithmetic
 template <typename T>
 struct IntervalT {
-	static_assert(std::is_floating_point<T>::value);
+	// TODO I want this struct to only be used with floats, but `static_assert` messes up overload resolution of math
+	// functions. For example, calling `clamp<int>(int, int, int)` triggers the `static_assert` because the compiler
+	// tries to match `clamp<int>(Interval<int>, Interval<int>, Interval<int>)`, and instead of getting skipped,
+	// compilation halts with an error. Any better option?
+	//
+	// static_assert(std::is_floating_point<T>::value);
 
 	// Both inclusive
 	T min;
@@ -60,6 +65,10 @@ struct IntervalT {
 
 	inline bool is_single_value() const {
 		return min == max;
+	}
+
+	inline bool is_valid() const {
+		return min <= max;
 	}
 
 	inline void add_point(T x) {
@@ -315,7 +324,7 @@ inline IntervalT<T> atan2(const IntervalT<T> &y, const IntervalT<T> &x, Optional
 
 	if (in_nx && in_px && in_ny && in_py) {
 		// All quadrants
-		return IntervalT<T>{ -Math_PI, Math_PI };
+		return IntervalT<T>{ -PI<T>, PI<T> };
 	}
 
 	const bool in_q0 = in_px && in_py;
@@ -333,15 +342,15 @@ inline IntervalT<T> atan2(const IntervalT<T> &y, const IntervalT<T> &x, Optional
 			// When crossing those two quadrants, the angle wraps from PI to -PI.
 			// We would be forced to split the interval in two, but we have to return only one.
 			// For correctness, we have to return the full range...
-			return IntervalT<T>{ -Math_PI, Math_PI };
+			return IntervalT<T>{ -PI<T>, PI<T> };
 		} else {
 			// But, sometimes we can afford splitting the interval,
 			// especially if our use case joins it back to one.
 			// Q1
-			secondary_output->value = IntervalT<T>(atan2(y.max, x.max), Math_PI);
+			secondary_output->value = IntervalT<T>(atan2(y.max, x.max), PI<T>);
 			secondary_output->valid = true;
 			// Q2
-			return IntervalT<T>(-Math_PI, atan2(y.min, x.max));
+			return IntervalT<T>(-PI<T>, atan2(y.min, x.max));
 		}
 	}
 	if (in_q2 && in_q3) {
@@ -367,7 +376,7 @@ inline IntervalT<T> atan2(const IntervalT<T> &y, const IntervalT<T> &x, Optional
 	}
 
 	// Bwarf.
-	return IntervalT<T>{ -Math_PI, Math_PI };
+	return IntervalT<T>{ -math::PI<T>, math::PI<T> };
 }
 
 template <typename T>
