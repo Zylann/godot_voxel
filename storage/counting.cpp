@@ -1,6 +1,6 @@
 #include "counting.h"
 #include "../util/containers/std_unordered_map.h"
-#include "materials_4i4w.h"
+#include "mixel4.h"
 
 namespace zylann::voxel {
 
@@ -68,6 +68,8 @@ std::array<uint64_t, 16> count_materials_mixel4(
 		const VoxelBuffer::ChannelId indices_channel_index,
 		const VoxelBuffer::ChannelId weights_channel_index
 ) {
+	using namespace mixel4;
+
 	std::array<uint64_t, 16> raw_counts = {};
 
 	ZN_ASSERT_RETURN_V(voxels.get_channel_depth(indices_channel_index) == VoxelBuffer::DEPTH_16_BIT, raw_counts);
@@ -175,6 +177,8 @@ std::array<uint64_t, 16> count_materials_mixel4_with_sdf_lower_than_value(
 		const VoxelBuffer::ChannelId weights_channel_index,
 		const float isolevel
 ) {
+	using namespace mixel4;
+
 	std::array<uint64_t, 16> raw_counts = {};
 
 	switch (voxels.get_channel_compression(sdf_channel_index)) {
