@@ -252,6 +252,13 @@
 				Checks if every voxel within a channel has the same value.
 			</description>
 		</method>
+		<method name="mirror">
+			<return type="void" />
+			<param index="0" name="axis" type="int" enum="Vector3i.Axis" />
+			<description>
+				Mirrors voxel values along the specified axis.
+			</description>
+		</method>
 		<method name="op_add_buffer_f">
 			<return type="void" />
 			<param index="0" name="other" type="VoxelBuffer" />
@@ -317,6 +324,15 @@
 			<param index="0" name="channel" type="int" />
 			<param index="1" name="map" type="PackedInt32Array" />
 			<description>
+				Remaps integer values in a channel using the passed [code]map[/code] lookup table. Each index in [code]map[/code] corresponds to an original value, and will be replaced by [code]map[original][/code].
+			</description>
+		</method>
+		<method name="rotate_90">
+			<return type="void" />
+			<param index="0" name="axis" type="int" enum="Vector3i.Axis" />
+			<param index="1" name="turns" type="int" />
+			<description>
+				Rotates voxel values by 90 degrees along the specified axis. 1 turn is 90 degrees, 2 turns is 180 degrees, 3 turns is 270 degrees (or -90), 4 turns does nothing. Negative turns go in the other direction. This may also rotate the size of the buffer, if it isn't cubic.
 			</description>
 		</method>
 		<method name="set_block_metadata">

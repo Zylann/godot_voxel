@@ -5,9 +5,11 @@
 #include "../engine/streaming_dependency.h"
 #include "../generators/voxel_generator.h"
 #include "../meshers/voxel_mesher.h"
+#include "../storage/voxel_format_gd.h"
 #include "../streams/voxel_stream.h"
 #include "../util/godot/classes/geometry_instance_3d.h"
 #include "../util/godot/classes/node_3d.h"
+
 #ifdef TOOLS_ENABLED
 #include "../util/godot/core/version.h"
 #endif
@@ -28,6 +30,10 @@ public:
 
 	virtual void set_generator(Ref<VoxelGenerator> generator);
 	virtual Ref<VoxelGenerator> get_generator() const;
+
+	void set_format(Ref<godot::VoxelFormat> format);
+	Ref<godot::VoxelFormat> get_format() const;
+	virtual void on_format_changed();
 
 	void set_gi_mode(GeometryInstance3D::GIMode mode);
 	GeometryInstance3D::GIMode get_gi_mode() const;
@@ -64,6 +70,8 @@ protected:
 	virtual void _on_shadow_casting_changed() {}
 	virtual void _on_render_layers_mask_changed() {}
 
+	VoxelFormat get_internal_format() const;
+
 private:
 	Ref<VoxelMesher> _b_get_mesher() {
 		return get_mesher();
@@ -86,11 +94,14 @@ private:
 		set_generator(g);
 	}
 
+	void _b_on_format_changed();
+
 	static void _bind_methods();
 
 	GeometryInstance3D::GIMode _gi_mode = GeometryInstance3D::GI_MODE_DISABLED;
 	GeometryInstance3D::ShadowCastingSetting _shadow_casting = GeometryInstance3D::SHADOW_CASTING_SETTING_ON;
 	int _render_layers_mask = 1;
+	Ref<godot::VoxelFormat> _format;
 };
 
 } // namespace zylann::voxel

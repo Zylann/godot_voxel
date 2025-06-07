@@ -75,8 +75,8 @@ void ZN_ModelViewer::_gui_input(const Ref<InputEvent> &p_event) {
 			const Vector2 delta = mm->get_relative() * sensitivity;
 			_pitch -= delta.y;
 			_yaw -= delta.x;
-			_pitch = math::clamp(_pitch, -math::PI_32 / 2.f, math::PI_32 / 2.f);
-			_yaw = Math::wrapf(_yaw, -math::PI_32, math::PI_32);
+			_pitch = math::clamp(_pitch, -math::PI<float> / 2.f, math::PI<float> / 2.f);
+			_yaw = Math::wrapf(_yaw, -math::PI<float>, math::PI<float>);
 			update_camera();
 		}
 	}

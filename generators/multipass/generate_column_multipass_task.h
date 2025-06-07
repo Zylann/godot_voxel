@@ -25,6 +25,7 @@ class GenerateColumnMultipassTask : public IThreadedTask {
 public:
 	GenerateColumnMultipassTask(
 			Vector2i p_column_position,
+			VoxelFormat p_format,
 			uint8_t p_block_size,
 			uint8_t p_subpass_index,
 			std::shared_ptr<VoxelGeneratorMultipassCBStructs::Internal> p_generator_internal,
@@ -60,6 +61,7 @@ private:
 	void return_to_caller(bool success);
 
 	Vector2i _column_position;
+	VoxelFormat _format;
 	TaskPriority _priority;
 	uint8_t _block_size;
 	uint8_t _subpass_index;

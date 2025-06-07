@@ -36,8 +36,8 @@ Return                                                                          
 [void](#)                                                                                       | [_on_area_edited](#i__on_area_edited) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) area_origin, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) area_size ) virtual                                       
 [void](#)                                                                                       | [_on_data_block_entered](#i__on_data_block_entered) ( [VoxelDataBlockEnterInfo](VoxelDataBlockEnterInfo.md) info ) virtual                                                                                                                                                   
 [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html)                  | [data_block_to_voxel](#i_data_block_to_voxel) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) block_pos ) const                                                                                                                             
-[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)                          | [debug_get_draw_flag](#i_debug_get_draw_flag) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) flag_index ) const                                                                                                                                      
-[void](#)                                                                                       | [debug_set_draw_flag](#i_debug_set_draw_flag) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) flag_index, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) enabled )                                                            
+[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)                          | [debug_get_draw_flag](#i_debug_get_draw_flag) ( [DebugDrawFlag](VoxelTerrain.md#enumerations) flag_index ) const                                                                                                                                                             
+[void](#)                                                                                       | [debug_set_draw_flag](#i_debug_set_draw_flag) ( [DebugDrawFlag](VoxelTerrain.md#enumerations) flag_index, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) enabled )                                                                                   
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)                            | [get_data_block_size](#i_get_data_block_size) ( ) const                                                                                                                                                                                                                      
 [Dictionary](https://docs.godotengine.org/en/stable/classes/class_dictionary.html)              | [get_statistics](#i_get_statistics) ( ) const                                                                                                                                                                                                                                
 [PackedInt32Array](https://docs.godotengine.org/en/stable/classes/class_packedint32array.html)  | [get_viewer_network_peer_ids_in_area](#i_get_viewer_network_peer_ids_in_area) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) area_origin, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) area_size ) const 
@@ -62,7 +62,7 @@ Emitted when a data block is unloaded due to being outside view distance.
 
 ### mesh_block_entered( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) position ) 
 
-Emitted when a mesh block receives its first update since it was added in the range of viewers. This is regardless of the mesh being empty or not. It tracks changes of the same state obtained with [VoxelTerrain.is_area_meshed](VoxelTerrain.md#i_is_area_meshed).
+Emitted when a mesh block receives its first update since it was added in the range of viewers. This is regardless of the mesh being empty or not. It tracks changes of the same state obtained with [is_area_meshed](VoxelTerrain.md#i_is_area_meshed).
 
 ### mesh_block_exited( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) position ) 
 
@@ -168,11 +168,11 @@ Enables GPU block generation, which can speed it up. This is only valid for gene
 
 Converts data block coordinates into voxel coordinates. Voxel coordinates of a block correspond to its lowest corner.
 
-### [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_debug_get_draw_flag"></span> **debug_get_draw_flag**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) flag_index ) 
+### [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_debug_get_draw_flag"></span> **debug_get_draw_flag**( [DebugDrawFlag](VoxelTerrain.md#enumerations) flag_index ) 
 
 *(This method has no documentation)*
 
-### [void](#)<span id="i_debug_set_draw_flag"></span> **debug_set_draw_flag**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) flag_index, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) enabled ) 
+### [void](#)<span id="i_debug_set_draw_flag"></span> **debug_set_draw_flag**( [DebugDrawFlag](VoxelTerrain.md#enumerations) flag_index, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) enabled ) 
 
 *(This method has no documentation)*
 
@@ -254,4 +254,4 @@ Note that blocks getting unloaded as the viewer moves around can also trigger sa
 
 *(This method has no documentation)*
 
-_Generated on Mar 23, 2025_
+_Generated on May 15, 2025_

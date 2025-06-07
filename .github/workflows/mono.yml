@@ -78,7 +78,7 @@ jobs:
       # We should always be explicit with our flags usage here since it's gonna be sure to always set those flags
       - name: Compile Godot (module_mono_enabled=yes mono_glue=no)
         run: |
-          scons verbose=yes warnings=all werror=yes strict_checks=yes platform=linuxbsd tests=no target=editor dev_build=no debug_symbols=no module_mono_enabled=yes mono_glue=no copy_mono_root=yes "cache_path=${{github.workspace}}/.scons_cache/" cache_limit=${{env.SCONS_CACHE_LIMIT_GB}}
+          scons verbose=yes warnings=extra werror=yes strict_checks=yes platform=linuxbsd tests=no target=editor dev_build=no debug_symbols=no module_mono_enabled=yes mono_glue=no copy_mono_root=yes "cache_path=${{github.workspace}}/.scons_cache/" cache_limit=${{env.SCONS_CACHE_LIMIT_GB}}
 
       - name: Generate Mono Glue
         run: |
@@ -169,7 +169,7 @@ jobs:
       # We should always be explicit with our flags usage here since it's gonna be sure to always set those flags
       - name: Compilation
         run: |
-          scons verbose=yes warnings=all werror=yes strict_checks=yes platform=linuxbsd tests=no target=editor dev_build=no debug_symbols=no module_mono_enabled=yes mono_glue=yes mono_static=yes copy_mono_root=yes "cache_path=${{github.workspace}}/.scons_cache/"  cache_limit=${{env.SCONS_CACHE_LIMIT_GB}}
+          scons verbose=yes warnings=extra werror=yes strict_checks=yes platform=linuxbsd tests=no target=editor dev_build=no debug_symbols=no module_mono_enabled=yes mono_glue=yes mono_static=yes copy_mono_root=yes "cache_path=${{github.workspace}}/.scons_cache/"  cache_limit=${{env.SCONS_CACHE_LIMIT_GB}}
 
       # Make build available
       - uses: actions/upload-artifact@v4
@@ -255,7 +255,7 @@ jobs:
           SCONS_CACHE_MSVC_CONFIG: true
         run: |
           set PYTHONIOENCODING=utf8
-          scons verbose=yes warnings=all werror=yes strict_checks=yes platform=windows tests=no target=editor dev_build=no debug_symbols=no module_mono_enabled=yes mono_glue=yes copy_mono_root=yes mono_static=yes "cache_path=${{github.workspace}}/.scons_cache/" cache_limit=${{env.SCONS_CACHE_LIMIT_GB}}
+          scons verbose=yes warnings=extra werror=yes strict_checks=yes platform=windows tests=no target=editor dev_build=no debug_symbols=no module_mono_enabled=yes mono_glue=yes copy_mono_root=yes mono_static=yes "cache_path=${{github.workspace}}/.scons_cache/" cache_limit=${{env.SCONS_CACHE_LIMIT_GB}}
 
       # TODO Enhancement: Run tests? Such tests are able to run from Godot 4.0 only
       # Execute unit tests for the editor

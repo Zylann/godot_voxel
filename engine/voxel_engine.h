@@ -2,7 +2,6 @@
 #define VOXEL_ENGINE_H
 
 #include "../meshers/voxel_mesher.h"
-#include "../streams/instance_data.h"
 #include "../util/containers/slot_map.h"
 #include "../util/containers/std_vector.h"
 #include "../util/godot/classes/rendering_device.h"
@@ -12,12 +11,22 @@
 #include "../util/tasks/progressive_task_runner.h"
 #include "../util/tasks/threaded_task_runner.h"
 #include "../util/tasks/time_spread_task_runner.h"
+#include "ids.h"
+#include "priority_dependency.h"
+
+#ifdef VOXEL_ENABLE_SMOOTH_MESHING
 #include "detail_rendering/detail_rendering.h"
+#endif
+
+#ifdef VOXEL_ENABLE_INSTANCER
+#include "../streams/instance_data.h"
+#endif
+
+#ifdef VOXEL_ENABLE_GPU
 #include "gpu/compute_shader.h"
 #include "gpu/gpu_storage_buffer_pool.h"
 #include "gpu/gpu_task_runner.h"
-#include "ids.h"
-#include "priority_dependency.h"
+#endif
 
 ZN_GODOT_FORWARD_DECLARE(class RenderingDevice);
 #ifdef ZN_GODOT_EXTENSION
@@ -56,9 +65,11 @@ public:
 		bool has_mesh_resource;
 		// Tells if the meshing task was required to build a rendering mesh if possible.
 		bool visual_was_required;
+#ifdef VOXEL_ENABLE_SMOOTH_MESHING
 		// Can be null. Attached to meshing output so it is tracked more easily, because it is baked asynchronously
 		// starting from the mesh task, and it might complete earlier or later than the mesh.
 		std::shared_ptr<DetailTextureOutput> detail_textures;
+#endif
 	};
 
 	struct BlockDataOutput {
@@ -72,7 +83,9 @@ public:
 		// If voxels are null with TYPE_LOADED, it means no block was found in the stream (if any) and no generator task
 		// was scheduled. This is the case when we don't want to cache blocks of generated data.
 		std::shared_ptr<VoxelBuffer> voxels;
+#ifdef VOXEL_ENABLE_INSTANCER
 		UniquePtr<InstanceBlockData> instances;
+#endif
 		Vector3i position;
 		uint8_t lod_index;
 		bool dropped;
@@ -85,16 +98,20 @@ public:
 		bool had_voxels;
 	};
 
+#ifdef VOXEL_ENABLE_SMOOTH_MESHING
 	struct BlockDetailTextureOutput {
 		std::shared_ptr<DetailTextureOutput> detail_textures;
 		Vector3i position;
 		uint32_t lod_index;
 	};
+#endif
 
 	struct VolumeCallbacks {
 		void (*mesh_output_callback)(void *, BlockMeshOutput &) = nullptr;
 		void (*data_output_callback)(void *, BlockDataOutput &) = nullptr;
+#ifdef VOXEL_ENABLE_SMOOTH_MESHING
 		void (*detail_texture_output_callback)(void *, BlockDetailTextureOutput &) = nullptr;
+#endif
 		void *data = nullptr;
 
 		inline bool check_callbacks() const {
@@ -175,6 +192,7 @@ public:
 	int get_viewer_network_peer_id(ViewerID viewer_id) const;
 	bool viewer_exists(ViewerID viewer_id) const;
 	void sync_viewers_task_priority_data();
+	bool get_viewer_count() const;
 
 	template <typename F>
 	inline void for_each_viewer(F f) const {
@@ -202,6 +220,8 @@ public:
 	void push_async_io_task(IThreadedTask *task);
 	// Thread-safe.
 	void push_async_io_tasks(Span<IThreadedTask *> tasks);
+
+#ifdef VOXEL_ENABLE_GPU
 	void push_gpu_task(IGPUTask *task);
 
 	template <typename F>
@@ -218,6 +238,7 @@ public:
 	}
 
 	uint32_t get_pending_gpu_tasks_count() const;
+#endif
 
 	void process();
 	void wait_and_clear_all_tasks(bool warn);
@@ -246,14 +267,18 @@ public:
 		int streaming_tasks;
 		int meshing_tasks;
 		int main_thread_tasks;
+#ifdef VOXEL_ENABLE_GPU
 		int gpu_tasks;
+#endif
 	};
 
 	Stats get_stats() const;
 
+#ifdef VOXEL_ENABLE_GPU
 	bool has_rendering_device() const {
 		return _gpu_task_runner.has_rendering_device();
 	}
+#endif
 
 	// RenderingDevice &get_rendering_device() const {
 	// 	ZN_ASSERT(_rendering_device != nullptr);
@@ -327,7 +352,9 @@ private:
 	// For example, the OpenGL renderer does not support this well, but the Vulkan one should.
 	bool _threaded_graphics_resource_building_enabled = false;
 
+#ifdef VOXEL_ENABLE_GPU
 	GPUTaskRunner _gpu_task_runner;
+#endif
 
 	// There can be multiple types of generation tasks, so we count them with a common counter.
 	std::atomic_int _debug_generate_block_task_count = { 0 };

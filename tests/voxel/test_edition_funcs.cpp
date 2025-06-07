@@ -261,10 +261,12 @@ void test_discord_soakil_copypaste() {
 
 			// Material
 
+			const VoxelFormat format = vd.get_format();
+
 			VoxelSingleValue default_indices;
-			default_indices.i = VoxelBuffer::get_default_value_static(VoxelBuffer::CHANNEL_INDICES);
+			default_indices.i = format.get_default_raw_value(VoxelBuffer::CHANNEL_INDICES);
 			VoxelSingleValue default_weights;
-			default_weights.i = VoxelBuffer::get_default_value_static(VoxelBuffer::CHANNEL_WEIGHTS);
+			default_weights.i = format.get_default_raw_value(VoxelBuffer::CHANNEL_WEIGHTS);
 
 			const uint16_t packed_indices_in_platform =
 					vd.get_voxel(Vector3i(0, 0, 0), VoxelBuffer::CHANNEL_INDICES, default_indices).i;
@@ -275,11 +277,11 @@ void test_discord_soakil_copypaste() {
 		}
 
 		static void check_indices_and_weights_in_platform(uint16_t packed_indices, uint16_t packed_weights) {
-			const FixedArray<uint8_t, 4> indices_in_platform = decode_indices_from_packed_u16(packed_indices);
+			const FixedArray<uint8_t, 4> indices_in_platform = mixel4::decode_indices_from_packed_u16(packed_indices);
 			unsigned int expected_material_index_index;
 			ZN_TEST_ASSERT(find(indices_in_platform, uint8_t(1), expected_material_index_index));
 
-			const FixedArray<uint8_t, 4> weights_in_platform = decode_weights_from_packed_u16(packed_weights);
+			const FixedArray<uint8_t, 4> weights_in_platform = mixel4::decode_weights_from_packed_u16(packed_weights);
 			for (unsigned int i = 0; i < weights_in_platform.size(); ++i) {
 				if (i == expected_material_index_index) {
 					ZN_TEST_ASSERT(weights_in_platform[i] > 0);

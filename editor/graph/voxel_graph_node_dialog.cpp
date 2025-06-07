@@ -112,7 +112,7 @@ VoxelGraphNodeDialog::VoxelGraphNodeDialog() {
 	set_exclusive(false);
 
 	set_ok_button_text(ZN_TTR("Create"));
-	get_ok_button()->connect("pressed", callable_mp(this, &VoxelGraphNodeDialog::_on_ok_pressed));
+	get_ok_button()->connect("pressed", callable_mp(this, &VoxelGraphNodeDialog::on_ok_pressed));
 	get_ok_button()->set_disabled(true);
 	// connect("canceled", callable_mp(this, &VisualShaderEditor::_member_cancel));
 
@@ -120,8 +120,8 @@ VoxelGraphNodeDialog::VoxelGraphNodeDialog() {
 	vb_container->set_v_size_flags(Control::SIZE_EXPAND_FILL);
 
 	LineEdit *filter_line_edit = memnew(LineEdit);
-	filter_line_edit->connect("text_changed", callable_mp(this, &VoxelGraphNodeDialog::_on_filter_text_changed));
-	filter_line_edit->connect("gui_input", callable_mp(this, &VoxelGraphNodeDialog::_on_filter_gui_input));
+	filter_line_edit->connect("text_changed", callable_mp(this, &VoxelGraphNodeDialog::on_filter_text_changed));
+	filter_line_edit->connect("gui_input", callable_mp(this, &VoxelGraphNodeDialog::on_filter_gui_input));
 	filter_line_edit->set_h_size_flags(Control::SIZE_EXPAND_FILL);
 	filter_line_edit->set_placeholder(ZN_TTR("Search"));
 	vb_container->add_child(filter_line_edit);
@@ -138,9 +138,9 @@ VoxelGraphNodeDialog::VoxelGraphNodeDialog() {
 	tree->set_allow_reselect(true);
 	tree->set_hide_folding(false);
 	tree->set_custom_minimum_size(Size2(180 * editor_scale, 200 * editor_scale));
-	tree->connect("item_activated", callable_mp(this, &VoxelGraphNodeDialog::_on_tree_item_activated));
-	tree->connect("item_selected", callable_mp(this, &VoxelGraphNodeDialog::_on_tree_item_selected));
-	tree->connect("nothing_selected", callable_mp(this, &VoxelGraphNodeDialog::_on_tree_nothing_selected));
+	tree->connect("item_activated", callable_mp(this, &VoxelGraphNodeDialog::on_tree_item_activated));
+	tree->connect("item_selected", callable_mp(this, &VoxelGraphNodeDialog::on_tree_item_selected));
+	tree->connect("nothing_selected", callable_mp(this, &VoxelGraphNodeDialog::on_tree_nothing_selected));
 	vsplit_container->add_child(tree);
 	_tree = tree;
 
@@ -149,7 +149,7 @@ VoxelGraphNodeDialog::VoxelGraphNodeDialog() {
 	description_label->set_custom_minimum_size(Size2(0, 70 * editor_scale));
 	description_label->set_use_bbcode(true);
 	description_label->connect(
-			"meta_clicked", callable_mp(this, &VoxelGraphNodeDialog::_on_description_label_meta_clicked)
+			"meta_clicked", callable_mp(this, &VoxelGraphNodeDialog::on_description_label_meta_clicked)
 	);
 	vsplit_container->add_child(description_label);
 	_description_label = description_label;
@@ -166,7 +166,7 @@ VoxelGraphNodeDialog::VoxelGraphNodeDialog() {
 	_function_file_dialog->add_filter("*.tres", ZN_TTR("Text Resource"));
 	_function_file_dialog->add_filter("*.res", ZN_TTR("Binary Resource"));
 	_function_file_dialog->connect(
-			"file_selected", callable_mp(this, &VoxelGraphNodeDialog::_on_function_file_dialog_file_selected)
+			"file_selected", callable_mp(this, &VoxelGraphNodeDialog::on_function_file_dialog_file_selected)
 	);
 	add_child(_function_file_dialog);
 
@@ -176,7 +176,7 @@ VoxelGraphNodeDialog::VoxelGraphNodeDialog() {
 #if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR <= 3
 	_function_quick_open_dialog = memnew(EditorQuickOpen);
 	_function_quick_open_dialog->connect(
-			"quick_open", callable_mp(this, &VoxelGraphNodeDialog::_on_function_quick_open_dialog_quick_open)
+			"quick_open", callable_mp(this, &VoxelGraphNodeDialog::on_function_quick_open_dialog_quick_open)
 	);
 	add_child(_function_quick_open_dialog);
 #endif
@@ -293,7 +293,7 @@ void VoxelGraphNodeDialog::update_tree(bool autoselect) {
 	StdVector<TreeItem *> category_tree_items;
 	category_tree_items.resize(_category_names.size(), nullptr);
 
-	bool autoselected = true;
+	bool autoselected = false;
 
 	for (const unsigned int item_index : filtered_items) {
 		const Item &item = _items[item_index];
@@ -324,11 +324,11 @@ void VoxelGraphNodeDialog::update_tree(bool autoselect) {
 	}
 }
 
-void VoxelGraphNodeDialog::_on_filter_text_changed(String new_text) {
+void VoxelGraphNodeDialog::on_filter_text_changed(String new_text) {
 	update_tree(true);
 }
 
-void VoxelGraphNodeDialog::_on_filter_gui_input(Ref<InputEvent> event) {
+void VoxelGraphNodeDialog::on_filter_gui_input(Ref<InputEvent> event) {
 	Ref<InputEventKey> key_event = event;
 	if (key_event.is_valid()) {
 		// TODO GDX: `Control::gui_input()` is not exposed to GDExtension, can't forward events.
@@ -352,7 +352,7 @@ void VoxelGraphNodeDialog::_on_filter_gui_input(Ref<InputEvent> event) {
 					break;
 
 				case ::godot::KEY_ENTER:
-					_on_tree_item_activated();
+					on_tree_item_activated();
 					break;
 
 				default:
@@ -362,7 +362,7 @@ void VoxelGraphNodeDialog::_on_filter_gui_input(Ref<InputEvent> event) {
 	}
 }
 
-void VoxelGraphNodeDialog::_on_tree_item_activated() {
+void VoxelGraphNodeDialog::on_tree_item_activated() {
 	const TreeItem *item = _tree->get_selected();
 	if (item == nullptr) {
 		return;
@@ -377,7 +377,7 @@ void VoxelGraphNodeDialog::_on_tree_item_activated() {
 
 	} else if (id == ID_FUNCTION_BROWSE) {
 		// Browse function nodes
-		_function_file_dialog->popup();
+		zylann::godot::popup_file_dialog(*_function_file_dialog);
 
 	} else if (id == ID_FUNCTION_QUICK_OPEN) {
 #ifdef ZN_GODOT
@@ -399,7 +399,7 @@ void VoxelGraphNodeDialog::_on_tree_item_activated() {
 	}
 }
 
-void VoxelGraphNodeDialog::_on_tree_item_selected() {
+void VoxelGraphNodeDialog::on_tree_item_selected() {
 	const TreeItem *tree_item = _tree->get_selected();
 	if (tree_item == nullptr) {
 		get_ok_button()->set_disabled(true);
@@ -427,20 +427,20 @@ void VoxelGraphNodeDialog::_on_tree_item_selected() {
 	}
 }
 
-void VoxelGraphNodeDialog::_on_tree_nothing_selected() {}
+void VoxelGraphNodeDialog::on_tree_nothing_selected() {}
 
-void VoxelGraphNodeDialog::_on_ok_pressed() {
-	_on_tree_item_activated();
+void VoxelGraphNodeDialog::on_ok_pressed() {
+	on_tree_item_activated();
 	// hide();
 }
 
-void VoxelGraphNodeDialog::_on_function_file_dialog_file_selected(String fpath) {
+void VoxelGraphNodeDialog::on_function_file_dialog_file_selected(String fpath) {
 	emit_signal(SIGNAL_FILE_SELECTED, fpath);
 	hide();
 }
 
 #if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR <= 3
-void VoxelGraphNodeDialog::_on_function_quick_open_dialog_quick_open() {
+void VoxelGraphNodeDialog::on_function_quick_open_dialog_quick_open() {
 #ifdef ZN_GODOT
 	String fpath = _function_quick_open_dialog->get_selected();
 	on_function_quick_open_dialog_item_selected(fpath);
@@ -459,7 +459,7 @@ void VoxelGraphNodeDialog::on_function_quick_open_dialog_item_selected(String fp
 #endif
 }
 
-void VoxelGraphNodeDialog::_on_description_label_meta_clicked(Variant meta) {
+void VoxelGraphNodeDialog::on_description_label_meta_clicked(Variant meta) {
 	// TODO Open docs if a class name is clicked
 }
 

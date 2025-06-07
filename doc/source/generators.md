@@ -15,6 +15,13 @@ Generators have a thread-safe API. The same generator `generate_block` method ma
 
 If a volume is not given a generator, blocks will be filled with air by default.
 
+### Series generation
+
+Some generators support "series generation": in addition to being able to fill 3D grids of voxels ("chunks"), they can also work when given a list of arbitrary floating-point positions (or "point cloud"). This is used by some features like detail rendering (CPU only) and `VoxelInstanceGenerator` snapping to SDF.
+
+Not all generators can do this, and this feature is not required for the terrain system to work. There is also no scripting API to implement this currently.
+`VoxelGeneratorGraph` supports it, and some of the basic generators too.
+
 
 Basic generators
 -------------------

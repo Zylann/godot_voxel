@@ -34,6 +34,18 @@ inline constexpr T max(const T a, const T b) {
 }
 
 template <typename T>
+inline T min(const T a, const T b, const T c) {
+	static_assert(std::is_scalar<T>::value);
+	return min(min(a, b), c);
+}
+
+template <typename T>
+inline T max(const T a, const T b, const T c) {
+	static_assert(std::is_scalar<T>::value);
+	return max(max(a, b), c);
+}
+
+template <typename T>
 inline T min(const T a, const T b, const T c, const T d) {
 	static_assert(std::is_scalar<T>::value);
 	return min(min(a, b), min(c, d));
@@ -318,6 +330,45 @@ inline void sort(T &a, T &b, T &c, T &d) {
 	sort(b, c);
 }
 
+template <typename TArray, typename TLess>
+inline void sort2_array(TArray &array, TLess less) {
+	if (less(array[1], array[0])) {
+		std::swap(array[1], array[0]);
+	}
+}
+
+template <typename TArray, typename TLess>
+inline void sort3_array(TArray &array, TLess less) {
+	if (less(array[1], array[0])) {
+		std::swap(array[1], array[0]);
+	}
+	if (less(array[2], array[0])) {
+		std::swap(array[2], array[0]);
+	}
+	if (less(array[2], array[1])) {
+		std::swap(array[2], array[1]);
+	}
+}
+
+template <typename TArray, typename TLess>
+inline void sort4_array(TArray &array, TLess less) {
+	if (less(array[1], array[0])) {
+		std::swap(array[1], array[0]);
+	}
+	if (less(array[3], array[2])) {
+		std::swap(array[3], array[2]);
+	}
+	if (less(array[2], array[0])) {
+		std::swap(array[2], array[0]);
+	}
+	if (less(array[3], array[1])) {
+		std::swap(array[3], array[1]);
+	}
+	if (less(array[2], array[1])) {
+		std::swap(array[2], array[1]);
+	}
+}
+
 // Returns -1 if `x` is negative, and 1 otherwise.
 // Contrary to a usual version like GLSL, this one returns 1 when `x` is 0, instead of 0.
 template <typename T>
@@ -390,23 +441,22 @@ inline bool is_inf(double p_val) {
 }
 
 inline double deg_to_rad(double p_y) {
-	return p_y * PI_64 / 180.0;
+	return p_y * PI<double> / 180.0;
 }
 
 inline float deg_to_rad(float p_y) {
-	return p_y * PI_32 / 180.f;
+	return p_y * PI<float> / 180.f;
 }
+
+// a*x+b
+struct LinearFuncParams {
+	float a;
+	float b;
+};
 
 // Given source and destination intervals, returns parameters to use in an `a*x+b` formula to apply such remap.
 // If the source interval is approximatively empty, returns zero values.
-inline void remap_intervals_to_linear_params(
-		float min0,
-		float max0,
-		float min1,
-		float max1,
-		float &out_a,
-		float &out_b
-) {
+inline LinearFuncParams remap_intervals_to_linear_params(float min0, float max0, float min1, float max1) {
 	// min1 + (max1 - min1) * (x - min0) / (max0 - min0)
 	// min1 + (max1 - min1) * (x - min0) * (1/(max0 - min0))
 	// min1 +       A       * (x - min0) *        B
@@ -418,14 +468,11 @@ inline void remap_intervals_to_linear_params(
 	//         b         + a * x
 	// a * x + b
 	if (Math::is_equal_approx(max0, min0)) {
-		out_a = 0;
-		out_b = 0;
-		return;
+		return { 0.f, 0.f };
 	}
 	const float a = (max1 - min1) / (max0 - min0);
 	const float b = min1 - a * min0;
-	out_a = a;
-	out_b = b;
+	return { a, b };
 }
 
 // The result of the right-shift operator `>>` is implementation-defined until C++20, where it performs arithmetic

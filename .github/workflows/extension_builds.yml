@@ -132,6 +132,12 @@ jobs:
         run: |
           Remove-Item project/addons/zylann.voxel/bin/* -Include *.exp,*.lib,*.pdb -Force
 
+      - name: Print
+        shell: bash
+        run: |
+          cd project/addons/zylann.voxel/bin
+          ls -l
+
       # Upload the build
       - name: Upload Artifact
         uses: actions/upload-artifact@v4

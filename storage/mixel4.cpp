@@ -1,7 +1,7 @@
-#include "materials_4i4w.h"
+#include "mixel4.h"
 #include "voxel_buffer.h"
 
-namespace zylann::voxel {
+namespace zylann::voxel::mixel4 {
 
 void debug_check_texture_indices_packed_u16(const VoxelBuffer &voxels) {
 	for (int z = 0; z < voxels.get_size().z; ++z) {
@@ -15,4 +15,4 @@ void debug_check_texture_indices_packed_u16(const VoxelBuffer &voxels) {
 	}
 }
 
-} // namespace zylann::voxel
+} // namespace zylann::voxel::mixel4

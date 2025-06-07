@@ -56,12 +56,14 @@ If you cloned Godot and Voxel Tools, you can use git to update your local code.
 
 This module can compile as a GDExtension library. This allows to distribute it as a library file (`.dll`, `.so`...) without having to recompile Godot Engine.
 You should read Godot's documentation about GDExtension:
+
 - [On Godot Docs](https://docs.godotengine.org/en/stable/tutorials/scripting/gdextension/index.html)
 - [GodotCpp Repository](https://github.com/godotengine/godot-cpp)
 
 To compile the library:
+
 - Download a copy of [GodotCpp](https://github.com/godotengine/godot-cpp)
-- In the voxel's root directory, write the path to GodotCpp at the beginning of the `SConstruct` script, or set the environment variable from command line.
+- In the voxel's root directory, write the path to GodotCpp at the beginning of the `SConstruct` script, or set the environment variable `GODOT_CPP_PATH` from command line.
 - Open the same kind of console you would use to compile Godot, change directory to voxel's root folder, and run `scons` there. It will use the `SConstruct` file instead of `SCsub`.
 
 Example of build command on Windows (unoptimized debug build for use in editor):
@@ -494,16 +496,37 @@ void process_every_frame() {
 }
 ```
 
-Preprocessor macros
----------------------
+Compilation flags and macros
+-------------------------------
 
 The module has a few preprocessor macros that can be defined in order to turn off parts of the code getting compiled.
 Some can be specified through SCons command line parameters.
 
+### Features
+
+By default, features are all enabled, unless specified otherwise. To turn off a feature, specify `flag_name=no` in the SCons command line. 
+
+SCons flag               | C++ Macro                       | Description
+------------------------ | ------------------------------- | -------------------------------------------------------------
+`voxel_fast_noise_2`     | `VOXEL_ENABLE_FAST_NOISE_2`     | Integrated support for SIMD CPU noise using FastNoise2. It is optional in case it causes problem on some compilers or platforms. **Not available in GDExtension builds**.
+`voxel_tests`            | `VOXEL_TESTS`                   | Unit tests. They will run on startup if the `--run_voxel_tests` command line argument is passed, or if `VoxelEngine.run_tests()` is called.
+`voxel_smooth_meshing`   | `VOXEL_ENABLE_SMOOTH_MESHING`   | Smooth voxel meshers and some associated features. Turning this off also turns off modifiers, which depend on it.
+`voxel_modifiers`        | `VOXEL_ENABLE_MODIFIERS`        | `VoxelModifier` experimental feature support.
+`voxel_sqlite`           | `VOXEL_ENABLE_SQLITE`           | `VoxelStreamSQLite`, which also bundles the SQLite3 library.
+`voxel_instancer`        | `VOXEL_ENABLE_INSTANCER`        | `VoxelInstancer` support
+`voxel_gpu`              | `VOXEL_ENABLE_GPU`              | GPU compute support (the GPU is still used when this option is off, just not using compute shaders)
+`voxel_basic_generators` | `VOXEL_ENABLE_BASIC_GENERATORS` | Includes basic generators that could be used for testing.
+`voxel_mesh_sdf`         | `VOXEL_ENABLE_MESH_SDF`         | Support for voxelized meshes with `VoxelMeshSDF`. Turning this off also turns off modifiers, which depend on it.
+`voxel_vox`              | `VOXEL_ENABLE_VOX`              | Ability to load `.vox` MagicaVoxel files.
+
+!!! warning
+    Testing combinations of these flags over time is very time-consuming, and most people don't compile custom builds to turn them off. So it is possible that the project doesn't compile with a specific subset. You may signal it and/or open a PR if you want to fix it.
+
+
+### Other macros
+
 - `MESHOPTIMIZER_ZYLANN_NEVER_COLLAPSE_BORDERS`: this one must be defined to fix an issue with `MeshOptimizer`. See [https://github.com/zeux/meshoptimizer/issues/311](https://github.com/zeux/meshoptimizer/issues/311)
 - `MESHOPTIMIZER_ZYLANN_WRAP_LIBRARY_IN_NAMESPACE`: this one must be defined to prevent conflict with Godot's own version of MeshOptimizer. See [https://github.com/zeux/meshoptimizer/issues/311#issuecomment-955750624](https://github.com/zeux/meshoptimizer/issues/311#issuecomment-955750624)
-- `VOXEL_ENABLE_FAST_NOISE_2`: if defined, the module will compile with integrated support for SIMD noise using FastNoise2. It is optional in case it causes problem on some compilers or platforms. SCons parameter: `voxel_fast_noise_2=yes`
-- `VOXEL_TESTS`: If `True`, tests will be compiled as part of the build (SCons parameter: `voxel_tests=yes`). They will run on startup if the `--run_voxel_tests` command line argument is passed. 
 - `ZN_GODOT`: must be defined when compiling this project as a module.
 - `ZN_GODOT_EXTENSION`: must be defined when compiling this project as a GDExtension.
 
@@ -529,7 +552,7 @@ Currently, C++ code generating shaders is intertwined with the contents of those
 Using the module from another module
 ----------------------------------------
 
-Writing a custom C++ module directly in Godot is one way to access features of Godot and the voxel engine more directly, which can be better for performance and more stable than a GDExtension. You can do this too if you want to create a custom generator, mesher, stream, or just use components of the module, without having to modify the module directly.
+Writing a custom C++ module directly in Godot is the easiest way to access features of Godot and the voxel engine directly, which can be better for performance and more stable than a GDExtension. You can do this too if you want to create a custom generator, mesher, stream, or just use components of the module, without having to modify the module directly.
 
 You can include files from the voxel module by using `modules/voxel/` in your includes:
 
@@ -544,3 +567,8 @@ env_yourmodule.Append(CPPDEFINES = [
     'ZN_GODOT'
 ])
 ```
+
+TODO: since the implementation of [compiling-out features](https://github.com/Zylann/godot_voxel/issues/746), you will have a lot more of preprocessor symbols to define, since you may want to `#include` headers of the voxel engine that expect them to be defined or not. There is currently no helper to do this, so you have to add them manually in your `CPPDEFINES` array. See the [list of macros](#features).
+
+!!! note
+    While API docs cover functions you will also find in C++, internals sometimes only have comments. They are not documented outside, and there is no plan to do so. It is recommended to inspect the headers to find what is exposed, what namespaces to use etc. You may also read existing code in `.cpp` files to see how some things are used.

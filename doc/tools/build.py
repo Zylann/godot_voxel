@@ -49,7 +49,7 @@ def update_classes_xml(custom_godot_path, godot_repo_root, verbose=False):
         print("Disregard Godot's errors about files unless they are about Voxel*.")
 
 
-def find_godot(bindir):
+def find_godot(bindir): # bindir: Path
     # Match a filename like these
     # godot.windows.editor.dev.x86_64.exe
     # godot.linuxbsd.editor.dev.x86_64
@@ -71,19 +71,29 @@ def find_godot(bindir):
     if platform.machine().lower() == "riscv64":
         arch = ".rv64"
 
-    # Names to try by priority
+    # Names to try
     names = [
         prefix + os_prefix + ".editor.dev" + arch + suffix,
         prefix + os_prefix + ".editor" + arch + suffix,
     ]
 
+    # Of all that we find, pick the most recent
+
+    binaries = []
+
     for name in names:
         path = bindir / name
-        if os.path.isfile(path):
-            return path
-
-    print("Error: Godot binary not specified and none suitable found in %s" % bindir)
-    return None
+        if path.is_file():
+            mtime = os.path.getmtime(path)
+            binaries.append((path, mtime))
+    
+    if len(binaries) == 0:
+        print("Error: Godot binary not specified and none suitable found in %s" % bindir)
+        return None
+    
+    binaries = sorted(binaries, key=lambda tup: tup[1])
+    most_recent = binaries[-1][0]
+    return most_recent
 
 
 def update_mkdocs_file(mkdocs_config_fpath, md_classes_dir):

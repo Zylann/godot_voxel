@@ -3,7 +3,7 @@
 
 #include "../constants/voxel_constants.h"
 #include "../util/containers/span.h"
-#include "../util/math/vector3i.h"
+#include "../util/math/ortho_basis.h"
 #include <cstdint>
 
 namespace zylann::voxel {
@@ -171,51 +171,32 @@ inline uint16_t snorm_to_u16(float v) {
 
 } // namespace legacy
 
-struct IntBasis {
-	Vector3i x;
-	Vector3i y;
-	Vector3i z;
-
-	Vector3i get_axis(int i) const {
-		// TODO Optimization: could use a union with an array
-		switch (i) {
-			case Vector3i::AXIS_X:
-				return x;
-			case Vector3i::AXIS_Y:
-				return y;
-			case Vector3i::AXIS_Z:
-				return z;
-			default:
-				ZN_CRASH();
-		}
-		return Vector3i();
-	}
-};
+// Gets the origin to add to transformed 3d coordinates in order for the transformation to move cells keeping them in
+// the destination array (otherwise rotation can lead to negative coordinates, which is not what we want for a 3D array)
+Vector3i get_3d_array_transform_origin(const math::OrthoBasis &basis, const Vector3i src_size, Vector3i *out_dst_size);
 
 // Rotates/flips/transposes the contents of a 3D array using a basis.
 // Returns the transformed size. Volume remains the same.
 // The array's coordinate convention uses ZXY (index+1 does Y+1).
 template <typename T>
-Vector3i transform_3d_array_zxy(Span<const T> src_grid, Span<T> dst_grid, Vector3i src_size, IntBasis basis) {
+Vector3i transform_3d_array_zxy(
+		Span<const T> src_grid,
+		Span<T> dst_grid,
+		Vector3i src_size,
+		math::OrthoBasis basis,
+		Vector3i *out_transform_origin = nullptr
+) {
 	ZN_ASSERT_RETURN_V(Vector3iUtil::is_unit_vector(basis.x), src_size);
 	ZN_ASSERT_RETURN_V(Vector3iUtil::is_unit_vector(basis.y), src_size);
 	ZN_ASSERT_RETURN_V(Vector3iUtil::is_unit_vector(basis.z), src_size);
 	ZN_ASSERT_RETURN_V(src_grid.size() == Vector3iUtil::get_volume_u64(src_size), src_size);
 	ZN_ASSERT_RETURN_V(dst_grid.size() == Vector3iUtil::get_volume_u64(src_size), src_size);
 
-	const int xa = basis.x.x != 0 ? 0 : basis.x.y != 0 ? 1 : 2;
-	const int ya = basis.y.x != 0 ? 0 : basis.y.y != 0 ? 1 : 2;
-	const int za = basis.z.x != 0 ? 0 : basis.z.y != 0 ? 1 : 2;
-
 	Vector3i dst_size;
-	dst_size[xa] = src_size.x;
-	dst_size[ya] = src_size.y;
-	dst_size[za] = src_size.z;
-
-	// If an axis is negative, it means iteration starts from the end
-	const int ox = basis.get_axis(xa).x < 0 ? dst_size.x - 1 : 0;
-	const int oy = basis.get_axis(ya).y < 0 ? dst_size.y - 1 : 0;
-	const int oz = basis.get_axis(za).z < 0 ? dst_size.z - 1 : 0;
+	const Vector3i origin = get_3d_array_transform_origin(basis, src_size, &dst_size);
+	if (out_transform_origin != nullptr) {
+		*out_transform_origin = origin;
+	}
 
 	int src_i = 0;
 
@@ -223,9 +204,9 @@ Vector3i transform_3d_array_zxy(Span<const T> src_grid, Span<T> dst_grid, Vector
 		for (int x = 0; x < src_size.x; ++x) {
 			for (int y = 0; y < src_size.y; ++y) {
 				// TODO Optimization: can be moved in the outer loop, we only need to add a number to dst_i
-				const int dst_x = ox + x * basis.x.x + y * basis.y.x + z * basis.z.x;
-				const int dst_y = oy + x * basis.x.y + y * basis.y.y + z * basis.z.y;
-				const int dst_z = oz + x * basis.x.z + y * basis.y.z + z * basis.z.z;
+				const int dst_x = origin.x + x * basis.x.x + y * basis.y.x + z * basis.z.x;
+				const int dst_y = origin.y + x * basis.x.y + y * basis.y.y + z * basis.z.y;
+				const int dst_z = origin.z + x * basis.x.z + y * basis.y.z + z * basis.z.z;
 				const int dst_i = dst_y + dst_size.y * (dst_x + dst_size.x * dst_z);
 				dst_grid[dst_i] = src_grid[src_i];
 				++src_i;

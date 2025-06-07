@@ -41,7 +41,9 @@ void LoadAllBlocksDataTask::apply_result() {
 
 				VoxelEngine::BlockDataOutput o;
 				o.voxels = rb.voxels;
+#ifdef VOXEL_ENABLE_INSTANCER
 				o.instances = std::move(rb.instances_data);
+#endif
 				o.position = rb.position;
 				o.lod_index = rb.lod;
 				o.dropped = false;
