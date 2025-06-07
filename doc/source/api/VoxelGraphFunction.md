@@ -22,7 +22,7 @@ Node types are identified with the enum [NodeTypeID](VoxelGraphFunction.md#enume
 
 Graphs can only process 32-bit floating point values.
 
-Description of node types is present in the graph editor node dialog, or at [https://voxel-tools.readthedocs.io/en/latest/graph_nodes]().
+Description of node types is present in the graph editor node dialog, or at [https://voxel-tools.readthedocs.io/en/latest/graph_nodes](https://voxel-tools.readthedocs.io/en/latest/graph_nodes).
 
 ## Properties: 
 
@@ -331,4 +331,4 @@ Set a parameter of a node, using its name as it appears in the editor.
 
 Set a parameter of a node to null. This method only exists to workaround an issue with Godot's UndoRedo system. Prefer using [set_node_param](VoxelGraphFunction.md#i_set_node_param).
 
-_Generated on Apr 27, 2025_
+_Generated on May 15, 2025_

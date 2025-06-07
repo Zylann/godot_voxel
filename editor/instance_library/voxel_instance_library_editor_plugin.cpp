@@ -4,7 +4,6 @@
 #include "../../util/godot/classes/box_mesh.h"
 #include "../../util/godot/classes/confirmation_dialog.h"
 #include "../../util/godot/classes/control.h"
-#include "../../util/godot/classes/editor_file_dialog.h"
 #include "../../util/godot/classes/editor_inspector.h"
 #include "../../util/godot/classes/editor_interface.h"
 #include "../../util/godot/classes/editor_undo_redo_manager.h"

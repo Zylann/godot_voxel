@@ -33,6 +33,6 @@ Then the shape of the voxel will change to be "pushed" downwards, creating steep
 
 ### [Material](https://docs.godotengine.org/en/stable/classes/class_material.html)<span id="i_material"></span> **material**
 
-Material used by all states of the fluid. Note that UVs of a fluid are different than a regular model, so you may need a [ShaderMaterial](https://docs.godotengine.org/en/stable/classes/class_shadermaterial.html) to handle flowing animation.
+Material used by all states of the fluid. Note that UVs of a fluid are different than a regular model, so you may need a [ShaderMaterial](https://docs.godotengine.org/en/stable/classes/class_shadermaterial.html) to handle flowing animation. See [https://voxel-tools.readthedocs.io/en/latest/blocky_terrain/#fluids](https://voxel-tools.readthedocs.io/en/latest/blocky_terrain/#fluids)
 
-_Generated on Apr 27, 2025_
+_Generated on May 15, 2025_

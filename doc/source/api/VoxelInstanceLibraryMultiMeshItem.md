@@ -15,6 +15,7 @@ Type                                                                            
 -------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- | --------------------------------------
 [PackedFloat32Array](https://docs.godotengine.org/en/stable/classes/class_packedfloat32array.html)                                           | [_mesh_lod_distance_ratios](#i__mesh_lod_distance_ratios)  | PackedFloat32Array(0.2, 0.35, 0.6, 1) 
 [ShadowCastingSetting](https://docs.godotengine.org/en/stable/classes/class_renderingserver.html#enum-renderingserver-shadowcastingsetting)  | [cast_shadow](#i_cast_shadow)                              | 1                                     
+[float](https://docs.godotengine.org/en/stable/classes/class_float.html)                                                                     | [collision_distance](#i_collision_distance)                | -1.0                                  
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)                                                                         | [collision_layer](#i_collision_layer)                      | 1                                     
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)                                                                         | [collision_mask](#i_collision_mask)                        | 1                                     
 [Array](https://docs.godotengine.org/en/stable/classes/class_array.html)                                                                     | [collision_shapes](#i_collision_shapes)                    | []                                    
@@ -70,6 +71,14 @@ enum **RemovalBehavior**:
 ### [ShadowCastingSetting](https://docs.godotengine.org/en/stable/classes/class_renderingserver.html#enum-renderingserver-shadowcastingsetting)<span id="i_cast_shadow"></span> **cast_shadow** = 1
 
 *(This property has no documentation)*
+
+### [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_collision_distance"></span> **collision_distance** = -1.0
+
+When greater than 0 and colliders are configured, hints the distance below which colliders may be created. This allows to reduce the amount of colliders while keeping a high view distance for visuals. 
+
+When negative, colliders will be created at all distances.
+
+Note: the instancer creates/removes colliders on a per-chunk basis, so this distance is compared against the distance to chunks, and not individual instances.
 
 ### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_collision_layer"></span> **collision_layer** = 1
 
@@ -141,7 +150,7 @@ Scene that will be used if [removal_behavior](VoxelInstanceLibraryMultiMeshItem.
 
 ### [PackedScene](https://docs.godotengine.org/en/stable/classes/class_packedscene.html)<span id="i_scene"></span> **scene**
 
-*(This property has no documentation)*
+Scene that will be used as configuration instead of manual properties. It should have a specific node structure to be supported. See [https://voxel-tools.readthedocs.io/en/latest/instancing/#setting-up-a-multimesh-item-from-a-scene](https://voxel-tools.readthedocs.io/en/latest/instancing/#setting-up-a-multimesh-item-from-a-scene)
 
 ## Method Descriptions
 
@@ -171,4 +180,4 @@ Sets the list of group names that will be added to collider nodes generated for 
 
 *(This method has no documentation)*
 
-_Generated on Apr 27, 2025_
+_Generated on May 15, 2025_

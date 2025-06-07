@@ -84,6 +84,7 @@
 		<method name="get_main_function" qualifiers="const">
 			<return type="VoxelGraphFunction" />
 			<description>
+				Gets the graph used for generation.
 			</description>
 		</method>
 	</methods>

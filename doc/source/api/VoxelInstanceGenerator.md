@@ -13,29 +13,32 @@ Note: to generate voxels, see [VoxelGenerator](VoxelGenerator.md).
 ## Properties: 
 
 
-Type                                                                                            | Name                                                             | Default                    
------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------- | ---------------------------
-[float](https://docs.godotengine.org/en/stable/classes/class_float.html)                        | [density](#i_density)                                            | 0.1                        
-[EmitMode](VoxelInstanceGenerator.md#enumerations)                                              | [emit_mode](#i_emit_mode)                                        | EMIT_FROM_VERTICES (0)     
-[float](https://docs.godotengine.org/en/stable/classes/class_float.html)                        | [jitter](#i_jitter)                                              | 1.0                        
-[float](https://docs.godotengine.org/en/stable/classes/class_float.html)                        | [max_height](#i_max_height)                                      | 3.40282e+38                
-[float](https://docs.godotengine.org/en/stable/classes/class_float.html)                        | [max_scale](#i_max_scale)                                        | 1.0                        
-[float](https://docs.godotengine.org/en/stable/classes/class_float.html)                        | [max_slope_degrees](#i_max_slope_degrees)                        | 180.0                      
-[float](https://docs.godotengine.org/en/stable/classes/class_float.html)                        | [min_height](#i_min_height)                                      | 1.17549e-38                
-[float](https://docs.godotengine.org/en/stable/classes/class_float.html)                        | [min_scale](#i_min_scale)                                        | 1.0                        
-[float](https://docs.godotengine.org/en/stable/classes/class_float.html)                        | [min_slope_degrees](#i_min_slope_degrees)                        | 0.0                        
-[Noise](https://docs.godotengine.org/en/stable/classes/class_noise.html)                        | [noise](#i_noise)                                                |                            
-[Dimension](VoxelInstanceGenerator.md#enumerations)                                             | [noise_dimension](#i_noise_dimension)                            | DIMENSION_3D (1)           
-[VoxelGraphFunction](VoxelGraphFunction.md)                                                     | [noise_graph](#i_noise_graph)                                    |                            
-[float](https://docs.godotengine.org/en/stable/classes/class_float.html)                        | [noise_on_scale](#i_noise_on_scale)                              | 0.0                        
-[float](https://docs.godotengine.org/en/stable/classes/class_float.html)                        | [offset_along_normal](#i_offset_along_normal)                    | 0.0                        
-[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)                          | [random_rotation](#i_random_rotation)                            | true                       
-[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)                          | [random_vertical_flip](#i_random_vertical_flip)                  | false                      
-[Distribution](VoxelInstanceGenerator.md#enumerations)                                          | [scale_distribution](#i_scale_distribution)                      | DISTRIBUTION_QUADRATIC (1) 
-[float](https://docs.godotengine.org/en/stable/classes/class_float.html)                        | [triangle_area_threshold](#i_triangle_area_threshold)            | 0.0                        
-[float](https://docs.godotengine.org/en/stable/classes/class_float.html)                        | [vertical_alignment](#i_vertical_alignment)                      | 1.0                        
-[PackedInt32Array](https://docs.godotengine.org/en/stable/classes/class_packedint32array.html)  | [voxel_texture_filter_array](#i_voxel_texture_filter_array)      | PackedInt32Array(0)        
-[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)                          | [voxel_texture_filter_enabled](#i_voxel_texture_filter_enabled)  | false                      
+Type                                                                                            | Name                                                                               | Default                    
+----------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | ---------------------------
+[float](https://docs.godotengine.org/en/stable/classes/class_float.html)                        | [density](#i_density)                                                              | 0.1                        
+[EmitMode](VoxelInstanceGenerator.md#enumerations)                                              | [emit_mode](#i_emit_mode)                                                          | EMIT_FROM_VERTICES (0)     
+[float](https://docs.godotengine.org/en/stable/classes/class_float.html)                        | [jitter](#i_jitter)                                                                | 1.0                        
+[float](https://docs.godotengine.org/en/stable/classes/class_float.html)                        | [max_height](#i_max_height)                                                        | 3.40282e+38                
+[float](https://docs.godotengine.org/en/stable/classes/class_float.html)                        | [max_scale](#i_max_scale)                                                          | 1.0                        
+[float](https://docs.godotengine.org/en/stable/classes/class_float.html)                        | [max_slope_degrees](#i_max_slope_degrees)                                          | 180.0                      
+[float](https://docs.godotengine.org/en/stable/classes/class_float.html)                        | [min_height](#i_min_height)                                                        | 1.17549e-38                
+[float](https://docs.godotengine.org/en/stable/classes/class_float.html)                        | [min_scale](#i_min_scale)                                                          | 1.0                        
+[float](https://docs.godotengine.org/en/stable/classes/class_float.html)                        | [min_slope_degrees](#i_min_slope_degrees)                                          | 0.0                        
+[Noise](https://docs.godotengine.org/en/stable/classes/class_noise.html)                        | [noise](#i_noise)                                                                  |                            
+[Dimension](VoxelInstanceGenerator.md#enumerations)                                             | [noise_dimension](#i_noise_dimension)                                              | DIMENSION_3D (1)           
+[VoxelGraphFunction](VoxelGraphFunction.md)                                                     | [noise_graph](#i_noise_graph)                                                      |                            
+[float](https://docs.godotengine.org/en/stable/classes/class_float.html)                        | [noise_on_scale](#i_noise_on_scale)                                                | 0.0                        
+[float](https://docs.godotengine.org/en/stable/classes/class_float.html)                        | [offset_along_normal](#i_offset_along_normal)                                      | 0.0                        
+[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)                          | [random_rotation](#i_random_rotation)                                              | true                       
+[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)                          | [random_vertical_flip](#i_random_vertical_flip)                                    | false                      
+[Distribution](VoxelInstanceGenerator.md#enumerations)                                          | [scale_distribution](#i_scale_distribution)                                        | DISTRIBUTION_QUADRATIC (1) 
+[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)                          | [snap_to_generator_sdf_enabled](#i_snap_to_generator_sdf_enabled)                  | false                      
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)                            | [snap_to_generator_sdf_sample_count](#i_snap_to_generator_sdf_sample_count)        | 2                          
+[float](https://docs.godotengine.org/en/stable/classes/class_float.html)                        | [snap_to_generator_sdf_search_distance](#i_snap_to_generator_sdf_search_distance)  | 1.0                        
+[float](https://docs.godotengine.org/en/stable/classes/class_float.html)                        | [triangle_area_threshold](#i_triangle_area_threshold)                              | 0.0                        
+[float](https://docs.godotengine.org/en/stable/classes/class_float.html)                        | [vertical_alignment](#i_vertical_alignment)                                        | 1.0                        
+[PackedInt32Array](https://docs.godotengine.org/en/stable/classes/class_packedint32array.html)  | [voxel_texture_filter_array](#i_voxel_texture_filter_array)                        | PackedInt32Array(0)        
+[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)                          | [voxel_texture_filter_enabled](#i_voxel_texture_filter_enabled)                    | false                      
 <p></p>
 
 ## Methods: 
@@ -152,6 +155,18 @@ When enabled, instances will randomly be flipped upside down. This can be useful
 
 Sets how random scales are distributed.
 
+### [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_snap_to_generator_sdf_enabled"></span> **snap_to_generator_sdf_enabled** = false
+
+Enables snapping to generator SDF. The generator's SDF values will be queried to move instances along their normal to be closerr to ground. Can help reduce the occurrence of "floating" or "buried" instances when moving close to them. This requires the terrain's generator to support series generation. Side-effects: instances might become floating or buried when seen from far away; spawning might become less even.
+
+### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_snap_to_generator_sdf_sample_count"></span> **snap_to_generator_sdf_sample_count** = 2
+
+How many samples per instance will be taken from the generator in order to approach the snapping position. More samples increases precision, but is more expensive.
+
+### [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_snap_to_generator_sdf_search_distance"></span> **snap_to_generator_sdf_search_distance** = 1.0
+
+Distance up and down across which snapping will search for ground location.
+
 ### [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_triangle_area_threshold"></span> **triangle_area_threshold** = 0.0
 
 If set greater than zero, triangles of the ground with an area lower than this threshold will be ignored.
@@ -190,4 +205,4 @@ When true, enables filtering of instances based on voxel texture indices. See [v
 
 *(This method has no documentation)*
 
-_Generated on Apr 27, 2025_
+_Generated on May 15, 2025_

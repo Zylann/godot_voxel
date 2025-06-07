@@ -95,7 +95,7 @@ Gets the material override for a specific surface of the model.
 
 ### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_get_mesh_ortho_rotation_index"></span> **get_mesh_ortho_rotation_index**( ) 
 
-*(This method has no documentation)*
+Gets the 90-degree rotation ID that will be applied to the model when the library is baked.
 
 ### [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_is_mesh_collision_enabled"></span> **is_mesh_collision_enabled**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) surface_index ) 
 
@@ -115,6 +115,6 @@ Enables or disables mesh-based collision on a specific surface. It allows a mode
 
 ### [void](#)<span id="i_set_mesh_ortho_rotation_index"></span> **set_mesh_ortho_rotation_index**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) i ) 
 
-*(This method has no documentation)*
+Gets the 90-degree rotation ID that will be applied to the model when the library is baked. This is a number representing one of 24 possible 90-degree rotations. You can also use [rotate_90](VoxelBlockyModel.md#i_rotate_90).
 
-_Generated on Apr 27, 2025_
+_Generated on May 15, 2025_

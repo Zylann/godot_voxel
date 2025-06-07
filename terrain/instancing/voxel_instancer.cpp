@@ -3287,6 +3287,20 @@ void VoxelInstancer::get_configuration_warnings(PackedStringArray &warnings) con
 				}
 			});
 		}
+
+		if (_parent != nullptr) {
+			Ref<VoxelStream> stream = _parent->get_stream();
+			if (stream.is_valid() && !stream->supports_instance_blocks()) {
+				const int persistent_id = _library->find_item([](const VoxelInstanceLibraryItem &item) { //
+					return item.is_persistent();
+				});
+				if (persistent_id != -1) {
+					warnings.append(String(ZN_TTR("Library contains at least one persistent item (ID {0}), but the "
+												  "current stream ({1}) does not support saving instances."))
+											.format(varray(persistent_id, stream->get_class())));
+				}
+			}
+		}
 	}
 }
 
