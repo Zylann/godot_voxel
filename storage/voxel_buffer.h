@@ -5,6 +5,7 @@
 #include "../util/containers/flat_map.h"
 #include "../util/containers/small_vector.h"
 #include "../util/math/box3i.h"
+#include "../util/math/ortho_basis.h"
 #include "funcs.h"
 #include "metadata/voxel_metadata.h"
 
@@ -15,6 +16,8 @@ namespace zylann {
 class DynamicBitset;
 
 namespace voxel {
+
+struct VoxelFormat;
 
 // Dense voxels data storage.
 // Organized in channels of configurable bit depth.
@@ -33,6 +36,8 @@ public:
 		// Arbitrary value, 8 should be enough. Tweak for your needs.
 		MAX_CHANNELS
 	};
+
+	static const char *get_channel_name(const ChannelId id);
 
 	static const int ALL_CHANNELS_MASK = 0xff;
 
@@ -123,12 +128,14 @@ public:
 
 	VoxelBuffer &operator=(VoxelBuffer &&src);
 
-	void create(unsigned int sx, unsigned int sy, unsigned int sz);
-	void create(Vector3i size);
+	void create(unsigned int sx, unsigned int sy, unsigned int sz, const VoxelFormat *new_format = nullptr);
+	void create(const Vector3i size, const VoxelFormat *new_format = nullptr);
 
-	void clear();
+	void clear(const VoxelFormat *new_format = nullptr);
 	void clear_channel(unsigned int channel_index, uint64_t clear_value);
 	void clear_channel_f(unsigned int channel_index, real_t clear_value);
+
+	bool has_format(const VoxelFormat &p_format) const;
 
 	inline Allocator get_allocator() const {
 		return _allocator;
@@ -138,9 +145,10 @@ public:
 		return _size;
 	}
 
-	void set_default_values(FixedArray<uint64_t, VoxelBuffer::MAX_CHANNELS> values);
-
-	static uint64_t get_default_value_static(unsigned int channel_index);
+	static uint64_t get_default_raw_value(const VoxelBuffer::ChannelId channel, const VoxelBuffer::Depth depth);
+	static uint64_t get_default_sdf_raw_value(const Depth depth);
+	static float get_default_sdf_value(const Depth depth);
+	static uint64_t get_default_indices_raw_value(const Depth depth);
 
 	uint64_t get_voxel(int x, int y, int z, unsigned int channel_index) const;
 	void set_voxel(uint64_t value, int x, int y, int z, unsigned int channel_index);
@@ -476,6 +484,8 @@ public:
 
 	void get_range_f(float &out_min, float &out_max, ChannelId channel_index) const;
 
+	void transform(const math::OrthoBasis &basis);
+
 	// Metadata
 
 	VoxelMetadata &get_block_metadata() {
@@ -524,6 +534,10 @@ public:
 	const FlatMapMoveOnly<Vector3i, VoxelMetadata> &get_voxel_metadata() const {
 		return _voxel_metadata;
 	}
+
+#ifdef VOXEL_TESTS
+	void check_voxel_metadata_integrity() const;
+#endif
 
 private:
 	void init_channel_defaults();

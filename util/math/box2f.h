@@ -11,27 +11,38 @@ namespace zylann {
 // Axis-aligned 2D box using float coordinates
 class Box2f {
 public:
-	Vector2f position;
-	Vector2f size;
+	Vector2f min;
+	Vector2f max;
 
-	Box2f() {}
+	static Box2f from_min_size(const Vector2f p_min, const Vector2f p_size) {
+		return { p_min, p_min + p_size };
+	}
 
-	Box2f(Vector2f p_pos, Vector2f p_size) : position(p_pos), size(p_size) {}
+	static Box2f from_min_max(const Vector2f p_min, const Vector2f p_max) {
+		return { p_min, p_max };
+	}
 
 	bool intersects(const Box2f &other) const {
-		if (position.x >= other.position.x + other.size.x) {
+		if (min.x >= other.max.x) {
 			return false;
 		}
-		if (position.y >= other.position.y + other.size.y) {
+		if (min.y >= other.max.y) {
 			return false;
 		}
-		if (other.position.x >= position.x + size.x) {
+		if (other.min.x >= max.x) {
 			return false;
 		}
-		if (other.position.y >= position.y + size.y) {
+		if (other.min.y >= max.y) {
 			return false;
 		}
 		return true;
+	}
+
+	void clip(const Box2f lim) {
+		min.x = math::clamp(min.x, lim.min.x, lim.max.x);
+		min.y = math::clamp(min.y, lim.min.y, lim.max.y);
+		max.x = math::clamp(max.x, lim.min.x, lim.max.x);
+		max.y = math::clamp(max.y, lim.min.y, lim.max.y);
 	}
 
 	// Subtracts another box from the current box,
@@ -56,38 +67,21 @@ public:
 
 		Box2f a = *this;
 
-		Vector2f a_min = a.position;
-		Vector2f a_max = a.position + a.size;
-
-		const Vector2f b_min = b.position;
-		const Vector2f b_max = b.position + b.size;
-
-		if (a_min.x < b_min.x) {
-			const Vector2f a_rect_size(b_min.x - a_min.x, a.size.y);
-			action(Box2f(a_min, a_rect_size));
-			a_min.x = b_min.x;
-			a.position.x = b.position.x;
-			a.size.x = a_max.x - a_min.x;
+		if (a.min.x < b.min.x) {
+			action(Box2f::from_min_max(a.min, Vector2f(b.min.x, a.max.y)));
+			a.min.x = b.min.x;
 		}
-		if (a_min.y < b_min.y) {
-			const Vector2f a_rect_size(a.size.x, b_min.y - a_min.y);
-			action(Box2f(a_min, a_rect_size));
-			a_min.y = b_min.y;
-			a.position.y = b.position.y;
-			a.size.y = a_max.y - a_min.y;
+		if (a.min.y < b.min.y) {
+			action(Box2f::from_min_max(a.min, Vector2f(a.max.x, b.min.y)));
+			a.min.y = b.min.y;
 		}
 
-		if (a_max.x > b_max.x) {
-			const Vector2f a_rect_pos(b_max.x, a_min.y);
-			const Vector2f a_rect_size(a_max.x - b_max.x, a.size.y);
-			action(Box2f(a_rect_pos, a_rect_size));
-			a_max.x = b_max.x;
-			a.size.x = a_max.x - a_min.x;
+		if (a.max.x > b.max.x) {
+			action(Box2f::from_min_max(Vector2f(b.max.x, a.min.y), a.max));
+			a.max.x = b.max.x;
 		}
-		if (a_max.y > b_max.y) {
-			const Vector2f a_rect_pos(a_min.x, b_max.y);
-			const Vector2f a_rect_size(a.size.x, a_max.y - b_max.y);
-			action(Box2f(a_rect_pos, a_rect_size));
+		if (a.max.y > b.max.y) {
+			action(Box2f::from_min_max(Vector2f(a.min.x, b.max.y), a.max));
 		}
 	}
 

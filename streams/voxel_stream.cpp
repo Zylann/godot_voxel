@@ -31,6 +31,8 @@ void VoxelStream::save_voxel_blocks(Span<VoxelQueryData> p_blocks) {
 	}
 }
 
+#ifdef VOXEL_ENABLE_INSTANCER
+
 bool VoxelStream::supports_instance_blocks() const {
 	// Can be implemented in subclasses
 	return false;
@@ -46,6 +48,8 @@ void VoxelStream::load_instance_blocks(Span<InstancesQueryData> out_blocks) {
 void VoxelStream::save_instance_blocks(Span<InstancesQueryData> p_blocks) {
 	// Can be implemented in subclasses
 }
+
+#endif
 
 void VoxelStream::load_all_blocks(FullLoadingResult &result) {
 	ZN_PRINT_ERROR(format("{} does not support `load_all_blocks`", get_class()));

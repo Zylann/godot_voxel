@@ -134,12 +134,10 @@ jobs:
       # Currently we specify it, but the issue remain unsolved if it shows up again.
       # See https://github.com/godotengine/godot/issues/103520
       #
-      # TODO Enhancement: we'd like to use `warnings=extra` with MSVC but Godot doesn't compile yet with that level of warnings.
-      # See https://github.com/godotengine/godot/issues/66537
       - name: Compilation
         run: |
           set PYTHONIOENCODING=utf-8
-          scons verbose=yes warnings=all werror=yes strict_checks=yes strict_checks=yes platform=windows tests=no target=${{matrix.target}} dev_build=no precision=${{matrix.precision}} tracy=${{matrix.tracy}} production=yes "cache_path=${{github.workspace}}/.scons_cache/" cache_limit=${{env.SCONS_CACHE_LIMIT_GB}} "angle_libs=${{github.workspace}}/angle"
+          scons verbose=yes warnings=extra werror=yes strict_checks=yes strict_checks=yes platform=windows tests=no target=${{matrix.target}} dev_build=no precision=${{matrix.precision}} tracy=${{matrix.tracy}} production=yes "cache_path=${{github.workspace}}/.scons_cache/" cache_limit=${{env.SCONS_CACHE_LIMIT_GB}} "angle_libs=${{github.workspace}}/angle"
 
       - name: "Rename executable"
         if: ${{ matrix.tracy == 'yes' }}

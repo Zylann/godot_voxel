@@ -1,3 +1,4 @@
+#include "../../constants/voxel_string_names.h"
 #include "../../edition/voxel_tool.h"
 #include "../../engine/buffered_task_scheduler.h"
 #include "../../streams/save_block_data_task.h"
@@ -13,7 +14,9 @@
 #include "../../util/godot/classes/resource_saver.h"
 #include "../../util/godot/classes/time.h"
 #include "../../util/godot/classes/viewport.h"
+#include "../../util/godot/core/aabb.h"
 #include "../../util/godot/core/array.h"
+#include "../../util/godot/core/basis.h"
 #include "../../util/math/conv.h"
 #include "../../util/profiling.h"
 #include "../../util/string/format.h"
@@ -95,7 +98,7 @@ void VoxelInstancer::clear_blocks_in_layer(int layer_id) {
 	for (size_t i = 0; i < _blocks.size(); ++i) {
 		Block &block = *_blocks[i];
 		if (block.layer_id == layer_id) {
-			remove_block(i);
+			remove_block(i, false);
 			// remove_block does a remove-at-swap so we have to re-iterate on the same slot
 			--i;
 		}
@@ -209,17 +212,26 @@ void VoxelInstancer::_notification(int p_what) {
 }
 
 void VoxelInstancer::process() {
+	ZN_PROFILE_SCOPE();
+
 	process_task_results();
+
 	if (_parent != nullptr) {
-		if (_library.is_valid() && _mesh_lod_distances[0] > 0.f) {
-			process_mesh_lods();
+		if (_library.is_valid()) {
+			if (_mesh_lod_distances[0] > 0.f) {
+				process_mesh_lods();
+			}
+			process_collision_distances();
 		}
+
 #ifdef TOOLS_ENABLED
 		if (_gizmos_enabled && is_visible_in_tree()) {
 			process_gizmos();
 		}
 #endif
 	}
+
+	process_fading();
 }
 
 void VoxelInstancer::process_task_results() {
@@ -300,17 +312,29 @@ void VoxelInstancer::process_task_results() {
 		const Transform3D block_local_transform = Transform3D(Basis(), output.render_block_position * mesh_block_size);
 		const Transform3D block_global_transform = parent_transform * block_local_transform;
 
-		update_block_from_transforms( //
-				block_it->second, //
-				to_span_const(output.transforms), //
-				output.render_block_position, //
-				layer, //
-				*item, //
-				output.layer_id, //
-				world, //
-				block_global_transform, //
-				block_local_transform.origin //
+		update_block_from_transforms(
+				block_it->second,
+				to_span_const(output.transforms),
+				output.render_block_position,
+				layer,
+				*item,
+				output.layer_id,
+				world,
+				block_global_transform,
+				block_local_transform.origin
 		);
+
+		if (_fading_enabled) {
+			const VoxelInstanceLibraryMultiMeshItem *mm_item =
+					Object::cast_to<const VoxelInstanceLibraryMultiMeshItem>(item);
+
+			if (mm_item != nullptr) {
+				FadingInBlock fb;
+				fb.grid_position = output.render_block_position;
+				fb.layer_id = output.layer_id;
+				_fading_in_blocks.push_back(fb);
+			}
+		}
 	}
 
 	results.clear();
@@ -319,6 +343,8 @@ void VoxelInstancer::process_task_results() {
 #ifdef TOOLS_ENABLED
 
 void VoxelInstancer::process_gizmos() {
+	ZN_PROFILE_SCOPE();
+
 	using namespace zylann::godot;
 
 	struct L {
@@ -484,8 +510,7 @@ void VoxelInstancer::process_mesh_lods() {
 
 	const float hysteresis = 1.05;
 
-	const uint64_t mesh_lod_update_time_budget_microseconds = 500;
-	const uint64_t time_up_time = Time::get_singleton()->get_ticks_usec() + mesh_lod_update_time_budget_microseconds;
+	const uint64_t time_up_time = Time::get_singleton()->get_ticks_usec() + _mesh_lod_update_budget_microseconds;
 
 	const bool instancer_is_visible = is_visible_in_tree();
 
@@ -591,6 +616,172 @@ void VoxelInstancer::process_mesh_lods() {
 	}
 }
 
+void VoxelInstancer::process_collision_distances() {
+	ZN_PROFILE_SCOPE();
+	ZN_ASSERT_RETURN(_library.is_valid());
+
+	// Godot's physics engine (including Jolt) dies in mysterious ways when users want colliders on items that may
+	// appear tens of thousands of times.
+	// They don't want to reduce the distance at which they spawn, and instead do that only on colliders, which then
+	// appears to fix the issues.
+
+	// Note, this is a client-only process at the moment. In server-authoritative scenarios, this would have to be done
+	// for every VoxelViewer, which is more expensive.
+
+	// Get viewer position
+	const Transform3D gtrans = get_global_transform();
+	const Vector3 cam_pos_global = get_global_camera_position(*this);
+	const Vector3 cam_pos_local = gtrans.affine_inverse().xform(cam_pos_global);
+
+	ERR_FAIL_COND(_parent == nullptr);
+	const unsigned int block_size = 1 << _parent_mesh_block_size_po2;
+
+	const float hysteresis = 1.05;
+
+	const uint64_t time_up_time =
+			Time::get_singleton()->get_ticks_usec() + _collision_distance_update_budget_microseconds;
+
+	// TODO Candidate for temp allocator
+	StdVector<Transform3f> transforms;
+
+	while (_collision_distance_time_sliced_block_index < _blocks.size()) {
+		// Iterate a portion of blocks, then check timing budget once after that
+		const unsigned int desired_portion_size = 64;
+
+		const unsigned int portion_begin = _collision_distance_time_sliced_block_index;
+		const unsigned int portion_end =
+				math::min(portion_begin + desired_portion_size, static_cast<unsigned int>(_blocks.size()));
+
+		Span<UniquePtr<Block>> blocks_portion =
+				to_span_from_position_and_size(_blocks, portion_begin, portion_end - portion_begin);
+
+		_collision_distance_time_sliced_block_index = portion_end;
+
+		for (unsigned int rel_block_index = 0; rel_block_index < blocks_portion.size(); ++rel_block_index) {
+			UniquePtr<Block> &block_ptr = blocks_portion[rel_block_index];
+			Block &block = *block_ptr;
+			// Early exit for empty blocks (we only do this for multimeshes so no need to check other things)
+			if (!block.multimesh_instance.is_valid()) {
+				continue;
+			}
+
+			const VoxelInstanceLibraryItem *item_base = _library->get_item_const(block.layer_id);
+			ZN_ASSERT_CONTINUE(item_base != nullptr);
+			// TODO Optimization: would be nice to not need this cast by iterating only the same item types
+			const VoxelInstanceLibraryMultiMeshItem *item =
+					Object::cast_to<VoxelInstanceLibraryMultiMeshItem>(item_base);
+			if (item == nullptr) {
+				// Not a multimesh item
+				continue;
+			}
+			const float collision_distance = item->get_collision_distance();
+			if (collision_distance <= 0.f) {
+				// Disabled, the item must have a collider at all distances
+				continue;
+			}
+
+			const int lod_block_size = block_size << block.lod_index;
+			const Vector3i block_origin = block.grid_position * lod_block_size;
+
+			const float distance_squared = zylann::distance_squared(
+					AABB(Vector3(block_origin), zylann::godot::Vector3Utility::splat(lod_block_size)), cam_pos_local
+			);
+
+			if (block.distance_colliders_active) {
+				// Exit distance is slightly higher so it has less chance to oscillate
+				// often when near the threshold
+				if (distance_squared > math::squared(collision_distance * hysteresis)) {
+					destroy_multimesh_block_colliders(block);
+					block.distance_colliders_active = false;
+				}
+			} else {
+				if (distance_squared < math::squared(collision_distance)) {
+					const unsigned int block_index = portion_begin + rel_block_index;
+
+					get_instance_transforms_local(block, transforms);
+
+					update_multimesh_block_colliders(
+							block, block_index, item->get_multimesh_settings(), to_span(transforms), block_origin
+					);
+					block.distance_colliders_active = true;
+				}
+			}
+		}
+
+		if (Time::get_singleton()->get_ticks_usec() > time_up_time) {
+			break;
+		}
+	}
+
+	// Keep restarting the update every frame for now
+	if (_collision_distance_time_sliced_block_index >= _blocks.size()) {
+		_collision_distance_time_sliced_block_index = 0;
+	}
+}
+
+void VoxelInstancer::process_fading() {
+	ZN_PROFILE_SCOPE();
+
+	const float delta_time = get_process_delta_time();
+	const float fading_delta = delta_time / math::max(_fading_duration, 0.0001f);
+
+	const StringName &shader_param_name = VoxelStringNames::get_singleton().u_lod_fade;
+
+	{
+		unsigned int i = _fading_in_blocks.size();
+		while (i > 0) {
+			--i;
+			FadingInBlock &fb = _fading_in_blocks[i];
+			fb.progress = math::min(fb.progress + fading_delta, 1.f);
+
+			auto layer_it = _layers.find(fb.layer_id);
+			if (layer_it != _layers.end()) {
+				Layer &layer = layer_it->second;
+
+				auto block_index_it = layer.blocks.find(fb.grid_position);
+				if (block_index_it != layer.blocks.end()) {
+					const unsigned int block_index = block_index_it->second;
+
+					const UniquePtr<Block> &block_ptr = _blocks[block_index];
+#ifdef DEV_ENABLED
+					ZN_ASSERT(block_ptr != nullptr);
+#endif
+					Block &block = *block_ptr.get();
+					if (block.multimesh_instance.is_valid()) {
+						const Vector2 v(fb.progress, 1.f);
+						block.multimesh_instance.set_shader_instance_parameter(shader_param_name, v);
+					}
+				}
+			}
+
+			if (fb.progress >= 1.f) {
+				unordered_remove(_fading_in_blocks, i);
+			}
+		}
+	}
+
+	{
+		unsigned int i = _fading_out_blocks.size();
+		while (i > 0) {
+			--i;
+			FadingOutBlock &fb = _fading_out_blocks[i];
+			fb.progress = math::min(fb.progress + fading_delta, 1.f);
+			const Vector2 v(fb.progress, 0.f);
+#ifdef DEV_ENABLED
+			ZN_ASSERT(fb.multimesh_instance.is_valid());
+#endif
+			fb.multimesh_instance.set_shader_instance_parameter(shader_param_name, v);
+
+			if (fb.progress >= 1.f) {
+				// fb.multimesh_instance.destroy();
+				// unordered_remove(_fading_out_blocks, i);
+				_fading_out_blocks[i] = std::move(_fading_out_blocks.back());
+				_fading_out_blocks.pop_back();
+			}
+		}
+	}
+}
+
 // We need to do this ourselves because we don't use nodes for multimeshes
 void VoxelInstancer::update_visibility() {
 	if (!is_inside_tree()) {
@@ -678,6 +869,38 @@ Ref<VoxelInstanceLibrary> VoxelInstancer::get_library() const {
 	return _library;
 }
 
+int VoxelInstancer::get_mesh_lod_update_budget_microseconds() const {
+	return _mesh_lod_update_budget_microseconds;
+}
+
+void VoxelInstancer::set_mesh_lod_update_budget_microseconds(const int p_micros) {
+	_mesh_lod_update_budget_microseconds = math::max(p_micros, 0);
+}
+
+int VoxelInstancer::get_collision_update_budget_microseconds() const {
+	return _collision_distance_update_budget_microseconds;
+}
+
+void VoxelInstancer::set_collision_update_budget_microseconds(const int p_micros) {
+	_collision_distance_update_budget_microseconds = math::max(p_micros, 0);
+}
+
+void VoxelInstancer::set_fading_enabled(const bool enabled) {
+	_fading_enabled = enabled;
+}
+
+bool VoxelInstancer::get_fading_enabled() const {
+	return _fading_enabled;
+}
+
+void VoxelInstancer::set_fading_duration(const float duration) {
+	_fading_duration = math::clamp(duration, 0.f, 5.f);
+}
+
+float VoxelInstancer::get_fading_duration() const {
+	return _fading_duration;
+}
+
 void VoxelInstancer::regenerate_layer(uint16_t layer_id, bool regenerate_blocks) {
 	ZN_PROFILE_SCOPE();
 	ERR_FAIL_COND(_parent == nullptr);
@@ -749,7 +972,7 @@ void VoxelInstancer::regenerate_layer(uint16_t layer_id, bool regenerate_blocks)
 			const int instance_count = zylann::godot::get_visible_instance_count(**multimesh);
 			const float h = render_block_size / 2;
 			for (int i = 0; i < instance_count; ++i) {
-				// TODO This is terrible in MT mode! Think about keeping a local copy...
+				// TODO Optimize: This is very slow the first time, and there is overhead even after that.
 				const Transform3D t = multimesh->get_instance_transform(i);
 				const uint8_t octant_index = VoxelInstanceGenerator::get_octant_index(to_vec3f(t.origin), h);
 				if ((octant_mask & (1 << octant_index)) != 0) {
@@ -758,6 +981,8 @@ void VoxelInstancer::regenerate_layer(uint16_t layer_id, bool regenerate_blocks)
 			}
 		}
 	};
+
+	Ref<VoxelGenerator> voxel_generator = _parent->get_generator();
 
 	// Update existing blocks
 	for (size_t block_index = 0; block_index < _blocks.size(); ++block_index) {
@@ -798,8 +1023,12 @@ void VoxelInstancer::regenerate_layer(uint16_t layer_id, bool regenerate_blocks)
 		transform_cache.clear();
 
 		Array surface_arrays;
+		int32_t vertex_range_end = -1;
+		int32_t index_range_end = -1;
 		if (parent_vlt != nullptr) {
-			surface_arrays = parent_vlt->get_mesh_block_surface(block.grid_position, lod_index);
+			surface_arrays = parent_vlt->get_mesh_block_surface(
+					block.grid_position, lod_index, vertex_range_end, index_range_end
+			);
 		} else if (parent_vt != nullptr) {
 			surface_arrays = parent_vt->get_mesh_block_surface(block.grid_position);
 		}
@@ -813,9 +1042,12 @@ void VoxelInstancer::regenerate_layer(uint16_t layer_id, bool regenerate_blocks)
 				block.lod_index,
 				layer_id,
 				surface_arrays,
+				vertex_range_end,
+				index_range_end,
 				_up_mode,
 				octant_mask,
-				lod_block_size
+				lod_block_size,
+				voxel_generator
 		);
 
 		if (render_to_data_factor == 2 && octant_mask != 0xff) {
@@ -1016,7 +1248,16 @@ void VoxelInstancer::remove_layer(int layer_id) {
 	_layers.erase(layer_id);
 }
 
-void VoxelInstancer::remove_block(unsigned int block_index) {
+void VoxelInstancer::destroy_multimesh_block_colliders(Block &block) {
+	ZN_PROFILE_SCOPE();
+	for (unsigned int i = 0; i < block.bodies.size(); ++i) {
+		VoxelInstancerRigidBody *body = block.bodies[i];
+		body->detach_and_destroy();
+	}
+	block.bodies.clear();
+}
+
+void VoxelInstancer::remove_block(const unsigned int block_index, const bool with_fade_out) {
 #ifdef DEBUG_ENABLED
 	CRASH_COND(block_index >= _blocks.size());
 #endif
@@ -1036,10 +1277,7 @@ void VoxelInstancer::remove_block(unsigned int block_index) {
 
 	// Destroy objects linked to the block
 
-	for (unsigned int i = 0; i < block->bodies.size(); ++i) {
-		VoxelInstancerRigidBody *body = block->bodies[i];
-		body->detach_and_destroy();
-	}
+	destroy_multimesh_block_colliders(*block);
 
 	for (unsigned int i = 0; i < block->scene_instances.size(); ++i) {
 		SceneInstance instance = block->scene_instances[i];
@@ -1049,13 +1287,27 @@ void VoxelInstancer::remove_block(unsigned int block_index) {
 		instance.root->queue_free();
 	}
 
-	// If the block we removed was also the last one, we don't enter here
+	// Update block index references, since we had to change the index of the last block during swap-remove.
+	// If the block we removed was actually the last one, we don't enter here
 	if (block.get() != &moved_block) {
 		// Update the index of the moved block referenced in its layer
 		Layer &layer = get_layer(moved_block.layer_id);
 		auto it = layer.blocks.find(moved_block.grid_position);
 		CRASH_COND(it == layer.blocks.end());
 		it->second = block_index;
+
+		for (VoxelInstancerRigidBody *body : moved_block.bodies) {
+			body->set_render_block_index(block_index);
+		}
+		for (const SceneInstance &scene : moved_block.scene_instances) {
+			scene.component->set_render_block_index(block_index);
+		}
+	}
+
+	if (with_fade_out && block->multimesh_instance.is_valid()) {
+		FadingOutBlock fb;
+		fb.multimesh_instance = std::move(block->multimesh_instance);
+		_fading_out_blocks.push_back(std::move(fb));
 	}
 }
 
@@ -1066,11 +1318,17 @@ void VoxelInstancer::remove_block(unsigned int block_index) {
 // 	lod.loaded_instances_data.insert(std::make_pair(grid_position, std::move(instances)));
 // }
 
-void VoxelInstancer::on_mesh_block_enter(Vector3i render_grid_position, unsigned int lod_index, Array surface_arrays) {
+void VoxelInstancer::on_mesh_block_enter(
+		const Vector3i render_grid_position,
+		const unsigned int lod_index,
+		Array surface_arrays,
+		const int32_t vertex_range_end,
+		const int32_t index_range_end
+) {
 	if (lod_index >= _lods.size()) {
 		return;
 	}
-	create_render_blocks(render_grid_position, lod_index, surface_arrays);
+	create_render_blocks(render_grid_position, lod_index, surface_arrays, vertex_range_end, index_range_end);
 }
 
 void VoxelInstancer::on_mesh_block_exit(Vector3i render_grid_position, unsigned int lod_index) {
@@ -1124,7 +1382,7 @@ void VoxelInstancer::on_mesh_block_exit(Vector3i render_grid_position, unsigned 
 
 		auto block_it = layer.blocks.find(render_grid_position);
 		if (block_it != layer.blocks.end()) {
-			remove_block(block_it->second);
+			remove_block(block_it->second, _fading_enabled);
 		}
 	}
 }
@@ -1155,6 +1413,91 @@ void VoxelInstancer::save_all_modified_blocks(
 		}
 		lod.modified_blocks.clear();
 	}
+}
+
+void VoxelInstancer::remove_instances_in_sphere(const Vector3 p_center, const float p_radius) {
+	ZN_PROFILE_MESSAGE("RemoveInSphere");
+
+	class RemoveInSphere : public IAreaOperation {
+	private:
+		VoxelInstancer &_instancer;
+		const Vector3 _center;
+		const float _radius_squared;
+		MMRemovalAction _mm_removal_action;
+		uint32_t _mm_removal_action_item_id;
+
+	public:
+		RemoveInSphere(VoxelInstancer &pp_instancer, const Vector3 pp_center, const float pp_radius) :
+				_instancer(pp_instancer),
+				_center(pp_center),
+				_radius_squared(pp_radius * pp_radius),
+				_mm_removal_action_item_id(VoxelInstanceLibrary::MAX_ID) //
+		{}
+
+		Result execute(Block &block) override {
+			ZN_PROFILE_SCOPE();
+
+			const unsigned int base_block_size = 1 << _instancer._parent_mesh_block_size_po2;
+			const Vector3 block_origin = Vector3i(block.grid_position * (base_block_size << block.lod_index));
+			const Vector3f center_local = to_vec3f(_center - block_origin);
+
+			// TODO Candidate for temp allocator
+			// TODO If we had our own cache, we might not need to allocate at all
+			StdVector<Vector3f> instance_positions;
+			get_instance_positions_local(block, base_block_size, instance_positions, nullptr);
+
+			// TODO Candidate for temp allocator
+			StdVector<uint32_t> instances_to_remove;
+			unsigned int instance_index = 0;
+			for (const Vector3f &instance_pos : instance_positions) {
+				const float ds = math::distance_squared(instance_pos, center_local);
+				if (ds < _radius_squared) {
+					instances_to_remove.push_back(instance_index);
+				}
+				++instance_index;
+			}
+
+			if (instances_to_remove.size() == 0) {
+				return { false };
+			}
+
+			try_update_item_cache(block.layer_id);
+
+			remove_instances_by_index(block, base_block_size, to_span(instances_to_remove), _mm_removal_action);
+
+			return { true };
+		}
+
+	private:
+		void try_update_item_cache(const uint32_t item_id) {
+			if (item_id == _mm_removal_action_item_id) {
+				return;
+			}
+
+			// Re-cache item info
+
+			_mm_removal_action = MMRemovalAction();
+			_mm_removal_action_item_id = item_id;
+
+			if (_instancer._library.is_null()) {
+				return;
+			}
+			VoxelInstanceLibraryItem *item = _instancer._library->get_item(item_id);
+			if (item == nullptr) {
+				return;
+			}
+			VoxelInstanceLibraryMultiMeshItem *mm_item = Object::cast_to<VoxelInstanceLibraryMultiMeshItem>(item);
+			if (mm_item == nullptr) {
+				return;
+			}
+			_mm_removal_action = get_mm_removal_action(&_instancer, mm_item);
+		}
+	};
+
+	RemoveInSphere op(*this, p_center, p_radius);
+
+	const Vector3 rv(p_radius, p_radius, p_radius);
+	do_area_operation(AABB(p_center - rv, 2 * rv), op);
 }
 
 VoxelInstancer::SceneInstance VoxelInstancer::create_scene_instance(
@@ -1200,9 +1543,9 @@ VoxelInstancer::SceneInstance VoxelInstancer::create_scene_instance(
 
 unsigned int VoxelInstancer::create_block(
 		Layer &layer,
-		uint16_t layer_id,
-		Vector3i grid_position,
-		bool pending_instances
+		const uint16_t layer_id,
+		const Vector3i grid_position,
+		const bool pending_instances
 ) {
 	UniquePtr<Block> block = make_unique_instance<Block>();
 	block->layer_id = layer_id;
@@ -1220,16 +1563,16 @@ unsigned int VoxelInstancer::create_block(
 	return block_index;
 }
 
-void VoxelInstancer::update_block_from_transforms( //
-		int block_index, //
-		Span<const Transform3f> transforms, //
-		Vector3i grid_position, //
-		Layer &layer, //
-		const VoxelInstanceLibraryItem &item_base, //
-		uint16_t layer_id, //
-		World3D &world, //
-		const Transform3D &block_global_transform, //
-		Vector3 block_local_position //
+void VoxelInstancer::update_block_from_transforms(
+		int block_index,
+		Span<const Transform3f> transforms,
+		const Vector3i grid_position,
+		Layer &layer,
+		const VoxelInstanceLibraryItem &item_base,
+		const uint16_t layer_id,
+		World3D &world,
+		const Transform3D &block_global_transform,
+		const Vector3 block_local_position
 ) {
 	ZN_PROFILE_SCOPE();
 
@@ -1243,191 +1586,240 @@ void VoxelInstancer::update_block_from_transforms( //
 #endif
 	Block &block = *_blocks[block_index];
 
-	// TODO Split in two functions?
-
 	// Update multimesh
 	const VoxelInstanceLibraryMultiMeshItem *item = Object::cast_to<VoxelInstanceLibraryMultiMeshItem>(&item_base);
 	if (item != nullptr) {
-		const VoxelInstanceLibraryMultiMeshItem::Settings &settings = item->get_multimesh_settings();
-
-		if (transforms.size() == 0) {
-			if (block.multimesh_instance.is_valid()) {
-				block.multimesh_instance.set_multimesh(Ref<MultiMesh>());
-				block.multimesh_instance.destroy();
-			}
-
-		} else {
-			Ref<MultiMesh> multimesh = block.multimesh_instance.get_multimesh();
-			if (multimesh.is_null()) {
-				multimesh.instantiate();
-				multimesh->set_transform_format(MultiMesh::TRANSFORM_3D);
-				multimesh->set_use_colors(false);
-				multimesh->set_use_custom_data(false);
-			} else {
-				multimesh->set_visible_instance_count(-1);
-			}
-			PackedFloat32Array bulk_array;
-			zylann::godot::DirectMultiMeshInstance::make_transform_3d_bulk_array(transforms, bulk_array);
-			multimesh->set_instance_count(transforms.size());
-
-			// Setting the mesh BEFORE `multimesh_set_buffer` because otherwise Godot computes the AABB inside
-			// `multimesh_set_buffer` BY DOWNLOADING BACK THE BUFFER FROM THE GRAPHICS CARD which can incur a very harsh
-			// performance penalty
-			// TODO If we could use custom AABBs, we would not need this reordering
-			if (settings.mesh_lod_count > 0) {
-				if (block.current_mesh_lod < settings.mesh_lod_count) {
-					multimesh->set_mesh(settings.mesh_lods[block.current_mesh_lod]);
-				}
-			}
-
-			// TODO Waiting for Godot to expose the method on the resource object
-			// multimesh->set_as_bulk_array(bulk_array);
-			RenderingServer::get_singleton()->multimesh_set_buffer(multimesh->get_rid(), bulk_array);
-
-			if (!block.multimesh_instance.is_valid()) {
-				block.multimesh_instance.create();
-				block.multimesh_instance.set_interpolated(false);
-				block.multimesh_instance.set_visible(
-						is_visible() &&
-						!(item->get_hide_beyond_max_lod() && block.current_mesh_lod == settings.mesh_lod_count)
-				);
-			}
-			block.multimesh_instance.set_multimesh(multimesh);
-			block.multimesh_instance.set_render_layer(settings.render_layer);
-			block.multimesh_instance.set_world(&world);
-			block.multimesh_instance.set_transform(block_global_transform);
-			block.multimesh_instance.set_material_override(settings.material_override);
-			block.multimesh_instance.set_cast_shadows_setting(settings.shadow_casting_setting);
-			block.multimesh_instance.set_gi_mode(settings.gi_mode);
-
-			if (settings.mesh_lod_count > 1 || (settings.mesh_lod_count == 1 && item->get_hide_beyond_max_lod())) {
-				// Hide for now, let the LOD system show/hide and assign the right mesh when it runs. We do this because
-				// the LOD system doesn't necessarily update every blocks every frame, which would flicker at their full
-				// LOD when spawning
-				block.current_mesh_lod = settings.mesh_lod_count;
-				block.multimesh_instance.set_visible(false);
-			}
-		}
-
-		// Update bodies
-		Span<const CollisionShapeInfo> collision_shapes = to_span(settings.collision_shapes);
-		if (collision_shapes.size() > 0) {
-			ZN_PROFILE_SCOPE_NAMED("Update multimesh bodies");
-
-			const int data_block_size_po2 = _parent_data_block_size_po2;
-
-			// Add new bodies
-			for (unsigned int instance_index = 0; instance_index < transforms.size(); ++instance_index) {
-				const Transform3D local_transform = to_transform3(transforms[instance_index]);
-				// Bodies are child nodes of the instancer, so we use local block coordinates
-				const Transform3D body_transform(local_transform.basis, local_transform.origin + block_local_position);
-
-				VoxelInstancerRigidBody *body;
-
-				if (instance_index < static_cast<unsigned int>(block.bodies.size())) {
-					body = block.bodies[instance_index];
-
-				} else {
-					// TODO Performance: removing nodes from the tree is slow. It causes framerate stalls.
-					// See https://github.com/godotengine/godot/issues/61929
-					// Instances with collisions can lead to the creation of thousands of nodes. While this works in
-					// practice, removal proved to be very slow. Not because of physics, but because of an issue in the
-					// node system itself. A possible workaround is to either use servers directly, or put nodes as
-					// children of more nodes acting as buckets.
-					body = memnew(VoxelInstancerRigidBody);
-					body->attach(this);
-					body->set_instance_index(instance_index);
-					body->set_render_block_index(block_index);
-					body->set_data_block_position(math::floor_to_int(body_transform.origin) >> data_block_size_po2);
-					body->set_collision_layer(settings.collision_layer);
-					body->set_collision_mask(settings.collision_mask);
-
-					for (unsigned int i = 0; i < collision_shapes.size(); ++i) {
-						const CollisionShapeInfo &shape_info = collision_shapes[i];
-						CollisionShape3D *cs = memnew(CollisionShape3D);
-						cs->set_shape(shape_info.shape);
-						cs->set_transform(shape_info.transform);
-						body->add_child(cs);
-					}
-
-					for (const StringName &group_name : settings.group_names) {
-						body->add_to_group(group_name);
-					}
-
-					add_child(body);
-					block.bodies.push_back(body);
-				}
-
-				body->set_transform(body_transform);
-			}
-
-			// Remove old bodies
-			for (unsigned int instance_index = transforms.size(); instance_index < block.bodies.size();
-				 ++instance_index) {
-				VoxelInstancerRigidBody *body = block.bodies[instance_index];
-				body->detach_and_destroy();
-			}
-
-			block.bodies.resize(transforms.size());
-		}
+		update_multimesh_block_from_transforms(
+				block, block_index, block_global_transform, block_local_position, transforms, *item, world
+		);
+		return;
 	}
 
 	// Update scene instances
 	const VoxelInstanceLibrarySceneItem *scene_item = Object::cast_to<VoxelInstanceLibrarySceneItem>(&item_base);
 	if (scene_item != nullptr) {
-		ZN_PROFILE_SCOPE_NAMED("Update scene instances");
-		ERR_FAIL_COND_MSG(
-				scene_item->get_scene().is_null(),
-				String("{0} ({1}) is missing an attached scene in {2} ({3})")
-						.format(varray(VoxelInstanceLibrarySceneItem::get_class_static(),
-									   item_base.get_item_name(),
-									   VoxelInstancer::get_class_static()),
-								get_path())
-		);
-
-		const int data_block_size_po2 = _parent_data_block_size_po2;
-
-		// Add new instances
-		for (unsigned int instance_index = 0; instance_index < transforms.size(); ++instance_index) {
-			const Transform3D local_transform = to_transform3(transforms[instance_index]);
-			const Transform3D body_transform(local_transform.basis, local_transform.origin + block_local_position);
-
-			SceneInstance instance;
-
-			if (instance_index < static_cast<unsigned int>(block.bodies.size())) {
-				instance = block.scene_instances[instance_index];
-				instance.root->set_transform(body_transform);
-
-			} else {
-				instance = create_scene_instance(
-						*scene_item, instance_index, block_index, body_transform, data_block_size_po2
-				);
-				ERR_CONTINUE(instance.root == nullptr);
-				block.scene_instances.push_back(instance);
-			}
-
-			// TODO Deserialize state
-		}
-
-		// Remove old instances
-		for (unsigned int instance_index = transforms.size(); instance_index < block.scene_instances.size();
-			 ++instance_index) {
-			SceneInstance instance = block.scene_instances[instance_index];
-			ERR_CONTINUE(instance.component == nullptr);
-			instance.component->detach();
-			ERR_CONTINUE(instance.root == nullptr);
-			instance.root->queue_free();
-		}
-
-		block.scene_instances.resize(transforms.size());
+		update_scene_block_from_transforms(block, block_index, block_local_position, transforms, *scene_item);
 	}
 }
 
-void VoxelInstancer::create_render_blocks(Vector3i render_grid_position, int lod_index, Array surface_arrays) {
+void VoxelInstancer::update_multimesh_block_from_transforms(
+		Block &block,
+		const unsigned int block_index,
+		const Transform3D &block_global_transform,
+		const Vector3 block_local_position,
+		Span<const Transform3f> transforms,
+		const VoxelInstanceLibraryMultiMeshItem &item,
+		World3D &world
+) {
+	ZN_PROFILE_SCOPE();
+
+	const VoxelInstanceLibraryMultiMeshItem::Settings &settings = item.get_multimesh_settings();
+
+	if (transforms.size() == 0) {
+		if (block.multimesh_instance.is_valid()) {
+			block.multimesh_instance.set_multimesh(Ref<MultiMesh>());
+			block.multimesh_instance.destroy();
+		}
+
+	} else {
+		Ref<MultiMesh> multimesh = block.multimesh_instance.get_multimesh();
+		if (multimesh.is_null()) {
+			multimesh.instantiate();
+			multimesh->set_transform_format(MultiMesh::TRANSFORM_3D);
+			multimesh->set_use_colors(false);
+			multimesh->set_use_custom_data(false);
+		} else {
+			multimesh->set_visible_instance_count(-1);
+		}
+		PackedFloat32Array bulk_array;
+		zylann::godot::DirectMultiMeshInstance::make_transform_3d_bulk_array(transforms, bulk_array);
+		multimesh->set_instance_count(transforms.size());
+
+		// Setting the mesh BEFORE `multimesh_set_buffer` because otherwise Godot computes the AABB inside
+		// `multimesh_set_buffer` BY DOWNLOADING BACK THE BUFFER FROM THE GRAPHICS CARD which can incur a very harsh
+		// performance penalty
+		// TODO If we could use custom AABBs, we would not need this reordering
+		if (settings.mesh_lod_count > 0) {
+			if (block.current_mesh_lod < settings.mesh_lod_count) {
+				multimesh->set_mesh(settings.mesh_lods[block.current_mesh_lod]);
+			}
+		}
+
+		// TODO Waiting for Godot to expose the method on the resource object
+		// multimesh->set_as_bulk_array(bulk_array);
+		RenderingServer::get_singleton()->multimesh_set_buffer(multimesh->get_rid(), bulk_array);
+
+		if (!block.multimesh_instance.is_valid()) {
+			block.multimesh_instance.create();
+			block.multimesh_instance.set_interpolated(false);
+			block.multimesh_instance.set_visible(
+					is_visible() &&
+					!(item.get_hide_beyond_max_lod() && block.current_mesh_lod == settings.mesh_lod_count)
+			);
+		}
+		block.multimesh_instance.set_multimesh(multimesh);
+		block.multimesh_instance.set_render_layer(settings.render_layer);
+		block.multimesh_instance.set_world(&world);
+		block.multimesh_instance.set_transform(block_global_transform);
+		block.multimesh_instance.set_material_override(settings.material_override);
+		block.multimesh_instance.set_cast_shadows_setting(settings.shadow_casting_setting);
+		block.multimesh_instance.set_gi_mode(settings.gi_mode);
+
+		if (settings.mesh_lod_count > 1 || (settings.mesh_lod_count == 1 && item.get_hide_beyond_max_lod())) {
+			// Hide for now, let the LOD system show/hide and assign the right mesh when it runs. We do this because
+			// the LOD system doesn't necessarily update every blocks every frame, which would flicker at their full
+			// LOD when spawning
+			block.current_mesh_lod = settings.mesh_lod_count;
+			block.multimesh_instance.set_visible(false);
+		}
+	}
+
+	if (item.get_collision_distance() < 0.f) {
+		// Colliders always present, create them all right away
+		update_multimesh_block_colliders(block, block_index, settings, transforms, block_local_position);
+	}
+}
+
+void VoxelInstancer::update_multimesh_block_colliders(
+		Block &block,
+		const uint32_t block_index,
+		const InstanceLibraryMultiMeshItemSettings &settings,
+		Span<const Transform3f> transforms,
+		const Vector3 block_local_position
+) {
+	// Update bodies
+	Span<const CollisionShapeInfo> collision_shapes = to_span(settings.collision_shapes);
+	if (collision_shapes.size() == 0) {
+		return;
+	}
+
+	ZN_PROFILE_SCOPE();
+
+	const int data_block_size_po2 = _parent_data_block_size_po2;
+
+	// Add new bodies
+	for (unsigned int instance_index = 0; instance_index < transforms.size(); ++instance_index) {
+		const Transform3D local_transform = to_transform3(transforms[instance_index]);
+		// Bodies are child nodes of the instancer, so we use local block coordinates
+		const Transform3D body_transform(local_transform.basis, local_transform.origin + block_local_position);
+
+		VoxelInstancerRigidBody *body;
+
+		if (instance_index < block.bodies.size()) {
+			// Body already exists, we'll only update its properties
+			body = block.bodies[instance_index];
+
+		} else {
+			// Create body
+
+			// TODO Performance: removing nodes from the tree is slow. It causes framerate stalls.
+			// See https://github.com/godotengine/godot/issues/61929
+			// Instances with collisions can lead to the creation of thousands of nodes. While this works in
+			// practice, removal proved to be very slow. Not because of physics, but because of an issue in the
+			// node system itself. A possible workaround is to either use servers directly, or put nodes as
+			// children of more nodes acting as buckets.
+			body = memnew(VoxelInstancerRigidBody);
+			body->attach(this);
+			body->set_instance_index(instance_index);
+			body->set_render_block_index(block_index);
+			body->set_data_block_position(math::floor_to_int(body_transform.origin) >> data_block_size_po2);
+			body->set_collision_layer(settings.collision_layer);
+			body->set_collision_mask(settings.collision_mask);
+
+			for (unsigned int i = 0; i < collision_shapes.size(); ++i) {
+				const CollisionShapeInfo &shape_info = collision_shapes[i];
+				CollisionShape3D *cs = memnew(CollisionShape3D);
+				cs->set_shape(shape_info.shape);
+				cs->set_transform(shape_info.transform);
+				body->add_child(cs);
+			}
+
+			for (const StringName &group_name : settings.group_names) {
+				body->add_to_group(group_name);
+			}
+
+			add_child(body);
+			block.bodies.push_back(body);
+		}
+
+		body->set_transform(body_transform);
+	}
+
+	// Remove excess bodies
+	for (unsigned int instance_index = transforms.size(); instance_index < block.bodies.size(); ++instance_index) {
+		VoxelInstancerRigidBody *body = block.bodies[instance_index];
+		body->detach_and_destroy();
+	}
+
+	block.bodies.resize(transforms.size());
+}
+
+void VoxelInstancer::update_scene_block_from_transforms(
+		Block &block,
+		const unsigned int block_index,
+		const Vector3 block_local_position,
+		Span<const Transform3f> transforms,
+		const VoxelInstanceLibrarySceneItem &scene_item
+) {
+	ZN_PROFILE_SCOPE();
+
+	ERR_FAIL_COND_MSG(
+			scene_item.get_scene().is_null(),
+			String("{0} ({1}) is missing an attached scene in {2} ({3})")
+					.format(varray(VoxelInstanceLibrarySceneItem::get_class_static(),
+								   scene_item.get_item_name(),
+								   VoxelInstancer::get_class_static()),
+							get_path())
+	);
+
+	const int data_block_size_po2 = _parent_data_block_size_po2;
+
+	// Add new instances
+	for (unsigned int instance_index = 0; instance_index < transforms.size(); ++instance_index) {
+		const Transform3D local_transform = to_transform3(transforms[instance_index]);
+		const Transform3D body_transform(local_transform.basis, local_transform.origin + block_local_position);
+
+		SceneInstance instance;
+
+		if (instance_index < static_cast<unsigned int>(block.bodies.size())) {
+			instance = block.scene_instances[instance_index];
+			instance.root->set_transform(body_transform);
+
+		} else {
+			instance =
+					create_scene_instance(scene_item, instance_index, block_index, body_transform, data_block_size_po2);
+			ERR_CONTINUE(instance.root == nullptr);
+			block.scene_instances.push_back(instance);
+		}
+
+		// TODO Deserialize state
+	}
+
+	// Remove old instances
+	for (unsigned int instance_index = transforms.size(); instance_index < block.scene_instances.size();
+		 ++instance_index) {
+		SceneInstance instance = block.scene_instances[instance_index];
+		ERR_CONTINUE(instance.component == nullptr);
+		instance.component->detach();
+		ERR_CONTINUE(instance.root == nullptr);
+		instance.root->queue_free();
+	}
+
+	block.scene_instances.resize(transforms.size());
+}
+
+void VoxelInstancer::create_render_blocks(
+		const Vector3i render_grid_position,
+		const int lod_index,
+		Array surface_arrays,
+		const int32_t vertex_range_end,
+		const int32_t index_range_end
+) {
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT_RETURN(_library.is_valid());
 	ZN_ASSERT_RETURN(_parent != nullptr);
 	Ref<VoxelStream> stream = _parent->get_stream();
+	Ref<VoxelGenerator> generator = _parent->get_generator();
 
 	const unsigned int render_block_size = 1 << _parent_mesh_block_size_po2;
 	const unsigned int data_block_size = 1 << _parent_data_block_size_po2;
@@ -1448,17 +1840,20 @@ void VoxelInstancer::create_render_blocks(Vector3i render_grid_position, int lod
 		create_block(layer, layer_id, render_grid_position, true);
 	}
 
-	LoadInstanceChunkTask *task = ZN_NEW(LoadInstanceChunkTask( //
-			_loading_results, //
-			stream, //
-			lod.quick_reload_cache, //
-			_library, //
-			surface_arrays, //
-			render_grid_position, //
-			lod_index, //
-			render_block_size, //
-			data_block_size, //
-			_up_mode //
+	LoadInstanceChunkTask *task = ZN_NEW(LoadInstanceChunkTask(
+			_loading_results,
+			stream,
+			generator,
+			lod.quick_reload_cache,
+			_library,
+			surface_arrays,
+			vertex_range_end,
+			index_range_end,
+			render_grid_position,
+			lod_index,
+			render_block_size,
+			data_block_size,
+			_up_mode
 	));
 
 	VoxelEngine::get_singleton().push_async_io_task(task);
@@ -1548,9 +1943,7 @@ SaveBlockDataTask *VoxelInstancer::save_block(
 
 				// TODO Optimization: it would be nice to get the whole array at once
 				for (int instance_index = 0; instance_index < instance_count; ++instance_index) {
-					// TODO This is terrible in MT mode! Think about keeping a local copy...
-					// TODO This is also terrible because it downloads the data from GPU (although Godot makes a cache
-					// by itself)
+					// TODO Optimize: This is very slow the first time, and there is overhead even after that.
 					layer_data.instances[instance_index].transform =
 							to_transform3f(multimesh->get_instance_transform(instance_index));
 				}
@@ -1648,12 +2041,520 @@ SaveBlockDataTask *VoxelInstancer::save_block(
 	return task;
 }
 
+inline bool detect_ground(
+		const Vector3 instance_position_local,
+		const Vector3 instance_up,
+		const Vector3 block_origin,
+		const float sd_threshold,
+		const float sd_offset,
+		const bool bidirectional,
+		const VoxelTool &voxel_tool
+) {
+	const Vector3 normal_offset = sd_offset * instance_up;
+	const Vector3 instance_pos_terrain = instance_position_local + block_origin;
+	const Vector3 instance_pos_terrain_below = instance_pos_terrain + normal_offset;
+
+	// TODO Optimize: use a transaction instead of random single queries
+	const float sdf_below = voxel_tool.get_voxel_f_interpolated(instance_pos_terrain_below);
+	if (sdf_below <= sd_threshold) {
+		// Still enough ground
+		return true;
+	}
+
+	if (bidirectional) {
+		// Attempt sampling above instead, in case the instance is flipped over
+		const Vector3 instance_pos_terrain_above = instance_pos_terrain - normal_offset;
+		const float sdf_above = voxel_tool.get_voxel_f_interpolated(instance_pos_terrain_above);
+		if (sdf_above <= sd_threshold) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+VoxelInstancer::MMRemovalAction VoxelInstancer::get_mm_removal_action(
+		VoxelInstancer *instancer,
+		VoxelInstanceLibraryMultiMeshItem *mm_item
+) {
+	if (mm_item == nullptr) {
+		ZN_PRINT_ERROR_ONCE("Didn't expect multimesh item to be null, bug?");
+		return MMRemovalAction();
+	}
+
+	switch (mm_item->get_removal_behavior()) {
+		case VoxelInstanceLibraryMultiMeshItem::REMOVAL_BEHAVIOR_NONE:
+			break;
+
+		case VoxelInstanceLibraryMultiMeshItem::REMOVAL_BEHAVIOR_INSTANTIATE: {
+			{
+				Ref<PackedScene> scene = mm_item->get_removal_scene();
+				if (scene.is_null()) {
+#ifdef TOOLS_ENABLED
+					Ref<VoxelInstanceLibrary> lib = instancer->get_library();
+					const int item_id = lib->get_item_id(mm_item);
+					ZN_PRINT_ERROR_ONCE(format(
+							"Removal behavior of item {} is set to instantiate a scene, but the scene is null.", item_id
+					));
+					return MMRemovalAction();
+#endif
+				}
+			}
+			MMRemovalAction action;
+			action.context = { instancer, mm_item };
+			action.callback = [](MMRemovalAction::Context ctx, const Transform3D &trans) {
+				Ref<PackedScene> scene = ctx.item->get_removal_scene();
+				Node *root = scene->instantiate();
+				Node3D *root_3d = Object::cast_to<Node3D>(root);
+				if (root_3d != nullptr) {
+					root_3d->set_transform(trans);
+					// We can't add_child when the callback occurs from within the removal of bodies, because Godot
+					// locks children of VoxelInstancer during the process, preventing from adding nodes...
+					// ctx.instancer->add_child(root);
+					ctx.instancer->call_deferred(VoxelStringNames::get_singleton().add_child, root);
+				} else {
+#ifdef TOOLS_ENABLED
+					Ref<VoxelInstanceLibrary> lib = ctx.instancer->get_library();
+					const int item_id = lib->get_item_id(ctx.item);
+					ZN_PRINT_ERROR_ONCE(
+							format("Removal behavior of item {} is set to instantiate a scene, but its root is not "
+								   "a Node3D.",
+								   item_id)
+					);
+#endif
+				}
+			};
+			return action;
+		}
+
+		case VoxelInstanceLibraryMultiMeshItem::REMOVAL_BEHAVIOR_CALLBACK: {
+			MMRemovalAction action;
+			action.context = { instancer, mm_item };
+			action.callback = [](MMRemovalAction::Context ctx, const Transform3D &trans) {
+				ctx.item->trigger_removal_callback(ctx.instancer, trans);
+			};
+			return action;
+		}
+
+		default:
+			ZN_PRINT_ERROR("Unknown removal mode");
+			break;
+	}
+
+	return MMRemovalAction();
+}
+
+void VoxelInstancer::get_instance_positions_local(
+		const Block &block,
+		const unsigned int base_block_size,
+		StdVector<Vector3f> &dst_positions,
+		StdVector<Vector3f> *dst_normals
+) {
+	ZN_PROFILE_SCOPE();
+
+	dst_positions.clear();
+	if (dst_normals != nullptr) {
+		dst_normals->clear();
+	}
+
+	if (block.scene_instances.size() > 0) {
+		const Vector3 block_origin(block.grid_position * (base_block_size << block.lod_index));
+
+		dst_positions.reserve(block.scene_instances.size());
+
+		for (const SceneInstance &si : block.scene_instances) {
+			const Vector3 pos_terrain = si.root->get_position();
+			dst_positions.push_back(to_vec3f(pos_terrain - block_origin));
+		}
+
+		if (dst_normals != nullptr) {
+			dst_normals->reserve(dst_positions.size());
+
+			for (const SceneInstance &si : block.scene_instances) {
+				const Vector3 normal = zylann::godot::BasisUtility::get_up(si.root->get_basis());
+				dst_positions.push_back(to_vec3f(normal));
+			}
+		}
+
+	} else {
+		if (!block.multimesh_instance.is_valid()) {
+			// Empty block
+			return;
+		}
+
+		Ref<MultiMesh> multimesh = block.multimesh_instance.get_multimesh();
+		ZN_ASSERT_RETURN(multimesh.is_valid());
+
+		const unsigned int instance_count = zylann::godot::get_visible_instance_count(**multimesh);
+		{
+			ZN_PROFILE_SCOPE_NAMED("Alloc P");
+			dst_positions.reserve(instance_count);
+		}
+
+		if (dst_normals != nullptr) {
+			{
+				ZN_PROFILE_SCOPE_NAMED("Alloc N");
+				dst_normals->reserve(instance_count);
+			}
+
+			for (unsigned int instance_index = 0; instance_index < instance_count; ++instance_index) {
+				// TODO Optimize: This is very slow the first time, and there is overhead even after that.
+				//      Would it be better to use `multimesh_get_buffer`? Unfortunately it ALWAYS allocates (it
+				//      isn't even benefiting from CoW), and it also doesn't cache, so to force it we'd have to do a
+				//      dummy call to `get_instance_transform`. Using our own cache and carefully avoiding Godot
+				//      from populating its own is still better...
+				const Transform3D instance_transform = multimesh->get_instance_transform(instance_index);
+				dst_positions.push_back(to_vec3f(instance_transform.origin));
+				dst_normals->push_back(to_vec3f(zylann::godot::BasisUtility::get_up(instance_transform.basis)));
+			}
+		} else {
+			for (unsigned int instance_index = 0; instance_index < instance_count; ++instance_index) {
+				// TODO Optimize: This is very slow the first time, and there is overhead even after that.
+				const Transform3D instance_transform = multimesh->get_instance_transform(instance_index);
+				dst_positions.push_back(to_vec3f(instance_transform.origin));
+			}
+		}
+	}
+}
+
+void VoxelInstancer::get_instance_transforms_local(const Block &block, StdVector<Transform3f> &dst) {
+	ZN_PROFILE_SCOPE();
+
+	Ref<MultiMesh> multimesh = block.multimesh_instance.get_multimesh();
+	ZN_ASSERT_RETURN(multimesh.is_valid());
+	const unsigned int instance_count = zylann::godot::get_visible_instance_count(**multimesh);
+
+	dst.resize(instance_count);
+
+	for (unsigned int instance_index = 0; instance_index < instance_count; ++instance_index) {
+		// TODO Optimize: This is very slow the first time, and there is overhead even after that.
+		const Transform3D trans = multimesh->get_instance_transform(instance_index);
+		dst[instance_index] = to_transform3f(trans);
+	}
+}
+
+void VoxelInstancer::remove_instances_by_index(
+		Block &block,
+		const uint32_t base_block_size,
+		Span<const uint32_t> ascending_indices,
+		const MMRemovalAction mm_removal_action
+) {
+#ifdef DEV_ENABLED
+	for (unsigned int i = 1; i < ascending_indices.size(); ++i) {
+		ZN_ASSERT(ascending_indices[i] > ascending_indices[i - 1]);
+	}
+#endif
+
+	if (block.scene_instances.size() > 0) {
+		remove_scene_instances_by_index(block, ascending_indices);
+
+	} else {
+		remove_multimesh_instances_by_index(block, base_block_size, ascending_indices, mm_removal_action);
+	}
+}
+
+void VoxelInstancer::remove_scene_instances_by_index(Block &block, Span<const uint32_t> ascending_indices) {
+	ZN_PROFILE_SCOPE();
+
+	const unsigned int initial_instance_count = block.scene_instances.size();
+	unsigned int instance_count = initial_instance_count;
+
+	unsigned int removal_list_index = ascending_indices.size();
+	while (removal_list_index > 0) {
+		--removal_list_index;
+
+		const unsigned int instance_index = ascending_indices[removal_list_index];
+
+		SceneInstance instance = block.scene_instances[instance_index];
+		ERR_CONTINUE(instance.root == nullptr);
+
+		const unsigned int last_instance_index = --instance_count;
+
+		// TODO In the case of scene instances, we could use an overlap check or a signal.
+		// Detach so it won't try to update our instances, we already do it here
+		ERR_CONTINUE(instance.component == nullptr);
+		// Not using detach_as_removed(),
+		// this function is not marking the block as modified. It may be done by the caller.
+		instance.component->detach();
+		instance.root->queue_free();
+
+		SceneInstance moved_instance = block.scene_instances[last_instance_index];
+		if (moved_instance.root != instance.root) {
+			if (moved_instance.component == nullptr) {
+				ERR_PRINT("Instance component should not be null");
+			} else {
+				moved_instance.component->set_instance_index(instance_index);
+			}
+			block.scene_instances[instance_index] = moved_instance;
+		}
+	}
+
+	if (instance_count < initial_instance_count) {
+		if (block.scene_instances.size() > 0) {
+			block.scene_instances.resize(instance_count);
+		}
+	}
+}
+
+void VoxelInstancer::remove_multimesh_instances_by_index(
+		Block &block,
+		const uint32_t base_block_size,
+		Span<const uint32_t> ascending_indices,
+		const MMRemovalAction removal_action
+) {
+	ZN_PROFILE_SCOPE();
+
+	Ref<MultiMesh> multimesh = block.multimesh_instance.get_multimesh();
+	ZN_ASSERT_RETURN(multimesh.is_valid());
+
+	const int initial_instance_count = zylann::godot::get_visible_instance_count(**multimesh);
+	int instance_count = initial_instance_count;
+
+	const int block_size = base_block_size << block.lod_index;
+
+	unsigned int removal_list_index = ascending_indices.size();
+	while (removal_list_index > 0) {
+		--removal_list_index;
+
+		const unsigned int instance_index = ascending_indices[removal_list_index];
+
+		Transform3D instance_transform;
+		if (removal_action.is_valid()) {
+			instance_transform = multimesh->get_instance_transform(instance_index);
+		}
+
+		// Remove the MultiMesh instance
+		const int last_instance_index = --instance_count;
+		// TODO This is terrible in MT mode! Think about keeping a local copy...
+		const Transform3D last_trans = multimesh->get_instance_transform(last_instance_index);
+		// TODO Also, SETTING transforms internally DOWNLOADS the buffer back to RAM in case it wasn't already,
+		// which Godot presumably uses to update the VRAM buffer in regions. But regions it uses are 512 items wide,
+		// so given our terrain chunks size we often have less items than that so there is very little benefit
+		// compared to uploading the whole buffer. Therefore even if we had our own cache to improve performance on
+		// our side while avoiding the *need* for Godot to have its own cache, we get little to no benefit from the
+		// Godot side.
+		multimesh->set_instance_transform(instance_index, last_trans);
+
+		// Remove the body if this block has some
+		// TODO In the case of bodies, we could use an overlap check
+		if (block.bodies.size() > 0) {
+			VoxelInstancerRigidBody *rb = block.bodies[instance_index];
+			// Detach so it won't try to update our instances, we already do it here
+			rb->detach_and_destroy();
+
+			// Update the last body index since we did a swap-removal
+			VoxelInstancerRigidBody *moved_rb = block.bodies[last_instance_index];
+			if (moved_rb != rb) {
+				moved_rb->set_instance_index(instance_index);
+				block.bodies[instance_index] = moved_rb;
+			}
+		}
+
+		if (removal_action.is_valid()) {
+			const Transform3D trans(
+					instance_transform.basis, instance_transform.origin + Vector3(block.grid_position * block_size)
+			);
+			removal_action.call(trans);
+		}
+	}
+
+	if (instance_count < initial_instance_count) {
+		// According to the docs, set_instance_count() resets the array so we only hide them instead
+		multimesh->set_visible_instance_count(instance_count);
+
+		if (block.bodies.size() > 0) {
+			block.bodies.resize(instance_count);
+		}
+	}
+}
+
+void VoxelInstancer::do_area_operation(const AABB p_aabb, IAreaOperation &op) {
+	do_area_operation(
+			Box3i::from_min_max(Vector3i(p_aabb.position.floor()), Vector3i((p_aabb.position + p_aabb.size).ceil())), op
+	);
+}
+
+void VoxelInstancer::do_area_operation(const Box3i p_voxel_box, IAreaOperation &op) {
+	ZN_PROFILE_SCOPE();
+	ERR_FAIL_COND(_parent == nullptr);
+	const int render_block_size = 1 << _parent_mesh_block_size_po2;
+	const int data_block_size = 1 << _parent_data_block_size_po2;
+
+	for (unsigned int lod_index = 0; lod_index < _lods.size(); ++lod_index) {
+		Lod &lod = _lods[lod_index];
+
+		if (lod.layers.size() == 0) {
+			continue;
+		}
+
+		const Box3i render_blocks_box = p_voxel_box.downscaled(render_block_size << lod_index);
+
+		bool modified = false;
+
+		for (const int layer_id : lod.layers) {
+			const Layer &layer = get_layer(layer_id);
+			const StdVector<UniquePtr<Block>> &blocks = _blocks;
+
+			// Iterate blocks intersecting the area
+			const Vector3i bmax = render_blocks_box.position + render_blocks_box.size;
+			Vector3i block_pos;
+			for (block_pos.z = render_blocks_box.position.z; block_pos.z < bmax.z; ++block_pos.z) {
+				for (block_pos.x = render_blocks_box.position.x; block_pos.x < bmax.x; ++block_pos.x) {
+					for (block_pos.y = render_blocks_box.position.y; block_pos.y < bmax.y; ++block_pos.y) {
+						//
+						const auto block_it = layer.blocks.find(block_pos);
+						if (block_it == layer.blocks.end()) {
+							// No instancing block here
+							continue;
+						}
+
+						Block &block = *blocks[block_it->second];
+						const IAreaOperation::Result result = op.execute(block);
+						modified = modified | result.modified;
+					}
+				}
+			}
+		}
+
+		if (modified) {
+			const Box3i data_blocks_box = p_voxel_box.downscaled(data_block_size << lod_index);
+
+			// All instances have to be frozen as edited.
+			// TODO Optimization: maybe we can narrow it down per item ID, if that's necessary
+			data_blocks_box.for_each_cell([&lod](Vector3i data_block_pos) { //
+				lod.modified_blocks.insert(data_block_pos);
+			});
+		}
+	}
+}
+
+void VoxelInstancer::on_area_edited(Box3i p_voxel_box) {
+	remove_floating_instances(p_voxel_box);
+}
+
+#ifdef VOXEL_INSTANCER_USE_SPECIALIZED_FLOATING_INSTANCE_REMOVAL_IMPLEMENTATION
+
+void VoxelInstancer::remove_floating_instances(const Box3i p_voxel_box) {
+	ZN_PROFILE_SCOPE();
+	ZN_PROFILE_MESSAGE("RemoveFloatingInstances");
+
+	ERR_FAIL_COND(_parent == nullptr);
+	const int render_block_size = 1 << _parent_mesh_block_size_po2;
+	const int data_block_size = 1 << _parent_data_block_size_po2;
+
+	Ref<VoxelTool> maybe_voxel_tool = _parent->get_voxel_tool();
+	ERR_FAIL_COND(maybe_voxel_tool.is_null());
+	VoxelTool &voxel_tool = **maybe_voxel_tool;
+	voxel_tool.set_channel(VoxelBuffer::CHANNEL_SDF);
+
+	const Transform3D parent_transform = get_global_transform();
+	const int base_block_size_po2 = _parent_mesh_block_size_po2;
+
+	for (unsigned int lod_index = 0; lod_index < _lods.size(); ++lod_index) {
+		Lod &lod = _lods[lod_index];
+
+		if (lod.layers.size() == 0) {
+			continue;
+		}
+
+		const Box3i render_blocks_box = p_voxel_box.downscaled(render_block_size << lod_index);
+
+		// Remove floating instances
+		for (const int layer_id : lod.layers) {
+			const Layer &layer = get_layer(layer_id);
+			const StdVector<UniquePtr<Block>> &blocks = _blocks;
+			const int block_size_po2 = base_block_size_po2 + layer.lod_index;
+
+			VoxelInstanceLibraryItem *item = nullptr;
+			VoxelInstanceLibraryMultiMeshItem *mm_item = nullptr;
+			bool bidirectional = false;
+			float sd_threshold = 0.f;
+			float sd_offset = 0.f;
+
+			const Vector3i bmax = render_blocks_box.position + render_blocks_box.size;
+			Vector3i block_pos;
+			for (block_pos.z = render_blocks_box.position.z; block_pos.z < bmax.z; ++block_pos.z) {
+				for (block_pos.x = render_blocks_box.position.x; block_pos.x < bmax.x; ++block_pos.x) {
+					for (block_pos.y = render_blocks_box.position.y; block_pos.y < bmax.y; ++block_pos.y) {
+						//
+						const auto block_it = layer.blocks.find(block_pos);
+						if (block_it == layer.blocks.end()) {
+							// No instancing block here
+							continue;
+						}
+
+						ZN_PROFILE_SCOPE_NAMED("Block");
+
+						Block &block = *blocks[block_it->second];
+
+						if (item == nullptr) {
+							item = _library->get_item(layer_id);
+							sd_threshold = item->get_floating_sdf_threshold();
+							sd_offset = item->get_floating_sdf_offset_along_normal();
+							Ref<VoxelInstanceGenerator> generator = item->get_generator();
+							if (generator.is_valid()) {
+								bidirectional = generator->get_random_vertical_flip();
+							}
+						}
+
+						if (block.scene_instances.size() > 0) {
+							remove_floating_scene_instances(
+									block,
+									parent_transform,
+									p_voxel_box,
+									voxel_tool,
+									block_size_po2,
+									sd_threshold,
+									sd_offset,
+									bidirectional
+							);
+
+						} else {
+							if (mm_item == nullptr) {
+								mm_item = Object::cast_to<VoxelInstanceLibraryMultiMeshItem>(item);
+							}
+
+							MMRemovalAction action = get_mm_removal_action(this, mm_item);
+
+							remove_floating_multimesh_instances(
+									block,
+									parent_transform,
+									p_voxel_box,
+									voxel_tool,
+									block_size_po2,
+									sd_threshold,
+									sd_offset,
+									bidirectional,
+									action
+							);
+						}
+					}
+				}
+			}
+		}
+
+		const Box3i data_blocks_box = p_voxel_box.downscaled(data_block_size << lod_index);
+
+		// All instances have to be frozen as edited.
+		// Because even if none of them were removed or added, the ground on which they can spawn has
+		// changed, and at the moment we don't want unexpected instances to generate when loading back
+		// this area.
+		data_blocks_box.for_each_cell([&lod](Vector3i data_block_pos) { //
+			lod.modified_blocks.insert(data_block_pos);
+		});
+	}
+}
+
 void VoxelInstancer::remove_floating_multimesh_instances(
 		Block &block,
 		const Transform3D &parent_transform,
-		Box3i p_voxel_box,
+		const Box3i p_voxel_box,
 		const VoxelTool &voxel_tool,
-		int block_size_po2
+		const int block_size_po2,
+		const float sd_threshold,
+		const float sd_offset,
+		const bool bidirectional,
+		const MMRemovalAction removal_action
 ) {
 	if (!block.multimesh_instance.is_valid()) {
 		// Empty block
@@ -1666,8 +2567,9 @@ void VoxelInstancer::remove_floating_multimesh_instances(
 	const int initial_instance_count = zylann::godot::get_visible_instance_count(**multimesh);
 	int instance_count = initial_instance_count;
 
-	const Transform3D block_global_transform =
-			Transform3D(parent_transform.basis, parent_transform.xform(block.grid_position << block_size_po2));
+	// const Transform3D block_global_transform =
+	// 		Transform3D(parent_transform.basis, parent_transform.xform(block.grid_position << block_size_po2));
+	const Vector3i block_origin_in_voxels = block.grid_position << block_size_po2;
 
 	// Let's check all instances one by one
 	// Note: the fact we have to query VisualServer in and out is pretty bad though.
@@ -1675,24 +2577,28 @@ void VoxelInstancer::remove_floating_multimesh_instances(
 	// - A hashmap RID lookup is performed to check `RID_Owner::id_map`
 	for (int instance_index = 0; instance_index < instance_count; ++instance_index) {
 		// TODO Optimize: This is terrible in MT mode! Think about keeping a local copy...
-		const Transform3D mm_transform = multimesh->get_instance_transform(instance_index);
-		const Vector3i voxel_pos(math::floor_to_int(mm_transform.origin + block_global_transform.origin));
+		const Transform3D instance_transform = multimesh->get_instance_transform(instance_index);
+		const Vector3i voxel_pos(math::floor_to_int(instance_transform.origin) + block_origin_in_voxels);
 
 		if (!p_voxel_box.contains(voxel_pos)) {
 			continue;
 		}
 
-		// TODO Optimize: use a transaction instead of random single queries
-		// 1-voxel cheap check without interpolation
-		const float sdf = voxel_tool.get_voxel_f(voxel_pos);
-		if (sdf < -0.0001f) {
-			// Still enough ground
+		if (detect_ground(
+					instance_transform.origin,
+					zylann::godot::BasisUtility::get_up(instance_transform.basis),
+					Vector3(block_origin_in_voxels),
+					sd_threshold,
+					sd_offset,
+					bidirectional,
+					voxel_tool
+			)) {
 			continue;
 		}
 
 		// Remove the MultiMesh instance
 		const int last_instance_index = --instance_count;
-		// TODO This is terrible in MT mode! Think about keeping a local copy...
+		// TODO Optimize: This is very slow the first time, and there is overhead even after that.
 		const Transform3D last_trans = multimesh->get_instance_transform(last_instance_index);
 		// TODO Also, SETTING transforms internally DOWNLOADS the buffer back to RAM in case it wasn't already,
 		// which Godot presumably uses to update the VRAM buffer in regions. But regions it uses are 512 items wide, so
@@ -1708,6 +2614,7 @@ void VoxelInstancer::remove_floating_multimesh_instances(
 			// Detach so it won't try to update our instances, we already do it here
 			rb->detach_and_destroy();
 
+			// Update the last body index since we did a swap-removal
 			VoxelInstancerRigidBody *moved_rb = block.bodies[last_instance_index];
 			if (moved_rb != rb) {
 				moved_rb->set_instance_index(instance_index);
@@ -1716,6 +2623,13 @@ void VoxelInstancer::remove_floating_multimesh_instances(
 		}
 
 		--instance_index;
+
+		if (removal_action.is_valid()) {
+			const Transform3D trans(
+					instance_transform.basis, instance_transform.origin + Vector3(block_origin_in_voxels)
+			);
+			removal_action.call(trans);
+		}
 
 		// DEBUG
 		// Ref<CubeMesh> cm;
@@ -1750,9 +2664,12 @@ void VoxelInstancer::remove_floating_multimesh_instances(
 void VoxelInstancer::remove_floating_scene_instances(
 		Block &block,
 		const Transform3D &parent_transform,
-		Box3i p_voxel_box,
+		const Box3i p_voxel_box,
 		const VoxelTool &voxel_tool,
-		int block_size_po2
+		const int block_size_po2,
+		const float sd_threshold,
+		const float sd_offset,
+		const bool bidirectional
 ) {
 	const unsigned int initial_instance_count = block.scene_instances.size();
 	unsigned int instance_count = initial_instance_count;
@@ -1774,10 +2691,15 @@ void VoxelInstancer::remove_floating_scene_instances(
 			continue;
 		}
 
-		// 1-voxel cheap check without interpolation
-		const float sdf = voxel_tool.get_voxel_f(voxel_pos);
-		if (sdf < -0.1f) {
-			// Still enough ground
+		if (detect_ground(
+					scene_transform.origin,
+					zylann::godot::BasisUtility::get_up(scene_transform.basis),
+					Vector3(), // Little hack, scenes are already in terrain space
+					sd_threshold,
+					sd_offset,
+					bidirectional,
+					voxel_tool
+			)) {
 			continue;
 		}
 
@@ -1812,69 +2734,131 @@ void VoxelInstancer::remove_floating_scene_instances(
 	}
 }
 
-void VoxelInstancer::on_area_edited(Box3i p_voxel_box) {
+#else // VOXEL_INSTANCER_USE_SPECIALIZED_FLOATING_INSTANCE_REMOVAL_IMPLEMENTATION
+
+void VoxelInstancer::remove_floating_instances(const Box3i voxel_box) {
 	ZN_PROFILE_SCOPE();
-	ERR_FAIL_COND(_parent == nullptr);
-	const int render_block_size = 1 << _parent_mesh_block_size_po2;
-	const int data_block_size = 1 << _parent_data_block_size_po2;
+	ZN_PROFILE_MESSAGE("RemoveFloatingInstances");
+
+	class RemoveFloatingInstances : public IAreaOperation {
+	private:
+		VoxelInstancer &_instancer;
+		const unsigned int _base_block_size;
+		VoxelTool &_voxel_tool;
+		Box3i _voxel_box;
+
+		MMRemovalAction _mm_removal_action;
+		uint32_t _mm_removal_action_item_id = VoxelInstanceLibrary::MAX_ID;
+		float _sd_threshold = 0.f;
+		float _offset_along_normal = 0.f;
+		bool _bidirectional = false;
+
+	public:
+		RemoveFloatingInstances(
+				VoxelInstancer &instancer,
+				const unsigned int base_block_size,
+				VoxelTool &p_voxel_tool,
+				const Box3i p_voxel_box
+		) :
+				_instancer(instancer),
+				_base_block_size(base_block_size),
+				_voxel_tool(p_voxel_tool),
+				_voxel_box(p_voxel_box) //
+		{}
+
+		Result execute(Block &block) override {
+			ZN_PROFILE_SCOPE();
+
+			// TODO Candidate for temp allocator
+			// TODO If we had our own cache, we might not need to allocate at all
+			StdVector<Vector3f> instance_positions;
+			StdVector<Vector3f> instance_normals;
+			get_instance_positions_local(block, _base_block_size, instance_positions, &instance_normals);
+
+			try_update_item_cache(block.layer_id);
+
+			// TODO We can get away with local positions if we use something more optimal than individual voxel queries
+			const Vector3i block_origin_i = block.grid_position * (_base_block_size << block.lod_index);
+			const Vector3 block_origin(block_origin_i);
+
+			const Box3f box_local = Box3f::from_min_max(
+					to_vec3f(_voxel_box.position - block_origin_i),
+					to_vec3f(_voxel_box.position - block_origin_i + _voxel_box.size)
+			);
+
+			// TODO Candidate for temp allocator
+			StdVector<uint32_t> instances_to_remove;
+			for (unsigned int instance_index = 0; instance_index < instance_positions.size(); ++instance_index) {
+				const Vector3f instance_pos = instance_positions[instance_index];
+				if (!box_local.contains(instance_pos)) {
+					continue;
+				}
+
+				if (!detect_ground(
+							to_vec3(instance_positions[instance_index]),
+							to_vec3(instance_normals[instance_index]),
+							block_origin,
+							_sd_threshold,
+							_offset_along_normal,
+							_bidirectional,
+							_voxel_tool
+					)) {
+					instances_to_remove.push_back(instance_index);
+				}
+			}
+
+			if (instances_to_remove.size() == 0) {
+				return { false };
+			}
+
+			remove_instances_by_index(block, _base_block_size, to_span(instances_to_remove), _mm_removal_action);
+
+			return { true };
+		}
+
+	private:
+		void try_update_item_cache(const uint32_t item_id) {
+			if (item_id == _mm_removal_action_item_id) {
+				return;
+			}
+
+			// Re-cache item info
+
+			_mm_removal_action = MMRemovalAction();
+			_mm_removal_action_item_id = item_id;
+			_sd_threshold = 0.f;
+			_offset_along_normal = 0.f;
+
+			if (_instancer._library.is_null()) {
+				return;
+			}
+			VoxelInstanceLibraryItem *item = _instancer._library->get_item(item_id);
+			if (item == nullptr) {
+				return;
+			}
+			_sd_threshold = item->get_floating_sdf_threshold();
+			_offset_along_normal = item->get_floating_sdf_offset_along_normal();
+
+			Ref<VoxelInstanceGenerator> instance_generator = item->get_generator();
+			_bidirectional = instance_generator.is_valid() ? instance_generator->get_random_vertical_flip() : false;
+
+			VoxelInstanceLibraryMultiMeshItem *mm_item = Object::cast_to<VoxelInstanceLibraryMultiMeshItem>(item);
+			if (mm_item == nullptr) {
+				return;
+			}
+			_mm_removal_action = get_mm_removal_action(&_instancer, mm_item);
+		}
+	};
 
 	Ref<VoxelTool> maybe_voxel_tool = _parent->get_voxel_tool();
-	ERR_FAIL_COND(maybe_voxel_tool.is_null());
-	VoxelTool &voxel_tool = **maybe_voxel_tool;
-	voxel_tool.set_channel(VoxelBuffer::CHANNEL_SDF);
+	ZN_ASSERT_RETURN(maybe_voxel_tool.is_valid());
 
-	const Transform3D parent_transform = get_global_transform();
-	const int base_block_size_po2 = _parent_mesh_block_size_po2;
+	RemoveFloatingInstances op(*this, 1 << _parent_mesh_block_size_po2, **maybe_voxel_tool, voxel_box);
 
-	for (unsigned int lod_index = 0; lod_index < _lods.size(); ++lod_index) {
-		Lod &lod = _lods[lod_index];
-
-		if (lod.layers.size() == 0) {
-			continue;
-		}
-
-		const Box3i render_blocks_box = p_voxel_box.downscaled(render_block_size << lod_index);
-		const Box3i data_blocks_box = p_voxel_box.downscaled(data_block_size << lod_index);
-
-		for (auto layer_it = lod.layers.begin(); layer_it != lod.layers.end(); ++layer_it) {
-			const Layer &layer = get_layer(*layer_it);
-			const StdVector<UniquePtr<Block>> &blocks = _blocks;
-			const int block_size_po2 = base_block_size_po2 + layer.lod_index;
-
-			render_blocks_box.for_each_cell(
-					[layer, &blocks, &voxel_tool, p_voxel_box, parent_transform, block_size_po2, &lod, data_blocks_box](
-							Vector3i block_pos
-					) {
-						const auto block_it = layer.blocks.find(block_pos);
-						if (block_it == layer.blocks.end()) {
-							// No instancing block here
-							return;
-						}
-
-						Block &block = *blocks[block_it->second];
-
-						if (block.scene_instances.size() > 0) {
-							remove_floating_scene_instances(
-									block, parent_transform, p_voxel_box, voxel_tool, block_size_po2
-							);
-						} else {
-							remove_floating_multimesh_instances(
-									block, parent_transform, p_voxel_box, voxel_tool, block_size_po2
-							);
-						}
-
-						// All instances have to be frozen as edited.
-						// Because even if none of them were removed or added, the ground on which they can spawn has
-						// changed, and at the moment we don't want unexpected instances to generate when loading back
-						// this area.
-						data_blocks_box.for_each_cell([&lod](Vector3i data_block_pos) { //
-							lod.modified_blocks.insert(data_block_pos);
-						});
-					}
-			);
-		}
-	}
+	do_area_operation(voxel_box, op);
 }
+
+#endif
 
 // This is called if a user destroys or unparents the body node while it's still attached to the ground
 void VoxelInstancer::on_body_removed(
@@ -1882,8 +2866,24 @@ void VoxelInstancer::on_body_removed(
 		unsigned int render_block_index,
 		unsigned int instance_index
 ) {
+	ZN_PRINT_VERBOSE(format("on_body_removed from block {}", render_block_index));
+
 	Block &block = *_blocks[render_block_index];
-	ZN_ASSERT_RETURN(instance_index < block.bodies.size());
+
+	if (instance_index >= block.bodies.size()) {
+		int instance_count = -1;
+		if (block.multimesh_instance.is_valid()) {
+			Ref<MultiMesh> multimesh = block.multimesh_instance.get_multimesh();
+			instance_count = zylann::godot::get_visible_instance_count(**multimesh);
+		}
+		ZN_PRINT_ERROR(
+				format("Can't remove instance with index {} (bodies: {}, instances: {})",
+					   instance_index,
+					   block.bodies.size(),
+					   instance_count)
+		);
+		return;
+	}
 
 	if (block.multimesh_instance.is_valid()) {
 		// Remove the multimesh instance
@@ -1891,11 +2891,26 @@ void VoxelInstancer::on_body_removed(
 		Ref<MultiMesh> multimesh = block.multimesh_instance.get_multimesh();
 		ERR_FAIL_COND(multimesh.is_null());
 
+		{
+			Ref<VoxelInstanceLibraryItem> item = _library->get_item(block.layer_id);
+			Ref<VoxelInstanceLibraryMultiMeshItem> mm_item = item;
+			MMRemovalAction action = get_mm_removal_action(this, mm_item.ptr());
+			if (action.is_valid()) {
+				// TODO Optimize: This is very slow the first time, and there is overhead even after that.
+				const Transform3D ltrans = multimesh->get_instance_transform(instance_index);
+				const Vector3i block_origin_in_voxels = data_block_position
+						<< (_parent_mesh_block_size_po2 + block.lod_index);
+				const Transform3D trans(ltrans.basis, ltrans.origin + Vector3(block_origin_in_voxels));
+				action.call(trans);
+			}
+		}
+
 		int visible_count = zylann::godot::get_visible_instance_count(**multimesh);
 		ERR_FAIL_COND(static_cast<int>(instance_index) >= visible_count);
 
 		--visible_count;
-		// TODO Optimize: This is terrible in MT mode! Think about keeping a local copy...
+		// Swap-remove
+		// TODO Optimize: This is very slow the first time, and there is overhead even after that.
 		const Transform3D last_trans = multimesh->get_instance_transform(visible_count);
 		multimesh->set_instance_transform(instance_index, last_trans);
 		multimesh->set_visible_instance_count(visible_count);
@@ -1906,6 +2921,7 @@ void VoxelInstancer::on_body_removed(
 	const unsigned int last_instance_index = --body_count;
 	VoxelInstancerRigidBody *moved_body = block.bodies[last_instance_index];
 	if (instance_index != last_instance_index) {
+		// Update last body index because we did a swap-remove
 		moved_body->set_instance_index(instance_index);
 		block.bodies[instance_index] = moved_body;
 	}
@@ -1930,6 +2946,7 @@ void VoxelInstancer::on_scene_instance_removed(
 	const unsigned int last_instance_index = --instance_count;
 	SceneInstance moved_instance = block.scene_instances[last_instance_index];
 	if (instance_index != last_instance_index) {
+		// Update last instance index because we did a swap-remove
 		ERR_FAIL_COND(moved_instance.component == nullptr);
 		moved_instance.component->set_instance_index(instance_index);
 		block.scene_instances[instance_index] = moved_instance;
@@ -2128,6 +3145,79 @@ bool VoxelInstancer::debug_get_draw_flag(DebugDrawFlag flag_index) const {
 #endif
 }
 
+Dictionary VoxelInstancer::debug_get_block_infos(const Vector3 world_position, const int item_id) {
+#ifndef TOOLS_ENABLED
+	return Dictionary();
+#else
+	Dictionary dict;
+
+	auto layer_it = _layers.find(item_id);
+	if (layer_it == _layers.end()) {
+		ZN_PRINT_ERROR("Invalid item id");
+		return Dictionary();
+	}
+	const Layer &layer = layer_it->second;
+
+	dict["lod_index"] = layer.lod_index;
+
+	const int block_shift = _parent_mesh_block_size_po2 + layer.lod_index;
+	const Vector3i bpos = Vector3i(world_position.floor()) >> block_shift;
+	const Vector3i block_origin_in_voxels = bpos << block_shift;
+	const int block_size_in_voxels = 1 << block_shift;
+
+	dict["aabb"] =
+			AABB(block_origin_in_voxels, Vector3(block_size_in_voxels, block_size_in_voxels, block_size_in_voxels));
+
+	dict["grid_position"] = bpos;
+
+	auto block_it = layer.blocks.find(bpos);
+	const bool allocated = (block_it != layer.blocks.end());
+	dict["allocated"] = allocated;
+	if (!allocated) {
+		return dict;
+	}
+
+	const unsigned int block_index = block_it->second;
+	const Block *block = _blocks[block_index].get();
+	ZN_ASSERT(block != nullptr);
+
+	dict["mesh_lod"] = block->current_mesh_lod;
+
+	Array instances_array;
+	Array bodies_array;
+	Array scenes_array;
+
+	if (block->multimesh_instance.is_valid()) {
+		Ref<MultiMesh> mm = block->multimesh_instance.get_multimesh();
+
+		if (mm.is_valid()) {
+			const unsigned int count = zylann::godot::get_visible_instance_count(**mm);
+			instances_array.resize(count);
+
+			for (unsigned int instance_index = 0; instance_index < count; ++instance_index) {
+				// TODO Optimize: This is very slow the first time, and there is overhead even after that.
+				const Transform3D instance_transform = mm->get_instance_transform(instance_index);
+				instances_array[instance_index] = instance_transform;
+			}
+		}
+	}
+
+	for (const VoxelInstancerRigidBody *body : block->bodies) {
+		bodies_array.push_back(body);
+	}
+
+	for (const SceneInstance &scene : block->scene_instances) {
+		scenes_array.push_back(scene.root);
+	}
+
+	dict["instances"] = instances_array;
+	dict["bodies"] = bodies_array;
+	dict["scenes"] = scenes_array;
+
+	return dict;
+#endif
+}
+
 #ifdef TOOLS_ENABLED
 
 #if defined(ZN_GODOT)
@@ -2171,6 +3261,20 @@ void VoxelInstancer::get_configuration_warnings(PackedStringArray &warnings) con
 				}
 			});
 		}
+
+		if (_parent != nullptr) {
+			Ref<VoxelStream> stream = _parent->get_stream();
+			if (stream.is_valid() && !stream->supports_instance_blocks()) {
+				const int persistent_id = _library->find_item([](const VoxelInstanceLibraryItem &item) { //
+					return item.is_persistent();
+				});
+				if (persistent_id != -1) {
+					warnings.append(String(ZN_TTR("Library contains at least one persistent item (ID {0}), but the "
+												  "current stream ({1}) does not support saving instances."))
+											.format(varray(persistent_id, stream->get_class())));
+				}
+			}
+		}
 	}
 }
 
@@ -2183,6 +3287,10 @@ void VoxelInstancer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_up_mode", "mode"), &VoxelInstancer::set_up_mode);
 	ClassDB::bind_method(D_METHOD("get_up_mode"), &VoxelInstancer::get_up_mode);
 
+	ClassDB::bind_method(
+			D_METHOD("remove_instances_in_sphere", "center", "radius"), &VoxelInstancer::remove_instances_in_sphere
+	);
+
 	ClassDB::bind_method(D_METHOD("debug_get_block_count"), &VoxelInstancer::debug_get_block_count);
 	ClassDB::bind_method(D_METHOD("debug_get_instance_counts"), &VoxelInstancer::_b_debug_get_instance_counts);
 	ClassDB::bind_method(D_METHOD("debug_dump_as_scene", "fpath"), &VoxelInstancer::debug_dump_as_scene);
@@ -2190,6 +3298,33 @@ void VoxelInstancer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("debug_is_draw_enabled"), &VoxelInstancer::debug_is_draw_enabled);
 	ClassDB::bind_method(D_METHOD("debug_set_draw_flag", "flag", "enabled"), &VoxelInstancer::debug_set_draw_flag);
 	ClassDB::bind_method(D_METHOD("debug_get_draw_flag", "flag"), &VoxelInstancer::debug_get_draw_flag);
+	ClassDB::bind_method(
+			D_METHOD("debug_get_block_infos", "world_position", "item_id"), &VoxelInstancer::debug_get_block_infos
+	);
+
+	ClassDB::bind_method(
+			D_METHOD("get_mesh_lod_update_budget_microseconds"),
+			&VoxelInstancer::get_mesh_lod_update_budget_microseconds
+	);
+	ClassDB::bind_method(
+			D_METHOD("set_mesh_lod_update_budget_microseconds", "micros"),
+			&VoxelInstancer::set_mesh_lod_update_budget_microseconds
+	);
+
+	ClassDB::bind_method(
+			D_METHOD("get_collision_update_budget_microseconds"),
+			&VoxelInstancer::get_collision_update_budget_microseconds
+	);
+	ClassDB::bind_method(
+			D_METHOD("set_collision_update_budget_microseconds", "micros"),
+			&VoxelInstancer::set_collision_update_budget_microseconds
+	);
+
+	ClassDB::bind_method(D_METHOD("set_fading_enabled", "enabled"), &VoxelInstancer::set_fading_enabled);
+	ClassDB::bind_method(D_METHOD("get_fading_enabled"), &VoxelInstancer::get_fading_enabled);
+
+	ClassDB::bind_method(D_METHOD("set_fading_duration", "duration"), &VoxelInstancer::set_fading_duration);
+	ClassDB::bind_method(D_METHOD("get_fading_duration"), &VoxelInstancer::get_fading_duration);
 
 	ADD_PROPERTY(
 			PropertyInfo(
@@ -2201,6 +3336,21 @@ void VoxelInstancer::_bind_methods() {
 	ADD_PROPERTY(
 			PropertyInfo(Variant::INT, "up_mode", PROPERTY_HINT_ENUM, "PositiveY,Sphere"), "set_up_mode", "get_up_mode"
 	);
+
+	ADD_PROPERTY(
+			PropertyInfo(Variant::INT, "mesh_lod_update_budget_microseconds"),
+			"set_mesh_lod_update_budget_microseconds",
+			"get_mesh_lod_update_budget_microseconds"
+	);
+
+	ADD_PROPERTY(
+			PropertyInfo(Variant::INT, "collision_update_budget_microseconds"),
+			"set_collision_update_budget_microseconds",
+			"get_collision_update_budget_microseconds"
+	);
+
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "fading_enabled"), "set_fading_enabled", "get_fading_enabled");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "fading_duration"), "set_fading_duration", "get_fading_duration");
 
 	BIND_CONSTANT(MAX_LOD);
 

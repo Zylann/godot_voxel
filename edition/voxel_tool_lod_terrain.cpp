@@ -15,7 +15,10 @@
 #include "floating_chunks.h"
 #include "funcs.h"
 #include "raycast.h"
+
+#ifdef VOXEL_ENABLE_MESH_SDF
 #include "voxel_mesh_sdf_gd.h"
+#endif
 
 namespace zylann::voxel {
 
@@ -321,6 +324,8 @@ Array VoxelToolLodTerrain::separate_floating_chunks(AABB world_box, Object *pare
 	);
 }
 
+#ifdef VOXEL_ENABLE_MESH_SDF
+
 // Combines a precalculated SDF with the terrain at a specific position, rotation and scale.
 //
 // `transform` is where the buffer should be applied on the terrain.
@@ -398,6 +403,8 @@ void VoxelToolLodTerrain::do_mesh(const VoxelMeshSDF &mesh_sdf, const Transform3
 	ZN_ASSERT_RETURN(_terrain != nullptr);
 	do_mesh_chunked(mesh_sdf, _terrain->get_storage(), transform, isolevel, true);
 }
+
+#endif
 
 // Runs the given graph in a bounding box in the terrain.
 // The graph must have an SDF output and can also have an SDF input to read source voxels.
@@ -510,7 +517,7 @@ void VoxelToolLodTerrain::do_graph(Ref<VoxelGeneratorGraph> graph, Transform3D t
 
 			// Apply strength and graph scale. Input serves as output too, shouldn't overlap
 			for (unsigned int i = 0; i < in_sdf.size(); ++i) {
-				in_sdf[i] = Math::lerp(in_sdf[i], graph_buffer.data[i] * graph_scale, op_strength);
+				in_sdf[i] = Math::lerp(in_sdf[i], graph_buffer.data[i], op_strength) * graph_scale;
 			}
 		}
 	}
@@ -556,6 +563,11 @@ void VoxelToolLodTerrain::run_blocky_random_tick(
 	);
 }
 
+VoxelFormat VoxelToolLodTerrain::get_format() const {
+	ZN_ASSERT(_terrain != nullptr);
+	return _terrain->get_storage().get_format();
+}
+
 void VoxelToolLodTerrain::_bind_methods() {
 	using Self = VoxelToolLodTerrain;
 
@@ -566,7 +578,9 @@ void VoxelToolLodTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_voxel_f_interpolated", "position"), &Self::get_voxel_f_interpolated);
 	ClassDB::bind_method(D_METHOD("separate_floating_chunks", "box", "parent_node"), &Self::separate_floating_chunks);
 	ClassDB::bind_method(D_METHOD("do_sphere_async", "center", "radius"), &Self::do_sphere_async);
+#ifdef VOXEL_ENABLE_MESH_SDF
 	ClassDB::bind_method(D_METHOD("stamp_sdf", "mesh_sdf", "transform", "isolevel", "sdf_scale"), &Self::stamp_sdf);
+#endif
 	ClassDB::bind_method(D_METHOD("do_graph", "graph", "transform", "area_size"), &Self::do_graph);
 	ClassDB::bind_method(
 			D_METHOD("do_hemisphere", "center", "radius", "flat_direction", "smoothness"),

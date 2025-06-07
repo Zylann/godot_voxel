@@ -6,7 +6,12 @@
 #include "../util/math/color8.h"
 #include "../util/math/conv.h"
 #include "../util/profiling.h"
+#include "funcs.h"
+
+#ifdef VOXEL_ENABLE_MESH_SDF
 #include "voxel_mesh_sdf_gd.h"
+#endif
+
 #ifdef DEBUG_ENABLED
 #include "../util/godot/core/aabb.h"
 #include "../util/string/format.h"
@@ -107,6 +112,11 @@ uint64_t VoxelTool::get_voxel(Vector3i pos) const {
 
 float VoxelTool::get_voxel_f(Vector3i pos) const {
 	return _get_voxel_f(pos);
+}
+
+float VoxelTool::get_voxel_f_interpolated(const Vector3 pos) const {
+	// Default, slow implementation
+	return get_sdf_interpolated([this](Vector3i ipos) { return _get_voxel_f(ipos); }, pos);
 }
 
 void VoxelTool::set_voxel(Vector3i pos, uint64_t v) {
@@ -261,10 +271,12 @@ void VoxelTool::do_path(Span<const Vector3> positions, Span<const float> radii) 
 	// Implemented in derived classes
 }
 
+#ifdef VOXEL_ENABLE_MESH_SDF
 void VoxelTool::do_mesh(const VoxelMeshSDF &mesh_sdf, const Transform3D &transform, const float isolevel) {
 	ERR_PRINT("Not implemented");
 	// Implemented in derived classes
 }
+#endif
 
 void VoxelTool::copy(Vector3i pos, VoxelBuffer &dst, uint8_t channels_mask) const {
 	ERR_PRINT("Not implemented");
@@ -345,6 +357,7 @@ void VoxelTool::smooth_sphere(Vector3 sphere_center, float sphere_radius, int bl
 		copy(padded_voxel_box.position, buffer, (1 << VoxelBuffer::CHANNEL_SDF));
 
 		VoxelBuffer smooth_buffer(VoxelBuffer::ALLOCATOR_POOL);
+		smooth_buffer.copy_format(buffer);
 		const Vector3f relative_sphere_center = to_vec3f(sphere_center - to_vec3(voxel_box.position));
 		ops::box_blur(buffer, smooth_buffer, blur_radius, relative_sphere_center, sphere_radius);
 
@@ -409,6 +422,12 @@ Variant VoxelTool::get_voxel_metadata(Vector3i pos) const {
 	return Variant();
 }
 
+VoxelFormat VoxelTool::get_format() const {
+	ERR_PRINT("Not implemented");
+	return VoxelFormat();
+}
+
+#ifdef VOXEL_ENABLE_MESH_SDF
 void VoxelTool::do_mesh_chunked(
 		const VoxelMeshSDF &mesh_sdf,
 		VoxelData &vdata,
@@ -484,6 +503,7 @@ void VoxelTool::do_mesh_chunked(
 
 	_post_edit(voxel_box);
 }
+#endif
 
 // Binding land
 
@@ -523,10 +543,12 @@ void VoxelTool::_b_do_path(PackedVector3Array positions, PackedFloat32Array radi
 	do_path(to_span(positions), to_span(radii));
 }
 
+#ifdef VOXEL_ENABLE_MESH_SDF
 void VoxelTool::_b_do_mesh(Ref<VoxelMeshSDF> mesh_sdf, Transform3D transform, float isolevel) {
 	ZN_ASSERT_RETURN(mesh_sdf.is_valid());
 	do_mesh(**mesh_sdf, transform, isolevel);
 }
+#endif
 
 void VoxelTool::_b_copy(Vector3i pos, Ref<godot::VoxelBuffer> voxels, int channel_mask) {
 	copy(pos, voxels, channel_mask);
@@ -572,22 +594,26 @@ int _b_color_to_u16(Color col) {
 	return Color8(col).to_u16();
 }
 
+uint32_t _b_color_to_u32(Color col) {
+	return Color8(col).to_u32();
+}
+
 int _b_vec4i_to_u16_indices(Vector4i v) {
-	return encode_indices_to_packed_u16(v.x, v.y, v.z, v.w);
+	return mixel4::encode_indices_to_packed_u16(v.x, v.y, v.z, v.w);
 }
 
 int _b_color_to_u16_weights(Color cf) {
 	const Color8 c(cf);
-	return encode_weights_to_packed_u16_lossy(c.r, c.g, c.b, c.a);
+	return mixel4::encode_weights_to_packed_u16_lossy(c.r, c.g, c.b, c.a);
 }
 
 Vector4i _b_u16_indices_to_vec4i(int e) {
-	FixedArray<uint8_t, 4> indices = decode_indices_from_packed_u16(e);
+	FixedArray<uint8_t, 4> indices = mixel4::decode_indices_from_packed_u16(e);
 	return Vector4i(indices[0], indices[1], indices[2], indices[3]);
 }
 
 Color _b_u16_weights_to_color(int e) {
-	FixedArray<uint8_t, 4> indices = decode_weights_from_packed_u16(e);
+	FixedArray<uint8_t, 4> indices = mixel4::decode_weights_from_packed_u16(e);
 	return Color(indices[0] / 255.f, indices[1] / 255.f, indices[2] / 255.f, indices[3] / 255.f);
 }
 
@@ -644,7 +670,9 @@ void VoxelTool::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("do_sphere", "center", "radius"), &VoxelTool::_b_do_sphere);
 	ClassDB::bind_method(D_METHOD("do_box", "begin", "end"), &VoxelTool::_b_do_box);
 	ClassDB::bind_method(D_METHOD("do_path", "points", "radii"), &VoxelTool::_b_do_path);
+#ifdef VOXEL_ENABLE_MESH_SDF
 	ClassDB::bind_method(D_METHOD("do_mesh", "mesh_sdf", "transform", "isolevel"), &VoxelTool::_b_do_mesh, DEFVAL(0.0));
+#endif
 
 	ClassDB::bind_method(
 			D_METHOD("smooth_sphere", "sphere_center", "sphere_radius", "blur_radius"), &VoxelTool::smooth_sphere
@@ -689,6 +717,7 @@ void VoxelTool::_bind_methods() {
 
 	// Encoding helpers
 	ClassDB::bind_static_method(VoxelTool::get_class_static(), D_METHOD("color_to_u16", "color"), &_b_color_to_u16);
+	ClassDB::bind_static_method(VoxelTool::get_class_static(), D_METHOD("color_to_u32", "color"), &_b_color_to_u32);
 	ClassDB::bind_static_method(
 			VoxelTool::get_class_static(), D_METHOD("vec4i_to_u16_indices"), &_b_vec4i_to_u16_indices
 	);

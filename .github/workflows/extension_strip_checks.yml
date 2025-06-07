@@ -1,0 +1,73 @@
+# Checks a few combinations of reduced feature flags
+
+name: ✂ Extension Strip Checks
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+concurrency:
+  # Cancel in-progress builds when triggering new ones, to save resources.
+  # Not using `${{ github.workflow }}` because when called from another workflow, it takes the value of the caller,
+  # which leads to unexpected cancellation.
+  # See https://github.com/orgs/community/discussions/30708
+  # group: ${{ github.workflow }}-${{ github.ref }}
+  group: extension-strip-checks-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GODOT_CPP_PATH: thirdparty/godot-cpp
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Minimal
+            id: minimal
+            sconsflags: voxel_tests=no voxel_smooth_meshing=no voxel_modifiers=no voxel_sqlite=no voxel_instancer=no voxel_gpu=no voxel_basic_generators=no voxel_mesh_sdf=no voxel_vox=no
+
+    runs-on: ubuntu-22.04
+    steps:
+      # Clone our repo
+      - uses: actions/checkout@v4
+
+      # Get GodotCpp
+      - name: Checkout GodotCpp
+        uses: actions/checkout@v4
+        with:
+          repository: godotengine/godot-cpp
+          ref: master
+          path: ${{env.GODOT_CPP_PATH}}
+
+      # Setup dependencies (Python, SCons, Android SDK...)
+      - name: Setup godot-cpp
+        # uses: ${{env.GODOT_CPP_PATH}}/.github/actions/setup-godot-cpp
+        # Unfortunately Github doesnt support variables in that path so we have to hardcode it
+        uses: ./thirdparty/godot-cpp/.github/actions/setup-godot-cpp
+        with:
+          platform: ${{ matrix.target.platform }}
+          em-version: 3.1.62
+          windows-compiler: msvc
+          buildtool: scons
+
+      # Load build cache
+      - name: Cache .scons_cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/.scons-cache/
+          key: ${{ matrix.id }}_gdextension_sc_cache
+
+      - name: Build
+        shell: sh
+        env:
+          SCONS_CACHE: ${{ github.workspace }}/.scons-cache/
+        run: |
+          scons target=editor platform=linux arch=x86_64 dev_build=no verbose=yes use_llvm=yes ${{ matrix.sconsflags }}
+
+      - name: Print
+        run: |
+          cd project/addons/zylann.voxel/bin
+          ls -l

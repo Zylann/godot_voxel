@@ -25,13 +25,20 @@
 				Encodes normalized 4-float color into 16-bit integer data, for use with the WEIGHTS channel.
 			</description>
 		</method>
+		<method name="color_to_u32" qualifiers="static">
+			<return type="int" />
+			<param index="0" name="color" type="Color" />
+			<description>
+				Encodes normalized 4-float color into 32-bit integer data, for use with the COLOR channel.
+			</description>
+		</method>
 		<method name="copy">
 			<return type="void" />
 			<param index="0" name="src_pos" type="Vector3i" />
 			<param index="1" name="dst_buffer" type="VoxelBuffer" />
 			<param index="2" name="channels_mask" type="int" />
 			<description>
-				Copies voxels in a box and stores them in the passed buffer.
+				Copies voxels in a box and stores them in the passed buffer. The source format will overwrite the destination.
 				[code]src_pos[/code] is the lowest corner of the box, and its size is determined by the size of [code]dst_buffer[/code].
 				[code]channels_mask[/code] is a bitmask where each bit tells which channels will be copied. Example: [code]1 &lt;&lt; VoxelBuffer.CHANNEL_SDF[/code] to get only SDF data. Use [code]0xff[/code] if you want them all.
 			</description>

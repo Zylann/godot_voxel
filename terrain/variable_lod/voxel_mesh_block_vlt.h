@@ -39,6 +39,9 @@ public:
 	uint64_t last_collider_update_time = 0;
 	UniquePtr<VoxelMesherOutput> deferred_collider_data;
 
+	int32_t col_vertex_end = -1;
+	int32_t col_index_end = -1;
+
 	VoxelMeshBlockVLT(const Vector3i bpos, unsigned int size, unsigned int p_lod_index);
 	~VoxelMeshBlockVLT();
 
@@ -58,7 +61,9 @@ public:
 			GeometryInstance3D::GIMode gi_mode,
 			RenderingServer::ShadowCastingSetting shadow_casting,
 			int render_layers_mask,
-			Ref<Mesh> shadow_occluder_mesh
+			Ref<Mesh> shadow_occluder_mesh,
+			int32_t p_col_vertex_max,
+			int32_t p_col_index_max
 #ifdef TOOLS_ENABLED
 			,
 			RenderingServer::ShadowCastingSetting shadow_occluder_mode

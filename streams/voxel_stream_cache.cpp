@@ -21,7 +21,6 @@ bool VoxelStreamCache::load_voxel_block(Vector3i position, uint8_t lod_index, Vo
 		}
 		// In cache, serve it
 
-
 		// Copying is required since the cache has ownership on its data,
 		// and the requests wants us to populate the buffer it provides
 		block.voxels.copy_to(out_voxels, true);
@@ -56,6 +55,8 @@ void VoxelStreamCache::save_voxel_block(Vector3i position, uint8_t lod_index, Vo
 		it->second.has_voxels = true;
 	}
 }
+
+#ifdef VOXEL_ENABLE_INSTANCER
 
 bool VoxelStreamCache::load_instance_block(
 		Vector3i position,
@@ -111,6 +112,8 @@ void VoxelStreamCache::save_instance_block(
 		it->second.instances = std::move(instances);
 	}
 }
+
+#endif
 
 unsigned int VoxelStreamCache::get_indicative_block_count() const {
 	return _count;

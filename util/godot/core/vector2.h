@@ -1,5 +1,5 @@
-#ifndef ZN_MATH_VECTOR2_H
-#define ZN_MATH_VECTOR2_H
+#ifndef ZN_GODOT_MATH_VECTOR2_H
+#define ZN_GODOT_MATH_VECTOR2_H
 
 #if defined(ZN_GODOT)
 #include <core/math/vector2.h>
@@ -8,4 +8,4 @@
 using namespace godot;
 #endif
 
-#endif // ZN_MATH_VECTOR2_H
+#endif // ZN_GODOT_MATH_VECTOR2_H

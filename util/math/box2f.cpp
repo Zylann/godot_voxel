@@ -4,10 +4,10 @@
 namespace zylann {
 
 StdStringStream &operator<<(StdStringStream &ss, const Box2f &box) {
-	ss << "(o:";
-	ss << box.position;
-	ss << ", s:";
-	ss << box.size;
+	ss << "(min:";
+	ss << box.min;
+	ss << ", max:";
+	ss << box.max;
 	ss << ")";
 	return ss;
 }

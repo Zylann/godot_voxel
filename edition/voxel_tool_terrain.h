@@ -50,7 +50,9 @@ public:
 	void do_box(Vector3i begin, Vector3i end) override;
 	void do_sphere(Vector3 center, float radius) override;
 	void do_path(Span<const Vector3> positions, Span<const float> radii) override;
+#ifdef VOXEL_ENABLE_MESH_SDF
 	void do_mesh(const VoxelMeshSDF &mesh_sdf, const Transform3D &transform, const float isolevel) override;
+#endif
 
 	// Specialized API
 
@@ -59,6 +61,8 @@ public:
 	void run_blocky_random_tick(AABB voxel_area, int voxel_count, const Callable &callback, int block_batch_count);
 
 	void for_each_voxel_metadata_in_area(AABB voxel_area, const Callable &callback);
+
+	VoxelFormat get_format() const override;
 
 protected:
 	uint64_t _get_voxel(Vector3i pos) const override;

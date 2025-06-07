@@ -19,6 +19,7 @@ namespace zylann::godot {
 class DirectMultiMeshInstance : public zylann::NonCopyable {
 public:
 	DirectMultiMeshInstance();
+	DirectMultiMeshInstance(DirectMultiMeshInstance &&src);
 	~DirectMultiMeshInstance();
 
 	void create();
@@ -31,9 +32,12 @@ public:
 	void set_visible(bool visible);
 	void set_material_override(Ref<Material> material);
 	void set_cast_shadows_setting(RenderingServer::ShadowCastingSetting mode);
+	void set_shader_instance_parameter(const StringName &key, const Variant &value);
 	void set_render_layer(int render_layer);
 	void set_gi_mode(GeometryInstance3D::GIMode mode);
 	void set_interpolated(const bool enabled);
+
+	void operator=(DirectMultiMeshInstance &&src);
 
 	static void make_transform_3d_bulk_array(Span<const Transform3D> transforms, PackedFloat32Array &bulk_array);
 	static void make_transform_3d_bulk_array(Span<const Transform3f> transforms, PackedFloat32Array &bulk_array);

@@ -557,10 +557,6 @@ math::Interval FastNoise2::get_estimated_output_range() const {
 	}
 }
 
-String FastNoise2::_b_get_simd_level_name(SIMDLevel level) {
-	return get_simd_level_name(level);
-}
-
 void FastNoise2::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_noise_type", "type"), &FastNoise2::set_noise_type);
 	ClassDB::bind_method(D_METHOD("get_noise_type"), &FastNoise2::get_noise_type);
@@ -642,10 +638,13 @@ void FastNoise2::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("generate_image", "image", "tileable"), &FastNoise2::generate_image);
 
-	ClassDB::bind_method(D_METHOD("get_simd_level_name", "level"), &FastNoise2::_b_get_simd_level_name);
-
 	ClassDB::bind_method(D_METHOD("update_generator"), &FastNoise2::update_generator);
 
+	ClassDB::bind_method(D_METHOD("get_simd_level"), &FastNoise2::get_simd_level);
+
+	ClassDB::bind_static_method(
+			FastNoise2::get_class_static(), D_METHOD("get_simd_level_name", "level"), &FastNoise2::get_simd_level_name
+	);
 	// ClassDB::bind_method(D_METHOD("_on_warp_noise_changed"), &FastNoiseLite::_on_warp_noise_changed);
 
 	ADD_PROPERTY(
