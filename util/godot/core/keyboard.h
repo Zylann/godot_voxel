@@ -25,6 +25,7 @@ static const Key KEY_R = Key::R;
 static const Key KEY_UP = Key::UP;
 static const Key KEY_DOWN = Key::DOWN;
 static const Key KEY_ENTER = Key::ENTER;
+static const Key KEY_ESCAPE = Key::ESCAPE;
 }; // namespace godot
 
 #elif defined(ZN_GODOT_EXTENSION)

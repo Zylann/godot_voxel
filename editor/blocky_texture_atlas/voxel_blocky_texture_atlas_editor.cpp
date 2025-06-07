@@ -19,6 +19,7 @@
 #include "../../util/godot/classes/v_box_container.h"
 #include "../../util/godot/classes/v_separator.h"
 #include "../../util/godot/core/array.h"
+#include "../../util/godot/core/keyboard.h"
 #include "../../util/godot/core/mouse_button.h"
 #include "../../util/godot/core/packed_arrays.h"
 #include "../../util/godot/core/string.h"
@@ -236,6 +237,7 @@ VoxelBlockyTextureAtlasEditor::VoxelBlockyTextureAtlasEditor() {
 	add_child(split_container);
 
 	// set_process(true);
+	set_process_unhandled_key_input(true);
 }
 
 void VoxelBlockyTextureAtlasEditor::update_select_context_menu() {
@@ -407,6 +409,23 @@ void VoxelBlockyTextureAtlasEditor::_notification(int p_what) {
 
 		default:
 			break;
+	}
+}
+
+#if defined(ZN_GODOT)
+void VoxelBlockyTextureAtlasEditor::unhandled_key_input(const Ref<InputEvent> &event) {
+#elif defined(ZN_GODOT_EXTENSION)
+void VoxelBlockyTextureAtlasEditor::_unhandled_key_input(const Ref<InputEvent> &event) {
+#endif
+	if (_blob9_gen.container->is_visible()) {
+		Ref<InputEventKey> key_event = event;
+		if (key_event.is_valid()) {
+			if (key_event->is_pressed()) {
+				if (key_event->get_keycode() == ::godot::KEY_ESCAPE) {
+					close_blob9_gen();
+				}
+			}
+		}
 	}
 }
 

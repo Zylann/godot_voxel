@@ -44,6 +44,12 @@ private:
 
 	void _notification(int p_what);
 
+#if defined(ZN_GODOT)
+	void unhandled_key_input(const Ref<InputEvent> &event) override;
+#elif defined(ZN_GODOT_EXTENSION)
+	void _unhandled_key_input(const Ref<InputEvent> &event) override;
+#endif
+
 	void on_texture_rect_draw();
 	void on_atlas_changed();
 	void on_texture_rect_gui_input(Ref<InputEvent> event);
