@@ -552,7 +552,7 @@ void count_values_u8_with_uncompressed_sdf_lower_than(
 				const TRawSD sd = sd_data[i];
 				const uint8_t vi = indices_data[i];
 				if (sd < raw_isolevel) {
-					counts[i] += 1;
+					counts[vi] += 1;
 				}
 			}
 		} break;
