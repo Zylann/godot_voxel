@@ -296,6 +296,384 @@ static const uint8_t g_case_index_to_connection_mask[BLOB9_TILE_COUNT] = {
 	0b010'11'010
 };
 
+struct Compact5Op {
+	uint8_t blob9_case_index;
+	uint8_t compact5_case_index;
+	// Tile sub-rectangle to copy across, in a coordinate system dividing the tile in 3x3 sub-tiles. Both points are
+	// inclusive.
+	uint8_t p0x;
+	uint8_t p0y;
+	uint8_t p1x;
+	uint8_t p1y;
+};
+
+// List of image copy operations to perform in order to obtain all Blob9 tiles from 5 reference tiles.
+// clang-format off
+static const std::array<Compact5Op, 127> g_compact5_mapping_ops = {{
+	// Case 0
+	// - - -
+	// - x -
+	// - - -
+	{ 0, COMPACT5_POINT, 0, 0, 2, 2 },
+
+	// Case 1
+	// - - -
+	// - x o
+	// - - -
+	{ 1, COMPACT5_POINT, 0, 0, 0, 2 },
+	{ 1, COMPACT5_HORIZONTAL, 1, 0, 2, 2 },
+
+	// Case 2
+	// - - -
+	// o x o
+	// - - -
+	{ 2, COMPACT5_HORIZONTAL, 0, 0, 2, 2 },
+
+	// Case 3
+	// - - -
+	// o x -
+	// - - -
+	{ 3, COMPACT5_HORIZONTAL, 0, 0, 1, 2 },
+	{ 3, COMPACT5_POINT, 2, 0, 2, 2 },
+
+	// Case 4
+	// - - -
+	// - x o
+	// - o -
+	{ 4, COMPACT5_CROSS, 1, 1, 2, 2 },
+	{ 4, COMPACT5_VERTICAL, 0, 1, 0, 2 },
+	{ 4, COMPACT5_HORIZONTAL, 1, 0, 2, 0 },
+	{ 4, COMPACT5_POINT, 0, 0, 0, 0 },
+
+	// Case 5
+	// - - -
+	// o x -
+	// - o -
+	{ 5, COMPACT5_CROSS, 0, 1, 1, 2 },
+	{ 5, COMPACT5_VERTICAL, 2, 1, 2, 2 },
+	{ 5, COMPACT5_HORIZONTAL, 0, 0, 1, 0 },
+	{ 5, COMPACT5_POINT, 2, 0, 2, 0 },
+
+	// Case 6
+	// - o -
+	// - x o
+	// - o -
+	{ 6, COMPACT5_VERTICAL, 0, 0, 1, 2 },
+	{ 6, COMPACT5_CROSS, 2, 0, 2, 2 },
+
+	// Case 7
+	// - - -
+	// o x o
+	// - o -
+	{ 7, COMPACT5_HORIZONTAL, 0, 0, 2, 0 },
+	{ 7, COMPACT5_CROSS, 0, 1, 2, 2 },
+
+	// Case 8
+	// - o o
+	// o x o
+	// - o -
+	{ 8, COMPACT5_CROSS, 0, 2, 2, 2 },
+	{ 8, COMPACT5_CROSS, 0, 0, 0, 1 },
+	{ 8, COMPACT5_FULL, 1, 0, 2, 1 },
+
+	// Case 9
+	// - o -
+	// o x o
+	// - o o
+	{ 9, COMPACT5_CROSS, 0, 0, 2, 0 },
+	{ 9, COMPACT5_CROSS, 0, 1, 0, 2 },
+	{ 9, COMPACT5_FULL, 1, 1, 2, 2 },
+
+	// Case 10
+	// o o -
+	// o x o
+	// o o -
+	{ 10, COMPACT5_FULL, 0, 0, 1, 2 },
+	{ 10, COMPACT5_CROSS, 2, 0, 2, 2 },
+
+	// Case 11
+	// o o o
+	// o x o
+	// - o -
+	{ 11, COMPACT5_FULL, 0, 0, 2, 1 },
+	{ 11, COMPACT5_CROSS, 0, 2, 2, 2 },
+
+	// Case 12
+	// - - -
+	// - x -
+	// - o -
+	{ 12, COMPACT5_POINT, 0, 0, 2, 0 },
+	{ 12, COMPACT5_VERTICAL, 0, 1, 2, 2 },
+
+	// Case 13
+	// - - -
+	// - x o
+	// - o o
+	{ 13, COMPACT5_POINT, 0, 0, 0, 0 },
+	{ 13, COMPACT5_HORIZONTAL, 1, 0, 2, 0 },
+	{ 13, COMPACT5_VERTICAL, 0, 1, 0, 2 },
+	{ 13, COMPACT5_FULL, 1, 1, 2, 2 },
+
+	// Case 14
+	// - - -
+	// o x o
+	// o o o
+	{ 14, COMPACT5_HORIZONTAL, 0, 0, 2, 0 },
+	{ 14, COMPACT5_FULL, 0, 1, 2, 2 },
+
+	// Case 15
+	// - - -
+	// o x -
+	// o o -
+	{ 15, COMPACT5_POINT, 2, 0, 2, 0 },
+	{ 15, COMPACT5_HORIZONTAL, 0, 0, 1, 0 },
+	{ 15, COMPACT5_VERTICAL, 2, 1, 2, 2 },
+	{ 15, COMPACT5_FULL, 0, 1, 1, 2 },
+
+	// Case 16
+	// - o -
+	// - x o
+	// - - -
+	{ 16, COMPACT5_CROSS, 1, 0, 2, 1 },
+	{ 16, COMPACT5_VERTICAL, 0, 0, 0, 1 },
+	{ 16, COMPACT5_HORIZONTAL, 1, 2, 2, 2 },
+	{ 16, COMPACT5_POINT, 0, 2, 0, 2 },
+
+	// Case 17
+	// - o -
+	// o x -
+	// - - -
+	{ 17, COMPACT5_CROSS, 0, 0, 1, 1 },
+	{ 17, COMPACT5_VERTICAL, 2, 0, 2, 1 },
+	{ 17, COMPACT5_HORIZONTAL, 0, 2, 1, 2 },
+	{ 17, COMPACT5_POINT, 2, 2, 2, 2 },
+
+	// Case 18
+	// - o -
+	// o x o
+	// - - -
+	{ 18, COMPACT5_CROSS, 0, 0, 2, 1 },
+	{ 18, COMPACT5_HORIZONTAL, 0, 2, 2, 2 },
+
+	// Case 19
+	// - o -
+	// o x -
+	// - o -
+	{ 19, COMPACT5_CROSS, 0, 0, 1, 2 },
+	{ 19, COMPACT5_VERTICAL, 2, 0, 2, 2 },
+
+	// Case 20
+	// o o -
+	// o x o
+	// - o -
+	{ 20, COMPACT5_FULL, 0, 0, 1, 1 },
+	{ 20, COMPACT5_CROSS, 0, 2, 2, 2 },
+	{ 20, COMPACT5_CROSS, 2, 0, 2, 1 },
+
+	// Case 21
+	// - o -
+	// o x o
+	// o o -
+	{ 21, COMPACT5_FULL, 0, 1, 1, 2 },
+	{ 21, COMPACT5_CROSS, 0, 0, 2, 0 },
+	{ 21, COMPACT5_CROSS, 2, 1, 2, 2 },
+
+	// Case 22
+	// - o -
+	// o x o
+	// o o o
+	{ 22, COMPACT5_FULL, 0, 1, 2, 2 },
+	{ 22, COMPACT5_CROSS, 0, 0, 2, 0 },
+
+	// Case 23
+	// - o o
+	// o x o
+	// - o o
+	{ 23, COMPACT5_FULL, 1, 0, 2, 2 },
+	{ 23, COMPACT5_CROSS, 0, 0, 0, 2 },
+
+	// Case 24
+	// - o -
+	// - x -
+	// - o -
+	{ 24, COMPACT5_VERTICAL, 0, 0, 2, 2 },
+
+	// Case 25
+	// - o o
+	// - x o
+	// - o o
+	{ 25, COMPACT5_VERTICAL, 0, 0, 0, 2 },
+	{ 25, COMPACT5_FULL, 1, 0, 2, 2 },
+
+	// Case 26
+	// o o o
+	// o x o
+	// o o o
+	{ 26, COMPACT5_FULL, 0, 0, 2, 2 },
+
+	// Case 27
+	// o o -
+	// o x -
+	// o o -
+	{ 27, COMPACT5_FULL, 0, 0, 1, 2 },
+	{ 27, COMPACT5_VERTICAL, 2, 0, 2, 2 },
+
+	// Case 28
+	// - o -
+	// - x o
+	// - o o
+	{ 28, COMPACT5_VERTICAL, 0, 0, 0, 2 },
+	{ 28, COMPACT5_CROSS, 1, 0, 2, 0 },
+	{ 28, COMPACT5_FULL, 1, 1, 2, 2 },
+
+	// Case 29
+	// - - -
+	// o x o
+	// o o -
+	{ 29, COMPACT5_HORIZONTAL, 0, 0, 2, 0 },
+	{ 29, COMPACT5_CROSS, 2, 1, 2, 2 },
+	{ 29, COMPACT5_FULL, 0, 1, 1, 2 },
+
+	// Case 30
+	// - o o
+	// - x o
+	// - o -
+	{ 30, COMPACT5_VERTICAL, 0, 0, 0, 2 },
+	{ 30, COMPACT5_CROSS, 1, 2, 2, 2 },
+	{ 30, COMPACT5_FULL, 1, 0, 2, 1 },
+
+	// Case 31
+	// - - -
+	// o x o
+	// - o o
+	{ 31, COMPACT5_HORIZONTAL, 0, 0, 2, 0 },
+	{ 31, COMPACT5_CROSS, 0, 1, 0, 2 },
+	{ 31, COMPACT5_FULL, 1, 1, 2, 2 },
+
+	// Case 32
+	// o o o
+	// o x o
+	// o o -
+	{ 32, COMPACT5_FULL, 0, 0, 2, 1 },
+	{ 32, COMPACT5_FULL, 0, 2, 1, 2 },
+	{ 32, COMPACT5_CROSS, 2, 2, 2, 2 },
+
+	// Case 33
+	// o o o
+	// o x o
+	// - o o
+	{ 33, COMPACT5_FULL, 0, 0, 2, 1 },
+	{ 33, COMPACT5_FULL, 1, 2, 2, 2 },
+	{ 33, COMPACT5_CROSS, 0, 2, 0, 2 },
+
+	// Case 34
+	// - o o
+	// o x o
+	// o o -
+	{ 34, COMPACT5_CROSS, 0, 0, 0, 0 },
+	{ 34, COMPACT5_FULL, 1, 0, 2, 0 },
+	{ 34, COMPACT5_FULL, 0, 1, 2, 1 },
+	{ 34, COMPACT5_FULL, 0, 2, 1, 2 },
+	{ 34, COMPACT5_CROSS, 2, 2, 2, 2 },
+
+	// Case 35
+	// o o -
+	// o x o
+	// - o o
+	{ 35, COMPACT5_CROSS, 2, 0, 2, 0 },
+	{ 35, COMPACT5_FULL, 0, 0, 1, 0 },
+	{ 35, COMPACT5_FULL, 0, 1, 2, 1 },
+	{ 35, COMPACT5_FULL, 1, 2, 2, 2 },
+	{ 35, COMPACT5_CROSS, 0, 2, 0, 2 },
+
+	// Case 36
+	// - o -
+	// - x -
+	// - - -
+	{ 36, COMPACT5_VERTICAL, 0, 0, 2, 1 },
+	{ 36, COMPACT5_POINT, 0, 2, 2, 2 },
+
+	// Case 37
+	// - o o
+	// - x o
+	// - - -
+	{ 37, COMPACT5_VERTICAL, 0, 0, 0, 1 },
+	{ 37, COMPACT5_HORIZONTAL, 1, 2, 2, 2 },
+	{ 37, COMPACT5_POINT, 0, 2, 0, 2 },
+	{ 37, COMPACT5_FULL, 1, 0, 2, 1 },
+
+	// Case 38
+	// o o o
+	// o x o
+	// - - -
+	{ 38, COMPACT5_FULL, 0, 0, 2, 1 },
+	{ 38, COMPACT5_HORIZONTAL, 0, 2, 2, 2 },
+
+	// Case 39
+	// o o -
+	// o x -
+	// - - -
+	{ 39, COMPACT5_FULL, 0, 0, 1, 1 },
+	{ 39, COMPACT5_HORIZONTAL, 0, 2, 1, 2 },
+	{ 39, COMPACT5_VERTICAL, 2, 0, 2, 1 },
+	{ 39, COMPACT5_POINT, 2, 2, 2, 2 },
+
+	// Case 40
+	// - o o
+	// o x o
+	// - - -
+	{ 40, COMPACT5_CROSS, 0, 0, 0, 1 },
+	{ 40, COMPACT5_FULL, 1, 0, 2, 1 },
+	{ 40, COMPACT5_HORIZONTAL, 0, 2, 2, 2 },
+
+	// Case 41
+	// o o -
+	// o x -
+	// - o -
+	{ 41, COMPACT5_FULL, 0, 0, 1, 1 },
+	{ 41, COMPACT5_VERTICAL, 2, 0, 2, 2 },
+	{ 41, COMPACT5_CROSS, 0, 2, 1, 2 },
+
+	// Case 42
+	// o o -
+	// o x o
+	// - - -
+	{ 42, COMPACT5_FULL, 0, 0, 1, 1 },
+	{ 42, COMPACT5_CROSS, 2, 0, 2, 1 },
+	{ 42, COMPACT5_HORIZONTAL, 0, 2, 2, 2 },
+
+	// Case 43
+	// - o -
+	// o x -
+	// o o -
+	{ 43, COMPACT5_CROSS, 0, 0, 1, 0 },
+	{ 43, COMPACT5_FULL, 0, 1, 1, 2 },
+	{ 43, COMPACT5_VERTICAL, 2, 0, 2, 2 },
+
+	// Case 44
+	// o o -
+	// o x o
+	// o o o
+	{ 44, COMPACT5_FULL, 0, 0, 1, 0 },
+	{ 44, COMPACT5_CROSS, 2, 0, 2, 0 },
+	{ 44, COMPACT5_FULL, 0, 1, 2, 2 },
+
+	// Case 45
+	// - o o
+	// o x o
+	// o o o
+	{ 45, COMPACT5_CROSS, 0, 0, 0, 0 },
+	{ 45, COMPACT5_FULL, 1, 0, 2, 0 },
+	{ 45, COMPACT5_FULL, 0, 1, 2, 2 },
+
+	// Case 46
+	// - o -
+	// o x o
+	// - o -
+	{ 46, COMPACT5_CROSS, 0, 0, 2, 2 }
+}};
+// clang-format on
+
 uint8_t get_connection_mask_from_case_index(const uint8_t case_index) {
 #ifdef DEV_ENABLED
 	ZN_ASSERT(case_index >= 0 && case_index < BLOB9_TILE_COUNT);
@@ -346,402 +724,22 @@ void generate_atlas_from_compact5(
 	const int xm_len = tile_res.x - 2 * xc_len;
 	const int ym_len = tile_res.y - 2 * yc_len;
 
-	// clang-format off
-	const Rect2i sr00(0,               0,                  xc_len, yc_len);
-	const Rect2i sr10(xc_len,          0,                  xm_len, yc_len);
-	const Rect2i sr20(xc_len + xm_len, 0,                  xc_len, yc_len);
-	const Rect2i sr01(0,               yc_len,             xc_len, ym_len);
-	const Rect2i sr11(xc_len,          yc_len,             xm_len, ym_len);
-	const Rect2i sr21(xc_len + xm_len, yc_len,             xc_len, ym_len);
-	const Rect2i sr02(0,               yc_len + ym_len,    xc_len, yc_len);
-	const Rect2i sr12(xc_len,          yc_len + ym_len,    xm_len, yc_len);
-	const Rect2i sr22(xc_len + xm_len, yc_len + ym_len,    xc_len, yc_len);
-	// clang-format on
+	const std::array<int, 4> x_offsets = { 0, xc_len, xc_len + xm_len, tile_res.x };
+	const std::array<int, 4> y_offsets = { 0, yc_len, yc_len + ym_len, tile_res.y };
 
-	struct TileBuilder {
-		const Image &input_image;
-		const std::array<Vector2i, 5> &input_tile_positions;
-		const Span<const Vector2i> output_tile_positions;
-		Image &output_image;
-		const Vector2i tile_res;
+	for (unsigned int op_index = 0; op_index < g_compact5_mapping_ops.size(); ++op_index) {
+		const Compact5Op op = g_compact5_mapping_ops[op_index];
 
-		void blit(
-				const unsigned int dst_case_index,
-				const unsigned int compact5_case,
-				const Rect2i src_tile_relative_rect
-		) {
-			const Rect2i src_rect(
-					input_tile_positions[compact5_case] + src_tile_relative_rect.position, src_tile_relative_rect.size
-			);
-			const Vector2i dst_rpos = output_tile_positions[dst_case_index];
-			const Vector2i dst_pos = dst_rpos + src_tile_relative_rect.position;
-			output_image.blit_rect(Ref<Image>(&input_image), src_rect, dst_pos);
-		}
-	};
+		const Vector2i p0(x_offsets[op.p0x + 0], y_offsets[op.p0y + 0]);
+		const Vector2i p1(x_offsets[op.p1x + 1], y_offsets[op.p1y + 1]);
 
-	TileBuilder tb{ input_image, input_positions, output_positions, output_image, tile_res };
+		const Rect2i src_rect(input_positions[op.compact5_case_index] + p0, p1 - p0);
 
-	// Case 0
-	// - - -
-	// - x -
-	// - - -
-	tb.blit(0, COMPACT5_POINT, Rect2i(Vector2i(), tile_res));
+		const Vector2i dst_tile_origin = output_positions[op.blob9_case_index];
+		const Vector2i dst_pos = dst_tile_origin + p0;
 
-	// Case 1
-	// - - -
-	// - x o
-	// - - -
-	tb.blit(1, COMPACT5_POINT, sr00.merge(sr02));
-	tb.blit(1, COMPACT5_HORIZONTAL, sr10.merge(sr22));
-
-	// Case 2
-	// - - -
-	// o x o
-	// - - -
-	tb.blit(2, COMPACT5_HORIZONTAL, Rect2i(Vector2i(), tile_res));
-
-	// Case 3
-	// - - -
-	// o x -
-	// - - -
-	tb.blit(3, COMPACT5_HORIZONTAL, sr00.merge(sr12));
-	tb.blit(3, COMPACT5_POINT, sr20.merge(sr22));
-
-	// Case 4
-	// - - -
-	// - x o
-	// - o -
-	tb.blit(4, COMPACT5_CROSS, sr11.merge(sr22));
-	tb.blit(4, COMPACT5_VERTICAL, sr01.merge(sr02));
-	tb.blit(4, COMPACT5_HORIZONTAL, sr10.merge(sr20));
-	tb.blit(4, COMPACT5_POINT, sr00);
-
-	// Case 5
-	// - - -
-	// o x -
-	// - o -
-	tb.blit(5, COMPACT5_CROSS, sr01.merge(sr12));
-	tb.blit(5, COMPACT5_VERTICAL, sr21.merge(sr22));
-	tb.blit(5, COMPACT5_HORIZONTAL, sr00.merge(sr10));
-	tb.blit(5, COMPACT5_POINT, sr20);
-
-	// Case 6
-	// - o -
-	// - x o
-	// - o -
-	tb.blit(6, COMPACT5_VERTICAL, sr00.merge(sr12));
-	tb.blit(6, COMPACT5_CROSS, sr20.merge(sr22));
-
-	// Case 7
-	// - - -
-	// o x o
-	// - o -
-	tb.blit(7, COMPACT5_HORIZONTAL, sr00.merge(sr20));
-	tb.blit(7, COMPACT5_CROSS, sr01.merge(sr22));
-
-	// Case 8
-	// - o o
-	// o x o
-	// - o -
-	tb.blit(8, COMPACT5_CROSS, sr02.merge(sr22));
-	tb.blit(8, COMPACT5_CROSS, sr00.merge(sr01));
-	tb.blit(8, COMPACT5_FULL, sr10.merge(sr21));
-
-	// Case 9
-	// - o -
-	// o x o
-	// - o o
-	tb.blit(9, COMPACT5_CROSS, sr00.merge(sr20));
-	tb.blit(9, COMPACT5_CROSS, sr01.merge(sr02));
-	tb.blit(9, COMPACT5_FULL, sr11.merge(sr22));
-
-	// Case 10
-	// o o -
-	// o x o
-	// o o -
-	tb.blit(10, COMPACT5_FULL, sr00.merge(sr12));
-	tb.blit(10, COMPACT5_CROSS, sr20.merge(sr22));
-
-	// Case 11
-	// o o o
-	// o x o
-	// - o -
-	tb.blit(11, COMPACT5_FULL, sr00.merge(sr21));
-	tb.blit(11, COMPACT5_CROSS, sr02.merge(sr22));
-
-	// Case 12
-	// - - -
-	// - x -
-	// - o -
-	tb.blit(12, COMPACT5_POINT, sr00.merge(sr20));
-	tb.blit(12, COMPACT5_VERTICAL, sr01.merge(sr22));
-
-	// Case 13
-	// - - -
-	// - x o
-	// - o o
-	tb.blit(13, COMPACT5_POINT, sr00);
-	tb.blit(13, COMPACT5_HORIZONTAL, sr10.merge(sr20));
-	tb.blit(13, COMPACT5_VERTICAL, sr01.merge(sr02));
-	tb.blit(13, COMPACT5_FULL, sr11.merge(sr22));
-
-	// Case 14
-	// - - -
-	// o x o
-	// o o o
-	tb.blit(14, COMPACT5_HORIZONTAL, sr00.merge(sr20));
-	tb.blit(14, COMPACT5_FULL, sr01.merge(sr22));
-
-	// Case 15
-	// - - -
-	// o x -
-	// o o -
-	tb.blit(15, COMPACT5_POINT, sr20);
-	tb.blit(15, COMPACT5_HORIZONTAL, sr00.merge(sr10));
-	tb.blit(15, COMPACT5_VERTICAL, sr21.merge(sr22));
-	tb.blit(15, COMPACT5_FULL, sr01.merge(sr12));
-
-	// Case 16
-	// - o -
-	// - x o
-	// - - -
-	tb.blit(16, COMPACT5_CROSS, sr10.merge(sr21));
-	tb.blit(16, COMPACT5_VERTICAL, sr00.merge(sr01));
-	tb.blit(16, COMPACT5_HORIZONTAL, sr12.merge(sr22));
-	tb.blit(16, COMPACT5_POINT, sr02);
-
-	// Case 17
-	// - o -
-	// o x -
-	// - - -
-	tb.blit(17, COMPACT5_CROSS, sr00.merge(sr11));
-	tb.blit(17, COMPACT5_VERTICAL, sr20.merge(sr21));
-	tb.blit(17, COMPACT5_HORIZONTAL, sr02.merge(sr12));
-	tb.blit(17, COMPACT5_POINT, sr22);
-
-	// Case 18
-	// - o -
-	// o x o
-	// - - -
-	tb.blit(18, COMPACT5_CROSS, sr00.merge(sr21));
-	tb.blit(18, COMPACT5_HORIZONTAL, sr02.merge(sr22));
-
-	// Case 19
-	// - o -
-	// o x -
-	// - o -
-	tb.blit(19, COMPACT5_CROSS, sr00.merge(sr12));
-	tb.blit(19, COMPACT5_VERTICAL, sr20.merge(sr22));
-
-	// Case 20
-	// o o -
-	// o x o
-	// - o -
-	tb.blit(20, COMPACT5_FULL, sr00.merge(sr11));
-	tb.blit(20, COMPACT5_CROSS, sr02.merge(sr22));
-	tb.blit(20, COMPACT5_CROSS, sr20.merge(sr21));
-
-	// Case 21
-	// - o -
-	// o x o
-	// o o -
-	tb.blit(21, COMPACT5_FULL, sr01.merge(sr12));
-	tb.blit(21, COMPACT5_CROSS, sr00.merge(sr20));
-	tb.blit(21, COMPACT5_CROSS, sr21.merge(sr22));
-
-	// Case 22
-	// - o -
-	// o x o
-	// o o o
-	tb.blit(22, COMPACT5_FULL, sr01.merge(sr22));
-	tb.blit(22, COMPACT5_CROSS, sr00.merge(sr20));
-
-	// Case 23
-	// - o o
-	// o x o
-	// - o o
-	tb.blit(23, COMPACT5_FULL, sr10.merge(sr22));
-	tb.blit(23, COMPACT5_CROSS, sr00.merge(sr02));
-
-	// Case 24
-	// - o -
-	// - x -
-	// - o -
-	tb.blit(24, COMPACT5_VERTICAL, sr00.merge(sr22));
-
-	// Case 25
-	// - o o
-	// - x o
-	// - o o
-	tb.blit(25, COMPACT5_VERTICAL, sr00.merge(sr02));
-	tb.blit(25, COMPACT5_FULL, sr10.merge(sr22));
-
-	// Case 26
-	// o o o
-	// o x o
-	// o o o
-	tb.blit(26, COMPACT5_FULL, sr00.merge(sr22));
-
-	// Case 27
-	// o o -
-	// o x -
-	// o o -
-	tb.blit(27, COMPACT5_FULL, sr00.merge(sr12));
-	tb.blit(27, COMPACT5_VERTICAL, sr20.merge(sr22));
-
-	// Case 28
-	// - o -
-	// - x o
-	// - o o
-	tb.blit(28, COMPACT5_VERTICAL, sr00.merge(sr02));
-	tb.blit(28, COMPACT5_CROSS, sr10.merge(sr20));
-	tb.blit(28, COMPACT5_FULL, sr11.merge(sr22));
-
-	// Case 29
-	// - - -
-	// o x o
-	// o o -
-	tb.blit(29, COMPACT5_HORIZONTAL, sr00.merge(sr20));
-	tb.blit(29, COMPACT5_CROSS, sr21.merge(sr22));
-	tb.blit(29, COMPACT5_FULL, sr01.merge(sr12));
-
-	// Case 30
-	// - o o
-	// - x o
-	// - o -
-	tb.blit(30, COMPACT5_VERTICAL, sr00.merge(sr02));
-	tb.blit(30, COMPACT5_CROSS, sr12.merge(sr22));
-	tb.blit(30, COMPACT5_FULL, sr10.merge(sr21));
-
-	// Case 31
-	// - - -
-	// o x o
-	// - o o
-	tb.blit(31, COMPACT5_HORIZONTAL, sr00.merge(sr20));
-	tb.blit(31, COMPACT5_CROSS, sr01.merge(sr02));
-	tb.blit(31, COMPACT5_FULL, sr11.merge(sr22));
-
-	// Case 32
-	// o o o
-	// o x o
-	// o o -
-	tb.blit(32, COMPACT5_FULL, sr00.merge(sr21));
-	tb.blit(32, COMPACT5_FULL, sr02.merge(sr12));
-	tb.blit(32, COMPACT5_CROSS, sr22);
-
-	// Case 33
-	// o o o
-	// o x o
-	// - o o
-	tb.blit(33, COMPACT5_FULL, sr00.merge(sr21));
-	tb.blit(33, COMPACT5_FULL, sr12.merge(sr22));
-	tb.blit(33, COMPACT5_CROSS, sr02);
-
-	// Case 34
-	// - o o
-	// o x o
-	// o o -
-	tb.blit(34, COMPACT5_CROSS, sr00);
-	tb.blit(34, COMPACT5_FULL, sr10.merge(sr20));
-	tb.blit(34, COMPACT5_FULL, sr01.merge(sr21));
-	tb.blit(34, COMPACT5_FULL, sr02.merge(sr12));
-	tb.blit(34, COMPACT5_CROSS, sr22);
-
-	// Case 35
-	// o o -
-	// o x o
-	// - o o
-	tb.blit(35, COMPACT5_CROSS, sr20);
-	tb.blit(35, COMPACT5_FULL, sr00.merge(sr10));
-	tb.blit(35, COMPACT5_FULL, sr01.merge(sr21));
-	tb.blit(35, COMPACT5_FULL, sr12.merge(sr22));
-	tb.blit(35, COMPACT5_CROSS, sr02);
-
-	// Case 36
-	// - o -
-	// - x -
-	// - - -
-	tb.blit(36, COMPACT5_VERTICAL, sr00.merge(sr21));
-	tb.blit(36, COMPACT5_POINT, sr02.merge(sr22));
-
-	// Case 37
-	// - o o
-	// - x o
-	// - - -
-	tb.blit(37, COMPACT5_VERTICAL, sr00.merge(sr01));
-	tb.blit(37, COMPACT5_HORIZONTAL, sr12.merge(sr22));
-	tb.blit(37, COMPACT5_POINT, sr02);
-	tb.blit(37, COMPACT5_FULL, sr10.merge(sr21));
-
-	// Case 38
-	// o o o
-	// o x o
-	// - - -
-	tb.blit(38, COMPACT5_FULL, sr00.merge(sr21));
-	tb.blit(38, COMPACT5_HORIZONTAL, sr02.merge(sr22));
-
-	// Case 39
-	// o o -
-	// o x -
-	// - - -
-	tb.blit(39, COMPACT5_FULL, sr00.merge(sr11));
-	tb.blit(39, COMPACT5_HORIZONTAL, sr02.merge(sr12));
-	tb.blit(39, COMPACT5_VERTICAL, sr20.merge(sr21));
-	tb.blit(39, COMPACT5_POINT, sr22);
-
-	// Case 40
-	// - o o
-	// o x o
-	// - - -
-	tb.blit(40, COMPACT5_CROSS, sr00.merge(sr01));
-	tb.blit(40, COMPACT5_FULL, sr10.merge(sr21));
-	tb.blit(40, COMPACT5_HORIZONTAL, sr02.merge(sr22));
-
-	// Case 41
-	// o o -
-	// o x -
-	// - o -
-	tb.blit(41, COMPACT5_FULL, sr00.merge(sr11));
-	tb.blit(41, COMPACT5_VERTICAL, sr20.merge(sr22));
-	tb.blit(41, COMPACT5_CROSS, sr02.merge(sr12));
-
-	// Case 42
-	// o o -
-	// o x o
-	// - - -
-	tb.blit(42, COMPACT5_FULL, sr00.merge(sr11));
-	tb.blit(42, COMPACT5_CROSS, sr20.merge(sr21));
-	tb.blit(42, COMPACT5_HORIZONTAL, sr02.merge(sr22));
-
-	// Case 43
-	// - o -
-	// o x -
-	// o o -
-	tb.blit(43, COMPACT5_CROSS, sr00.merge(sr10));
-	tb.blit(43, COMPACT5_FULL, sr01.merge(sr12));
-	tb.blit(43, COMPACT5_VERTICAL, sr20.merge(sr22));
-
-	// Case 44
-	// o o -
-	// o x o
-	// o o o
-	tb.blit(44, COMPACT5_FULL, sr00.merge(sr10));
-	tb.blit(44, COMPACT5_CROSS, sr20);
-	tb.blit(44, COMPACT5_FULL, sr01.merge(sr22));
-
-	// Case 45
-	// - o o
-	// o x o
-	// o o o
-	tb.blit(45, COMPACT5_CROSS, sr00);
-	tb.blit(45, COMPACT5_FULL, sr10.merge(sr20));
-	tb.blit(45, COMPACT5_FULL, sr01.merge(sr22));
-
-	// Case 46
-	// - o -
-	// o x o
-	// - o -
-	tb.blit(46, COMPACT5_CROSS, sr00.merge(sr22));
+		output_image.blit_rect(Ref<Image>(&input_image), src_rect, dst_pos);
+	}
 }
 
 void generate_atlas_from_compact5(
