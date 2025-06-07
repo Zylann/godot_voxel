@@ -248,6 +248,14 @@ public:
 		}
 	};
 
+	inline const K &get_key_at_index(const unsigned int i) const {
+		return _items[i].key;
+	}
+
+	inline const T &get_value_at_index(const unsigned int i) const {
+		return _items[i].value;
+	}
+
 	// If the key already exists, the item is not inserted and returns false.
 	// If insertion was successful, returns true.
 	bool insert(K key, T &&value) {

@@ -15,6 +15,7 @@ namespace zylann::voxel {
 LoadInstanceChunkTask::LoadInstanceChunkTask(
 		std::shared_ptr<InstancerTaskOutputQueue> output_queue,
 		Ref<VoxelStream> stream,
+		Ref<VoxelGenerator> voxel_generator,
 		std::shared_ptr<InstancerQuickReloadingCache> quick_reload_cache,
 		Ref<VoxelInstanceLibrary> library,
 		Array mesh_arrays,
@@ -28,6 +29,7 @@ LoadInstanceChunkTask::LoadInstanceChunkTask(
 ) :
 		_output_queue(output_queue),
 		_stream(stream),
+		_voxel_generator(voxel_generator),
 		_quick_reload_cache(quick_reload_cache),
 		_library(library),
 		_mesh_arrays(mesh_arrays),
@@ -37,7 +39,8 @@ LoadInstanceChunkTask::LoadInstanceChunkTask(
 		_lod_index(lod_index),
 		_instance_block_size(instance_block_size),
 		_data_block_size(data_block_size),
-		_up_mode(up_mode) {
+		_up_mode(up_mode) //
+{
 #ifdef DEBUG_ENABLED
 	ZN_ASSERT(_output_queue != nullptr);
 	ZN_ASSERT(_instance_block_size > 0);
@@ -241,6 +244,7 @@ void LoadInstanceChunkTask::run(ThreadedTaskContext &ctx) {
 						task->vertex_range_end = _vertex_range_end;
 						task->index_range_end = _index_range_end;
 						task->generator = item.generator;
+						task->voxel_generator = _voxel_generator;
 						task->transforms = std::move(layer.transforms);
 						task->output_queue = _output_queue;
 

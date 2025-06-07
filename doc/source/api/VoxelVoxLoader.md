@@ -28,4 +28,4 @@ Returns an [Error](https://docs.godotengine.org/en/stable/classes/class_error.ht
 
 Note: MagicaVoxel uses a different axis convention than Godot: X is right, Y is forwards and Z is up. Voxel coordinates will be the same when looked up in the buffer, but they mean different location in space.
 
-_Generated on Apr 27, 2025_
+_Generated on May 15, 2025_

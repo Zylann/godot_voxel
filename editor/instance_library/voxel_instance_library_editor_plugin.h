@@ -9,7 +9,6 @@ ZN_GODOT_FORWARD_DECLARE(class Control)
 ZN_GODOT_FORWARD_DECLARE(class MenuButton)
 ZN_GODOT_FORWARD_DECLARE(class ConfirmationDialog)
 ZN_GODOT_FORWARD_DECLARE(class AcceptDialog)
-ZN_GODOT_FORWARD_DECLARE(class EditorFileDialog)
 
 namespace zylann::voxel {
 

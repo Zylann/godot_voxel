@@ -21,6 +21,13 @@
 
 #include <limits>
 
+// I implemented an alternate API to customize instance queries more easily. The approach was to use virtuals and
+// temporary buffers instead of templates, because templates would cause a lot of bloat. But when used on the existing
+// floating removal function, it made it slightly slower (up to 20% longer). So this keeps the old implementation.
+// Note: if we used our own instance cache instead of grabbing it from Godot, the performance difference might be ruled
+// out.
+#define VOXEL_INSTANCER_USE_SPECIALIZED_FLOATING_INSTANCE_REMOVAL_IMPLEMENTATION
+
 ZN_GODOT_FORWARD_DECLARE(class PhysicsBody3D);
 
 namespace zylann {
@@ -72,6 +79,18 @@ public:
 	void set_library(Ref<VoxelInstanceLibrary> library);
 	Ref<VoxelInstanceLibrary> get_library() const;
 
+	int get_mesh_lod_update_budget_microseconds() const;
+	void set_mesh_lod_update_budget_microseconds(const int p_micros);
+
+	int get_collision_update_budget_microseconds() const;
+	void set_collision_update_budget_microseconds(const int p_micros);
+
+	void set_fading_enabled(const bool enabled);
+	bool get_fading_enabled() const;
+
+	void set_fading_duration(const float fading);
+	float get_fading_duration() const;
+
 	// Actions
 
 	void save_all_modified_blocks(
@@ -79,6 +98,8 @@ public:
 			std::shared_ptr<AsyncDependencyTracker> tracker,
 			bool with_flush
 	);
+
+	void remove_instances_in_sphere(const Vector3 p_center, const float p_radius);
 
 	// Event handlers
 
@@ -151,6 +172,8 @@ private:
 	void process();
 	void process_task_results();
 	void process_mesh_lods();
+	void process_collision_distances();
+	void process_fading();
 
 	void add_layer(int layer_id, int lod_index);
 	void remove_layer(int layer_id);
@@ -160,7 +183,7 @@ private:
 			const Vector3i grid_position,
 			const bool pending_instances
 	);
-	void remove_block(unsigned int block_index);
+	void remove_block(const unsigned int block_index, const bool with_fade_out);
 	void set_world(World3D *world);
 	void clear_blocks();
 	void clear_blocks_in_layer(int layer_id);
@@ -189,6 +212,20 @@ private:
 			const int32_t index_range_end
 	);
 
+	struct Block;
+
+	class IAreaOperation {
+	public:
+		struct Result {
+			bool modified;
+		};
+		virtual ~IAreaOperation() {}
+		virtual Result execute(Block &block) = 0;
+	};
+
+	void do_area_operation(const AABB p_aabb, IAreaOperation &op);
+	void do_area_operation(const Box3i p_voxel_box, IAreaOperation &op);
+
 #ifdef TOOLS_ENABLED
 	void process_gizmos();
 #endif
@@ -210,31 +247,72 @@ private:
 	void update_block_from_transforms(
 			int block_index,
 			Span<const Transform3f> transforms,
-			Vector3i grid_position,
+			const Vector3i grid_position,
 			Layer &layer,
 			const VoxelInstanceLibraryItem &item_base,
-			uint16_t layer_id,
+			const uint16_t layer_id,
 			World3D &world,
 			const Transform3D &block_transform,
-			Vector3 block_local_position
+			const Vector3 block_local_position
 	);
+
+	void update_multimesh_block_from_transforms(
+			Block &block,
+			const unsigned int block_index,
+			const Transform3D &block_global_transform,
+			const Vector3 block_local_position,
+			Span<const Transform3f> transforms,
+			const VoxelInstanceLibraryMultiMeshItem &item,
+			World3D &world
+	);
+
+	void update_scene_block_from_transforms(
+			Block &block,
+			const unsigned int block_index,
+			const Vector3 block_local_position,
+			Span<const Transform3f> transforms,
+			const VoxelInstanceLibrarySceneItem &scene_item
+	);
+
+	void update_multimesh_block_colliders(
+			Block &block,
+			const uint32_t block_index,
+			const InstanceLibraryMultiMeshItemSettings &settings,
+			Span<const Transform3f> transforms,
+			const Vector3 block_local_position
+	);
+
+	void destroy_multimesh_block_colliders(Block &block);
 
 	void on_library_item_changed(int item_id, IInstanceLibraryItemListener::ChangeType change) override;
 
-	struct Block;
+	struct MMRemovalAction {
+		struct Context {
+			VoxelInstancer *instancer = nullptr;
+			VoxelInstanceLibraryMultiMeshItem *item = nullptr;
+		};
+		Context context;
 
-	struct MMRemovalCallbackContext {
-		VoxelInstancer *instancer;
-		VoxelInstanceLibraryMultiMeshItem *item;
+		typedef void (*Callback)(Context, const Transform3D &);
+		Callback callback = nullptr;
+
+		inline bool is_valid() const {
+			return callback != nullptr;
+		}
+
+		inline void call(const Transform3D &t) const {
+#ifdef DEV_ENABLED
+			ZN_ASSERT(callback != nullptr);
+#endif
+			(*callback)(context, t);
+		}
 	};
 
-	typedef void (*MMRemovalCallback)(MMRemovalCallbackContext, const Transform3D &);
+	static MMRemovalAction get_mm_removal_action(VoxelInstancer *instancer, VoxelInstanceLibraryMultiMeshItem *mm_item);
 
-	static MMRemovalCallback get_mm_removal_callback(
-			VoxelInstancer *instancer,
-			VoxelInstanceLibraryMultiMeshItem *mm_item
-	);
+	void remove_floating_instances(const Box3i voxel_box);
 
+#ifdef VOXEL_INSTANCER_USE_SPECIALIZED_FLOATING_INSTANCE_REMOVAL_IMPLEMENTATION
 	static void remove_floating_multimesh_instances(
 			Block &block,
 			const Transform3D &parent_transform,
@@ -244,8 +322,7 @@ private:
 			const float sd_threshold,
 			const float sd_offset,
 			const bool bidirectional,
-			const MMRemovalCallback callback,
-			MMRemovalCallbackContext callback_context
+			const MMRemovalAction removal_action
 	);
 
 	static void remove_floating_scene_instances(
@@ -254,7 +331,35 @@ private:
 			const Box3i p_voxel_box,
 			const VoxelTool &voxel_tool,
 			const int block_size_po2,
-			const float sd_threshold
+			const float sd_threshold,
+			const float sd_offset,
+			const bool bidirectional
+	);
+#endif
+
+	static void get_instance_positions_local(
+			const Block &block,
+			const unsigned int base_block_size,
+			StdVector<Vector3f> &dst_positions,
+			StdVector<Vector3f> *dst_normals
+	);
+
+	static void get_instance_transforms_local(const Block &block, StdVector<Transform3f> &dst);
+
+	static void remove_instances_by_index(
+			Block &block,
+			const uint32_t base_block_size,
+			Span<const uint32_t> ascending_indices,
+			const MMRemovalAction mm_removal_action
+	);
+
+	static void remove_scene_instances_by_index(Block &block, Span<const uint32_t> ascending_indices);
+
+	static void remove_multimesh_instances_by_index(
+			Block &block,
+			const uint32_t base_block_size,
+			Span<const uint32_t> ascending_indices,
+			const MMRemovalAction action
 	);
 
 	static void update_mesh_from_mesh_lod(
@@ -280,6 +385,8 @@ private:
 		// generation completes, we can check if the block is still present.
 		// TODO Unused?
 		bool pending_instances = false;
+		// Used for distance-filtered colliders feature
+		bool distance_colliders_active = false;
 		// Position in mesh block coordinate system
 		Vector3i grid_position;
 		zylann::godot::DirectMultiMeshInstance multimesh_instance;
@@ -357,8 +464,28 @@ private:
 	// Vector3 _mesh_lod_last_update_camera_position;
 	// float _mesh_lod_update_camera_threshold_distance = 8.f;
 	unsigned int _mesh_lod_time_sliced_block_index = 0;
+	uint32_t _mesh_lod_update_budget_microseconds = 500;
+
+	unsigned int _collision_distance_time_sliced_block_index = 0;
+	uint32_t _collision_distance_update_budget_microseconds = 500;
 
 	std::shared_ptr<InstancerTaskOutputQueue> _loading_results;
+
+	struct FadingInBlock {
+		uint16_t layer_id = 0;
+		Vector3i grid_position;
+		float progress = 0.f;
+	};
+
+	struct FadingOutBlock {
+		float progress = 0.f;
+		zylann::godot::DirectMultiMeshInstance multimesh_instance;
+	};
+
+	StdVector<FadingInBlock> _fading_in_blocks;
+	StdVector<FadingOutBlock> _fading_out_blocks;
+	float _fading_duration = 0.3f;
+	bool _fading_enabled = false;
 
 #ifdef TOOLS_ENABLED
 	zylann::godot::DebugRenderer _debug_renderer;

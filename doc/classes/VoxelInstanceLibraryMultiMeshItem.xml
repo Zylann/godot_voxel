@@ -56,6 +56,11 @@
 		</member>
 		<member name="cast_shadow" type="int" setter="set_cast_shadows_setting" getter="get_cast_shadows_setting" enum="RenderingServer.ShadowCastingSetting" default="1">
 		</member>
+		<member name="collision_distance" type="float" setter="set_collision_distance" getter="get_collision_distance" default="-1.0">
+			When greater than 0 and colliders are configured, hints the distance below which colliders may be created. This allows to reduce the amount of colliders while keeping a high view distance for visuals. 
+			When negative, colliders will be created at all distances.
+			Note: the instancer creates/removes colliders on a per-chunk basis, so this distance is compared against the distance to chunks, and not individual instances.
+		</member>
 		<member name="collision_layer" type="int" setter="set_collision_layer" getter="get_collision_layer" default="1">
 		</member>
 		<member name="collision_mask" type="int" setter="set_collision_mask" getter="get_collision_mask" default="1">
@@ -94,6 +99,7 @@
 		<member name="render_layer" type="int" setter="set_render_layer" getter="get_render_layer" default="1">
 		</member>
 		<member name="scene" type="PackedScene" setter="set_scene" getter="get_scene">
+			Scene that will be used as configuration instead of manual properties. It should have a specific node structure to be supported. See [url]https://voxel-tools.readthedocs.io/en/latest/instancing/#setting-up-a-multimesh-item-from-a-scene[/url]
 		</member>
 	</members>
 	<constants>

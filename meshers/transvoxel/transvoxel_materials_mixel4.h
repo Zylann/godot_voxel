@@ -1,7 +1,7 @@
 #ifndef VOXEL_TRANSVOXEL_MATERIALS_MIXEL4_H
 #define VOXEL_TRANSVOXEL_MATERIALS_MIXEL4_H
 
-#include "../../storage/materials_4i4w.h"
+#include "../../storage/mixel4.h"
 #include "../../util/containers/fixed_array.h"
 #include "../../util/containers/std_vector.h"
 #include "transvoxel.h"
@@ -56,7 +56,8 @@ CellTextureDatas<NVoxels> select_textures_4_per_voxel(
 
 		const unsigned int data_index = voxel_indices[ci];
 
-		const FixedArray<uint8_t, 4> indices = decode_indices_from_packed_u16(indices_data[data_index]);
+		const FixedArray<uint8_t, 4> indices =
+				zylann::voxel::mixel4::decode_indices_from_packed_u16(indices_data[data_index]);
 		const FixedArray<uint8_t, 4> weights = weights_sampler.get_weights(data_index);
 
 		for (unsigned int j = 0; j < indices.size(); ++j) {
@@ -154,7 +155,7 @@ inline void get_cell_texture_data(
 struct WeightSamplerPackedU16 {
 	Span<const uint16_t> u16_data;
 	inline FixedArray<uint8_t, 4> get_weights(unsigned int i) const {
-		return decode_weights_from_packed_u16(u16_data[i]);
+		return zylann::voxel::mixel4::decode_weights_from_packed_u16(u16_data[i]);
 	}
 };
 
@@ -263,7 +264,7 @@ TextureIndicesData get_texture_indices_data(
 
 	if (voxels.is_uniform(indices_channel)) {
 		const uint16_t encoded_indices = voxels.get_voxel(Vector3i(), indices_channel);
-		data.default_indices = decode_indices_from_packed_u16(encoded_indices);
+		data.default_indices = zylann::voxel::mixel4::decode_indices_from_packed_u16(encoded_indices);
 		data.packed_default_indices = pack_bytes(data.default_indices);
 
 		out_default_texture_indices_data.indices = data.default_indices;

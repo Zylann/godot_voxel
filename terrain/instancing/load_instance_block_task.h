@@ -1,6 +1,7 @@
 #ifndef VOXEL_LOAD_INSTANCE_BLOCK_TASK_H
 #define VOXEL_LOAD_INSTANCE_BLOCK_TASK_H
 
+#include "../../generators/voxel_generator.h"
 #include "../../streams/voxel_stream.h"
 #include "../../util/godot/core/array.h"
 #include "../../util/math/vector3i.h"
@@ -21,6 +22,7 @@ public:
 	LoadInstanceChunkTask(
 			std::shared_ptr<InstancerTaskOutputQueue> output_queue,
 			Ref<VoxelStream> stream,
+			Ref<VoxelGenerator> voxel_generator,
 			std::shared_ptr<InstancerQuickReloadingCache> quick_reload_cache,
 			Ref<VoxelInstanceLibrary> library,
 			Array mesh_arrays,
@@ -42,6 +44,7 @@ public:
 private:
 	std::shared_ptr<InstancerTaskOutputQueue> _output_queue;
 	Ref<VoxelStream> _stream;
+	Ref<VoxelGenerator> _voxel_generator;
 	std::shared_ptr<InstancerQuickReloadingCache> _quick_reload_cache;
 	Ref<VoxelInstanceLibrary> _library;
 	Array _mesh_arrays;

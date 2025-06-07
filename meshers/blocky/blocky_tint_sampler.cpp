@@ -11,7 +11,7 @@ TintSampler TintSampler::create(const VoxelBuffer &p_voxels, const Mode mode) {
 			break;
 
 		case MODE_RAW: {
-			const VoxelBuffer::ChannelId channel = VoxelBuffer::CHANNEL_COLOR;
+			static constexpr VoxelBuffer::ChannelId channel = VoxelBuffer::CHANNEL_COLOR;
 			const VoxelBuffer::Depth depth = p_voxels.get_channel_depth(channel);
 
 			switch (depth) {

@@ -599,21 +599,21 @@ uint32_t _b_color_to_u32(Color col) {
 }
 
 int _b_vec4i_to_u16_indices(Vector4i v) {
-	return encode_indices_to_packed_u16(v.x, v.y, v.z, v.w);
+	return mixel4::encode_indices_to_packed_u16(v.x, v.y, v.z, v.w);
 }
 
 int _b_color_to_u16_weights(Color cf) {
 	const Color8 c(cf);
-	return encode_weights_to_packed_u16_lossy(c.r, c.g, c.b, c.a);
+	return mixel4::encode_weights_to_packed_u16_lossy(c.r, c.g, c.b, c.a);
 }
 
 Vector4i _b_u16_indices_to_vec4i(int e) {
-	FixedArray<uint8_t, 4> indices = decode_indices_from_packed_u16(e);
+	FixedArray<uint8_t, 4> indices = mixel4::decode_indices_from_packed_u16(e);
 	return Vector4i(indices[0], indices[1], indices[2], indices[3]);
 }
 
 Color _b_u16_weights_to_color(int e) {
-	FixedArray<uint8_t, 4> indices = decode_weights_from_packed_u16(e);
+	FixedArray<uint8_t, 4> indices = mixel4::decode_weights_from_packed_u16(e);
 	return Color(indices[0] / 255.f, indices[1] / 255.f, indices[2] / 255.f, indices[3] / 255.f);
 }
 

@@ -58,6 +58,17 @@ public:
 		}
 	}
 
+	template <typename TPredicate>
+	int find_item(TPredicate pred) const {
+		for (auto it = _items.begin(); it != _items.end(); ++it) {
+			ZN_ASSERT(it->second.is_valid());
+			if (pred(**it->second)) {
+				return it->first;
+			}
+		}
+		return -1;
+	}
+
 	void add_listener(IInstanceLibraryItemListener *listener);
 	void remove_listener(IInstanceLibraryItemListener *listener);
 

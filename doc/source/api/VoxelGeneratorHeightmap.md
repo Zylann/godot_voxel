@@ -9,12 +9,13 @@ Base class for several basic height-based generators.
 ## Properties: 
 
 
-Type                                                                      | Name                             | Default         
-------------------------------------------------------------------------- | -------------------------------- | ----------------
-[ChannelId](VoxelBuffer.md#enumerations)                                  | [channel](#i_channel)            | CHANNEL_SDF (1) 
-[float](https://docs.godotengine.org/en/stable/classes/class_float.html)  | [height_range](#i_height_range)  | 30.0            
-[float](https://docs.godotengine.org/en/stable/classes/class_float.html)  | [height_start](#i_height_start)  | -50.0           
-[float](https://docs.godotengine.org/en/stable/classes/class_float.html)  | [iso_scale](#i_iso_scale)        | 1.0             
+Type                                                                            | Name                             | Default         
+------------------------------------------------------------------------------- | -------------------------------- | ----------------
+[ChannelId](VoxelBuffer.md#enumerations)                                        | [channel](#i_channel)            | CHANNEL_SDF (1) 
+[float](https://docs.godotengine.org/en/stable/classes/class_float.html)        | [height_range](#i_height_range)  | 30.0            
+[float](https://docs.godotengine.org/en/stable/classes/class_float.html)        | [height_start](#i_height_start)  | -50.0           
+[float](https://docs.godotengine.org/en/stable/classes/class_float.html)        | [iso_scale](#i_iso_scale)        | 1.0             
+[Vector2i](https://docs.godotengine.org/en/stable/classes/class_vector2i.html)  | [offset](#i_offset)              | Vector2i(0, 0)  
 <p></p>
 
 ## Property Descriptions
@@ -37,4 +38,8 @@ Minimum height where the surface will generate.
 
 Scale applied to the signed distance field when using a smooth terrain configuration.
 
-_Generated on Apr 27, 2025_
+### [Vector2i](https://docs.godotengine.org/en/stable/classes/class_vector2i.html)<span id="i_offset"></span> **offset** = Vector2i(0, 0)
+
+Offsets height generation along the X and Z axes.
+
+_Generated on May 15, 2025_

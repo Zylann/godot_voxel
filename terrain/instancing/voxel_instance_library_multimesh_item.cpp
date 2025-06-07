@@ -524,6 +524,14 @@ void VoxelInstanceLibraryMultiMeshItem::trigger_removal_callback(VoxelInstancer 
 	GDVIRTUAL_CALL(_on_instance_removed, instancer, trans);
 }
 
+void VoxelInstanceLibraryMultiMeshItem::set_collision_distance(const float distance) {
+	_collision_distance = distance;
+}
+
+float VoxelInstanceLibraryMultiMeshItem::get_collision_distance() const {
+	return _collision_distance;
+}
+
 const VoxelInstanceLibraryMultiMeshItem::Settings &VoxelInstanceLibraryMultiMeshItem::get_multimesh_settings() const {
 	if (_scene.is_valid()) {
 		return _scene_settings;
@@ -694,6 +702,9 @@ void VoxelInstanceLibraryMultiMeshItem::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_removal_scene"), &Self::get_removal_scene);
 	ClassDB::bind_method(D_METHOD("set_removal_scene", "scene"), &Self::set_removal_scene);
 
+	ClassDB::bind_method(D_METHOD("get_collision_distance"), &Self::get_collision_distance);
+	ClassDB::bind_method(D_METHOD("set_collision_distance", "distance"), &Self::set_collision_distance);
+
 	// Used in editor only
 	ClassDB::bind_method(
 			D_METHOD("_deserialize_multimesh_item_properties", "props"), &Self::deserialize_multimesh_item_properties
@@ -703,6 +714,10 @@ void VoxelInstanceLibraryMultiMeshItem::_bind_methods() {
 			PropertyInfo(Variant::OBJECT, "scene", PROPERTY_HINT_RESOURCE_TYPE, PackedScene::get_class_static()),
 			"set_scene",
 			"get_scene"
+	);
+
+	ADD_PROPERTY(
+			PropertyInfo(Variant::FLOAT, "collision_distance"), "set_collision_distance", "get_collision_distance"
 	);
 
 	ADD_GROUP(MANUAL_SETTINGS_GROUP_NAME, "");

@@ -11,7 +11,8 @@ ZN_GODOT_FORWARD_DECLARE(class Label)
 namespace zylann::voxel {
 
 class VoxelGraphEditorNodePreview;
-class VoxelGeneratorGraph;
+struct GraphEditorAdapter;
+
 namespace pg {
 class VoxelGraphFunction;
 }
@@ -25,7 +26,7 @@ public:
 	void update_title(const pg::VoxelGraphFunction &graph);
 	void poll(const pg::VoxelGraphFunction &graph);
 
-	void update_range_analysis_tooltips(const VoxelGeneratorGraph &generator, const pg::Runtime::State &state);
+	void update_range_analysis_tooltips(const GraphEditorAdapter &adapter, const pg::Runtime::State &state);
 	void clear_range_analysis_tooltips();
 
 	void update_layout(const pg::VoxelGraphFunction &graph);

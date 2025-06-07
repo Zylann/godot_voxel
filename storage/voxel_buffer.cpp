@@ -5,7 +5,7 @@
 #include "../util/dstack.h"
 #include "../util/profiling.h"
 #include "../util/string/format.h"
-#include "materials_4i4w.h"
+#include "mixel4.h"
 #include "voxel_format.h"
 #include "voxel_memory_pool.h"
 #include <cstring>
@@ -151,8 +151,8 @@ const char *VoxelBuffer::get_channel_name(const ChannelId id) {
 // should be possible to cast it back to the actual type with no loss of data, as long as all bits are preserved.
 static constexpr uint16_t DEFAULT_RAW_SDF_16BIT = uint16_t(snorm_to_s16(1.f));
 
-static constexpr uint16_t MIXEL4_DEFAULT_INDICES = encode_indices_to_packed_u16(0, 1, 2, 3);
-static constexpr uint16_t MIXEL4_DEFAULT_WEIGHTS = encode_weights_to_packed_u16_lossy(255, 0, 0, 0);
+static constexpr uint16_t MIXEL4_DEFAULT_INDICES = mixel4::encode_indices_to_packed_u16(0, 1, 2, 3);
+static constexpr uint16_t MIXEL4_DEFAULT_WEIGHTS = mixel4::encode_weights_to_packed_u16_lossy(255, 0, 0, 0);
 
 uint64_t VoxelBuffer::get_default_raw_value(const VoxelBuffer::ChannelId channel, const VoxelBuffer::Depth depth) {
 	switch (channel) {
@@ -958,6 +958,26 @@ bool VoxelBuffer::equals(const VoxelBuffer &p_other) const {
 		}
 	}
 
+	if (_voxel_metadata.size() != p_other._voxel_metadata.size()) {
+		return false;
+	}
+
+	for (unsigned int i = 0; i < _voxel_metadata.size(); ++i) {
+		const Vector3i key = _voxel_metadata.get_key_at_index(i);
+		const Vector3i other_key = p_other._voxel_metadata.get_key_at_index(i);
+
+		if (key != other_key) {
+			return false;
+		}
+
+		const VoxelMetadata &meta = _voxel_metadata.get_value_at_index(i);
+		const VoxelMetadata &other_meta = _voxel_metadata.get_value_at_index(i);
+
+		if (!meta.equals(other_meta)) {
+			return false;
+		}
+	}
+
 	return true;
 }
 
@@ -1238,6 +1258,18 @@ void VoxelBuffer::copy_voxel_metadata(const VoxelBuffer &src_buffer) {
 	_block_metadata.copy_from(src_buffer._block_metadata);
 }
 
+#ifdef VOXEL_TESTS
+
+void VoxelBuffer::check_voxel_metadata_integrity() const {
+	for (FlatMapMoveOnly<Vector3i, VoxelMetadata>::ConstIterator it = _voxel_metadata.begin();
+		 it != _voxel_metadata.end();
+		 ++it) {
+		ZN_ASSERT(is_position_valid(it->key));
+	}
+}
+
+#endif
+
 void get_unscaled_sdf(const VoxelBuffer &voxels, Span<float> sdf) {
 	ZN_PROFILE_SCOPE();
 	ZN_DSTACK();
@@ -1456,10 +1488,15 @@ void paste_src_masked(
 	}
 
 	if (with_metadata) {
-		dst_buffer.erase_voxel_metadata_if([dst_box, &src_buffer, src_mask_channel, src_mask_value](
+		dst_buffer.erase_voxel_metadata_if([dst_box, &src_buffer, src_mask_channel, src_mask_value, dst_base_pos](
 												   const FlatMapMoveOnly<Vector3i, VoxelMetadata>::Pair &p
 										   ) {
-			return dst_box.contains(p.key) && src_buffer.get_voxel(p.key, src_mask_channel) != src_mask_value;
+			if (!dst_box.contains(p.key)) {
+				return false;
+			}
+			const Vector3i src_pos = p.key - dst_base_pos;
+			const uint32_t src_v = src_buffer.get_voxel(src_pos, src_mask_channel);
+			return src_v != src_mask_value;
 		});
 
 		const Box3i src_box(dst_box.position - dst_base_pos, dst_box.size);
@@ -1546,16 +1583,25 @@ void paste_src_masked_dst_predicate(
 	}
 
 	if (with_metadata) {
-		dst_buffer.erase_voxel_metadata_if(
-				[&src_buffer, src_mask_channel, src_mask_value, dst_box, &dst_buffer, dst_mask_channel, &dst_predicate](
-						const FlatMapMoveOnly<Vector3i, VoxelMetadata>::Pair &p
-				) {
-					//
-					return dst_box.contains(p.key) //
-							&& src_buffer.get_voxel(p.key, src_mask_channel) != src_mask_value //
-							&& dst_predicate(dst_buffer.get_voxel(p.key, dst_mask_channel));
-				}
-		);
+		dst_buffer.erase_voxel_metadata_if([&src_buffer,
+											src_mask_channel,
+											src_mask_value,
+											dst_box,
+											&dst_buffer,
+											dst_base_pos,
+											dst_mask_channel,
+											&dst_predicate](const FlatMapMoveOnly<Vector3i, VoxelMetadata>::Pair &p) {
+			if (!dst_box.contains(p.key)) {
+				return false;
+			}
+			const Vector3i src_pos = p.key - dst_base_pos;
+			const uint32_t src_v = src_buffer.get_voxel(src_pos, src_mask_channel);
+			if (src_v == src_mask_value) {
+				return false;
+			}
+			const uint32_t dst_v = dst_buffer.get_voxel(p.key, dst_mask_channel);
+			return dst_predicate(dst_v);
+		});
 
 		const Box3i src_box(dst_box.position - dst_base_pos, dst_box.size);
 

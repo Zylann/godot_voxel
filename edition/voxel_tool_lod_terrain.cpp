@@ -517,7 +517,7 @@ void VoxelToolLodTerrain::do_graph(Ref<VoxelGeneratorGraph> graph, Transform3D t
 
 			// Apply strength and graph scale. Input serves as output too, shouldn't overlap
 			for (unsigned int i = 0; i < in_sdf.size(); ++i) {
-				in_sdf[i] = Math::lerp(in_sdf[i], graph_buffer.data[i] * graph_scale, op_strength);
+				in_sdf[i] = Math::lerp(in_sdf[i], graph_buffer.data[i], op_strength) * graph_scale;
 			}
 		}
 	}

@@ -117,6 +117,9 @@ public:
 	void set_removal_scene(Ref<PackedScene> scene);
 	Ref<PackedScene> get_removal_scene() const;
 
+	void set_collision_distance(const float distance);
+	float get_collision_distance() const;
+
 	// Internal
 
 	void trigger_removal_callback(VoxelInstancer *instancer, const Transform3D &trans);
@@ -228,6 +231,8 @@ private:
 
 	RemovalBehavior _removal_behavior = REMOVAL_BEHAVIOR_NONE;
 	Ref<PackedScene> _removal_scene;
+
+	float _collision_distance = -1.f;
 };
 
 } // namespace zylann::voxel
