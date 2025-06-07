@@ -48,6 +48,9 @@ private:
 	void sync_all_parameters();
 	void sync_view_distances();
 
+	// static void unregister_deferred_callback(const ObjectID viewer_node_id, const Vector2i encoded_viewer_id);
+	static void unregister_deferred_callback(const int64_t viewer_node_id, const Vector2i encoded_viewer_id);
+
 	bool is_active() const;
 
 	ViewerID _viewer_id;
@@ -57,6 +60,7 @@ private:
 	bool _requires_collisions = true;
 	bool _requires_data_block_notifications = false;
 	bool _enabled_in_editor = false;
+	bool _pending_deferred_unregistration = false;
 	int _network_peer_id = -1;
 };
 

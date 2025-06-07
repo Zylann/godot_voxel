@@ -2,6 +2,7 @@
 #include "../../util/containers/container_funcs.h"
 #include "../../util/containers/std_unordered_set.h"
 #include "../../util/errors.h"
+#include "../../util/godot/classes/object.h"
 #include "../../util/godot/classes/resource.h"
 #include "../../util/godot/core/string.h"
 #include "../../util/memory/memory.h"
@@ -354,6 +355,90 @@ void ProgramGraph::debug_print_dot_file(String p_file_path) const {
 
 	ofs << "}\n";
 	ofs.close();
+}
+
+bool ProgramGraph::branch_equals(
+		const uint32_t node_id,
+		const ProgramGraph &other_graph,
+		const uint32_t other_node_id
+) const {
+	const Node &src_node = get_node(node_id);
+	const Node &dst_node = other_graph.get_node(other_node_id);
+
+	if (src_node.type_id != dst_node.type_id) {
+		return false;
+	}
+
+	if (src_node.name != dst_node.name) {
+		return false;
+	}
+
+	if (src_node.params.size() != dst_node.params.size()) {
+		return false;
+	}
+
+	for (unsigned int param_index = 0; param_index < src_node.params.size(); ++param_index) {
+		const Variant &src_value = src_node.params[param_index];
+		const Variant &dst_value = dst_node.params[param_index];
+
+		if (src_value == dst_value) {
+			continue;
+		}
+
+		if (src_value.get_type() != dst_value.get_type()) {
+			return false;
+		}
+
+		if (src_value.get_type() == Variant::OBJECT) {
+			const Object *obj0 = src_value;
+			const Object *obj1 = dst_value;
+			if (obj0 == nullptr || obj1 == nullptr) {
+				return false;
+			}
+			const uint64_t h0 = zylann::godot::get_deep_hash(*obj0);
+			const uint64_t h1 = zylann::godot::get_deep_hash(*obj1);
+			if (h0 != h1) {
+				return false;
+			}
+		} else {
+			return false;
+		}
+	}
+
+	if (src_node.inputs.size() != dst_node.inputs.size()) {
+		return false;
+	}
+	if (src_node.outputs.size() != dst_node.outputs.size()) {
+		return false;
+	}
+
+	for (unsigned int input_index = 0; input_index < src_node.inputs.size(); ++input_index) {
+		const Port &src_input = src_node.inputs[input_index];
+		const Port &dst_input = dst_node.inputs[input_index];
+
+		ZN_ASSERT_RETURN_V(src_input.connections.size() <= 1, false);
+		ZN_ASSERT_RETURN_V(dst_input.connections.size() <= 1, false);
+
+		if (src_input.connections.size() != dst_input.connections.size()) {
+			return false;
+		}
+		if (src_input.connections.size() == 0) {
+			continue;
+		}
+
+		const PortLocation src_loc = src_input.connections[0];
+		const PortLocation dst_loc = dst_input.connections[0];
+
+		if (src_loc.port_index != dst_loc.port_index) {
+			return false;
+		}
+
+		if (!branch_equals(src_loc.node_id, other_graph, dst_loc.node_id)) {
+			return false;
+		}
+	}
+
+	return true;
 }
 
 void ProgramGraph::copy_from(const ProgramGraph &other, bool copy_subresources) {

@@ -1,4 +1,3 @@
-#include "../../../shaders/fast_noise_lite_shader.h"
 #include "../../../util/godot/classes/fast_noise_lite.h"
 #include "../../../util/noise/fast_noise_lite/fast_noise_lite.h"
 #include "../../../util/noise/fast_noise_lite/fast_noise_lite_range.h"
@@ -11,6 +10,10 @@
 #include "../../../util/noise/fast_noise_2.h"
 #endif
 
+#ifdef VOXEL_ENABLE_GPU
+#include "../../../shaders/fast_noise_lite_shader.h"
+#endif
+
 namespace zylann::voxel::pg {
 
 template <typename T>
@@ -19,6 +22,8 @@ Variant create_resource_to_variant() {
 	res.instantiate();
 	return Variant(res);
 }
+
+#ifdef VOXEL_ENABLE_GPU
 
 void add_fast_noise_lite_state_config(ShaderGenContext &ctx, const FastNoiseLite &fnl) {
 	// TODO Add missing options
@@ -93,6 +98,8 @@ void add_fast_noise_lite_gradient_state_config(ShaderGenContext &ctx, const ZN_F
 	);
 }
 
+#endif
+
 void register_noise_nodes(Span<NodeType> types) {
 	using namespace math;
 
@@ -147,6 +154,7 @@ void register_noise_nodes(Span<NodeType> types) {
 			ctx.set_output(0, get_range_2d(*p.noise, x, y));
 		};
 
+#ifdef VOXEL_ENABLE_GPU
 		t.shader_gen_func = [](ShaderGenContext &ctx) {
 			Ref<Noise> noise = ctx.get_param(0);
 			if (noise.is_null()) {
@@ -193,6 +201,7 @@ void register_noise_nodes(Span<NodeType> types) {
 			);
 			return;
 		};
+#endif
 	}
 	{
 		struct Params {
@@ -245,6 +254,7 @@ void register_noise_nodes(Span<NodeType> types) {
 			ctx.set_output(0, get_range_3d(*p.noise, x, y, z));
 		};
 
+#ifdef VOXEL_ENABLE_GPU
 		t.shader_gen_func = [](ShaderGenContext &ctx) {
 			Ref<Noise> noise = ctx.get_param(0);
 			if (noise.is_null()) {
@@ -275,6 +285,7 @@ void register_noise_nodes(Span<NodeType> types) {
 					ctx.get_input_name(2)
 			);
 		};
+#endif
 	}
 	{
 		struct Params {
@@ -287,10 +298,11 @@ void register_noise_nodes(Span<NodeType> types) {
 		t.inputs.push_back(NodeType::Port("x", 0.f, VoxelGraphFunction::AUTO_CONNECT_X));
 		t.inputs.push_back(NodeType::Port("y", 0.f, VoxelGraphFunction::AUTO_CONNECT_Z));
 		t.outputs.push_back(NodeType::Port("out"));
-		t.params.push_back(NodeType::
-								   Param("noise",
-										 ZN_FastNoiseLite::get_class_static(),
-										 &create_resource_to_variant<ZN_FastNoiseLite>));
+		t.params.push_back(
+				NodeType::Param(
+						"noise", ZN_FastNoiseLite::get_class_static(), &create_resource_to_variant<ZN_FastNoiseLite>
+				)
+		);
 
 		t.compile_func = [](CompileContext &ctx) {
 			Ref<ZN_FastNoiseLite> noise = ctx.get_param(0);
@@ -324,6 +336,7 @@ void register_noise_nodes(Span<NodeType> types) {
 			ctx.set_output(0, get_fnl_range_2d(*p.noise, x, y));
 		};
 
+#ifdef VOXEL_ENABLE_GPU
 		t.shader_gen_func = [](ShaderGenContext &ctx) {
 			Ref<ZN_FastNoiseLite> noise = ctx.get_param(0);
 			if (noise.is_null()) {
@@ -341,6 +354,7 @@ void register_noise_nodes(Span<NodeType> types) {
 					ctx.get_input_name(1)
 			);
 		};
+#endif
 	}
 	{
 		struct Params {
@@ -354,10 +368,11 @@ void register_noise_nodes(Span<NodeType> types) {
 		t.inputs.push_back(NodeType::Port("y", 0.f, VoxelGraphFunction::AUTO_CONNECT_Y));
 		t.inputs.push_back(NodeType::Port("z", 0.f, VoxelGraphFunction::AUTO_CONNECT_Z));
 		t.outputs.push_back(NodeType::Port("out"));
-		t.params.push_back(NodeType::
-								   Param("noise",
-										 ZN_FastNoiseLite::get_class_static(),
-										 &create_resource_to_variant<ZN_FastNoiseLite>));
+		t.params.push_back(
+				NodeType::Param(
+						"noise", ZN_FastNoiseLite::get_class_static(), &create_resource_to_variant<ZN_FastNoiseLite>
+				)
+		);
 
 		t.compile_func = [](CompileContext &ctx) {
 			Ref<ZN_FastNoiseLite> noise = ctx.get_param(0);
@@ -393,6 +408,7 @@ void register_noise_nodes(Span<NodeType> types) {
 			ctx.set_output(0, get_fnl_range_3d(*p.noise, x, y, z));
 		};
 
+#ifdef VOXEL_ENABLE_GPU
 		t.shader_gen_func = [](ShaderGenContext &ctx) {
 			Ref<ZN_FastNoiseLite> noise = ctx.get_param(0);
 			if (noise.is_null()) {
@@ -411,6 +427,7 @@ void register_noise_nodes(Span<NodeType> types) {
 					ctx.get_input_name(2)
 			);
 		};
+#endif
 	}
 	{
 		struct Params {
@@ -424,10 +441,13 @@ void register_noise_nodes(Span<NodeType> types) {
 		t.inputs.push_back(NodeType::Port("y", 0.f, VoxelGraphFunction::AUTO_CONNECT_Z));
 		t.outputs.push_back(NodeType::Port("out_x"));
 		t.outputs.push_back(NodeType::Port("out_y"));
-		t.params.push_back(NodeType::
-								   Param("noise",
-										 ZN_FastNoiseLiteGradient::get_class_static(),
-										 &create_resource_to_variant<ZN_FastNoiseLiteGradient>));
+		t.params.push_back(
+				NodeType::Param(
+						"noise",
+						ZN_FastNoiseLiteGradient::get_class_static(),
+						&create_resource_to_variant<ZN_FastNoiseLiteGradient>
+				)
+		);
 
 		t.compile_func = [](CompileContext &ctx) {
 			Ref<ZN_FastNoiseLiteGradient> noise = ctx.get_param(0);
@@ -467,6 +487,7 @@ void register_noise_nodes(Span<NodeType> types) {
 			ctx.set_output(1, r.y);
 		};
 
+#ifdef VOXEL_ENABLE_GPU
 		t.shader_gen_func = [](ShaderGenContext &ctx) {
 			Ref<ZN_FastNoiseLiteGradient> noise = ctx.get_param(0);
 			if (noise.is_null()) {
@@ -488,6 +509,7 @@ void register_noise_nodes(Span<NodeType> types) {
 					ctx.get_output_name(1)
 			);
 		};
+#endif
 	}
 	{
 		struct Params {
@@ -503,10 +525,13 @@ void register_noise_nodes(Span<NodeType> types) {
 		t.outputs.push_back(NodeType::Port("out_x"));
 		t.outputs.push_back(NodeType::Port("out_y"));
 		t.outputs.push_back(NodeType::Port("out_z"));
-		t.params.push_back(NodeType::
-								   Param("noise",
-										 ZN_FastNoiseLiteGradient::get_class_static(),
-										 &create_resource_to_variant<ZN_FastNoiseLiteGradient>));
+		t.params.push_back(
+				NodeType::Param(
+						"noise",
+						ZN_FastNoiseLiteGradient::get_class_static(),
+						&create_resource_to_variant<ZN_FastNoiseLiteGradient>
+				)
+		);
 
 		t.compile_func = [](CompileContext &ctx) {
 			Ref<ZN_FastNoiseLiteGradient> noise = ctx.get_param(0);
@@ -552,6 +577,7 @@ void register_noise_nodes(Span<NodeType> types) {
 			ctx.set_output(2, r.z);
 		};
 
+#ifdef VOXEL_ENABLE_GPU
 		t.shader_gen_func = [](ShaderGenContext &ctx) {
 			Ref<ZN_FastNoiseLiteGradient> noise = ctx.get_param(0);
 			if (noise.is_null()) {
@@ -577,6 +603,7 @@ void register_noise_nodes(Span<NodeType> types) {
 					ctx.get_output_name(2)
 			);
 		};
+#endif
 	}
 #ifdef VOXEL_ENABLE_FAST_NOISE_2
 	{

@@ -8,7 +8,8 @@
 #include "../../util/profiling.h"
 #include "../../util/profiling_clock.h"
 #include "../../util/string/format.h"
-#include "../testing.h"
+#include "../../util/testing/test_directory.h"
+#include "../../util/testing/test_macros.h"
 
 namespace zylann::voxel::tests {
 

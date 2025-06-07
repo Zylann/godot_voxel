@@ -1,4 +1,5 @@
 #include "voxel_node.h"
+#include "../constants/voxel_string_names.h"
 #include "../edition/voxel_tool.h"
 #include "../generators/voxel_generator.h"
 #include "../meshers/blocky/voxel_mesher_blocky.h"
@@ -38,6 +39,39 @@ void VoxelNode::set_generator(Ref<VoxelGenerator> generator) {
 Ref<VoxelGenerator> VoxelNode::get_generator() const {
 	// Implemented in subclasses
 	return Ref<VoxelGenerator>();
+}
+
+void VoxelNode::set_format(Ref<godot::VoxelFormat> format) {
+	if (_format == format) {
+		return;
+	}
+	if (_format.is_valid()) {
+		_format->disconnect(
+				VoxelStringNames::get_singleton().changed, callable_mp(this, &VoxelNode::_b_on_format_changed)
+		);
+	}
+	_format = format;
+	if (_format.is_valid()) {
+		_format->connect(
+				VoxelStringNames::get_singleton().changed, callable_mp(this, &VoxelNode::_b_on_format_changed)
+		);
+	}
+	on_format_changed();
+}
+
+Ref<godot::VoxelFormat> VoxelNode::get_format() const {
+	return _format;
+}
+
+VoxelFormat VoxelNode::get_internal_format() const {
+	if (_format.is_valid()) {
+		return _format->get_internal();
+	}
+	return VoxelFormat();
+}
+
+void VoxelNode::on_format_changed() {
+	// Implemented in subclasses
 }
 
 void VoxelNode::restart_stream() {
@@ -88,8 +122,10 @@ void VoxelNode::get_configuration_warnings(PackedStringArray &warnings) const {
 	Ref<VoxelGenerator> generator = get_generator();
 
 	if (mesher.is_null()) {
-		warnings.append(ZN_TTR("This node has no mesher assigned, it won't produce any mesh visuals. "
-							   "You can assign one on the `mesher` property."));
+		warnings.append(
+				ZN_TTR("This node has no mesher assigned, it won't produce any mesh visuals. "
+					   "You can assign one on the `mesher` property.")
+		);
 	}
 
 	if (stream.is_valid()) {
@@ -99,8 +135,10 @@ void VoxelNode::get_configuration_warnings(PackedStringArray &warnings) const {
 			if (stream_script->is_tool()) {
 				// TODO This is very annoying. Probably needs an issue or proposal in Godot so we can handle this
 				// properly?
-				warnings.append(ZN_TTR("Careful, don't edit your custom stream while it's running, "
-									   "it can cause crashes. Turn off `run_stream_in_editor` before doing so."));
+				warnings.append(
+						ZN_TTR("Careful, don't edit your custom stream while it's running, "
+							   "it can cause crashes. Turn off `run_stream_in_editor` before doing so.")
+				);
 			} else {
 				warnings.append(ZN_TTR("The custom stream is not tool, the editor won't be able to use it."));
 			}
@@ -127,8 +165,10 @@ void VoxelNode::get_configuration_warnings(PackedStringArray &warnings) const {
 			if (generator_script->is_tool()) {
 				// TODO This is very annoying. Probably needs an issue or proposal in Godot so we can handle this
 				// properly?
-				warnings.append(ZN_TTR("Careful, don't edit your custom generator while it's running, "
-									   "it can cause crashes. Turn off `run_stream_in_editor` before doing so."));
+				warnings.append(
+						ZN_TTR("Careful, don't edit your custom generator while it's running, "
+							   "it can cause crashes. Turn off `run_stream_in_editor` before doing so.")
+				);
 			} else {
 				can_check_generator_channels = false;
 				// return ZN_TTR("The custom generator is not tool, the editor won't be able to use it.");
@@ -216,6 +256,10 @@ GeometryInstance3D::ShadowCastingSetting VoxelNode::get_shadow_casting() const {
 	return _shadow_casting;
 }
 
+void VoxelNode::_b_on_format_changed() {
+	on_format_changed();
+}
+
 void VoxelNode::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_stream", "stream"), &VoxelNode::_b_set_stream);
 	ClassDB::bind_method(D_METHOD("get_stream"), &VoxelNode::_b_get_stream);
@@ -225,6 +269,9 @@ void VoxelNode::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("set_mesher", "mesher"), &VoxelNode::_b_set_mesher);
 	ClassDB::bind_method(D_METHOD("get_mesher"), &VoxelNode::_b_get_mesher);
+
+	ClassDB::bind_method(D_METHOD("set_format", "format"), &VoxelNode::set_format);
+	ClassDB::bind_method(D_METHOD("get_format"), &VoxelNode::get_format);
 
 	ClassDB::bind_method(D_METHOD("set_gi_mode", "mode"), &VoxelNode::set_gi_mode);
 	ClassDB::bind_method(D_METHOD("get_gi_mode"), &VoxelNode::get_gi_mode);
@@ -249,6 +296,16 @@ void VoxelNode::_bind_methods() {
 			PropertyInfo(Variant::OBJECT, "mesher", PROPERTY_HINT_RESOURCE_TYPE, VoxelMesher::get_class_static()),
 			"set_mesher",
 			"get_mesher"
+	);
+	ADD_PROPERTY(
+			PropertyInfo(
+					Variant::OBJECT,
+					"format",
+					PROPERTY_HINT_RESOURCE_TYPE,
+					zylann::voxel::godot::VoxelFormat::get_class_static()
+			),
+			"set_format",
+			"get_format"
 	);
 	ADD_PROPERTY(
 			PropertyInfo(Variant::INT, "gi_mode", PROPERTY_HINT_ENUM, zylann::godot::GI_MODE_ENUM_HINT_STRING),

@@ -26,7 +26,12 @@ void get_graph_edit_connections(const GraphEdit &self, StdVector<GraphEditConnec
 	}
 
 #else // Godot 4.3+
+
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR <= 3
 	const List<Ref<GraphEdit::Connection>> &connections_list = self.get_connection_list();
+#else
+	const Vector<Ref<GraphEdit::Connection>> &connections_list = self.get_connections();
+#endif
 
 	for (const Ref<GraphEdit::Connection> &src_con : connections_list) {
 		GraphEditConnection dst_con;

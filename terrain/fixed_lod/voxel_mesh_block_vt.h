@@ -75,6 +75,7 @@ public:
 			if (!shadow_occluder.is_valid()) {
 				// Create instance if it doesn't exist
 				shadow_occluder.create();
+				shadow_occluder.set_interpolated(false);
 				shadow_occluder.set_render_layers_mask(render_layers_mask);
 #ifdef TOOLS_ENABLED
 				shadow_occluder.set_cast_shadows_setting(shadow_occluder_mode);

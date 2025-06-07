@@ -1,15 +1,15 @@
 #ifndef ZN_CONV_H
 #define ZN_CONV_H
 
+#include "../godot/core/transform_3d.h"
+#include "../godot/core/vector2.h"
+#include "../godot/core/vector2i.h"
+#include "../godot/core/vector3.h"
+#include "../godot/core/vector3i.h"
 #include "transform3f.h"
-#include "transform_3d.h"
-#include "vector2.h"
 #include "vector2f.h"
-#include "vector2i.h"
-#include "vector3.h"
 #include "vector3d.h"
 #include "vector3f.h"
-#include "vector3i.h"
 #include "vector3i16.h"
 #include <limits>
 

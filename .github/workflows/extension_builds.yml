@@ -1,0 +1,160 @@
+name: ⚙️ Extension Builds
+on:
+  workflow_call:
+    inputs:
+      # TODO Unfortunately Github Actions does not support array inputs.
+      # So instead we use a JSON string containing an array, and we unpack it with fromJson
+      # https://github.com/orgs/community/discussions/11692
+      float-precisions:
+        required: false
+        type: string
+        default: "['single']"
+      
+      godot-cpp-branch:
+        required: false
+        type: string
+        default: master
+
+concurrency:
+  # Cancel in-progress builds when triggering new ones, to save resources.
+  # Not using `${{ github.workflow }}` because when called from another workflow, it takes the value of the caller,
+  # which leads to unexpected cancellation.
+  # See https://github.com/orgs/community/discussions/30708
+  # group: ${{ github.workflow }}-${{ github.ref }}
+  group: extension-builds-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GODOT_CPP_PATH: thirdparty/godot-cpp
+  LIB_NAME: libvoxel
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        # A build is made for every possible combination of parameters
+        # You can add or remove entries from the arrays of each parameter to customize which builds you want to run
+        # See https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/running-variations-of-jobs-in-a-workflow
+        target:
+          [
+            { platform: linux, arch: x86_64, os: ubuntu-22.04 },
+            { platform: windows, arch: x86_64, os: windows-latest },
+            # { platform: windows, arch: x86_32, os: windows-latest },
+            { platform: macos, arch: universal, os: macos-latest },
+            { platform: android, arch: arm64, os: ubuntu-22.04 },
+            # { platform: android, arch: arm32, os: ubuntu-22.04 },
+            { platform: android, arch: x86_64, os: ubuntu-22.04 },
+            # { platform: android, arch: x86_32, os: ubuntu-22.04 },
+            { platform: ios, arch: arm64, os: macos-latest },
+            # { platform: web, arch: wasm32, os: ubuntu-22.04 }
+          ]
+        target-type: [editor, template_release]
+        float-precision: ${{ fromJson(inputs.float-precisions) }}
+
+        # include: # Also build a release version for these specific targets. Remove if you add template_release above.
+        #   - target: { platform: linux, arch: x86_64, os: ubuntu-22.04 }
+        #     target-type: template_release
+        #     float-precision: single
+
+        #   - target: { platform: linux, arch: x86_64, os: ubuntu-22.04 }
+        #     target-type: template_release
+        #     float-precision: double
+
+    runs-on: ${{ matrix.target.os }}
+    steps:
+      # Clone our repo
+      - uses: actions/checkout@v4
+
+      # Lint
+      #- name: Setup clang-format
+      #  shell: bash
+      #  run: |
+      #    python -m pip install clang-format
+      #- name: Run clang-format
+      #  shell: bash
+      #  run: |
+      #    clang-format src/** --dry-run --Werror
+
+      # Get GodotCpp
+      - name: Checkout GodotCpp
+        uses: actions/checkout@v4
+        with:
+          repository: godotengine/godot-cpp
+          ref: ${{inputs.godot-cpp-branch}}
+          path: ${{env.GODOT_CPP_PATH}}
+
+      # Setup dependencies (Python, SCons, Android SDK...)
+      - name: Setup godot-cpp
+        # uses: ${{env.GODOT_CPP_PATH}}/.github/actions/setup-godot-cpp
+        # Unfortunately Github doesnt support variables in that path so we have to hardcode it
+        uses: ./thirdparty/godot-cpp/.github/actions/setup-godot-cpp
+        with:
+          platform: ${{ matrix.target.platform }}
+          em-version: 3.1.62
+          windows-compiler: msvc
+          buildtool: scons
+      
+      # Load build cache
+      - name: Cache .scons_cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/.scons-cache/
+          key: ${{ matrix.target.platform }}_${{ matrix.target.arch }}_${{ matrix.float-precision }}_${{ matrix.target-type }}_${{ inputs.godot-cpp-branch }}_gdextension_cache
+      
+      - name: Build
+        shell: sh
+        env:
+          SCONS_CACHE: ${{ github.workspace }}/.scons-cache/
+        run: |
+          scons target=${{ matrix.target-type }} platform=${{ matrix.target.platform }} arch=${{ matrix.target.arch }} precision=${{ matrix.float-precision }} dev_build=no verbose=yes
+
+      # Sign the binary (macOS only)
+      # - name: Mac Sign
+      #   # Disable sign if secrets are not set
+      #   if: ${{ matrix.target.platform == 'macos' && env.APPLE_CERT_BASE64 }}
+      #   env:
+      #     APPLE_CERT_BASE64: ${{ secrets.APPLE_CERT_BASE64 }}
+      #   uses: ./.github/actions/sign
+      #   with:
+      #     FRAMEWORK_PATH: bin/macos/macos.framework
+      #     APPLE_CERT_BASE64: ${{ secrets.APPLE_CERT_BASE64 }}
+      #     APPLE_CERT_PASSWORD: ${{ secrets.APPLE_CERT_PASSWORD }}
+      #     APPLE_DEV_PASSWORD: ${{ secrets.APPLE_DEV_PASSWORD }}
+      #     APPLE_DEV_ID: ${{ secrets.APPLE_DEV_ID }}
+      #     APPLE_DEV_TEAM_ID: ${{ secrets.APPLE_DEV_TEAM_ID }}
+      #     APPLE_DEV_APP_ID: ${{ secrets.APPLE_DEV_APP_ID }}
+
+      # Clean up compilation files
+      - name: Windows - Delete compilation files
+        if: ${{ matrix.target.platform == 'windows' }}
+        shell: pwsh
+        run: |
+          Remove-Item project/addons/zylann.voxel/bin/* -Include *.exp,*.lib,*.pdb -Force
+
+      - name: Print
+        shell: bash
+        run: |
+          cd project/addons/zylann.voxel/bin
+          ls -l
+
+      # Upload the build
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{env.LIB_NAME}}-${{ matrix.target.platform }}-${{ matrix.target.arch }}-${{ matrix.float-precision }}-${{ matrix.target-type }}
+          path: |
+            ${{ github.workspace }}/project/addons/zylann.voxel/bin/**
+
+  # Merges all the build artifacts together into a single godot-cpp-template artifact.
+  # If you comment out this step, all the builds will be uploaded individually.
+  merge:
+    runs-on: ubuntu-22.04
+    needs: build
+    steps:
+      - name: Merge Artifacts
+        uses: actions/upload-artifact/merge@v4
+        with:
+          name: ${{env.LIB_NAME}}
+          pattern: ${{env.LIB_NAME}}-*
+          delete-merged: true

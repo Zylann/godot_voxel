@@ -43,6 +43,9 @@ const Vector3f g_corner_position[CORNER_COUNT] = {
 	Vector3f(1, 1, 1)
 };
 
+// 3---2
+// |   |
+// 0---1
 const int g_side_quad_triangles[SIDE_COUNT][6] = {
 	{ 0, 2, 1, 0, 3, 2 }, // LEFT (+x)
 	{ 0, 2, 1, 0, 3, 2 }, // RIGHT (-x)
@@ -51,6 +54,8 @@ const int g_side_quad_triangles[SIDE_COUNT][6] = {
 	{ 0, 2, 1, 0, 3, 2 }, // BACK (-z)
 	{ 0, 2, 1, 0, 3, 2 }, // FRONT (+z)
 };
+
+// const int g_side_quad_triangles_alt[6] = { 0, 3, 1, 1, 3, 2 };
 
 // const unsigned int g_side_coord[SIDE_COUNT] = { 0, 0, 1, 1, 2, 2 };
 // const unsigned int g_side_sign[SIDE_COUNT] = { 0, 1, 0, 1, 0, 1 };
@@ -211,6 +216,15 @@ const Vector3i g_ordered_moore_area_3d[MOORE_AREA_3D_COUNT] = { //
 	Vector3i(-1, 1, 1), //
 	Vector3i(0, 1, 1), //
 	Vector3i(1, 1, 1)
+};
+
+const int g_opposite_side[6] = {
+	Cube::SIDE_NEGATIVE_X, //
+	Cube::SIDE_POSITIVE_X, //
+	Cube::SIDE_POSITIVE_Y, //
+	Cube::SIDE_NEGATIVE_Y, //
+	Cube::SIDE_POSITIVE_Z, //
+	Cube::SIDE_NEGATIVE_Z //
 };
 
 // clang-format on

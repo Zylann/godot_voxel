@@ -2,7 +2,6 @@
 #include "../../constants/voxel_string_names.h"
 #include "../../edition/voxel_tool_lod_terrain.h"
 #include "../../engine/buffered_task_scheduler.h"
-#include "../../engine/detail_rendering/detail_rendering.h"
 #include "../../engine/voxel_engine_gd.h"
 #include "../../engine/voxel_engine_updater.h"
 #include "../../meshers/blocky/voxel_mesher_blocky.h"
@@ -34,9 +33,16 @@
 #include "../../util/thread/mutex.h"
 #include "../../util/thread/rw_lock.h"
 #include "../free_mesh_task.h"
-#include "../instancing/voxel_instancer.h"
 #include "../voxel_save_completion_tracker.h"
 #include "voxel_lod_terrain_update_task.h"
+
+#ifdef VOXEL_ENABLE_SMOOTH_MESHING
+#include "../../engine/detail_rendering/detail_rendering.h"
+#endif
+
+#ifdef VOXEL_ENABLE_INSTANCER
+#include "../instancing/voxel_instancer.h"
+#endif
 
 namespace zylann::voxel {
 
@@ -153,10 +159,12 @@ VoxelLodTerrain::VoxelLodTerrain() {
 		VoxelLodTerrain *self = reinterpret_cast<VoxelLodTerrain *>(cb_data);
 		self->apply_data_block_response(ob);
 	};
+#ifdef VOXEL_ENABLE_SMOOTH_MESHING
 	callbacks.detail_texture_output_callback = [](void *cb_data, VoxelEngine::BlockDetailTextureOutput &ob) {
 		VoxelLodTerrain *self = reinterpret_cast<VoxelLodTerrain *>(cb_data);
 		self->apply_detail_texture_update(ob);
 	};
+#endif
 
 	_volume_id = VoxelEngine::get_singleton().add_volume(callbacks);
 	// VoxelEngine::get_singleton().set_volume_octree_lod_distance(_volume_id, get_lod_distance());
@@ -435,6 +443,8 @@ void VoxelLodTerrain::_on_stream_params_changed() {
 	// also this code isn't right, it doesn't update the other lods
 	//_data->lods[0].map.create(p_block_size_po2, 0);
 
+	_data->set_format(get_internal_format());
+
 	Ref<VoxelGenerator> generator = get_generator();
 
 	if ((stream.is_valid() || generator.is_valid()) &&
@@ -487,10 +497,12 @@ void VoxelLodTerrain::set_mesh_block_size(unsigned int mesh_block_size) {
 	_update_data->settings.mesh_block_size_po2 = po2;
 	_update_data->state.octree_streaming.force_update_octrees_next_update = true;
 
+#ifdef VOXEL_ENABLE_INSTANCER
 	// Doing this after because `on_mesh_block_exit` may use the old size
 	if (_instancer != nullptr) {
 		_instancer->set_mesh_block_size_po2(mesh_block_size);
 	}
+#endif
 
 	// Update voxel bounds because block size change can affect octree size
 	set_voxel_bounds(_data->get_bounds());
@@ -605,9 +617,24 @@ void VoxelLodTerrain::post_edit_area(Box3i p_box, bool update_mesh) {
 	}
 #endif
 
+#ifdef VOXEL_ENABLE_INSTANCER
 	if (_instancer != nullptr && update_mesh) {
 		_instancer->on_area_edited(p_box);
 	}
+#endif
+
+#ifdef TOOLS_ENABLED
+	// This is a workaround for a defect in the LegacyOctree streaming system:
+	// when no VoxelViewer is present, it still loads terrain, but some functionalities don't work properly.
+	if (get_streaming_system() == STREAMING_SYSTEM_LEGACY_OCTREE) {
+		if (VoxelEngine::get_singleton().get_viewer_count() == 0) {
+			ZN_PRINT_WARNING_ONCE(
+					"Terrain was edited without a VoxelViewer. The LegacyOctree streaming system requires one "
+					"VoxelViewer, but none are present in the scene."
+			);
+		}
+	}
+#endif
 }
 
 void VoxelLodTerrain::post_edit_modifiers(Box3i p_voxel_box) {
@@ -757,9 +784,11 @@ void VoxelLodTerrain::set_lod_distance(float p_lod_distance) {
 	_update_data->state.octree_streaming.force_update_octrees_next_update = true;
 	// VoxelEngine::get_singleton().set_volume_octree_lod_distance(_volume_id, get_lod_distance());
 
+#ifdef VOXEL_ENABLE_INSTANCER
 	if (_instancer != nullptr) {
 		_instancer->update_mesh_lod_distances_from_parent();
 	}
+#endif
 }
 
 float VoxelLodTerrain::get_lod_distance() const {
@@ -781,9 +810,11 @@ void VoxelLodTerrain::set_secondary_lod_distance(float p_lod_distance) {
 	_update_data->state.octree_streaming.force_update_octrees_next_update = true;
 	// VoxelEngine::get_singleton().set_volume_octree_lod_distance(_volume_id, get_lod_distance());
 
+#ifdef VOXEL_ENABLE_INSTANCER
 	if (_instancer != nullptr) {
 		_instancer->update_mesh_lod_distances_from_parent();
 	}
+#endif
 }
 
 float VoxelLodTerrain::get_secondary_lod_distance() const {
@@ -848,6 +879,10 @@ void VoxelLodTerrain::_set_lod_count(int p_lod_count) {
 	reset_maps();
 }
 
+void VoxelLodTerrain::on_format_changed() {
+	_on_stream_params_changed();
+}
+
 void VoxelLodTerrain::reset_maps() {
 	// Clears all blocks and reconfigures maps to account for new LOD count and block sizes
 
@@ -873,6 +908,7 @@ void VoxelLodTerrain::reset_mesh_maps() {
 		VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
 		VoxelMeshMap<VoxelMeshBlockVLT> &mesh_map = _mesh_maps_per_lod[lod_index];
 
+#ifdef VOXEL_ENABLE_INSTANCER
 		if (_instancer != nullptr) {
 			// Unload instances
 			VoxelInstancer *instancer = _instancer;
@@ -880,6 +916,7 @@ void VoxelLodTerrain::reset_mesh_maps() {
 				instancer->on_mesh_block_exit(block.position, lod_index);
 			});
 		}
+#endif
 
 		// mesh_map.for_each_block(BeforeUnloadMeshAction{ _shader_material_pool });
 
@@ -1048,6 +1085,7 @@ void VoxelLodTerrain::_notification(int p_what) {
 			break;
 
 #ifdef TOOLS_ENABLED
+#ifdef VOXEL_ENABLE_SMOOTH_MESHING
 		case NOTIFICATION_ENTER_TREE:
 			// In the editor, auto-configure a default mesher, for convenience.
 			// Because Godot has a property hint to automatically instantiate a resource, but if that resource is
@@ -1059,6 +1097,7 @@ void VoxelLodTerrain::_notification(int p_what) {
 				set_mesher(mesher);
 			}
 			break;
+#endif
 #endif
 
 		case NOTIFICATION_EXIT_TREE:
@@ -1149,9 +1188,11 @@ Vector3 VoxelLodTerrain::get_local_viewer_pos() const {
 	Vector3 pos = _update_data->state.lods[0].last_viewer_data_block_pos << get_data_block_size_pow2();
 
 	// TODO Support for multiple viewers, this is a placeholder implementation
-	VoxelEngine::get_singleton().for_each_viewer([&pos](ViewerID id, const VoxelEngine::Viewer &viewer) {
-		pos = viewer.world_position;
-	});
+	VoxelEngine::get_singleton().for_each_viewer( //
+			[&pos](ViewerID id, const VoxelEngine::Viewer &viewer) { //
+				pos = viewer.world_position;
+			}
+	);
 
 	const Transform3D world_to_local = get_global_transform().affine_inverse();
 	pos = world_to_local.xform(pos);
@@ -1174,6 +1215,8 @@ void VoxelLodTerrain::process(float delta) {
 		return;
 	}
 
+#ifdef VOXEL_ENABLE_SMOOTH_MESHING
+#ifdef VOXEL_ENABLE_GPU
 	// TODO It is currently not possible to fully compile those shaders on the fly in a thread.
 	// The GLSL functions of VoxelGenerator need to be thread-safe. Compiling should be safe, but getting the source
 	// code isn't. VoxelGeneratorGraph's shader generation is not thread-safe, because it accesses its graph.
@@ -1190,6 +1233,9 @@ void VoxelLodTerrain::process(float delta) {
 			generator->compile_shaders();
 		}
 	}
+#endif
+#endif
+#ifdef VOXEL_ENABLE_GPU
 	if (get_generator_use_gpu()) {
 		Ref<VoxelGenerator> generator = get_generator();
 		if (generator.is_valid() && generator->supports_shaders() &&
@@ -1197,6 +1243,7 @@ void VoxelLodTerrain::process(float delta) {
 			generator->compile_shaders();
 		}
 	}
+#endif
 
 	// Get block loading responses
 	// Note: if block loading is too fast, this can cause stutters.
@@ -1284,8 +1331,10 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 			VoxelEngine::BlockDataOutput ob{
 				VoxelEngine::BlockDataOutput::TYPE_LOADED, //
 				qrb.voxels, //
+#ifdef VOXEL_ENABLE_INSTANCER
 				// TODO This doesn't work with VoxelInstancer because it unloads based on meshes...
 				nullptr, //
+#endif
 				qrb.position, //
 				static_cast<uint8_t>(lod_index), //
 				false, // dropped
@@ -1471,6 +1520,7 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 							);
 
 							item.mesh_instance.create();
+							item.mesh_instance.set_interpolated(false);
 							item.mesh_instance.set_mesh(mesh_block->get_mesh());
 							item.mesh_instance.set_gi_mode(get_gi_mode());
 							item.mesh_instance.set_transform(
@@ -1493,9 +1543,11 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 
 			mesh_map.remove_block(bpos, BeforeUnloadMeshAction{ _shader_material_pool });
 
+#ifdef VOXEL_ENABLE_INSTANCER
 			if (_instancer != nullptr) {
 				_instancer->on_mesh_block_exit(bpos, lod_index);
 			}
+#endif
 			/*
 #ifdef DEBUG_ENABLED
 			debug_removed_blocks.insert(bpos);
@@ -1560,6 +1612,7 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 						// 		VoxelStringNames::get_singleton().u_lod_fade, Vector2(item.progress, 0.f));
 
 						item.mesh_instance.create();
+						item.mesh_instance.set_interpolated(false);
 						item.mesh_instance.set_mesh(block->get_mesh());
 						item.mesh_instance.set_gi_mode(get_gi_mode());
 						item.mesh_instance.set_transform(volume_transform * Transform3D(Basis(), item.local_position));
@@ -1643,9 +1696,12 @@ void VoxelLodTerrain::apply_data_block_response(VoxelEngine::BlockDataOutput &ob
 				lod.unloaded_saving_blocks.erase(ob.position);
 			}
 
-		} else if (ob.had_instances && _instancer != nullptr) {
+		}
+#ifdef VOXEL_ENABLE_INSTANCER
+		else if (ob.had_instances && _instancer != nullptr) {
 			_instancer->on_data_block_saved(ob.position, ob.lod_index);
 		}
+#endif
 
 		return;
 	}
@@ -1748,7 +1804,7 @@ inline void set_block_collision_shape(
 		const SceneTree *scene_tree = terrain.get_tree();
 #if DEBUG_ENABLED
 		if (shape.is_valid()) {
-			const Color debug_color = scene_tree->get_debug_collisions_color();
+			const Color debug_color = zylann::godot::get_shape_3d_default_color(*scene_tree);
 			zylann::godot::set_shape_3d_debug_color(**shape, debug_color);
 		}
 #endif
@@ -1770,6 +1826,10 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 	// Building collision shapes in threads efficiently is not supported.
 	ZN_PROFILE_SCOPE();
 
+	// TODO This spams in the editor upon opening a project, when more than one scene was open with a terrain.
+	// I suspect this is because one scene opens, then another opens and takes precedence. This causes the first scene
+	// to be removed from the scene tree, yet it already has started loading so all mesh update results come up too
+	// late...
 	ERR_FAIL_COND(!is_inside_tree());
 
 	CRASH_COND(_update_data == nullptr);
@@ -1841,8 +1901,10 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 		// Notify streaming system so it can subdivide LODs as they load
 		VoxelLodTerrainUpdateData::ClipboxStreamingState &cs = _update_data->state.clipbox_streaming;
 		MutexLock mlock(cs.loaded_mesh_blocks_mutex);
-		cs.loaded_mesh_blocks.push_back(VoxelLodTerrainUpdateData::LoadedMeshBlockEvent{
-				ob.position, ob.lod, first_visual_load, first_collision_load });
+		cs.loaded_mesh_blocks.push_back(
+				VoxelLodTerrainUpdateData::LoadedMeshBlockEvent{
+						ob.position, ob.lod, first_visual_load, first_collision_load }
+		);
 	}
 
 	// -------- Part where we invoke Godot functions ---------
@@ -1893,9 +1955,11 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 			// TODO Factor removal in a function, it's done in a few places
 			mesh_map.remove_block(ob.position, BeforeUnloadMeshAction{ _shader_material_pool });
 
+#ifdef VOXEL_ENABLE_INSTANCER
 			if (_instancer != nullptr) {
 				_instancer->on_mesh_block_exit(ob.position, ob.lod);
 			}
+#endif
 		}
 		// ZN_PRINT_VERBOSE(format("Empty block pos {} lod {} time {}", ob.position, int(ob.lod),
 		// 		Time::get_singleton()->get_ticks_msec()));
@@ -1911,16 +1975,27 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 
 		block->set_world(get_world_3d());
 
+#ifdef VOXEL_ENABLE_INSTANCER
 		// TODO Need a more generic API for this kind of stuff
-		if (_instancer != nullptr && ob.surfaces.surfaces.size() > 0) {
-			// TODO The mesh could come from an edited region!
-			// If we place spheres upwards eventually it will create a new chunk mesh which we can't differenciate
-			// from a mesh that would have been part of the original terrain. Because of that the instancer will
-			// unexpectedly generate instances on it
 
+		// Check whether this was "a first load" of any of the features that produces the mesh:
+		// We don't create MeshBlocks when loaded meshes turn out to be empty. But that means we can't just rely on
+		// `block == nullptr` to find out that it has loaded in. For example, the block being created could also be
+		// an area that just didn't have a mesh before, because voxels produced no surface there. So that made instances
+		// generating as we dig or build, which is unexpected.
+		const bool first_mesh_load = (first_visual_load || first_collision_load);
+
+		if (_instancer != nullptr && first_mesh_load && ob.surfaces.surfaces.size() > 0) {
 			// We would have to know if specific voxels got edited, or different from the generator
-			_instancer->on_mesh_block_enter(ob.position, ob.lod, ob.surfaces.surfaces[0].arrays);
+			_instancer->on_mesh_block_enter(
+					ob.position,
+					ob.lod,
+					ob.surfaces.surfaces[0].arrays,
+					ob.surfaces.collision_surface.submesh_vertex_end,
+					ob.surfaces.collision_surface.submesh_index_end
+			);
 		}
+#endif
 
 		block->set_collision_enabled(collision_active);
 	}
@@ -1989,7 +2064,9 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 				get_gi_mode(),
 				RenderingServer::ShadowCastingSetting(get_shadow_casting()),
 				get_render_layers_mask(),
-				shadow_occluder_mesh
+				shadow_occluder_mesh,
+				ob.surfaces.collision_surface.submesh_vertex_end,
+				ob.surfaces.collision_surface.submesh_index_end
 #ifdef TOOLS_ENABLED
 				,
 				shadow_occluder_mode
@@ -2057,8 +2134,10 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 
 	// This is done regardless in case a MeshInstance or collision body is created, because it will then set its
 	// position
+	// TODO Godot prevents this from working when outside of the scene tree!
 	block->set_parent_transform(get_global_transform());
 
+#ifdef VOXEL_ENABLE_SMOOTH_MESHING
 	if (ob.detail_textures != nullptr && visual_expected) {
 		if (ob.detail_textures->valid) {
 			apply_detail_texture_update_to_block(*block, *ob.detail_textures, ob.lod);
@@ -2071,6 +2150,7 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 			try_apply_parent_detail_texture_to_block(*block, ob.position, ob.lod);
 		}
 	}
+#endif
 
 #ifdef TOOLS_ENABLED
 	if (debug_is_draw_enabled() && debug_get_draw_flag(DEBUG_DRAW_MESH_UPDATES)) {
@@ -2079,6 +2159,7 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 #endif
 }
 
+#ifdef VOXEL_ENABLE_SMOOTH_MESHING
 void VoxelLodTerrain::apply_detail_texture_update(VoxelEngine::BlockDetailTextureOutput &ob) {
 	ZN_PROFILE_SCOPE();
 	VoxelMeshMap<VoxelMeshBlockVLT> &mesh_map = _mesh_maps_per_lod[ob.lod_index];
@@ -2259,6 +2340,8 @@ void VoxelLodTerrain::apply_detail_texture_update_to_block(
 	block.detail_texture_fallback_level = 0;
 }
 
+#endif
+
 void VoxelLodTerrain::process_deferred_collision_updates(uint32_t timeout_msec) {
 	ZN_PROFILE_SCOPE();
 
@@ -2437,17 +2520,24 @@ VoxelLodTerrain::LocalCameraInfo VoxelLodTerrain::get_local_camera_info() const 
 	return info;
 }
 
+#ifdef VOXEL_ENABLE_INSTANCER
 void VoxelLodTerrain::set_instancer(VoxelInstancer *instancer) {
 	if (_instancer != nullptr && instancer != nullptr) {
 		ERR_FAIL_COND_MSG(_instancer != nullptr, "No more than one VoxelInstancer per terrain");
 	}
 	_instancer = instancer;
 }
+#endif
 
 // This function is primarily intended for editor use cases at the moment.
 // It will be slower than using the instancing generation events,
 // because it has to query VisualServer, which then allocates and decodes vertex buffers (assuming they are cached).
-Array VoxelLodTerrain::get_mesh_block_surface(Vector3i block_pos, int lod_index) const {
+Array VoxelLodTerrain::get_mesh_block_surface(
+		const Vector3i block_pos,
+		const int lod_index,
+		int &col_vertex_max,
+		int &col_index_max
+) const {
 	ZN_PROFILE_SCOPE();
 
 	const int lod_count = get_lod_count();
@@ -2500,9 +2590,11 @@ void VoxelLodTerrain::save_all_modified_blocks(bool with_copy, std::shared_ptr<A
 		// That may cause a stutter, so should be used when the player won't notice
 		_data->consume_all_modifications(blocks_to_save, with_copy);
 
+#ifdef VOXEL_ENABLE_INSTANCER
 		if (_instancer != nullptr && stream->supports_instance_blocks()) {
 			_instancer->save_all_modified_blocks(task_scheduler, tracker, true);
 		}
+#endif
 	}
 
 	// And flush immediately
@@ -2683,6 +2775,8 @@ float VoxelLodTerrain::get_lod_fade_duration() const {
 	return _lod_fade_duration;
 }
 
+#ifdef VOXEL_ENABLE_SMOOTH_MESHING
+
 void VoxelLodTerrain::set_normalmap_enabled(bool enable) {
 	_update_data->settings.detail_texture_settings.enabled = enable;
 }
@@ -2755,6 +2849,8 @@ int VoxelLodTerrain::get_normalmap_generator_override_begin_lod_index() const {
 	return _update_data->settings.detail_texture_generator_override_begin_lod_index;
 }
 
+#ifdef VOXEL_ENABLE_GPU
+
 void VoxelLodTerrain::set_normalmap_use_gpu(bool enabled) {
 	_update_data->settings.detail_textures_use_gpu = enabled;
 	update_configuration_warnings();
@@ -2764,6 +2860,12 @@ bool VoxelLodTerrain::get_normalmap_use_gpu() const {
 	return _update_data->settings.detail_textures_use_gpu;
 }
 
+#endif
+
+#endif
+
+#ifdef VOXEL_ENABLE_GPU
+
 void VoxelLodTerrain::set_generator_use_gpu(bool enabled) {
 	_update_data->settings.generator_use_gpu = enabled;
 	update_configuration_warnings();
@@ -2771,6 +2873,20 @@ void VoxelLodTerrain::set_generator_use_gpu(bool enabled) {
 
 bool VoxelLodTerrain::get_generator_use_gpu() const {
 	return _update_data->settings.generator_use_gpu;
+}
+
+#endif
+
+void VoxelLodTerrain::set_cache_generated_blocks(const bool enabled) {
+	if (enabled == _update_data->settings.cache_generated_blocks) {
+		return;
+	}
+	_update_data->settings.cache_generated_blocks = enabled;
+	update_configuration_warnings();
+}
+
+bool VoxelLodTerrain::get_cache_generated_blocks() const {
+	return _update_data->settings.cache_generated_blocks;
 }
 
 #ifdef TOOLS_ENABLED
@@ -2790,6 +2906,22 @@ void VoxelLodTerrain::get_configuration_warnings(PackedStringArray &warnings) co
 		);
 	}
 
+	Ref<VoxelStream> stream = get_stream();
+	if (stream.is_valid()) {
+		if (stream->get_save_generator_output()) {
+			if (is_full_load_mode_enabled()) {
+				warnings.append(ZN_TTR("The assigned {0} is set to save generator output, but it is not supported when "
+									   "`full_load_mode` is enabled.")
+										.format(varray(VoxelStream::get_class_static())));
+			}
+			if (get_cache_generated_blocks() == false) {
+				warnings.append(ZN_TTR("The assigned {0} is set to save generator output, but it is not supported when "
+									   "`cache_generated_blocks` is disabled.")
+										.format(varray(VoxelStream::get_class_static())));
+			}
+		}
+	}
+
 	Ref<VoxelMesher> mesher = get_mesher();
 
 	// Material
@@ -2798,6 +2930,7 @@ void VoxelLodTerrain::get_configuration_warnings(PackedStringArray &warnings) co
 		warnings.append(ZN_TTR("The assigned {0} has no shader").format(varray(ShaderMaterial::get_class_static())));
 	}
 
+#ifdef VOXEL_ENABLE_GPU
 	if (get_generator_use_gpu()) {
 		if (generator.is_valid() && !generator->supports_shaders()) {
 			warnings.append(String("`use_gpu_generation` is enabled, but {0} does not support running on the GPU.")
@@ -2806,9 +2939,10 @@ void VoxelLodTerrain::get_configuration_warnings(PackedStringArray &warnings) co
 		if (!VoxelEngine::get_singleton().has_rendering_device()) {
 			warnings.append(String("`use_gpu_generation` is enabled, but the selected renderer does not support the "
 								   "RenderingDevice API ({0}).")
-									.format(varray(ZN_CLASS_NAME_C(VoxelLodTerrain), get_current_rendering_method())));
+									.format(varray(get_current_rendering_method())));
 		}
 	}
+#endif
 
 	if (mesher.is_valid()) {
 		// LOD support in mesher
@@ -2863,14 +2997,17 @@ void VoxelLodTerrain::get_configuration_warnings(PackedStringArray &warnings) co
 			}
 		}
 
-		// Detail textures
 		if (generator.is_valid()) {
+#ifdef VOXEL_ENABLE_GPU
 			if (get_generator_use_gpu() && !generator->supports_shaders()) {
 				warnings.append(ZN_TTR("The option to use GPU when generating voxels is enabled, but the current "
 									   "generator ({0}) does not support GLSL.")
 										.format(varray(generator->get_class())));
 			}
+#endif
 
+#ifdef VOXEL_ENABLE_SMOOTH_MESHING
+			// Detail textures
 			if (is_normalmap_enabled()) {
 				if (!generator->supports_series_generation()) {
 					warnings.append(
@@ -2909,12 +3046,15 @@ void VoxelLodTerrain::get_configuration_warnings(PackedStringArray &warnings) co
 					}
 				}
 
+#ifdef VOXEL_ENABLE_GPU
 				if (get_normalmap_use_gpu() && !generator->supports_shaders()) {
 					warnings.append(ZN_TTR("Normalmaps are enabled with the option to use the GPU, but the current "
 										   "generator ({0}) does not support GLSL.")
 											.format(varray(generator->get_class())));
 				}
+#endif
 			}
+#endif
 		}
 	}
 
@@ -3458,6 +3598,7 @@ void VoxelLodTerrain::update_gizmos() {
 		}
 	}
 
+#ifdef VOXEL_ENABLE_MODIFIERS
 	// Modifiers
 	if (debug_get_draw_flag(DEBUG_DRAW_MODIFIER_BOUNDS)) {
 		const VoxelModifierStack &modifiers = _data->get_modifiers();
@@ -3467,6 +3608,7 @@ void VoxelLodTerrain::update_gizmos() {
 			dr.draw_box(t, Color8(0, 0, 255, 255));
 		});
 	}
+#endif
 
 	dr.end();
 }
@@ -3552,12 +3694,14 @@ Node3D *VoxelLodTerrain::debug_dump_as_nodes(bool include_instancer) const {
 		});
 	}
 
+#ifdef VOXEL_ENABLE_INSTANCER
 	if (include_instancer && _instancer != nullptr) {
 		Node *instances_root = _instancer->debug_dump_as_nodes();
 		if (instances_root != nullptr) {
 			root->add_child(instances_root);
 		}
 	}
+#endif
 
 	return root;
 }
@@ -3658,6 +3802,7 @@ void VoxelLodTerrain::_bind_methods() {
 
 	// Normalmaps
 
+#ifdef VOXEL_ENABLE_SMOOTH_MESHING
 	ClassDB::bind_method(D_METHOD("set_normalmap_enabled", "enabled"), &Self::set_normalmap_enabled);
 	ClassDB::bind_method(D_METHOD("is_normalmap_enabled"), &Self::is_normalmap_enabled);
 
@@ -3696,8 +3841,11 @@ void VoxelLodTerrain::_bind_methods() {
 			&Self::get_normalmap_generator_override_begin_lod_index
 	);
 
+#ifdef VOXEL_ENABLE_GPU
 	ClassDB::bind_method(D_METHOD("set_normalmap_use_gpu", "enabled"), &Self::set_normalmap_use_gpu);
 	ClassDB::bind_method(D_METHOD("get_normalmap_use_gpu"), &Self::get_normalmap_use_gpu);
+#endif
+#endif
 
 	// Advanced
 
@@ -3716,11 +3864,16 @@ void VoxelLodTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_process_callback", "mode"), &Self::set_process_callback);
 	ClassDB::bind_method(D_METHOD("get_process_callback"), &Self::get_process_callback);
 
+#ifdef VOXEL_ENABLE_GPU
 	ClassDB::bind_method(D_METHOD("set_generator_use_gpu", "enabled"), &Self::set_generator_use_gpu);
 	ClassDB::bind_method(D_METHOD("get_generator_use_gpu"), &Self::get_generator_use_gpu);
+#endif
 
 	ClassDB::bind_method(D_METHOD("set_streaming_system", "system"), &Self::set_streaming_system);
 	ClassDB::bind_method(D_METHOD("get_streaming_system"), &Self::get_streaming_system);
+
+	ClassDB::bind_method(D_METHOD("set_cache_generated_blocks", "enabled"), &Self::set_cache_generated_blocks);
+	ClassDB::bind_method(D_METHOD("get_cache_generated_blocks"), &Self::get_cache_generated_blocks);
 
 	// Debug
 
@@ -3788,14 +3941,13 @@ void VoxelLodTerrain::_bind_methods() {
 					Variant::OBJECT,
 					"material",
 					PROPERTY_HINT_RESOURCE_TYPE,
-					String("{0},{1}").format(
-							varray(BaseMaterial3D::get_class_static(), ShaderMaterial::get_class_static())
-					)
+					zylann::godot::MATERIAL_3D_PROPERTY_HINT_STRING
 			),
 			"set_material",
 			"get_material"
 	);
 
+#ifdef VOXEL_ENABLE_SMOOTH_MESHING
 	ADD_GROUP("Detail normalmaps", "normalmap_");
 
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "normalmap_enabled"), "set_normalmap_enabled", "is_normalmap_enabled");
@@ -3824,7 +3976,10 @@ void VoxelLodTerrain::_bind_methods() {
 			"set_octahedral_normal_encoding",
 			"get_octahedral_normal_encoding"
 	);
+#ifdef VOXEL_ENABLE_GPU
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "normalmap_use_gpu"), "set_normalmap_use_gpu", "get_normalmap_use_gpu");
+#endif
+#endif
 
 	ADD_GROUP("Collisions", "");
 
@@ -3866,11 +4021,18 @@ void VoxelLodTerrain::_bind_methods() {
 			"is_full_load_mode_enabled"
 	);
 	ADD_PROPERTY(
+			PropertyInfo(Variant::BOOL, "cache_generated_blocks"),
+			"set_cache_generated_blocks",
+			"get_cache_generated_blocks"
+	);
+	ADD_PROPERTY(
 			PropertyInfo(Variant::BOOL, "threaded_update_enabled"),
 			"set_threaded_update_enabled",
 			"is_threaded_update_enabled"
 	);
+#ifdef VOXEL_ENABLE_GPU
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "use_gpu_generation"), "set_generator_use_gpu", "get_generator_use_gpu");
+#endif
 	ADD_PROPERTY(
 			PropertyInfo(Variant::INT, "streaming_system", PROPERTY_HINT_ENUM, "Octree (legacy),Clipbox"),
 			"set_streaming_system",

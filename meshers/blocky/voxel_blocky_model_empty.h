@@ -11,7 +11,8 @@ class VoxelBlockyModelEmpty : public VoxelBlockyModel {
 public:
 	VoxelBlockyModelEmpty();
 
-	void bake(BakedData &baked_data, bool bake_tangents, MaterialIndexer &materials) const override;
+	void bake(blocky::ModelBakingContext &ctx) const override;
+
 	Ref<Mesh> get_preview_mesh() const override;
 	bool is_empty() const override;
 

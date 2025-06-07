@@ -1,28 +1,21 @@
-
 # This file is for compiling as a module. It may not be used when compiling as an extension.
+
+import common
+
 
 def can_build(env, platform):
     return True
 
 
 def configure(env):
-    from SCons.Script import BoolVariable, Variables, Help
-
-    env_vars = Variables()
-
-    env_vars.Add(BoolVariable("voxel_tests",
-        "Build with tests for the voxel module, which will run on startup of the engine", False))
-
-    env_vars.Add(BoolVariable("voxel_fast_noise_2", "Build FastNoise2 support (x86-only)", True))
-
-    env_vars.Add(BoolVariable("tracy", "Build with enabled Tracy Profiler integration", False))
-
-    env_vars.Update(env)
-    Help(env_vars.GenerateHelpText(env))
+    common.register_scons_options(env, False)
 
 
 def get_icons_path():
-    return "editor/icons"
+    # return "editor/icons"
+    # GDExtension icons have to be shipped as external files instead of being compiled in the library.
+    # So we put them here to avoid having to copy them.
+    return "project/addons/zylann.voxel/editor/icons"
 
 
 def get_doc_classes():
@@ -40,7 +33,9 @@ def get_doc_classes():
         "VoxelBlockyModel",
         "VoxelBlockyModelCube",
         "VoxelBlockyModelEmpty",
+        "VoxelBlockyModelFluid",
         "VoxelBlockyModelMesh",
+        "VoxelBlockyFluid",
         "VoxelBlockyType",
         "VoxelBlockyTypeLibrary",
         "VoxelBoxMover",
@@ -48,6 +43,7 @@ def get_doc_classes():
         "VoxelColorPalette",
         "VoxelDataBlockEnterInfo",
         "VoxelEngine",
+        "VoxelFormat",
         "VoxelGenerator",
         "VoxelGeneratorFlat",
         "VoxelGeneratorGraph",

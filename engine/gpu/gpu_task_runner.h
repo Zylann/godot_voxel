@@ -10,6 +10,10 @@
 #include "../../util/thread/mutex.h"
 #include "../../util/thread/semaphore.h"
 #include "../../util/thread/thread.h"
+
+#include "compute_shader.h"
+#include "gpu_storage_buffer_pool.h"
+
 #include <atomic>
 
 ZN_GODOT_FORWARD_DECLARE(class RenderingDevice)
@@ -21,9 +25,25 @@ namespace zylann::voxel {
 
 class GPUStorageBufferPool;
 
+struct BaseGPUResources {
+	ComputeShaderInternal dilate_normalmap_shader;
+	ComputeShaderInternal detail_gather_hits_shader;
+	ComputeShaderInternal detail_normalmap_shader;
+	ComputeShaderInternal detail_modifier_sphere_shader;
+	ComputeShaderInternal detail_modifier_mesh_shader;
+	ComputeShaderInternal block_modifier_sphere_shader;
+	ComputeShaderInternal block_modifier_mesh_shader;
+
+	RID filtering_sampler_rid;
+
+	void load(RenderingDevice &rd);
+	void clear(RenderingDevice &rd);
+};
+
 struct GPUTaskContext {
 	RenderingDevice &rendering_device;
 	GPUStorageBufferPool &storage_buffer_pool;
+	const BaseGPUResources &base_resources;
 
 	// Buffer shared by multiple tasks in the current batch.
 	// It will be downloaded in one go before collection, which is faster than downloading multiple individual buffers,
@@ -33,8 +53,8 @@ struct GPUTaskContext {
 	RID shared_output_buffer_rid;
 	PackedByteArray downloaded_shared_output_data;
 
-	GPUTaskContext(RenderingDevice &rd, GPUStorageBufferPool &sb_pool) :
-			rendering_device(rd), storage_buffer_pool(sb_pool) {}
+	GPUTaskContext(RenderingDevice &rd, GPUStorageBufferPool &sb_pool, const BaseGPUResources &br) :
+			rendering_device(rd), storage_buffer_pool(sb_pool), base_resources(br) {}
 };
 
 class IGPUTask {
@@ -55,16 +75,24 @@ public:
 	GPUTaskRunner();
 	~GPUTaskRunner();
 
-	void start(RenderingDevice *rd, GPUStorageBufferPool *pool);
+	void start();
 	void stop();
 	void push(IGPUTask *task);
 	unsigned int get_pending_task_count() const;
+	bool has_rendering_device() const;
+	bool is_running() const;
 
 private:
 	void thread_func();
 
 	RenderingDevice *_rendering_device = nullptr;
-	GPUStorageBufferPool *_storage_buffer_pool = nullptr;
+	// mutable Mutex _rendering_device_ptr_mutex;
+	bool _has_rendering_device = false;
+
+	GPUStorageBufferPool _storage_buffer_pool;
+	BaseGPUResources _base_resources;
+
+	// Queue of tasks to run. They will be run in the order they were submitted.
 	StdVector<IGPUTask *> _shared_tasks;
 	Mutex _mutex;
 	Semaphore _semaphore;

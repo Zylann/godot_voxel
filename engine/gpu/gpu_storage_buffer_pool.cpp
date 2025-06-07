@@ -41,6 +41,11 @@ void GPUStorageBufferPool::clear() {
 					format("{} storage buffers are still in use when clearing pool {}", pool.used_buffers, pool_index)
 			);
 		}
+		if (pool.buffers.size() > 0) {
+			ZN_PRINT_VERBOSE(
+					format("Freeing {} VoxelRD pooled storage buffers from pool {}", pool.buffers.size(), pool_index)
+			);
+		}
 		for (GPUStorageBuffer &b : pool.buffers) {
 			godot::free_rendering_device_rid(rd, b.rid);
 		}
@@ -96,6 +101,7 @@ GPUStorageBuffer GPUStorageBufferPool::allocate(uint32_t p_size, const PackedByt
 
 	if (pool.buffers.size() == 0) {
 		const unsigned int capacity = _pool_sizes[pool_index];
+		ZN_PRINT_VERBOSE(format("Creating VoxelRD pooled storage buffer {}b", capacity));
 		// Unfortunately `storage_buffer_create` in the Godot API requires that you provide a PoolByteArray of the exact
 		// same size, when provided. Our pooling strategy means we are often allocating a bit more than initially
 		// requested. The passed data would fit, but Godot doesn't want that... so in order to avoid having to create an

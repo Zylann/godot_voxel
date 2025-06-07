@@ -75,6 +75,8 @@ private:
 		bool operator==(const VoxelID &other) const {
 			return type_name == other.type_name && variant_key == other.variant_key;
 		}
+
+		String to_string() const;
 	};
 
 	void update_id_map();
@@ -82,7 +84,6 @@ private:
 	static PackedStringArray serialize_id_map_to_string_array(const StdVector<VoxelID> &id_map);
 
 	static bool parse_voxel_id(const String &str, VoxelID &out_id);
-	static String to_string(const VoxelID &id);
 
 	int get_model_index(const VoxelID queried_id) const;
 

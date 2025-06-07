@@ -2,6 +2,7 @@
 #define VOXEL_DATA_BLOCK_H
 
 #include "../util/ref_count.h"
+#include <cstdint>
 #include <memory>
 
 namespace zylann::voxel {

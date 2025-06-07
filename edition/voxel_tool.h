@@ -3,6 +3,7 @@
 
 #include "../storage/funcs.h"
 #include "../storage/voxel_buffer_gd.h"
+#include "../storage/voxel_format.h"
 #include "../util/math/box3i.h"
 #include "../util/math/sdf.h"
 #include "funcs.h"
@@ -11,6 +12,10 @@
 // TODO Need to review VoxelTool to account for transformed volumes
 
 namespace zylann::voxel {
+
+#ifdef VOXEL_ENABLE_MESH_SDF
+class VoxelMeshSDF;
+#endif
 
 // High-level voxel editing interface.
 // It's not a class to instantiate alone, get it from the voxel objects you want to work with.
@@ -44,6 +49,8 @@ public:
 	uint64_t get_voxel(Vector3i pos) const;
 	float get_voxel_f(Vector3i pos) const;
 
+	virtual float get_voxel_f_interpolated(const Vector3 pos) const;
+
 	float get_sdf_scale() const;
 	void set_sdf_scale(float s);
 
@@ -69,6 +76,9 @@ public:
 	virtual void do_sphere(Vector3 p_center, float radius);
 	virtual void do_box(Vector3i begin, Vector3i end);
 	virtual void do_path(Span<const Vector3> positions, Span<const float> radii);
+#ifdef VOXEL_ENABLE_MESH_SDF
+	virtual void do_mesh(const VoxelMeshSDF &mesh_sdf, const Transform3D &transform, const float isolevel);
+#endif
 
 	void sdf_stamp_erase(Ref<godot::VoxelBuffer> stamp, Vector3i pos);
 	void sdf_stamp_erase(const VoxelBuffer &stamp, Vector3i pos);
@@ -102,11 +112,15 @@ public:
 
 	virtual Ref<VoxelRaycastResult> raycast(Vector3 pos, Vector3 dir, float max_distance, uint32_t collision_mask);
 
+	void set_raycast_normal_enabled(bool enabled);
+
 	// Checks if an edit affecting the given box can be applied, fully or partially
 	virtual bool is_area_editable(const Box3i &box) const;
 
 	virtual void set_voxel_metadata(Vector3i pos, Variant meta);
 	virtual Variant get_voxel_metadata(Vector3i pos) const;
+
+	virtual VoxelFormat get_format() const;
 
 protected:
 	static void _bind_methods();
@@ -118,6 +132,16 @@ protected:
 	virtual void _set_voxel(Vector3i pos, uint64_t v);
 	virtual void _set_voxel_f(Vector3i pos, float v);
 	virtual void _post_edit(const Box3i &box);
+
+#ifdef VOXEL_ENABLE_MESH_SDF
+	void do_mesh_chunked(
+			const VoxelMeshSDF &mesh_sdf,
+			VoxelData &vdata,
+			const Transform3D &transform,
+			const float isolevel,
+			const bool with_pre_generate
+	);
+#endif
 
 private:
 	// Bindings to convert to more specialized C++ types and handle virtuality,
@@ -132,6 +156,9 @@ private:
 	void _b_do_sphere(Vector3 pos, float radius);
 	void _b_do_box(Vector3i begin, Vector3i end);
 	void _b_do_path(PackedVector3Array positions, PackedFloat32Array radii);
+#ifdef VOXEL_ENABLE_MESH_SDF
+	void _b_do_mesh(Ref<VoxelMeshSDF> mesh_sdf, Transform3D transform, float isolevel);
+#endif
 	void _b_copy(Vector3i pos, Ref<godot::VoxelBuffer> voxels, int channel_mask);
 	void _b_paste(Vector3i pos, Ref<godot::VoxelBuffer> voxels, int channels_mask);
 	void _b_paste_masked(
@@ -158,6 +185,7 @@ protected:
 	// If true, operations will be allowed even if the affected area is partially outside the bounds of editable voxels.
 	// Depending on the context, it may be useful, or cause iconsistent results.
 	bool _allow_out_of_bounds = false;
+	bool _raycast_normal_enabled = true;
 
 	// Used on smooth terrain
 	ops::TextureParams _texture_params;

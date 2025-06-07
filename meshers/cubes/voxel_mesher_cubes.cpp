@@ -4,6 +4,7 @@
 #include "../../util/godot/classes/base_material_3d.h"
 #include "../../util/godot/classes/geometry_2d.h"
 #include "../../util/godot/classes/image.h"
+#include "../../util/godot/classes/material.h"
 #include "../../util/godot/classes/shader_material.h"
 #include "../../util/godot/core/packed_arrays.h"
 #include "../../util/godot/core/string.h"
@@ -1095,22 +1096,22 @@ bool VoxelMesherCubes::get_store_colors_in_texture() const {
 	return _parameters.store_colors_in_texture;
 }
 
-Ref<Resource> VoxelMesherCubes::duplicate(bool p_subresources) const {
-	Parameters params;
-	{
-		RWLockRead rlock(_parameters_lock);
-		params = _parameters;
-	}
+// Ref<Resource> VoxelMesherCubes::duplicate(bool p_subresources) const {
+// 	Parameters params;
+// 	{
+// 		RWLockRead rlock(_parameters_lock);
+// 		params = _parameters;
+// 	}
 
-	if (p_subresources && params.palette.is_valid()) {
-		params.palette = params.palette->duplicate(true);
-	}
-	Ref<VoxelMesherCubes> d;
-	d.instantiate();
-	d->_parameters = params;
+// 	if (p_subresources && params.palette.is_valid()) {
+// 		params.palette = params.palette->duplicate(true);
+// 	}
+// 	Ref<VoxelMesherCubes> d;
+// 	d.instantiate();
+// 	d->_parameters = params;
 
-	return d;
-}
+// 	return d;
+// }
 
 int VoxelMesherCubes::get_used_channels_mask() const {
 	return (1 << VoxelBuffer::CHANNEL_COLOR);
@@ -1161,9 +1162,9 @@ Ref<Mesh> VoxelMesherCubes::generate_mesh_from_image(Ref<Image> image, float vox
 	const int im_size_y = image->get_height();
 
 	// Currently all meshers require pre-padded voxel data...
-	voxels.create( //
-			im_size_x + VoxelMesherCubes::PADDING * 2, //
-			im_size_y + VoxelMesherCubes::PADDING * 2, //
+	voxels.create(
+			im_size_x + VoxelMesherCubes::PADDING * 2,
+			im_size_y + VoxelMesherCubes::PADDING * 2,
 			1 + VoxelMesherCubes::PADDING * 2
 	);
 
@@ -1272,16 +1273,23 @@ void VoxelMesherCubes::_bind_methods() {
 			"get_palette"
 	);
 
-	const String material_hint =
-			String(BaseMaterial3D::get_class_static()) + "," + String(ShaderMaterial::get_class_static());
-
 	ADD_PROPERTY(
-			PropertyInfo(Variant::OBJECT, "opaque_material", PROPERTY_HINT_RESOURCE_TYPE, material_hint),
+			PropertyInfo(
+					Variant::OBJECT,
+					"opaque_material",
+					PROPERTY_HINT_RESOURCE_TYPE,
+					zylann::godot::MATERIAL_3D_PROPERTY_HINT_STRING
+			),
 			"_set_opaque_material",
 			"_get_opaque_material"
 	);
 	ADD_PROPERTY(
-			PropertyInfo(Variant::OBJECT, "transparent_material", PROPERTY_HINT_RESOURCE_TYPE, material_hint),
+			PropertyInfo(
+					Variant::OBJECT,
+					"transparent_material",
+					PROPERTY_HINT_RESOURCE_TYPE,
+					zylann::godot::MATERIAL_3D_PROPERTY_HINT_STRING
+			),
 			"_set_transparent_material",
 			"_get_transparent_material"
 	);

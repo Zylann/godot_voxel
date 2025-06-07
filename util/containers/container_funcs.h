@@ -98,12 +98,12 @@ struct DuplicateSearchResult {
 	}
 };
 
-template <typename T>
-DuplicateSearchResult find_duplicate(Span<const T> items) {
+template <typename T, typename TEqual>
+DuplicateSearchResult find_duplicate_f(Span<const T> items, TEqual equal) {
 	for (unsigned int i = 0; i < items.size(); ++i) {
 		const T &a = items[i];
 		for (unsigned int j = i + 1; j < items.size(); ++j) {
-			if (items[j] == a) {
+			if (equal(items[j], a)) {
 				return { i, j };
 			}
 		}
@@ -112,14 +112,27 @@ DuplicateSearchResult find_duplicate(Span<const T> items) {
 }
 
 template <typename T>
-bool has_duplicate(Span<const T> items) {
+inline DuplicateSearchResult find_duplicate(Span<const T> items) {
+	return find_duplicate_f(items, [](const T &a, const T &b) { return a == b; });
+}
+
+template <typename T>
+inline bool has_duplicate(Span<const T> items) {
 	return find_duplicate(items).is_valid();
+}
+
+template <typename T, typename TEqual>
+inline bool has_duplicate_f(Span<const T> items, TEqual equal) {
+	return find_duplicate_f(items, equal).is_valid();
 }
 
 // Tests if POD items in an array are all the same.
 // Better tailored for more than hundred items that have power-of-two size.
 template <typename Item_T>
-inline bool is_uniform(const Item_T *p_data, size_t item_count) {
+inline bool is_uniform(const Item_T *p_data, const size_t item_count) {
+	// Testing uniformity of an empty buffer has no meaningful answer
+	ZN_ASSERT_RETURN_V(item_count > 0, false);
+
 	const Item_T v0 = p_data[0];
 
 	// typedef size_t Bucket_T;
@@ -202,6 +215,11 @@ bool find(const std::vector<T, TAllocator> &vec, size_t &out_index, TPredicate p
 	return find(to_span_const(vec), out_index, predicate);
 }
 
+template <typename T, typename TAllocator>
+bool find(const std::vector<T, TAllocator> &vec, const T &v, size_t &out_index) {
+	return find(to_span_const(vec), v, out_index);
+}
+
 template <typename T>
 bool contains(Span<const T> items, const T &v) {
 	for (const T &item : items) {
@@ -239,6 +257,17 @@ constexpr size_t string_literal_length(const char (&)[N]) {
 	// -1 to exclude the null-terminating character '\0'
 	static_assert(N > 0);
 	return N - 1;
+}
+
+template <typename T, typename TSrcAllocator, typename TDstAllocator>
+void copy(const std::vector<T, TSrcAllocator> &src, std::vector<T, TDstAllocator> &dst) {
+	dst.resize(src.size());
+	std::copy(src.begin(), src.end(), dst.begin());
+}
+
+template <typename T, typename TAllocator>
+void fill(std::vector<T, TAllocator> &dst, const T &v) {
+	std::fill(dst.begin(), dst.end(), v);
 }
 
 } // namespace zylann

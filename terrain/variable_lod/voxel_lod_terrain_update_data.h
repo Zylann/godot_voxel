@@ -2,7 +2,6 @@
 #define VOXEL_LOD_TERRAIN_UPDATE_DATA_H
 
 #include "../../constants/voxel_constants.h"
-#include "../../engine/detail_rendering/detail_rendering.h"
 #include "../../generators/voxel_generator.h"
 #include "../../streams/voxel_stream.h"
 #include "../../util/containers/fixed_array.h"
@@ -13,6 +12,10 @@
 #include "../../util/tasks/cancellation_token.h"
 #include "../voxel_mesh_map.h"
 #include "lod_octree.h"
+
+#ifdef VOXEL_ENABLE_SMOOTH_MESHING
+#include "../../engine/detail_rendering/detail_rendering.h"
+#endif
 
 namespace zylann {
 
@@ -71,6 +74,7 @@ struct VoxelLodTerrainUpdateData {
 		bool run_stream_in_editor = true;
 		// If true, try to generate blocks and store them in the data map before posting mesh requests.
 		// If false, meshing will generate non-edited voxels on the fly instead.
+		// If streaming is disabled, this option has no effect.
 		// Not really exposed for now, will wait for it to be really needed. It might never be.
 		bool cache_generated_blocks = false;
 		bool collision_enabled = true;
@@ -78,7 +82,9 @@ struct VoxelLodTerrainUpdateData {
 		bool generator_use_gpu = false;
 		uint8_t detail_texture_generator_override_begin_lod_index = 0;
 		unsigned int mesh_block_size_po2 = 4;
+#ifdef VOXEL_ENABLE_SMOOTH_MESHING
 		DetailRenderingSettings detail_texture_settings;
+#endif
 		Ref<VoxelGenerator> detail_texture_generator_override;
 	};
 

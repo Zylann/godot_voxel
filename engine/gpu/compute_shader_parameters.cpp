@@ -4,10 +4,10 @@
 
 namespace zylann::voxel {
 
-void add_uniform_params(const StdVector<ComputeShaderParameter> &params, Array &uniforms) {
+void add_uniform_params(const StdVector<ComputeShaderParameter> &params, Array &uniforms, const RID filtering_sampler) {
 	for (const ComputeShaderParameter &p : params) {
 		ZN_ASSERT(p.resource != nullptr);
-		ZN_ASSERT(p.resource->is_valid());
+		ZN_ASSERT(p.resource->get_rid().is_valid());
 
 		Ref<RDUniform> uniform;
 		uniform.instantiate();
@@ -15,13 +15,13 @@ void add_uniform_params(const StdVector<ComputeShaderParameter> &params, Array &
 		uniform->set_binding(p.binding);
 
 		switch (p.resource->get_type()) {
-			case ComputeShaderResource::TYPE_TEXTURE_2D:
-			case ComputeShaderResource::TYPE_TEXTURE_3D:
+			case ComputeShaderResourceInternal::TYPE_TEXTURE_2D:
+			case ComputeShaderResourceInternal::TYPE_TEXTURE_3D:
 				uniform->set_uniform_type(RenderingDevice::UNIFORM_TYPE_SAMPLER_WITH_TEXTURE);
-				uniform->add_id(VoxelEngine::get_singleton().get_filtering_sampler());
+				uniform->add_id(filtering_sampler);
 				break;
 
-			case ComputeShaderResource::TYPE_STORAGE_BUFFER:
+			case ComputeShaderResourceInternal::TYPE_STORAGE_BUFFER:
 				uniform->set_uniform_type(RenderingDevice::UNIFORM_TYPE_STORAGE_BUFFER);
 				break;
 

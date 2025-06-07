@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VoxelBlockyModelFluid" inherits="VoxelBlockyModel" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Model representing a specific state of a fluid.
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="fluid" type="VoxelBlockyFluid" setter="set_fluid" getter="get_fluid">
+			Which fluid this model is part of. Note, fluid resources are supposed to be shared between multiple models, in order to make those models recognized as states of that fluid.
+		</member>
+		<member name="level" type="int" setter="set_level" getter="get_level" default="0">
+			Fluid level, usually representing how much fluid the model contains. Levels should start from 0, and must be lower than 256. Fluids can have multiple models with the same level. It is also preferable to define at least one model per level (avoid missing levels). It is also recommended to assign models with consecutive levels to consecutive library IDs, however this is not required.
+		</member>
+	</members>
+	<constants>
+		<constant name="MAX_LEVELS" value="256">
+			Maximum amount of supported fluid levels.
+		</constant>
+	</constants>
+</class>

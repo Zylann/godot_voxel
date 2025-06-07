@@ -1,0 +1,14 @@
+name: 📊 Build extension on code changes
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build_binaries:
+    uses: Zylann/godot_voxel/.github/workflows/extension_builds.yml@master
+    with:
+      godot-cpp-branch: master
+      # float-precisions: [single, double]
+

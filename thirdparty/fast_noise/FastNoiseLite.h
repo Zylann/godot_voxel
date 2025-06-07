@@ -1,7 +1,7 @@
 // MIT License
 //
-// Copyright(c) 2020 Jordan Peck (jordan.me2@gmail.com)
-// Copyright(c) 2020 Contributors
+// Copyright(c) 2023 Jordan Peck (jordan.me2@gmail.com)
+// Copyright(c) 2023 Contributors
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files(the "Software"), to deal
@@ -44,9 +44,10 @@
 //       ....',;:codxkO000OOxdoc:;,''',,,;;;;,''.......',,;:clodkO00000Okxolc::;,,''..',;:ldxOKXNWWWNNK0OkkkkkkkkkkkxxddooooodxxkOOOOO000
 //       ....',;;clodxkkOOOkkdolc:;,,,,,,,,'..........,;:clodxkO0KKXKK0Okxdolcc::;;,,,;;:codkO0XXNNNNXKK0OOOOOkkkkxxdoollloodxkO0KKKXXXXX
 //
-// VERSION: 1.0.1
-// https://github.com/Auburn/FastNoise
+// VERSION: 1.1.1
+// https://github.com/Auburn/FastNoiseLite
 
+// <Zylann> Prefixed `ZN_` to avoid conflict with Godot's version
 #ifndef ZN_FASTNOISELITE_H
 #define ZN_FASTNOISELITE_H
 
@@ -127,7 +128,7 @@ public:
         mLacunarity = 2.0f;
         mGain = 0.5f;
         mWeightedStrength = 0.0f;
-        mPingPongStength = 2.0f;
+        mPingPongStrength = 2.0f;
 
         mFractalBounding = 1 / 1.75f;
 
@@ -238,7 +239,7 @@ public:
     /// <remarks>
     /// Default: 2.0
     /// </remarks>
-    void SetFractalPingPongStrength(float pingPongStrength) { mPingPongStength = pingPongStrength; }
+    void SetFractalPingPongStrength(float pingPongStrength) { mPingPongStrength = pingPongStrength; }
 
 
     /// <summary>
@@ -301,7 +302,7 @@ public:
     /// Noise output bounded between -1...1
     /// </returns>
     template <typename FNfloat>
-    float GetNoise(FNfloat x, FNfloat y) const // <Zylann> Added const
+    float GetNoise(FNfloat x, FNfloat y) const
     {
         Arguments_must_be_floating_point_values<FNfloat>();
 
@@ -327,7 +328,7 @@ public:
     /// Noise output bounded between -1...1
     /// </returns>
     template <typename FNfloat>
-    float GetNoise(FNfloat x, FNfloat y, FNfloat z) const // <Zylann> Added const
+    float GetNoise(FNfloat x, FNfloat y, FNfloat z) const
     {
         Arguments_must_be_floating_point_values<FNfloat>();
 
@@ -346,6 +347,7 @@ public:
         }
     }
 
+
     /// <summary>
     /// 2D warps the input position using current domain warp settings
     /// </summary>
@@ -355,7 +357,7 @@ public:
     /// noise = GetNoise(x, y)</code>
     /// </example>
     template <typename FNfloat>
-    void DomainWarp(FNfloat& x, FNfloat& y) const // <Zylann> Added const
+    void DomainWarp(FNfloat& x, FNfloat& y) const
     {
         Arguments_must_be_floating_point_values<FNfloat>();
 
@@ -382,7 +384,7 @@ public:
     /// noise = GetNoise(x, y, z)</code>
     /// </example>
     template <typename FNfloat>
-    void DomainWarp(FNfloat& x, FNfloat& y, FNfloat& z) const // <Zylann> Added const
+    void DomainWarp(FNfloat& x, FNfloat& y, FNfloat& z) const
     {
         Arguments_must_be_floating_point_values<FNfloat>();
 
@@ -401,8 +403,7 @@ public:
     }
 
 // <Zylann> Exposed everything. Need it for extensions without modifying the library too much
-//private:
-
+// private:
     template <typename T>
     struct Arguments_must_be_floating_point_values;
 
@@ -425,7 +426,7 @@ public:
     float mLacunarity;
     float mGain;
     float mWeightedStrength;
-    float mPingPongStength;
+    float mPingPongStrength;
 
     float mFractalBounding;
 
@@ -535,7 +536,7 @@ public:
     }
 
 
-    float GradCoord(int seed, int xPrimed, int yPrimed, float xd, float yd) const // <Zylann> Added const
+    float GradCoord(int seed, int xPrimed, int yPrimed, float xd, float yd) const
     {
         int hash = Hash(seed, xPrimed, yPrimed);
         hash ^= hash >> 15;
@@ -548,7 +549,7 @@ public:
     }
 
 
-    float GradCoord(int seed, int xPrimed, int yPrimed, int zPrimed, float xd, float yd, float zd) const // <Zylann> Added const
+    float GradCoord(int seed, int xPrimed, int yPrimed, int zPrimed, float xd, float yd, float zd) const
     {
         int hash = Hash(seed, xPrimed, yPrimed, zPrimed);
         hash ^= hash >> 15;
@@ -562,7 +563,7 @@ public:
     }
 
 
-    void GradCoordOut(int seed, int xPrimed, int yPrimed, float& xo, float& yo) const // <Zylann> Added const
+    void GradCoordOut(int seed, int xPrimed, int yPrimed, float& xo, float& yo) const
     {
         int hash = Hash(seed, xPrimed, yPrimed) & (255 << 1);
 
@@ -571,7 +572,7 @@ public:
     }
 
 
-    void GradCoordOut(int seed, int xPrimed, int yPrimed, int zPrimed, float& xo, float& yo, float& zo) const // <Zylann> Added const
+    void GradCoordOut(int seed, int xPrimed, int yPrimed, int zPrimed, float& xo, float& yo, float& zo) const
     {
         int hash = Hash(seed, xPrimed, yPrimed, zPrimed) & (255 << 2);
 
@@ -581,7 +582,7 @@ public:
     }
 
 
-    void GradCoordDual(int seed, int xPrimed, int yPrimed, float xd, float yd, float& xo, float& yo) const // <Zylann> Added const
+    void GradCoordDual(int seed, int xPrimed, int yPrimed, float xd, float yd, float& xo, float& yo) const
     {
         int hash = Hash(seed, xPrimed, yPrimed);
         int index1 = hash & (127 << 1);
@@ -599,7 +600,7 @@ public:
     }
 
 
-    void GradCoordDual(int seed, int xPrimed, int yPrimed, int zPrimed, float xd, float yd, float zd, float& xo, float& yo, float& zo) const // <Zylann> Added const
+    void GradCoordDual(int seed, int xPrimed, int yPrimed, int zPrimed, float xd, float yd, float zd, float& xo, float& yo, float& zo) const
     {
         int hash = Hash(seed, xPrimed, yPrimed, zPrimed);
         int index1 = hash & (63 << 2);
@@ -623,7 +624,7 @@ public:
     // Generic noise gen
 
     template <typename FNfloat>
-    float GenNoiseSingle(int seed, FNfloat x, FNfloat y) const // <Zylann> Added const
+    float GenNoiseSingle(int seed, FNfloat x, FNfloat y) const
     {
         switch (mNoiseType)
         {
@@ -645,7 +646,7 @@ public:
     }
 
     template <typename FNfloat>
-    float GenNoiseSingle(int seed, FNfloat x, FNfloat y, FNfloat z) const // <Zylann> Added const
+    float GenNoiseSingle(int seed, FNfloat x, FNfloat y, FNfloat z) const
     {
         switch (mNoiseType)
         {
@@ -670,7 +671,7 @@ public:
     // Noise Coordinate Transforms (frequency, and possible skew or rotation)
 
     template <typename FNfloat>
-    void TransformNoiseCoordinate(FNfloat& x, FNfloat& y) const // <Zylann> Added const
+    void TransformNoiseCoordinate(FNfloat& x, FNfloat& y) const
     {
         x *= mFrequency;
         y *= mFrequency;
@@ -693,7 +694,7 @@ public:
     }
 
     template <typename FNfloat>
-    void TransformNoiseCoordinate(FNfloat& x, FNfloat& y, FNfloat& z) const // <Zylann> Added const
+    void TransformNoiseCoordinate(FNfloat& x, FNfloat& y, FNfloat& z) const
     {
         x *= mFrequency;
         y *= mFrequency;
@@ -764,7 +765,7 @@ public:
     // Domain Warp Coordinate Transforms
 
     template <typename FNfloat>
-    void TransformDomainWarpCoordinate(FNfloat& x, FNfloat& y) const // <Zylann> Added const
+    void TransformDomainWarpCoordinate(FNfloat& x, FNfloat& y) const
     {
         switch (mDomainWarpType)
         {
@@ -784,7 +785,7 @@ public:
     }
 
     template <typename FNfloat>
-    void TransformDomainWarpCoordinate(FNfloat& x, FNfloat& y, FNfloat& z) const // <Zylann> Added const
+    void TransformDomainWarpCoordinate(FNfloat& x, FNfloat& y, FNfloat& z) const
     {
         switch (mWarpTransformType3D)
         {
@@ -851,7 +852,7 @@ public:
     // Fractal FBm
 
     template <typename FNfloat>
-    float GenFractalFBm(FNfloat x, FNfloat y) const // <Zylann> Added const
+    float GenFractalFBm(FNfloat x, FNfloat y) const
     {
         int seed = mSeed;
         float sum = 0;
@@ -872,7 +873,7 @@ public:
     }
 
     template <typename FNfloat>
-    float GenFractalFBm(FNfloat x, FNfloat y, FNfloat z) const // <Zylann> Added const
+    float GenFractalFBm(FNfloat x, FNfloat y, FNfloat z) const
     {
         int seed = mSeed;
         float sum = 0;
@@ -893,10 +894,11 @@ public:
         return sum;
     }
 
+
     // Fractal Ridged
 
     template <typename FNfloat>
-    float GenFractalRidged(FNfloat x, FNfloat y) const // <Zylann> Added const
+    float GenFractalRidged(FNfloat x, FNfloat y) const
     {
         int seed = mSeed;
         float sum = 0;
@@ -917,7 +919,7 @@ public:
     }
 
     template <typename FNfloat>
-    float GenFractalRidged(FNfloat x, FNfloat y, FNfloat z) const // <Zylann> Added const
+    float GenFractalRidged(FNfloat x, FNfloat y, FNfloat z) const
     {
         int seed = mSeed;
         float sum = 0;
@@ -942,7 +944,7 @@ public:
     // Fractal PingPong 
 
     template <typename FNfloat>
-    float GenFractalPingPong(FNfloat x, FNfloat y) const // <Zylann> Added const
+    float GenFractalPingPong(FNfloat x, FNfloat y) const
     {
         int seed = mSeed;
         float sum = 0;
@@ -950,7 +952,7 @@ public:
 
         for (int i = 0; i < mOctaves; i++)
         {
-            float noise = PingPong((GenNoiseSingle(seed++, x, y) + 1) * mPingPongStength);
+            float noise = PingPong((GenNoiseSingle(seed++, x, y) + 1) * mPingPongStrength);
             sum += (noise - 0.5f) * 2 * amp;
             amp *= Lerp(1.0f, noise, mWeightedStrength);
 
@@ -963,7 +965,7 @@ public:
     }
 
     template <typename FNfloat>
-    float GenFractalPingPong(FNfloat x, FNfloat y, FNfloat z) const // <Zylann> Added const
+    float GenFractalPingPong(FNfloat x, FNfloat y, FNfloat z) const
     {
         int seed = mSeed;
         float sum = 0;
@@ -971,7 +973,7 @@ public:
 
         for (int i = 0; i < mOctaves; i++)
         {
-            float noise = PingPong((GenNoiseSingle(seed++, x, y, z) + 1) * mPingPongStength);
+            float noise = PingPong((GenNoiseSingle(seed++, x, y, z) + 1) * mPingPongStrength);
             sum += (noise - 0.5f) * 2 * amp;
             amp *= Lerp(1.0f, noise, mWeightedStrength);
 
@@ -988,7 +990,7 @@ public:
     // Simplex/OpenSimplex2 Noise
 
     template <typename FNfloat>
-    float SingleSimplex(int seed, FNfloat x, FNfloat y) const // <Zylann> Added const
+    float SingleSimplex(int seed, FNfloat x, FNfloat y) const
     {
         // 2D OpenSimplex2 case uses the same algorithm as ordinary Simplex.
 
@@ -1059,7 +1061,7 @@ public:
     }
 
     template <typename FNfloat>
-    float SingleOpenSimplex2(int seed, FNfloat x, FNfloat y, FNfloat z) const // <Zylann> Added const
+    float SingleOpenSimplex2(int seed, FNfloat x, FNfloat y, FNfloat z) const
     {
         // 3D OpenSimplex2 case uses two offset rotated cube grids.
 
@@ -1161,7 +1163,7 @@ public:
     // OpenSimplex2S Noise
 
     template <typename FNfloat>
-    float SingleOpenSimplex2S(int seed, FNfloat x, FNfloat y) const // <Zylann> Added const
+    float SingleOpenSimplex2S(int seed, FNfloat x, FNfloat y) const
     {
         // 2D OpenSimplex2S case is a modified 2D simplex noise.
 
@@ -1292,7 +1294,7 @@ public:
     }
 
     template <typename FNfloat>
-    float SingleOpenSimplex2S(int seed, FNfloat x, FNfloat y, FNfloat z) const // <Zylann> Added const
+    float SingleOpenSimplex2S(int seed, FNfloat x, FNfloat y, FNfloat z) const
     {
         // 3D OpenSimplex2S case uses two offset rotated cube grids.
 
@@ -1484,6 +1486,7 @@ public:
         return value * 9.046026385208288f;
     }
 
+
 // <Zylann> GCC raises warnings when integer overflows occur, which are needed for hashing here.
 // Same fix as in Godot e41e2a110373a251cd0664f077ada6f344e5c8fd
 #if defined(__GNUC__) && !defined(__clang__)
@@ -1494,7 +1497,7 @@ public:
     // Cellular Noise
 
     template <typename FNfloat>
-    float SingleCellular(int seed, FNfloat x, FNfloat y) const // <Zylann> Added const
+    float SingleCellular(int seed, FNfloat x, FNfloat y) const
     {
         int xr = FastRound(x);
         int yr = FastRound(y);
@@ -1624,7 +1627,7 @@ public:
     }
 
     template <typename FNfloat>
-    float SingleCellular(int seed, FNfloat x, FNfloat y, FNfloat z) const // <Zylann> Added const
+    float SingleCellular(int seed, FNfloat x, FNfloat y, FNfloat z) const
     {
         int xr = FastRound(x);
         int yr = FastRound(y);
@@ -1785,7 +1788,7 @@ public:
     // Perlin Noise
 
     template <typename FNfloat>
-    float SinglePerlin(int seed, FNfloat x, FNfloat y) const // <Zylann> Added const
+    float SinglePerlin(int seed, FNfloat x, FNfloat y) const
     {
         int x0 = FastFloor(x);
         int y0 = FastFloor(y);
@@ -1810,7 +1813,7 @@ public:
     }
 
     template <typename FNfloat>
-    float SinglePerlin(int seed, FNfloat x, FNfloat y, FNfloat z) const // <Zylann> Added const
+    float SinglePerlin(int seed, FNfloat x, FNfloat y, FNfloat z) const
     {
         int x0 = FastFloor(x);
         int y0 = FastFloor(y);
@@ -1849,7 +1852,7 @@ public:
     // Value Cubic Noise
 
     template <typename FNfloat>
-    float SingleValueCubic(int seed, FNfloat x, FNfloat y) const // <Zylann> Added const
+    float SingleValueCubic(int seed, FNfloat x, FNfloat y) const
     {
         int x1 = FastFloor(x);
         int y1 = FastFloor(y);
@@ -1879,7 +1882,7 @@ public:
     }
 
     template <typename FNfloat>
-    float SingleValueCubic(int seed, FNfloat x, FNfloat y, FNfloat z) const // <Zylann> Added const
+    float SingleValueCubic(int seed, FNfloat x, FNfloat y, FNfloat z) const
     {
         int x1 = FastFloor(x);
         int y1 = FastFloor(y);
@@ -1936,7 +1939,7 @@ public:
     // Value Noise
 
     template <typename FNfloat>
-    float SingleValue(int seed, FNfloat x, FNfloat y) const // <Zylann> Added const
+    float SingleValue(int seed, FNfloat x, FNfloat y) const
     {
         int x0 = FastFloor(x);
         int y0 = FastFloor(y);
@@ -1956,7 +1959,7 @@ public:
     }
 
     template <typename FNfloat>
-    float SingleValue(int seed, FNfloat x, FNfloat y, FNfloat z) const // <Zylann> Added const
+    float SingleValue(int seed, FNfloat x, FNfloat y, FNfloat z) const
     {
         int x0 = FastFloor(x);
         int y0 = FastFloor(y);
@@ -1988,7 +1991,7 @@ public:
     // Domain Warp
 
     template <typename FNfloat>
-    void DoSingleDomainWarp(int seed, float amp, float freq, FNfloat x, FNfloat y, FNfloat& xr, FNfloat& yr) const // <Zylann> Added const
+    void DoSingleDomainWarp(int seed, float amp, float freq, FNfloat x, FNfloat y, FNfloat& xr, FNfloat& yr) const
     {
         switch (mDomainWarpType)
         {
@@ -2005,7 +2008,7 @@ public:
     }
 
     template <typename FNfloat>
-    void DoSingleDomainWarp(int seed, float amp, float freq, FNfloat x, FNfloat y, FNfloat z, FNfloat& xr, FNfloat& yr, FNfloat& zr) const // <Zylann> Added const
+    void DoSingleDomainWarp(int seed, float amp, float freq, FNfloat x, FNfloat y, FNfloat z, FNfloat& xr, FNfloat& yr, FNfloat& zr) const
     {
         switch (mDomainWarpType)
         {
@@ -2025,7 +2028,7 @@ public:
     // Domain Warp Single Wrapper
 
     template <typename FNfloat>
-    void DomainWarpSingle(FNfloat& x, FNfloat& y) const // <Zylann> Added const
+    void DomainWarpSingle(FNfloat& x, FNfloat& y) const
     {
         int seed = mSeed;
         float amp = mDomainWarpAmp * mFractalBounding;
@@ -2039,7 +2042,7 @@ public:
     }
 
     template <typename FNfloat>
-    void DomainWarpSingle(FNfloat& x, FNfloat& y, FNfloat& z) const // <Zylann> Added const
+    void DomainWarpSingle(FNfloat& x, FNfloat& y, FNfloat& z) const
     {
         int seed = mSeed;
         float amp = mDomainWarpAmp * mFractalBounding;
@@ -2057,7 +2060,7 @@ public:
     // Domain Warp Fractal Progressive
 
     template <typename FNfloat>
-    void DomainWarpFractalProgressive(FNfloat& x, FNfloat& y) const // <Zylann> Added const
+    void DomainWarpFractalProgressive(FNfloat& x, FNfloat& y) const
     {
         int seed = mSeed;
         float amp = mDomainWarpAmp * mFractalBounding;
@@ -2078,7 +2081,7 @@ public:
     }
 
     template <typename FNfloat>
-    void DomainWarpFractalProgressive(FNfloat& x, FNfloat& y, FNfloat& z) const // <Zylann> Added const
+    void DomainWarpFractalProgressive(FNfloat& x, FNfloat& y, FNfloat& z) const
     {
         int seed = mSeed;
         float amp = mDomainWarpAmp * mFractalBounding;
@@ -2103,7 +2106,7 @@ public:
     // Domain Warp Fractal Independant
 
     template <typename FNfloat>
-    void DomainWarpFractalIndependent(FNfloat& x, FNfloat& y) const // <Zylann> Added const
+    void DomainWarpFractalIndependent(FNfloat& x, FNfloat& y) const
     {
         FNfloat xs = x;
         FNfloat ys = y;
@@ -2124,7 +2127,7 @@ public:
     }
 
     template <typename FNfloat>
-    void DomainWarpFractalIndependent(FNfloat& x, FNfloat& y, FNfloat& z) const // <Zylann> Added const
+    void DomainWarpFractalIndependent(FNfloat& x, FNfloat& y, FNfloat& z) const
     {
         FNfloat xs = x;
         FNfloat ys = y;
@@ -2149,7 +2152,7 @@ public:
     // Domain Warp Basic Grid
 
     template <typename FNfloat>
-    void SingleDomainWarpBasicGrid(int seed, float warpAmp, float frequency, FNfloat x, FNfloat y, FNfloat& xr, FNfloat& yr) const // <Zylann> Added const
+    void SingleDomainWarpBasicGrid(int seed, float warpAmp, float frequency, FNfloat x, FNfloat y, FNfloat& xr, FNfloat& yr) const
     {
         FNfloat xf = x * frequency;
         FNfloat yf = y * frequency;
@@ -2182,7 +2185,7 @@ public:
     }
 
     template <typename FNfloat>
-    void SingleDomainWarpBasicGrid(int seed, float warpAmp, float frequency, FNfloat x, FNfloat y, FNfloat z, FNfloat& xr, FNfloat& yr, FNfloat& zr) const // <Zylann> Added const
+    void SingleDomainWarpBasicGrid(int seed, float warpAmp, float frequency, FNfloat x, FNfloat y, FNfloat z, FNfloat& xr, FNfloat& yr, FNfloat& zr) const
     {
         FNfloat xf = x * frequency;
         FNfloat yf = y * frequency;
@@ -2244,7 +2247,7 @@ public:
     // Domain Warp Simplex/OpenSimplex2
 
     template <typename FNfloat>
-    void SingleDomainWarpSimplexGradient(int seed, float warpAmp, float frequency, FNfloat x, FNfloat y, FNfloat& xr, FNfloat& yr, bool outGradOnly) const // <Zylann> Added const
+    void SingleDomainWarpSimplexGradient(int seed, float warpAmp, float frequency, FNfloat x, FNfloat y, FNfloat& xr, FNfloat& yr, bool outGradOnly) const
     {
         const float SQRT3 = 1.7320508075688772935274463415059f;
         const float G2 = (3 - SQRT3) / 6;
@@ -2342,7 +2345,7 @@ public:
     }
 
     template <typename FNfloat>
-    void SingleDomainWarpOpenSimplex2Gradient(int seed, float warpAmp, float frequency, FNfloat x, FNfloat y, FNfloat z, FNfloat& xr, FNfloat& yr, FNfloat& zr, bool outGradOnly) const // <Zylann> Added const
+    void SingleDomainWarpOpenSimplex2Gradient(int seed, float warpAmp, float frequency, FNfloat x, FNfloat y, FNfloat z, FNfloat& xr, FNfloat& yr, FNfloat& zr, bool outGradOnly) const
     {
         x *= frequency;
         y *= frequency;

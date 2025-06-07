@@ -5,15 +5,13 @@
 
 namespace zylann {
 
-class ZN_SpotNoiseEditorPlugin : public EditorPlugin {
-	GDCLASS(ZN_SpotNoiseEditorPlugin, EditorPlugin)
+class ZN_SpotNoiseEditorPlugin : public zylann::godot::ZN_EditorPlugin {
+	GDCLASS(ZN_SpotNoiseEditorPlugin, zylann::godot::ZN_EditorPlugin)
 public:
-// Apparently `get_name` is a thing when compiling as a module only
-#ifdef ZN_GODOT
-	String get_name() const override;
-#endif
-
 	ZN_SpotNoiseEditorPlugin();
+
+protected:
+	String _zn_get_plugin_name() const override;
 
 private:
 	// When compiling with GodotCpp, `_bind_methods` is not optional

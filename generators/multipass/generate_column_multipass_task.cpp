@@ -29,6 +29,7 @@ using namespace VoxelGeneratorMultipassCBStructs;
 
 GenerateColumnMultipassTask::GenerateColumnMultipassTask(
 		Vector2i p_column_position,
+		VoxelFormat p_format,
 		uint8_t p_block_size,
 		uint8_t p_subpass_index,
 		std::shared_ptr<Internal> p_generator_internal,
@@ -38,6 +39,7 @@ GenerateColumnMultipassTask::GenerateColumnMultipassTask(
 		std::shared_ptr<std::atomic_int> p_caller_dependency_count
 ) {
 	_column_position = p_column_position;
+	_format = p_format;
 	_priority = p_priority;
 	_block_size = p_block_size;
 	_subpass_index = p_subpass_index;
@@ -76,7 +78,7 @@ GenerateColumnMultipassTask::~GenerateColumnMultipassTask() {
 void GenerateColumnMultipassTask::run(ThreadedTaskContext &ctx) {
 	ZN_DSTACK();
 	ZN_PROFILE_SCOPE();
-	ZN_ASSERT(_generator != nullptr);
+	ZN_ASSERT(_generator.is_valid());
 
 	Map &map = _generator_internal->map;
 	BufferedTaskScheduler &task_scheduler = BufferedTaskScheduler::get_for_current_thread();
@@ -161,7 +163,6 @@ void GenerateColumnMultipassTask::run(ThreadedTaskContext &ctx) {
 			// TODO We don't create new columns from here, could use a shared lock?
 			MutexLock mlock(map.mutex);
 
-			Vector2i bpos;
 			// Coordinate order matters (note, Y in Vector2i corresponds to Z in 3D here).
 			neighbors_box.for_each_cell_yx([&columns, &map](Vector2i cpos) {
 				auto it = map.columns.find(cpos);
@@ -249,6 +250,7 @@ void GenerateColumnMultipassTask::run(ThreadedTaskContext &ctx) {
 
 							GenerateColumnMultipassTask *subtask = ZN_NEW(GenerateColumnMultipassTask(
 									cpos,
+									_format,
 									_block_size,
 									prev_subpass_index,
 									_generator_internal,
@@ -298,7 +300,7 @@ void GenerateColumnMultipassTask::run(ThreadedTaskContext &ctx) {
 					// First pass creates blocks
 					// main_column->blocks.resize(column_height_blocks);
 					for (Block &block : main_column->blocks) {
-						block.voxels.create(Vector3iUtil::create(_block_size));
+						block.voxels.create(Vector3iUtil::create(_block_size), &_format);
 					}
 				}
 

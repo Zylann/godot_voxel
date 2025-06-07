@@ -66,6 +66,7 @@ DebugRenderer::DebugRenderer() {}
 
 void DebugRenderer::init() {
 	_multimesh_instance.create();
+	_multimesh_instance.set_interpolated(false);
 	// TODO When shadow casting is on, directional shadows completely break.
 	// The reason is still unknown.
 	// It should be off anyways, but it's rather concerning.

@@ -44,6 +44,33 @@ struct Vector4T {
 #endif
 		return coords[p_axis];
 	}
+
+	inline Vector4T operator+(const Vector4T &p_v) const {
+		return Vector4T( //
+				x + p_v.x, //
+				y + p_v.y, //
+				z + p_v.z, //
+				w + p_v.w //
+		);
+	}
+
+	inline Vector4T operator*(const Vector4T &p_v) const {
+		return Vector4T( //
+				x * p_v.x, //
+				y * p_v.y, //
+				z * p_v.z, //
+				w * p_v.w //
+		);
+	}
+
+	inline Vector4T operator*(const T p_scalar) const {
+		return Vector4T( //
+				x * p_scalar, //
+				y * p_scalar, //
+				z * p_scalar, //
+				w * p_scalar //
+		);
+	}
 };
 
 } // namespace zylann

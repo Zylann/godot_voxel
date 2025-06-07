@@ -119,6 +119,15 @@ void DirectMeshInstance::set_render_layers_mask(int mask) {
 	vs.instance_set_layer_mask(_mesh_instance, mask);
 }
 
+void DirectMeshInstance::set_interpolated(const bool enabled) {
+	// This was added in Godot 4.4, then moved to the SceneTree in 4.5
+	// See https://github.com/godotengine/godot/pull/104269
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR == 4
+	RenderingServer &vs = *RenderingServer::get_singleton();
+	vs.instance_set_interpolated(_mesh_instance, enabled);
+#endif
+}
+
 void DirectMeshInstance::operator=(DirectMeshInstance &&src) {
 	if (_mesh_instance == src._mesh_instance) {
 		return;

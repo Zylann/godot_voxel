@@ -55,7 +55,10 @@ void copy_from_chunked_storage(
 						// For now, inexistent blocks default to hardcoded defaults, corresponding to "empty space".
 						// If we want to change this, we may have to add an API for that.
 						dst_buffer.fill_area(
-								VoxelBuffer::get_default_value_static(channel),
+								VoxelBuffer::get_default_raw_value(
+										static_cast<VoxelBuffer::ChannelId>(channel),
+										dst_buffer.get_channel_depth(channel)
+								),
 								src_block_origin - min_pos,
 								src_block_origin - min_pos + block_size_v,
 								channel
@@ -172,7 +175,7 @@ void run_blocky_random_tick(
 		}
 	};
 
-	const VoxelBlockyLibraryBase::BakedData &lib_data = lib.get_baked_data();
+	const blocky::BakedLibrary &lib_data = lib.get_baked_data();
 
 	// Choose blocks at random
 	for (int bi = 0; bi < block_count; ++bi) {
@@ -195,7 +198,7 @@ void run_blocky_random_tick(
 				if (voxels.get_channel_compression(channel) == VoxelBuffer::COMPRESSION_UNIFORM) {
 					const uint64_t v = voxels.get_voxel(0, 0, 0, channel);
 					if (lib_data.has_model(v)) {
-						const VoxelBlockyModel::BakedData &vt = lib_data.models[v];
+						const blocky::BakedModel &vt = lib_data.models[v];
 						if (vt.is_random_tickable) {
 							// Skip whole block
 							continue;
@@ -227,7 +230,7 @@ void run_blocky_random_tick(
 			const Pick pick = picks[i];
 
 			if (lib_data.has_model(pick.value)) {
-				const VoxelBlockyModel::BakedData &vt = lib_data.models[pick.value];
+				const blocky::BakedModel &vt = lib_data.models[pick.value];
 
 				if (vt.is_random_tickable) {
 					ERR_FAIL_COND(!callback(callback_data, pick.rpos + block_origin, pick.value));
@@ -317,13 +320,13 @@ bool indices_to_bitarray_u16(Span<const int32_t> indices, DynamicBitset &bitarra
 namespace zylann::voxel::ops {
 
 Box3i get_round_cone_int_bounds(Vector3f p0, Vector3f p1, float r0, float r1) {
-	const Vector3f minp( //
+	const Vector3f minp(
 			math::min(p0.x - r0, p1.x - r1), //
 			math::min(p0.y - r0, p1.y - r1), //
 			math::min(p0.z - r0, p1.z - r1)
 	);
 
-	const Vector3f maxp( //
+	const Vector3f maxp(
 			math::max(p0.x + r0, p1.x + r1), //
 			math::max(p0.y + r0, p1.y + r1), //
 			math::max(p0.z + r0, p1.z + r1)

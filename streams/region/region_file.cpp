@@ -209,7 +209,7 @@ Error RegionFile::open(const String &fpath, bool create_if_not_found) {
 	Ref<FileAccess> f = zylann::godot::open_file(fpath, FileAccess::READ_WRITE, file_error);
 	if (file_error != OK) {
 		if (create_if_not_found) {
-			CRASH_COND(f != nullptr);
+			CRASH_COND(f.is_valid());
 
 			// Checking folders, needed for region "forests"
 			const String fpath_base_dir = fpath.get_base_dir();
@@ -289,7 +289,7 @@ Error RegionFile::open(const String &fpath, bool create_if_not_found) {
 Error RegionFile::close() {
 	ZN_PROFILE_SCOPE();
 	Error err = OK;
-	if (_file_access != nullptr) {
+	if (_file_access.is_valid()) {
 		if (_header_modified) {
 			if (!save_header(**_file_access)) {
 				// TODO Need to do a big pass on these errors codes so we can return meaningful ones...
@@ -304,7 +304,7 @@ Error RegionFile::close() {
 }
 
 bool RegionFile::is_open() const {
-	return _file_access != nullptr;
+	return _file_access.is_valid();
 }
 
 void RegionFile::flush() {
@@ -318,7 +318,7 @@ void RegionFile::flush() {
 }
 
 bool RegionFile::set_format(const RegionFormat &format) {
-	ERR_FAIL_COND_V_MSG(_file_access != nullptr, false, "Can't set format when the file already exists");
+	ERR_FAIL_COND_V_MSG(_file_access.is_valid(), false, "Can't set format when the file already exists");
 	ERR_FAIL_COND_V(!format.validate(), false);
 
 	// This will be the format used to create the next file if not found on open()
@@ -381,7 +381,7 @@ Error RegionFile::save_block(Vector3i position, VoxelBuffer &block) {
 	ERR_FAIL_COND_V(_header.format.verify_block(block) == false, ERR_INVALID_PARAMETER);
 	ERR_FAIL_COND_V(!is_valid_block_position(position), ERR_INVALID_PARAMETER);
 
-	ERR_FAIL_COND_V(_file_access == nullptr, ERR_FILE_CANT_WRITE);
+	ERR_FAIL_COND_V(_file_access.is_null(), ERR_FILE_CANT_WRITE);
 	FileAccess &f = **_file_access;
 
 	// We should be allowed to migrate before write operations
@@ -515,7 +515,7 @@ void RegionFile::remove_sectors_from_block(Vector3i block_pos, unsigned int p_se
 	// So if a block has 5 sectors and we remove 2, the first 3 will be preserved.
 	// Then all following sectors are moved earlier in the file to fill the gap.
 
-	CRASH_COND(_file_access == nullptr);
+	CRASH_COND(_file_access.is_null());
 	CRASH_COND(p_sector_count <= 0);
 
 	FileAccess &f = **_file_access;
@@ -684,7 +684,7 @@ bool RegionFile::has_block(unsigned int index) const {
 // Checks to detect some corruption signs in the file
 void RegionFile::debug_check() {
 	ERR_FAIL_COND(!is_open());
-	ERR_FAIL_COND(_file_access == nullptr);
+	ERR_FAIL_COND(_file_access.is_null());
 	FileAccess &f = **_file_access;
 	const size_t file_len = f.get_length();
 

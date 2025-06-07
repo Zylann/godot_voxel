@@ -28,9 +28,10 @@ inline void get_resource_configuration_warnings(
 
 	const int current_size = warnings.size();
 	if (current_size != prev_size) {
+		// New warnings were added
 		String context = get_context_string_func();
 		for (int i = prev_size; i < current_size; ++i) {
-			String w = context + warnings[i];
+			const String w = context + warnings[i];
 #if defined(ZN_GODOT)
 			warnings.write[i] = w;
 #elif defined(ZN_GODOT_EXTENSION)

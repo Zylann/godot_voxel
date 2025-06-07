@@ -1,5 +1,5 @@
-#ifndef VOXEL_MATERIAL_FUNCS_4I4W_H
-#define VOXEL_MATERIAL_FUNCS_4I4W_H
+#ifndef VOXEL_MIXEL4_H
+#define VOXEL_MIXEL4_H
 
 #include "../util/containers/fixed_array.h"
 #include "../util/math/funcs.h"
@@ -10,6 +10,8 @@
 namespace zylann::voxel {
 
 class VoxelBuffer;
+
+namespace mixel4 {
 
 inline FixedArray<uint8_t, 4> decode_weights_from_packed_u16(uint16_t packed_weights) {
 	FixedArray<uint8_t, 4> weights;
@@ -178,6 +180,26 @@ inline void blend_texture_packed_u16(
 
 void debug_check_texture_indices_packed_u16(const VoxelBuffer &voxels);
 
+constexpr inline uint16_t make_encoded_weights_for_single_texture() {
+	return encode_weights_to_packed_u16_lossy(255, 0, 0, 0);
+}
+
+constexpr inline uint16_t make_encoded_indices_for_single_texture(uint8_t index) {
+	// Make sure other indices are different so the weights associated with them don't override the first
+	// index's weight.
+	const uint8_t index1 = (index + 1) & 0xf;
+	const uint8_t index2 = (index + 2) & 0xf;
+	const uint8_t index3 = (index + 3) & 0xf;
+	const uint16_t encoded_indices = encode_indices_to_packed_u16(index, index1, index2, index3);
+	return encoded_indices;
+	// Note: an alternative would be to snap indices so that the first one is multiple of 4 and following ones are
+	// consecutive. That would minimize the changes in indices layout while keeping them sorted, which could in turn
+	// reduce the amount of seams the mesher might have to make. However it needs to involve weights too instead of
+	// assuming the relevant slot will be the first one. Haven't done that for now as it's not high priority, and it's
+	// likely for the format to change to become simpler instead
+}
+
+} // namespace mixel4
 } // namespace zylann::voxel
 
-#endif // VOXEL_MATERIAL_FUNCS_4I4W_H
+#endif // VOXEL_MIXEL4_H

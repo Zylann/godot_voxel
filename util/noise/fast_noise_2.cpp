@@ -10,6 +10,8 @@ namespace zylann {
 FastNoise2::FastNoise2() {
 	// Setup default
 	update_generator();
+	// https://github.com/Auburn/FastNoise2/issues/136
+	_generator->GetSIMDLevel();
 }
 
 void FastNoise2::set_encoded_node_tree(String data) {
@@ -555,10 +557,6 @@ math::Interval FastNoise2::get_estimated_output_range() const {
 	}
 }
 
-String FastNoise2::_b_get_simd_level_name(SIMDLevel level) {
-	return get_simd_level_name(level);
-}
-
 real_t FastNoise2::_zn_get_noise_1d(real_t p_x) const {
 	return get_noise_2d_single(Vector2(p_x, 0.0));
 }
@@ -808,10 +806,13 @@ void FastNoise2::_bind_methods() {
 	// TODO Rename `get_image_3d_simd`, or have Godot expose get_image* functions as virtual
 	ClassDB::bind_method(D_METHOD("generate_image", "image", "tileable"), &FastNoise2::generate_image);
 
-	ClassDB::bind_method(D_METHOD("get_simd_level_name", "level"), &FastNoise2::_b_get_simd_level_name);
-
 	ClassDB::bind_method(D_METHOD("update_generator"), &FastNoise2::update_generator);
 
+	ClassDB::bind_method(D_METHOD("get_simd_level"), &FastNoise2::get_simd_level);
+
+	ClassDB::bind_static_method(
+			FastNoise2::get_class_static(), D_METHOD("get_simd_level_name", "level"), &FastNoise2::get_simd_level_name
+	);
 	// ClassDB::bind_method(D_METHOD("_on_warp_noise_changed"), &FastNoiseLite::_on_warp_noise_changed);
 
 	ADD_PROPERTY(

@@ -87,6 +87,68 @@ You can choose to export materials from here too, but it is recommended to do it
 !!! warning
 	If your voxels use mesh-based physics (GodotPhysics, Jolt...) and you export your game with "Export as dedicated server" in the resources tab of an export preset, make sure meshes you used in `VoxelBlockyModelMesh` are **not** stripped. Mesh data is required at runtime to generate colliders. If you don't do this, models using a mesh will not generate any mesh-based collision.
 
+
+### Fluids
+
+If you need to make flowing water with different levels and a similar style as Minecraft, [VoxelBlockyModelFluid](api/VoxelBlockyModelFluid.md) is available.
+Top corners of fluid voxels will be raised to match the highest neighbor fluid of the same type.
+
+This is a procedural model, so less data is precomputed and is instead calculated by the mesher on every block update. This is because when fluids have more than a few levels, precomputed models would require so many variations that it wouldn't be worth it.
+
+!!! note
+	Like the rest of models, fluids won't simulate behavior on their own. That part is for you to implement.
+
+
+#### Library setup
+
+Fluid models works a bit differently than regular models. First you have to create a [VoxelBlockyFluid](api/VoxelBlockyFluid.md) resource, and save it as a `.tres` file.
+
+Then, in your library, create a [VoxelBlockyModelFluid](api/VoxelBlockyModelFluid.md) for every level your fluid has, setting their `fluid` and `level` properties accordingly. It may be convenient for each level to have consecutive IDs, but it is not required. 
+It is important that you share the same fluid on the `fluid` property (which is easier if the fluid resource is a file). This way, the mesher will recognize each model as part of the same fluid.
+
+To avoid issues with side culling, make sure fluid models also have a `transparency_index` higher than solid blocks.
+
+
+#### Material setup
+
+[VoxelBlockyFluid](api/VoxelBlockyFluid.md) has a `material` property, which will be used for every model part of that fluid.
+
+In order to flow in the right direction and animate, you have to use a `ShaderMaterial` with a special shader. Instead of filling `UV` with texture coordinates, the mesher will store flowing information:
+
+- `UV.x` = which axis to project textures on. 0=x, 1=y, 2=z (this could also be deduced from the vertex normal).
+- `UV.y` = flowing state. Tells which direction the flow is going, or if it's not moving.
+
+Flow state      | Value
+----------------|--------
+Straight +X     | 0
+Diagonal +X -Z  | 1
+Straight -Z     | 2
+Diagonal -X -Z  | 3
+Straight -X     | 4
+Diagonal -X +Z  | 5
+Straight +Z     | 6
+Diagonal +X +Z  | 7
+Idle            | 8
+
+Values are chosen such that they are proportional to an angle.
+
+![Screenshot of 3x3 water voxels flowing outwards from the center, and flowing state numbers laid out on top. OpenGL axes are indicated too, with X going right and Z going down. Flowing states start at 0 on the right, and increment counter-clockwise, where 8 is at the center.](images/blocky_fluid_flowing_states.webp)
+
+Based on this, it is possible to orient and animate a water texture, using local vertex coordinates instead to sample pixels (similar to triplanar mapping).
+This mostly matters for the top side of fluid voxels. Lateral sides will always flow down, and the bottom side will always be idle.
+It is up to you to tweak the shader if you want the result to look different, for example if you want flowing textures to be different than the idle texture.
+
+TODO Example scene
+
+
+#### Limitations
+
+- The maximum number of levels is limited (see [VoxelBlockyModelFluid](api/VoxelBlockyModelFluid.md) API)
+- The maximum number of fluids is limited (see [VoxelBlockyLibraryBase](api/VoxelBlockyLibraryBase.md) API)
+- Normals of the top side of fluid voxels remain the same as if it was flat. Only corner positions are displaced. As a result, shading of the top won't change with slope. This is currently not implemented for performance reasons, until a fast method is found (note: Minecraft seems to have done the same choice).
+- Currently no backfaces are generated. In Minecraft, water actually has both backfaces and front faces, which are culled differently in certain edge cases. Currently the engine doesn't differenciate the two. A workaround people often try is to disable backface culling entirely in the water material, but that might lead to other issues. For more details, see [issue 621](https://github.com/Zylann/godot_voxel/issues/621)
+
+
 ### Usage of voxel model IDs
 
 Voxel IDs defined in a `VoxelBlockyLibrary` are like tiles in a tilemap: for simple games, they can directly correspond to a type of block. However, you may want to avoid treating them directly this way over time. Instead, you may define your own list of block types, and each type can correspond to one, or multiple `VoxelBlockyModel` IDs. 
@@ -138,9 +200,7 @@ Here is that same group of leaves with `culls_neighbors=false`. The sides in-bet
 
 ![Screenshot of leaves with culls_neighbors set to false](images/culls_neighbors_disabled.webp)
 
-### Limitations
-
-#### Culling
+### Culling limitations
 
 While the blocky mesher will attempt to cull neighbor faces when they cover each other, it won't actually cut them out perfectly like CSG nodes. If you have two slabs touching each other on the side, both sides will be removed.
 
@@ -155,19 +215,6 @@ This is mainly because the engine doesn't have time to do full "CSG" on every po
 This can be problematic if models need transparency because it exposes the underlying geometry. There is currently no way to avoid it, other than not having this situation in the game. For example, in Minecraft, there are no glass slabs or staircases, and water flows such that model sides always match.
 
 Another more minor detail is how matching faces are detected. During baking of the library, the engine uses rasterization to check if two sides have the same shape, so it can gather all shapes of the whole library and compare them all against each other quickly, generating a "culling" matrix that the mesher will be able to use. If you rely on very small triangles or very detailed faces, the result might not work out perfectly in certain cases.
-
-
-#### Fluids
-
-Doing dynamic water is currently not well supported. You can have transparent models, but it is often desired for water to have different levels and be able to flow.
-
-The logic of flowing is up to you at the moment. It's something that is normally handled with a system of block updates, where flowing water is just one kind of update that propagates to neighbor locations.
-
-Rendering water is tricky because in order to look like Minecraft, it would need a lot of models due to all the combinations of levels on 4 sides. Currently options are to either generate those models using a script, or to use only flat levels looking like "staircases". The latter is however affected by [culling limitations](#culling-limitations).
-
-Another tricky part with water relates to backfaces. In Minecraft, water actually has both backfaces and front faces, which are culled differently in certain edge cases. Currently the engine doesn't differenciate the two. A workaround people often try is to disable backface culling entirely in the water material, but that leads to other issues. For more details, see [issue 621](https://github.com/Zylann/godot_voxel/issues/621)
-
-Dedicated fluid models or procedural models to help with the rendering part might be implemented in the future.
 
 
 ### Random tick

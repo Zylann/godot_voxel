@@ -1,21 +1,15 @@
-#ifndef ZYLANN_VECTOR3I_H
-#define ZYLANN_VECTOR3I_H
+#ifndef ZN_MATH_VECTOR3I_H
+#define ZN_MATH_VECTOR3I_H
 
+#include "../containers/span.h"
+#include "../godot/core/vector3.h"
+#include "../godot/core/vector3i.h"
+#include "../godot/macros.h"
 #include "../hash_funcs.h"
+#include "../macros.h"
+#include "../string/std_stringstream.h"
 #include "funcs.h"
 #include <functional> // For std::hash
-
-#if defined(ZN_GODOT)
-#include <core/math/vector3.h>
-#include <core/math/vector3i.h>
-#elif defined(ZN_GODOT_EXTENSION)
-#include <godot_cpp/variant/vector3.hpp>
-#include <godot_cpp/variant/vector3i.hpp>
-using namespace godot;
-#endif
-
-#include "../godot/macros.h"
-#include "../string/std_stringstream.h"
 
 namespace zylann {
 namespace Vector3iUtil {
@@ -150,6 +144,7 @@ inline Vector3i rotate_z_90_cw(Vector3i v) {
 }
 
 Vector3i rotate_90(Vector3i v, Axis axis, bool clockwise);
+void rotate_90(Span<Vector3i> vecs, const Axis axis, const bool clockwise);
 
 inline int manhattan_distance(const Vector3i &a, const Vector3i &b) {
 	return Math::abs(a.x - b.x) + Math::abs(a.y - b.y) + Math::abs(a.z - b.z);
@@ -158,6 +153,10 @@ inline int manhattan_distance(const Vector3i &a, const Vector3i &b) {
 inline int chebyshev_distance(const Vector3i &a, const Vector3i &b) {
 	// In Chebyshev metric, points on the surface of a cube are all equidistant to its center
 	return math::max(math::max(Math::abs(a.x - b.x), Math::abs(a.y - b.y)), Math::abs(a.z - b.z));
+}
+
+inline int dot(const Vector3i &a, const Vector3i &b) {
+	return a.x * b.x + a.y * b.y + a.z * b.z;
 }
 
 } // namespace math
@@ -222,4 +221,4 @@ struct hash<Vector3i> {
 };
 } // namespace std
 
-#endif // ZYLANN_VECTOR3I_H
+#endif // ZN_MATH_VECTOR3I_H

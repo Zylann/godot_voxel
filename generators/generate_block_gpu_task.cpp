@@ -1,17 +1,22 @@
-#include "generate_block_gpu_task.h"
 #include "../engine/gpu/compute_shader.h"
 #include "../engine/gpu/compute_shader_parameters.h"
 #include "../engine/voxel_engine.h"
 #include "../meshers/mesh_block_task.h"
-#include "../modifiers/voxel_modifier.h"
-#include "../storage/materials_4i4w.h"
+#include "../storage/mixel4.h"
 #include "../util/dstack.h"
+#include "../util/godot/classes/rendering_device.h"
 #include "../util/godot/core/packed_arrays.h"
 #include "../util/math/conv.h"
 #include "../util/profiling.h"
 #include "../util/string/format.h"
 
-#include "../util/godot/classes/rendering_device.h"
+#ifdef VOXEL_ENABLE_MODIFIERS
+#include "../modifiers/voxel_modifier.h"
+#endif
+
+#ifdef VOXEL_ENABLE_GPU
+#include "generate_block_gpu_task.h"
+#endif
 
 namespace zylann::voxel {
 
@@ -39,7 +44,7 @@ void GenerateBlockGPUTask::prepare(GPUTaskContext &ctx) {
 	ZN_DSTACK();
 
 	ZN_ASSERT_RETURN(generator_shader != nullptr);
-	ZN_ASSERT_RETURN(generator_shader->is_valid());
+	ZN_ASSERT_RETURN(generator_shader->get_rid().is_valid());
 
 	ZN_ASSERT_RETURN(generator_shader_params != nullptr);
 	ZN_ASSERT_RETURN(generator_shader_outputs != nullptr);
@@ -116,18 +121,25 @@ void GenerateBlockGPUTask::prepare(GPUTaskContext &ctx) {
 	_generator_pipeline_rid = rd.compute_pipeline_create(generator_shader_rid);
 	ERR_FAIL_COND(!_generator_pipeline_rid.is_valid());
 
-	for (const ModifierData &modifier : modifiers) {
-		ERR_FAIL_COND(!modifier.shader_rid.is_valid());
-		const RID rid = rd.compute_pipeline_create(modifier.shader_rid);
+#ifdef VOXEL_ENABLE_MODIFIERS
+	for (const VoxelModifier::ShaderData &modifier : modifiers) {
+		const RID modifier_shader_rid = VoxelModifier::get_block_shader(ctx.base_resources, modifier.modifier_type);
+		ERR_FAIL_COND(!modifier_shader_rid.is_valid());
+		const RID rid = rd.compute_pipeline_create(modifier_shader_rid);
 		ERR_FAIL_COND(!rid.is_valid());
 		_modifier_pipelines.push_back(rid);
 	}
+#endif
 
 	// Make compute list
 
 	const int compute_list_id = rd.compute_list_begin();
 
 	// Generate
+
+#ifdef VOXEL_ENABLE_MODIFIERS
+	_uniform_sets_to_free.reserve(_boxes_data.size() * (1 + modifiers.size()));
+#endif
 
 	for (unsigned int box_index = 0; box_index < _boxes_data.size(); ++box_index) {
 		BoxData &bd = _boxes_data[box_index];
@@ -142,7 +154,9 @@ void GenerateBlockGPUTask::prepare(GPUTaskContext &ctx) {
 
 		// Additional params
 		if (generator_shader_params != nullptr && generator_shader_params->params.size() > 0) {
-			add_uniform_params(generator_shader_params->params, generator_uniforms);
+			add_uniform_params(
+					generator_shader_params->params, generator_uniforms, ctx.base_resources.filtering_sampler_rid
+			);
 		}
 
 		// Note, this internally locks RenderingDeviceVulkan's class mutex. Which means it could perhaps be used outside
@@ -150,6 +164,7 @@ void GenerateBlockGPUTask::prepare(GPUTaskContext &ctx) {
 		// Mutex (instead of BinaryMutex)
 		const RID generator_uniform_set =
 				zylann::godot::uniform_set_create(rd, generator_uniforms, generator_shader_rid, 0);
+		_uniform_sets_to_free.push_back(generator_uniform_set);
 
 		{
 			ZN_PROFILE_SCOPE_NAMED("compute_list_bind_compute_pipeline");
@@ -175,8 +190,8 @@ void GenerateBlockGPUTask::prepare(GPUTaskContext &ctx) {
 	// the barrier?
 	rd.compute_list_add_barrier(compute_list_id);
 
+#ifdef VOXEL_ENABLE_MODIFIERS
 	// Apply modifiers in-place
-
 	if (sd_output_index != -1) {
 		for (unsigned int box_index = 0; box_index < _boxes_data.size(); ++box_index) {
 			BoxData &bd = _boxes_data[box_index];
@@ -187,8 +202,10 @@ void GenerateBlockGPUTask::prepare(GPUTaskContext &ctx) {
 			Ref<RDUniform> sd_buffer0_uniform = bd.output_uniform;
 
 			for (unsigned int modifier_index = 0; modifier_index < modifiers.size(); ++modifier_index) {
-				const ModifierData &modifier_data = modifiers[modifier_index];
-				ZN_ASSERT_CONTINUE(modifier_data.shader_rid.is_valid());
+				const VoxelModifier::ShaderData &modifier_data = modifiers[modifier_index];
+				const RID modifier_shader_rid =
+						VoxelModifier::get_block_shader(ctx.base_resources, modifier_data.modifier_type);
+				ZN_ASSERT_CONTINUE(modifier_shader_rid.is_valid());
 
 				bd.params_uniform->set_binding(0);
 				sd_buffer0_uniform->set_binding(1);
@@ -200,11 +217,14 @@ void GenerateBlockGPUTask::prepare(GPUTaskContext &ctx) {
 
 				// Extra params
 				if (modifier_data.params != nullptr) {
-					add_uniform_params(modifier_data.params->params, modifier_uniforms);
+					add_uniform_params(
+							modifier_data.params->params, modifier_uniforms, ctx.base_resources.filtering_sampler_rid
+					);
 				}
 
 				const RID modifier_uniform_set =
-						zylann::godot::uniform_set_create(rd, modifier_uniforms, modifier_data.shader_rid, 0);
+						zylann::godot::uniform_set_create(rd, modifier_uniforms, modifier_shader_rid, 0);
+				_uniform_sets_to_free.push_back(modifier_uniform_set);
 
 				const RID pipeline_rid = _modifier_pipelines[modifier_index];
 				rd.compute_list_bind_compute_pipeline(compute_list_id, pipeline_rid);
@@ -216,6 +236,7 @@ void GenerateBlockGPUTask::prepare(GPUTaskContext &ctx) {
 			}
 		}
 	}
+#endif
 
 	rd.compute_list_end();
 }
@@ -280,7 +301,7 @@ void convert_gpu_output_sdf(VoxelBuffer &dst, Span<const float> src_data_f, cons
 
 void convert_gpu_output_single_texture(VoxelBuffer &dst, Span<const float> src_data_f, const Box3i &box) {
 	ZN_PROFILE_SCOPE();
-	const uint16_t encoded_weights = encode_weights_to_packed_u16_lossy(255, 0, 0, 0);
+	const uint16_t encoded_weights = mixel4::make_encoded_weights_for_single_texture();
 	dst.fill_area(encoded_weights, box.position, box.position + box.size, VoxelBuffer::CHANNEL_WEIGHTS);
 
 	// Little hack: the destination type is smaller than float, so we can convert in place.
@@ -288,10 +309,7 @@ void convert_gpu_output_single_texture(VoxelBuffer &dst, Span<const float> src_d
 
 	for (unsigned int value_index = 0; value_index < src_data_f.size(); ++value_index) {
 		const uint8_t index = math::clamp(int(Math::round(src_data_f[value_index])), 0, 15);
-		// Make sure other indices are different so the weights associated with them don't override the first
-		// index's weight
-		const uint8_t other_index = (index == 0 ? 1 : 0);
-		const uint16_t encoded_indices = encode_indices_to_packed_u16(index, other_index, other_index, other_index);
+		const uint16_t encoded_indices = mixel4::make_encoded_indices_for_single_texture(index);
 		src_data_u16[value_index] = encoded_indices;
 	}
 
@@ -458,7 +476,11 @@ void GenerateBlockGPUTask::collect(GPUTaskContext &ctx) {
 
 	zylann::godot::free_rendering_device_rid(rd, _generator_pipeline_rid);
 
-	for (RID rid : _modifier_pipelines) {
+	for (const RID &rid : _modifier_pipelines) {
+		zylann::godot::free_rendering_device_rid(rd, rid);
+	}
+
+	for (const RID &rid : _uniform_sets_to_free) {
 		zylann::godot::free_rendering_device_rid(rd, rid);
 	}
 

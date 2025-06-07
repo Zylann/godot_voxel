@@ -7,12 +7,18 @@ Singleton holding common settings and handling voxel processing tasks in backgro
 ## Methods: 
 
 
-Return                                                                              | Signature                                           
------------------------------------------------------------------------------------ | ----------------------------------------------------
-[Dictionary](https://docs.godotengine.org/en/stable/classes/class_dictionary.html)  | [get_stats](#i_get_stats) ( ) const                 
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)                | [get_version_major](#i_get_version_major) ( ) const 
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)                | [get_version_minor](#i_get_version_minor) ( ) const 
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)                | [get_version_patch](#i_get_version_patch) ( ) const 
+Return                                                                              | Signature                                                                                                                 
+----------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------
+[Dictionary](https://docs.godotengine.org/en/stable/classes/class_dictionary.html)  | [get_stats](#i_get_stats) ( ) const                                                                                       
+[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)              | [get_threaded_graphics_resource_building_enabled](#i_get_threaded_graphics_resource_building_enabled) ( ) const           
+[String](https://docs.godotengine.org/en/stable/classes/class_string.html)          | [get_version_edition](#i_get_version_edition) ( ) const                                                                   
+[String](https://docs.godotengine.org/en/stable/classes/class_string.html)          | [get_version_git_hash](#i_get_version_git_hash) ( ) const                                                                 
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)                | [get_version_major](#i_get_version_major) ( ) const                                                                       
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)                | [get_version_minor](#i_get_version_minor) ( ) const                                                                       
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)                | [get_version_patch](#i_get_version_patch) ( ) const                                                                       
+[String](https://docs.godotengine.org/en/stable/classes/class_string.html)          | [get_version_status](#i_get_version_status) ( ) const                                                                     
+[Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html)      | [get_version_v](#i_get_version_v) ( ) const                                                                               
+[void](#)                                                                           | [run_tests](#i_run_tests) ( [Dictionary](https://docs.godotengine.org/en/stable/classes/class_dictionary.html) options )  
 <p></p>
 
 ## Method Descriptions
@@ -37,7 +43,8 @@ The returned dictionary has the following structure:
 		"streaming": int,
 		"meshing": int,
 		"generation": int,
-		"main_thread": int
+		"main_thread": int,
+		"gpu": int
 	},
 	"memory_pools": {
 		"voxel_used": int,
@@ -49,6 +56,18 @@ The returned dictionary has the following structure:
 	}
 }
 ```
+
+### [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_get_threaded_graphics_resource_building_enabled"></span> **get_threaded_graphics_resource_building_enabled**( ) 
+
+Tells if the voxel engine is able to create graphics resources from different threads. This will usually be true if the current renderer's thread model is safe or multi-threaded, but might also be false if the renderer would poorly benefit from this (such as legacy OpenGL).
+
+### [String](https://docs.godotengine.org/en/stable/classes/class_string.html)<span id="i_get_version_edition"></span> **get_version_edition**( ) 
+
+Tells the edition of the voxel engine, which is either of the following: `module`, `extension`
+
+### [String](https://docs.godotengine.org/en/stable/classes/class_string.html)<span id="i_get_version_git_hash"></span> **get_version_git_hash**( ) 
+
+Gets the Git hash that was used to compile the voxel engine.
 
 ### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_get_version_major"></span> **get_version_major**( ) 
 
@@ -62,4 +81,16 @@ Gets the minor version number of the voxel engine. For example, in `1.2.0`, `2` 
 
 Gets the patch version number of the voxel engine. For example, in `1.2.0`, `0` is the patch version.
 
-_Generated on Aug 27, 2024_
+### [String](https://docs.godotengine.org/en/stable/classes/class_string.html)<span id="i_get_version_status"></span> **get_version_status**( ) 
+
+Gets the version status, which may be one of the following: `dev`, `release`
+
+### [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html)<span id="i_get_version_v"></span> **get_version_v**( ) 
+
+Gets the major (x), minor (y) and patch (z) version numbers of the voxel engine as a single vector. May be useful for comparisons.
+
+### [void](#)<span id="i_run_tests"></span> **run_tests**( [Dictionary](https://docs.godotengine.org/en/stable/classes/class_dictionary.html) options ) 
+
+Runs internal unit tests. This function is only available if the voxel engine is compiled with `voxel_tests=true`.
+
+_Generated on May 15, 2025_

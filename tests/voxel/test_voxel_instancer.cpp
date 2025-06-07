@@ -1,7 +1,7 @@
 #include "test_voxel_instancer.h"
 #include "../../streams/instance_data.h"
 #include "../../util/math/conv.h"
-#include "../testing.h"
+#include "../../util/testing/test_macros.h"
 
 namespace zylann::voxel::tests {
 

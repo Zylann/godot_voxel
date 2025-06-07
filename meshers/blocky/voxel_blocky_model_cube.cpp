@@ -1,6 +1,8 @@
 #include "voxel_blocky_model_cube.h"
 #include "../../util/containers/container_funcs.h"
 #include "../../util/math/conv.h"
+#include "blocky_material_indexer.h"
+#include "blocky_model_baking_context.h"
 #include "voxel_blocky_model_mesh.h"
 
 namespace zylann::voxel {
@@ -114,12 +116,34 @@ float VoxelBlockyModelCube::get_height() const {
 	return _height;
 }
 
-namespace {
-
-Cube::Side get_rotated_side(const Cube::Side src_side, const math::OrthoBasis ortho_basis) {
-	const Vector3i dir = ortho_basis.xform(Cube::g_side_normals[src_side]);
-	return Cube::dir_to_side(dir);
+void make_cube_side_vertices(StdVector<Vector3f> &positions, const unsigned int side_index, const float height) {
+	positions.resize(4);
+	for (unsigned int i = 0; i < 4; ++i) {
+		const int corner = Cube::g_side_corners[side_index][i];
+		Vector3f p = Cube::g_corner_position[corner];
+		if (p.y > 0.9) {
+			p.y = height;
+		}
+		positions[i] = p;
+	}
 }
+
+void make_cube_side_indices(StdVector<int> &indices, const unsigned int side_index) {
+	indices.resize(6);
+	for (unsigned int i = 0; i < 6; ++i) {
+		indices[i] = Cube::g_side_quad_triangles[side_index][i];
+	}
+}
+
+void make_cube_side_tangents(StdVector<float> &tangents, const unsigned int side_index) {
+	for (unsigned int i = 0; i < 4; ++i) {
+		for (unsigned int j = 0; j < 4; ++j) {
+			tangents.push_back(Cube::g_side_tangents[side_index][j]);
+		}
+	}
+}
+
+namespace {
 
 void add(Span<Vector3f> vecs, Vector3f a) {
 	for (Vector3f &v : vecs) {
@@ -127,69 +151,81 @@ void add(Span<Vector3f> vecs, Vector3f a) {
 	}
 }
 
+} // namespace
+
+namespace blocky {
+
+void make_cube_sides_vertices_tangents(
+		Span<FixedArray<BakedModel::SideSurface, MAX_SURFACES>> sides_surfaces,
+		const float height,
+		const bool bake_tangents
+) {
+	for (unsigned int side = 0; side < Cube::SIDE_COUNT; ++side) {
+		BakedModel::SideSurface &side_surface = sides_surfaces[side][0];
+		make_cube_side_vertices(side_surface.positions, side, height);
+		make_cube_side_indices(side_surface.indices, side);
+		if (bake_tangents) {
+			make_cube_side_tangents(side_surface.tangents, side);
+		}
+	}
+}
+
+Cube::Side get_rotated_side(const Cube::Side src_side, const math::OrthoBasis ortho_basis) {
+	const Vector3i dir = ortho_basis.xform(Cube::g_side_normals[src_side]);
+	return Cube::dir_to_side(dir);
+}
+
 void rotate_ortho(
-		FixedArray<VoxelBlockyModel::BakedData::SideSurface, Cube::SIDE_COUNT> &sides,
+		FixedArray<FixedArray<BakedModel::SideSurface, VoxelBlockyModel::MAX_SURFACES>, Cube::SIDE_COUNT>
+				&sides_surfaces,
 		const unsigned int ortho_rotation_index
 ) {
 	const math::OrthoBasis ortho_basis = math::get_ortho_basis_from_index(ortho_rotation_index);
 	const Basis3f basis(to_vec3f(ortho_basis.x), to_vec3f(ortho_basis.y), to_vec3f(ortho_basis.z));
 
-	FixedArray<VoxelBlockyModel::BakedData::SideSurface, Cube::SIDE_COUNT> rotated_sides;
+	FixedArray<FixedArray<BakedModel::SideSurface, MAX_SURFACES>, Cube::SIDE_COUNT> rotated_sides_surfaces;
 
 	for (unsigned int side = 0; side < Cube::SIDE_COUNT; ++side) {
-		VoxelBlockyModel::BakedData::SideSurface &side_surface = sides[side];
+		FixedArray<BakedModel::SideSurface, MAX_SURFACES> &surfaces = sides_surfaces[side];
 
 		FixedArray<Vector3f, 4> normals;
 		for (Vector3f &n : normals) {
 			n = to_vec3f(Cube::g_side_normals[side]);
 		}
 
-		// Move mesh to origin for easier rotation, since the baked mesh spans 0..1 instead of -0.5..0.5
-		add(to_span(side_surface.positions), Vector3f(-0.5));
-		rotate_mesh_arrays(to_span(side_surface.positions), to_span(normals), to_span(side_surface.tangents), basis);
-		add(to_span(side_surface.positions), Vector3f(0.5));
+		unsigned int surface_index = 0;
+		for (BakedModel::SideSurface &surface : surfaces) {
+			// Move mesh to origin for easier rotation, since the baked mesh spans 0..1 instead of -0.5..0.5
+			add(to_span(surface.positions), Vector3f(-0.5));
+			rotate_mesh_arrays(to_span(surface.positions), to_span(normals), to_span(surface.tangents), basis);
+			add(to_span(surface.positions), Vector3f(0.5));
 
-		const Cube::Side dst_side = get_rotated_side(static_cast<Cube::Side>(side), ortho_basis);
-		rotated_sides[dst_side] = std::move(side_surface);
+			const Cube::Side dst_side = get_rotated_side(static_cast<Cube::Side>(side), ortho_basis);
+			rotated_sides_surfaces[dst_side][surface_index] = std::move(surface);
+			++surface_index;
+		}
 	}
 
-	sides = std::move(rotated_sides);
+	sides_surfaces = std::move(rotated_sides_surfaces);
 }
 
 void bake_cube_geometry(
 		const VoxelBlockyModelCube &config,
-		VoxelBlockyModel::BakedData &baked_data,
+		BakedModel &baked_data,
 		Vector2i p_atlas_size,
-		VoxelBlockyModel::MaterialIndexer &material_indexer,
+		MaterialIndexer &material_indexer,
 		bool bake_tangents
 ) {
 	const float height = config.get_height();
 
 	baked_data.model.surface_count = 1;
-	VoxelBlockyModel::BakedData::Surface &surface = baked_data.model.surfaces[0];
-	// The only way to specify matererials in this model is via "material overrides", since there is no base mesh.
+
+	BakedModel::Surface &surface = baked_data.model.surfaces[0];
+	// The only way to specify materials in this model is via "material overrides", since there is no base mesh.
 	// Even if none are specified, we should at least index the "empty" material.
 	surface.material_id = material_indexer.get_or_create_index(config.get_material_override(0));
 
-	for (unsigned int side = 0; side < Cube::SIDE_COUNT; ++side) {
-		VoxelBlockyModel::BakedData::SideSurface &side_surface = surface.sides[side];
-		StdVector<Vector3f> &positions = side_surface.positions;
-		positions.resize(4);
-		for (unsigned int i = 0; i < 4; ++i) {
-			int corner = Cube::g_side_corners[side][i];
-			Vector3f p = Cube::g_corner_position[corner];
-			if (p.y > 0.9) {
-				p.y = height;
-			}
-			positions[i] = p;
-		}
-
-		StdVector<int> &indices = side_surface.indices;
-		indices.resize(6);
-		for (unsigned int i = 0; i < 6; ++i) {
-			indices[i] = Cube::g_side_quad_triangles[side][i];
-		}
-	}
+	make_cube_sides_vertices_tangents(to_span(baked_data.model.sides_surfaces), config.get_height(), bake_tangents);
 
 	const float e = 0.001;
 	// Winding is the same as the one chosen in Cube:: vertices
@@ -216,7 +252,7 @@ void bake_cube_geometry(
 	const Vector2f s = Vector2f(1.0f) / atlas_size;
 
 	for (unsigned int side = 0; side < Cube::SIDE_COUNT; ++side) {
-		VoxelBlockyModel::BakedData::SideSurface &side_surface = surface.sides[side];
+		blocky::BakedModel::SideSurface &side_surface = baked_data.model.sides_surfaces[side][0];
 		StdVector<Vector2f> &uvs = side_surface.uvs;
 		uvs.resize(4);
 
@@ -225,30 +261,24 @@ void bake_cube_geometry(
 		for (unsigned int i = 0; i < 4; ++i) {
 			uvs[i] = (to_vec2f(config.get_tile(VoxelBlockyModel::Side(side))) + uv_norm[i]) * s;
 		}
-
-		if (bake_tangents) {
-			StdVector<float> &tangents = side_surface.tangents;
-			for (unsigned int i = 0; i < 4; ++i) {
-				for (unsigned int j = 0; j < 4; ++j) {
-					tangents.push_back(Cube::g_side_tangents[side][j]);
-				}
-			}
-		}
 	}
 
 	if (config.get_mesh_ortho_rotation_index() != 0) {
-		rotate_ortho(surface.sides, config.get_mesh_ortho_rotation_index());
+		rotate_ortho(baked_data.model.sides_surfaces, config.get_mesh_ortho_rotation_index());
 	}
 
 	baked_data.empty = false;
 }
 
-} // namespace
+} // namespace blocky
 
-void VoxelBlockyModelCube::bake(BakedData &baked_data, bool bake_tangents, MaterialIndexer &materials) const {
+void VoxelBlockyModelCube::bake(blocky::ModelBakingContext &ctx) const {
+	blocky::BakedModel &baked_data = ctx.model;
+
 	baked_data.clear();
-	bake_cube_geometry(*this, baked_data, _atlas_size_in_tiles, materials, bake_tangents);
-	VoxelBlockyModel::bake(baked_data, bake_tangents, materials);
+
+	bake_cube_geometry(*this, baked_data, _atlas_size_in_tiles, ctx.material_indexer, ctx.tangents_enabled);
+	VoxelBlockyModel::bake(ctx);
 }
 
 bool VoxelBlockyModelCube::is_empty() const {
@@ -258,10 +288,10 @@ bool VoxelBlockyModelCube::is_empty() const {
 Ref<Mesh> VoxelBlockyModelCube::get_preview_mesh() const {
 	const bool bake_tangents = false;
 
-	VoxelBlockyModel::BakedData baked_data;
+	blocky::BakedModel baked_data;
 	baked_data.color = get_color();
 	StdVector<Ref<Material>> materials;
-	MaterialIndexer material_indexer{ materials };
+	blocky::MaterialIndexer material_indexer{ materials };
 	bake_cube_geometry(*this, baked_data, _atlas_size_in_tiles, material_indexer, bake_tangents);
 
 	Ref<Mesh> mesh = make_mesh_from_baked_data(baked_data, bake_tangents);
@@ -299,7 +329,7 @@ void VoxelBlockyModelCube::rotate_tiles_ortho(const math::OrthoBasis ortho_basis
 	FixedArray<Vector2i, Cube::SIDE_COUNT> rotated_tiles;
 
 	for (unsigned int src_side = 0; src_side < Cube::SIDE_COUNT; ++src_side) {
-		Cube::Side dst_side = get_rotated_side(static_cast<Cube::Side>(src_side), ortho_basis);
+		const Cube::Side dst_side = blocky::get_rotated_side(static_cast<Cube::Side>(src_side), ortho_basis);
 		rotated_tiles[dst_side] = _tiles[src_side];
 	}
 

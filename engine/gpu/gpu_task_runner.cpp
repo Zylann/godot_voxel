@@ -1,10 +1,14 @@
 #include "gpu_task_runner.h"
 #include "../../util/dstack.h"
 #include "../../util/errors.h"
+#include "../../util/godot/classes/rd_sampler_state.h"
 #include "../../util/godot/classes/rendering_device.h"
+#include "../../util/godot/classes/rendering_server.h"
 #include "../../util/math/funcs.h"
 #include "../../util/memory/memory.h"
 #include "../../util/profiling.h"
+
+#include "../../shaders/shaders.h"
 
 namespace zylann::voxel {
 
@@ -13,17 +17,16 @@ GPUTaskRunner::GPUTaskRunner() {}
 GPUTaskRunner::~GPUTaskRunner() {
 	stop();
 
+	// There shouldn't be any tasks at this point, we delete them in the thread before destroying the RenderingDevice.
+	// But in theory nothing prevents tasks from being added yet after that...
 	for (IGPUTask *task : _shared_tasks) {
 		ZN_DELETE(task);
 	}
 }
 
-void GPUTaskRunner::start(RenderingDevice *rd, GPUStorageBufferPool *pool) {
-	ZN_ASSERT(rd != nullptr);
-	ZN_ASSERT(pool != nullptr);
+void GPUTaskRunner::start() {
 	ZN_ASSERT(!_running);
-	_rendering_device = rd;
-	_storage_buffer_pool = pool;
+	ZN_PRINT_VERBOSE("Starting GPUTaskRunner");
 	_running = true;
 	_thread.start(
 			[](void *p_userdata) {
@@ -44,6 +47,10 @@ void GPUTaskRunner::stop() {
 	_thread.wait_to_finish();
 }
 
+bool GPUTaskRunner::is_running() const {
+	return _running;
+}
+
 void GPUTaskRunner::push(IGPUTask *task) {
 	ZN_ASSERT_RETURN(task != nullptr);
 	MutexLock mlock(_mutex);
@@ -56,9 +63,37 @@ unsigned int GPUTaskRunner::get_pending_task_count() const {
 	return _pending_count;
 }
 
+// RenderingDevice *GPUTaskRunner::get_rendering_device() const {
+// 	MutexLock mlock(_rendering_device_ptr_mutex);
+// 	return _rendering_device;
+// }
+
+bool GPUTaskRunner::has_rendering_device() const {
+	return _has_rendering_device;
+}
+
 void GPUTaskRunner::thread_func() {
 	ZN_PROFILE_SET_THREAD_NAME("Voxel GPU tasks");
 	ZN_DSTACK();
+
+	{
+		ZN_PRINT_VERBOSE("Creating Voxel RenderingDevice");
+		// MutexLock mlock(_rendering_device_ptr_mutex);
+		// We have to create this RenderingDevice in the same thread where we'll use it in, because otherwise it
+		// triggers errors from threading guards in some of its methods.
+		// This in turn affects a lot of other design decisions regarding how we manage resources with it...
+		_rendering_device = RenderingServer::get_singleton()->create_local_rendering_device();
+	}
+
+	if (_rendering_device == nullptr) {
+		ZN_PRINT_VERBOSE("Could not create local RenderingDevice, GPU functionality won't be supported.");
+		return;
+	}
+
+	_has_rendering_device = true;
+
+	_storage_buffer_pool.set_rendering_device(_rendering_device);
+	_base_resources.load(*_rendering_device);
 
 	StdVector<IGPUTask *> tasks;
 
@@ -91,7 +126,7 @@ void GPUTaskRunner::thread_func() {
 		}
 
 		ZN_ASSERT(_rendering_device != nullptr);
-		GPUTaskContext ctx(*_rendering_device, *_storage_buffer_pool);
+		GPUTaskContext ctx(*_rendering_device, _storage_buffer_pool, _base_resources);
 
 		for (size_t begin_index = 0; begin_index < tasks.size(); begin_index += batch_count) {
 			ZN_PROFILE_SCOPE_NAMED("Batch");
@@ -177,11 +212,102 @@ void GPUTaskRunner::thread_func() {
 		tasks.clear();
 	}
 
+	ZN_ASSERT(tasks.size() == 0);
+
+	// Cleanup
+
 	if (shared_output_storage_buffer_rid.is_valid()) {
 		godot::free_rendering_device_rid(*_rendering_device, shared_output_storage_buffer_rid);
 	}
 
-	ZN_ASSERT(tasks.size() == 0);
+	{
+		MutexLock mlock(_mutex);
+		for (IGPUTask *task : _shared_tasks) {
+			ZN_DELETE(task);
+		}
+	}
+
+	_base_resources.clear(*_rendering_device);
+
+	if (is_verbose_output_enabled()) {
+		_storage_buffer_pool.debug_print();
+	}
+
+	_storage_buffer_pool.clear();
+	_storage_buffer_pool.set_rendering_device(nullptr);
+
+	{
+		ZN_PRINT_VERBOSE("Freeing Voxel RenderingDevice");
+		// MutexLock mlock(_rendering_device_ptr_mutex);
+		memdelete(_rendering_device);
+		_rendering_device = nullptr;
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void BaseGPUResources::load(RenderingDevice &rd) {
+	ZN_PROFILE_SCOPE();
+	{
+		ZN_PROFILE_SCOPE_NAMED("Base Compute Shaders");
+
+		ZN_PRINT_VERBOSE("Loading VoxelEngine shaders");
+
+		dilate_normalmap_shader.load_from_glsl(rd, g_dilate_normalmap_shader, "zylann.voxel.dilate_normalmap");
+		detail_gather_hits_shader.load_from_glsl(rd, g_detail_gather_hits_shader, "zylann.voxel.detail_gather_hits");
+		detail_normalmap_shader.load_from_glsl(rd, g_detail_normalmap_shader, "zylann.voxel.detail_normalmap_shader");
+
+		detail_modifier_sphere_shader.load_from_glsl(
+				rd,
+				String(g_detail_modifier_shader_template_0) + String(g_modifier_sphere_shader_snippet) +
+						String(g_detail_modifier_shader_template_1),
+				"zylann.voxel.detail_modifier_sphere_shader"
+		);
+
+		detail_modifier_mesh_shader.load_from_glsl(
+				rd,
+				String(g_detail_modifier_shader_template_0) + String(g_modifier_mesh_shader_snippet) +
+						String(g_detail_modifier_shader_template_1),
+				"zylann.voxel.detail_modifier_mesh_shader"
+		);
+
+		block_modifier_sphere_shader.load_from_glsl(
+				rd,
+				String(g_block_modifier_shader_template_0) + String(g_modifier_sphere_shader_snippet) +
+						String(g_block_modifier_shader_template_1),
+				"zylann.voxel.block_modifier_sphere_shader"
+		);
+
+		block_modifier_mesh_shader.load_from_glsl(
+				rd,
+				String(g_block_modifier_shader_template_0) + String(g_modifier_mesh_shader_snippet) +
+						String(g_block_modifier_shader_template_1),
+				"zylann.voxel.block_modifier_mesh_shader"
+		);
+	}
+
+	{
+		Ref<RDSamplerState> sampler_state;
+		sampler_state.instantiate();
+		// Using samplers for their interpolation features.
+		// Otherwise I don't feel like there is a point in using one IMO.
+		sampler_state->set_mag_filter(RenderingDevice::SAMPLER_FILTER_LINEAR);
+		sampler_state->set_min_filter(RenderingDevice::SAMPLER_FILTER_LINEAR);
+		filtering_sampler_rid = zylann::godot::sampler_create(rd, **sampler_state);
+	}
+}
+
+void BaseGPUResources::clear(RenderingDevice &rd) {
+	dilate_normalmap_shader.clear(rd);
+	detail_gather_hits_shader.clear(rd);
+	detail_normalmap_shader.clear(rd);
+	detail_modifier_sphere_shader.clear(rd);
+	detail_modifier_mesh_shader.clear(rd);
+	block_modifier_sphere_shader.clear(rd);
+	block_modifier_mesh_shader.clear(rd);
+
+	zylann::godot::free_rendering_device_rid(rd, filtering_sampler_rid);
+	filtering_sampler_rid = RID();
 }
 
 } // namespace zylann::voxel

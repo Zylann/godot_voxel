@@ -8,6 +8,7 @@
 #endif
 
 #include "../../containers/span.h"
+#include <vector>
 
 namespace zylann::godot {
 
@@ -44,12 +45,20 @@ inline void copy_to(std::vector<Ref<T>, TAllocator> &dst, const TypedArray<T> &s
 }
 
 template <typename T, typename TAllocator>
-inline void copy_range_to(std::vector<Ref<T>, TAllocator> &dst, const TypedArray<T> &src, int from, int to) {
-	ZN_ASSERT(from >= 0 && from < src.size());
-	ZN_ASSERT(to >= 0 && to <= src.size());
-	ZN_ASSERT(from <= to);
-	const unsigned int len = to - from;
-	dst.resize(len);
+inline void copy_range_to(
+		std::vector<Ref<T>, TAllocator> &dst,
+		const TypedArray<T> &src,
+		const int from,
+		const int count
+) {
+	if (count == 0) {
+		dst.clear();
+		return;
+	}
+	ZN_ASSERT_RETURN(from >= 0 && from < src.size());
+	ZN_ASSERT_RETURN(count >= 0 && from + count <= src.size());
+	dst.resize(count);
+	const int to = from + count;
 	for (int i = from; i < to; ++i) {
 		dst[i - from] = src[i];
 	}
@@ -68,6 +77,20 @@ inline TypedArray<T> to_typed_array(Span<const Ref<T>> src) {
 	copy_to(array, src);
 	return array;
 }
+
+#if defined(ZN_GODOT)
+
+template <typename T>
+Vector<Ref<T>> to_ref_vector(const TypedArray<T> &typed_array) {
+	Vector<Ref<T>> refs;
+	refs.resize(typed_array.size());
+	for (int i = 0; i < typed_array.size(); ++i) {
+		refs.write[i] = typed_array[i];
+	}
+	return refs;
+}
+
+#endif
 
 } // namespace zylann::godot
 
