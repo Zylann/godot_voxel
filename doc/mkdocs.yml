@@ -57,6 +57,7 @@ nav:
     - api/VoxelColorPalette.md
     - api/VoxelDataBlockEnterInfo.md
     - api/VoxelEngine.md
+    - api/VoxelFormat.md
     - api/VoxelGenerator.md
     - api/VoxelGeneratorFlat.md
     - api/VoxelGeneratorGraph.md

@@ -1,12 +1,15 @@
 #include "voxel_generator.h"
 #include "../constants/voxel_string_names.h"
-#include "../engine/gpu/compute_shader.h"
-#include "../engine/gpu/compute_shader_parameters.h"
 #include "../shaders/shaders.h"
 #include "../storage/voxel_buffer_gd.h"
 #include "../util/godot/core/array.h" // for `varray` in GDExtension builds
 #include "../util/profiling.h"
 #include "generate_block_task.h"
+
+#ifdef VOXEL_ENABLE_GPU
+#include "../engine/gpu/compute_shader.h"
+#include "../engine/gpu/compute_shader_parameters.h"
+#endif
 
 namespace zylann::voxel {
 
@@ -64,6 +67,8 @@ void VoxelGenerator::_b_generate_block(Ref<godot::VoxelBuffer> out_buffer, Vecto
 	VoxelQueryData q = { out_buffer->get_buffer(), origin_in_voxels, uint8_t(lod) };
 	generate_block(q);
 }
+
+#ifdef VOXEL_ENABLE_GPU
 
 bool VoxelGenerator::get_shader_source(ShaderSourceData &out_params) const {
 	ZN_PRINT_ERROR("Not implemented");
@@ -291,6 +296,8 @@ void VoxelGenerator::invalidate_shaders() {
 		_block_rendering_shader_outputs.reset();
 	}
 }
+
+#endif
 
 bool VoxelGenerator::generate_broad_block(VoxelQueryData input) {
 	// By default, generators don't support this separately and just do it inside `generate_block`.

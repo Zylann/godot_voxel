@@ -23,7 +23,7 @@ Type                                                                      | Name
 
 ### [Mesh](https://docs.godotengine.org/en/stable/classes/class_mesh.html)<span id="i_mesh"></span> **mesh**
 
-Mesh that will be used for this model. Must not be empty (if you want an empty model, use [VoxelBlockyModelEmpty](VoxelBlockyModelEmpty.md)). If it has more than 2 surfaces (2 materials) the next surfaces will be ignored. Surfaces must be made of triangles. Must be indexed (if you generate meshes with [SurfaceTool](https://docs.godotengine.org/en/stable/classes/class_surfacetool.html), use [SurfaceTool.index](https://docs.godotengine.org/en/stable/classes/class_surfacetool.html#class-surfacetool-method-index)). Should ideally contain geometry within a 0..1 area. Only triangles located on the sides of that cubic area will be considered for neighbor side culling (see also [VoxelBlockyModelMesh.side_vertex_tolerance](VoxelBlockyModelMesh.md#i_side_vertex_tolerance)).
+Mesh that will be used for this model. Must not be empty (if you want an empty model, use [VoxelBlockyModelEmpty](VoxelBlockyModelEmpty.md)). If it has more than 2 surfaces (2 materials) the next surfaces will be ignored. Surfaces must be made of triangles. Must be indexed (if you generate meshes with [SurfaceTool](https://docs.godotengine.org/en/stable/classes/class_surfacetool.html), use [SurfaceTool.index](https://docs.godotengine.org/en/stable/classes/class_surfacetool.html#class-surfacetool-method-index)). Should ideally contain geometry within a 0..1 area. Only triangles located on the sides of that cubic area will be considered for neighbor side culling (see also [side_vertex_tolerance](VoxelBlockyModelMesh.md#i_side_vertex_tolerance)).
 
 ### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_mesh_ortho_rotation_index"></span> **mesh_ortho_rotation_index** = 0
 
@@ -39,4 +39,4 @@ When a neighbor voxel partially covers a side of this voxel, the occluded geomet
 
 Margin below which triangles located near one of the 6 sides of the voxel will be considered on that side. Sides get culled or not by comparing between triangles of neighbor sides.
 
-_Generated on Mar 23, 2025_
+_Generated on May 15, 2025_

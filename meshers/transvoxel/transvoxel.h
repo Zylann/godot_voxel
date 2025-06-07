@@ -16,10 +16,6 @@ namespace zylann::voxel::transvoxel {
 static const int MIN_PADDING = 1;
 // How many extra voxels are needed towards the positive axes
 static const int MAX_PADDING = 2;
-// How many textures can be referred to in total
-static const unsigned int MAX_TEXTURES = 16;
-// How many textures can blend at once
-static const unsigned int MAX_TEXTURE_BLENDS = 4;
 // Transvoxel guarantees a maximum number of triangle generated for each 2x2x2 cell of voxels.
 static const unsigned int MAX_TRIANGLES_PER_CELL = 5;
 
@@ -28,7 +24,14 @@ enum TexturingMode {
 	// Blends the 4 most-represented textures in the given block, ignoring the others.
 	// Texture indices and blend factors have 4-bit precision (maximum 16 textures and 16 transition gradients),
 	// and are respectively encoded in UV.x and UV.y.
-	TEXTURES_BLEND_4_OVER_16
+	TEXTURES_MIXEL4_S4,
+	// Each voxel has only one material index, and up to 4 can blend in shader
+	TEXTURES_SINGLE_S4,
+#ifdef VOXEL_ENABLE_TRANSVOXEL_MATERIAL_SINGLE_S2
+	// Each voxel has only one material index, and up to 2 can blend in shader
+	TEXTURES_SINGLE_S2,
+#endif
+	TEXTURES_MODE_COUNT
 };
 
 struct LodAttrib {
@@ -65,14 +68,21 @@ struct MeshArrays {
 	StdVector<Vector3f> vertices;
 	StdVector<Vector3f> normals;
 	StdVector<LodAttrib> lod_data;
-	StdVector<Vector2f> texturing_data; // TextureAttrib
+
+	// Not really floats, only aligned to 32-bit. Actual layout depends on texturing mode
+	// TODO Maybe use directly the right struct and reinterpret at the end? This has been float only because Godot only
+	// lets us pass it as float
+	StdVector<float> texturing_data_1f32;
+	StdVector<Vector2f> texturing_data_2f32;
+
 	StdVector<int32_t> indices;
 
 	void clear() {
 		vertices.clear();
 		normals.clear();
 		lod_data.clear();
-		texturing_data.clear();
+		texturing_data_1f32.clear();
+		texturing_data_2f32.clear();
 		indices.clear();
 	}
 

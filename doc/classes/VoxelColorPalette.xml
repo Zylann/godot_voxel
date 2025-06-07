@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="VoxelColorPalette" inherits="Resource" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
-		Limited list of colors that can be indexed quickly.
+		Limited list of 256 colors in 8-bit format that can be indexed quickly.
 	</brief_description>
 	<description>
 		Contains a list of colors that can be accessed quickly by their index. This is useful to store colored voxels with small memory footprint.
@@ -15,6 +15,7 @@
 			<return type="Color" />
 			<param index="0" name="index" type="int" />
 			<description>
+				Gets the color at the given index.
 			</description>
 		</method>
 		<method name="set_color">
@@ -22,6 +23,7 @@
 			<param index="0" name="index" type="int" />
 			<param index="1" name="color" type="Color" />
 			<description>
+				Sets the color at the given index.
 			</description>
 		</method>
 	</methods>

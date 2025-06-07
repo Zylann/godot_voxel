@@ -6,6 +6,7 @@ import sys
 import textwrap
 import bbcode
 import bbcode_to_markdown
+import xml_to_markdown
 import markdown
 from pathlib import Path
 
@@ -108,7 +109,7 @@ def get_nodes_by_category_dict(nodes_list):
 
 # Formats nodes in a table. Was used before, but Mkdocs is bad at it,
 # long descriptions are not wrapped on multiple lines and instead have scrollbars...
-def write_markdown_table_from_nodes(nodes, module_class_names):
+def write_markdown_table_from_nodes(nodes, formatter):
     out = ""
     nodes_per_category = get_nodes_by_category_dict(nodes)
     category_names = sorted(nodes_per_category.keys())
@@ -119,7 +120,7 @@ def write_markdown_table_from_nodes(nodes, module_class_names):
         table_rows = [["Node name", "Description"]]
 
         for node in nodes_per_category[category_name]:
-            desc = bbcode_to_markdown.format_text_for_table(node.description, module_class_names, None, 'api/')
+            desc = formatter.make_text_single_line(node.description)
             table_rows.append([node.name, desc])
 
         out += markdown.make_table(table_rows)
@@ -144,7 +145,7 @@ def strip_leading_and_trailing_empty_lines(text, newline = '\n'):
 
 
 # More classic representation, can show more things
-def write_markdown_listing_from_nodes(nodes, module_class_names):
+def write_markdown_listing_from_nodes(nodes, formatter):
     out = ""
     nodes_per_category = get_nodes_by_category_dict(nodes)
     category_names = sorted(nodes_per_category.keys())
@@ -164,7 +165,7 @@ def write_markdown_listing_from_nodes(nodes, module_class_names):
             
             out += "\n"
             desc = strip_leading_and_trailing_empty_lines(node.description)
-            out += bbcode_to_markdown.format_text(desc, module_class_names, None, 'api/')
+            out += formatter.make_text(desc)
             out += "\n\n"
     
     return out
@@ -268,12 +269,12 @@ if __name__ == "__main__":
         f.write(cpp)
     
     # Generate Markdown
+    formatter = xml_to_markdown.ClassFormatter('', module_class_names, {}, 'api/')
     module_class_names = get_module_class_names(Path(xml_classes_dirpath))
-    md = write_markdown_listing_from_nodes(nodes, module_class_names)
+    md = write_markdown_listing_from_nodes(nodes, formatter)
     with open(md_fpath, "w") as f:
         f.write("# VoxelGeneratorGraph nodes\n\n")
-        f.write(bbcode_to_markdown.format_text(
-            "This page lists all nodes that can be used in [VoxelGeneratorGraph] and [VoxelGraphFunction].\n\n", 
-            module_class_names, None, 'api/'))
+        f.write(formatter.make_text(
+            "This page lists all nodes that can be used in [VoxelGeneratorGraph] and [VoxelGraphFunction].\n\n"))
         f.write(md)
 

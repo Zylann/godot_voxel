@@ -20,6 +20,13 @@
 			<description>
 			</description>
 		</method>
+		<method name="debug_get_block_infos">
+			<return type="Dictionary" />
+			<param index="0" name="world_position" type="Vector3" />
+			<param index="1" name="item_id" type="int" />
+			<description>
+			</description>
+		</method>
 		<method name="debug_get_draw_flag" qualifiers="const">
 			<return type="bool" />
 			<param index="0" name="flag" type="int" enum="VoxelInstancer.DebugDrawFlag" />
@@ -49,10 +56,31 @@
 			<description>
 			</description>
 		</method>
+		<method name="remove_instances_in_sphere">
+			<return type="void" />
+			<param index="0" name="center" type="Vector3" />
+			<param index="1" name="radius" type="float" />
+			<description>
+				Removes all instances having their origin inside the given sphere. Coordinates are local to the instancer.
+			</description>
+		</method>
 	</methods>
 	<members>
+		<member name="collision_update_budget_microseconds" type="int" setter="set_collision_update_budget_microseconds" getter="get_collision_update_budget_microseconds" default="500">
+			Hints the maximum time that should be spent updating collisions that are based on distance (see [member VoxelInstanceLibraryMultiMeshItem.collision_distance]). This time can still be exceeded if an operation takes longer, but then no further processing will occur until next frame.
+		</member>
+		<member name="fading_duration" type="float" setter="set_fading_duration" getter="get_fading_duration" default="0.3">
+			How long it takes for fading to complete, in seconds (same for fading in and out). Used when [member fading_enabled] is active.
+		</member>
+		<member name="fading_enabled" type="bool" setter="set_fading_enabled" getter="get_fading_enabled" default="false">
+			When enabled, a per-instance shader parameter will be updated when instances load in and out, so it can be used to apply a fading effect.
+			The material used by instances must have a shader that has a [code]instance uniform vec2 u_lod_fade;[/code] property. X will animate from 0 to 1 during fade in and fade out. Y will be 1 when fading in, and 0 when fading out.
+		</member>
 		<member name="library" type="VoxelInstanceLibrary" setter="set_library" getter="get_library">
 			Library from which instances to spawn will be taken from.
+		</member>
+		<member name="mesh_lod_update_budget_microseconds" type="int" setter="set_mesh_lod_update_budget_microseconds" getter="get_mesh_lod_update_budget_microseconds" default="500">
+			Hints the maximum time that should be spent updating mesh LODs (see "mesh LOD" properties on [VoxelInstanceLibraryMultiMeshItem]). This time can still be exceeded if an operation takes longer, but then no further processing will occur until next frame.
 		</member>
 		<member name="up_mode" type="int" setter="set_up_mode" getter="get_up_mode" enum="VoxelInstancer.UpMode" default="0">
 			Where to consider the "up" direction is on the terrain when generating instances. See also [VoxelInstanceGenerator].

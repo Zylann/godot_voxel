@@ -1,12 +1,15 @@
 #ifndef VOXEL_MESH_SDF_GD_H
 #define VOXEL_MESH_SDF_GD_H
 
-#include "../engine/gpu/compute_shader_resource.h"
 #include "../storage/voxel_buffer_gd.h"
 #include "../util/godot/classes/mesh.h"
 #include "../util/godot/classes/resource.h"
 #include "../util/math/vector3f.h"
 #include "../util/thread/mutex.h"
+
+#ifdef VOXEL_ENABLE_GPU
+#include "../engine/gpu/compute_shader_resource.h"
+#endif
 
 ZN_GODOT_FORWARD_DECLARE(class SceneTree);
 
@@ -84,7 +87,9 @@ public:
 		return _max_pos;
 	}
 
+	#ifdef VOXEL_ENABLE_GPU
 	std::shared_ptr<ComputeShaderResource> get_gpu_resource();
+	#endif
 
 	Array debug_check_sdf(Ref<Mesh> mesh);
 
@@ -100,9 +105,11 @@ private:
 	Ref<godot::VoxelBuffer> _voxel_buffer;
 	Vector3f _min_pos;
 	Vector3f _max_pos;
+#ifdef VOXEL_ENABLE_GPU
 	// Stored as a shared_ptr in case that resource is in use while being re-generated
 	std::shared_ptr<ComputeShaderResource> _gpu_resource;
 	Mutex _gpu_resource_mutex;
+#endif
 
 	// States
 	bool _is_baking = false;

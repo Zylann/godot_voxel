@@ -7,17 +7,17 @@ Voxel generator producing overhanging shapes using 3D noise.
 ## Properties: 
 
 
-Type                                                                                      | Name                             | Default 
------------------------------------------------------------------------------------------ | -------------------------------- | --------
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)                      | [channel](#i_channel)            | 1       
-[float](https://docs.godotengine.org/en/stable/classes/class_float.html)                  | [height_range](#i_height_range)  | 200.0   
-[float](https://docs.godotengine.org/en/stable/classes/class_float.html)                  | [height_start](#i_height_start)  | -100.0  
-[FastNoiseLite](https://docs.godotengine.org/en/stable/classes/class_fastnoiselite.html)  | [noise](#i_noise)                |         
+Type                                                                                      | Name                             | Default         
+----------------------------------------------------------------------------------------- | -------------------------------- | ----------------
+[ChannelId](VoxelBuffer.md#enumerations)                                                  | [channel](#i_channel)            | CHANNEL_SDF (1) 
+[float](https://docs.godotengine.org/en/stable/classes/class_float.html)                  | [height_range](#i_height_range)  | 200.0           
+[float](https://docs.godotengine.org/en/stable/classes/class_float.html)                  | [height_start](#i_height_start)  | -100.0          
+[FastNoiseLite](https://docs.godotengine.org/en/stable/classes/class_fastnoiselite.html)  | [noise](#i_noise)                |                 
 <p></p>
 
 ## Property Descriptions
 
-### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_channel"></span> **channel** = 1
+### [ChannelId](VoxelBuffer.md#enumerations)<span id="i_channel"></span> **channel** = CHANNEL_SDF (1)
 
 Channel into which the generator will produce voxel data. This depends on the type of meshing you need.
 
@@ -35,4 +35,4 @@ Base of the shape. Everything below it will be filled with ground.
 
 Noise used as density function. It is required for the generator to work.
 
-_Generated on Mar 23, 2025_
+_Generated on May 15, 2025_

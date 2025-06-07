@@ -8,6 +8,14 @@
 // 3-dimensional vector which components are either 32-bit float or 64-bit float depending on how Godot was compiled.
 // This is the type to use for interoperating with Godot.
 
+namespace zylann::godot::Vector3Utility {
+
+inline Vector3 splat(const real_t v) {
+	return Vector3(v, v, v);
+}
+
+} // namespace zylann::godot::Vector3Utility
+
 namespace zylann::math {
 
 inline Vector3 fract(const Vector3 &p) {
@@ -68,6 +76,10 @@ inline real_t dot(const Vector3 &a, const Vector3 &b) {
 
 inline real_t length_squared(const Vector3 &a) {
 	return a.length_squared();
+}
+
+inline real_t get_largest_coord(Vector3 v) {
+	return math::max(math::max(v.x, v.y), v.z);
 }
 
 } // namespace zylann::math

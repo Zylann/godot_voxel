@@ -2,23 +2,35 @@
 #define VOXEL_MESH_BLOCK_TASK_H
 
 #include "../constants/voxel_constants.h"
-#include "../engine/detail_rendering/detail_rendering.h"
 #include "../engine/ids.h"
 #include "../engine/meshing_dependency.h"
 #include "../engine/priority_dependency.h"
-#include "../generators/generate_block_gpu_task.h"
 #include "../storage/voxel_buffer.h"
 #include "../util/containers/std_vector.h"
 #include "../util/godot/classes/array_mesh.h"
 #include "../util/tasks/cancellation_token.h"
 #include "../util/tasks/threaded_task.h"
 
+#ifdef VOXEL_ENABLE_SMOOTH_MESHING
+#include "../engine/detail_rendering/detail_rendering.h"
+#endif
+
+#ifdef VOXEL_ENABLE_GPU
+#include "../generators/generate_block_gpu_task.h"
+#endif
+
 namespace zylann::voxel {
 
 class VoxelData;
 
 // Asynchronous task generating a mesh from voxel blocks and their neighbors, in a particular volume
-class MeshBlockTask : public IGeneratingVoxelsThreadedTask {
+class MeshBlockTask
+#ifdef VOXEL_ENABLE_GPU
+		: public IGeneratingVoxelsThreadedTask
+#else
+		: public IThreadedTask
+#endif
+{
 public:
 	MeshBlockTask();
 	~MeshBlockTask();
@@ -32,7 +44,9 @@ public:
 	bool is_cancelled() override;
 	void apply_result() override;
 
+#ifdef VOXEL_ENABLE_GPU
 	void set_gpu_results(StdVector<GenerateBlockGPUTaskResult> &&results) override;
+#endif
 
 	static int debug_get_running_count();
 
@@ -60,26 +74,36 @@ public:
 	PriorityDependency priority_dependency;
 	std::shared_ptr<MeshingDependency> meshing_dependency;
 	std::shared_ptr<VoxelData> data;
+#ifdef VOXEL_ENABLE_SMOOTH_MESHING
 	DetailRenderingSettings detail_texture_settings;
+#endif
 	Ref<VoxelGenerator> detail_texture_generator_override;
 	TaskCancellationToken cancellation_token;
 
 private:
+#ifdef VOXEL_ENABLE_GPU
 	void gather_voxels_gpu(zylann::ThreadedTaskContext &ctx);
+#endif
 	void gather_voxels_cpu();
 	void build_mesh();
 
 	bool _has_run = false;
 	bool _too_far = false;
 	bool _has_mesh_resource = false;
+#ifdef VOXEL_ENABLE_GPU
 	uint8_t _stage = 0;
+#endif
 	VoxelBuffer _voxels;
 	VoxelMesher::Output _surfaces_output;
 	Ref<Mesh> _mesh;
 	Ref<Mesh> _shadow_occluder_mesh;
 	StdVector<uint16_t> _mesh_material_indices; // Indexed by mesh surface
+#ifdef VOXEL_ENABLE_SMOOTH_MESHING
 	std::shared_ptr<DetailTextureOutput> _detail_textures;
+#endif
+#ifdef VOXEL_ENABLE_GPU
 	StdVector<GenerateBlockGPUTaskResult> _gpu_generation_results;
+#endif
 };
 
 // Builds a mesh resource from multiple surfaces data, and returns a mapping of where materials specified in the input

@@ -46,7 +46,7 @@ void VoxelBlockyAttributeRotation::update_values() {
 	} else {
 		for (unsigned int ortho_index = 0; ortho_index < math::ORTHOGONAL_BASIS_COUNT; ++ortho_index) {
 			const math::OrthoBasis &basis = math::get_ortho_basis_from_index(ortho_index);
-			if (basis.y != math::Vector3i8(0, 1, 0) && basis.z.y == 0) {
+			if (basis.y != Vector3i(0, 1, 0) && basis.z.y == 0) {
 				// Skip rotations where Y is not up and Z is not horizontal
 				continue;
 			}
@@ -57,12 +57,16 @@ void VoxelBlockyAttributeRotation::update_values() {
 
 void VoxelBlockyAttributeRotation::_bind_methods() {
 	ClassDB::bind_method(
-			D_METHOD("is_horizontal_roll_enabled"), &VoxelBlockyAttributeRotation::is_horizontal_roll_enabled);
-	ClassDB::bind_method(D_METHOD("set_horizontal_roll_enabled", "enabled"),
-			&VoxelBlockyAttributeRotation::set_horizontal_roll_enabled);
+			D_METHOD("is_horizontal_roll_enabled"), &VoxelBlockyAttributeRotation::is_horizontal_roll_enabled
+	);
+	ClassDB::bind_method(
+			D_METHOD("set_horizontal_roll_enabled", "enabled"),
+			&VoxelBlockyAttributeRotation::set_horizontal_roll_enabled
+	);
 
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "horizontal_only"), "set_horizontal_roll_enabled",
-			"is_horizontal_roll_enabled");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::BOOL, "horizontal_only"), "set_horizontal_roll_enabled", "is_horizontal_roll_enabled"
+	);
 }
 
 } // namespace zylann::voxel

@@ -17,6 +17,7 @@ namespace zylann::voxel {
 
 GenerateBlockMultipassCBTask::GenerateBlockMultipassCBTask(const VoxelGenerator::BlockTaskParams &params) :
 		_block_position(params.block_position),
+		_format(params.format),
 		_volume_id(params.volume_id),
 		_lod_index(params.lod_index),
 		_block_size(params.block_size),
@@ -120,6 +121,7 @@ void GenerateBlockMultipassCBTask::run(zylann::ThreadedTaskContext &ctx) {
 				// Spawn a subtask to bring this column to final state.
 				GenerateColumnMultipassTask *subtask = ZN_NEW(GenerateColumnMultipassTask(
 						column_position,
+						_format,
 						_block_size,
 						final_subpass_index,
 						multipass_generator_internal,
@@ -157,6 +159,7 @@ void GenerateBlockMultipassCBTask::run(zylann::ThreadedTaskContext &ctx) {
 			// (if we do, we need to change the column's spatial lock to WRITE)
 			voxels = make_shared_instance<VoxelBuffer>(VoxelBuffer::ALLOCATOR_POOL);
 			voxels->create(block.voxels.get_size());
+			voxels->copy_format(block.voxels);
 			voxels->copy_channels_from(block.voxels);
 			voxels->copy_voxel_metadata(block.voxels);
 
@@ -169,7 +172,7 @@ void GenerateBlockMultipassCBTask::run(zylann::ThreadedTaskContext &ctx) {
 
 	if (voxels == nullptr) {
 		voxels = make_shared_instance<VoxelBuffer>(VoxelBuffer::ALLOCATOR_POOL);
-		voxels->create(_block_size, _block_size, _block_size);
+		voxels->create(Vector3iUtil::create(_block_size), &_format);
 	}
 
 	run_cpu_generation();

@@ -504,6 +504,34 @@ void VoxelInstanceLibraryMultiMeshItem::set_hide_beyond_max_lod(bool enabled) {
 	_hide_beyond_max_lod = enabled;
 }
 
+void VoxelInstanceLibraryMultiMeshItem::set_removal_behavior(const RemovalBehavior rb) {
+	_removal_behavior = rb;
+}
+
+VoxelInstanceLibraryMultiMeshItem::RemovalBehavior VoxelInstanceLibraryMultiMeshItem::get_removal_behavior() const {
+	return _removal_behavior;
+}
+
+void VoxelInstanceLibraryMultiMeshItem::set_removal_scene(Ref<PackedScene> scene) {
+	_removal_scene = scene;
+}
+
+Ref<PackedScene> VoxelInstanceLibraryMultiMeshItem::get_removal_scene() const {
+	return _removal_scene;
+}
+
+void VoxelInstanceLibraryMultiMeshItem::trigger_removal_callback(VoxelInstancer *instancer, const Transform3D &trans) {
+	GDVIRTUAL_CALL(_on_instance_removed, instancer, trans);
+}
+
+void VoxelInstanceLibraryMultiMeshItem::set_collision_distance(const float distance) {
+	_collision_distance = distance;
+}
+
+float VoxelInstanceLibraryMultiMeshItem::get_collision_distance() const {
+	return _collision_distance;
+}
+
 const VoxelInstanceLibraryMultiMeshItem::Settings &VoxelInstanceLibraryMultiMeshItem::get_multimesh_settings() const {
 	if (_scene.is_valid()) {
 		return _scene_settings;
@@ -549,6 +577,36 @@ void VoxelInstanceLibraryMultiMeshItem::deserialize_multimesh_item_properties(Ar
 	deserialize_group_names(a[ai++], settings.group_names);
 	notify_listeners(IInstanceLibraryItemListener::CHANGE_VISUAL);
 }
+
+#ifdef TOOLS_ENABLED
+void VoxelInstanceLibraryMultiMeshItem::get_configuration_warnings(PackedStringArray &warnings) const {
+	VoxelInstanceLibraryItem::get_configuration_warnings(warnings);
+
+	switch (_removal_behavior) {
+		case REMOVAL_BEHAVIOR_NONE:
+			break;
+
+		case REMOVAL_BEHAVIOR_INSTANTIATE:
+			if (_removal_scene.is_null()) {
+				warnings.push_back(String("Removal behavior is set to instantiate, but no scene is assigned."));
+			}
+			break;
+
+		case REMOVAL_BEHAVIOR_CALLBACK:
+			if (!has_method("_on_instance_removed")) {
+				warnings.push_back(
+						String("Removal behavior is set to callback, but `_on_instance_removed` has not been "
+							   "implemented by a script or extension.")
+				);
+			}
+			break;
+
+		default:
+			ZN_PRINT_ERROR("Unknown removal behavior");
+			break;
+	}
+}
+#endif
 
 void VoxelInstanceLibraryMultiMeshItem::_b_set_collision_shapes(Array shape_infos) {
 	Settings &settings = _manual_settings;
@@ -638,6 +696,15 @@ void VoxelInstanceLibraryMultiMeshItem::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_scene"), &Self::get_scene);
 	ClassDB::bind_method(D_METHOD("set_scene", "scene"), &Self::set_scene);
 
+	ClassDB::bind_method(D_METHOD("get_removal_behavior"), &Self::get_removal_behavior);
+	ClassDB::bind_method(D_METHOD("set_removal_behavior", "rb"), &Self::set_removal_behavior);
+
+	ClassDB::bind_method(D_METHOD("get_removal_scene"), &Self::get_removal_scene);
+	ClassDB::bind_method(D_METHOD("set_removal_scene", "scene"), &Self::set_removal_scene);
+
+	ClassDB::bind_method(D_METHOD("get_collision_distance"), &Self::get_collision_distance);
+	ClassDB::bind_method(D_METHOD("set_collision_distance", "distance"), &Self::set_collision_distance);
+
 	// Used in editor only
 	ClassDB::bind_method(
 			D_METHOD("_deserialize_multimesh_item_properties", "props"), &Self::deserialize_multimesh_item_properties
@@ -647,6 +714,10 @@ void VoxelInstanceLibraryMultiMeshItem::_bind_methods() {
 			PropertyInfo(Variant::OBJECT, "scene", PROPERTY_HINT_RESOURCE_TYPE, PackedScene::get_class_static()),
 			"set_scene",
 			"get_scene"
+	);
+
+	ADD_PROPERTY(
+			PropertyInfo(Variant::FLOAT, "collision_distance"), "set_collision_distance", "get_collision_distance"
 	);
 
 	ADD_GROUP(MANUAL_SETTINGS_GROUP_NAME, "");
@@ -756,7 +827,29 @@ void VoxelInstanceLibraryMultiMeshItem::_bind_methods() {
 			PropertyInfo(Variant::BOOL, "hide_beyond_max_lod"), "set_hide_beyond_max_lod", "get_hide_beyond_max_lod"
 	);
 
+	ADD_GROUP("Removal", "");
+
+	ADD_PROPERTY(
+			PropertyInfo(Variant::INT, "removal_behavior", PROPERTY_HINT_ENUM, "None,Instantiate,Callback"),
+			"set_removal_behavior",
+			"get_removal_behavior"
+	);
+
+	ADD_PROPERTY(
+			PropertyInfo(
+					Variant::OBJECT, "removal_scene", PROPERTY_HINT_RESOURCE_TYPE, PackedScene::get_class_static()
+			),
+			"set_removal_scene",
+			"get_removal_scene"
+	);
+
 	BIND_CONSTANT(MAX_MESH_LODS);
+
+	BIND_ENUM_CONSTANT(REMOVAL_BEHAVIOR_NONE);
+	BIND_ENUM_CONSTANT(REMOVAL_BEHAVIOR_INSTANTIATE);
+	BIND_ENUM_CONSTANT(REMOVAL_BEHAVIOR_CALLBACK);
+
+	GDVIRTUAL_BIND(_on_instance_removed, "instancer", "transform");
 }
 
 } // namespace zylann::voxel

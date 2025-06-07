@@ -15,6 +15,14 @@ public:
 	Vector3T<T> min;
 	Vector3T<T> max;
 
+	static Box3fT<T> from_min_max(const Vector3T<T> p_min, const Vector3T<T> p_max) {
+		return { p_min, p_max };
+	}
+
+	static Box3fT<T> from_min_size(const Vector3T<T> p_min, const Vector3T<T> size) {
+		return { p_min, p_min + size };
+	}
+
 	static Box3fT<T> from_center_half_size(const Vector3T<T> center, const Vector3T<T> hs) {
 		return { center - hs, center + hs };
 	}
@@ -40,6 +48,11 @@ public:
 		}
 
 		return true;
+	}
+
+	T distance_squared(const Vector3T<T> p) const {
+		const Vector3T<T> d = math::max(min - p, p - max, T(0.0));
+		return d.length_squared();
 	}
 };
 

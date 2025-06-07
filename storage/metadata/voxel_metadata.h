@@ -68,6 +68,8 @@ public:
 	// Clears this metadata and makes it a duplicate of the given one.
 	void copy_from(const VoxelMetadata &src);
 
+	bool equals(const VoxelMetadata &other) const;
+
 private:
 	union Data {
 		uint64_t u64_data;

@@ -92,7 +92,7 @@ struct QuadIndices {
 	Box2f to_box(Span<const Vector2f> vertices) const {
 		const Vector2f p0 = vertices[i0];
 		const Vector2f p2 = vertices[i2];
-		return Box2f(p0, p2 - p0);
+		return Box2f::from_min_max(p0, p2);
 	}
 };
 
@@ -284,8 +284,8 @@ void quads_to_triangles(Span<const Box2f> quads, StdVector<Vector2f> &vertices) 
 		// 3---2
 		// |   |
 		// 0---1
-		const Vector2f &p0 = quad.position;
-		const Vector2f p2 = quad.position + quad.size;
+		const Vector2f p0 = quad.min;
+		const Vector2f p2 = quad.max;
 		const Vector2f p1(p2.x, p0.y);
 		const Vector2f p3(p0.x, p2.y);
 

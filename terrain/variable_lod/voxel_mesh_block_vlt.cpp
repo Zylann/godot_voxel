@@ -54,7 +54,9 @@ void VoxelMeshBlockVLT::set_mesh(
 		GeometryInstance3D::GIMode gi_mode,
 		RenderingServer::ShadowCastingSetting shadow_casting,
 		int render_layers_mask,
-		Ref<Mesh> shadow_occluder_mesh
+		Ref<Mesh> shadow_occluder_mesh,
+		int32_t p_col_vertex_end,
+		int32_t p_col_index_end
 #ifdef TOOLS_ENABLED
 		,
 		RenderingServer::ShadowCastingSetting shadow_occluder_mode
@@ -113,6 +115,9 @@ void VoxelMeshBlockVLT::set_mesh(
 			_mesh_instance.destroy();
 		}
 	}
+
+	col_vertex_end = p_col_vertex_end;
+	col_index_end = p_col_index_end;
 }
 
 void VoxelMeshBlockVLT::drop_visuals() {

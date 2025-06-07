@@ -34,18 +34,23 @@ public:
 	void set_iso_scale(float iso_scale);
 	float get_iso_scale() const;
 
+	void set_offset(const Vector2i offset);
+	Vector2i get_offset() const;
+
 protected:
 	void _b_set_channel(godot::VoxelBuffer::ChannelId p_channel);
 	godot::VoxelBuffer::ChannelId _b_get_channel() const;
 
 	// float height_func(x, y)
 	template <typename Height_F>
-	Result generate(VoxelBuffer &out_buffer, Height_F height_func, Vector3i origin, int lod) {
+	Result generate(VoxelBuffer &out_buffer, Height_F height_func, Vector3i p_origin, int lod) {
 		Parameters params;
 		{
 			RWLockRead rlock(_parameters_lock);
 			params = _parameters;
 		}
+
+		const Vector3i origin(p_origin.x - params.offset.x, p_origin.y, p_origin.z - params.offset.y);
 
 		const int channel = params.channel;
 		const Vector3i bs = out_buffer.get_size();
@@ -167,6 +172,7 @@ private:
 		int matter_type = 1;
 		Range range;
 		float iso_scale = 1.f;
+		Vector2i offset;
 	};
 
 	RWLock _parameters_lock;

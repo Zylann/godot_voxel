@@ -1,6 +1,7 @@
 #ifndef ZN_FLAT_MAP_H
 #define ZN_FLAT_MAP_H
 
+#include "container_funcs.h"
 #include "span.h"
 #include "std_vector.h"
 #include <algorithm>
@@ -247,6 +248,14 @@ public:
 		}
 	};
 
+	inline const K &get_key_at_index(const unsigned int i) const {
+		return _items[i].key;
+	}
+
+	inline const T &get_value_at_index(const unsigned int i) const {
+		return _items[i].value;
+	}
+
 	// If the key already exists, the item is not inserted and returns false.
 	// If insertion was successful, returns true.
 	bool insert(K key, T &&value) {
@@ -333,6 +342,17 @@ public:
 	template <typename F>
 	inline void remove_if(F predicate) {
 		_items.erase(std::remove_if(_items.begin(), _items.end(), predicate), _items.end());
+	}
+
+	template <typename F>
+	void remap_keys_unchecked(F modifier) {
+		for (Pair &p : _items) {
+			p.key = modifier(p.key);
+		}
+#ifdef DEV_ENABLED
+		ZN_ASSERT(!has_duplicate_f(to_span_const(_items), [](const Pair &a, const Pair &b) { return a.key == b.key; }));
+#endif
+		std::sort(_items.begin(), _items.end());
 	}
 
 	void operator=(const FlatMap<K, T> &other) {

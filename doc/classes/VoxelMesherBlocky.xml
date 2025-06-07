@@ -30,6 +30,7 @@
 		<member name="occlusion_darkness" type="float" setter="set_occlusion_darkness" getter="get_occlusion_darkness" default="0.8">
 		</member>
 		<member name="occlusion_enabled" type="bool" setter="set_occlusion_enabled" getter="get_occlusion_enabled" default="true">
+			Enables baked ambient occlusion. To render it, you need a material that applies vertex colors.
 		</member>
 		<member name="shadow_occluder_negative_x" type="bool" setter="set_shadow_occluder_side" getter="get_shadow_occluder_side" default="false" experimental="">
 			When enabled, generates a quad covering the negative X side of the chunk if it is fully covered by opaque voxels, in order to force directional lights to project a shadow.
@@ -49,6 +50,9 @@
 		<member name="shadow_occluder_positive_z" type="bool" setter="set_shadow_occluder_side" getter="get_shadow_occluder_side" default="false" experimental="">
 			When enabled, generates a quad covering the positive Z side of the chunk if it is fully covered by opaque voxels, in order to force directional lights to project a shadow.
 		</member>
+		<member name="tint_mode" type="int" setter="set_tint_mode" getter="get_tint_mode" enum="VoxelMesherBlocky.TintMode" default="0">
+			Configures a way to apply color from voxel data.
+		</member>
 	</members>
 	<constants>
 		<constant name="SIDE_NEGATIVE_X" value="0" enum="Side">
@@ -62,6 +66,12 @@
 		<constant name="SIDE_NEGATIVE_Z" value="4" enum="Side">
 		</constant>
 		<constant name="SIDE_POSITIVE_Z" value="5" enum="Side">
+		</constant>
+		<constant name="TINT_NONE" value="0" enum="TintMode">
+			Only use colors from library models.
+		</constant>
+		<constant name="TINT_RAW_COLOR" value="1" enum="TintMode">
+			Modulate voxel colors based on the [constant VoxelBuffer.CHANNEL_COLOR] channel. Values are interpreted as being raw RGBA color. If the channel is 16-bit, colors are packed with 4 bits per component. If 32-bits, colors are packed with 8 bits per component. Other depths are not supported. See [method VoxelTool.color_to_u32] for encoding. You may also change the format of the color channel to use this, see [member VoxelNode.format]. Alpha will only have an effect if the material supports transparency, but will not affect how faces are culled by the mesher.
 		</constant>
 	</constants>
 </class>

@@ -429,6 +429,28 @@ void VoxelBuffer::downscale_to(Ref<VoxelBuffer> dst, Vector3i src_min, Vector3i 
 	_buffer->downscale_to(dst->get_buffer(), src_min, src_max, dst_min);
 }
 
+void VoxelBuffer::rotate_90(Vector3i::Axis axis, int turns) {
+	_buffer->transform(math::OrthoBasis::from_axis_turns(axis, turns));
+}
+
+static math::OrthoBasis mirror_axis_to_basis(const Vector3i::Axis axis) {
+	switch (axis) {
+		case Vector3i::AXIS_X:
+			return math::OrthoBasis(Vector3i(-1, 0, 0), Vector3i(0, 1, 0), Vector3i(0, 0, 1));
+		case Vector3i::AXIS_Y:
+			return math::OrthoBasis(Vector3i(1, 0, 0), Vector3i(0, -1, 0), Vector3i(0, 0, 1));
+		case Vector3i::AXIS_Z:
+			return math::OrthoBasis(Vector3i(1, 0, 0), Vector3i(0, 1, 0), Vector3i(0, 0, -1));
+		default:
+			ZN_PRINT_ERROR("Invalid axis");
+			return math::OrthoBasis();
+	}
+}
+
+void VoxelBuffer::mirror(Vector3i::Axis axis) {
+	_buffer->transform(mirror_axis_to_basis(axis));
+}
+
 Ref<VoxelBuffer> VoxelBuffer::duplicate(bool include_metadata) const {
 	Ref<VoxelBuffer> d;
 	d.instantiate();
@@ -703,10 +725,8 @@ void VoxelBuffer::for_each_voxel_metadata_in_area(const Callable &callback, Vect
 		);
 
 #elif defined(ZN_GODOT_EXTENSION)
-		// TODO Error reporting? GodotCpp doesn't expose anything
-		//callback.call(rel_pos, v);
-		// TODO GodotCpp is missing the implementation of `Callable::call`.
-		ZN_PRINT_ERROR("Unable to call Callable, go moan at https://github.com/godotengine/godot-cpp/issues/802");
+		// Can't do error-reporting the same way we do in modules.
+		callback.call(rel_pos, v);
 #endif
 	});
 }
@@ -928,6 +948,8 @@ void VoxelBuffer::_bind_methods() {
 			&VoxelBuffer::copy_channel_from_area
 	);
 	ClassDB::bind_method(D_METHOD("downscale_to", "dst", "src_min", "src_max", "dst_min"), &VoxelBuffer::downscale_to);
+	ClassDB::bind_method(D_METHOD("rotate_90", "axis", "turns"), &VoxelBuffer::rotate_90);
+	ClassDB::bind_method(D_METHOD("mirror", "axis"), &VoxelBuffer::mirror);
 
 	ClassDB::bind_method(D_METHOD("is_uniform", "channel"), &VoxelBuffer::is_uniform);
 	ClassDB::bind_method(D_METHOD("compress_uniform_channels"), &VoxelBuffer::compress_uniform_channels);
