@@ -16,5 +16,11 @@
 				Gets the ID of the item in the instancer's [VoxelInstanceLibrary] that was used to create the instance having this collider.
 			</description>
 		</method>
+		<method name="queue_free_and_notify_instancer">
+			<return type="void" />
+			<description>
+				Alternative to [code]queue_free[/code] in case you don't want to use [code]call_deferred[/code] to add nodes under [VoxelInstancer] from [method VoxelInstanceLibraryMultiMeshItem._on_instance_removed].
+			</description>
+		</method>
 	</methods>
 </class>

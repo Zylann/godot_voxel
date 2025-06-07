@@ -55,4 +55,25 @@ void VoxelMetadata::copy_from(const VoxelMetadata &src) {
 	_type = src._type;
 }
 
+bool VoxelMetadata::equals(const VoxelMetadata &other) const {
+	if (_type != other._type) {
+		return false;
+	}
+	switch (_type) {
+		case TYPE_EMPTY:
+			return true;
+		case TYPE_U64:
+			return _data.u64_data == other._data.u64_data;
+		default:
+			if (_type >= TYPE_CUSTOM_BEGIN) {
+				ZN_ASSERT(_data.custom_data != nullptr);
+				ZN_ASSERT(other._data.custom_data != nullptr);
+				return _data.custom_data->equals(*other._data.custom_data);
+			} else {
+				ZN_PRINT_ERROR("Non-implemented comparison");
+				return false;
+			}
+	}
+}
+
 } // namespace zylann::voxel

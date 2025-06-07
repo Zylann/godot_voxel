@@ -98,12 +98,12 @@ struct DuplicateSearchResult {
 	}
 };
 
-template <typename T>
-DuplicateSearchResult find_duplicate(Span<const T> items) {
+template <typename T, typename TEqual>
+DuplicateSearchResult find_duplicate_f(Span<const T> items, TEqual equal) {
 	for (unsigned int i = 0; i < items.size(); ++i) {
 		const T &a = items[i];
 		for (unsigned int j = i + 1; j < items.size(); ++j) {
-			if (items[j] == a) {
+			if (equal(items[j], a)) {
 				return { i, j };
 			}
 		}
@@ -112,8 +112,18 @@ DuplicateSearchResult find_duplicate(Span<const T> items) {
 }
 
 template <typename T>
-bool has_duplicate(Span<const T> items) {
+inline DuplicateSearchResult find_duplicate(Span<const T> items) {
+	return find_duplicate_f(items, [](const T &a, const T &b) { return a == b; });
+}
+
+template <typename T>
+inline bool has_duplicate(Span<const T> items) {
 	return find_duplicate(items).is_valid();
+}
+
+template <typename T, typename TEqual>
+inline bool has_duplicate_f(Span<const T> items, TEqual equal) {
+	return find_duplicate_f(items, equal).is_valid();
 }
 
 // Tests if POD items in an array are all the same.

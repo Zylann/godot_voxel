@@ -47,7 +47,7 @@ Given a motion vector, returns a modified vector telling you by how much to move
 
 ### [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_has_stepped_up"></span> **has_stepped_up**( ) 
 
-When step climbing is enabled, tells when the last call to [VoxelBoxMover.get_motion](VoxelBoxMover.md#i_get_motion) caused climbing to occur.
+When step climbing is enabled, tells when the last call to [get_motion](VoxelBoxMover.md#i_get_motion) caused climbing to occur.
 
 Climbing modifies the motion vector upwards so that the body is snapped on top of the step. This can have implications in character controller code, such as considering the character to be on the floor instead of having jumped.
 
@@ -69,6 +69,6 @@ Sets the maximum height that can be climbed like "stairs".
 
 ### [void](#)<span id="i_set_step_climbing_enabled"></span> **set_step_climbing_enabled**( [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) enabled ) 
 
-When enabled, [VoxelBoxMover.get_motion](VoxelBoxMover.md#i_get_motion) will attempt to climb up small steps. This allows to implement Minecraft-like stairs.
+When enabled, [get_motion](VoxelBoxMover.md#i_get_motion) will attempt to climb up small steps. This allows to implement Minecraft-like stairs.
 
-_Generated on Mar 23, 2025_
+_Generated on May 15, 2025_

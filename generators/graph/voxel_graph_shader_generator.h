@@ -1,7 +1,6 @@
 #ifndef VOXEL_GRAPH_SHADER_GENERATOR_H
 #define VOXEL_GRAPH_SHADER_GENERATOR_H
 
-#include "../../engine/gpu/compute_shader_resource.h"
 #include "../../util/containers/span.h"
 #include "../../util/containers/std_vector.h"
 #include "../../util/errors.h"
@@ -12,16 +11,6 @@
 #include "voxel_graph_runtime.h"
 
 namespace zylann::voxel::pg {
-
-struct ShaderParameter {
-	StdString name;
-	std::shared_ptr<ComputeShaderResource> resource;
-};
-
-struct ShaderOutput {
-	enum Type { TYPE_SDF, TYPE_SINGLE_TEXTURE, TYPE_TYPE };
-	Type type;
-};
 
 // Generates GLSL code from the given graph.
 CompilationResult generate_shader(

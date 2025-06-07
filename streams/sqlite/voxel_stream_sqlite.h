@@ -37,9 +37,11 @@ public:
 	void load_voxel_blocks(Span<VoxelStream::VoxelQueryData> p_blocks) override;
 	void save_voxel_blocks(Span<VoxelStream::VoxelQueryData> p_blocks) override;
 
+#ifdef VOXEL_ENABLE_INSTANCER
 	bool supports_instance_blocks() const override;
 	void load_instance_blocks(Span<VoxelStream::InstancesQueryData> out_blocks) override;
 	void save_instance_blocks(Span<VoxelStream::InstancesQueryData> p_blocks) override;
+#endif
 
 	bool supports_loading_all_blocks() const override {
 		return true;
@@ -126,7 +128,14 @@ private:
 	// Because of this, in our use case, it might be simpler to just leave SQLite in thread-safe mode,
 	// and synchronize ourselves.
 
-	sqlite::Connection *get_connection();
+	struct ConnectionResult {
+		enum Code { SUCCESS, NOT_CONFIGURED, ERROR };
+
+		sqlite::Connection *connection = nullptr;
+		Code code = ERROR;
+	};
+
+	ConnectionResult get_connection();
 	void recycle_connection(sqlite::Connection *con);
 
 	struct ScopeRecycle {

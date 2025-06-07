@@ -37,6 +37,10 @@ public:
 	const VoxelInstanceLibraryItem *get_item_const(int id) const;
 	VoxelInstanceLibraryItem *get_item(int id);
 
+#ifdef TOOLS_ENABLED
+	int get_item_id(const VoxelInstanceLibraryItem *item) const;
+#endif
+
 	// f(int item_id, VoxelInstanceLibraryItem &item)
 	template <typename F>
 	void for_each_item(F f) {
@@ -52,6 +56,17 @@ public:
 			ZN_ASSERT(it->second.is_valid());
 			f(it->first, **it->second);
 		}
+	}
+
+	template <typename TPredicate>
+	int find_item(TPredicate pred) const {
+		for (auto it = _items.begin(); it != _items.end(); ++it) {
+			ZN_ASSERT(it->second.is_valid());
+			if (pred(**it->second)) {
+				return it->first;
+			}
+		}
+		return -1;
 	}
 
 	void add_listener(IInstanceLibraryItemListener *listener);

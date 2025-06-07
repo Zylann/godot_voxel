@@ -3,7 +3,6 @@
 #include "../../engine/voxel_engine.h"
 #include "../../generators/generate_block_task.h"
 #include "../../meshers/mesh_block_task.h"
-#include "../../meshers/transvoxel/voxel_mesher_transvoxel.h"
 #include "../../storage/voxel_data.h"
 #include "../../streams/load_block_data_task.h"
 #include "../../streams/save_block_data_task.h"
@@ -17,6 +16,10 @@
 #include "../../util/tasks/async_dependency_tracker.h"
 #include "voxel_lod_terrain_update_clipbox_streaming.h"
 #include "voxel_lod_terrain_update_octree_streaming.h"
+
+#ifdef VOXEL_ENABLE_SMOOTH_MESHING
+#include "../../meshers/transvoxel/voxel_mesher_transvoxel.h"
+#endif
 
 namespace zylann::voxel {
 
@@ -76,13 +79,16 @@ void request_block_generate(
 	VoxelGenerator::BlockTaskParams params;
 	params.volume_id = volume_id;
 	params.block_position = block_pos;
+	params.format = data->get_format();
 	params.lod_index = lod_index;
 	params.block_size = data_block_size;
 	params.stream_dependency = stream_dependency;
 	params.tracker = tracker;
 	params.drop_beyond_max_distance = allow_drop;
 	params.data = data;
+#ifdef VOXEL_ENABLE_GPU
 	params.use_gpu = settings.generator_use_gpu;
+#endif
 	params.cancellation_token = cancellation_token;
 
 	init_sparse_octree_priority_dependency(
@@ -333,14 +339,17 @@ void send_mesh_requests(
 			task->data = data_ptr;
 			task->require_visual = mesh_to_update.require_visual;
 			task->collision_hint = settings.collision_enabled;
+#ifdef VOXEL_ENABLE_SMOOTH_MESHING
 			task->detail_texture_settings = settings.detail_texture_settings;
 			task->detail_texture_generator_override = settings.detail_texture_generator_override;
 			task->detail_texture_generator_override_begin_lod_index =
 					settings.detail_texture_generator_override_begin_lod_index;
 			task->detail_texture_use_gpu = settings.detail_textures_use_gpu;
+#endif
 			task->block_generation_use_gpu = settings.generator_use_gpu;
 			task->cancellation_token = mesh_to_update.cancellation_token;
 
+#ifdef VOXEL_ENABLE_SMOOTH_MESHING
 			// Don't update a detail texture if one update is already processing
 			if (settings.detail_texture_settings.enabled &&
 				lod_index >= settings.detail_texture_settings.begin_lod_index &&
@@ -348,6 +357,7 @@ void send_mesh_requests(
 				mesh_block.detail_texture_state = VoxelLodTerrainUpdateData::DETAIL_TEXTURE_PENDING;
 				task->require_detail_texture = true;
 			}
+#endif
 
 			const Box3i data_box =
 					Box3i(render_to_data_factor * mesh_to_update.position, Vector3iUtil::create(render_to_data_factor))

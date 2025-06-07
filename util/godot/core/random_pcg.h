@@ -142,11 +142,13 @@ public:
 
 	inline double randfn(double p_mean, double p_deviation) {
 		return p_mean +
-				p_deviation * (cos(zylann::math::TAU_64 * randd()) * sqrt(-2.0 * log(randd()))); // Box-Muller transform
+				p_deviation *
+				(cos(zylann::math::TAU<double> * randd()) * sqrt(-2.0 * log(randd()))); // Box-Muller transform
 	}
 	inline float randfn(float p_mean, float p_deviation) {
 		return p_mean +
-				p_deviation * (cos(zylann::math::TAU_32 * randf()) * sqrt(-2.0 * log(randf()))); // Box-Muller transform
+				p_deviation *
+				(cos(zylann::math::TAU<float> * randf()) * sqrt(-2.0 * log(randf()))); // Box-Muller transform
 	}
 
 	double random(double p_from, double p_to);

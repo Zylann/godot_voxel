@@ -1,6 +1,7 @@
 #ifndef ZN_MATH_VECTOR3I_H
 #define ZN_MATH_VECTOR3I_H
 
+#include "../containers/span.h"
 #include "../godot/core/vector3.h"
 #include "../godot/core/vector3i.h"
 #include "../godot/macros.h"
@@ -143,6 +144,7 @@ inline Vector3i rotate_z_90_cw(Vector3i v) {
 }
 
 Vector3i rotate_90(Vector3i v, Axis axis, bool clockwise);
+void rotate_90(Span<Vector3i> vecs, const Axis axis, const bool clockwise);
 
 inline int manhattan_distance(const Vector3i &a, const Vector3i &b) {
 	return Math::abs(a.x - b.x) + Math::abs(a.y - b.y) + Math::abs(a.z - b.z);
@@ -151,6 +153,10 @@ inline int manhattan_distance(const Vector3i &a, const Vector3i &b) {
 inline int chebyshev_distance(const Vector3i &a, const Vector3i &b) {
 	// In Chebyshev metric, points on the surface of a cube are all equidistant to its center
 	return math::max(math::max(Math::abs(a.x - b.x), Math::abs(a.y - b.y)), Math::abs(a.z - b.z));
+}
+
+inline int dot(const Vector3i &a, const Vector3i &b) {
+	return a.x * b.x + a.y * b.y + a.z * b.z;
 }
 
 } // namespace math

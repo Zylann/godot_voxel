@@ -16,36 +16,27 @@ FAST_NOISE_2_SRC = env["voxel_fast_noise_2"]
 if not env["arch"].startswith("x86"):
 	FAST_NOISE_2_SRC = False
 
-INCLUDE_TESTS = env["voxel_tests"]
-
 env_voxel = env_modules.Clone()
 
-voxel_files = common.get_sources(env_voxel, env.editor_build, INCLUDE_TESTS)
+voxel_files = common.get_sources(env_voxel, env.editor_build)
 
 env_voxel.Append(CPPDEFINES=[
 	# Tell engine-agnostic code we are using Godot Engine as a module
 	"ZN_GODOT"
 ])
 
-if INCLUDE_TESTS:
-	if FAST_NOISE_2_SRC:
-		voxel_files += ["tests/fast_noise_2/*.cpp"]
+if env["voxel_sqlite"]:
+	env_sqlite = env_voxel.Clone()
 
-	env_voxel.Append(CPPDEFINES={"VOXEL_TESTS": 1})
+	# Turn off warnings, we get some with Clang and with `warnings=extra`
+	env_sqlite.disable_warnings()
 
-# ----------------------------------------------------------------------------------------------------------------------
-# SQLite
-env_sqlite = env_voxel.Clone()
+	# if not env_sqlite.msvc:
+	#     env_sqlite.Append(CXXFLAGS=["-Wno-discarded-qualifiers"])
 
-# Turn off warnings, we get some with Clang and with `warnings=extra`
-env_sqlite.disable_warnings()
-
-# if not env_sqlite.msvc:
-#     env_sqlite.Append(CXXFLAGS=["-Wno-discarded-qualifiers"])
-
-# TODO Enhancement: the way SQLite is integrated should not be duplicated between Godot and GodotCpp targets.
-# Had to do so, because this line below is specific to Godot's build system!
-env_sqlite.add_source_files(env.modules_sources, ["thirdparty/sqlite/sqlite3.c"])
+	# TODO Enhancement: the way SQLite is integrated should not be duplicated between Godot and GodotCpp targets.
+	# Had to do so, because this line below is specific to Godot's build system!
+	env_sqlite.add_source_files(env.modules_sources, ["thirdparty/sqlite/sqlite3.c"])
 
 # ----------------------------------------------------------------------------------------------------------------------
 # FastNoise 2
@@ -70,6 +61,9 @@ if FAST_NOISE_2_SRC:
 		voxel_files += [
 			"editor/fast_noise_2/*.cpp"
 		]
+
+	if env["voxel_tests"]:
+		voxel_files += ["tests/fast_noise_2/*.cpp"]
 
 # ----------------------------------------------------------------------------------------------------------------------
 # Tracy library

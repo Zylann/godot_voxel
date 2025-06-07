@@ -37,6 +37,7 @@ private:
 	void run_stream_saving_and_finish();
 
 	Vector3i _block_position;
+	VoxelFormat _format;
 	VolumeID _volume_id;
 	uint8_t _lod_index;
 	uint8_t _block_size;

@@ -33,18 +33,18 @@ public:
 private:
 	void update_tree(bool autoselect);
 
-	void _on_ok_pressed();
-	void _on_filter_text_changed(String new_text);
-	void _on_filter_gui_input(Ref<InputEvent> event);
-	void _on_tree_item_activated();
-	void _on_tree_item_selected();
-	void _on_tree_nothing_selected();
-	void _on_function_file_dialog_file_selected(String fpath);
+	void on_ok_pressed();
+	void on_filter_text_changed(String new_text);
+	void on_filter_gui_input(Ref<InputEvent> event);
+	void on_tree_item_activated();
+	void on_tree_item_selected();
+	void on_tree_nothing_selected();
+	void on_function_file_dialog_file_selected(String fpath);
 #if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR <= 3
-	void _on_function_quick_open_dialog_quick_open();
+	void on_function_quick_open_dialog_quick_open();
 #endif
 	void on_function_quick_open_dialog_item_selected(String fpath);
-	void _on_description_label_meta_clicked(Variant meta);
+	void on_description_label_meta_clicked(Variant meta);
 
 	void _notification(int p_what);
 

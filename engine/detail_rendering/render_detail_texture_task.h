@@ -56,8 +56,12 @@ public:
 
 private:
 	void run_on_cpu();
+#ifdef VOXEL_ENABLE_GPU
 	void run_on_gpu();
+#endif
 };
+
+#ifdef VOXEL_ENABLE_GPU
 
 // Performs final operations on the CPU after the GPU work is done
 class RenderDetailTexturePass2Task : public IThreadedTask {
@@ -81,6 +85,8 @@ public:
 	void run(ThreadedTaskContext &ctx) override;
 	void apply_result() override;
 };
+
+#endif
 
 } // namespace zylann::voxel
 

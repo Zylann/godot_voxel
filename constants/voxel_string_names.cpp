@@ -124,6 +124,8 @@ VoxelStringNames::VoxelStringNames() {
 	density = StringName("density");
 	noise_dimension = StringName("noise_dimension");
 	noise_on_scale = StringName("noise_on_scale");
+
+	add_child = StringName("add_child");
 }
 
 } // namespace zylann::voxel

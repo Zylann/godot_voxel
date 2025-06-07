@@ -22,10 +22,10 @@ Tells which channels in [VoxelBuffer](VoxelBuffer.md) are supported to save voxe
 
 ### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i__load_voxel_block"></span> **_load_voxel_block**( [VoxelBuffer](VoxelBuffer.md) out_buffer, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) position_in_blocks, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) lod ) 
 
-Called when a block of voxels needs to be loaded. Assumes `out_buffer` always has the same size. Returns [VoxelStream.ResultCode](VoxelStream.md#enumerations).
+Called when a block of voxels needs to be loaded. Assumes `out_buffer` always has the same size. Returns [ResultCode](VoxelStream.md#enumerations).
 
 ### [void](#)<span id="i__save_voxel_block"></span> **_save_voxel_block**( [VoxelBuffer](VoxelBuffer.md) buffer, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) position_in_blocks, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) lod ) 
 
 Called when a block of voxels needs to be saved. Assumes `out_buffer` always has the same size.
 
-_Generated on Mar 23, 2025_
+_Generated on May 15, 2025_

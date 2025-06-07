@@ -15,4 +15,10 @@
 using namespace godot;
 #endif
 
+namespace zylann::godot {
+
+void popup_file_dialog(EditorFileDialog &dialog);
+
+} // namespace zylann::godot
+
 #endif // ZN_GODOT_EDITOR_FILE_DIALOG_H

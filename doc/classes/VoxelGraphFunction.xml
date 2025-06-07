@@ -227,6 +227,15 @@
 				Sets the value an input of a node will have when it is left unconnected.
 			</description>
 		</method>
+		<method name="set_node_default_input_by_name">
+			<return type="void" />
+			<param index="0" name="node_id" type="int" />
+			<param index="1" name="input_name" type="String" />
+			<param index="2" name="value" type="Variant" />
+			<description>
+				Sets the value an input of a node will have when it is left unconnected. The input is specified by its name as seen in the editor.
+			</description>
+		</method>
 		<method name="set_node_default_inputs_autoconnect">
 			<return type="void" />
 			<param index="0" name="node_id" type="int" />
@@ -267,6 +276,15 @@
 			<param index="2" name="value" type="Variant" />
 			<description>
 				Set a parameter of a node. The parameter index corresponds to the position that parameter comes in when seen in the editor.
+			</description>
+		</method>
+		<method name="set_node_param_by_name">
+			<return type="void" />
+			<param index="0" name="node_id" type="int" />
+			<param index="1" name="param_name" type="String" />
+			<param index="2" name="value" type="Variant" />
+			<description>
+				Set a parameter of a node, using its name as it appears in the editor.
 			</description>
 		</method>
 		<method name="set_node_param_null">

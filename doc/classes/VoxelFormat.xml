@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VoxelFormat" inherits="Resource" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Specifies the format of voxels.
+	</brief_description>
+	<description>
+		Specifies the format of voxels. Currently, it only stores how many bytes each channel uses per voxel.
+		Voxels have a default format which is often enough for most use cases, but sometimes it is necessary to change it. In this case, you may create a new [VoxelFormat] resource, do the changes, and assign it to a [VoxelNode].
+		WARNING: it is recommended to choose a format early in development (whether it is the default, or a custom one). If you want to change much later and you have saves in the wild, you will have to figure out how to convert them, otherwise loading them will be problematic.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="configure_buffer" qualifiers="const">
+			<return type="void" />
+			<param index="0" name="buffer" type="VoxelBuffer" />
+			<description>
+				Clears and formats the [VoxelBuffer] using properties from the current format. Should be used on a buffer that hasn't been modified yet.
+			</description>
+		</method>
+		<method name="create_buffer" qualifiers="const">
+			<return type="VoxelBuffer" />
+			<param index="0" name="size" type="Vector3i" />
+			<description>
+				Creates a new [VoxelBuffer] that has the current format.
+			</description>
+		</method>
+		<method name="get_channel_depth" qualifiers="const">
+			<return type="int" enum="VoxelBuffer.Depth" />
+			<param index="0" name="channel_index" type="int" enum="VoxelBuffer.ChannelId" />
+			<description>
+				Gets the depth of a specific channel. See [enum VoxelBuffer.Depth] for more information.
+			</description>
+		</method>
+		<method name="set_channel_depth">
+			<return type="void" />
+			<param index="0" name="channel_index" type="int" enum="VoxelBuffer.ChannelId" />
+			<param index="1" name="depth" type="int" enum="VoxelBuffer.Depth" />
+			<description>
+				Sets the depth of a specific channel. See [enum VoxelBuffer.Depth] for more information.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="_data" type="Array" setter="_set_data" getter="_get_data" default="[0, 1, 1, 0, 1, 1, 0, 0, 0]">
+		</member>
+		<member name="color_depth" type="int" setter="set_channel_depth" getter="get_channel_depth" enum="VoxelBuffer.Depth" default="0">
+			Depth of [constant VoxelBuffer.CHANNEL_COLOR].
+		</member>
+		<member name="indices_depth" type="int" setter="set_channel_depth" getter="get_channel_depth" enum="VoxelBuffer.Depth" default="1">
+			Depth of [constant VoxelBuffer.CHANNEL_INDICES]. Only 8-bit and 16-bit depths are supported.
+		</member>
+		<member name="sdf_depth" type="int" setter="set_channel_depth" getter="get_channel_depth" enum="VoxelBuffer.Depth" default="1">
+			Depth of [constant VoxelBuffer.CHANNEL_SDF].
+		</member>
+		<member name="type_depth" type="int" setter="set_channel_depth" getter="get_channel_depth" enum="VoxelBuffer.Depth" default="1">
+			Depth of [constant VoxelBuffer.CHANNEL_TYPE]. Only 8-bit and 16-bit depths are supported.
+		</member>
+	</members>
+</class>

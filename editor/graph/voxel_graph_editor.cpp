@@ -32,6 +32,7 @@
 #include "../../util/math/conv.h"
 #include "../../util/profiling.h"
 #include "../../util/string/format.h"
+#include "graph_editor_adapter.h"
 #include "voxel_graph_editor_node.h"
 #include "voxel_graph_editor_node_preview.h"
 #include "voxel_graph_editor_shader_dialog.h"
@@ -104,7 +105,9 @@ VoxelGraphEditor::VoxelGraphEditor() {
 			menu_button->set_switch_on_hover(true);
 
 			PopupMenu *popup_menu = menu_button->get_popup();
+#ifdef VOXEL_ENABLE_GPU
 			popup_menu->add_item(ZN_TTR("Generate Shader"), MENU_GENERATE_SHADER);
+#endif
 
 			popup_menu->connect("id_pressed", callable_mp(this, &Self::_on_menu_id_pressed));
 
@@ -751,13 +754,13 @@ void VoxelGraphEditor::_on_menu_id_pressed(int id) {
 			break;
 
 		case MENU_PREVIEW_AXES_XY:
-			_preview_axes = PREVIEW_AXES_XY;
+			_node_preview_mode = GraphEditorPreview::VIEW_SLICE_XY;
 			schedule_preview_update();
 			update_preview_axes_menu();
 			break;
 
 		case MENU_PREVIEW_AXES_XZ:
-			_preview_axes = PREVIEW_AXES_XZ;
+			_node_preview_mode = GraphEditorPreview::VIEW_SLICE_XZ;
 			schedule_preview_update();
 			update_preview_axes_menu();
 			break;
@@ -781,16 +784,18 @@ void VoxelGraphEditor::_on_menu_id_pressed(int id) {
 			menu->set_item_checked(idx, _live_update_enabled);
 		} break;
 
+#ifdef VOXEL_ENABLE_GPU
 		case MENU_GENERATE_SHADER: {
-			ERR_FAIL_COND(_generator.is_null());
-			VoxelGenerator::ShaderSourceData sd;
-			if (!_generator->get_shader_source(sd)) {
+			ERR_FAIL_COND(_graph.is_null());
+			pg::VoxelGraphFunction::ShaderResult shader_res = _graph->get_shader_source();
+			if (!shader_res.compilation.success) {
 				return;
 			}
 			// TODO Include uniforms in that version?
-			_shader_dialog->set_shader_code(sd.glsl);
+			_shader_dialog->set_shader_code(to_godot(shader_res.code_utf8));
 			_shader_dialog->popup_centered();
 		} break;
+#endif
 
 		default:
 			ERR_PRINT("Unknown menu item");
@@ -999,9 +1004,16 @@ void VoxelGraphEditor::update_previews(bool with_live_update) {
 		_compile_result_label->hide();
 	}
 
-	if (_generator.is_null() || !_generator->is_good()) {
-		return;
+	if (_generator.is_valid()) {
+		if (!_generator->is_good()) {
+			return;
+		}
+	} else {
+		if (!_graph->is_compiled()) {
+			return;
+		}
 	}
+
 	// We assume no other thread will try to modify the graph and compile something not good
 
 	// TODO Make slice previews work with arbitrary functions, when possible
@@ -1039,15 +1051,13 @@ void VoxelGraphEditor::update_previews(bool with_live_update) {
 
 void VoxelGraphEditor::update_range_analysis_previews() {
 	ZN_PRINT_VERBOSE("Updating range analysis previews");
-	ERR_FAIL_COND(_generator.is_null());
-	ERR_FAIL_COND(!_generator->is_good());
+	GraphEditorAdapter adapter(_generator, _graph);
+	ERR_FAIL_COND(!adapter.is_good());
 
 	const AABB aabb = _range_analysis_dialog->get_aabb();
-	_generator->debug_analyze_range(
-			math::floor_to_int(aabb.position), math::floor_to_int(aabb.position + aabb.size), true
-	);
+	adapter.debug_analyze_range(math::floor_to_int(aabb.position), math::floor_to_int(aabb.position + aabb.size));
 
-	const pg::Runtime::State &state = _generator->get_last_state_from_current_thread();
+	const pg::Runtime::State &state = adapter.get_last_state_from_current_thread();
 
 	const Color greyed_out_color(1, 1, 1, 0.5);
 
@@ -1065,7 +1075,7 @@ void VoxelGraphEditor::update_range_analysis_previews() {
 		// TODO Would be nice if GraphEdit's minimap would take such coloring into account...
 		node_view->set_modulate(greyed_out_color);
 
-		node_view->update_range_analysis_tooltips(**_generator, state);
+		node_view->update_range_analysis_tooltips(adapter, state);
 	}
 
 	// Highlight only nodes that will actually run.
@@ -1110,17 +1120,8 @@ void VoxelGraphEditor::update_range_analysis_gizmo() {
 }
 
 void VoxelGraphEditor::update_slice_previews() {
-	// TODO Use a thread?
-	ZN_PRINT_VERBOSE("Updating slice previews");
-	ERR_FAIL_COND(!_generator->is_good());
-
-	struct PreviewInfo {
-		VoxelGraphEditorNodePreview *control;
-		uint32_t address;
-		uint32_t node_id;
-	};
-
-	StdVector<PreviewInfo> previews;
+	GraphEditorAdapter adapter(_generator, _graph);
+	StdVector<VoxelGraphEditorNodePreview::PreviewInfo> previews;
 
 	// Gather preview nodes
 	for (int i = 0; i < _graph_edit->get_child_count(); ++i) {
@@ -1136,9 +1137,9 @@ void VoxelGraphEditor::update_slice_previews() {
 			// Not connected?
 			continue;
 		}
-		PreviewInfo info;
+		VoxelGraphEditorNodePreview::PreviewInfo info;
 		info.control = node->get_preview();
-		if (!_generator->try_get_output_port_address(src, info.address)) {
+		if (!adapter.try_get_output_port_address(src, info.address)) {
 			// Not part of the compiled result
 			continue;
 		}
@@ -1146,59 +1147,9 @@ void VoxelGraphEditor::update_slice_previews() {
 		previews.push_back(info);
 	}
 
-	// Generate data
-	{
-		const int preview_size_x = VoxelGraphEditorNodePreview::RESOLUTION;
-		const int preview_size_y = VoxelGraphEditorNodePreview::RESOLUTION;
-		const int buffer_size = preview_size_x * preview_size_y;
-		StdVector<float> x_vec;
-		StdVector<float> y_vec;
-		StdVector<float> z_vec;
-		x_vec.resize(buffer_size);
-		y_vec.resize(buffer_size);
-		z_vec.resize(buffer_size);
-
-		const float view_size_x = _preview_scale * float(preview_size_x);
-		const float view_size_y = _preview_scale * float(preview_size_x);
-		const Vector3f min_pos =
-				Vector3f(-view_size_x * 0.5f + _preview_offset.x, -view_size_y * 0.5f + _preview_offset.y, 0);
-		const Vector3f max_pos = min_pos + Vector3f(view_size_x, view_size_y, 0);
-
-		int i = 0;
-		for (int iy = 0; iy < preview_size_x; ++iy) {
-			const float y = Math::lerp(min_pos.y, max_pos.y, static_cast<float>(iy) / preview_size_y);
-			for (int ix = 0; ix < preview_size_y; ++ix) {
-				const float x = Math::lerp(min_pos.x, max_pos.x, static_cast<float>(ix) / preview_size_x);
-				x_vec[i] = x;
-				y_vec[i] = y;
-				z_vec[i] = min_pos.z;
-				++i;
-			}
-		}
-
-		Span<float> x_coords = to_span(x_vec);
-		Span<float> y_coords;
-		Span<float> z_coords;
-		if (_preview_axes == PREVIEW_AXES_XY) {
-			y_coords = to_span(y_vec);
-			z_coords = to_span(z_vec);
-		} else {
-			y_coords = to_span(z_vec);
-			z_coords = to_span(y_vec);
-		}
-
-		_generator->generate_set(x_coords, y_coords, z_coords);
-	}
-
-	const pg::Runtime::State &last_state = VoxelGeneratorGraph::get_last_state_from_current_thread();
-
-	// Update previews
-	for (size_t preview_index = 0; preview_index < previews.size(); ++preview_index) {
-		PreviewInfo &info = previews[preview_index];
-		const pg::Runtime::Buffer &buffer = last_state.get_buffer(info.address);
-		info.control->update_from_buffer(buffer);
-		info.control->update_display_settings(**_graph, info.node_id);
-	}
+	VoxelGraphEditorNodePreview::update_previews(
+			adapter, to_span(previews), _node_preview_mode, _preview_scale, _preview_offset
+	);
 }
 
 void VoxelGraphEditor::clear_range_analysis_tooltips() {
@@ -1294,11 +1245,11 @@ void VoxelGraphEditor::update_preview_axes_menu() {
 	// Update menu state from current settings
 	ERR_FAIL_COND(_preview_axes_menu == nullptr);
 	ToolbarMenuIDs id;
-	switch (_preview_axes) {
-		case PREVIEW_AXES_XY:
+	switch (_node_preview_mode) {
+		case GraphEditorPreview::VIEW_SLICE_XY:
 			id = MENU_PREVIEW_AXES_XY;
 			break;
-		case PREVIEW_AXES_XZ:
+		case GraphEditorPreview::VIEW_SLICE_XZ:
 			id = MENU_PREVIEW_AXES_XZ;
 			break;
 		default:
@@ -1320,8 +1271,19 @@ void VoxelGraphEditor::hide_profiling_ratios() {
 
 void VoxelGraphEditor::update_buttons_availability() {
 	// Some features are only available with a generator (for now)
-	_debug_menu_button->set_disabled(_generator.is_null());
-	_graph_menu_button->set_disabled(_generator.is_null());
+	// _debug_menu_button->set_disabled(_generator.is_null());
+	// _graph_menu_button->set_disabled(_generator.is_null());
+
+	// TODO Implement profiling on any graph
+	PopupMenu &menu = *_debug_menu_button->get_popup();
+	{
+		const int index = menu.get_item_index(MENU_PROFILE);
+		menu.set_item_disabled(index, _generator.is_null());
+	}
+	{
+		const int index = menu.get_item_index(MENU_LIVE_UPDATE);
+		menu.set_item_disabled(index, _generator.is_null());
+	}
 }
 
 void VoxelGraphEditor::_on_range_analysis_toggled(bool enabled) {
