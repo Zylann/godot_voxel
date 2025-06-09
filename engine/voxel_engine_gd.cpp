@@ -181,12 +181,9 @@ int VoxelEngine::get_thread_count() const {
 	return zylann::voxel::VoxelEngine::get_singleton().get_thread_count();
 }
 
-void VoxelEngine::set_thread_count(int count) {
-	ERR_FAIL_COND_MSG(count < 1,
-			vformat("The thread count must be a number from 1 to %d", ThreadedTaskRunner::MAX_THREADS));
-	// if `thread_count` is bigger than MAX_THREADS we allow the function to continue,
-	// as the rest of the code is build to handle this
-
+void VoxelEngine::set_thread_count(uint32_t count) {
+	ERR_FAIL_COND_MSG(count < 1 || count > ThreadedTaskRunner::MAX_THREADS,
+			vformat("Thread count must be a number from 1 to %d", ThreadedTaskRunner::MAX_THREADS));
 	zylann::voxel::VoxelEngine::get_singleton().set_thread_count(count);
 }
 
