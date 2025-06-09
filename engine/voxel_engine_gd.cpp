@@ -177,6 +177,19 @@ Dictionary VoxelEngine::get_stats() const {
 	return to_dict(zylann::voxel::VoxelEngine::get_singleton().get_stats());
 }
 
+int VoxelEngine::get_thread_count() const {
+	return zylann::voxel::VoxelEngine::get_singleton().get_thread_count();
+}
+
+void VoxelEngine::set_thread_count(int count) {
+	ERR_FAIL_COND_MSG(count < 1,
+			vformat("The thread count must be a number from 1 to %d", ThreadedTaskRunner::MAX_THREADS));
+	// if `thread_count` is bigger than MAX_THREADS we allow the function to continue,
+	// as the rest of the code is build to handle this
+
+	zylann::voxel::VoxelEngine::get_singleton().set_thread_count(count);
+}
+
 void VoxelEngine::schedule_task(Ref<ZN_ThreadedTask> task) {
 	ERR_FAIL_COND(task.is_null());
 	ERR_FAIL_COND_MSG(task->is_scheduled(), "Cannot schedule again a task that is already scheduled");
@@ -235,6 +248,8 @@ void VoxelEngine::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_version_status"), &VoxelEngine::get_version_status);
 	ClassDB::bind_method(D_METHOD("get_version_git_hash"), &VoxelEngine::get_version_git_hash);
 	ClassDB::bind_method(D_METHOD("get_stats"), &VoxelEngine::get_stats);
+	ClassDB::bind_method(D_METHOD("get_thread_count"), &VoxelEngine::get_thread_count);
+	ClassDB::bind_method(D_METHOD("set_thread_count", "count"), &VoxelEngine::set_thread_count);
 
 	ClassDB::bind_method(
 			D_METHOD("get_threaded_graphics_resource_building_enabled"),

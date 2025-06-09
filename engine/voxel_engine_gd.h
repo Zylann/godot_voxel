@@ -38,6 +38,9 @@ public:
 	Dictionary get_stats() const;
 	void schedule_task(Ref<ZN_ThreadedTask> task);
 
+	int get_thread_count() const;
+	void set_thread_count(int count);
+
 #ifdef TOOLS_ENABLED
 	void set_editor_camera_info(Vector3 position, Vector3 direction);
 	Vector3 get_editor_camera_position() const;
