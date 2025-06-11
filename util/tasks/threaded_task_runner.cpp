@@ -90,11 +90,11 @@ void ThreadedTaskRunner::set_thread_count(uint32_t count) {
 		count = MAX_THREADS;
 	}
 	destroy_all_threads();
-	for (uint32_t i = _thread_count; i < count; ++i) {
+	_thread_count = count;
+	for (uint32_t i = 0; i < _thread_count; ++i) {
 		ThreadData &d = _threads[i];
 		create_thread(d, i);
 	}
-	_thread_count = count;
 }
 
 void ThreadedTaskRunner::set_priority_update_period(uint32_t milliseconds) {
