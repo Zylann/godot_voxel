@@ -14,6 +14,7 @@ Dev 1.4.2
 Primarily developped with Godot 4.4.1+
 
 - `VoxelBuffer`: added functions to rotate/mirror contents
+- `VoxelEngine`: added function to manually change thread count (thanks to wildlachs)
 - `VoxelGeneratorGraph`: implemented constant reduction, which slightly optimizes graphs running on CPU if they contain constant branches
 - `VoxelGeneratorHeightmap`: added `offset` property
 - `VoxelGraphFunction`: Editor: preview nodes should now work
@@ -52,6 +53,7 @@ Primarily developped with Godot 4.4.1+
     - `VoxelTool`:
         - `is_area_editable` was off by one in size, and was always returning `true` if the size of the AABB had any component smaller than 1
         - `paste_masked` didn't check the right coordinates to clear metadata in destinations containing at least one. It also caused a spam of `get_voxel` being at invalid position
+        - `paste_masked_writable_list` caused an index out of bounds error (spotted thanks to @HiperSlug)
     - `VoxelToolLodTerrain`: fixed `do_graph` tended to produce boxes when the transform was scaled and `sdf_strength` was not 1
     - `VoxelViewer`: reparenting (`remove_child` followed by `add_child`) should no longer reload terrain around the viewer
     - `VoxelAStarGrid3D`: fixed crash if `find_path` is called without setting a terrain first
