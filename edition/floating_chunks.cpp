@@ -436,10 +436,11 @@ Array separate_floating_chunks_to_rigidbodies(
 					Ref<ShaderMaterial> sm = materials[i];
 					ZN_ASSERT_CONTINUE(sm.is_valid());
 					sm = sm->duplicate(false);
-					// That parameter should have a valid default value matching the local transform relative to the
-					// volume, which is usually per-instance, but in Godot 3 we have no such feature, so we have to
-					// duplicate.
-					// TODO Try using per-instance parameters for scalar uniforms (Godot 4 doesn't support textures)
+					// That parameter should have a valid default value matching the local transform
+					// relative to the volume, which is usually per-instance, but in Godot 3 we have
+					// no such feature, so we have to duplicate.
+					// TODO Try using per-instance parameters for scalar uniforms (Godot 4 doesn't
+					// support textures)
 					sm->set_shader_parameter(
 							VoxelStringNames::get_singleton().u_block_local_transform, local_transform
 					);
@@ -447,8 +448,8 @@ Array separate_floating_chunks_to_rigidbodies(
 				}
 			}
 
-			// TODO If normalmapping is used here with the Transvoxel mesher, we need to either turn it off just for
-			// this call, or to pass the right options
+			// TODO If normalmapping is used here with the Transvoxel mesher, we need to either turn
+			// it off just for this call, or to pass the right options
 			Ref<ArrayMesh> mesh = mesher->build_mesh(info.voxels, materials, Dictionary());
 			// The mesh is not supposed to be null,
 			// because we build these buffers from connected groups that had negative SDF.
@@ -465,17 +466,18 @@ Array separate_floating_chunks_to_rigidbodies(
 			// 	Ref<StreamPeerBuffer> peer;
 			// 	peer.instance();
 			// 	serializer->serialize(peer, info.voxels, false);
-			// 	String fpath = String("debug_data/split_dump_{0}.bin").format(varray(instance_index));
-			// 	FileAccess *f = FileAccess::open(fpath, FileAccess::WRITE);
-			// 	PoolByteArray bytes = peer->get_data_array();
-			// 	PoolByteArray::Read bytes_read = bytes.read();
+			// 	String fpath =
+			// String("debug_data/split_dump_{0}.bin").format(varray(instance_index)); 	FileAccess *f
+			// = FileAccess::open(fpath, FileAccess::WRITE); 	PoolByteArray bytes =
+			// peer->get_data_array(); 	PoolByteArray::Read bytes_read = bytes.read();
 			// 	f->store_buffer(bytes_read.ptr(), bytes.size());
 			// 	f->close();
 			// 	memdelete(f);
 			// }
 
 			// TODO Option to make multiple convex shapes
-			// TODO Use the fast way. This is slow because of the internal TriangleMesh thing and mesh data query.
+			// TODO Use the fast way. This is slow because of the internal TriangleMesh thing and
+			// mesh data query.
 			// TODO Don't create a body if the mesh has no triangles
 			Ref<Shape3D> shape = mesh->create_convex_shape();
 			ERR_CONTINUE(shape.is_null());
