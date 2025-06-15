@@ -319,7 +319,7 @@ Array VoxelToolLodTerrain::separate_floating_chunks(AABB world_box, Object *pare
 	Array materials;
 	materials.append(_terrain->get_material());
 	const Box3i int_world_box(math::floor_to_int(world_box.position), math::ceil_to_int(world_box.size));
-	return zylann::voxel::separate_floating_chunks(
+	return zylann::voxel::separate_floating_chunks_to_rigidbodies(
 			*this, int_world_box, parent_node, _terrain->get_global_transform(), mesher, materials
 	);
 }

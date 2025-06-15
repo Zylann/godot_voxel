@@ -12,7 +12,7 @@ namespace zylann::voxel {
 
 class VoxelTool;
 
-Array separate_floating_chunks(
+Array separate_floating_chunks_to_rigidbodies(
 		VoxelTool &voxel_tool,
 		Box3i world_box,
 		Node *parent_node,

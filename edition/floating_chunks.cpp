@@ -107,24 +107,21 @@ void box_propagate_ccl(Span<uint8_t> cells, const Vector3i size) {
 	}
 }
 
-// Turns floating chunks of voxels into rigidbodies:
-// Detects separate groups of connected voxels within a box. Each group fully contained in the box is removed from
-// the source volume, and turned into a rigidbody.
-// This is one way of doing it, I don't know if it's the best way (there is rarely a best way)
-// so there are probably other approaches that could be explored in the future, if they have better performance
-Array separate_floating_chunks(
+struct FloatingChunkInfo {
+	VoxelBuffer voxels;
+	Vector3i world_pos;
+};
+
+// Erases floating chunks of voxels and returns individual copies of these chunks, if they are entirely contained within
+// the given box.
+StdVector<FloatingChunkInfo> separate_floating_chunks(
 		VoxelTool &voxel_tool,
-		Box3i world_box,
-		Node *parent_node,
-		Transform3D terrain_transform,
-		Ref<VoxelMesher> mesher,
-		Array materials
+		const Box3i world_box,
+		// Additional voxels to extract around each chunk
+		const int min_padding, // mesher->get_minimum_padding();
+		const int max_padding // mesher->get_maximum_padding();
 ) {
 	ZN_PROFILE_SCOPE();
-
-	// Checks
-	ERR_FAIL_COND_V(mesher.is_null(), Array());
-	ERR_FAIL_COND_V(parent_node == nullptr, Array());
 
 	// Copy source data
 
@@ -251,15 +248,7 @@ Array separate_floating_chunks(
 
 	// Create voxel buffer for each group
 
-	struct InstanceInfo {
-		VoxelBuffer voxels;
-		Vector3i world_pos;
-		unsigned int label;
-	};
-	StdVector<InstanceInfo> instances_info;
-
-	const int min_padding = 2; // mesher->get_minimum_padding();
-	const int max_padding = 2; // mesher->get_maximum_padding();
+	StdVector<FloatingChunkInfo> instances_info;
 
 	{
 		ZN_PROFILE_SCOPE_NAMED("Extraction");
@@ -276,7 +265,7 @@ Array separate_floating_chunks(
 			const Vector3i size =
 					local_bounds.max_pos - local_bounds.min_pos + Vector3iUtil::create(1 + max_padding + min_padding);
 
-			instances_info.push_back(InstanceInfo{ VoxelBuffer(VoxelBuffer::ALLOCATOR_POOL), world_pos, label });
+			instances_info.push_back(FloatingChunkInfo{ VoxelBuffer(VoxelBuffer::ALLOCATOR_POOL), world_pos });
 
 			VoxelBuffer &buffer = instances_info.back().voxels;
 			buffer.create(size.x, size.y, size.z);
@@ -326,10 +315,39 @@ Array separate_floating_chunks(
 
 		for (unsigned int instance_index = 0; instance_index < instances_info.size(); ++instance_index) {
 			CRASH_COND(instance_index >= instances_info.size());
-			const InstanceInfo &info = instances_info[instance_index];
+			const FloatingChunkInfo &info = instances_info[instance_index];
 			voxel_tool.sdf_stamp_erase(info.voxels, info.world_pos);
 		}
 	}
+
+	return instances_info;
+}
+
+// Turns floating chunks of voxels into rigidbodies:
+// Detects separate groups of connected voxels within a box. Each group fully contained in the box is removed from
+// the source volume, and turned into a rigidbody.
+// This is one way of doing it, I don't know if it's the best way (there is rarely a best way)
+// so there are probably other approaches that could be explored in the future, if they have better performance
+Array separate_floating_chunks_to_rigidbodies(
+		VoxelTool &voxel_tool,
+		Box3i world_box,
+		Node *parent_node,
+		Transform3D terrain_transform,
+		Ref<VoxelMesher> mesher,
+		Array materials
+) {
+	ZN_PROFILE_SCOPE();
+
+	// Checks
+	ERR_FAIL_COND_V(mesher.is_null(), Array());
+	ERR_FAIL_COND_V(parent_node == nullptr, Array());
+
+	const int min_padding = 2;
+	const int max_padding = 2;
+
+	// TODO Candidate for temp allocator
+	StdVector<FloatingChunkInfo> floating_chunks =
+			separate_floating_chunks(voxel_tool, world_box, min_padding, max_padding);
 
 	// Find out which materials contain parameters that require instancing.
 	//
@@ -378,13 +396,13 @@ Array separate_floating_chunks(
 	{
 		ZN_PROFILE_SCOPE_NAMED("Remeshing and instancing");
 
-		for (unsigned int instance_index = 0; instance_index < instances_info.size(); ++instance_index) {
-			CRASH_COND(instance_index >= instances_info.size());
-			const InstanceInfo &info = instances_info[instance_index];
+		for (unsigned int instance_index = 0; instance_index < floating_chunks.size(); ++instance_index) {
+			CRASH_COND(instance_index >= floating_chunks.size());
+			const FloatingChunkInfo &info = floating_chunks[instance_index];
 
-			CRASH_COND(info.label >= bounds_per_label.size());
-			const Bounds local_bounds = bounds_per_label[info.label];
-			ERR_CONTINUE(!local_bounds.valid);
+			// CRASH_COND(info.label >= bounds_per_label.size());
+			// const Bounds local_bounds = bounds_per_label[info.label];
+			// ERR_CONTINUE(!local_bounds.valid);
 
 			// DEBUG
 			// print_line(String("--- Instance {0}").format(varray(instance_index)));
@@ -464,8 +482,7 @@ Array separate_floating_chunks(
 			CollisionShape3D *collision_shape = memnew(CollisionShape3D);
 			collision_shape->set_shape(shape);
 			// Center the shape somewhat, because Godot is confusing node origin with center of mass
-			const Vector3i size =
-					local_bounds.max_pos - local_bounds.min_pos + Vector3iUtil::create(1 + max_padding + min_padding);
+			const Vector3i size = info.voxels.get_size();
 			const Vector3 offset = -Vector3(size) * 0.5f;
 			collision_shape->set_position(offset);
 
