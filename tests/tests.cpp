@@ -71,6 +71,7 @@ void run_voxel_tests(const testing::TestOptions &options) {
 	VOXEL_TEST(test_box3i_for_inner_outline);
 	VOXEL_TEST(test_voxel_data_map_paste_fill);
 	VOXEL_TEST(test_voxel_data_map_paste_mask);
+	VOXEL_TEST(test_voxel_data_map_paste_dst_mask);
 	VOXEL_TEST(test_voxel_data_map_copy);
 	VOXEL_TEST(test_encode_weights_packed_u16);
 	VOXEL_TEST(test_copy_3d_region_zxy);
@@ -158,6 +159,7 @@ void run_voxel_tests(const testing::TestOptions &options) {
 	VOXEL_TEST(test_sdf_hemisphere);
 	VOXEL_TEST(test_fnl_range);
 	VOXEL_TEST(test_voxel_buffer_set_channel_bytes);
+	VOXEL_TEST(test_voxel_buffer_issue769);
 	VOXEL_TEST(test_raycast_sdf);
 	VOXEL_TEST(test_raycast_blocky);
 	VOXEL_TEST(test_raycast_blocky_no_cache_graph);

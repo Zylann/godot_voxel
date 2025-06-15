@@ -20,6 +20,11 @@ public:
 		_size = size;
 	}
 
+	void clear() {
+		_bits.clear();
+		_size = 0;
+	}
+
 	void fill(bool v) {
 		// Note: padding bits will also be set
 		uint64_t m = v ? 0xffffffffffffffff : 0;

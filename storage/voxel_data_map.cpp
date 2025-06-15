@@ -296,7 +296,7 @@ void VoxelDataMap::paste_masked(
 			VoxelBuffer::mask_to_channels_list(channels_mask);
 
 	DynamicBitset bitarray;
-	if (dst_writable_values.size() == 1) {
+	if (dst_writable_values.size() > 1) {
 		ZN_ASSERT_RETURN(indices_to_bitarray_u16(dst_writable_values, bitarray));
 	}
 

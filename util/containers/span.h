@@ -226,6 +226,11 @@ Span<T> to_span(std::array<T, N> &a) {
 	return Span<T>(a.data(), a.size());
 }
 
+template <typename T, size_t N>
+Span<const T> to_span(const std::array<T, N> &a) {
+	return Span<const T>(a.data(), a.size());
+}
+
 // TODO Deprecate, now Span has a conversion constructor that can allow doing that
 template <typename T>
 Span<const T> to_span_const(const Span<T> &a) {

@@ -176,6 +176,7 @@ struct SrcMasked_DstWritableBitArray {
 } // namespace paste_functors
 
 bool indices_to_bitarray_u16(Span<const int32_t> indices, DynamicBitset &bitarray);
+void indices_to_bitarray(Span<const uint8_t> indices, DynamicBitset &bitarray);
 
 template <typename FGetBlock>
 void paste_to_chunked_storage_masked_writable_list(

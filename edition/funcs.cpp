@@ -301,18 +301,35 @@ bool indices_to_bitarray_u16(Span<const int32_t> indices, DynamicBitset &bitarra
 	}
 #endif
 
-	int32_t max_value = 0;
+	int32_t max_value = -1;
 	for (const int32_t i : indices) {
 		max_value = math::max(i, max_value);
 	}
 
-	bitarray.resize_no_init(indices.size() / 8);
+	bitarray.resize_no_init(max_value + 1);
 
 	for (const int32_t i : indices) {
 		bitarray.set(i);
 	}
 
 	return true;
+}
+
+void indices_to_bitarray(Span<const uint8_t> indices, DynamicBitset &bitarray) {
+	if (indices.size() == 0) {
+		bitarray.clear();
+	}
+
+	uint8_t max_value = 0;
+	for (const uint8_t i : indices) {
+		max_value = math::max(i, max_value);
+	}
+
+	bitarray.resize_no_init(max_value + 1);
+
+	for (const uint8_t i : indices) {
+		bitarray.set(i);
+	}
 }
 
 } // namespace zylann::voxel
