@@ -315,12 +315,23 @@ Array VoxelToolLodTerrain::separate_floating_chunks(AABB world_box, Object *pare
 #endif
 	ERR_FAIL_COND_V(_terrain == nullptr, Array());
 	ERR_FAIL_COND_V(!math::is_valid_size(world_box.size), Array());
+
 	Ref<VoxelMesher> mesher = _terrain->get_mesher();
+	ERR_FAIL_COND_V(mesher.is_null(), Array());
+
 	Array materials;
 	materials.append(_terrain->get_material());
+
 	const Box3i int_world_box(math::floor_to_int(world_box.position), math::ceil_to_int(world_box.size));
+
 	return zylann::voxel::separate_floating_chunks_to_rigidbodies(
-			*this, int_world_box, parent_node, _terrain->get_global_transform(), mesher, materials
+			*this,
+			int_world_box,
+			VoxelBuffer::CHANNEL_SDF,
+			parent_node,
+			_terrain->get_global_transform(),
+			**mesher,
+			materials
 	);
 }
 

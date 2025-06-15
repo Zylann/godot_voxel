@@ -1,5 +1,6 @@
 #include "floating_chunks.h"
 #include "../constants/voxel_string_names.h"
+#include "../meshers/voxel_mesher.h"
 #include "../storage/voxel_buffer.h"
 #include "../util/godot/classes/array_mesh.h"
 #include "../util/godot/classes/collision_shape_3d.h"
@@ -12,6 +13,7 @@
 #include "../util/godot/classes/timer.h"
 #include "../util/island_finder.h"
 #include "../util/profiling.h"
+#include "../util/string/format.h"
 #include "voxel_tool.h"
 
 namespace zylann::voxel {
@@ -107,6 +109,130 @@ void box_propagate_ccl(Span<uint8_t> cells, const Vector3i size) {
 	}
 }
 
+template <typename T>
+bool fill_nonzero(const VoxelBuffer &vb, const VoxelBuffer::ChannelId channel_id, DynamicBitset &bitarray) {
+	Span<const T> data;
+	ZN_ASSERT_RETURN_V(vb.get_channel_data_read_only(channel_id, data), false);
+	for (unsigned int i = 0; i < data.size(); ++i) {
+		const T v = data[i];
+		bitarray.set(i, v != 0);
+	}
+	return true;
+}
+
+bool get_nonzero_solid_buffer(const VoxelBuffer &vb, DynamicBitset &bitarray, const VoxelBuffer::ChannelId channel_id) {
+	const size_t volume = Vector3iUtil::get_volume_u64(vb.get_size());
+	bitarray.resize_no_init(volume);
+
+	if (vb.get_channel_compression(channel_id) == VoxelBuffer::COMPRESSION_UNIFORM) {
+		const int64_t v = vb.get_voxel(Vector3i(), channel_id);
+		bitarray.fill(v != 0);
+		return true;
+	}
+
+	switch (vb.get_channel_depth(channel_id)) {
+		case VoxelBuffer::DEPTH_8_BIT:
+			ZN_ASSERT_RETURN_V(fill_nonzero<uint8_t>(vb, channel_id, bitarray), false);
+			break;
+
+		case VoxelBuffer::DEPTH_16_BIT:
+			ZN_ASSERT_RETURN_V(fill_nonzero<uint16_t>(vb, channel_id, bitarray), false);
+			break;
+
+		case VoxelBuffer::DEPTH_32_BIT:
+			ZN_ASSERT_RETURN_V(fill_nonzero<uint32_t>(vb, channel_id, bitarray), false);
+			break;
+
+		default:
+			ZN_PRINT_ERROR("Unsupported depth");
+			return false;
+	}
+
+	return true;
+}
+
+bool get_sdf_solid_buffer(const VoxelBuffer &vb, DynamicBitset &bitarray) {
+	const size_t volume = Vector3iUtil::get_volume_u64(vb.get_size());
+	bitarray.resize_no_init(volume);
+
+	const VoxelBuffer::ChannelId channel_id = VoxelBuffer::CHANNEL_SDF;
+
+	if (vb.get_channel_compression(channel_id) == VoxelBuffer::COMPRESSION_UNIFORM) {
+		const float sd = vb.get_voxel_f(Vector3i(), channel_id);
+		bitarray.fill(sd < 0.f);
+		return true;
+	}
+
+	// {
+	// 	unsigned int i = 0;
+	// 	Vector3i pos;
+	// 	for (pos.z = 0; pos.z < vb.get_size().z; ++pos.z) {
+	// 		for (pos.x = 0; pos.x < vb.get_size().x; ++pos.x) {
+	// 			for (pos.y = 0; pos.y < vb.get_size().y; ++pos.y) {
+	// 				bitarray.set(i, vb.get_voxel_f(pos, channel_id) < 0.f);
+	// 				++i;
+	// 			}
+	// 		}
+	// 	}
+	// 	return true;
+	// }
+
+	// Note: signed distance 0 is considered solid by the mesher
+
+	switch (vb.get_channel_depth(channel_id)) {
+		case VoxelBuffer::DEPTH_8_BIT: {
+			Span<const int8_t> sd_data;
+			ZN_ASSERT_RETURN_V(vb.get_channel_data_read_only(channel_id, sd_data), false);
+			for (unsigned int i = 0; i < sd_data.size(); ++i) {
+				const int8_t sd = sd_data[i];
+				bitarray.set(i, sd <= 0);
+			}
+		} break;
+
+		case VoxelBuffer::DEPTH_16_BIT: {
+			Span<const int16_t> sd_data;
+			ZN_ASSERT_RETURN_V(vb.get_channel_data_read_only(channel_id, sd_data), false);
+			for (unsigned int i = 0; i < sd_data.size(); ++i) {
+				const int16_t sd = sd_data[i];
+				bitarray.set(i, sd <= 0);
+			}
+		} break;
+
+		case VoxelBuffer::DEPTH_32_BIT: {
+			Span<const float> sd_data;
+			ZN_ASSERT_RETURN_V(vb.get_channel_data_read_only(channel_id, sd_data), false);
+			for (unsigned int i = 0; i < sd_data.size(); ++i) {
+				const float sd = sd_data[i];
+				bitarray.set(i, sd <= 0.f);
+			}
+		} break;
+
+		default:
+			ZN_PRINT_ERROR("Unsupported depth");
+			return false;
+	}
+
+	return true;
+}
+
+bool get_solid_buffer(const VoxelBuffer &vb, const VoxelBuffer::ChannelId main_channel, DynamicBitset &solid_buffer) {
+	switch (main_channel) {
+		case VoxelBuffer::CHANNEL_SDF:
+			ZN_ASSERT_RETURN_V(get_sdf_solid_buffer(vb, solid_buffer), false);
+			break;
+
+		case VoxelBuffer::CHANNEL_TYPE:
+			ZN_ASSERT_RETURN_V(get_nonzero_solid_buffer(vb, solid_buffer, main_channel), false);
+			break;
+
+		default:
+			ZN_PRINT_ERROR(format("Unsupported channel {}", main_channel));
+			return false;
+	}
+
+	return true;
+}
+
 struct FloatingChunkInfo {
 	VoxelBuffer voxels;
 	Vector3i world_pos;
@@ -114,9 +240,12 @@ struct FloatingChunkInfo {
 
 // Erases floating chunks of voxels and returns individual copies of these chunks, if they are entirely contained within
 // the given box.
+// This is one way of doing it, I don't know if it's the best way (there is rarely a best way)
+// so there are probably other approaches that could be explored in the future, if they have better performance
 StdVector<FloatingChunkInfo> separate_floating_chunks(
 		VoxelTool &voxel_tool,
 		const Box3i world_box,
+		const VoxelBuffer::ChannelId main_channel,
 		// Additional voxels to extract around each chunk
 		const int min_padding, // mesher->get_minimum_padding();
 		const int max_padding // mesher->get_maximum_padding();
@@ -126,8 +255,7 @@ StdVector<FloatingChunkInfo> separate_floating_chunks(
 	// Copy source data
 
 	// TODO Do not assume channel, at the moment it's hardcoded for smooth terrain
-	static const int channels_mask = (1 << VoxelBuffer::CHANNEL_SDF);
-	static const VoxelBuffer::ChannelId main_channel = VoxelBuffer::CHANNEL_SDF;
+	static const int channels_mask = (1 << main_channel);
 
 	VoxelBuffer source_copy_buffer(VoxelBuffer::ALLOCATOR_POOL);
 	{
@@ -143,16 +271,20 @@ StdVector<FloatingChunkInfo> separate_floating_chunks(
 	ccl_output.resize(Vector3iUtil::get_volume_u64(world_box.size));
 
 	unsigned int label_count = 0;
-
 	{
+		DynamicBitset solid_buffer;
+		ZN_ASSERT_RETURN_V(
+				get_solid_buffer(source_copy_buffer, main_channel, solid_buffer), StdVector<FloatingChunkInfo>()
+		);
+
 		// TODO Allow to run the algorithm at a different LOD, to trade precision for speed
 		ZN_PROFILE_SCOPE_NAMED("CCL scan");
 		IslandFinder island_finder;
 		island_finder.scan_3d(
 				Box3i(Vector3i(), world_box.size),
-				[&source_copy_buffer](Vector3i pos) {
-					// TODO Can be optimized further with direct access
-					return source_copy_buffer.get_voxel_f(pos.x, pos.y, pos.z, main_channel) < 0.f;
+				[&solid_buffer, world_box](Vector3i pos) {
+					const unsigned int i = Vector3iUtil::get_zxy_index(pos, world_box.size);
+					return solid_buffer.get(i);
 				},
 				to_span(ccl_output),
 				&label_count
@@ -253,6 +385,9 @@ StdVector<FloatingChunkInfo> separate_floating_chunks(
 	{
 		ZN_PROFILE_SCOPE_NAMED("Extraction");
 
+		const uint64_t empty_value =
+				VoxelBuffer::get_default_raw_value(main_channel, source_copy_buffer.get_channel_depth(main_channel));
+
 		for (unsigned int label = 1; label < bounds_per_label.size(); ++label) {
 			CRASH_COND(label >= bounds_per_label.size());
 			const Bounds local_bounds = bounds_per_label[label];
@@ -278,9 +413,10 @@ StdVector<FloatingChunkInfo> separate_floating_chunks(
 					Vector3iUtil::create(min_padding),
 					buffer.get_size() - Vector3iUtil::create(min_padding + max_padding)
 			);
-			Box3i(Vector3i(), buffer.get_size()).difference(inner_box, [&buffer](Box3i box) {
-				buffer.fill_area_f(constants::SDF_FAR_OUTSIDE, box.position, box.position + box.size, main_channel);
-			});
+			Box3i(Vector3i(), buffer.get_size())
+					.difference(inner_box, [&buffer, main_channel, empty_value](const Box3i box) {
+						buffer.fill_area(empty_value, box.position, box.position + box.size, main_channel);
+					});
 
 			// Filter out voxels that don't belong to this label
 			for (int z = local_bounds.min_pos.z; z <= local_bounds.max_pos.z; ++z) {
@@ -291,13 +427,13 @@ StdVector<FloatingChunkInfo> separate_floating_chunks(
 						const uint8_t label2 = ccl_output[ccl_index];
 
 						if (label2 != 0 && label != label2) {
-							buffer.set_voxel_f(
-									constants::SDF_FAR_OUTSIDE,
+							const Vector3i pos(
 									min_padding + x - local_bounds.min_pos.x,
 									min_padding + y - local_bounds.min_pos.y,
-									min_padding + z - local_bounds.min_pos.z,
-									main_channel
+									min_padding + z - local_bounds.min_pos.z
 							);
+
+							buffer.set_voxel(empty_value, pos, main_channel);
 						}
 					}
 				}
@@ -313,10 +449,23 @@ StdVector<FloatingChunkInfo> separate_floating_chunks(
 
 		voxel_tool.set_channel(main_channel);
 
-		for (unsigned int instance_index = 0; instance_index < instances_info.size(); ++instance_index) {
-			CRASH_COND(instance_index >= instances_info.size());
-			const FloatingChunkInfo &info = instances_info[instance_index];
-			voxel_tool.sdf_stamp_erase(info.voxels, info.world_pos);
+		switch (main_channel) {
+			case VoxelBuffer::CHANNEL_SDF:
+				for (const FloatingChunkInfo &info : instances_info) {
+					voxel_tool.sdf_stamp_erase(info.voxels, info.world_pos);
+				}
+				break;
+
+			case VoxelBuffer::CHANNEL_TYPE:
+				voxel_tool.set_mode(VoxelTool::MODE_SET);
+				voxel_tool.set_value(0);
+				for (const FloatingChunkInfo &info : instances_info) {
+					voxel_tool.do_box(info.world_pos, info.world_pos + info.voxels.get_size());
+				}
+				break;
+
+			default:
+				break;
 		}
 	}
 
@@ -326,20 +475,18 @@ StdVector<FloatingChunkInfo> separate_floating_chunks(
 // Turns floating chunks of voxels into rigidbodies:
 // Detects separate groups of connected voxels within a box. Each group fully contained in the box is removed from
 // the source volume, and turned into a rigidbody.
-// This is one way of doing it, I don't know if it's the best way (there is rarely a best way)
-// so there are probably other approaches that could be explored in the future, if they have better performance
 Array separate_floating_chunks_to_rigidbodies(
 		VoxelTool &voxel_tool,
 		Box3i world_box,
+		const VoxelBuffer::ChannelId main_channel,
 		Node *parent_node,
 		Transform3D terrain_transform,
-		Ref<VoxelMesher> mesher,
+		VoxelMesher &mesher,
 		Array materials
 ) {
 	ZN_PROFILE_SCOPE();
 
 	// Checks
-	ERR_FAIL_COND_V(mesher.is_null(), Array());
 	ERR_FAIL_COND_V(parent_node == nullptr, Array());
 
 	const int min_padding = 2;
@@ -347,7 +494,11 @@ Array separate_floating_chunks_to_rigidbodies(
 
 	// TODO Candidate for temp allocator
 	StdVector<FloatingChunkInfo> floating_chunks =
-			separate_floating_chunks(voxel_tool, world_box, min_padding, max_padding);
+			separate_floating_chunks(voxel_tool, world_box, main_channel, min_padding, max_padding);
+
+	if (floating_chunks.size() == 0) {
+		return Array();
+	}
 
 	// Find out which materials contain parameters that require instancing.
 	//
@@ -450,7 +601,7 @@ Array separate_floating_chunks_to_rigidbodies(
 
 			// TODO If normalmapping is used here with the Transvoxel mesher, we need to either turn
 			// it off just for this call, or to pass the right options
-			Ref<ArrayMesh> mesh = mesher->build_mesh(info.voxels, materials, Dictionary());
+			Ref<ArrayMesh> mesh = mesher.build_mesh(info.voxels, materials, Dictionary());
 			// The mesh is not supposed to be null,
 			// because we build these buffers from connected groups that had negative SDF.
 			ERR_CONTINUE(mesh.is_null());
