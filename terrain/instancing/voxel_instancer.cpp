@@ -1512,10 +1512,12 @@ VoxelInstancer::SceneInstance VoxelInstancer::create_scene_instance(
 			scene_item.get_scene().is_null(),
 			instance,
 			String("{0} ({1}) is missing an attached scene in {2} ({3})")
-					.format(varray(VoxelInstanceLibrarySceneItem::get_class_static(),
+					.format(
+							varray(VoxelInstanceLibrarySceneItem::get_class_static(),
 								   scene_item.get_item_name(),
-								   VoxelInstancer::get_class_static()),
-							get_path())
+								   VoxelInstancer::get_class_static(),
+								   get_path())
+					)
 	);
 	Node *root = scene_item.get_scene()->instantiate();
 	ERR_FAIL_COND_V(root == nullptr, instance);
@@ -1766,10 +1768,12 @@ void VoxelInstancer::update_scene_block_from_transforms(
 	ERR_FAIL_COND_MSG(
 			scene_item.get_scene().is_null(),
 			String("{0} ({1}) is missing an attached scene in {2} ({3})")
-					.format(varray(VoxelInstanceLibrarySceneItem::get_class_static(),
+					.format(
+							varray(VoxelInstanceLibrarySceneItem::get_class_static(),
 								   scene_item.get_item_name(),
-								   VoxelInstancer::get_class_static()),
-							get_path())
+								   VoxelInstancer::get_class_static(),
+								   get_path())
+					)
 	);
 
 	const int data_block_size_po2 = _parent_data_block_size_po2;
