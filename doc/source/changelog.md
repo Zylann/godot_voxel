@@ -33,7 +33,9 @@ Primarily developped with Godot 4.4.1+
 - Introduced `VoxelFormat` to allow overriding default channel depths (was required to use the new `Single` voxel textures mode)
 
 - Fixes
-    - `VoxelBlockyTypeLibrary`: fixed crash when setting `types` to empty array
+    - `VoxelBlockyTypeLibrary`: 
+        - fixed crash when setting `types` to empty array
+        - fixed incorrect loading of the ID map when a type has more than two attributes
     - `VoxelInstancer`: 
         - Fixed instance removal failing randomly after at least one chunk gets unloaded
         - Fixed instances getting generated when digging down or building up in *already meshed* chunks that had no geometry before, when using `VoxelLodTerrain`

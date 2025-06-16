@@ -630,6 +630,14 @@ bool VoxelBlockyTypeLibrary::parse_voxel_id(const String &p_str, VoxelID &out_id
 		if (token.type == VoxelIDToken::CLOSE_BRACKET) {
 			break;
 		}
+
+		if (attribute_index > 0) {
+			ZN_ASSERT_RETURN_V(token.type == VoxelIDToken::COMMA, false);
+
+			result = tokenizer.get(token);
+			ZN_ASSERT_RETURN_V(result == VoxelIDTokenizer::TOKEN, false);
+		}
+
 		ZN_ASSERT_RETURN_V(token.type == VoxelIDToken::NAME, false);
 		out_id.variant_key.attribute_names[attribute_index] = p_str.substr(token.position, token.size);
 
