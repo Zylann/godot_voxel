@@ -59,6 +59,12 @@
 	<members>
 		<member name="cellular_distance_function" type="int" setter="set_cellular_distance_function" getter="get_cellular_distance_function" enum="FastNoise2.CellularDistanceFunction" default="0">
 		</member>
+		<member name="cellular_index0" type="int" setter="set_cellular_index0" getter="get_cellular_index0" default="0">
+			N-th closest cell used in cellular distance or value calculations.
+		</member>
+		<member name="cellular_index1" type="int" setter="set_cellular_index1" getter="get_cellular_index1" default="1">
+			N-th closest cell used as second component in some cellular distance calculations.
+		</member>
 		<member name="cellular_jitter" type="float" setter="set_cellular_jitter" getter="get_cellular_jitter" default="1.0">
 		</member>
 		<member name="cellular_return_type" type="int" setter="set_cellular_return_type" getter="get_cellular_return_type" enum="FastNoise2.CellularReturnType" default="0">
@@ -110,6 +116,8 @@
 		<constant name="TYPE_CELLULAR" value="4" enum="NoiseType">
 		</constant>
 		<constant name="TYPE_ENCODED_NODE_TREE" value="5" enum="NoiseType">
+		</constant>
+		<constant name="TYPE_CELLULAR_VALUE" value="6" enum="NoiseType">
 		</constant>
 		<constant name="FRACTAL_NONE" value="0" enum="FractalType">
 		</constant>

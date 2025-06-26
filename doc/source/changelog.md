@@ -29,6 +29,9 @@ Primarily developped with Godot 4.4.1+
 - `VoxelMesherBlocky`: added tint mode to modulate voxel colors using the `COLOR` channel.
 - `VoxelMesherTransvoxel`: added `Single` texturing mode, which uses only one byte per voxel to store a texture index. `VoxelGeneratorGraph` was also updated to include this mode.
 - `VoxelTool`: added `do_mesh` to replace `stamp_sdf`. Supported on terrains only.
+- `FastNoise2`: 
+    - Exposed `CELLULAR_VALUE` noise type 
+    - Exposed properties to choose cell indices used in distance/value calculations
 - Build system: added options to turn off features when doing custom builds
 - Introduced `VoxelFormat` to allow overriding default channel depths (was required to use the new `Single` voxel textures mode)
 
