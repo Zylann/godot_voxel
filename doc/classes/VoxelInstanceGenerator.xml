@@ -32,7 +32,7 @@
 		<member name="jitter" type="float" setter="set_jitter" getter="get_jitter" default="1.0">
 			Controls randomness of spawning position when [member emit_mode] is set to [constant EMIT_ONE_PER_TRIANGLE].
 		</member>
-		<member name="max_height" type="float" setter="set_max_height" getter="get_max_height" default="3.40282e+38">
+		<member name="max_height" type="float" setter="set_max_height" getter="get_max_height" default="3.4028235e+38">
 			Instances will not be created above this height.
 			This also depends on the chosen [member VoxelInstancer.up_mode].
 		</member>
@@ -43,7 +43,7 @@
 			Instances will not spawn if the ground has a slope higher than this angle.
 			This also depends on the chosen [member VoxelInstancer.up_mode].
 		</member>
-		<member name="min_height" type="float" setter="set_min_height" getter="get_min_height" default="1.17549e-38">
+		<member name="min_height" type="float" setter="set_min_height" getter="get_min_height" default="1.1754944e-38">
 			Instances will not be created below this height. This also depends on the chosen [member VoxelInstancer.up_mode].
 		</member>
 		<member name="min_scale" type="float" setter="set_min_scale" getter="get_min_scale" default="1.0">
