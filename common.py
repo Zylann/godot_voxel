@@ -21,6 +21,7 @@ def register_scons_options(env, is_extension):
     if not is_extension:
         env_vars.Add(BoolVariable("tracy", "Build with enabled Tracy Profiler integration", False))
         env_vars.Add(BoolVariable("voxel_fast_noise_2", "Build FastNoise2 support (x86-only)", True))
+        env_vars.Add(BoolVariable("voxel_werror", "Explicitely enable warninngs as errors for module code only", False))
 
     env_vars.Update(env)
 
