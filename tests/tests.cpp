@@ -28,6 +28,7 @@
 #include "voxel/test_voxel_mesher_cubes.h"
 
 #ifdef VOXEL_ENABLE_SMOOTH_MESHING
+#include "voxel/test_transvoxel.h"
 #ifdef VOXEL_ENABLE_GPU
 #include "voxel/test_detail_rendering_gpu.h"
 #endif
@@ -164,6 +165,9 @@ void run_voxel_tests(const testing::TestOptions &options) {
 	VOXEL_TEST(test_raycast_blocky);
 	VOXEL_TEST(test_raycast_blocky_no_cache_graph);
 	VOXEL_TEST(test_voxel_graph_constant_reduction);
+#ifdef VOXEL_ENABLE_SMOOTH_MESHING
+	VOXEL_TEST(test_transvoxel_issue772);
+#endif
 
 	print_line("------------ Voxel tests end -------------");
 }
