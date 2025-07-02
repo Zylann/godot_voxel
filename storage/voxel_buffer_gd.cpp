@@ -562,7 +562,7 @@ void VoxelBuffer::op_mul_value_f(float scale, VoxelBuffer::ChannelId channel) {
 	op_buffer_value_f(
 			*_buffer,
 			scale,
-			static_cast<zylann::voxel::VoxelBuffer::ChannelId>(channel),
+			static_cast<zylann::voxel::VoxelBuffer::ChannelId>(channel), //
 			[](float a, float b) { return a * b; }
 	);
 }
