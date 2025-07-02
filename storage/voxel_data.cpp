@@ -5,6 +5,7 @@
 #include "../util/string/format.h"
 #include "../util/thread/mutex.h"
 #include "metadata/voxel_metadata_variant.h"
+#include "voxel_buffer_gd.h"
 #include "voxel_data_grid.h"
 
 namespace zylann::voxel {
@@ -1285,9 +1286,9 @@ void VoxelData::set_voxel_metadata(Vector3i pos, Variant meta) {
 	// TODO Ability to have metadata in areas where voxels have not been allocated?
 	// Otherwise we have to generate the block, because that's where it is stored at the moment.
 	ZN_ASSERT_RETURN_MSG(block->has_voxels(), "Area not cached");
-	VoxelMetadata *meta_storage = block->get_voxels().get_or_create_voxel_metadata(lod.map.to_local(pos));
-	ZN_ASSERT_RETURN(meta_storage != nullptr);
-	godot::set_as_variant(*meta_storage, meta);
+	VoxelBuffer &vb = block->get_voxels();
+	const Vector3i rpos = lod.map.to_local(pos);
+	zylann::voxel::godot::set_voxel_metadata(vb, rpos, meta);
 }
 
 Variant VoxelData::get_voxel_metadata(Vector3i pos) {
@@ -1301,11 +1302,9 @@ Variant VoxelData::get_voxel_metadata(Vector3i pos) {
 	VoxelDataBlock *block = lod.map.get_block(bpos);
 	ZN_ASSERT_RETURN_V_MSG(block != nullptr, Variant(), "Area not editable");
 	ZN_ASSERT_RETURN_V_MSG(block->has_voxels(), Variant(), "Area not cached");
-	const VoxelMetadata *meta = block->get_voxels_const().get_voxel_metadata(lod.map.to_local(pos));
-	if (meta == nullptr) {
-		return Variant();
-	}
-	return godot::get_as_variant(*meta);
+	const VoxelBuffer &vb = block->get_voxels_const();
+	const Vector3i rpos = lod.map.to_local(pos);
+	return zylann::voxel::godot::get_voxel_metadata(vb, rpos);
 }
 
 } // namespace zylann::voxel
