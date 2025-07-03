@@ -255,7 +255,7 @@ jobs:
           SCONS_CACHE_MSVC_CONFIG: true
         run: |
           set PYTHONIOENCODING=utf8
-          scons verbose=yes warnings=extra werror=yes strict_checks=yes platform=windows tests=no target=editor dev_build=no debug_symbols=no module_mono_enabled=yes mono_glue=yes copy_mono_root=yes mono_static=yes "cache_path=${{github.workspace}}/.scons_cache/" cache_limit=${{env.SCONS_CACHE_LIMIT_GB}}
+          scons verbose=yes warnings=extra voxel_werror=yes strict_checks=yes platform=windows tests=no target=editor dev_build=no debug_symbols=no module_mono_enabled=yes mono_glue=yes copy_mono_root=yes mono_static=yes "cache_path=${{github.workspace}}/.scons_cache/" cache_limit=${{env.SCONS_CACHE_LIMIT_GB}}
 
       # TODO Enhancement: Run tests? Such tests are able to run from Godot 4.0 only
       # Execute unit tests for the editor
