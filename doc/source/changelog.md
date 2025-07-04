@@ -22,7 +22,9 @@ Primarily developped with Godot 4.4.1+
 - `VoxelInstanceLibraryMultiMeshItem`: 
     - Added `removal_behavior` property to trigger something when instances get removed
     - Added `collision_distance` to only create colliders when below a certain distance to chunks
-- `VoxelInstanceGenerator`: Added an option to snap instances based on the voxel generator SDF (only available with `VoxelGeneratorGraph`).
+- `VoxelInstanceGenerator`: 
+    - Added an option to snap instances based on the voxel generator SDF (only available with `VoxelGeneratorGraph`).
+    - Exposed threshold for voxel texture filtering 
 - `VoxelInstancer`: 
     - Added `remove_instances_in_sphere`
     - Added fading system so a shader can be used to fade instances as they load in and out
@@ -95,10 +97,11 @@ Primarily developped with Godot 4.4.
 - `VoxelBuffer`:
     - Added functions to create/update a `Texture3D` from the SDF channel
     - Added functions to get/set a whole channel as a raw `PackedByteArray`
-- `VoxelInstanceGenerator`: Added `OnePerTriangle` emission mode
+- `VoxelInstanceGenerator`: 
+    - Added `OnePerTriangle` emission mode
+    - Added ability to filter spawning by voxel texture indices, when using `VoxelMesherTransvoxel` with `texturing_mode` set to `4-blend over 16 textures`
 - `VoxelTool`: `raycast` also returns a `normal` based on voxel data (it may be different from a physics raycast in some cases)
 - `VoxelToolLodTerrain`: Implemented raycast when the mesher is `VoxelMesherBlocky` or `VoxelMesherCubes`
-- `VoxelInstanceGenerator`: Added ability to filter spawning by voxel texture indices, when using `VoxelMesherTransvoxel` with `texturing_mode` set to `4-blend over 16 textures`
 - `VoxelMesherBlocky`: Added basic support for fluid models
 
 - Fixes

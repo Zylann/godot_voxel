@@ -137,6 +137,9 @@ public:
 	void set_voxel_material_filter_mask(const uint32_t mask);
 	uint32_t get_voxel_material_filter_mask() const;
 
+	void set_voxel_material_filter_threshold(const float p_threshold);
+	float get_voxel_material_filter_threshold() const;
+
 	void set_snap_to_generator_sdf_enabled(bool enabled);
 	bool get_snap_to_generator_sdf_enabled() const;
 
@@ -188,6 +191,7 @@ private:
 	float _noise_on_scale = 0.f;
 	bool _voxel_material_filter_enabled = false;
 	uint32_t _voxel_material_filter_mask = 1;
+	float _voxel_material_filter_threshold = 0.5f;
 
 	struct GeneratorSDFSnapSettings {
 		bool enabled = false;

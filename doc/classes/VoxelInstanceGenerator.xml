@@ -106,6 +106,9 @@
 		<member name="voxel_texture_filter_enabled" type="bool" setter="set_voxel_texture_filter_enabled" getter="is_voxel_texture_filter_enabled" default="false">
 			When true, enables filtering of instances based on voxel texture indices. See [member voxel_texture_filter_array].
 		</member>
+		<member name="voxel_texture_filter_threshold" type="float" setter="set_voxel_texture_filter_threshold" getter="get_voxel_texture_filter_threshold" default="0.5">
+			When [member voxel_texture_filter_enabled] is active, controls how much of filtered texture has to be present for instances to spawn. The value must be betweem 0 and 1.
+		</member>
 	</members>
 	<constants>
 		<constant name="EMIT_FROM_VERTICES" value="0" enum="EmitMode">
