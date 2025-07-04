@@ -541,7 +541,8 @@ void VoxelInstanceGenerator::generate_transforms(
 			attrib_array = attrib_array.sub(0, vertex_range_end);
 		}
 
-		const unsigned int weight_threshold = 128;
+		const unsigned int weight_threshold =
+				math::clamp(static_cast<unsigned int>(_voxel_material_filter_threshold * 255.f), 0u, 255u);
 
 		struct L {
 			static inline bool vertex_contains_enough_material(
@@ -1298,6 +1299,18 @@ uint32_t VoxelInstanceGenerator::get_voxel_material_filter_mask() const {
 	return _voxel_material_filter_mask;
 }
 
+void VoxelInstanceGenerator::set_voxel_material_filter_threshold(const float p_threshold) {
+	const float threshold = math::clamp(p_threshold, 0.f, 0.f);
+	if (threshold == _voxel_material_filter_threshold) {
+		return;
+	}
+	_voxel_material_filter_threshold = threshold;
+}
+
+float VoxelInstanceGenerator::get_voxel_material_filter_threshold() const {
+	return _voxel_material_filter_threshold;
+}
+
 void VoxelInstanceGenerator::set_snap_to_generator_sdf_enabled(bool enabled) {
 	if (_gen_sdf_snap_settings.enabled == enabled) {
 		return;
@@ -1517,6 +1530,11 @@ void VoxelInstanceGenerator::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_voxel_texture_filter_mask"), &Self::get_voxel_material_filter_mask);
 
 	ClassDB::bind_method(
+			D_METHOD("set_voxel_texture_filter_threshold", "threshold"), &Self::set_voxel_material_filter_threshold
+	);
+	ClassDB::bind_method(D_METHOD("get_voxel_texture_filter_threshold"), &Self::get_voxel_material_filter_threshold);
+
+	ClassDB::bind_method(
 			D_METHOD("set_voxel_texture_filter_array", "texture_indices"), &Self::_b_set_voxel_material_filter_array
 	);
 	ClassDB::bind_method(D_METHOD("get_voxel_texture_filter_array"), &Self::_b_get_voxel_material_filter_array);
@@ -1657,6 +1675,12 @@ void VoxelInstanceGenerator::_bind_methods() {
 			PropertyInfo(Variant::PACKED_INT32_ARRAY, "voxel_texture_filter_array"),
 			"set_voxel_texture_filter_array",
 			"get_voxel_texture_filter_array"
+	);
+
+	ADD_PROPERTY(
+			PropertyInfo(Variant::FLOAT, "voxel_texture_filter_threshold"),
+			"set_voxel_texture_filter_threshold",
+			"get_voxel_texture_filter_threshold"
 	);
 
 	ADD_GROUP("Snap to generator SDF", "snap_to_generator_sdf_");
