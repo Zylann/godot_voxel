@@ -341,13 +341,13 @@ void VoxelInstanceGenerator::generate_transforms(
 					const int ib = mesh_indices[ii + 1];
 					const int ic = mesh_indices[ii + 2];
 
-					const Vector3 &pa = vertices[ia];
-					const Vector3 &pb = vertices[ib];
-					const Vector3 &pc = vertices[ic];
+					const Vector3f pa = to_vec3f(vertices[ia]);
+					const Vector3f pb = to_vec3f(vertices[ib]);
+					const Vector3f pc = to_vec3f(vertices[ic]);
 
-					const Vector3 &na = normals[ia];
-					const Vector3 &nb = normals[ib];
-					const Vector3 &nc = normals[ic];
+					const Vector3f na = to_vec3f(normals[ia]);
+					const Vector3f nb = to_vec3f(normals[ib]);
+					const Vector3f nc = to_vec3f(normals[ic]);
 
 					const float t0 = pcg1.randf();
 					const float t1 = pcg1.randf();
@@ -356,8 +356,12 @@ void VoxelInstanceGenerator::generate_transforms(
 					// const Vector3 p = pa.linear_interpolate(pb, t0).linear_interpolate(pc, 1.f - sqrt(t1));
 
 					// This is an approximation
-					const Vector3 p = pa.lerp(pb, t0).lerp(pc, t1);
-					const Vector3 n = na.lerp(nb, t0).lerp(nc, t1);
+					// const Vector3 p = pa.lerp(pb, t0).lerp(pc, t1);
+					// const Vector3 n = na.lerp(nb, t0).lerp(nc, t1);
+
+					const Vector3f bary = math::get_triangle_random_barycentric(t0, t1);
+					const Vector3f p = math::interpolate_triangle(pa, pb, pc, bary);
+					const Vector3f n = math::interpolate_triangle(na, nb, nc, bary);
 
 					vertex_cache[instance_index] = to_vec3f(p);
 					normal_cache[instance_index] = to_vec3f(n);
@@ -422,11 +426,15 @@ void VoxelInstanceGenerator::generate_transforms(
 						// const Vector3 p = pa.linear_interpolate(pb, t0).linear_interpolate(pc, 1.f - sqrt(t1));
 
 						// This is an approximation
-						const Vector3f rp = math::lerp(math::lerp(pa, pb, t0), pc, t1);
-						const Vector3f rn = math::lerp(math::lerp(na, nb, t0), nc, t1);
+						// const Vector3f rp = math::lerp(math::lerp(pa, pb, t0), pc, t1);
+						// const Vector3f rn = math::lerp(math::lerp(na, nb, t0), nc, t1);
 
-						vertex_cache.push_back(rp);
-						normal_cache.push_back(rn);
+						const Vector3f bary = math::get_triangle_random_barycentric(t0, t1);
+						const Vector3f p = math::interpolate_triangle(pa, pb, pc, bary);
+						const Vector3f n = math::interpolate_triangle(na, nb, nc, bary);
+
+						vertex_cache.push_back(p);
+						normal_cache.push_back(n);
 
 						if (index_cache_used) {
 							index_cache.push_back(ii);
@@ -483,12 +491,15 @@ void VoxelInstanceGenerator::generate_transforms(
 
 						// This formula gives pretty uniform distribution but involves a square root
 						// const Vector3 p = pa.linear_interpolate(pb, t0).linear_interpolate(pc, 1.f - sqrt(t1));
-						// This is an approximation
-						const Vector3f rp = math::lerp(math::lerp(pa, pb, t0), pc, t1);
-						const Vector3f rn = math::lerp(math::lerp(na, nb, t0), nc, t1);
 
-						const Vector3f p = math::lerp(cp, rp, _jitter);
-						const Vector3f n = math::lerp(cn, rn, _jitter);
+						// This is an approximation
+						// const Vector3f rp = math::lerp(math::lerp(pa, pb, t0), pc, t1);
+						// const Vector3f rn = math::lerp(math::lerp(na, nb, t0), nc, t1);
+
+						const Vector3f rbary = math::get_triangle_random_barycentric(t0, t1);
+						const Vector3f bary = math::lerp(Vector3f(one_third), rbary, _jitter);
+						const Vector3f p = math::interpolate_triangle(pa, pb, pc, bary);
+						const Vector3f n = math::interpolate_triangle(na, nb, nc, bary);
 
 						vertex_cache.push_back(p);
 						normal_cache.push_back(n);

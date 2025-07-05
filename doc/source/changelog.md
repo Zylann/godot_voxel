@@ -28,6 +28,7 @@ Primarily developped with Godot 4.4.1+
 - `VoxelInstancer`: 
     - Added `remove_instances_in_sphere`
     - Added fading system so a shader can be used to fade instances as they load in and out
+    - Slightly improved random spread of instances over triangles
 - `VoxelMesherBlocky`: added tint mode to modulate voxel colors using the `COLOR` channel.
 - `VoxelMesherTransvoxel`: added `Single` texturing mode, which uses only one byte per voxel to store a texture index. `VoxelGeneratorGraph` was also updated to include this mode.
 - `VoxelTool`: added `do_mesh` to replace `stamp_sdf`. Supported on terrains only.
