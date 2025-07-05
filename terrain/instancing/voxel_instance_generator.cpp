@@ -1300,7 +1300,7 @@ uint32_t VoxelInstanceGenerator::get_voxel_material_filter_mask() const {
 }
 
 void VoxelInstanceGenerator::set_voxel_material_filter_threshold(const float p_threshold) {
-	const float threshold = math::clamp(p_threshold, 0.f, 0.f);
+	const float threshold = math::clamp(p_threshold, 0.f, 1.f);
 	if (threshold == _voxel_material_filter_threshold) {
 		return;
 	}
@@ -1678,7 +1678,7 @@ void VoxelInstanceGenerator::_bind_methods() {
 	);
 
 	ADD_PROPERTY(
-			PropertyInfo(Variant::FLOAT, "voxel_texture_filter_threshold"),
+			PropertyInfo(Variant::FLOAT, "voxel_texture_filter_threshold", PROPERTY_HINT_RANGE, "0.0, 1.0, 0.01"),
 			"set_voxel_texture_filter_threshold",
 			"get_voxel_texture_filter_threshold"
 	);
