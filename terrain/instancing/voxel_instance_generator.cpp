@@ -11,6 +11,7 @@
 #include "../../util/godot/core/string.h"
 #include "../../util/math/conv.h"
 #include "../../util/math/triangle.h"
+#include "../../util/math/vector4f.h"
 #include "../../util/profiling.h"
 #include "../../util/string/format.h"
 
@@ -186,6 +187,28 @@ void snap_surface_points_from_generator_sdf(
 	// ZN_PRINT_VERBOSE(format("Gen SDF snap hits {} misses {}", debug_hits, debug_misses));
 }
 
+struct TexAttrib {
+	uint32_t packed_indices;
+	uint32_t packed_weights;
+};
+
+inline bool vertex_contains_enough_material(
+		const TexAttrib attrib,
+		const unsigned int threshold,
+		const uint32_t material_mask
+) {
+	for (unsigned int i = 0; i < 4; ++i) {
+		const unsigned int vmat_weight = (attrib.packed_weights >> (i * 8)) & 0xff;
+		if (vmat_weight > threshold) {
+			const unsigned int vmat_index = (attrib.packed_indices >> (i * 8)) & 0xff;
+			if (((1 << vmat_index) & material_mask) != 0) {
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
 } // namespace
 
 void VoxelInstanceGenerator::generate_transforms(
@@ -268,18 +291,48 @@ void VoxelInstanceGenerator::generate_transforms(
 	static thread_local StdVector<float> g_noise_graph_y_cache;
 	static thread_local StdVector<float> g_noise_graph_z_cache;
 
+	static thread_local StdVector<float> g_barycentrics_cache;
+
 	StdVector<Vector3f> &vertex_cache = g_vertex_cache;
 	StdVector<Vector3f> &normal_cache = g_normal_cache;
 	StdVector<uint32_t> &index_cache = g_index_cache;
 
+	StdVector<float> &barycentrics = g_barycentrics_cache;
+
 	vertex_cache.clear();
 	normal_cache.clear();
 	index_cache.clear();
+	barycentrics.clear();
 
-	const bool voxel_material_filter_enabled = _voxel_material_filter_enabled;
+	const bool voxel_material_filter_enabled =
+			_voxel_material_filter_enabled && surface_arrays.size() >= Mesh::ARRAY_CUSTOM1;
 	const uint32_t voxel_material_filter_mask = _voxel_material_filter_mask;
 
 	const bool index_cache_used = voxel_material_filter_enabled;
+	const bool barycentrics_used = voxel_material_filter_enabled && _emit_mode != EMIT_FROM_VERTICES;
+
+	// Do an early check to see if there is any material that we can potentially find
+	Span<const TexAttrib> tex_attrib_array;
+	if (voxel_material_filter_enabled) {
+		ZN_PROFILE_SCOPE_NAMED("material filter mesh-wide early check");
+
+		const PackedFloat32Array src_vertex_data = surface_arrays[Mesh::ARRAY_CUSTOM1];
+		tex_attrib_array = to_span(src_vertex_data).reinterpret_cast_to<const TexAttrib>();
+		if (vertex_range_end > 0) {
+			tex_attrib_array = tex_attrib_array.sub(0, vertex_range_end);
+		}
+
+		bool found_any = false;
+		for (const TexAttrib &attrib : tex_attrib_array) {
+			if (vertex_contains_enough_material(attrib, 0, voxel_material_filter_mask)) {
+				found_any = true;
+				break;
+			}
+		}
+		if (!found_any) {
+			return;
+		}
+	}
 
 	// Pick random points
 	{
@@ -369,6 +422,12 @@ void VoxelInstanceGenerator::generate_transforms(
 					if (index_cache_used) {
 						index_cache.push_back(ii);
 					}
+
+					if (barycentrics_used) {
+						barycentrics.push_back(bary.x);
+						barycentrics.push_back(bary.y);
+						barycentrics.push_back(bary.z);
+					}
 				}
 
 			} break;
@@ -439,6 +498,12 @@ void VoxelInstanceGenerator::generate_transforms(
 						if (index_cache_used) {
 							index_cache.push_back(ii);
 						}
+
+						if (barycentrics_used) {
+							barycentrics.push_back(bary.x);
+							barycentrics.push_back(bary.y);
+							barycentrics.push_back(bary.z);
+						}
 					}
 
 					area_accumulator -= count_in_triangle * inv_density;
@@ -485,6 +550,12 @@ void VoxelInstanceGenerator::generate_transforms(
 						vertex_cache.push_back(to_vec3f(cp));
 						normal_cache.push_back(to_vec3f(cn));
 
+						if (barycentrics_used) {
+							barycentrics.push_back(one_third);
+							barycentrics.push_back(one_third);
+							barycentrics.push_back(one_third);
+						}
+
 					} else {
 						const float t0 = pcg1.randf();
 						const float t1 = pcg1.randf();
@@ -503,6 +574,12 @@ void VoxelInstanceGenerator::generate_transforms(
 
 						vertex_cache.push_back(p);
 						normal_cache.push_back(n);
+
+						if (barycentrics_used) {
+							barycentrics.push_back(bary.x);
+							barycentrics.push_back(bary.y);
+							barycentrics.push_back(bary.z);
+						}
 					}
 
 					if (index_cache_used) {
@@ -515,6 +592,13 @@ void VoxelInstanceGenerator::generate_transforms(
 				CRASH_NOW();
 		}
 	}
+
+#ifdef DEV_ENABLED
+	if (barycentrics_used) {
+		ZN_ASSERT((barycentrics.size() % 3) == 0);
+		ZN_ASSERT(barycentrics.size() / 3 == vertex_cache.size());
+	}
+#endif
 
 	// Filter out by octants
 	// This is done so some octants can be filled with user-edited data instead,
@@ -531,6 +615,11 @@ void VoxelInstanceGenerator::generate_transforms(
 				if (index_cache_used) {
 					unordered_remove(index_cache, i);
 				}
+				if (barycentrics_used) {
+					unordered_remove(barycentrics, i * 3 + 2);
+					unordered_remove(barycentrics, i * 3 + 1);
+					unordered_remove(barycentrics, i * 3 + 0);
+				}
 				--i;
 			}
 		}
@@ -539,64 +628,118 @@ void VoxelInstanceGenerator::generate_transforms(
 	// Filter out by voxel materials
 	// Assuming 4x8-bit weights and 4x8-bit indices as used in VoxelMesherTransvoxel for now, but might have other
 	// formats in the future
-	if (voxel_material_filter_enabled && surface_arrays.size() >= Mesh::ARRAY_CUSTOM1) {
-		ZN_PROFILE_SCOPE();
+	if (voxel_material_filter_enabled) {
+		ZN_PROFILE_SCOPE_NAMED("Material filter");
 
-		struct Attrib {
-			uint32_t packed_indices;
-			uint32_t packed_weights;
-		};
-		const PackedFloat32Array src_vertex_data = surface_arrays[Mesh::ARRAY_CUSTOM1];
-		Span<const Attrib> attrib_array = to_span(src_vertex_data).reinterpret_cast_to<const Attrib>();
-		if (vertex_range_end > 0) {
-			attrib_array = attrib_array.sub(0, vertex_range_end);
+#ifdef DEV_ENABLED
+		if (barycentrics_used) {
+			ZN_ASSERT(barycentrics.size() / 3 == vertex_cache.size());
 		}
+#endif
 
-		const unsigned int weight_threshold =
-				math::clamp(static_cast<unsigned int>(_voxel_material_filter_threshold * 255.f), 0u, 255u);
+		const float weight_threshold = _voxel_material_filter_threshold;
 
 		struct L {
-			static inline bool vertex_contains_enough_material(
-					const Attrib attrib,
-					const unsigned int threshold,
-					const uint32_t material_mask
-			) {
-				for (unsigned int i = 0; i < 4; ++i) {
-					const unsigned int vmat_weight = (attrib.packed_weights >> (i * 8)) & 0xff;
-					if (vmat_weight > threshold) {
-						const unsigned int vmat_index = (attrib.packed_indices >> (i * 8)) & 0xff;
-						if (((1 << vmat_index) & material_mask) != 0) {
-							return true;
-						}
-					}
-				}
-				return false;
+			static inline float u8_to_unorm(uint32_t u) {
+				return static_cast<float>(u) / 255.f;
 			}
 
-			static inline bool triangle_contains_enough_material(
-					const Span<const Attrib> attrib_array,
+			static inline float csum(const Vector4f v) {
+				return v.x + v.y + v.z + v.w;
+			}
+
+			static inline Vector4f linear_normalize(const Vector4f v) {
+				const float sum = math::max(csum(v), 0.0001f);
+				return v * (1.f / sum);
+			}
+
+			static inline Vector4f unpack_weights(const uint32_t packed_weights) {
+				Vector4f weights;
+				for (unsigned int i = 0; i < 4; ++i) {
+					weights[i] = u8_to_unorm((packed_weights >> (i * 8)) & 0xff);
+				}
+				return weights;
+			}
+
+			static inline bool triangle_contains_enough_material_interpolated(
+					const Span<const TexAttrib> attrib_array,
 					const Span<const int32_t> mesh_indices,
+					// Barycentric coordinates that were used to position the instance in the triangle
+					const Span<const float> barycentrics,
+					const unsigned int instance_index,
 					const unsigned int ii0,
-					const unsigned int threshold,
+					const float threshold,
 					const uint32_t material_mask
 			) {
 				const uint32_t vi0 = mesh_indices[ii0 + 0];
 				const uint32_t vi1 = mesh_indices[ii0 + 1];
 				const uint32_t vi2 = mesh_indices[ii0 + 2];
 
-				return vertex_contains_enough_material(attrib_array[vi0], threshold, material_mask) ||
-						vertex_contains_enough_material(attrib_array[vi1], threshold, material_mask) ||
-						vertex_contains_enough_material(attrib_array[vi2], threshold, material_mask);
+				const uint32_t packed_indices = attrib_array[vi0].packed_indices;
+
+				const uint32_t packed_weights0 = attrib_array[vi0].packed_weights;
+				const uint32_t packed_weights1 = attrib_array[vi1].packed_weights;
+				const uint32_t packed_weights2 = attrib_array[vi2].packed_weights;
+
+#ifdef DEV_ENABLED
+				{
+					// We assume each vertex actually has the same indices, it's a property of the mesh for
+					// interpolation to make sense
+					ZN_ASSERT(
+							attrib_array[vi0].packed_indices == attrib_array[vi1].packed_indices &&
+							attrib_array[vi1].packed_indices == attrib_array[vi2].packed_indices
+					);
+				}
+#endif
+
+				// Early out
+				const bool found_any =
+						vertex_contains_enough_material({ packed_indices, packed_weights0 }, 0, material_mask) ||
+						vertex_contains_enough_material({ packed_indices, packed_weights1 }, 0, material_mask) ||
+						vertex_contains_enough_material({ packed_indices, packed_weights2 }, 0, material_mask);
+				if (!found_any) {
+					return false;
+				}
+
+				// Unpack, normalize and compare
+
+				const Vector4f rweights0 = unpack_weights(packed_weights0);
+				const Vector4f rweights1 = unpack_weights(packed_weights1);
+				const Vector4f rweights2 = unpack_weights(packed_weights2);
+
+				const Vector4f weights0 = linear_normalize(rweights0);
+				const Vector4f weights1 = linear_normalize(rweights1);
+				const Vector4f weights2 = linear_normalize(rweights2);
+
+				const Vector3f bary(
+						barycentrics[instance_index * 3 + 0],
+						barycentrics[instance_index * 3 + 1],
+						barycentrics[instance_index * 3 + 2]
+				);
+
+				for (unsigned int i = 0; i < 4; ++i) {
+					const uint32_t vmat_index = (packed_indices >> (i * 8)) & 0xff;
+					if (((1 << vmat_index) & material_mask) != 0) {
+						const float weight = math::interpolate_triangle(weights0[i], weights1[i], weights2[i], bary);
+						if (weight >= threshold) {
+							return true;
+						}
+					}
+				}
+
+				return false;
 			}
 		};
 
 		switch (_emit_mode) {
 			case EMIT_FROM_VERTICES: {
+				const unsigned int weight_threshold_i =
+						math::clamp(static_cast<unsigned int>(weight_threshold * 255.f), 0u, 255u);
 				// Indices are vertices
 				for (unsigned int instance_index = 0; instance_index < vertex_cache.size();) {
 					const unsigned int vi = index_cache[instance_index];
-					const Attrib attrib = attrib_array[vi];
-					if (L::vertex_contains_enough_material(attrib, weight_threshold, voxel_material_filter_mask)) {
+					const TexAttrib attrib = tex_attrib_array[vi];
+					if (vertex_contains_enough_material(attrib, weight_threshold_i, voxel_material_filter_mask)) {
 						instance_index += 1;
 					} else {
 						// Remove instance
@@ -611,10 +754,18 @@ void VoxelInstanceGenerator::generate_transforms(
 			case EMIT_ONE_PER_TRIANGLE: {
 				// Indices are the index in the index buffer of the first vertex of the triangle in which the instance
 				// was spawned in
+				const Span<const float> barycentrics_s = to_span(barycentrics);
 				for (unsigned int instance_index = 0; instance_index < vertex_cache.size();) {
 					const uint32_t ii0 = index_cache[instance_index];
-					if (L::triangle_contains_enough_material(
-								attrib_array, mesh_indices, ii0, weight_threshold, voxel_material_filter_mask
+					// if (L::triangle_contains_enough_material_rough(
+					if (L::triangle_contains_enough_material_interpolated(
+								tex_attrib_array,
+								mesh_indices,
+								barycentrics_s,
+								instance_index,
+								ii0,
+								weight_threshold,
+								voxel_material_filter_mask
 						)) {
 						instance_index += 1;
 					} else {
@@ -622,6 +773,10 @@ void VoxelInstanceGenerator::generate_transforms(
 						unordered_remove(vertex_cache, instance_index);
 						unordered_remove(normal_cache, instance_index);
 						unordered_remove(index_cache, instance_index);
+
+						unordered_remove(barycentrics, instance_index * 3 + 2);
+						unordered_remove(barycentrics, instance_index * 3 + 1);
+						unordered_remove(barycentrics, instance_index * 3 + 0);
 					}
 				}
 			} break;
@@ -1316,6 +1471,7 @@ void VoxelInstanceGenerator::set_voxel_material_filter_threshold(const float p_t
 		return;
 	}
 	_voxel_material_filter_threshold = threshold;
+	emit_changed();
 }
 
 float VoxelInstanceGenerator::get_voxel_material_filter_threshold() const {
