@@ -16,6 +16,7 @@
 #include "../blocky_material_indexer.h"
 #include "../blocky_model_baking_context.h"
 #include "../voxel_blocky_library_base.h"
+#include <array>
 
 namespace zylann::voxel {
 
@@ -559,7 +560,7 @@ void VoxelBlockyType::gather_and_sort_attributes(
 	}
 
 	unordered_remove_duplicates(
-			out_attributes,
+			out_attributes, //
 			[](const Ref<VoxelBlockyAttribute> &a, const Ref<VoxelBlockyAttribute> &b) {
 				return a->get_attribute_name() == b->get_attribute_name();
 			}
@@ -729,6 +730,7 @@ void VoxelBlockyType::_b_set_attributes(TypedArray<VoxelBlockyAttribute> attribu
 void VoxelBlockyType::_b_set_variant_model(Array p_key, Ref<VoxelBlockyModel> model) {
 	VariantKey key;
 	ZN_ASSERT_RETURN(key.parse_from_array(p_key));
+	key.sort();
 	set_variant(key, model);
 }
 
@@ -793,7 +795,7 @@ void VoxelBlockyType::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("get_rotation_attribute"), &VoxelBlockyType::get_rotation_attribute);
 
-	ClassDB::bind_method(D_METHOD("set_variant_model"), &VoxelBlockyType::_b_set_variant_model);
+	ClassDB::bind_method(D_METHOD("set_variant_model", "key", "model"), &VoxelBlockyType::_b_set_variant_model);
 
 	ClassDB::bind_method(D_METHOD("_get_variant_models_data"), &VoxelBlockyType::_b_get_variant_models_data);
 	ClassDB::bind_method(D_METHOD("_set_variant_models_data", "data"), &VoxelBlockyType::_b_set_variant_models_data);
@@ -913,6 +915,26 @@ Array VoxelBlockyType::VariantKey::to_array() const {
 		array.append(attribute_values[i]);
 	}
 	return array;
+}
+
+void VoxelBlockyType::VariantKey::sort() {
+	std::array<std::pair<StringName, uint8_t>, MAX_ATTRIBUTES> pairs;
+	unsigned int n = 0;
+	for (unsigned int i = 0; i < attribute_names.size(); ++i) {
+		if (!attribute_names[i].is_empty()) {
+			pairs[n] = { attribute_names[i], attribute_values[i] };
+			++n;
+		}
+	}
+	VoxelBlockyAttribute::sort_by_name(to_span(pairs, n));
+	for (unsigned int i = 0; i < n; ++i) {
+		attribute_names[i] = pairs[i].first;
+		attribute_values[i] = pairs[i].second;
+	}
+	for (unsigned int i = n; i < attribute_names.size(); ++i) {
+		attribute_names[i] = StringName();
+		attribute_values[i] = 0;
+	}
 }
 
 } // namespace zylann::voxel

@@ -39,6 +39,7 @@ Primarily developped with Godot 4.4.1+
 - Introduced `VoxelFormat` to allow overriding default channel depths (was required to use the new `Single` voxel textures mode)
 
 - Fixes
+    - `VoxelBlockyType`: fixed models added using `set_variant_model` were not always returned by `_variant_models_data` (however it can still happen for different reasons, check the documentation of `set_variant_model`)
     - `VoxelBlockyTypeLibrary`: 
         - fixed crash when setting `types` to empty array
         - fixed incorrect loading of the ID map when a type has more than two attributes

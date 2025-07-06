@@ -14,9 +14,11 @@
 		</method>
 		<method name="set_variant_model">
 			<return type="void" />
-			<param index="0" name="_unnamed_arg0" type="Array" />
-			<param index="1" name="_unnamed_arg1" type="VoxelBlockyModel" />
+			<param index="0" name="key" type="Array" />
+			<param index="1" name="model" type="VoxelBlockyModel" />
 			<description>
+				Explicitely sets which model to use for a given combination of attributes (key).
+				If you have attributes that automatically generate variants (such as rotations), you are expected to only set models for the default value of such attributes. Other models will not be preserved. This is because the default value will be used as a reference to generate the other models.
 			</description>
 		</method>
 	</methods>
