@@ -986,7 +986,7 @@ void VoxelInstanceGenerator::generate_transforms(
 	if ((octant_mask & 0xff) != 0xff) {
 		ZN_PROFILE_SCOPE_NAMED("octant filter");
 		const float h = block_size / 2.f;
-		for (unsigned int i = 0; i < vertex_cache.size(); ++i) {
+		for (unsigned int i = 0; i < vertex_cache.size();) {
 			const Vector3f &pos = vertex_cache[i];
 			const uint8_t octant_index = get_octant_index(pos, h);
 			if ((octant_mask & (1 << octant_index)) == 0) {
@@ -1000,7 +1000,8 @@ void VoxelInstanceGenerator::generate_transforms(
 					unordered_remove(barycentrics, i * 3 + 1);
 					unordered_remove(barycentrics, i * 3 + 0);
 				}
-				--i;
+			} else {
+				++i;
 			}
 		}
 	}
@@ -1093,7 +1094,7 @@ void VoxelInstanceGenerator::generate_transforms(
 	if (use_noise) {
 		ZN_PROFILE_SCOPE_NAMED("Noise filter");
 
-		for (size_t i = 0; i < vertex_cache.size(); ++i) {
+		for (size_t i = 0; i < vertex_cache.size();) {
 			const float n = noise_cache[i];
 			if (n <= 0) {
 				unordered_remove(vertex_cache, i);
@@ -1103,7 +1104,8 @@ void VoxelInstanceGenerator::generate_transforms(
 				// if (index_cache_used) {
 				// 	unordered_remove(index_cache, i);
 				// }
-				--i;
+			} else {
+				++i;
 			}
 		}
 	}
