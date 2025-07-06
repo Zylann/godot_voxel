@@ -823,6 +823,36 @@ MeshData parse_arrays(
 	return { vertices, normals, tex_attribs, mesh_indices };
 }
 
+void filter_instances_by_octant(
+		StdVector<Vector3f> &instance_positions,
+		StdVector<Vector3f> &instance_normals,
+		StdVector<uint32_t> *instance_indices,
+		StdVector<float> *instance_barycentrics,
+		const float block_size,
+		const uint8_t octant_mask
+) {
+	ZN_PROFILE_SCOPE();
+	const float h = block_size / 2.f;
+	for (unsigned int i = 0; i < instance_positions.size();) {
+		const Vector3f &pos = instance_positions[i];
+		const uint8_t octant_index = VoxelInstanceGenerator::get_octant_index(pos, h);
+		if ((octant_mask & (1 << octant_index)) == 0) {
+			unordered_remove(instance_positions, i);
+			unordered_remove(instance_normals, i);
+			if (instance_indices != nullptr) {
+				unordered_remove(*instance_indices, i);
+			}
+			if (instance_barycentrics != nullptr) {
+				unordered_remove(*instance_barycentrics, i * 3 + 2);
+				unordered_remove(*instance_barycentrics, i * 3 + 1);
+				unordered_remove(*instance_barycentrics, i * 3 + 0);
+			}
+		} else {
+			++i;
+		}
+	}
+}
+
 } // namespace
 
 void VoxelInstanceGenerator::generate_transforms(
@@ -984,26 +1014,14 @@ void VoxelInstanceGenerator::generate_transforms(
 	// This is done so some octants can be filled with user-edited data instead,
 	// because mesh size may not necessarily match data block size
 	if ((octant_mask & 0xff) != 0xff) {
-		ZN_PROFILE_SCOPE_NAMED("octant filter");
-		const float h = block_size / 2.f;
-		for (unsigned int i = 0; i < vertex_cache.size();) {
-			const Vector3f &pos = vertex_cache[i];
-			const uint8_t octant_index = get_octant_index(pos, h);
-			if ((octant_mask & (1 << octant_index)) == 0) {
-				unordered_remove(vertex_cache, i);
-				unordered_remove(normal_cache, i);
-				if (index_cache_used) {
-					unordered_remove(index_cache, i);
-				}
-				if (barycentrics_used) {
-					unordered_remove(barycentrics, i * 3 + 2);
-					unordered_remove(barycentrics, i * 3 + 1);
-					unordered_remove(barycentrics, i * 3 + 0);
-				}
-			} else {
-				++i;
-			}
-		}
+		filter_instances_by_octant(
+				vertex_cache,
+				normal_cache,
+				index_cache_used ? &index_cache : nullptr,
+				barycentrics_used ? &barycentrics : nullptr,
+				block_size,
+				octant_mask
+		);
 	}
 
 	if (voxel_material_filter_enabled) {
