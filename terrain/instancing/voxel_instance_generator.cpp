@@ -209,6 +209,620 @@ inline bool vertex_contains_enough_material(
 	return false;
 }
 
+inline float u8_to_unorm(uint32_t u) {
+	return static_cast<float>(u) / 255.f;
+}
+
+inline float csum(const Vector4f v) {
+	return v.x + v.y + v.z + v.w;
+}
+
+inline Vector4f linear_normalize(const Vector4f v) {
+	const float sum = math::max(csum(v), 0.0001f);
+	return v * (1.f / sum);
+}
+
+inline Vector4f unpack_weights(const uint32_t packed_weights) {
+	Vector4f weights;
+	for (unsigned int i = 0; i < 4; ++i) {
+		weights[i] = u8_to_unorm((packed_weights >> (i * 8)) & 0xff);
+	}
+	return weights;
+}
+
+inline bool triangle_contains_enough_material_interpolated(
+		const Span<const TexAttrib> attrib_array,
+		const Span<const int32_t> mesh_indices,
+		const Span<const float> barycentrics,
+		const unsigned int instance_index,
+		const unsigned int ii0,
+		const float threshold,
+		const uint32_t material_mask
+) {
+	const uint32_t vi0 = mesh_indices[ii0 + 0];
+	const uint32_t vi1 = mesh_indices[ii0 + 1];
+	const uint32_t vi2 = mesh_indices[ii0 + 2];
+
+	const uint32_t packed_indices = attrib_array[vi0].packed_indices;
+
+	const uint32_t packed_weights0 = attrib_array[vi0].packed_weights;
+	const uint32_t packed_weights1 = attrib_array[vi1].packed_weights;
+	const uint32_t packed_weights2 = attrib_array[vi2].packed_weights;
+
+#ifdef DEV_ENABLED
+	{
+		// We assume each vertex actually has the same indices, it's a property of the mesh for
+		// interpolation to make sense
+		ZN_ASSERT(
+				attrib_array[vi0].packed_indices == attrib_array[vi1].packed_indices &&
+				attrib_array[vi1].packed_indices == attrib_array[vi2].packed_indices
+		);
+	}
+#endif
+
+	// Early out
+	const bool found_any = vertex_contains_enough_material({ packed_indices, packed_weights0 }, 0, material_mask) ||
+			vertex_contains_enough_material({ packed_indices, packed_weights1 }, 0, material_mask) ||
+			vertex_contains_enough_material({ packed_indices, packed_weights2 }, 0, material_mask);
+	if (!found_any) {
+		return false;
+	}
+
+	// Unpack, normalize and compare
+
+	const Vector4f rweights0 = unpack_weights(packed_weights0);
+	const Vector4f rweights1 = unpack_weights(packed_weights1);
+	const Vector4f rweights2 = unpack_weights(packed_weights2);
+
+	const Vector4f weights0 = linear_normalize(rweights0);
+	const Vector4f weights1 = linear_normalize(rweights1);
+	const Vector4f weights2 = linear_normalize(rweights2);
+
+	const Vector3f bary(
+			barycentrics[instance_index * 3 + 0],
+			barycentrics[instance_index * 3 + 1],
+			barycentrics[instance_index * 3 + 2]
+	);
+
+	for (unsigned int i = 0; i < 4; ++i) {
+		const uint32_t vmat_index = (packed_indices >> (i * 8)) & 0xff;
+		if (((1 << vmat_index) & material_mask) != 0) {
+			const float weight = math::interpolate_triangle(weights0[i], weights1[i], weights2[i], bary);
+			if (weight >= threshold) {
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
+// Filter out by voxel materials
+// Assuming 4x8-bit weights and 4x8-bit indices as used in VoxelMesherTransvoxel for now, but might have other
+// formats in the future
+void filter_instances_by_voxel_materials(
+		StdVector<Vector3f> &instance_positions,
+		StdVector<Vector3f> &instance_normals,
+		// Barycentric coordinates that were used to position the instance in the triangle.
+		// Not used in vertex emission mode.
+		StdVector<float> &instance_barycentrics,
+		// In vertex emission mode, index in the mesh vertex array.
+		// In other modes, index of the first triangle index in the mesh's index array.
+		StdVector<uint32_t> &instance_indices,
+
+		Span<const int32_t> mesh_indices,
+		Span<const TexAttrib> mesh_tex_attrib_array,
+		const float weight_threshold,
+		const uint32_t material_mask,
+		const VoxelInstanceGenerator::EmitMode emit_mode
+) {
+	ZN_PROFILE_SCOPE();
+
+	switch (emit_mode) {
+		case VoxelInstanceGenerator::EMIT_FROM_VERTICES: {
+			const unsigned int weight_threshold_i =
+					math::clamp(static_cast<unsigned int>(weight_threshold * 255.f), 0u, 255u);
+			// Indices are vertices
+			for (unsigned int instance_index = 0; instance_index < instance_positions.size();) {
+				const unsigned int vi = instance_indices[instance_index];
+				const TexAttrib attrib = mesh_tex_attrib_array[vi];
+				if (vertex_contains_enough_material(attrib, weight_threshold_i, material_mask)) {
+					instance_index += 1;
+				} else {
+					// Remove instance
+					unordered_remove(instance_positions, instance_index);
+					unordered_remove(instance_normals, instance_index);
+					unordered_remove(instance_indices, instance_index);
+				}
+			}
+		} break;
+
+		case VoxelInstanceGenerator::EMIT_FROM_FACES:
+		case VoxelInstanceGenerator::EMIT_FROM_FACES_FAST:
+		case VoxelInstanceGenerator::EMIT_ONE_PER_TRIANGLE: {
+#ifdef DEV_ENABLED
+			ZN_ASSERT(instance_barycentrics.size() / 3 == instance_positions.size());
+#endif
+
+			// Indices are the index in the index buffer of the first vertex of the triangle in which the instance
+			// was spawned in
+			const Span<const float> barycentrics_s = to_span(instance_barycentrics);
+			for (unsigned int instance_index = 0; instance_index < instance_positions.size();) {
+				const uint32_t ii0 = instance_indices[instance_index];
+				// if (L::triangle_contains_enough_material_rough(
+				if (triangle_contains_enough_material_interpolated(
+							mesh_tex_attrib_array,
+							mesh_indices,
+							barycentrics_s,
+							instance_index,
+							ii0,
+							weight_threshold,
+							material_mask
+					)) {
+					instance_index += 1;
+				} else {
+					// Remove instance
+					unordered_remove(instance_positions, instance_index);
+					unordered_remove(instance_normals, instance_index);
+					unordered_remove(instance_indices, instance_index);
+
+					unordered_remove(instance_barycentrics, instance_index * 3 + 2);
+					unordered_remove(instance_barycentrics, instance_index * 3 + 1);
+					unordered_remove(instance_barycentrics, instance_index * 3 + 0);
+				}
+			}
+		} break;
+
+		default:
+			ZN_PRINT_ERROR_ONCE("Unhandled emit mode");
+			break;
+	}
+}
+
+void generate_random_points_from_vertices(
+		Span<const Vector3> mesh_vertices,
+		Span<const Vector3> mesh_normals,
+		const float input_density,
+		// The mesh vertices are assumed to be within (0,0,0) and (block_size, block_size, block_size)
+		const float block_size,
+		RandomPCG &pcg,
+		StdVector<Vector3f> &out_positions,
+		StdVector<Vector3f> &out_normals,
+		StdVector<uint32_t> *out_indices
+) {
+	// Density is interpreted differently here,
+	// so it's possible a different emit mode will produce different amounts of instances.
+	// I had to use `uint64` and clamp it because floats can't contain `0xffffffff` accurately. Instead
+	// it results in `0x100000000`, one unit above.
+	const float density = math::clamp(input_density, 0.f, 1.f);
+	static constexpr float max_density = 1.f;
+	const uint32_t density_u32 = math::min(uint64_t(double(0xffffffff) * density / max_density), uint64_t(0xffffffff));
+	const int size = mesh_vertices.size();
+	const float margin = block_size - block_size * 0.01f;
+	for (int i = 0; i < size; ++i) {
+		// TODO We could actually generate indexes and pick those,
+		// rather than iterating them all and rejecting
+		if (pcg.rand() >= density_u32) {
+			continue;
+		}
+		// Ignore vertices located on the positive faces of the block. They are usually shared with the
+		// neighbor block, which causes a density bias and overlapping instances
+		const Vector3f pos = to_vec3f(mesh_vertices[i]);
+		if (pos.x > margin || pos.y > margin || pos.z > margin) {
+			continue;
+		}
+		out_positions.push_back(pos);
+		out_normals.push_back(to_vec3f(mesh_normals[i]));
+		if (out_indices != nullptr) {
+			out_indices->push_back(i);
+		}
+	}
+}
+
+void generate_random_points_from_triangles_fast(
+		Span<const Vector3> mesh_vertices,
+		Span<const Vector3> mesh_normals,
+		Span<const int32_t> mesh_indices,
+		const float density,
+		RandomPCG &pcg0,
+		RandomPCG &pcg1,
+		StdVector<Vector3f> &out_positions,
+		StdVector<Vector3f> &out_normals,
+		StdVector<uint32_t> *out_indices,
+		StdVector<float> *out_barycentrics
+) {
+	const int triangle_count = mesh_indices.size() / 3;
+
+	// Assumes triangles are all roughly under the same size, and Transvoxel ones do (when not simplified),
+	// so we can use number of triangles as a metric proportional to the number of instances
+	const int instance_count = density * triangle_count;
+
+	out_positions.resize(instance_count);
+	out_normals.resize(instance_count);
+
+	for (int instance_index = 0; instance_index < instance_count; ++instance_index) {
+		// Pick a random triangle
+		const uint32_t ii = (pcg0.rand() % triangle_count) * 3;
+
+		const int ia = mesh_indices[ii];
+		const int ib = mesh_indices[ii + 1];
+		const int ic = mesh_indices[ii + 2];
+
+		const Vector3f pa = to_vec3f(mesh_vertices[ia]);
+		const Vector3f pb = to_vec3f(mesh_vertices[ib]);
+		const Vector3f pc = to_vec3f(mesh_vertices[ic]);
+
+		const Vector3f na = to_vec3f(mesh_normals[ia]);
+		const Vector3f nb = to_vec3f(mesh_normals[ib]);
+		const Vector3f nc = to_vec3f(mesh_normals[ic]);
+
+		const float t0 = pcg1.randf();
+		const float t1 = pcg1.randf();
+
+		// This formula gives pretty uniform distribution but involves a square root
+		// const Vector3 p = pa.linear_interpolate(pb, t0).linear_interpolate(pc, 1.f - sqrt(t1));
+
+		// This is an approximation
+		// const Vector3 p = pa.lerp(pb, t0).lerp(pc, t1);
+		// const Vector3 n = na.lerp(nb, t0).lerp(nc, t1);
+
+		const Vector3f bary = math::get_triangle_random_barycentric(t0, t1);
+		const Vector3f p = math::interpolate_triangle(pa, pb, pc, bary);
+		const Vector3f n = math::interpolate_triangle(na, nb, nc, bary);
+
+		out_positions[instance_index] = to_vec3f(p);
+		out_normals[instance_index] = to_vec3f(n);
+
+		if (out_indices != nullptr) {
+			out_indices->push_back(ii);
+		}
+
+		if (out_barycentrics != nullptr) {
+			out_barycentrics->push_back(bary.x);
+			out_barycentrics->push_back(bary.y);
+			out_barycentrics->push_back(bary.z);
+		}
+	}
+}
+
+void generate_random_points_from_triangles(
+		Span<const Vector3> mesh_vertices,
+		Span<const Vector3> mesh_normals,
+		Span<const int32_t> mesh_indices,
+		const float density,
+		const float triangle_area_threshold,
+		RandomPCG &pcg,
+		StdVector<Vector3f> &out_positions,
+		StdVector<Vector3f> &out_normals,
+		StdVector<uint32_t> *out_indices,
+		StdVector<float> *out_barycentrics
+) {
+	// PackedInt32Array::Read indices_r = indices.read();
+
+	const int triangle_count = mesh_indices.size() / 3;
+
+	// static thread_local StdVector<float> g_area_cache;
+	// StdVector<float> &area_cache = g_area_cache;
+	// area_cache.resize(triangle_count);
+
+	// Does not assume triangles have the same size, so instead a "unit size" is used,
+	// and more instances will be placed in triangles larger than this.
+	// This is roughly the size of one voxel's triangle
+	// const float unit_area = 0.5f * squared(block_size / 32.f);
+
+	float area_accumulator = 0.f;
+	// Here density means "instances per space unit squared".
+	// So inverse density means "units squared per instance"
+	const float inv_density = 1.f / density;
+
+	for (int triangle_index = 0; triangle_index < triangle_count; ++triangle_index) {
+		const uint32_t ii = triangle_index * 3;
+
+		const int ia = mesh_indices[ii];
+		const int ib = mesh_indices[ii + 1];
+		const int ic = mesh_indices[ii + 2];
+
+		const Vector3f &pa = to_vec3f(mesh_vertices[ia]);
+		const Vector3f &pb = to_vec3f(mesh_vertices[ib]);
+		const Vector3f &pc = to_vec3f(mesh_vertices[ic]);
+
+		const float triangle_area = math::get_triangle_area(pa, pb, pc);
+		if (triangle_area <= triangle_area_threshold) {
+			continue;
+		}
+
+		const Vector3f &na = to_vec3f(mesh_normals[ia]);
+		const Vector3f &nb = to_vec3f(mesh_normals[ib]);
+		const Vector3f &nc = to_vec3f(mesh_normals[ic]);
+
+		area_accumulator += triangle_area;
+
+		const int count_in_triangle = int(area_accumulator * density);
+
+		for (int i = 0; i < count_in_triangle; ++i) {
+			const float t0 = pcg.randf();
+			const float t1 = pcg.randf();
+
+			// This formula gives pretty uniform distribution but involves a square root
+			// const Vector3 p = pa.linear_interpolate(pb, t0).linear_interpolate(pc, 1.f - sqrt(t1));
+
+			// This is an approximation
+			// const Vector3f rp = math::lerp(math::lerp(pa, pb, t0), pc, t1);
+			// const Vector3f rn = math::lerp(math::lerp(na, nb, t0), nc, t1);
+
+			const Vector3f bary = math::get_triangle_random_barycentric(t0, t1);
+			const Vector3f p = math::interpolate_triangle(pa, pb, pc, bary);
+			const Vector3f n = math::interpolate_triangle(na, nb, nc, bary);
+
+			out_positions.push_back(p);
+			out_normals.push_back(n);
+
+			if (out_indices != nullptr) {
+				out_indices->push_back(ii);
+			}
+
+			if (out_barycentrics != nullptr) {
+				out_barycentrics->push_back(bary.x);
+				out_barycentrics->push_back(bary.y);
+				out_barycentrics->push_back(bary.z);
+			}
+		}
+
+		area_accumulator -= count_in_triangle * inv_density;
+	}
+}
+
+void generate_one_random_point_per_triangle(
+		Span<const Vector3> mesh_vertices,
+		Span<const Vector3> mesh_normals,
+		Span<const int32_t> mesh_indices,
+		const float triangle_area_threshold,
+		const float jitter,
+		RandomPCG &pcg,
+		StdVector<Vector3f> &out_positions,
+		StdVector<Vector3f> &out_normals,
+		StdVector<uint32_t> *out_indices,
+		StdVector<float> *out_barycentrics
+) {
+	const int triangle_count = mesh_indices.size() / 3;
+	const float one_third = 1.f / 3.f;
+
+	out_positions.reserve(triangle_count);
+	out_normals.reserve(triangle_count);
+
+	for (int triangle_index = 0; triangle_index < triangle_count; ++triangle_index) {
+		const uint32_t ii = triangle_index * 3;
+
+		const int ia = mesh_indices[ii];
+		const int ib = mesh_indices[ii + 1];
+		const int ic = mesh_indices[ii + 2];
+
+		const Vector3f &pa = to_vec3f(mesh_vertices[ia]);
+		const Vector3f &pb = to_vec3f(mesh_vertices[ib]);
+		const Vector3f &pc = to_vec3f(mesh_vertices[ic]);
+
+		if (triangle_area_threshold > 0.f) {
+			const float triangle_area = math::get_triangle_area(pa, pb, pc);
+			if (triangle_area < triangle_area_threshold) {
+				continue;
+			}
+		}
+
+		const Vector3f &na = to_vec3f(mesh_normals[ia]);
+		const Vector3f &nb = to_vec3f(mesh_normals[ib]);
+		const Vector3f &nc = to_vec3f(mesh_normals[ic]);
+
+		const Vector3f cp = (pa + pb + pc) * one_third;
+		const Vector3f cn = (na + nb + nc) * one_third;
+
+		if (jitter == 0.f) {
+			out_positions.push_back(to_vec3f(cp));
+			out_normals.push_back(to_vec3f(cn));
+
+			if (out_barycentrics != nullptr) {
+				out_barycentrics->push_back(one_third);
+				out_barycentrics->push_back(one_third);
+				out_barycentrics->push_back(one_third);
+			}
+
+		} else {
+			const float t0 = pcg.randf();
+			const float t1 = pcg.randf();
+
+			// This formula gives pretty uniform distribution but involves a square root
+			// const Vector3 p = pa.linear_interpolate(pb, t0).linear_interpolate(pc, 1.f - sqrt(t1));
+
+			// This is an approximation
+			// const Vector3f rp = math::lerp(math::lerp(pa, pb, t0), pc, t1);
+			// const Vector3f rn = math::lerp(math::lerp(na, nb, t0), nc, t1);
+
+			const Vector3f rbary = math::get_triangle_random_barycentric(t0, t1);
+			const Vector3f bary = math::lerp(Vector3f(one_third), rbary, jitter);
+			const Vector3f p = math::interpolate_triangle(pa, pb, pc, bary);
+			const Vector3f n = math::interpolate_triangle(na, nb, nc, bary);
+
+			out_positions.push_back(p);
+			out_normals.push_back(n);
+
+			if (out_barycentrics != nullptr) {
+				out_barycentrics->push_back(bary.x);
+				out_barycentrics->push_back(bary.y);
+				out_barycentrics->push_back(bary.z);
+			}
+		}
+
+		if (out_indices != nullptr) {
+			out_indices->push_back(ii);
+		}
+	}
+}
+
+void generate_noise_at_positions_with_graph(
+		StdVector<Vector3f> &instance_positions,
+		const Vector3 mesh_block_origin_d,
+		// TODO Should be const, investigate if it can be fixed
+		pg::VoxelGraphFunction &noise_graph,
+		const VoxelInstanceGenerator::Dimension noise_dimension,
+		StdVector<float> &out_noise
+) {
+	out_noise.resize(instance_positions.size());
+
+	// Check noise graph validity
+	std::shared_ptr<pg::VoxelGraphFunction::CompiledGraph> compiled_graph = noise_graph.get_compiled_graph();
+	if (compiled_graph != nullptr) {
+		const int input_count = compiled_graph->runtime.get_input_count();
+		const int output_count = compiled_graph->runtime.get_output_count();
+
+		bool valid = (output_count == 1);
+
+		switch (noise_dimension) {
+			case VoxelInstanceGenerator::DIMENSION_2D:
+				if (input_count != 2) {
+					valid = false;
+				}
+				break;
+			case VoxelInstanceGenerator::DIMENSION_3D:
+				if (input_count != 3) {
+					valid = false;
+				}
+				break;
+			default:
+				ERR_FAIL();
+		}
+
+		if (!valid) {
+			compiled_graph = nullptr;
+		}
+	}
+
+	if (compiled_graph != nullptr) {
+		// Execute graph
+
+		// TODO Candidates for temp allocator
+		static thread_local StdVector<float> g_noise_graph_x_cache;
+		static thread_local StdVector<float> g_noise_graph_y_cache;
+		static thread_local StdVector<float> g_noise_graph_z_cache;
+
+		StdVector<float> &x_buffer = g_noise_graph_x_cache;
+		StdVector<float> &z_buffer = g_noise_graph_z_cache;
+		x_buffer.resize(instance_positions.size());
+		z_buffer.resize(instance_positions.size());
+
+		FixedArray<Span<float>, 1> outputs;
+		outputs[0] = to_span(out_noise);
+
+		switch (noise_dimension) {
+			case VoxelInstanceGenerator::DIMENSION_2D: {
+				for (size_t i = 0; i < instance_positions.size(); ++i) {
+					const Vector3 &pos = to_vec3(instance_positions[i]) + mesh_block_origin_d;
+					x_buffer[i] = pos.x;
+					z_buffer[i] = pos.z;
+				}
+
+				FixedArray<Span<const float>, 2> inputs;
+				inputs[0] = to_span(x_buffer);
+				inputs[1] = to_span(z_buffer);
+
+				noise_graph.execute(to_span(inputs), to_span(outputs));
+			} break;
+
+			case VoxelInstanceGenerator::DIMENSION_3D: {
+				StdVector<float> &y_buffer = g_noise_graph_y_cache;
+				y_buffer.resize(instance_positions.size());
+
+				for (size_t i = 0; i < instance_positions.size(); ++i) {
+					const Vector3 &pos = to_vec3(instance_positions[i]) + mesh_block_origin_d;
+					x_buffer[i] = pos.x;
+					y_buffer[i] = pos.y;
+					z_buffer[i] = pos.z;
+				}
+
+				FixedArray<Span<const float>, 3> inputs;
+				inputs[0] = to_span(x_buffer);
+				inputs[1] = to_span(y_buffer);
+				inputs[2] = to_span(z_buffer);
+
+				noise_graph.execute(to_span(inputs), to_span(outputs));
+			} break;
+
+			default:
+				ERR_FAIL();
+		}
+
+	} else {
+		// Error fallback
+		for (float &v : out_noise) {
+			v = 0.f;
+		}
+	}
+}
+
+struct MeshData {
+	Span<const Vector3> vertices;
+	Span<const Vector3> normals;
+	Span<const TexAttrib> texture_data;
+	Span<const int32_t> indices;
+
+	inline bool is_empty() const {
+		return indices.size() == 0;
+	}
+};
+
+MeshData parse_arrays(
+		const Array &surface_arrays,
+		const int32_t vertex_range_end,
+		const int32_t index_range_end,
+		const bool use_tex_attribs
+) {
+	if (vertex_range_end == 0) {
+		return {};
+	}
+	if (index_range_end == 0) {
+		return {};
+	}
+
+	if (surface_arrays.size() < ArrayMesh::ARRAY_VERTEX && surface_arrays.size() < ArrayMesh::ARRAY_NORMAL &&
+		surface_arrays.size() < ArrayMesh::ARRAY_INDEX) {
+		return {};
+	}
+
+	const PackedVector3Array vertices_pa = surface_arrays[ArrayMesh::ARRAY_VERTEX];
+	if (vertices_pa.size() == 0) {
+		return {};
+	}
+
+	Span<const Vector3> vertices = to_span(vertices_pa);
+	if (vertex_range_end > 0) {
+		vertices = vertices.sub(0, vertex_range_end);
+	}
+
+	const PackedVector3Array normals_pa = surface_arrays[ArrayMesh::ARRAY_NORMAL];
+	ERR_FAIL_COND_V(normals_pa.size() == 0, {});
+	Span<const Vector3> normals = to_span(normals_pa);
+	if (vertex_range_end > 0) {
+		normals = normals.sub(0, vertex_range_end);
+	}
+
+	Span<const TexAttrib> tex_attribs;
+	if (use_tex_attribs && surface_arrays.size() >= Mesh::ARRAY_CUSTOM1) {
+		const PackedFloat32Array src_vertex_data = surface_arrays[Mesh::ARRAY_CUSTOM1];
+		tex_attribs = to_span(src_vertex_data).reinterpret_cast_to<const TexAttrib>();
+		if (vertex_range_end > 0) {
+			tex_attribs = tex_attribs.sub(0, vertex_range_end);
+		}
+	}
+
+	const PackedInt32Array mesh_indices_pa = surface_arrays[ArrayMesh::ARRAY_INDEX];
+	ERR_FAIL_COND_V(mesh_indices_pa.size() == 0, {});
+	ERR_FAIL_COND_V(mesh_indices_pa.size() % 3 != 0, {});
+	Span<const int32_t> mesh_indices = to_span(mesh_indices_pa);
+	if (index_range_end > 0) {
+		mesh_indices = mesh_indices.sub(0, index_range_end);
+	}
+
+	return { vertices, normals, tex_attribs, mesh_indices };
+}
+
 } // namespace
 
 void VoxelInstanceGenerator::generate_transforms(
@@ -228,44 +842,14 @@ void VoxelInstanceGenerator::generate_transforms(
 ) {
 	ZN_PROFILE_SCOPE();
 
-	if (vertex_range_end == 0) {
-		return;
-	}
-	if (index_range_end == 0) {
-		return;
-	}
-
-	if (surface_arrays.size() < ArrayMesh::ARRAY_VERTEX && surface_arrays.size() < ArrayMesh::ARRAY_NORMAL &&
-		surface_arrays.size() < ArrayMesh::ARRAY_INDEX) {
-		return;
-	}
-
-	PackedVector3Array vertices_pa = surface_arrays[ArrayMesh::ARRAY_VERTEX];
-	if (vertices_pa.size() == 0) {
-		return;
-	}
-	Span<const Vector3> vertices = to_span(vertices_pa);
-	if (vertex_range_end > 0) {
-		vertices = vertices.sub(0, vertex_range_end);
-	}
-
 	if (_density <= 0.f) {
 		return;
 	}
 
-	PackedVector3Array normals_pa = surface_arrays[ArrayMesh::ARRAY_NORMAL];
-	ERR_FAIL_COND(normals_pa.size() == 0);
-	Span<const Vector3> normals = to_span(normals_pa);
-	if (vertex_range_end > 0) {
-		normals = normals.sub(0, vertex_range_end);
-	}
-
-	PackedInt32Array mesh_indices_pa = surface_arrays[ArrayMesh::ARRAY_INDEX];
-	ERR_FAIL_COND(mesh_indices_pa.size() == 0);
-	ERR_FAIL_COND(mesh_indices_pa.size() % 3 != 0);
-	Span<const int32_t> mesh_indices = to_span(mesh_indices_pa);
-	if (index_range_end > 0) {
-		mesh_indices = mesh_indices.sub(0, index_range_end);
+	const MeshData mesh =
+			parse_arrays(surface_arrays, vertex_range_end, index_range_end, _voxel_material_filter_enabled);
+	if (mesh.is_empty()) {
+		return;
 	}
 
 	const uint32_t block_pos_hash = Vector3iHasher::hash(grid_position);
@@ -287,9 +871,6 @@ void VoxelInstanceGenerator::generate_transforms(
 	static thread_local StdVector<uint32_t> g_index_cache;
 	static thread_local StdVector<float> g_noise_cache;
 	// static thread_local StdVector<float> g_noise_graph_output_cache;
-	static thread_local StdVector<float> g_noise_graph_x_cache;
-	static thread_local StdVector<float> g_noise_graph_y_cache;
-	static thread_local StdVector<float> g_noise_graph_z_cache;
 
 	static thread_local StdVector<float> g_barycentrics_cache;
 
@@ -304,26 +885,18 @@ void VoxelInstanceGenerator::generate_transforms(
 	index_cache.clear();
 	barycentrics.clear();
 
-	const bool voxel_material_filter_enabled =
-			_voxel_material_filter_enabled && surface_arrays.size() >= Mesh::ARRAY_CUSTOM1;
+	const bool voxel_material_filter_enabled = _voxel_material_filter_enabled;
 	const uint32_t voxel_material_filter_mask = _voxel_material_filter_mask;
 
 	const bool index_cache_used = voxel_material_filter_enabled;
 	const bool barycentrics_used = voxel_material_filter_enabled && _emit_mode != EMIT_FROM_VERTICES;
 
 	// Do an early check to see if there is any material that we can potentially find
-	Span<const TexAttrib> tex_attrib_array;
 	if (voxel_material_filter_enabled) {
 		ZN_PROFILE_SCOPE_NAMED("material filter mesh-wide early check");
 
-		const PackedFloat32Array src_vertex_data = surface_arrays[Mesh::ARRAY_CUSTOM1];
-		tex_attrib_array = to_span(src_vertex_data).reinterpret_cast_to<const TexAttrib>();
-		if (vertex_range_end > 0) {
-			tex_attrib_array = tex_attrib_array.sub(0, vertex_range_end);
-		}
-
 		bool found_any = false;
-		for (const TexAttrib &attrib : tex_attrib_array) {
+		for (const TexAttrib &attrib : mesh.texture_data) {
 			if (vertex_contains_enough_material(attrib, 0, voxel_material_filter_mask)) {
 				found_any = true;
 				break;
@@ -335,262 +908,69 @@ void VoxelInstanceGenerator::generate_transforms(
 	}
 
 	// Pick random points
-	{
-		ZN_PROFILE_SCOPE_NAMED("mesh to points");
+	// Generate base positions
+	switch (_emit_mode) {
+		case EMIT_FROM_VERTICES:
+			generate_random_points_from_vertices(
+					mesh.vertices,
+					mesh.normals,
+					_density,
+					block_size,
+					pcg0,
+					vertex_cache,
+					normal_cache,
+					index_cache_used ? &index_cache : nullptr
+			);
+			break;
 
-		// PackedVector3Array::Read vertices_r = vertices.read();
-		// PackedVector3Array::Read normals_r = normals.read();
+		case EMIT_FROM_FACES_FAST:
+			generate_random_points_from_triangles_fast(
+					mesh.vertices,
+					mesh.normals,
+					mesh.indices,
+					_density,
+					pcg0,
+					pcg1,
+					vertex_cache,
+					normal_cache,
+					index_cache_used ? &index_cache : nullptr,
+					barycentrics_used ? &barycentrics : nullptr
+			);
+			break;
 
-		// Generate base positions
-		switch (_emit_mode) {
-			case EMIT_FROM_VERTICES: {
-				// Density is interpreted differently here,
-				// so it's possible a different emit mode will produce different amounts of instances.
-				// I had to use `uint64` and clamp it because floats can't contain `0xffffffff` accurately. Instead
-				// it results in `0x100000000`, one unit above.
-				const float density = math::clamp(_density, 0.f, 1.f);
-				static constexpr float max_density = 1.f;
-				const uint32_t density_u32 =
-						math::min(uint64_t(double(0xffffffff) * density / max_density), uint64_t(0xffffffff));
-				const int size = vertices.size();
-				const float margin = block_size - block_size * 0.01f;
-				for (int i = 0; i < size; ++i) {
-					// TODO We could actually generate indexes and pick those,
-					// rather than iterating them all and rejecting
-					if (pcg0.rand() >= density_u32) {
-						continue;
-					}
-					// Ignore vertices located on the positive faces of the block. They are usually shared with the
-					// neighbor block, which causes a density bias and overlapping instances
-					const Vector3f pos = to_vec3f(vertices[i]);
-					if (pos.x > margin || pos.y > margin || pos.z > margin) {
-						continue;
-					}
-					vertex_cache.push_back(pos);
-					normal_cache.push_back(to_vec3f(normals[i]));
-					if (index_cache_used) {
-						index_cache.push_back(i);
-					}
-				}
-			} break;
+		case EMIT_FROM_FACES:
+			generate_random_points_from_triangles(
+					mesh.vertices,
+					mesh.normals,
+					mesh.indices,
+					_density,
+					math::squared(1 << lod_index) * _triangle_area_threshold_lod0,
+					pcg1,
+					vertex_cache,
+					normal_cache,
+					index_cache_used ? &index_cache : nullptr,
+					barycentrics_used ? &barycentrics : nullptr
+			);
+			break;
 
-			case EMIT_FROM_FACES_FAST: {
-				// PoolIntArray::Read indices_r = indices.read();
+		case EMIT_ONE_PER_TRIANGLE:
+			// Density has no effect here.
+			generate_one_random_point_per_triangle(
+					mesh.vertices,
+					mesh.normals,
+					mesh.indices,
+					math::squared(1 << lod_index) * _triangle_area_threshold_lod0,
+					_jitter,
+					pcg1,
+					vertex_cache,
+					normal_cache,
+					index_cache_used ? &index_cache : nullptr,
+					barycentrics_used ? &barycentrics : nullptr
+			);
+			break;
 
-				const int triangle_count = mesh_indices.size() / 3;
-
-				// Assumes triangles are all roughly under the same size, and Transvoxel ones do (when not simplified),
-				// so we can use number of triangles as a metric proportional to the number of instances
-				const int instance_count = _density * triangle_count;
-
-				vertex_cache.resize(instance_count);
-				normal_cache.resize(instance_count);
-
-				for (int instance_index = 0; instance_index < instance_count; ++instance_index) {
-					// Pick a random triangle
-					const uint32_t ii = (pcg0.rand() % triangle_count) * 3;
-
-					const int ia = mesh_indices[ii];
-					const int ib = mesh_indices[ii + 1];
-					const int ic = mesh_indices[ii + 2];
-
-					const Vector3f pa = to_vec3f(vertices[ia]);
-					const Vector3f pb = to_vec3f(vertices[ib]);
-					const Vector3f pc = to_vec3f(vertices[ic]);
-
-					const Vector3f na = to_vec3f(normals[ia]);
-					const Vector3f nb = to_vec3f(normals[ib]);
-					const Vector3f nc = to_vec3f(normals[ic]);
-
-					const float t0 = pcg1.randf();
-					const float t1 = pcg1.randf();
-
-					// This formula gives pretty uniform distribution but involves a square root
-					// const Vector3 p = pa.linear_interpolate(pb, t0).linear_interpolate(pc, 1.f - sqrt(t1));
-
-					// This is an approximation
-					// const Vector3 p = pa.lerp(pb, t0).lerp(pc, t1);
-					// const Vector3 n = na.lerp(nb, t0).lerp(nc, t1);
-
-					const Vector3f bary = math::get_triangle_random_barycentric(t0, t1);
-					const Vector3f p = math::interpolate_triangle(pa, pb, pc, bary);
-					const Vector3f n = math::interpolate_triangle(na, nb, nc, bary);
-
-					vertex_cache[instance_index] = to_vec3f(p);
-					normal_cache[instance_index] = to_vec3f(n);
-
-					if (index_cache_used) {
-						index_cache.push_back(ii);
-					}
-
-					if (barycentrics_used) {
-						barycentrics.push_back(bary.x);
-						barycentrics.push_back(bary.y);
-						barycentrics.push_back(bary.z);
-					}
-				}
-
-			} break;
-
-			case EMIT_FROM_FACES: {
-				// PackedInt32Array::Read indices_r = indices.read();
-
-				const int triangle_count = mesh_indices.size() / 3;
-
-				// static thread_local StdVector<float> g_area_cache;
-				// StdVector<float> &area_cache = g_area_cache;
-				// area_cache.resize(triangle_count);
-
-				// Does not assume triangles have the same size, so instead a "unit size" is used,
-				// and more instances will be placed in triangles larger than this.
-				// This is roughly the size of one voxel's triangle
-				// const float unit_area = 0.5f * squared(block_size / 32.f);
-
-				float area_accumulator = 0.f;
-				// Here density means "instances per space unit squared".
-				// So inverse density means "units squared per instance"
-				const float inv_density = 1.f / _density;
-
-				const float triangle_area_threshold = math::squared(1 << lod_index) * _triangle_area_threshold_lod0;
-
-				for (int triangle_index = 0; triangle_index < triangle_count; ++triangle_index) {
-					const uint32_t ii = triangle_index * 3;
-
-					const int ia = mesh_indices[ii];
-					const int ib = mesh_indices[ii + 1];
-					const int ic = mesh_indices[ii + 2];
-
-					const Vector3f &pa = to_vec3f(vertices[ia]);
-					const Vector3f &pb = to_vec3f(vertices[ib]);
-					const Vector3f &pc = to_vec3f(vertices[ic]);
-
-					const float triangle_area = math::get_triangle_area(pa, pb, pc);
-					if (triangle_area <= triangle_area_threshold) {
-						continue;
-					}
-
-					const Vector3f &na = to_vec3f(normals[ia]);
-					const Vector3f &nb = to_vec3f(normals[ib]);
-					const Vector3f &nc = to_vec3f(normals[ic]);
-
-					area_accumulator += triangle_area;
-
-					const int count_in_triangle = int(area_accumulator * _density);
-
-					for (int i = 0; i < count_in_triangle; ++i) {
-						const float t0 = pcg1.randf();
-						const float t1 = pcg1.randf();
-
-						// This formula gives pretty uniform distribution but involves a square root
-						// const Vector3 p = pa.linear_interpolate(pb, t0).linear_interpolate(pc, 1.f - sqrt(t1));
-
-						// This is an approximation
-						// const Vector3f rp = math::lerp(math::lerp(pa, pb, t0), pc, t1);
-						// const Vector3f rn = math::lerp(math::lerp(na, nb, t0), nc, t1);
-
-						const Vector3f bary = math::get_triangle_random_barycentric(t0, t1);
-						const Vector3f p = math::interpolate_triangle(pa, pb, pc, bary);
-						const Vector3f n = math::interpolate_triangle(na, nb, nc, bary);
-
-						vertex_cache.push_back(p);
-						normal_cache.push_back(n);
-
-						if (index_cache_used) {
-							index_cache.push_back(ii);
-						}
-
-						if (barycentrics_used) {
-							barycentrics.push_back(bary.x);
-							barycentrics.push_back(bary.y);
-							barycentrics.push_back(bary.z);
-						}
-					}
-
-					area_accumulator -= count_in_triangle * inv_density;
-				}
-
-			} break;
-
-			case EMIT_ONE_PER_TRIANGLE: {
-				// Density has no effect here.
-
-				const int triangle_count = mesh_indices.size() / 3;
-				const float one_third = 1.f / 3.f;
-				const float triangle_area_threshold = math::squared(1 << lod_index) * _triangle_area_threshold_lod0;
-
-				vertex_cache.reserve(triangle_count);
-				normal_cache.reserve(triangle_count);
-
-				for (int triangle_index = 0; triangle_index < triangle_count; ++triangle_index) {
-					const uint32_t ii = triangle_index * 3;
-
-					const int ia = mesh_indices[ii];
-					const int ib = mesh_indices[ii + 1];
-					const int ic = mesh_indices[ii + 2];
-
-					const Vector3f &pa = to_vec3f(vertices[ia]);
-					const Vector3f &pb = to_vec3f(vertices[ib]);
-					const Vector3f &pc = to_vec3f(vertices[ic]);
-
-					if (triangle_area_threshold > 0.f) {
-						const float triangle_area = math::get_triangle_area(pa, pb, pc);
-						if (triangle_area < triangle_area_threshold) {
-							continue;
-						}
-					}
-
-					const Vector3f &na = to_vec3f(normals[ia]);
-					const Vector3f &nb = to_vec3f(normals[ib]);
-					const Vector3f &nc = to_vec3f(normals[ic]);
-
-					const Vector3f cp = (pa + pb + pc) * one_third;
-					const Vector3f cn = (na + nb + nc) * one_third;
-
-					if (_jitter == 0.f) {
-						vertex_cache.push_back(to_vec3f(cp));
-						normal_cache.push_back(to_vec3f(cn));
-
-						if (barycentrics_used) {
-							barycentrics.push_back(one_third);
-							barycentrics.push_back(one_third);
-							barycentrics.push_back(one_third);
-						}
-
-					} else {
-						const float t0 = pcg1.randf();
-						const float t1 = pcg1.randf();
-
-						// This formula gives pretty uniform distribution but involves a square root
-						// const Vector3 p = pa.linear_interpolate(pb, t0).linear_interpolate(pc, 1.f - sqrt(t1));
-
-						// This is an approximation
-						// const Vector3f rp = math::lerp(math::lerp(pa, pb, t0), pc, t1);
-						// const Vector3f rn = math::lerp(math::lerp(na, nb, t0), nc, t1);
-
-						const Vector3f rbary = math::get_triangle_random_barycentric(t0, t1);
-						const Vector3f bary = math::lerp(Vector3f(one_third), rbary, _jitter);
-						const Vector3f p = math::interpolate_triangle(pa, pb, pc, bary);
-						const Vector3f n = math::interpolate_triangle(na, nb, nc, bary);
-
-						vertex_cache.push_back(p);
-						normal_cache.push_back(n);
-
-						if (barycentrics_used) {
-							barycentrics.push_back(bary.x);
-							barycentrics.push_back(bary.y);
-							barycentrics.push_back(bary.z);
-						}
-					}
-
-					if (index_cache_used) {
-						index_cache.push_back(ii);
-					}
-				}
-			} break;
-
-			default:
-				CRASH_NOW();
-		}
+		default:
+			ZN_CRASH();
 	}
 
 #ifdef DEV_ENABLED
@@ -625,165 +1005,18 @@ void VoxelInstanceGenerator::generate_transforms(
 		}
 	}
 
-	// Filter out by voxel materials
-	// Assuming 4x8-bit weights and 4x8-bit indices as used in VoxelMesherTransvoxel for now, but might have other
-	// formats in the future
 	if (voxel_material_filter_enabled) {
-		ZN_PROFILE_SCOPE_NAMED("Material filter");
-
-#ifdef DEV_ENABLED
-		if (barycentrics_used) {
-			ZN_ASSERT(barycentrics.size() / 3 == vertex_cache.size());
-		}
-#endif
-
-		const float weight_threshold = _voxel_material_filter_threshold;
-
-		struct L {
-			static inline float u8_to_unorm(uint32_t u) {
-				return static_cast<float>(u) / 255.f;
-			}
-
-			static inline float csum(const Vector4f v) {
-				return v.x + v.y + v.z + v.w;
-			}
-
-			static inline Vector4f linear_normalize(const Vector4f v) {
-				const float sum = math::max(csum(v), 0.0001f);
-				return v * (1.f / sum);
-			}
-
-			static inline Vector4f unpack_weights(const uint32_t packed_weights) {
-				Vector4f weights;
-				for (unsigned int i = 0; i < 4; ++i) {
-					weights[i] = u8_to_unorm((packed_weights >> (i * 8)) & 0xff);
-				}
-				return weights;
-			}
-
-			static inline bool triangle_contains_enough_material_interpolated(
-					const Span<const TexAttrib> attrib_array,
-					const Span<const int32_t> mesh_indices,
-					// Barycentric coordinates that were used to position the instance in the triangle
-					const Span<const float> barycentrics,
-					const unsigned int instance_index,
-					const unsigned int ii0,
-					const float threshold,
-					const uint32_t material_mask
-			) {
-				const uint32_t vi0 = mesh_indices[ii0 + 0];
-				const uint32_t vi1 = mesh_indices[ii0 + 1];
-				const uint32_t vi2 = mesh_indices[ii0 + 2];
-
-				const uint32_t packed_indices = attrib_array[vi0].packed_indices;
-
-				const uint32_t packed_weights0 = attrib_array[vi0].packed_weights;
-				const uint32_t packed_weights1 = attrib_array[vi1].packed_weights;
-				const uint32_t packed_weights2 = attrib_array[vi2].packed_weights;
-
-#ifdef DEV_ENABLED
-				{
-					// We assume each vertex actually has the same indices, it's a property of the mesh for
-					// interpolation to make sense
-					ZN_ASSERT(
-							attrib_array[vi0].packed_indices == attrib_array[vi1].packed_indices &&
-							attrib_array[vi1].packed_indices == attrib_array[vi2].packed_indices
-					);
-				}
-#endif
-
-				// Early out
-				const bool found_any =
-						vertex_contains_enough_material({ packed_indices, packed_weights0 }, 0, material_mask) ||
-						vertex_contains_enough_material({ packed_indices, packed_weights1 }, 0, material_mask) ||
-						vertex_contains_enough_material({ packed_indices, packed_weights2 }, 0, material_mask);
-				if (!found_any) {
-					return false;
-				}
-
-				// Unpack, normalize and compare
-
-				const Vector4f rweights0 = unpack_weights(packed_weights0);
-				const Vector4f rweights1 = unpack_weights(packed_weights1);
-				const Vector4f rweights2 = unpack_weights(packed_weights2);
-
-				const Vector4f weights0 = linear_normalize(rweights0);
-				const Vector4f weights1 = linear_normalize(rweights1);
-				const Vector4f weights2 = linear_normalize(rweights2);
-
-				const Vector3f bary(
-						barycentrics[instance_index * 3 + 0],
-						barycentrics[instance_index * 3 + 1],
-						barycentrics[instance_index * 3 + 2]
-				);
-
-				for (unsigned int i = 0; i < 4; ++i) {
-					const uint32_t vmat_index = (packed_indices >> (i * 8)) & 0xff;
-					if (((1 << vmat_index) & material_mask) != 0) {
-						const float weight = math::interpolate_triangle(weights0[i], weights1[i], weights2[i], bary);
-						if (weight >= threshold) {
-							return true;
-						}
-					}
-				}
-
-				return false;
-			}
-		};
-
-		switch (_emit_mode) {
-			case EMIT_FROM_VERTICES: {
-				const unsigned int weight_threshold_i =
-						math::clamp(static_cast<unsigned int>(weight_threshold * 255.f), 0u, 255u);
-				// Indices are vertices
-				for (unsigned int instance_index = 0; instance_index < vertex_cache.size();) {
-					const unsigned int vi = index_cache[instance_index];
-					const TexAttrib attrib = tex_attrib_array[vi];
-					if (vertex_contains_enough_material(attrib, weight_threshold_i, voxel_material_filter_mask)) {
-						instance_index += 1;
-					} else {
-						// Remove instance
-						unordered_remove(vertex_cache, instance_index);
-						unordered_remove(normal_cache, instance_index);
-						unordered_remove(index_cache, instance_index);
-					}
-				}
-			} break;
-			case EMIT_FROM_FACES:
-			case EMIT_FROM_FACES_FAST:
-			case EMIT_ONE_PER_TRIANGLE: {
-				// Indices are the index in the index buffer of the first vertex of the triangle in which the instance
-				// was spawned in
-				const Span<const float> barycentrics_s = to_span(barycentrics);
-				for (unsigned int instance_index = 0; instance_index < vertex_cache.size();) {
-					const uint32_t ii0 = index_cache[instance_index];
-					// if (L::triangle_contains_enough_material_rough(
-					if (L::triangle_contains_enough_material_interpolated(
-								tex_attrib_array,
-								mesh_indices,
-								barycentrics_s,
-								instance_index,
-								ii0,
-								weight_threshold,
-								voxel_material_filter_mask
-						)) {
-						instance_index += 1;
-					} else {
-						// Remove instance
-						unordered_remove(vertex_cache, instance_index);
-						unordered_remove(normal_cache, instance_index);
-						unordered_remove(index_cache, instance_index);
-
-						unordered_remove(barycentrics, instance_index * 3 + 2);
-						unordered_remove(barycentrics, instance_index * 3 + 1);
-						unordered_remove(barycentrics, instance_index * 3 + 0);
-					}
-				}
-			} break;
-			default:
-				ZN_PRINT_ERROR_ONCE("Unhandled emit mode");
-				break;
-		}
+		filter_instances_by_voxel_materials(
+				vertex_cache,
+				normal_cache,
+				barycentrics,
+				index_cache,
+				mesh.indices,
+				mesh.texture_data,
+				_voxel_material_filter_threshold,
+				_voxel_material_filter_mask,
+				_emit_mode
+		);
 
 		// Index cache has no use yet after this. To detect future mistakes if any, make it obvious by clearing it
 		index_cache.clear();
@@ -803,99 +1036,14 @@ void VoxelInstanceGenerator::generate_transforms(
 		noise_graph = _noise_graph;
 	}
 
+	StdVector<float> &noise_cache = g_noise_cache;
+
 	// Filter out by noise graph
 	if (noise_graph.is_valid()) {
-		ZN_PROFILE_SCOPE_NAMED("Noise graph filter");
-
-		StdVector<float> &out_buffer = g_noise_cache;
-		out_buffer.resize(vertex_cache.size());
-
-		// Check noise graph validity
-		std::shared_ptr<pg::VoxelGraphFunction::CompiledGraph> compiled_graph = noise_graph->get_compiled_graph();
-		if (compiled_graph != nullptr) {
-			const int input_count = compiled_graph->runtime.get_input_count();
-			const int output_count = compiled_graph->runtime.get_output_count();
-
-			bool valid = (output_count == 1);
-
-			switch (_noise_dimension) {
-				case DIMENSION_2D:
-					if (input_count != 2) {
-						valid = false;
-					}
-					break;
-				case DIMENSION_3D:
-					if (input_count != 3) {
-						valid = false;
-					}
-					break;
-				default:
-					ERR_FAIL();
-			}
-
-			if (!valid) {
-				compiled_graph = nullptr;
-			}
-		}
-
-		if (compiled_graph != nullptr) {
-			// Execute graph
-
-			StdVector<float> &x_buffer = g_noise_graph_x_cache;
-			StdVector<float> &z_buffer = g_noise_graph_z_cache;
-			x_buffer.resize(vertex_cache.size());
-			z_buffer.resize(vertex_cache.size());
-
-			FixedArray<Span<float>, 1> outputs;
-			outputs[0] = to_span(out_buffer);
-
-			switch (_noise_dimension) {
-				case DIMENSION_2D: {
-					for (size_t i = 0; i < vertex_cache.size(); ++i) {
-						const Vector3 &pos = to_vec3(vertex_cache[i]) + mesh_block_origin_d;
-						x_buffer[i] = pos.x;
-						z_buffer[i] = pos.z;
-					}
-
-					FixedArray<Span<const float>, 2> inputs;
-					inputs[0] = to_span(x_buffer);
-					inputs[1] = to_span(z_buffer);
-
-					noise_graph->execute(to_span(inputs), to_span(outputs));
-				} break;
-
-				case DIMENSION_3D: {
-					StdVector<float> &y_buffer = g_noise_graph_y_cache;
-					y_buffer.resize(vertex_cache.size());
-
-					for (size_t i = 0; i < vertex_cache.size(); ++i) {
-						const Vector3 &pos = to_vec3(vertex_cache[i]) + mesh_block_origin_d;
-						x_buffer[i] = pos.x;
-						y_buffer[i] = pos.y;
-						z_buffer[i] = pos.z;
-					}
-
-					FixedArray<Span<const float>, 3> inputs;
-					inputs[0] = to_span(x_buffer);
-					inputs[1] = to_span(y_buffer);
-					inputs[2] = to_span(z_buffer);
-
-					noise_graph->execute(to_span(inputs), to_span(outputs));
-				} break;
-
-				default:
-					ERR_FAIL();
-			}
-
-		} else {
-			// Error fallback
-			for (float &v : out_buffer) {
-				v = 0.f;
-			}
-		}
+		generate_noise_at_positions_with_graph(
+				vertex_cache, mesh_block_origin_d, **noise_graph, _noise_dimension, noise_cache
+		);
 	}
-
-	StdVector<float> &noise_cache = g_noise_cache;
 
 	// Legacy noise (noise graph is more versatile, but this remains for compatibility)
 	if (noise.is_valid()) {
