@@ -426,7 +426,7 @@ Array VoxelBlockyTypeLibrary::get_type_name_and_attributes_from_model_index(int 
 	Dictionary dict;
 	for (unsigned int attribute_index = 0; attribute_index < id.variant_key.attribute_names.size(); ++attribute_index) {
 		const StringName &attrib_name = id.variant_key.attribute_names[attribute_index];
-		if (attrib_name == StringName()) {
+		if (zylann::godot::is_empty(attrib_name)) {
 			break;
 		}
 		dict[attrib_name] = id.variant_key.attribute_values[attribute_index];
@@ -741,7 +741,8 @@ bool VoxelBlockyTypeLibrary::load_id_map_from_json(String json_string) {
 
 String VoxelBlockyTypeLibrary::VoxelID::to_string() const {
 	String s = type_name;
-	if (variant_key.attribute_names[0] != StringName()) {
+	// Assuming the key is sorted, we can check if it contains variant parameters by just checking the first
+	if (!zylann::godot::is_empty(variant_key.attribute_names[0])) {
 		s += "[";
 		s += variant_key.to_string();
 		s += "]";
@@ -757,7 +758,7 @@ PackedStringArray VoxelBlockyTypeLibrary::serialize_id_map_to_string_array(const
 	Span<String> array_w(array.ptrw(), array.size());
 	for (unsigned int model_index = 0; model_index < id_map.size(); ++model_index) {
 		const VoxelID &id = id_map[model_index];
-		if (id.type_name == StringName()) {
+		if (zylann::godot::is_empty(id.type_name)) {
 			continue;
 		}
 		array_w[model_index] = id.to_string();

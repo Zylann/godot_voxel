@@ -5,6 +5,7 @@
 #include "../../../util/godot/classes/ref_counted.h"
 #include "../../../util/godot/core/array.h"
 #include "../../../util/godot/core/string.h"
+#include "../../../util/godot/core/string_name.h"
 #include "../../../util/godot/core/typed_array.h"
 #ifdef ZN_GODOT_EXTENSION
 // For `MAKE_RESOURCE_TYPE_HINT`
@@ -842,7 +843,7 @@ String VoxelBlockyType::VariantKey::to_string() const {
 	String s;
 	for (unsigned int attribute_index = 0; attribute_index < key.attribute_names.size(); ++attribute_index) {
 		const StringName &attrib_name = key.attribute_names[attribute_index];
-		if (attrib_name == StringName()) {
+		if (zylann::godot::is_empty(attrib_name)) {
 			break;
 		}
 		if (attribute_index > 0) {
@@ -860,7 +861,7 @@ String VoxelBlockyType::VariantKey::to_string(Span<const Ref<VoxelBlockyAttribut
 	String s;
 	for (unsigned int attribute_index = 0; attribute_index < key.attribute_names.size(); ++attribute_index) {
 		const StringName &attrib_name = key.attribute_names[attribute_index];
-		if (attrib_name == StringName()) {
+		if (zylann::godot::is_empty(attrib_name)) {
 			break;
 		}
 		if (attribute_index > 0) {
@@ -908,7 +909,7 @@ Array VoxelBlockyType::VariantKey::to_array() const {
 	Array array;
 	for (unsigned int i = 0; i < attribute_names.size(); ++i) {
 		const StringName &attribute_name = attribute_names[i];
-		if (attribute_name == StringName()) {
+		if (zylann::godot::is_empty(attribute_name)) {
 			break;
 		}
 		array.append(attribute_name);
@@ -921,7 +922,7 @@ void VoxelBlockyType::VariantKey::sort() {
 	std::array<std::pair<StringName, uint8_t>, MAX_ATTRIBUTES> pairs;
 	unsigned int n = 0;
 	for (unsigned int i = 0; i < attribute_names.size(); ++i) {
-		if (!attribute_names[i].is_empty()) {
+		if (!zylann::godot::is_empty(attribute_names[i])) {
 			pairs[n] = { attribute_names[i], attribute_values[i] };
 			++n;
 		}

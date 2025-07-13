@@ -488,7 +488,7 @@ void VoxelGraphFunction::set_node_name(uint32_t node_id, StringName p_name) {
 	if (node->name == p_name) {
 		return;
 	}
-	if (p_name != StringName()) {
+	if (!zylann::godot::is_empty(p_name)) {
 		const uint32_t existing_node_id = _graph.find_node_by_name(p_name);
 		if (existing_node_id != ProgramGraph::NULL_ID && node_id == existing_node_id) {
 			ZN_PRINT_ERROR(format("More than one graph node has the name \"{}\"", String(p_name)));
@@ -962,7 +962,7 @@ Dictionary get_graph_as_variant_data(const ProgramGraph &graph) {
 			node_data["gui_size"] = node->gui_size;
 		}
 
-		if (node->name != StringName()) {
+		if (!zylann::godot::is_empty(node->name)) {
 			node_data["name"] = node->name;
 		}
 

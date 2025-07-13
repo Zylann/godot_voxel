@@ -80,12 +80,12 @@ bool VoxelBlockyAttribute::is_equivalent(const VoxelBlockyAttribute &other) cons
 bool find_non_empty_duplicate(const StdVector<StringName> &names) {
 	for (unsigned int i = 0; i < names.size(); ++i) {
 		const StringName &a = names[i];
-		if (a == StringName()) {
+		if (zylann::godot::is_empty(a)) {
 			continue;
 		}
 		for (unsigned int j = i + 1; j < names.size(); ++j) {
 			const StringName &b = names[j];
-			if (b == StringName()) {
+			if (zylann::godot::is_empty(b)) {
 				continue;
 			}
 			if (a == b) {
@@ -141,7 +141,7 @@ void VoxelBlockyAttribute::sort_by_name(Span<Ref<VoxelBlockyAttribute>> attribut
 
 void VoxelBlockyAttribute::sort_by_name(Span<StringName> attributes) {
 	for (const StringName &attrib : attributes) {
-		ZN_ASSERT_RETURN(attrib != StringName());
+		ZN_ASSERT_RETURN(!zylann::godot::is_empty(attrib));
 	}
 	struct AttributeComparator {
 		bool operator()(const StringName &a, const StringName &b) const {
@@ -154,7 +154,7 @@ void VoxelBlockyAttribute::sort_by_name(Span<StringName> attributes) {
 
 void VoxelBlockyAttribute::sort_by_name(Span<std::pair<StringName, uint8_t>> attributes) {
 	for (const std::pair<StringName, uint8_t> &attrib : attributes) {
-		ZN_ASSERT_RETURN(attrib.first != StringName());
+		ZN_ASSERT_RETURN(!zylann::godot::is_empty(attrib.first));
 	}
 	struct AttributeComparator {
 		bool operator()(const std::pair<StringName, uint8_t> &a, const std::pair<StringName, uint8_t> &b) const {
