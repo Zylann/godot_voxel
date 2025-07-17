@@ -370,7 +370,8 @@ int VoxelBlockyTypeLibrary::get_model_index_with_attributes(StringName type_name
 		if (dict_key_type == Variant::STRING || dict_key_type == Variant::STRING_NAME) {
 			pair.first = dict_key;
 		} else {
-			ZN_PRINT_ERROR(format("Attribute name must be a StringName. Got {}", Variant::get_type_name(dict_key_type))
+			ZN_PRINT_ERROR(
+					format("Attribute name must be a StringName. Got {}", Variant::get_type_name(dict_key_type))
 			);
 			return -1;
 		}

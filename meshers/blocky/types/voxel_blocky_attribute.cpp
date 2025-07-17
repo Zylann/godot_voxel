@@ -105,8 +105,9 @@ void VoxelBlockyAttribute::get_configuration_warnings(PackedStringArray &out_war
 	}
 
 	if (!contains(to_span(_used_values), _default_value)) {
-		out_warnings.push_back(String("{0} named {1} has an invalid default value.")
-									   .format(varray(get_class(), get_attribute_name())));
+		out_warnings.push_back(
+				String("{0} named {1} has an invalid default value.").format(varray(get_class(), get_attribute_name()))
+		);
 	}
 }
 
