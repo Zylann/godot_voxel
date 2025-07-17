@@ -44,6 +44,11 @@ jobs:
           repository: godotengine/godot
           ref: ${{ matrix.godot_base_branch }}
 
+      # Use more recent Xcode to fix build issues with MoltenVK
+      # https://github.com/godotengine/godot/pull/108649
+      - name: Select Xcode 16
+        run: sudo xcode-select -s /Applications/Xcode_16.2.app
+
       # Clone our module under the correct directory
       - uses: actions/checkout@v4
         with:
