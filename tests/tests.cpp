@@ -171,6 +171,7 @@ void run_voxel_tests(const testing::TestOptions &options) {
 #ifdef VOXEL_ENABLE_INSTANCER
 	VOXEL_TEST(test_instance_generator_material_filter_issue774);
 #endif
+	VOXEL_TEST(test_spot_noise);
 
 	print_line("------------ Voxel tests end -------------");
 }

@@ -68,6 +68,7 @@ Primarily developped with Godot 4.4.1+
     - `VoxelToolLodTerrain`: fixed `do_graph` tended to produce boxes when the transform was scaled and `sdf_strength` was not 1
     - `VoxelViewer`: reparenting (`remove_child` followed by `add_child`) should no longer reload terrain around the viewer
     - `VoxelAStarGrid3D`: fixed crash if `find_path` is called without setting a terrain first
+    - `ZN_SpotNoise`: fixed `get_spot_positions_in_area` functions were not working outside of the (0,0) cell
 
 - Breaking changes
     - `VoxelGeneratorGraph`: `SdfSphere` node: `radius` is now an input instead of a parameter (compat breakage only occurs if you used a script to set it: replace `set_node_param(id, 0, radius)` with `set_node_default_input(id, 3, radius)`)
