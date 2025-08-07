@@ -53,6 +53,7 @@ Primarily developped with Godot 4.4.1+
         - Editor: fixed node dialog didn't auto-select the first item when searching
         - Editor: decimal numbers that have no exact float representation are now displayed rounded instead of widening nodes excessively. Instead, the exact value is shown with a tooltip.
         - Fixed incorrect texture painting leading to black triangles when using Mixel4 with OutputSingleTexture and GPU generation
+        - Fixed crash with specific setups where equivalent nodes are connected multiple times to equivalent ancestors (issue 783; `FATAL: Assertion failed: "p != equivalence" is false`)
     - `VoxelMesherBlocky`: Fixed crash when invalid model IDs are present at chunk borders with `VoxelLodTerrain`
     - `VoxelMeshSDF`: Fixed error when baking from a non-indexed mesh (which is exceptionally the case with Godot's CSG nodes)
     - `VoxelMesherTransvoxel`: Fixed some incorrect geometry changes near positive LOD borders, notably when voxel textures are used. Edge cases remain but can be fixed with a shader hack for now.

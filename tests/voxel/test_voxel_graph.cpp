@@ -2440,4 +2440,100 @@ void test_voxel_graph_constant_reduction() {
 	ZN_TEST_ASSERT(graph->equals(**expected_graph));
 }
 
+void test_voxel_graph_multiple_function_instances() {
+	Ref<VoxelGraphFunction> function;
+	function.instantiate();
+	{
+		// X --- Add --- Out
+		//      /
+		//     Y
+		const uint32_t n_in_x = function->create_node(VoxelGraphFunction::NODE_INPUT_X);
+		const uint32_t n_in_y = function->create_node(VoxelGraphFunction::NODE_INPUT_Y);
+		const uint32_t n_add = function->create_node(VoxelGraphFunction::NODE_ADD);
+		const uint32_t n_out = function->create_node(VoxelGraphFunction::NODE_OUTPUT_SDF);
+
+		function->add_connection(n_in_x, 0, n_add, 0);
+		function->add_connection(n_in_y, 0, n_add, 1);
+		function->add_connection(n_add, 0, n_out, 0);
+
+		function->auto_pick_inputs_and_outputs();
+	}
+
+	Ref<VoxelGeneratorGraph> graph;
+	graph.instantiate();
+	{
+		Ref<VoxelGraphFunction> mf = graph->get_main_function();
+
+		//     X
+		//      \
+		// Y --- F1 --- Add --- Out
+		//             /
+		//     X --- F2
+		//          /
+		//         Y
+		const uint32_t n_in_x = mf->create_node(VoxelGraphFunction::NODE_INPUT_X);
+		const uint32_t n_in_y = mf->create_node(VoxelGraphFunction::NODE_INPUT_Y);
+		const uint32_t n_f1 = mf->create_function_node(function);
+		const uint32_t n_f2 = mf->create_function_node(function);
+		const uint32_t n_add = mf->create_node(VoxelGraphFunction::NODE_ADD);
+		const uint32_t n_out = mf->create_node(VoxelGraphFunction::NODE_OUTPUT_SDF);
+
+		mf->add_connection(n_in_x, 0, n_f1, 0);
+		mf->add_connection(n_in_y, 0, n_f1, 1);
+		mf->add_connection(n_in_x, 0, n_f2, 0);
+		mf->add_connection(n_in_y, 0, n_f2, 1);
+		mf->add_connection(n_f1, 0, n_add, 0);
+		mf->add_connection(n_f2, 0, n_add, 1);
+		mf->add_connection(n_add, 0, n_out, 0);
+
+		const CompilationResult result_debug = graph->compile(true);
+		ZN_TEST_ASSERT(result_debug.success);
+	}
+}
+
+void test_voxel_graph_issue783() {
+	Ref<VoxelGeneratorGraph> graph;
+	graph.instantiate();
+	{
+		Ref<VoxelGraphFunction> mf = graph->get_main_function();
+
+		//               ---
+		//        A1 ---|    B1
+		//      /        ---   \
+		//     X                Add --- Out
+		//      \        ---   /
+		//        A2 ---|    B2
+		//               ---
+		//
+		// A1 and A2 are equivalent
+		// B1 and B2 are equivalent
+
+		// TODO This test somewhat depends on StdUnorderedMap implementation details.
+		// The input conditions may or may not satisfy what we are testing depending on the order in which nodes are
+		// added. We want the "equivalence merging" step of the optimizer to evaluate B1 and B2 BEFORE A1 and A2.
+		// If A1 and A2 are checked first, they will be merged and input conditions will be different for B1 and B2.
+		const uint32_t n_out = mf->create_node(VoxelGraphFunction::NODE_OUTPUT_SDF);
+		const uint32_t n_add = mf->create_node(VoxelGraphFunction::NODE_ADD);
+		const uint32_t n_b2 = mf->create_node(VoxelGraphFunction::NODE_ADD);
+		const uint32_t n_b1 = mf->create_node(VoxelGraphFunction::NODE_ADD);
+		const uint32_t n_a2 = mf->create_node(VoxelGraphFunction::NODE_ABS);
+		const uint32_t n_a1 = mf->create_node(VoxelGraphFunction::NODE_ABS);
+		const uint32_t n_in_x = mf->create_node(VoxelGraphFunction::NODE_INPUT_X);
+
+		mf->add_connection(n_in_x, 0, n_a1, 0);
+		mf->add_connection(n_in_x, 0, n_a2, 0);
+		mf->add_connection(n_a1, 0, n_b1, 0);
+		mf->add_connection(n_a1, 0, n_b1, 1);
+		mf->add_connection(n_a2, 0, n_b2, 0);
+		mf->add_connection(n_a2, 0, n_b2, 1);
+		mf->add_connection(n_b1, 0, n_add, 0);
+		mf->add_connection(n_b2, 0, n_add, 1);
+		mf->add_connection(n_add, 0, n_out, 0);
+
+		// TODO This should not error. Need a way to fail test if an error prints
+		const CompilationResult result_debug = graph->compile(true);
+		ZN_TEST_ASSERT(result_debug.success);
+	}
+}
+
 } // namespace zylann::voxel::tests
