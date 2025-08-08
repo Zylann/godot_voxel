@@ -366,6 +366,7 @@ private:
 	bool _automatic_io_setup_enabled = true;
 	StdVector<Port> _inputs;
 	StdVector<Port> _outputs;
+	StdVector<ObjectID> _subresources; // Can contain duplicates
 #ifdef TOOLS_ENABLED
 	// Godot doesn't make a difference between a resource newly created in the inspector, an existing empty one, or one
 	// created from script... It is necessary to know that in order to load a "hello world" graph in the editor when
