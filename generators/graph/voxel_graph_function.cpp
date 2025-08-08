@@ -865,7 +865,9 @@ const ProgramGraph &VoxelGraphFunction::get_graph() const {
 
 void VoxelGraphFunction::register_subresource(Resource &resource) {
 	// print_line(String("{0}: Registering subresource {1}").format(varray(int64_t(this), int64_t(&resource))));
-	const ObjectID res_id = resource.get_instance_id();
+
+	const ObjectID res_id(resource.get_instance_id());
+
 	// The same resource can be registered more than once, so we have to account for it
 	if (!contains(_subresources, res_id)) {
 		resource.connect(
@@ -878,7 +880,9 @@ void VoxelGraphFunction::register_subresource(Resource &resource) {
 
 void VoxelGraphFunction::unregister_subresource(Resource &resource) {
 	// print_line(String("{0}: Unregistering subresource {1}").format(varray(int64_t(this), int64_t(&resource))));
-	const ObjectID res_id = resource.get_instance_id();
+
+	const ObjectID res_id(resource.get_instance_id());
+
 	size_t i;
 	if (find(_subresources, res_id, i)) {
 		unordered_remove(_subresources, i);
