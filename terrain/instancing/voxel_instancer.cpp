@@ -829,8 +829,10 @@ void VoxelInstancer::set_up_mode(UpMode mode) {
 		return;
 	}
 	_up_mode = mode;
-	for (auto it = _layers.begin(); it != _layers.end(); ++it) {
-		regenerate_layer(it->first, false);
+	if (_parent != nullptr && is_inside_tree()) {
+		for (auto it = _layers.begin(); it != _layers.end(); ++it) {
+			regenerate_layer(it->first, false);
+		}
 	}
 }
 

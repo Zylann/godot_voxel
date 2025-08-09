@@ -50,6 +50,7 @@ Primarily developped with Godot 4.4.1+
         - Fixed instance removal failing randomly after at least one chunk gets unloaded
         - Fixed instances getting generated when digging down or building up in *already meshed* chunks that had no geometry before, when using `VoxelLodTerrain`
         - Fixed transition meshes should not be used as spawning surfaces, they caused density bias and position bias at chunk borders
+        - Fixed error when loading a scene with an instancer set with `up_mode = SPHERE` (issue 786; `voxel_instancer.cpp:906 - Condition "_parent == nullptr" is true`)
     - `VoxelGeneratorGraph`: 
         - Editor: fixed error sometimes printing after closing the graph editor
         - Editor: fixed error spam `Invalid param name` after editing a graph (in some yet unknown situations)
