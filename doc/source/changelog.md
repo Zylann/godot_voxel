@@ -13,32 +13,33 @@ Dev 1.4.2
 
 Primarily developped with Godot 4.4.1+
 
-- `VoxelBuffer`: added functions to rotate/mirror contents
-- `VoxelEngine`: added function to manually change thread count (thanks to wildlachs)
-- `VoxelGeneratorGraph`: implemented constant reduction, which slightly optimizes graphs running on CPU if they contain constant branches
-- `VoxelGeneratorHeightmap`: added `offset` property
-- `VoxelGraphFunction`: Editor: preview nodes should now work
-- `VoxelInstanceLibraryItem`: Exposed `floating_sdf_*` parameters to tune how floating instances are detected after digging ground around them.
-- `VoxelInstanceLibraryMultiMeshItem`: 
-    - Added `removal_behavior` property to trigger something when instances get removed
-    - Added `collision_distance` to only create colliders when below a certain distance to chunks
-- `VoxelInstanceGenerator`: 
-    - Added an option to snap instances based on the voxel generator SDF (only available with `VoxelGeneratorGraph`).
-    - Exposed threshold for voxel texture filtering 
-    - Added falloff settings for height, slope and noise filtering, so density can fade progressively (issue 784).
-    - Added noise threshold to expand or shrink areas filtered by noise.
-- `VoxelInstancer`: 
-    - Added `remove_instances_in_sphere`
-    - Added fading system so a shader can be used to fade instances as they load in and out
-    - Slightly improved random spread of instances over triangles
-- `VoxelMesherBlocky`: added tint mode to modulate voxel colors using the `COLOR` channel.
-- `VoxelMesherTransvoxel`: added `Single` texturing mode, which uses only one byte per voxel to store a texture index. `VoxelGeneratorGraph` was also updated to include this mode.
-- `VoxelTool`: added `do_mesh` to replace `stamp_sdf`. Supported on terrains only.
-- `FastNoise2`: 
-    - Exposed `CELLULAR_VALUE` noise type 
-    - Exposed properties to choose cell indices used in distance/value calculations
-- Build system: added options to turn off features when doing custom builds
-- Introduced `VoxelFormat` to allow overriding default channel depths (was required to use the new `Single` voxel textures mode)
+- Improvements
+    - `VoxelBuffer`: added functions to rotate/mirror contents
+    - `VoxelEngine`: added function to manually change thread count (thanks to wildlachs)
+    - `VoxelGeneratorGraph`: implemented constant reduction, which slightly optimizes graphs running on CPU if they contain constant branches
+    - `VoxelGeneratorHeightmap`: added `offset` property
+    - `VoxelGraphFunction`: Editor: preview nodes should now work
+    - `VoxelInstanceLibraryItem`: Exposed `floating_sdf_*` parameters to tune how floating instances are detected after digging ground around them.
+    - `VoxelInstanceLibraryMultiMeshItem`: 
+        - Added `removal_behavior` property to trigger something when instances get removed
+        - Added `collision_distance` to only create colliders when below a certain distance to chunks
+    - `VoxelInstanceGenerator`: 
+        - Added an option to snap instances based on the voxel generator SDF (only available with `VoxelGeneratorGraph`).
+        - Exposed threshold for voxel texture filtering 
+        - Added falloff settings for height, slope and noise filtering, so density can fade progressively (issue 784).
+        - Added noise threshold to expand or shrink areas filtered by noise.
+    - `VoxelInstancer`: 
+        - Added `remove_instances_in_sphere`
+        - Added fading system so a shader can be used to fade instances as they load in and out
+        - Slightly improved random spread of instances over triangles
+    - `VoxelMesherBlocky`: added tint mode to modulate voxel colors using the `COLOR` channel.
+    - `VoxelMesherTransvoxel`: added `Single` texturing mode, which uses only one byte per voxel to store a texture index. `VoxelGeneratorGraph` was also updated to include this mode.
+    - `VoxelTool`: added `do_mesh` to replace `stamp_sdf`. Supported on terrains only.
+    - `FastNoise2`: 
+        - Exposed `CELLULAR_VALUE` noise type 
+        - Exposed properties to choose cell indices used in distance/value calculations
+    - Build system: added options to turn off features when doing custom builds
+    - Introduced `VoxelFormat` to allow overriding default channel depths (was required to use the new `Single` voxel textures mode)
 
 - Fixes
     - `VoxelBlockyType`: fixed models added using `set_variant_model` were not always returned by `_variant_models_data` (however it can still happen for different reasons, check the documentation of `set_variant_model`)
