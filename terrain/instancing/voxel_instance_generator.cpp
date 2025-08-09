@@ -853,6 +853,99 @@ void filter_instances_by_octant(
 	}
 }
 
+struct LinearFalloffRange {
+	float min0;
+	float min1;
+	float max0;
+	float max1;
+	float min_falloff;
+	float max_falloff;
+
+	LinearFalloffRange(const float p_min, const float p_max, const float p_min_falloff, const float p_max_falloff) {
+		min0 = p_min;
+		min1 = p_min + p_min_falloff;
+		max0 = p_max - p_max_falloff;
+		max1 = p_max;
+		min_falloff = p_min_falloff;
+		max_falloff = p_max_falloff;
+	}
+
+	inline bool should_discard(const float v, RandomPCG &rng) const {
+		if (v < min0 || v > max1) {
+			return true;
+		}
+		if (v < min1) {
+			const float d = (v - min0) / min_falloff;
+			const float n = rng.randf();
+			// We use the square because it gives a better perceived gradient over a surface, as the notion of
+			// `density` for a surface would be proportional to `points/meters^2`
+			return n > d * d;
+		} else if (v > max0) {
+			const float d = (max1 - v) / max_falloff;
+			const float n = rng.randf();
+			return n > d * d;
+		}
+		return false;
+	}
+};
+
+struct AngularFalloffRange {
+	float min0_rad;
+	// float min1_rad;
+	// float max0_rad;
+	float max1_rad;
+
+	float min0_cosine;
+	float min1_cosine;
+	float max0_cosine;
+	float max1_cosine;
+
+	float min_falloff_rad;
+	float max_falloff_rad;
+
+	AngularFalloffRange(
+			const float min_degrees,
+			const float max_degrees,
+			const float min_falloff_degrees,
+			const float max_falloff_degrees
+	) {
+		min0_rad = math::deg_to_rad(min_degrees);
+		const float min1_rad = math::deg_to_rad(min_degrees + min_falloff_degrees);
+		const float max0_rad = math::deg_to_rad(max_degrees - max_falloff_degrees);
+		max1_rad = math::deg_to_rad(max_degrees);
+
+		// Order is reversed because `cos` is decreasing in the 0..180 degree range
+		min0_cosine = math::cos(max1_rad);
+		min1_cosine = math::cos(max0_rad);
+		max0_cosine = math::cos(min1_rad);
+		max1_cosine = math::cos(min0_rad);
+
+		min_falloff_rad = math::deg_to_rad(min_falloff_degrees);
+		max_falloff_rad = math::deg_to_rad(max_falloff_degrees);
+	}
+
+	inline bool should_discard_cosine(const float cosine, RandomPCG &rng) const {
+		if (cosine < min0_cosine || cosine > max1_cosine) {
+			return true;
+		}
+		if (cosine < min1_cosine) {
+			const float angle = Math::acos(math::clamp(cosine, 0.f, 1.f));
+			const float d = (max1_rad - angle) / max_falloff_rad;
+			const float n = rng.randf();
+			// We use the square because it gives a better perceived gradient over a surface, as the notion of
+			// `density` for a surface would be proportional to `points/meters^2`
+			return n > d * d;
+		}
+		if (cosine > max0_cosine) {
+			const float angle = Math::acos(math::clamp(cosine, 0.f, 1.f));
+			const float d = (angle - min0_rad) / min_falloff_rad;
+			const float n = rng.randf();
+			return n > d * d;
+		}
+		return false;
+	}
+};
+
 } // namespace
 
 void VoxelInstanceGenerator::generate_transforms(
@@ -1112,18 +1205,46 @@ void VoxelInstanceGenerator::generate_transforms(
 	if (use_noise) {
 		ZN_PROFILE_SCOPE_NAMED("Noise filter");
 
-		for (size_t i = 0; i < vertex_cache.size();) {
-			const float n = noise_cache[i];
-			if (n <= 0) {
-				unordered_remove(vertex_cache, i);
-				unordered_remove(normal_cache, i);
-				unordered_remove(noise_cache, i);
-				// We don't use the index cache after this... for now
-				// if (index_cache_used) {
-				// 	unordered_remove(index_cache, i);
-				// }
-			} else {
-				++i;
+		const float falloff = _noise_falloff;
+
+		const float threshold = _noise_threshold;
+		if (threshold != 0.f) {
+			for (float &n : noise_cache) {
+				n += threshold;
+			}
+		}
+
+		if (falloff <= 0.f) {
+			for (size_t i = 0; i < vertex_cache.size();) {
+				const float n = noise_cache[i];
+				if (n <= 0.f) {
+					unordered_remove(vertex_cache, i);
+					unordered_remove(normal_cache, i);
+					unordered_remove(noise_cache, i);
+					// We don't use the index cache after this... for now
+					// if (index_cache_used) {
+					// 	unordered_remove(index_cache, i);
+					// }
+				} else {
+					++i;
+				}
+			}
+		} else {
+			for (size_t i = 0; i < vertex_cache.size();) {
+				const float n = noise_cache[i];
+				const float r = pcg1.randf();
+				const float d = n / falloff;
+				if (d < 0.f || r > d * d) {
+					unordered_remove(vertex_cache, i);
+					unordered_remove(normal_cache, i);
+					unordered_remove(noise_cache, i);
+					// We don't use the index cache after this... for now
+					// if (index_cache_used) {
+					// 	unordered_remove(index_cache, i);
+					// }
+				} else {
+					++i;
+				}
 			}
 		}
 	}
@@ -1150,13 +1271,15 @@ void VoxelInstanceGenerator::generate_transforms(
 	const float scale_range = _max_scale - _min_scale;
 	const bool random_vertical_flip = _random_vertical_flip;
 	const float offset_along_normal = _offset_along_normal;
-	const float normal_min_y = _min_surface_normal_y;
-	const float normal_max_y = _max_surface_normal_y;
-	const bool slope_filter = normal_min_y != -1.f || normal_max_y != 1.f;
-	const bool height_filter =
+
+	const bool slope_filter_active = _min_slope_degrees != 0.f || _max_slope_degrees != 180.f;
+	const AngularFalloffRange slope_filter(
+			_min_slope_degrees, _max_slope_degrees, _min_slope_falloff_degrees, _max_slope_falloff_degrees
+	);
+
+	const bool height_filter_active =
 			_min_height != std::numeric_limits<float>::min() || _max_height != std::numeric_limits<float>::max();
-	const float min_height = _min_height;
-	const float max_height = _max_height;
+	const LinearFalloffRange height_filter(_min_height, _max_height, _min_height_falloff, _max_height_falloff);
 
 	const Vector3f fixed_look_axis = up_mode == UP_MODE_POSITIVE_Y ? Vector3f(1, 0, 0) : Vector3f(0, 1, 0);
 	const Vector3f fixed_look_axis_alternative = up_mode == UP_MODE_POSITIVE_Y ? Vector3f(0, 1, 0) : Vector3f(1, 0, 0);
@@ -1198,11 +1321,13 @@ void VoxelInstanceGenerator::generate_transforms(
 			}
 		}
 
-		if (slope_filter) {
+		if (slope_filter_active) {
 			if (!surface_normal_is_normalized) {
 				surface_normal = math::normalized(surface_normal);
 			}
 
+			// If the normal points straight up, it will be 1, and angle is considered to be 0. Then angle increases as
+			// ground gets sloped or goes upside down, up to 180 degrees
 			float ny = surface_normal.y;
 			if (up_mode == UP_MODE_SPHERE) {
 				if (!sphere_up_is_computed) {
@@ -1213,13 +1338,12 @@ void VoxelInstanceGenerator::generate_transforms(
 				ny = math::dot(surface_normal, global_up);
 			}
 
-			if (ny < normal_min_y || ny > normal_max_y) {
-				// Discard
+			if (slope_filter.should_discard_cosine(ny, pcg1)) {
 				continue;
 			}
 		}
 
-		if (height_filter) {
+		if (height_filter_active) {
 			float y = mesh_block_origin.y + t.origin.y;
 			if (up_mode == UP_MODE_SPHERE) {
 				if (!sphere_distance_is_computed) {
@@ -1229,7 +1353,7 @@ void VoxelInstanceGenerator::generate_transforms(
 				y = sphere_distance;
 			}
 
-			if (y < min_height || y > max_height) {
+			if (height_filter.should_discard(y, pcg1)) {
 				continue;
 			}
 		}
@@ -1433,13 +1557,12 @@ float VoxelInstanceGenerator::get_offset_along_normal() const {
 	return _offset_along_normal;
 }
 
-void VoxelInstanceGenerator::set_min_slope_degrees(float degrees) {
-	_min_slope_degrees = math::clamp(degrees, 0.f, 180.f);
-	const float max_surface_normal_y = math::min(1.f, Math::cos(math::deg_to_rad(_min_slope_degrees)));
-	if (max_surface_normal_y == _max_surface_normal_y) {
+void VoxelInstanceGenerator::set_min_slope_degrees(float p_degrees) {
+	const float degrees = math::clamp(p_degrees, 0.f, 180.f);
+	if (degrees == _min_slope_degrees) {
 		return;
 	}
-	_max_surface_normal_y = max_surface_normal_y;
+	_min_slope_degrees = degrees;
 	emit_changed();
 }
 
@@ -1447,18 +1570,43 @@ float VoxelInstanceGenerator::get_min_slope_degrees() const {
 	return _min_slope_degrees;
 }
 
-void VoxelInstanceGenerator::set_max_slope_degrees(float degrees) {
-	_max_slope_degrees = math::clamp(degrees, 0.f, 180.f);
-	const float min_surface_normal_y = math::max(-1.f, Math::cos(math::deg_to_rad(_max_slope_degrees)));
-	if (min_surface_normal_y == _min_surface_normal_y) {
+void VoxelInstanceGenerator::set_max_slope_degrees(float p_degrees) {
+	const float degrees = math::clamp(p_degrees, 0.f, 180.f);
+	if (degrees == _max_slope_degrees) {
 		return;
 	}
-	_min_surface_normal_y = min_surface_normal_y;
+	_max_slope_degrees = degrees;
 	emit_changed();
 }
 
 float VoxelInstanceGenerator::get_max_slope_degrees() const {
 	return _max_slope_degrees;
+}
+
+void VoxelInstanceGenerator::set_min_slope_falloff_degrees(float p_degrees) {
+	const float degrees = math::clamp(p_degrees, 0.f, 180.f);
+	if (degrees == _min_slope_falloff_degrees) {
+		return;
+	}
+	_min_slope_falloff_degrees = degrees;
+	emit_changed();
+}
+
+float VoxelInstanceGenerator::get_min_slope_falloff_degrees() const {
+	return _min_slope_falloff_degrees;
+}
+
+void VoxelInstanceGenerator::set_max_slope_falloff_degrees(float p_degrees) {
+	const float degrees = math::clamp(p_degrees, 0.f, 180.f);
+	if (degrees == _max_slope_falloff_degrees) {
+		return;
+	}
+	_max_slope_falloff_degrees = degrees;
+	emit_changed();
+}
+
+float VoxelInstanceGenerator::get_max_slope_falloff_degrees() const {
+	return _max_slope_falloff_degrees;
 }
 
 void VoxelInstanceGenerator::set_min_height(float h) {
@@ -1483,6 +1631,32 @@ void VoxelInstanceGenerator::set_max_height(float h) {
 
 float VoxelInstanceGenerator::get_max_height() const {
 	return _max_height;
+}
+
+void VoxelInstanceGenerator::set_min_height_falloff(float f) {
+	f = math::max(f, 0.f);
+	if (f == _min_height_falloff) {
+		return;
+	}
+	_min_height_falloff = f;
+	emit_changed();
+}
+
+float VoxelInstanceGenerator::get_min_height_falloff() const {
+	return _min_height_falloff;
+}
+
+void VoxelInstanceGenerator::set_max_height_falloff(float f) {
+	f = math::max(f, 0.f);
+	if (_max_height_falloff == f) {
+		return;
+	}
+	_max_height_falloff = f;
+	emit_changed();
+}
+
+float VoxelInstanceGenerator::get_max_height_falloff() const {
+	return _max_height_falloff;
 }
 
 void VoxelInstanceGenerator::set_random_vertical_flip(bool flip_enabled) {
@@ -1594,6 +1768,31 @@ void VoxelInstanceGenerator::set_noise_dimension(Dimension dim) {
 
 VoxelInstanceGenerator::Dimension VoxelInstanceGenerator::get_noise_dimension() const {
 	return _noise_dimension;
+}
+
+void VoxelInstanceGenerator::set_noise_falloff(const float p_falloff) {
+	const float falloff = math::max(p_falloff, 0.f);
+	if (falloff == _noise_falloff) {
+		return;
+	}
+	_noise_falloff = falloff;
+	emit_changed();
+}
+
+float VoxelInstanceGenerator::get_noise_falloff() const {
+	return _noise_falloff;
+}
+
+void VoxelInstanceGenerator::set_noise_threshold(const float threshold) {
+	if (threshold == _noise_threshold) {
+		return;
+	}
+	_noise_threshold = threshold;
+	emit_changed();
+}
+
+float VoxelInstanceGenerator::get_noise_threshold() const {
+	return _noise_threshold;
 }
 
 void VoxelInstanceGenerator::set_noise_on_scale(float amount) {
@@ -1832,11 +2031,23 @@ void VoxelInstanceGenerator::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_max_slope_degrees", "degrees"), &Self::set_max_slope_degrees);
 	ClassDB::bind_method(D_METHOD("get_max_slope_degrees"), &Self::get_max_slope_degrees);
 
+	ClassDB::bind_method(D_METHOD("set_min_slope_falloff_degrees", "degrees"), &Self::set_min_slope_falloff_degrees);
+	ClassDB::bind_method(D_METHOD("get_min_slope_falloff_degrees"), &Self::get_min_slope_falloff_degrees);
+
+	ClassDB::bind_method(D_METHOD("set_max_slope_falloff_degrees", "degrees"), &Self::set_max_slope_falloff_degrees);
+	ClassDB::bind_method(D_METHOD("get_max_slope_falloff_degrees"), &Self::get_max_slope_falloff_degrees);
+
 	ClassDB::bind_method(D_METHOD("set_min_height", "height"), &Self::set_min_height);
 	ClassDB::bind_method(D_METHOD("get_min_height"), &Self::get_min_height);
 
 	ClassDB::bind_method(D_METHOD("set_max_height", "height"), &Self::set_max_height);
 	ClassDB::bind_method(D_METHOD("get_max_height"), &Self::get_max_height);
+
+	ClassDB::bind_method(D_METHOD("set_min_height_falloff", "distance"), &Self::set_min_height_falloff);
+	ClassDB::bind_method(D_METHOD("get_min_height_falloff"), &Self::get_min_height_falloff);
+
+	ClassDB::bind_method(D_METHOD("set_max_height_falloff", "distance"), &Self::set_max_height_falloff);
+	ClassDB::bind_method(D_METHOD("get_max_height_falloff"), &Self::get_max_height_falloff);
 
 	ClassDB::bind_method(D_METHOD("set_random_vertical_flip", "enabled"), &Self::set_random_vertical_flip);
 	ClassDB::bind_method(D_METHOD("get_random_vertical_flip"), &Self::get_random_vertical_flip);
@@ -1852,6 +2063,12 @@ void VoxelInstanceGenerator::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("set_noise_dimension", "dim"), &Self::set_noise_dimension);
 	ClassDB::bind_method(D_METHOD("get_noise_dimension"), &Self::get_noise_dimension);
+
+	ClassDB::bind_method(D_METHOD("set_noise_falloff", "falloff"), &Self::set_noise_falloff);
+	ClassDB::bind_method(D_METHOD("get_noise_falloff"), &Self::get_noise_falloff);
+
+	ClassDB::bind_method(D_METHOD("set_noise_threshold", "threshold"), &Self::set_noise_threshold);
+	ClassDB::bind_method(D_METHOD("get_noise_threshold"), &Self::get_noise_threshold);
 
 	ClassDB::bind_method(D_METHOD("set_noise_on_scale", "amount"), &Self::set_noise_on_scale);
 	ClassDB::bind_method(D_METHOD("get_noise_on_scale"), &Self::get_noise_on_scale);
@@ -1917,19 +2134,6 @@ void VoxelInstanceGenerator::_bind_methods() {
 			"get_triangle_area_threshold"
 	);
 
-	ADD_PROPERTY(
-			PropertyInfo(Variant::FLOAT, "min_slope_degrees", PROPERTY_HINT_RANGE, "0.0, 180.0, 0.1"),
-			"set_min_slope_degrees",
-			"get_min_slope_degrees"
-	);
-	ADD_PROPERTY(
-			PropertyInfo(Variant::FLOAT, "max_slope_degrees", PROPERTY_HINT_RANGE, "0.0, 180.0, 0.1"),
-			"set_max_slope_degrees",
-			"get_max_slope_degrees"
-	);
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "min_height"), "set_min_height", "get_min_height");
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "max_height"), "set_max_height", "get_max_height");
-
 	ADD_GROUP("Scale", "");
 
 	ADD_PROPERTY(
@@ -1966,7 +2170,43 @@ void VoxelInstanceGenerator::_bind_methods() {
 			PropertyInfo(Variant::FLOAT, "offset_along_normal"), "set_offset_along_normal", "get_offset_along_normal"
 	);
 
-	ADD_GROUP("Noise", "");
+	ADD_GROUP("Slope filtering", "");
+
+	ADD_PROPERTY(
+			PropertyInfo(Variant::FLOAT, "min_slope_degrees", PROPERTY_HINT_RANGE, "0.0, 180.0, 0.1"),
+			"set_min_slope_degrees",
+			"get_min_slope_degrees"
+	);
+	ADD_PROPERTY(
+			PropertyInfo(Variant::FLOAT, "max_slope_degrees", PROPERTY_HINT_RANGE, "0.0, 180.0, 0.1"),
+			"set_max_slope_degrees",
+			"get_max_slope_degrees"
+	);
+
+	ADD_PROPERTY(
+			PropertyInfo(Variant::FLOAT, "min_slope_falloff_degrees", PROPERTY_HINT_RANGE, "0.0, 180.0, 0.1"),
+			"set_min_slope_falloff_degrees",
+			"get_min_slope_falloff_degrees"
+	);
+	ADD_PROPERTY(
+			PropertyInfo(Variant::FLOAT, "max_slope_falloff_degrees", PROPERTY_HINT_RANGE, "0.0, 180.0, 0.1"),
+			"set_max_slope_falloff_degrees",
+			"get_max_slope_falloff_degrees"
+	);
+
+	ADD_GROUP("Height filtering", "");
+
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "min_height"), "set_min_height", "get_min_height");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "max_height"), "set_max_height", "get_max_height");
+
+	ADD_PROPERTY(
+			PropertyInfo(Variant::FLOAT, "min_height_falloff"), "set_min_height_falloff", "get_min_height_falloff"
+	);
+	ADD_PROPERTY(
+			PropertyInfo(Variant::FLOAT, "max_height_falloff"), "set_max_height_falloff", "get_max_height_falloff"
+	);
+
+	ADD_GROUP("Noise filtering", "");
 
 	ADD_PROPERTY(
 			PropertyInfo(Variant::OBJECT, "noise", PROPERTY_HINT_RESOURCE_TYPE, Noise::get_class_static()),
@@ -1984,6 +2224,16 @@ void VoxelInstanceGenerator::_bind_methods() {
 			"get_noise_graph"
 	);
 	ADD_PROPERTY(
+			PropertyInfo(Variant::FLOAT, "noise_falloff", PROPERTY_HINT_RANGE, "0.0, 1.0, 0.01"),
+			"set_noise_falloff",
+			"get_noise_falloff"
+	);
+	ADD_PROPERTY(
+			PropertyInfo(Variant::FLOAT, "noise_threshold", PROPERTY_HINT_RANGE, "-2.0, 2.0, 0.01"),
+			"set_noise_threshold",
+			"get_noise_threshold"
+	);
+	ADD_PROPERTY(
 			PropertyInfo(Variant::INT, "noise_dimension", PROPERTY_HINT_ENUM, "2D,3D"),
 			"set_noise_dimension",
 			"get_noise_dimension"
@@ -1994,7 +2244,7 @@ void VoxelInstanceGenerator::_bind_methods() {
 			"get_noise_on_scale"
 	);
 
-	ADD_GROUP("Filtering", "");
+	ADD_GROUP("Texture filtering", "");
 
 	ADD_PROPERTY(
 			PropertyInfo(Variant::BOOL, "voxel_texture_filter_enabled"),

@@ -25,6 +25,8 @@ Primarily developped with Godot 4.4.1+
 - `VoxelInstanceGenerator`: 
     - Added an option to snap instances based on the voxel generator SDF (only available with `VoxelGeneratorGraph`).
     - Exposed threshold for voxel texture filtering 
+    - Added falloff settings for height, slope and noise filtering, so density can fade progressively (issue 784).
+    - Added noise threshold to expand or shrink areas filtered by noise.
 - `VoxelInstancer`: 
     - Added `remove_instances_in_sphere`
     - Added fading system so a shader can be used to fade instances as they load in and out

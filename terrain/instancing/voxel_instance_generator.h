@@ -101,17 +101,29 @@ public:
 	void set_offset_along_normal(float offset);
 	float get_offset_along_normal() const;
 
-	void set_min_slope_degrees(float degrees);
+	void set_min_slope_degrees(float p_degrees);
 	float get_min_slope_degrees() const;
 
-	void set_max_slope_degrees(float degrees);
+	void set_max_slope_degrees(float p_degrees);
 	float get_max_slope_degrees() const;
+
+	void set_min_slope_falloff_degrees(float p_degrees);
+	float get_min_slope_falloff_degrees() const;
+
+	void set_max_slope_falloff_degrees(float p_degrees);
+	float get_max_slope_falloff_degrees() const;
 
 	void set_min_height(float h);
 	float get_min_height() const;
 
 	void set_max_height(float h);
 	float get_max_height() const;
+
+	void set_min_height_falloff(float f);
+	float get_min_height_falloff() const;
+
+	void set_max_height_falloff(float f);
+	float get_max_height_falloff() const;
 
 	void set_random_vertical_flip(bool flip);
 	bool get_random_vertical_flip() const;
@@ -127,6 +139,12 @@ public:
 
 	void set_noise_dimension(Dimension dim);
 	Dimension get_noise_dimension() const;
+
+	void set_noise_falloff(const float p_falloff);
+	float get_noise_falloff() const;
+
+	void set_noise_threshold(const float threshold);
+	float get_noise_threshold() const;
 
 	void set_noise_on_scale(float amount);
 	float get_noise_on_scale() const;
@@ -178,10 +196,17 @@ private:
 	float _min_scale = 1.f;
 	float _max_scale = 1.f;
 	float _offset_along_normal = 0.f;
-	float _min_surface_normal_y = -1.f;
-	float _max_surface_normal_y = 1.f;
+
 	float _min_height = std::numeric_limits<float>::min();
 	float _max_height = std::numeric_limits<float>::max();
+	float _min_height_falloff = 0.0f;
+	float _max_height_falloff = 0.0f;
+
+	float _min_slope_degrees = 0.f;
+	float _max_slope_degrees = 180.f;
+	float _min_slope_falloff_degrees = 0.f;
+	float _max_slope_falloff_degrees = 0.f;
+
 	bool _random_vertical_flip = false;
 	bool _random_rotation = true;
 	EmitMode _emit_mode = EMIT_FROM_VERTICES;
@@ -213,9 +238,8 @@ private:
 	// - Per vertex: recommended if many items with high density need it (will be shared among them)
 	// - Per instance: recommended if items with low density need it
 
-	// Stored separately for editor
-	float _min_slope_degrees = 0.f;
-	float _max_slope_degrees = 180.f;
+	float _noise_falloff = 0.f;
+	float _noise_threshold = 0.f;
 
 	// Used when accessing pointer settings, since this generator can be used in a thread while the editor thread can
 	// modify settings.
