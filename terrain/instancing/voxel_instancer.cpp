@@ -3240,7 +3240,8 @@ PackedStringArray VoxelInstancer::_get_configuration_warnings() const {
 
 void VoxelInstancer::get_configuration_warnings(PackedStringArray &warnings) const {
 	if (_parent == nullptr) {
-		warnings.append(ZN_TTR("This node must be child of a {0}.").format(varray(VoxelLodTerrain::get_class_static()))
+		warnings.append(
+				ZN_TTR("This node must be child of a {0}.").format(varray(VoxelLodTerrain::get_class_static()))
 		);
 	}
 	if (_library.is_null()) {
