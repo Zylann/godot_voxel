@@ -265,7 +265,9 @@ Sets the signed distance field (SDF) value a specific voxel. This should prefera
 
 ### [void](#)<span id="i_set_voxel_metadata"></span> **set_voxel_metadata**( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) pos, [Variant](https://docs.godotengine.org/en/stable/classes/class_variant.html) meta ) 
 
-*(This method has no documentation)*
+Attaches arbitrary data on a specific voxel. Old data is replaced. Passing `null` will erase metadata.
+
+If the underlying voxels can be saved, this metadata will also be saved, so make sure the data supports serialization (i.e you can't put nodes or arbitrary objects in it).
 
 ### [void](#)<span id="i_smooth_sphere"></span> **smooth_sphere**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) sphere_center, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) sphere_radius, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) blur_radius ) 
 
@@ -293,4 +295,4 @@ Decodes raw voxel integer data from the WEIGHTS channel into a normalized 4-floa
 
 Encodes a 4-integer vector into 16-bit integer voxel data, for use in the INDICES channel.
 
-_Generated on May 15, 2025_
+_Generated on Aug 09, 2025_

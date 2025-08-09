@@ -55,4 +55,4 @@ Enables caching keys of the database to speed up loading queries in terrains tha
 
 This must be called before any call to `load_voxel_block` (before the terrain starts using it), otherwise it won't work properly. You may use a script to do this.
 
-_Generated on May 15, 2025_
+_Generated on Aug 09, 2025_

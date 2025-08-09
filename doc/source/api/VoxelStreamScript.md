@@ -28,4 +28,4 @@ Called when a block of voxels needs to be loaded. Assumes `out_buffer` always ha
 
 Called when a block of voxels needs to be saved. Assumes `out_buffer` always has the same size.
 
-_Generated on May 15, 2025_
+_Generated on Aug 09, 2025_
