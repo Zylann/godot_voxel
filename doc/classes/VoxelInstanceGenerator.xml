@@ -72,6 +72,7 @@
 			Which dimension should be used when evaluating [member noise] and [member noise_graph].
 		</member>
 		<member name="noise_falloff" type="float" setter="set_noise_falloff" getter="get_noise_falloff" default="0.0">
+			Noise range over which density will fade. For example if falloff is 0.3, then density will fade when noise values are between 0 and 0.3.
 		</member>
 		<member name="noise_graph" type="VoxelGraphFunction" setter="set_noise_graph" getter="get_noise_graph">
 			Graph function used to filter out spawned instances, similar to [member noise], but allows more custom noise computations.
