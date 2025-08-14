@@ -245,6 +245,13 @@ void VoxelTerrain::set_mesh_block_size(unsigned int mesh_block_size) {
 		viewer.prev_state.mesh_box = Box3i();
 	}
 
+#ifdef VOXEL_ENABLE_INSTANCER
+	// Doing this after because `on_mesh_block_exit` may use the old size
+	if (_instancer != nullptr) {
+		_instancer->set_mesh_block_size_po2(po2);
+	}
+#endif
+
 	// VoxelEngine::get_singleton().set_volume_render_block_size(_volume_id, mesh_block_size);
 
 	// No update on bounds because we can support a mismatch, as long as it is a multiple of data block size
