@@ -500,7 +500,7 @@ void VoxelLodTerrain::set_mesh_block_size(unsigned int mesh_block_size) {
 #ifdef VOXEL_ENABLE_INSTANCER
 	// Doing this after because `on_mesh_block_exit` may use the old size
 	if (_instancer != nullptr) {
-		_instancer->set_mesh_block_size_po2(mesh_block_size);
+		_instancer->set_mesh_block_size_po2(po2);
 	}
 #endif
 
