@@ -1333,7 +1333,7 @@ void VoxelInstancer::on_mesh_block_enter(
 	create_render_blocks(render_grid_position, lod_index, surface_arrays, vertex_range_end, index_range_end);
 }
 
-void VoxelInstancer::on_mesh_block_exit(Vector3i render_grid_position, unsigned int lod_index) {
+void VoxelInstancer::on_mesh_block_exit(const Vector3i render_grid_position, const unsigned int lod_index) {
 	if (lod_index >= _lods.size()) {
 		// The instancer doesn't handle large LODs
 		return;
