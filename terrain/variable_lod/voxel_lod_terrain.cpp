@@ -3037,11 +3037,12 @@ void VoxelLodTerrain::get_configuration_warnings(PackedStringArray &warnings) co
 						const String missing_uniforms = get_missing_uniform_names(to_span(expected_uniforms), **shader);
 
 						if (missing_uniforms.length() != 0) {
-							warnings.append(String(ZN_TTR("Normalmaps are enabled, but it requires to use a {0} with a "
-														  "shader having "
-														  "specific uniforms. Missing ones: {1}"))
-													.format(varray(ShaderMaterial::get_class_static(), missing_uniforms)
-													));
+							warnings.append(
+									String(ZN_TTR("Normalmaps are enabled, but it requires to use a {0} with a "
+												  "shader having "
+												  "specific uniforms. Missing ones: {1}"))
+											.format(varray(ShaderMaterial::get_class_static(), missing_uniforms))
+							);
 						}
 					}
 				}
