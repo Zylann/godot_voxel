@@ -104,17 +104,19 @@ void VoxelStreamSQLite::save_voxel_block(VoxelStream::VoxelQueryData &q) {
 	save_voxel_blocks(Span<VoxelStream::VoxelQueryData>(&q, 1));
 }
 
-void set_result_codes(Span<VoxelStream::VoxelQueryData> p_blocks, VoxelStream::ResultCode code) {
+static void set_result_codes(Span<VoxelStream::VoxelQueryData> p_blocks, VoxelStream::ResultCode code) {
 	for (VoxelStream::VoxelQueryData &q : p_blocks) {
 		q.result = code;
 	}
 }
 
-void set_result_codes(Span<VoxelStream::InstancesQueryData> p_blocks, VoxelStream::ResultCode code) {
+#ifdef VOXEL_ENABLE_INSTANCER
+static void set_result_codes(Span<VoxelStream::InstancesQueryData> p_blocks, VoxelStream::ResultCode code) {
 	for (VoxelStream::InstancesQueryData &q : p_blocks) {
 		q.result = code;
 	}
 }
+#endif
 
 void VoxelStreamSQLite::load_voxel_blocks(Span<VoxelStream::VoxelQueryData> p_blocks) {
 	ZN_PROFILE_SCOPE();
