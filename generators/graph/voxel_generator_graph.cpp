@@ -983,7 +983,7 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelGenerator::Voxel
 }
 
 bool VoxelGeneratorGraph::generate_broad_block(VoxelGenerator::VoxelQueryData input) {
-	// This is a reduced version of whan `generate_block` does already, so it can be used before scheduling GPU work.
+	// This is a reduced version of what `generate_block` does already, so it can be used before scheduling GPU work.
 	// If range analysis and SDF clipping finds that we don't need to generate the full block, we can get away with the
 	// broad result. If any channel cannot be determined this way, we have to perform full generation.
 
