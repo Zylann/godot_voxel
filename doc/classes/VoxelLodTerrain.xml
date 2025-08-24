@@ -176,6 +176,7 @@
 					"blocked_lods": int
 				}
 				[/codeblock]
+				Times are in microseconds.
 			</description>
 		</method>
 		<method name="get_voxel_tool">
