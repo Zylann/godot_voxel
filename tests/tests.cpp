@@ -174,6 +174,7 @@ void run_voxel_tests(const testing::TestOptions &options) {
 	VOXEL_TEST(test_spot_noise);
 	VOXEL_TEST(test_voxel_graph_multiple_function_instances);
 	VOXEL_TEST(test_voxel_graph_issue783);
+	VOXEL_TEST(test_voxel_graph_broad_block);
 
 	print_line("------------ Voxel tests end -------------");
 }

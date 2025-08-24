@@ -1003,18 +1003,12 @@ bool VoxelGeneratorGraph::generate_broad_block(VoxelGenerator::VoxelQueryData in
 	const VoxelBuffer::ChannelId sdf_channel = VoxelBuffer::CHANNEL_SDF;
 	const Vector3i origin = input.origin_in_voxels;
 
-	// TODO This may be shared across the module
-	// Storing voxels is lossy on some depth configurations. They use normalized SDF,
-	// so we must scale the values to make better use of the offered resolution
-	const VoxelBuffer::Depth sdf_channel_depth = out_buffer.get_channel_depth(sdf_channel);
-	const float sdf_scale = VoxelBuffer::get_sdf_quantization_scale(sdf_channel_depth);
-
 	const VoxelBuffer::ChannelId type_channel = VoxelBuffer::CHANNEL_TYPE;
 
 	const int stride = 1 << input.lod;
 
 	// Clip threshold must be higher for higher lod indexes because distances for one sampled voxel are also larger
-	const float clip_threshold = sdf_scale * _sdf_clip_threshold * stride;
+	const float clip_threshold = _sdf_clip_threshold * stride;
 
 	Cache &cache = get_tls_cache();
 
@@ -1044,7 +1038,7 @@ bool VoxelGeneratorGraph::generate_broad_block(VoxelGenerator::VoxelQueryData in
 
 	bool sdf_is_air = true;
 	if (sdf_output_buffer_index != -1) {
-		const math::Interval sdf_range = cache.state.get_range(sdf_output_buffer_index) * sdf_scale;
+		const math::Interval sdf_range = cache.state.get_range(sdf_output_buffer_index);
 
 		if (sdf_range.min > clip_threshold && sdf_range.max > clip_threshold) {
 			out_buffer.fill_f(air_sdf, sdf_channel);

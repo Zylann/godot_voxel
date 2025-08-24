@@ -60,6 +60,7 @@ Primarily developped with Godot 4.4.1+
         - Fixed incorrect texture painting leading to black triangles when using Mixel4 with OutputSingleTexture and GPU generation
         - Fixed crash with specific setups where equivalent nodes are connected multiple times to equivalent ancestors (issue 783; `FATAL: Assertion failed: "p != equivalence" is false`)
         - Fixed error when creating multiple nodes referring to a common resource (`ERROR: Signal 'changed' is already connected to given callable 'VoxelGraphFunction::_on_subresource_changed'`)
+        - Fixed incorrect "walls" showing up in areas that are assumed uniform by range analysis, when GPU generation is enabled (For example, when using a Select node to output SDF=1.0 in an area; commit: 350d3897dcec7e37016e4fb95851cd389947371b)
     - `VoxelMesherBlocky`: Fixed crash when invalid model IDs are present at chunk borders with `VoxelLodTerrain`
     - `VoxelMeshSDF`: Fixed error when baking from a non-indexed mesh (which is exceptionally the case with Godot's CSG nodes)
     - `VoxelMesherTransvoxel`: Fixed some incorrect geometry changes near positive LOD borders, notably when voxel textures are used. Edge cases remain but can be fixed with a shader hack for now.

@@ -44,6 +44,7 @@ void test_voxel_graph_empty_image();
 void test_voxel_graph_constant_reduction();
 void test_voxel_graph_multiple_function_instances();
 void test_voxel_graph_issue783();
+void test_voxel_graph_broad_block();
 
 } // namespace zylann::voxel::tests
 

@@ -2536,4 +2536,51 @@ void test_voxel_graph_issue783() {
 	}
 }
 
+void test_voxel_graph_broad_block() {
+	// generate_broad_block used to scale SDF when filling the output buffer, but it should not have done that because
+	// VoxelBuffer already scales internally. So when range analysis returns single-value outputs that are small enough
+	// (for example using 1.0 in Select to output air in an area) then it was rounded to 0, which for Transvoxel means
+	// solid.
+
+	Ref<VoxelGeneratorGraph> graph;
+	graph.instantiate();
+
+	{
+		Ref<VoxelGraphFunction> mf = graph->get_main_function();
+
+		// Y --- SdfPlane --- A
+		//                    B Select --- Out
+		//              X --- T
+
+		const uint32_t n_x = mf->create_node(VoxelGraphFunction::NODE_INPUT_X);
+		const uint32_t n_y = mf->create_node(VoxelGraphFunction::NODE_INPUT_Y);
+		const uint32_t n_select = mf->create_node(VoxelGraphFunction::NODE_SELECT);
+		const uint32_t n_plane = mf->create_node(VoxelGraphFunction::NODE_SDF_PLANE);
+		const uint32_t n_out = mf->create_node(VoxelGraphFunction::NODE_OUTPUT_SDF);
+
+		mf->add_connection(n_y, 0, n_plane, 0);
+
+		mf->add_connection(n_plane, 0, n_select, 0);
+		mf->set_node_default_input(n_select, 1, 1.f);
+		const uint32_t param_threshold = 0;
+		mf->set_node_param(n_select, param_threshold, 50.f); // x < 50 ? A : B
+		mf->add_connection(n_x, 0, n_select, 2);
+
+		mf->add_connection(n_select, 0, n_out, 0);
+	}
+
+	const CompilationResult comp_result = graph->compile(false);
+	ZN_TEST_ASSERT(comp_result.success);
+
+	VoxelBuffer voxels(VoxelBuffer::ALLOCATOR_DEFAULT);
+	voxels.create(Vector3i(16, 16, 16));
+
+	VoxelGenerator::VoxelQueryData query{ voxels, Vector3i(224, -32, 0), 0 };
+	const bool is_broad = graph->generate_broad_block(query);
+	ZN_TEST_ASSERT(is_broad);
+	ZN_TEST_ASSERT(voxels.get_channel_compression(VoxelBuffer::CHANNEL_SDF) == VoxelBuffer::COMPRESSION_UNIFORM);
+	const float sd = voxels.get_voxel_f(Vector3i(0, 0, 0), VoxelBuffer::CHANNEL_SDF);
+	ZN_TEST_ASSERT(sd > 0.f);
+}
+
 } // namespace zylann::voxel::tests
