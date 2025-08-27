@@ -3,6 +3,7 @@
 #include "../util/containers/container_funcs.h"
 #include "../util/containers/dynamic_bitset.h"
 #include "../util/dstack.h"
+#include "../util/math/box_bounds_3i.h"
 #include "../util/profiling.h"
 #include "../util/string/format.h"
 #include "mixel4.h"
@@ -1226,18 +1227,27 @@ void VoxelBuffer::clear_voxel_metadata_in_area(const Box3i box) {
 	});
 }
 
-void VoxelBuffer::copy_voxel_metadata_in_area(const VoxelBuffer &src_buffer, Box3i src_box, Vector3i dst_origin) {
-	ZN_ASSERT_RETURN(src_buffer.is_box_valid(src_box));
+void VoxelBuffer::copy_voxel_metadata_in_area(
+		const VoxelBuffer &src_buffer,
+		const Box3i src_box,
+		const Vector3i dst_origin
+) {
+	BoxBounds3i clamped_src_box(src_box);
+	Vector3i clamped_dst_min = dst_origin;
+	clip_copy_region(clamped_src_box.min_pos, clamped_src_box.max_pos, src_buffer.get_size(), clamped_dst_min, _size);
+	if (clamped_src_box.is_empty()) {
+		return;
+	}
+	const Vector3i src_to_dst_offset = clamped_dst_min - clamped_src_box.min_pos;
 
-	const Box3i clipped_src_box = src_box.clipped(Box3i(src_box.position - dst_origin, _size));
-	const Vector3i clipped_dst_offset = dst_origin + clipped_src_box.position - src_box.position;
-
-	for (FlatMapMoveOnly<Vector3i, VoxelMetadata>::ConstIterator src_it = src_buffer._voxel_metadata.begin();
-		 src_it != src_buffer._voxel_metadata.end();
-		 ++src_it) {
-		if (src_box.contains(src_it->key)) {
-			const Vector3i dst_pos = src_it->key + clipped_dst_offset;
-			ZN_ASSERT(is_position_valid(dst_pos));
+	for (
+			FlatMapMoveOnly<Vector3i, VoxelMetadata>::ConstIterator src_it = src_buffer._voxel_metadata.begin();
+			src_it != src_buffer._voxel_metadata.end();
+			++src_it //
+	) {
+		if (clamped_src_box.contains(src_it->key)) {
+			const Vector3i dst_pos = src_it->key + src_to_dst_offset;
+			ZN_ASSERT_CONTINUE(is_position_valid(dst_pos));
 
 			VoxelMetadata &meta = _voxel_metadata.insert_or_assign(dst_pos, VoxelMetadata());
 			meta.copy_from(src_it->value);

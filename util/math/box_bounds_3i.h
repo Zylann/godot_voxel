@@ -48,6 +48,15 @@ struct BoxBounds3i {
 		);
 	}
 
+	inline bool contains(const Vector3i p) const {
+		return p.x >= min_pos.x && //
+				p.y >= min_pos.y && //
+				p.z >= min_pos.z && //
+				p.x < max_pos.x && //
+				p.y < max_pos.y && //
+				p.z < max_pos.z;
+	}
+
 	inline bool operator==(const BoxBounds3i &other) const {
 		return min_pos == other.min_pos && max_pos == other.max_pos;
 	}

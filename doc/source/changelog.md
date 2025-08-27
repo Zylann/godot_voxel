@@ -47,6 +47,7 @@ Primarily developped with Godot 4.4.1+
     - `VoxelBlockyTypeLibrary`: 
         - fixed crash when setting `types` to empty array
         - fixed incorrect loading of the ID map when a type has more than two attributes
+    - `VoxelBuffer`: fixed `copy_voxel_metadata_in_area` could crash in some cases with the error `Assertion failed: "is_position_valid(dst_pos)" is false.`
     - `VoxelInstancer`: 
         - Fixed instance removal failing randomly after at least one chunk gets unloaded
         - Fixed instances getting generated when digging down or building up in *already meshed* chunks that had no geometry before, when using `VoxelLodTerrain`
