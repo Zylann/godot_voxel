@@ -1220,7 +1220,7 @@ void VoxelBuffer::clear_voxel_metadata() {
 	_voxel_metadata.clear();
 }
 
-void VoxelBuffer::clear_voxel_metadata_in_area(Box3i box) {
+void VoxelBuffer::clear_voxel_metadata_in_area(const Box3i box) {
 	_voxel_metadata.remove_if([&box](const FlatMapMoveOnly<Vector3i, VoxelMetadata>::Pair &p) { //
 		return box.contains(p.key);
 	});

@@ -527,7 +527,7 @@ public:
 	// #endif
 
 	void clear_voxel_metadata();
-	void clear_voxel_metadata_in_area(Box3i box);
+	void clear_voxel_metadata_in_area(const Box3i box);
 	void copy_voxel_metadata_in_area(const VoxelBuffer &src_buffer, Box3i src_box, Vector3i dst_origin);
 	void copy_voxel_metadata(const VoxelBuffer &src_buffer);
 
