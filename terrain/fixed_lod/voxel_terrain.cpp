@@ -2280,6 +2280,27 @@ void VoxelTerrain::process_debug_draw() {
 		});
 	}
 
+	if (debug_get_draw_flag(DEBUG_DRAW_VOXEL_METADATA)) {
+		const int data_block_size = get_data_block_size();
+		_data->for_each_block_at_lod_r(
+				[&dr, parent_transform, data_block_size](const Vector3i &bpos, const VoxelDataBlock &block) {
+					if (block.has_voxels()) {
+						const VoxelBuffer &vb = block.get_voxels_const();
+						const FlatMapMoveOnly<Vector3i, VoxelMetadata> &meta_map = vb.get_voxel_metadata();
+						const Vector3i block_origin = bpos * data_block_size;
+
+						for (auto it = meta_map.begin(); it != meta_map.end(); ++it) {
+							const Vector3i rpos = it->key;
+							const Transform3D local_transform(Basis(), to_vec3(block_origin + rpos));
+							const Transform3D t = parent_transform * local_transform;
+							dr.draw_box(t, Color8(255, 255, 0, 255));
+						}
+					}
+				},
+				0
+		);
+	}
+
 	dr.end();
 }
 
@@ -2527,6 +2548,7 @@ void VoxelTerrain::_bind_methods() {
 
 	BIND_ENUM_CONSTANT(DEBUG_DRAW_VOLUME_BOUNDS);
 	BIND_ENUM_CONSTANT(DEBUG_DRAW_VISUAL_AND_COLLISION_BLOCKS);
+	BIND_ENUM_CONSTANT(DEBUG_DRAW_VOXEL_METADATA);
 	BIND_ENUM_CONSTANT(DEBUG_DRAW_FLAGS_COUNT);
 
 	ADD_PROPERTY(
@@ -2545,6 +2567,7 @@ void VoxelTerrain::_bind_methods() {
 
 	ADD_DEBUG_DRAW_FLAG("debug_draw_volume_bounds", DEBUG_DRAW_VOLUME_BOUNDS);
 	ADD_DEBUG_DRAW_FLAG("debug_draw_visual_and_collision_blocks", DEBUG_DRAW_VISUAL_AND_COLLISION_BLOCKS);
+	ADD_DEBUG_DRAW_FLAG("debug_draw_voxel_metadata", DEBUG_DRAW_VOXEL_METADATA);
 
 	ADD_PROPERTY(
 			PropertyInfo(Variant::BOOL, "debug_draw_shadow_occluders", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR),
