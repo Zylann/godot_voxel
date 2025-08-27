@@ -227,6 +227,10 @@ void VoxelDataMap::copy(
 						);
 					}
 
+					dst_buffer.copy_voxel_metadata_in_area(
+							src_buffer, Box3i(min_pos - src_block_origin, src_buffer.get_size()), Vector3i()
+					);
+
 				} else if (gen_func != nullptr) {
 					const Box3i box = Box3i(bpos << get_block_size_pow2(), block_size_v)
 											  .clipped(Box3i(min_pos, dst_buffer.get_size()));
@@ -241,6 +245,12 @@ void VoxelDataMap::copy(
 								temp, Vector3i(), temp.get_size(), box.position - min_pos, channel
 						);
 					}
+
+					// Not sure if it is reasonable to have a workflow with on-the-fly generation that also generates
+					// voxel metadata?
+					dst_buffer.copy_voxel_metadata_in_area(
+							temp, Box3i(Vector3i(), temp.get_size()), box.position - min_pos
+					);
 
 				} else {
 					for (const uint8_t channel : channels) {

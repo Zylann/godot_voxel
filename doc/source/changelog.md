@@ -75,6 +75,7 @@ Primarily developped with Godot 4.4.1+
         - `paste_masked` didn't check the right coordinates to clear metadata in destinations containing at least one. It also caused a spam of `get_voxel` being at invalid position
         - `paste_masked_writable_list` caused an index out of bounds error (spotted thanks to @HiperSlug)
         - `set_voxel_metadata`: terrains: fixed passing `null` wasn't erasing metadata like with `VoxelBuffers`. 
+        - `copy`: fixed voxel metadata was not copied when the source is a terrain
     - `VoxelToolLodTerrain`: fixed `do_graph` tended to produce boxes when the transform was scaled and `sdf_strength` was not 1
     - `VoxelViewer`: reparenting (`remove_child` followed by `add_child`) should no longer reload terrain around the viewer
     - `VoxelAStarGrid3D`: fixed crash if `find_path` is called without setting a terrain first
