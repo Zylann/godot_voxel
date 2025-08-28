@@ -228,7 +228,9 @@ void VoxelDataMap::copy(
 					}
 
 					dst_buffer.copy_voxel_metadata_in_area(
-							src_buffer, Box3i(min_pos - src_block_origin, src_buffer.get_size()), Vector3i()
+							src_buffer,
+							Box3i::from_min_max(min_pos - src_block_origin, src_buffer.get_size()),
+							Vector3i()
 					);
 
 				} else if (gen_func != nullptr) {
