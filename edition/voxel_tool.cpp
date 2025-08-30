@@ -684,8 +684,16 @@ void VoxelTool::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_voxel_metadata", "pos", "meta"), &VoxelTool::_b_set_voxel_metadata);
 	ClassDB::bind_method(D_METHOD("get_voxel_metadata", "pos"), &VoxelTool::_b_get_voxel_metadata);
 
-	ClassDB::bind_method(D_METHOD("copy", "src_pos", "dst_buffer", "channels_mask"), &VoxelTool::_b_copy);
-	ClassDB::bind_method(D_METHOD("paste", "dst_pos", "src_buffer", "channels_mask"), &VoxelTool::_b_paste);
+	ClassDB::bind_method(
+			D_METHOD("copy", "src_pos", "dst_buffer", "channels_mask"),
+			&VoxelTool::_b_copy,
+			DEFVAL(VoxelBuffer::ALL_CHANNELS_MASK)
+	);
+	ClassDB::bind_method(
+			D_METHOD("paste", "dst_pos", "src_buffer", "channels_mask"),
+			&VoxelTool::_b_paste,
+			DEFVAL(VoxelBuffer::ALL_CHANNELS_MASK)
+	);
 	ClassDB::bind_method(
 			D_METHOD("paste_masked", "dst_pos", "src_buffer", "channels_mask", "mask_channel", "mask_value"),
 			&VoxelTool::_b_paste_masked
