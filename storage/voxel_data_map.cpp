@@ -191,11 +191,12 @@ bool VoxelDataMap::is_block_surrounded(Vector3i pos) const {
 }
 
 void VoxelDataMap::copy(
-		Vector3i min_pos,
+		const Vector3i min_pos,
 		VoxelBuffer &dst_buffer,
-		unsigned int channels_mask,
+		const unsigned int channels_mask,
 		void *callback_data,
-		void (*gen_func)(void *, VoxelBuffer &, Vector3i)
+		void (*gen_func)(void *, VoxelBuffer &, Vector3i),
+		const bool with_metadata
 ) const {
 	// TODO Reimplement using `copy_from_chunked_storage`?
 
@@ -227,11 +228,13 @@ void VoxelDataMap::copy(
 						);
 					}
 
-					dst_buffer.copy_voxel_metadata_in_area(
-							src_buffer,
-							Box3i::from_min_max(min_pos - src_block_origin, src_buffer.get_size()),
-							Vector3i()
-					);
+					if (with_metadata) {
+						dst_buffer.copy_voxel_metadata_in_area(
+								src_buffer,
+								Box3i::from_min_max(min_pos - src_block_origin, src_buffer.get_size()),
+								Vector3i()
+						);
+					}
 
 				} else if (gen_func != nullptr) {
 					const Box3i box = Box3i(bpos << get_block_size_pow2(), block_size_v)
@@ -248,11 +251,13 @@ void VoxelDataMap::copy(
 						);
 					}
 
-					// Not sure if it is reasonable to have a workflow with on-the-fly generation that also generates
-					// voxel metadata?
-					dst_buffer.copy_voxel_metadata_in_area(
-							temp, Box3i(Vector3i(), temp.get_size()), box.position - min_pos
-					);
+					if (with_metadata) {
+						// Not sure if it is reasonable to have a workflow with on-the-fly generation that also
+						// generates voxel metadata?
+						dst_buffer.copy_voxel_metadata_in_area(
+								temp, Box3i(Vector3i(), temp.get_size()), box.position - min_pos
+						);
+					}
 
 				} else {
 					for (const uint8_t channel : channels) {
@@ -272,25 +277,39 @@ void VoxelDataMap::copy(
 }
 
 void VoxelDataMap::paste(
-		Vector3i min_pos,
+		const Vector3i min_pos,
 		const VoxelBuffer &src_buffer,
-		unsigned int channels_mask,
-		bool create_new_blocks
+		const unsigned int channels_mask,
+		const bool create_new_blocks,
+		const bool with_metadata
 ) {
-	paste_masked(min_pos, src_buffer, channels_mask, false, 0, 0, false, 0, Span<const int32_t>(), create_new_blocks);
+	paste_masked(
+			min_pos,
+			src_buffer,
+			channels_mask,
+			false,
+			0,
+			0,
+			false,
+			0,
+			Span<const int32_t>(),
+			create_new_blocks,
+			with_metadata
+	);
 }
 
 void VoxelDataMap::paste_masked(
-		Vector3i min_pos,
+		const Vector3i min_pos,
 		const VoxelBuffer &src_buffer,
-		unsigned int channels_mask,
-		bool use_src_mask,
-		uint8_t src_mask_channel,
-		uint64_t src_mask_value,
-		bool use_dst_mask,
-		uint8_t dst_mask_channel,
-		Span<const int32_t> dst_writable_values,
-		bool create_new_blocks
+		const unsigned int channels_mask,
+		const bool use_src_mask,
+		const uint8_t src_mask_channel,
+		const uint64_t src_mask_value,
+		const bool use_dst_mask,
+		const uint8_t dst_mask_channel,
+		const Span<const int32_t> dst_writable_values,
+		const bool create_new_blocks,
+		const bool with_metadata
 ) {
 	if (use_dst_mask && !use_src_mask) {
 		ZN_PRINT_ERROR("Destination mask without source mask is not implemented");
@@ -316,8 +335,6 @@ void VoxelDataMap::paste_masked(
 	for (bpos.z = min_block_pos.z; bpos.z < max_block_pos.z; ++bpos.z) {
 		for (bpos.x = min_block_pos.x; bpos.x < max_block_pos.x; ++bpos.x) {
 			for (bpos.y = min_block_pos.y; bpos.y < max_block_pos.y; ++bpos.y) {
-				const bool with_metadata = true;
-
 				VoxelDataBlock *block = get_block(bpos);
 
 				if (block == nullptr) {

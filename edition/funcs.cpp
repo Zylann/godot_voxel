@@ -16,11 +16,12 @@ namespace zylann::voxel {
 
 void copy_from_chunked_storage(
 		VoxelBuffer &dst_buffer,
-		Vector3i min_pos,
-		unsigned int block_size_po2,
-		uint32_t channels_mask,
+		const Vector3i min_pos,
+		const unsigned int block_size_po2,
+		const uint32_t channels_mask,
 		const VoxelBuffer *(*get_block_func)(void *, Vector3i),
-		void *get_block_func_ctx
+		void *get_block_func_ctx,
+		const bool with_metadata
 ) {
 	ZN_ASSERT_RETURN_MSG(Vector3iUtil::get_volume_u64(dst_buffer.get_size()) > 0, "The area to copy is empty");
 	ZN_ASSERT_RETURN(get_block_func != nullptr);
@@ -50,11 +51,13 @@ void copy_from_chunked_storage(
 						);
 					}
 
-					dst_buffer.copy_voxel_metadata_in_area(
-							*src_buffer,
-							Box3i::from_min_max(min_pos - src_block_origin, src_buffer->get_size()),
-							Vector3i()
-					);
+					if (with_metadata) {
+						dst_buffer.copy_voxel_metadata_in_area(
+								*src_buffer,
+								Box3i::from_min_max(min_pos - src_block_origin, src_buffer->get_size()),
+								Vector3i()
+						);
+					}
 
 				} else {
 					for (const uint8_t channel : channels) {

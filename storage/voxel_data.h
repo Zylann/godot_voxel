@@ -114,13 +114,24 @@ public:
 
 	// Copies voxel data in a box from LOD0.
 	// `channels_mask` bits tell which channel is read.
-	void copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsigned int channels_mask) const;
+	void copy(
+			const Vector3i min_pos,
+			VoxelBuffer &dst_buffer,
+			const unsigned int channels_mask,
+			const bool with_metadata
+	) const;
 
 	// Pastes voxel data in a box at LOD0.
 	// `channels_mask` bits tell which channel is pasted.
 	// If `use_mask` is used, will only write voxels of the source buffer that are not equal to `mask_value`.
 	// If `create_new_blocks` is true, blocks will be created if not found in the area.
-	void paste(Vector3i min_pos, const VoxelBuffer &src_buffer, unsigned int channels_mask, bool create_new_blocks);
+	void paste(
+			const Vector3i min_pos,
+			const VoxelBuffer &src_buffer,
+			const unsigned int channels_mask,
+			const bool create_new_blocks,
+			const bool with_metadata
+	);
 
 	void paste_masked(
 			Vector3i min_pos,

@@ -51,7 +51,7 @@ bool VoxelAStarGrid3DInternal::is_solid(Vector3i pos) {
 
 		const VoxelBuffer::ChannelId channel_index = VoxelBuffer::CHANNEL_TYPE;
 		const Vector3i copy_origin = (cpos << Chunk::SIZE_PO2) + get_region().position;
-		data->copy(copy_origin, _voxel_buffer, 1 << channel_index);
+		data->copy(copy_origin, _voxel_buffer, 1 << channel_index, false);
 
 		if (_voxel_buffer.get_channel_compression(channel_index) == VoxelBuffer::COMPRESSION_UNIFORM) {
 			if (_voxel_buffer.get_voxel(0, 0, 0, channel_index) != 0) {

@@ -65,11 +65,12 @@ float get_sdf_interpolated(const Volume_F &f, Vector3 pos) {
 // Standalone helper function to copy voxels from any 3D chunked container
 void copy_from_chunked_storage(
 		VoxelBuffer &dst_buffer,
-		Vector3i min_pos,
-		unsigned int block_size_po2,
-		uint32_t channels_mask,
+		const Vector3i min_pos,
+		const unsigned int block_size_po2,
+		const uint32_t channels_mask,
 		const VoxelBuffer *(*get_block_func)(void *, Vector3i),
-		void *get_block_func_ctx
+		void *get_block_func_ctx,
+		const bool with_metadata
 );
 
 // Standalone helper function to paste voxels to any 3D chunked container
@@ -622,9 +623,7 @@ inline void write_box_in_chunked_storage_1_channel(
 		VoxelBuffer::ChannelId channel_id
 ) {
 	process_chunked_storage(
-			box,
-			block_access,
-			[&op, channel_id](VoxelBuffer &vb, const Box3i local_box, Vector3i origin) {
+			box, block_access, [&op, channel_id](VoxelBuffer &vb, const Box3i local_box, Vector3i origin) {
 				vb.write_box(local_box, channel_id, op, origin);
 			}
 	);

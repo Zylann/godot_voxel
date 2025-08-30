@@ -222,13 +222,16 @@ void VoxelToolLodTerrain::do_sphere_async(Vector3 center, float radius) {
 	_terrain->push_async_edit(task, op.box, task->get_tracker());
 }
 
-void VoxelToolLodTerrain::copy(Vector3i pos, VoxelBuffer &dst, uint8_t channels_mask) const {
+void VoxelToolLodTerrain::copy(
+		const Vector3i pos,
+		VoxelBuffer &dst,
+		const uint8_t p_channels_mask,
+		const bool with_metadata
+) const {
 	ZN_PROFILE_SCOPE();
 	ERR_FAIL_COND(_terrain == nullptr);
-	if (channels_mask == 0) {
-		channels_mask = (1 << _channel);
-	}
-	_terrain->get_storage().copy(pos, dst, channels_mask);
+	const unsigned int channels_mask = (p_channels_mask == 0 ? (1 << _channel) : p_channels_mask);
+	_terrain->get_storage().copy(pos, dst, channels_mask, with_metadata);
 }
 
 void VoxelToolLodTerrain::paste(Vector3i pos, const VoxelBuffer &src, uint8_t channels_mask) {
@@ -245,7 +248,7 @@ void VoxelToolLodTerrain::paste(Vector3i pos, const VoxelBuffer &src, uint8_t ch
 	VoxelData &data = _terrain->get_storage();
 
 	data.pre_generate_box(box);
-	data.paste(pos, src, channels_mask, false);
+	data.paste(pos, src, channels_mask, false, true);
 
 	_post_edit(box);
 }
@@ -437,7 +440,7 @@ void VoxelToolLodTerrain::do_graph(Ref<VoxelGeneratorGraph> graph, Transform3D t
 
 	VoxelBuffer buffer(VoxelBuffer::ALLOCATOR_POOL);
 	buffer.create(box.size);
-	data.copy(box.position, buffer, 1 << channel_index);
+	data.copy(box.position, buffer, 1 << channel_index, false);
 
 	buffer.decompress_channel(channel_index);
 
@@ -524,7 +527,7 @@ void VoxelToolLodTerrain::do_graph(Ref<VoxelGeneratorGraph> graph, Transform3D t
 
 	scale_and_store_sdf(buffer, in_sdf_full);
 
-	data.paste(box.position, buffer, 1 << channel_index, false);
+	data.paste(box.position, buffer, 1 << channel_index, false, false);
 
 	_post_edit(box);
 }

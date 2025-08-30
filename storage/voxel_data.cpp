@@ -305,7 +305,12 @@ bool VoxelData::try_set_voxel_f(real_t value, Vector3i pos, unsigned int channel
 	return try_set_voxel(snorm_to_s16(value), pos, channel_index);
 }
 
-void VoxelData::copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsigned int channels_mask) const {
+void VoxelData::copy(
+		const Vector3i min_pos,
+		VoxelBuffer &dst_buffer,
+		const unsigned int channels_mask,
+		const bool with_metadata
+) const {
 	ZN_PROFILE_SCOPE();
 
 #ifdef DEBUG_ENABLED
@@ -333,7 +338,7 @@ void VoxelData::copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsigned int cha
 		RWLockRead rlock(data_lod0.map_lock);
 		// Only gets blocks we have voxel data of. Other blocks will be air.
 		// TODO Modifiers?
-		data_lod0.map.copy(min_pos, dst_buffer, channels_mask);
+		data_lod0.map.copy(min_pos, dst_buffer, channels_mask, with_metadata);
 
 	} else {
 		struct GenContext {
@@ -377,16 +382,18 @@ void VoxelData::copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsigned int cha
 #ifdef VOXEL_ENABLE_MODIFIERS
 					gctx2->modifiers.apply(voxels, AABB(pos, voxels.get_size()));
 #endif
-				}
+				},
+				with_metadata
 		);
 	}
 }
 
 void VoxelData::paste(
-		Vector3i min_pos,
+		const Vector3i min_pos,
 		const VoxelBuffer &src_buffer,
-		unsigned int channels_mask,
-		bool create_new_blocks
+		const unsigned int channels_mask,
+		const bool create_new_blocks,
+		const bool with_metadata
 ) {
 	ZN_PROFILE_SCOPE();
 
@@ -398,11 +405,11 @@ void VoxelData::paste(
 	if (create_new_blocks) {
 		// We will modify the hashmap so no other threads can perform lookups while we do that
 		RWLockWrite wlock(data_lod0.map_lock);
-		data_lod0.map.paste(min_pos, src_buffer, channels_mask, create_new_blocks);
+		data_lod0.map.paste(min_pos, src_buffer, channels_mask, create_new_blocks, with_metadata);
 	} else {
 		// We won't modify the hashmap so other threads can still perform lookups in different areas
 		RWLockRead rlock(data_lod0.map_lock);
-		data_lod0.map.paste(min_pos, src_buffer, channels_mask, create_new_blocks);
+		data_lod0.map.paste(min_pos, src_buffer, channels_mask, create_new_blocks, with_metadata);
 	}
 }
 
@@ -421,6 +428,8 @@ void VoxelData::paste_masked(
 	const Box3i blocks_box = Box3i(min_pos, src_buffer.get_size()).downscaled(data_lod0.map.get_block_size());
 	SpatialLock3D::Write swlock(data_lod0.spatial_lock, BoxBounds3i(blocks_box));
 
+	const bool with_metadata = true;
+
 	if (create_new_blocks) {
 		// We will modify the hashmap so no other threads can perform lookups while we do that
 		RWLockWrite wlock(data_lod0.map_lock);
@@ -434,7 +443,8 @@ void VoxelData::paste_masked(
 				false, // Unused dst mask
 				0,
 				Span<const int32_t>(),
-				create_new_blocks
+				create_new_blocks,
+				with_metadata
 		);
 	} else {
 		// We won't modify the hashmap so other threads can still perform lookups in different areas
@@ -449,7 +459,8 @@ void VoxelData::paste_masked(
 				false, // Unused dst mask
 				0,
 				Span<const int32_t>(),
-				create_new_blocks
+				create_new_blocks,
+				with_metadata
 		);
 	}
 }
@@ -469,35 +480,39 @@ void VoxelData::paste_masked_writable_list(
 	const Box3i blocks_box = Box3i(min_pos, src_buffer.get_size()).downscaled(data_lod0.map.get_block_size());
 	SpatialLock3D::Write swlock(data_lod0.spatial_lock, BoxBounds3i(blocks_box));
 
+	const bool with_metadata = true;
+
 	if (create_new_blocks) {
 		// We will modify the hashmap so no other threads can perform lookups while we do that
 		RWLockWrite wlock(data_lod0.map_lock);
-		data_lod0.map.paste_masked( //
-				min_pos, //
-				src_buffer, //
-				channels_mask, //
-				true, //
-				src_mask_channel, //
-				src_mask_value, //
-				true, //
-				dst_mask_channel, //
-				dst_writable_values, //
-				create_new_blocks //
+		data_lod0.map.paste_masked(
+				min_pos,
+				src_buffer,
+				channels_mask,
+				true,
+				src_mask_channel,
+				src_mask_value,
+				true,
+				dst_mask_channel,
+				dst_writable_values,
+				create_new_blocks,
+				with_metadata
 		);
 	} else {
 		// We won't modify the hashmap so other threads can still perform lookups in different areas
 		RWLockRead rlock(data_lod0.map_lock);
-		data_lod0.map.paste_masked( //
-				min_pos, //
-				src_buffer, //
-				channels_mask, //
-				true, //
-				src_mask_channel, //
-				src_mask_value, //
-				true, //
-				dst_mask_channel, //
-				dst_writable_values, //
-				create_new_blocks //
+		data_lod0.map.paste_masked(
+				min_pos,
+				src_buffer,
+				channels_mask,
+				true,
+				src_mask_channel,
+				src_mask_value,
+				true,
+				dst_mask_channel,
+				dst_writable_values,
+				create_new_blocks,
+				with_metadata
 		);
 	}
 }

@@ -83,8 +83,18 @@ public:
 	void sdf_stamp_erase(Ref<godot::VoxelBuffer> stamp, Vector3i pos);
 	void sdf_stamp_erase(const VoxelBuffer &stamp, Vector3i pos);
 
-	virtual void copy(Vector3i pos, VoxelBuffer &dst, uint8_t channels_mask) const;
-	void copy(Vector3i pos, Ref<godot::VoxelBuffer> dst, uint8_t channels_mask) const;
+	virtual void copy(
+			const Vector3i pos,
+			VoxelBuffer &dst,
+			const uint8_t channels_mask,
+			const bool with_metadata
+	) const;
+	void copy(
+			const Vector3i pos,
+			Ref<godot::VoxelBuffer> dst,
+			const uint8_t channels_mask,
+			const bool with_metadata
+	) const;
 
 	virtual void paste(Vector3i pos, const VoxelBuffer &src, uint8_t channels_mask);
 	void paste(Vector3i pos, Ref<godot::VoxelBuffer> p_voxels, uint8_t channels_mask);
@@ -159,7 +169,7 @@ private:
 #ifdef VOXEL_ENABLE_MESH_SDF
 	void _b_do_mesh(Ref<VoxelMeshSDF> mesh_sdf, Transform3D transform, float isolevel);
 #endif
-	void _b_copy(Vector3i pos, Ref<godot::VoxelBuffer> voxels, int channel_mask);
+	void _b_copy(Vector3i pos, Ref<godot::VoxelBuffer> voxels, int channel_mask, bool with_metadata);
 	void _b_paste(Vector3i pos, Ref<godot::VoxelBuffer> voxels, int channels_mask);
 	void _b_paste_masked(
 			Vector3i pos,
