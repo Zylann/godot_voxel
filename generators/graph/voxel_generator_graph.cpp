@@ -1446,6 +1446,14 @@ int VoxelGeneratorGraph::get_sdf_output_port_address() const {
 	return _runtime->sdf_output_buffer_index;
 }
 
+bool VoxelGeneratorGraph::has_texture_output() const {
+	RWLockRead rlock(_runtime_lock);
+	if (_runtime == nullptr) {
+		return false;
+	}
+	return _runtime->single_texture_output_index != -1 || _runtime->weight_outputs_count > 0;
+}
+
 inline Vector3 get_3d_pos_from_panorama_uv(Vector2 uv) {
 	const float xa = -math::TAU<real_t> * uv.x - math::PI<real_t>;
 	const float ya = math::PI<real_t> * (uv.y - 0.5);

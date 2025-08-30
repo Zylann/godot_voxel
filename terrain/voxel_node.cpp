@@ -1,8 +1,10 @@
 #include "voxel_node.h"
 #include "../constants/voxel_string_names.h"
 #include "../edition/voxel_tool.h"
+#include "../generators/graph/voxel_generator_graph.h"
 #include "../generators/voxel_generator.h"
 #include "../meshers/blocky/voxel_mesher_blocky.h"
+#include "../meshers/transvoxel/voxel_mesher_transvoxel.h"
 #include "../meshers/voxel_mesher.h"
 #include "../streams/voxel_stream.h"
 #include "../util/godot/classes/script.h"
@@ -199,6 +201,49 @@ void VoxelNode::get_configuration_warnings(PackedStringArray &warnings) const {
 						"Shadow casting is turned off on the terrain, but the mesher generates shadow occluders. You "
 						"may want to turn that off too."
 				));
+			}
+		}
+
+		Ref<VoxelMesherTransvoxel> transvoxel_mesher = mesher;
+		if (transvoxel_mesher.is_valid()) {
+			if (generator.is_valid()) {
+				Ref<VoxelGeneratorGraph> graph_generator = generator;
+
+				if (graph_generator.is_valid()) {
+					const VoxelMesherTransvoxel::TexturingMode mesher_tex_mode =
+							transvoxel_mesher->get_texturing_mode();
+					const VoxelGeneratorGraph::TextureMode generator_tex_mode = graph_generator->get_texture_mode();
+
+					switch (mesher_tex_mode) {
+						case VoxelMesherTransvoxel::TEXTURES_NONE:
+							if (graph_generator->has_texture_output()) {
+								warnings.append(ZN_TTR(
+										"The generator's graph has a texture output, but the mesher's texture mode is "
+										"set to None."
+								));
+							}
+							break;
+
+						case VoxelMesherTransvoxel::TEXTURES_MIXEL4_S4:
+							if (generator_tex_mode != VoxelGeneratorGraph::TEXTURE_MODE_MIXEL4) {
+								warnings.append(
+										ZN_TTR("The mesher's texture mode does not match the generator's texture mode")
+								);
+							}
+							break;
+
+						case VoxelMesherTransvoxel::TEXTURES_SINGLE_S4:
+							if (generator_tex_mode != VoxelGeneratorGraph::TEXTURE_MODE_SINGLE) {
+								warnings.append(
+										ZN_TTR("The mesher's texture mode does not match the generator's texture mode")
+								);
+							}
+							break;
+
+						default:
+							break;
+					}
+				}
 			}
 		}
 	}
