@@ -140,37 +140,44 @@ public:
 	// Important: functions editing the graph are NOT thread-safe.
 	// They are expected to be used by the main thread (editor or game logic).
 
-	uint32_t create_node(NodeTypeID type_id, Vector2 position = Vector2(), uint32_t id = ProgramGraph::NULL_ID);
-	void remove_node(uint32_t node_id);
+	uint32_t create_node(
+			const NodeTypeID type_id,
+			const Vector2 position = Vector2(),
+			const uint32_t id = ProgramGraph::NULL_ID,
+			const bool notify = true
+	);
+
+	void remove_node(uint32_t node_id, const bool notify = true);
 
 	uint32_t create_function_node(
 			Ref<VoxelGraphFunction> func,
-			Vector2 position = Vector2(),
-			uint32_t p_id = ProgramGraph::NULL_ID
+			const Vector2 position = Vector2(),
+			const uint32_t p_id = ProgramGraph::NULL_ID,
+			const bool notify = true
 	);
 
 	// Checks if the specified connection can be created
 	bool can_connect(
-			uint32_t src_node_id,
-			uint32_t src_port_index,
-			uint32_t dst_node_id,
-			uint32_t dst_port_index
+			const uint32_t src_node_id,
+			const uint32_t src_port_index,
+			const uint32_t dst_node_id,
+			const uint32_t dst_port_index
 	) const;
 
 	// Checks if the specified connection is valid (without considering existing connections)
 	bool is_valid_connection(
-			uint32_t src_node_id,
-			uint32_t src_port_index,
-			uint32_t dst_node_id,
-			uint32_t dst_port_index
+			const uint32_t src_node_id,
+			const uint32_t src_port_index,
+			const uint32_t dst_node_id,
+			const uint32_t dst_port_index
 	) const;
 
 	void add_connection(uint32_t src_node_id, uint32_t src_port_index, uint32_t dst_node_id, uint32_t dst_port_index);
 	void remove_connection(
-			uint32_t src_node_id,
-			uint32_t src_port_index,
-			uint32_t dst_node_id,
-			uint32_t dst_port_index
+			const uint32_t src_node_id,
+			const uint32_t src_port_index,
+			const uint32_t dst_node_id,
+			const uint32_t dst_port_index
 	);
 	void get_connections(StdVector<ProgramGraph::Connection> &p_connections) const;
 
@@ -187,7 +194,14 @@ public:
 	Variant get_node_param(uint32_t node_id, int param_index) const;
 	void set_node_param(uint32_t node_id, int param_index, Variant value);
 	void set_node_param_by_name(const uint32_t node_id, const String &param_name, const Variant &value);
-	void set_node_param_unchecked(ProgramGraph::Node &node, const int param_index, const Variant &value);
+
+	void set_node_param_internal(
+			ProgramGraph::Node &node,
+			const int param_index,
+			const Variant &value,
+			const bool notify_changed = true,
+			const bool report_errors = true
+	);
 
 	static bool get_expression_variables(std::string_view code, StdVector<std::string_view> &vars);
 	void get_expression_node_inputs(uint32_t node_id, StdVector<StdString> &out_names) const;
@@ -213,6 +227,12 @@ public:
 	}
 
 	unsigned int get_nodes_count() const;
+
+	uint32_t replace_node(
+			const uint32_t node_id,
+			const NodeTypeID new_node_type,
+			Ref<VoxelGraphFunction> func = Ref<VoxelGraphFunction>()
+	);
 
 	// Editor
 
@@ -338,8 +358,11 @@ private:
 	void unregister_subresources();
 	void _on_subresource_changed();
 
+	int _b_create_node(const NodeTypeID type_id, const Vector2 position, const uint32_t id);
+	void _b_remove_node(uint32_t node_id);
+	int _b_create_function_node(Ref<VoxelGraphFunction> func, const Vector2 position, const uint32_t p_id);
 	int _b_get_node_type_count() const;
-	Dictionary _b_get_node_type_info(int type_id) const;
+	static Dictionary _b_get_node_type_info(const int type_id);
 	Array _b_get_connections() const;
 	// TODO Only exists because the UndoRedo API is confusing `null` with `absence of argument`...
 	// See https://github.com/godotengine/godot/issues/36895
