@@ -61,7 +61,8 @@ enum ToolbarMenuIDs {
 	MENU_PREVIEW_RESET_LOCATION,
 	MENU_GENERATE_SHADER,
 
-	MENU_REMOVE_NODE,
+	MENU_REMOVE_SELECTED_NODES,
+	MENU_REMOVE_CONNECTION,
 };
 
 // Utilities
@@ -226,7 +227,6 @@ VoxelGraphEditor::VoxelGraphEditor() {
 	add_child(_node_dialog);
 
 	_context_menu = memnew(PopupMenu);
-	_context_menu->add_item(ZN_TTR("Delete Node"), MENU_REMOVE_NODE);
 	_context_menu->connect("id_pressed", callable_mp(this, &Self::_on_menu_id_pressed));
 	_context_menu->hide();
 	add_child(_context_menu);
@@ -585,10 +585,28 @@ void VoxelGraphEditor::_on_graph_edit_gui_input(Ref<InputEvent> event) {
 				StdVector<VoxelGraphEditorNode *> selected_nodes;
 				get_selected_nodes(*_graph_edit, selected_nodes);
 
-				if (selected_nodes.size() > 0) {
-					const Vector2 pos = _graph_edit->get_screen_position() + _graph_edit->get_local_mouse_position();
+				const Vector2 menu_pos = _graph_edit->get_local_mouse_position();
+				_context_connection = get_graph_edit_closest_connection_at_point(*_graph_edit, menu_pos);
 
-					_context_menu->set_position(pos);
+				if (_context_connection.is_valid() || selected_nodes.size() > 0) {
+					// Show context menu
+
+					const Vector2 global_pos =
+							_graph_edit->get_screen_position() + _graph_edit->get_local_mouse_position();
+
+					_context_menu->clear();
+
+					if (selected_nodes.size() > 0) {
+						const String delete_node_text =
+								selected_nodes.size() > 1 ? ZN_TTR("Delete Nodes") : ZN_TTR("Delete Node");
+						_context_menu->add_item(delete_node_text, MENU_REMOVE_SELECTED_NODES);
+					}
+
+					if (_context_connection.is_valid()) {
+						_context_menu->add_item(ZN_TTR("Delete Connection"), MENU_REMOVE_CONNECTION);
+					}
+
+					_context_menu->set_position(global_pos);
 					// VisualShaderEditor uses that, but it's not exposed. I don't know what it's used for.
 					// _context_menu->reset_size();
 					_context_menu->popup();
@@ -667,6 +685,15 @@ void VoxelGraphEditor::_on_graph_edit_disconnection_request(
 		int from_slot,
 		String to_node_name,
 		int to_slot
+) {
+	remove_connection(from_node_name, from_slot, to_node_name, to_slot);
+}
+
+void VoxelGraphEditor::remove_connection(
+		const String from_node_name,
+		const int from_slot,
+		const String to_node_name,
+		const int to_slot
 ) {
 	VoxelGraphEditorNode *src_node_view = get_node_typed<VoxelGraphEditorNode>(*_graph_edit, from_node_name);
 	VoxelGraphEditorNode *dst_node_view = get_node_typed<VoxelGraphEditorNode>(*_graph_edit, to_node_name);
@@ -810,8 +837,19 @@ void VoxelGraphEditor::_on_menu_id_pressed(int id) {
 			menu->set_item_checked(idx, _live_update_enabled);
 		} break;
 
-		case MENU_REMOVE_NODE:
+		case MENU_REMOVE_SELECTED_NODES:
 			delete_selected_nodes();
+			break;
+
+		case MENU_REMOVE_CONNECTION:
+			if (_context_connection.is_valid()) {
+				remove_connection(
+						_context_connection.from,
+						_context_connection.from_port,
+						_context_connection.to,
+						_context_connection.to_port
+				);
+			}
 			break;
 
 #ifdef VOXEL_ENABLE_GPU
