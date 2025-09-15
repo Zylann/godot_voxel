@@ -16,7 +16,9 @@ Primarily developped with Godot 4.4.1+
 - Improvements
     - `VoxelBuffer`: added functions to rotate/mirror contents
     - `VoxelEngine`: added function to manually change thread count (thanks to wildlachs)
-    - `VoxelGeneratorGraph`: implemented constant reduction, which slightly optimizes graphs running on CPU if they contain constant branches
+    - `VoxelGeneratorGraph`:
+        - Editor: selected nodes and connections can be removed using a right-click context menu (may be long-press on Android)
+        - implemented constant reduction, which slightly optimizes graphs running on CPU if they contain constant branches
     - `VoxelGeneratorHeightmap`: added `offset` property
     - `VoxelGraphFunction`: Editor: preview nodes should now work
     - `VoxelInstanceLibraryItem`: Exposed `floating_sdf_*` parameters to tune how floating instances are detected after digging ground around them.
