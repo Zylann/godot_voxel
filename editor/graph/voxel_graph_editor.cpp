@@ -59,7 +59,9 @@ enum ToolbarMenuIDs {
 	MENU_PREVIEW_AXES_XY,
 	MENU_PREVIEW_AXES_XZ,
 	MENU_PREVIEW_RESET_LOCATION,
-	MENU_GENERATE_SHADER
+	MENU_GENERATE_SHADER,
+
+	MENU_REMOVE_NODE,
 };
 
 // Utilities
@@ -222,6 +224,12 @@ VoxelGraphEditor::VoxelGraphEditor() {
 	// So for now we do the same fix, making it exclusive...
 	_node_dialog->set_exclusive(true);
 	add_child(_node_dialog);
+
+	_context_menu = memnew(PopupMenu);
+	_context_menu->add_item(ZN_TTR("Delete Node"), MENU_REMOVE_NODE);
+	_context_menu->connect("id_pressed", callable_mp(this, &Self::_on_menu_id_pressed));
+	_context_menu->hide();
+	add_child(_context_menu);
 
 	_range_analysis_dialog = memnew(VoxelRangeAnalysisDialog);
 	_range_analysis_dialog->connect("analysis_toggled", callable_mp(this, &Self::_on_range_analysis_toggled));
@@ -555,6 +563,17 @@ bool VoxelGraphEditor::is_pinned_hint() const {
 	return _pin_button->is_pressed();
 }
 
+static void get_selected_nodes(const GraphEdit &graph_edit, StdVector<VoxelGraphEditorNode *> &out_nodes) {
+	for (int i = 0; i < graph_edit.get_child_count(); ++i) {
+		VoxelGraphEditorNode *node_view = Object::cast_to<VoxelGraphEditorNode>(graph_edit.get_child(i));
+		if (node_view != nullptr) {
+			if (node_view->is_selected()) {
+				out_nodes.push_back(node_view);
+			}
+		}
+	}
+}
+
 void VoxelGraphEditor::_on_graph_edit_gui_input(Ref<InputEvent> event) {
 	Ref<InputEventMouseButton> mb = event;
 
@@ -563,10 +582,23 @@ void VoxelGraphEditor::_on_graph_edit_gui_input(Ref<InputEvent> event) {
 			if (mb->get_button_index() == ::godot::MOUSE_BUTTON_RIGHT) {
 				_click_position = mb->get_position();
 
-				// Careful with how the position is computed, some users have multiple monitors but OSes handle it in
-				// different ways, either with two desktops or one expanded desktop. This affects mouse positions.
-				// I took example on context menus in `filesystem_dock.cpp`.
-				_node_dialog->popup_at_screen_position(_graph_edit->get_screen_position() + mb->get_position());
+				StdVector<VoxelGraphEditorNode *> selected_nodes;
+				get_selected_nodes(*_graph_edit, selected_nodes);
+
+				if (selected_nodes.size() > 0) {
+					const Vector2 pos = _graph_edit->get_screen_position() + _graph_edit->get_local_mouse_position();
+
+					_context_menu->set_position(pos);
+					// VisualShaderEditor uses that, but it's not exposed. I don't know what it's used for.
+					// _context_menu->reset_size();
+					_context_menu->popup();
+
+				} else {
+					// Careful with how the position is computed, some users have multiple monitors but OSes handle it
+					// in different ways, either with two desktops or one expanded desktop. This affects mouse
+					// positions. I took example on context menus in `filesystem_dock.cpp`.
+					_node_dialog->popup_at_screen_position(_graph_edit->get_screen_position() + mb->get_position());
+				}
 			}
 		}
 	}
@@ -655,31 +687,25 @@ void VoxelGraphEditor::_on_graph_edit_disconnection_request(
 	_undo_redo->commit_action();
 }
 
-namespace {
-void get_selected_nodes(const GraphEdit &graph_edit, StdVector<VoxelGraphEditorNode *> &out_nodes) {
-	for (int i = 0; i < graph_edit.get_child_count(); ++i) {
-		VoxelGraphEditorNode *node_view = Object::cast_to<VoxelGraphEditorNode>(graph_edit.get_child(i));
-		if (node_view != nullptr) {
-			if (node_view->is_selected()) {
-				out_nodes.push_back(node_view);
-			}
-		}
-	}
-}
-} // namespace
-
 #if defined(ZN_GODOT)
 void VoxelGraphEditor::_on_graph_edit_delete_nodes_request(TypedArray<StringName> node_names) {
 #elif defined(ZN_GODOT_EXTENSION)
 void VoxelGraphEditor::_on_graph_edit_delete_nodes_request(Array node_names) {
 #endif
-	StdVector<VoxelGraphEditorNode *> to_erase;
-
 	// The `node_names` argument is the result of Godot issue #61112. While it is less convenient than just getting
 	// the nodes themselves, it also has the downside of being always empty if you choose to not show "close" buttons
 	// on every graph node corner, even if you have nodes selected. That behavior was even documented. Go figure.
 	// So... I keep doing it the old way.
+	delete_selected_nodes();
+}
+
+void VoxelGraphEditor::delete_selected_nodes() {
+	StdVector<VoxelGraphEditorNode *> to_erase;
 	get_selected_nodes(*_graph_edit, to_erase);
+
+	if (to_erase.size() == 0) {
+		return;
+	}
 
 	_undo_redo->create_action(ZN_TTR("Delete Nodes"));
 
@@ -783,6 +809,10 @@ void VoxelGraphEditor::_on_menu_id_pressed(int id) {
 			const int idx = menu->get_item_index(id);
 			menu->set_item_checked(idx, _live_update_enabled);
 		} break;
+
+		case MENU_REMOVE_NODE:
+			delete_selected_nodes();
+			break;
 
 #ifdef VOXEL_ENABLE_GPU
 		case MENU_GENERATE_SHADER: {
@@ -1085,7 +1115,8 @@ void VoxelGraphEditor::update_range_analysis_previews() {
 		const uint32_t node_id = execution_map[i];
 		// Some returned nodes might not be in the user-facing graph because they get generated during compilation
 		if (!_graph->has_node(node_id)) {
-			ZN_PRINT_VERBOSE(format("Ignoring node {} from range analysis results, not present in user graph", node_id)
+			ZN_PRINT_VERBOSE(
+					format("Ignoring node {} from range analysis results, not present in user graph", node_id)
 			);
 			continue;
 		}

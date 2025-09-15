@@ -95,6 +95,8 @@ private:
 	void paste_clipboard();
 	void create_node_gui_input_connections(int node_id);
 
+	void delete_selected_nodes();
+
 	void _on_graph_edit_gui_input(Ref<InputEvent> event);
 	void _on_graph_edit_connection_request(String from_node_name, int from_slot, String to_node_name, int to_slot);
 	void _on_graph_edit_disconnection_request(String from_node_name, int from_slot, String to_node_name, int to_slot);
@@ -158,6 +160,7 @@ private:
 	MenuButton *_debug_menu_button = nullptr;
 	PopupMenu *_preview_axes_menu = nullptr;
 	VoxelGraphNodeDialog *_node_dialog = nullptr;
+	PopupMenu *_context_menu = nullptr;
 
 	GraphEditorPreview::ViewMode _node_preview_mode = GraphEditorPreview::VIEW_SLICE_XY;
 	Vector2f _preview_offset;
