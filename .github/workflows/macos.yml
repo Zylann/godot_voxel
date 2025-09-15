@@ -24,18 +24,15 @@ jobs:
         arch: [x86_64, arm64]
         target: [editor, template_release]
         include:
-          - name: 4.4.2-rc Editor
+          - name: 4.5 Editor
             target: editor
             executable_name: godot.macos.editor
-            # godot_base_branch: "4.4.1-stable"
-            # Temporarily using non-stable to get a fix for the Vulkan SDK (841596cae4ddf97d67dc253021347bc01863f00f)
-            godot_base_branch: "4.4"
+            godot_base_branch: "4.5"
 
-          - name: 4.4.2-rc Template
+          - name: 4.5 Template
             target: template_release
             executable_name: godot.macos.template_release
-            # godot_base_branch: "4.4.1-stable"
-            godot_base_branch: "4.4"
+            godot_base_branch: "4.5"
 
     steps:
       # Clone Godot
