@@ -61,6 +61,7 @@ Primarily developped with Godot 4.4.1+
         - Editor: fixed error spam `Invalid param name` after editing a graph (in some yet unknown situations)
         - Editor: fixed node dialog didn't auto-select the first item when searching
         - Editor: decimal numbers that have no exact float representation are now displayed rounded instead of widening nodes excessively. Instead, the exact value is shown with a tooltip.
+        - Editor: fixed node names were incorrectly translated
         - Fixed incorrect texture painting leading to black triangles when using Mixel4 with OutputSingleTexture and GPU generation
         - Fixed crash with specific setups where equivalent nodes are connected multiple times to equivalent ancestors (issue 783; `FATAL: Assertion failed: "p != equivalence" is false`)
         - Fixed error when creating multiple nodes referring to a common resource (`ERROR: Signal 'changed' is already connected to given callable 'VoxelGraphFunction::_on_subresource_changed'`)
