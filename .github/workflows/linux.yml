@@ -74,7 +74,7 @@ jobs:
           - name: 4.4 Editor
             precision: single
             target: editor
-            production: yes
+            production: no
             executable_name: godot.linuxbsd.editor.x86_64
             godot_base_branch: "4.4"
             warnings: extra
