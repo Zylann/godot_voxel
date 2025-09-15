@@ -13,7 +13,7 @@ struct GraphEditConnection {
 	// float activity = 0.0;
 
 	inline bool is_valid() const {
-		return !from.is_empty();
+		return !is_empty(from);
 	}
 };
 
