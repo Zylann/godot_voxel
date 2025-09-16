@@ -8,10 +8,8 @@ At the moment, this module doesn't have a distinct release schedule, so this cha
 I try to minimize breaking changes, but there are usually a few in each release which I list in detail, so watch out for that section.
 
 
-Dev 1.4.2
--------------
-
-Primarily developped with Godot 4.4.1+
+1.5 - 16/09/2025 - tag `v1.5`
+------------------------------
 
 - Improvements
     - `VoxelBuffer`: added functions to rotate/mirror contents
