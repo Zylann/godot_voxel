@@ -187,6 +187,7 @@ void simplify(
 				sizeof(Vector3f),
 				target_index_count,
 				p_error_threshold,
+				0,
 				&lod_error
 		);
 
