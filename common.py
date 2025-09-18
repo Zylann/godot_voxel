@@ -33,16 +33,6 @@ def register_scons_options(env, is_extension):
 # For extension-specific configuration, see `SConstruct`.
 def get_sources(env, is_editor_build):
     env.Append(CPPPATH=["."])
-
-    env.Append(CPPDEFINES=[
-        # See https://github.com/zeux/meshoptimizer/issues/311
-        "MESHOPTIMIZER_ZYLANN_NEVER_COLLAPSE_BORDERS",
-        # Because of the above, the MeshOptimizer library in this module is different to an official one.
-        # Godot 4 includes an official version, which means they would both conflict at linking time.
-        # To prevent this clash we wrap the entire library within an additional namespace.
-        # This should be solved either by solving issue #311 or by porting the module to a dynamic library (GDExtension).
-        "MESHOPTIMIZER_ZYLANN_WRAP_LIBRARY_IN_NAMESPACE",
-    ])
     
     tests_enabled = env["voxel_tests"]
     smoosh_meshing_enabled = env["voxel_smooth_meshing"]
