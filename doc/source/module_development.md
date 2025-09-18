@@ -525,7 +525,6 @@ SCons flag               | C++ Macro                       | Description
 
 ### Other macros
 
-- `MESHOPTIMIZER_ZYLANN_NEVER_COLLAPSE_BORDERS`: this one must be defined to fix an issue with `MeshOptimizer`. See [https://github.com/zeux/meshoptimizer/issues/311](https://github.com/zeux/meshoptimizer/issues/311)
 - `MESHOPTIMIZER_ZYLANN_WRAP_LIBRARY_IN_NAMESPACE`: this one must be defined to prevent conflict with Godot's own version of MeshOptimizer. See [https://github.com/zeux/meshoptimizer/issues/311#issuecomment-955750624](https://github.com/zeux/meshoptimizer/issues/311#issuecomment-955750624)
 - `ZN_GODOT`: must be defined when compiling this project as a module.
 - `ZN_GODOT_EXTENSION`: must be defined when compiling this project as a GDExtension.

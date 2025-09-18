@@ -309,15 +309,9 @@ enum VertexKind
 // a rule of thumb is that collapsing kind A into kind B preserves the kind B in the target vertex
 // for example, while we could collapse Complex into Manifold, this would mean the target vertex isn't Manifold anymore
 const unsigned char kCanCollapse[Kind_Count][Kind_Count] = {
-	// See https://github.com/zeux/meshoptimizer/issues/311
-#ifdef MESHOPTIMIZER_ZYLANN_NEVER_COLLAPSE_BORDERS
-    {1, 0, 1, 1, 1},
-    {0, 0, 0, 0, 0},
-#else
     {1, 1, 1, 1, 1},
-    {0, 1, 0, 0, 0},
-#endif
-    {0, 0, 1, 0, 0},
+    {0, 1, 0, 0, 1},
+    {0, 0, 1, 0, 1},
     {0, 0, 0, 1, 1},
     {0, 0, 0, 0, 0},
 };
