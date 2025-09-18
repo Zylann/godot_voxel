@@ -208,7 +208,7 @@ void run_blocky_random_tick(
 					const uint64_t v = voxels.get_voxel(0, 0, 0, channel);
 					if (lib_data.has_model(v)) {
 						const blocky::BakedModel &vt = lib_data.models[v];
-						if (vt.is_random_tickable) {
+						if (!vt.is_random_tickable) {
 							// Skip whole block
 							continue;
 						}
