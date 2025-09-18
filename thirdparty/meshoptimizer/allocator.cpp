@@ -3,11 +3,19 @@
 
 MESHOPTIMIZER_ZYLANN_NAMESPACE_BEGIN
 
-void meshopt_setAllocator(void* (*allocate)(size_t), void (*deallocate)(void*))
+#ifdef MESHOPTIMIZER_ALLOC_EXPORT
+meshopt_Allocator::Storage& meshopt_Allocator::storage()
 {
-	meshopt_Allocator::Storage::allocate = allocate;
-	meshopt_Allocator::Storage::deallocate = deallocate;
+	static Storage s = {::operator new, ::operator delete };
+	return s;
+}
+#endif
+
+void meshopt_setAllocator(void* (MESHOPTIMIZER_ALLOC_CALLCONV* allocate)(size_t), void (MESHOPTIMIZER_ALLOC_CALLCONV* deallocate)(void*))
+{
+	meshopt_Allocator::Storage& s = meshopt_Allocator::storage();
+	s.allocate = allocate;
+	s.deallocate = deallocate;
 }
 
 MESHOPTIMIZER_ZYLANN_NAMESPACE_END
-
