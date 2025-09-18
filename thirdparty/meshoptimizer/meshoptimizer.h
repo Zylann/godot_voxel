@@ -29,7 +29,9 @@
 #endif
 
 /* Experimental APIs have unstable interface and might have implementation that's not fully tested or optimized */
+#ifndef MESHOPTIMIZER_EXPERIMENTAL
 #define MESHOPTIMIZER_EXPERIMENTAL MESHOPTIMIZER_API
+#endif
 
 #ifdef MESHOPTIMIZER_ZYLANN_WRAP_LIBRARY_IN_NAMESPACE
 
