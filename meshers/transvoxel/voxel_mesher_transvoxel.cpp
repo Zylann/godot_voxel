@@ -4,7 +4,7 @@
 #include "../../shaders/transvoxel_minimal_shader.h"
 #include "../../storage/voxel_buffer_gd.h"
 #include "../../storage/voxel_data.h"
-#include "../../thirdparty/meshoptimizer/meshoptimizer.h"
+#include "thirdparty/meshoptimizer/meshoptimizer.h"
 #include "../../util/godot/classes/array_mesh.h"
 #include "../../util/godot/classes/rendering_server.h"
 #include "../../util/godot/classes/shader.h"
@@ -145,7 +145,7 @@ void remap_vertex_array(
 		return;
 	}
 	dst_data.resize(unique_vertex_count);
-	zylannmeshopt::meshopt_remapVertexBuffer(
+	meshopt_remapVertexBuffer(
 			&dst_data[0], &src_data[0], src_data.size(), sizeof(T), remap_indices.data()
 	);
 }
@@ -177,8 +177,7 @@ void simplify(
 	{
 		ZN_PROFILE_SCOPE_NAMED("meshopt_simplify");
 
-		// TODO See build script about the `zylannmeshopt::` namespace
-		const unsigned int lod_index_count = zylannmeshopt::meshopt_simplify(
+		const unsigned int lod_index_count = meshopt_simplify(
 				&lod_indices[0],
 				reinterpret_cast<const unsigned int *>(src_mesh.indices.data()),
 				src_mesh.indices.size(),
@@ -187,7 +186,7 @@ void simplify(
 				sizeof(Vector3f),
 				target_index_count,
 				p_error_threshold,
-				0,
+				meshopt_SimplifyLockBorder, // Crucial for chunk borders, see https://github.com/zeux/meshoptimizer/issues/311
 				&lod_error
 		);
 
@@ -203,7 +202,7 @@ void simplify(
 	remap_indices.clear();
 	remap_indices.resize(src_mesh.vertices.size());
 
-	const unsigned int unique_vertex_count = zylannmeshopt::meshopt_optimizeVertexFetchRemap(
+	const unsigned int unique_vertex_count = meshopt_optimizeVertexFetchRemap(
 			&remap_indices[0], lod_indices.data(), lod_indices.size(), src_mesh.vertices.size()
 	);
 
@@ -215,7 +214,7 @@ void simplify(
 
 	dst_mesh.indices.resize(lod_indices.size());
 	// TODO Not sure if arguments are correct
-	zylannmeshopt::meshopt_remapIndexBuffer(
+	meshopt_remapIndexBuffer(
 			reinterpret_cast<unsigned int *>(dst_mesh.indices.data()),
 			lod_indices.data(),
 			lod_indices.size(),

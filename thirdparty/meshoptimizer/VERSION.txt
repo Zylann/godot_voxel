@@ -1,3 +1,0 @@
-zeux/meshoptimizer
-
-v0.25 (6daea4695c48338363b08022d2fb15deaef6ac09)
