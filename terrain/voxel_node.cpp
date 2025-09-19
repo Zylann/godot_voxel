@@ -4,11 +4,14 @@
 #include "../generators/graph/voxel_generator_graph.h"
 #include "../generators/voxel_generator.h"
 #include "../meshers/blocky/voxel_mesher_blocky.h"
-#include "../meshers/transvoxel/voxel_mesher_transvoxel.h"
 #include "../meshers/voxel_mesher.h"
 #include "../streams/voxel_stream.h"
 #include "../util/godot/classes/script.h"
 #include "../util/godot/core/string.h"
+
+#ifdef VOXEL_ENABLE_SMOOTH_MESHING
+#include "../meshers/transvoxel/voxel_mesher_transvoxel.h"
+#endif
 
 #ifdef TOOLS_ENABLED
 #include "../util/godot/core/packed_arrays.h"
@@ -204,6 +207,7 @@ void VoxelNode::get_configuration_warnings(PackedStringArray &warnings) const {
 			}
 		}
 
+#ifdef VOXEL_ENABLE_SMOOTH_MESHING
 		Ref<VoxelMesherTransvoxel> transvoxel_mesher = mesher;
 		if (transvoxel_mesher.is_valid()) {
 			if (generator.is_valid()) {
@@ -246,6 +250,7 @@ void VoxelNode::get_configuration_warnings(PackedStringArray &warnings) const {
 				}
 			}
 		}
+#endif
 	}
 }
 
