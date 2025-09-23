@@ -51,6 +51,27 @@ void add_fast_noise_lite_state_config(ShaderGenContext &ctx, const FastNoiseLite
 	);
 }
 
+void add_fast_noise_lite_gradient_state_config(ShaderGenContext &ctx, const ZN_FastNoiseLiteGradient &fnl) {
+	ctx.add_format(
+			"fnl_state warp_state = fnlCreateState({});\n"
+			"warp_state.domain_warp_type = {};\n"
+			"warp_state.domain_warp_amp = {};\n"
+			"warp_state.fractal_type = {};\n"
+			"warp_state.octaves = {};\n"
+			"warp_state.gain = {};\n"
+			"warp_state.frequency = {};\n"
+			"warp_state.lacunarity = {};\n",
+			fnl.get_seed(),
+			fnl.get_noise_type(),
+			fnl.get_amplitude(),
+			fnl.get_fractal_type_fnl(),
+			fnl.get_fractal_octaves(),
+			fnl.get_fractal_gain(),
+			1.0 / fnl.get_period(),
+			fnl.get_fractal_lacunarity()
+	);
+}
+
 void add_fast_noise_lite_state_config(ShaderGenContext &ctx, const ZN_FastNoiseLite &fnl) {
 	// TODO Add missing options
 	ctx.add_format(
@@ -74,27 +95,6 @@ void add_fast_noise_lite_state_config(ShaderGenContext &ctx, const ZN_FastNoiseL
 			fnl.get_cellular_distance_function(),
 			fnl.get_cellular_return_type(),
 			fnl.get_cellular_jitter()
-	);
-}
-
-void add_fast_noise_lite_gradient_state_config(ShaderGenContext &ctx, const ZN_FastNoiseLiteGradient &fnl) {
-	ctx.add_format(
-			"fnl_state state = fnlCreateState({});\n"
-			"state.domain_warp_type = {};\n"
-			"state.domain_warp_amp = {};\n"
-			"state.fractal_type = {};\n"
-			"state.octaves = {};\n"
-			"state.gain = {};\n"
-			"state.frequency = {};\n"
-			"state.lacunarity = {};\n",
-			fnl.get_seed(),
-			fnl.get_noise_type(),
-			fnl.get_amplitude(),
-			fnl.get_fractal_type(),
-			fnl.get_fractal_octaves(),
-			fnl.get_fractal_gain(),
-			1.0 / fnl.get_period(),
-			fnl.get_fractal_lacunarity()
 	);
 }
 
@@ -477,7 +477,7 @@ void register_noise_nodes(Span<NodeType> types) {
 			ctx.add_format(
 					"float wx = {};\n"
 					"float wy = {};\n"
-					"fnlDomainWarp2D(state, wx, wy);\n"
+					"fnlDomainWarp2D(warp_state, wx, wy);\n"
 					"{} = wx;\n"
 					"{} = wy;\n",
 					ctx.get_input_name(0),
@@ -568,7 +568,7 @@ void register_noise_nodes(Span<NodeType> types) {
 					"float wx = {};\n"
 					"float wy = {};\n"
 					"float wz = {};\n"
-					"fnlDomainWarp3D(state, wx, wy, wz);\n"
+					"fnlDomainWarp3D(warp_state, wx, wy, wz);\n"
 					"{} = wx;\n"
 					"{} = wy;\n"
 					"{} = wz;\n",

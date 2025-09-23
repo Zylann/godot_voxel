@@ -59,6 +59,7 @@ public:
 
 	void set_fractal_type(FractalType type);
 	FractalType get_fractal_type() const;
+	_FastNoise::FractalType get_fractal_type_fnl() const;
 
 	void set_fractal_octaves(int octaves);
 	int get_fractal_octaves() const;

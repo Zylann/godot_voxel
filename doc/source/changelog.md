@@ -7,6 +7,12 @@ At the moment, this module doesn't have a distinct release schedule, so this cha
 
 I try to minimize breaking changes, but there are usually a few in each release which I list in detail, so watch out for that section.
 
+Dev 1.5.1 - `master`
+--------------------
+
+- Fixes
+    - `VoxelGeneratorGraph`: fixed `FastNoiseGradient` was incorrect when fractal type isn't `None` and using GPU
+
 
 1.5 - 16/09/2025 - tag `v1.5`
 ------------------------------
