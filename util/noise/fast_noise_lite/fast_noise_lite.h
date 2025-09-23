@@ -145,6 +145,14 @@ public:
 
 	// Internal
 
+	inline float get_noise_2d_unwarped(const real_t x, const real_t y) const {
+		return _fn.GetNoise(x, y);
+	}
+
+	inline float get_noise_3d_unwarped(const real_t x, const real_t y, const real_t z) const {
+		return _fn.GetNoise(x, y, z);
+	}
+
 	const ::fast_noise_lite::FastNoiseLite &get_noise_internal() const {
 		return _fn;
 	}

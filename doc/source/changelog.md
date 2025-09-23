@@ -12,6 +12,7 @@ Dev 1.5.1 - `master`
 
 - `VoxelGeneratorGraph`: 
     - Editor: added `Add Node` item to the context menu
+    - Added support for domain warp on `FastNoiseLite` and `ZN_FastNoiseLite` resources when using GPU (previously required to prepend `FastNoiseLiteGradient` noise)
 
 - Fixes
     - `VoxelGeneratorGraph`: fixed `FastNoiseGradient` was incorrect when fractal type isn't `None` and using GPU
