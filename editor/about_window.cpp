@@ -257,7 +257,8 @@ VoxelAboutWindow::VoxelAboutWindow() {
 						"ddel-rio (Daniel del Río Román)\n"
 						"Cyberphinx\n"
 						"Mia (Tigxette)\n"
-						"geryan (OGeryan)";
+						"geryan (OGeryan)\n"
+						"kevATin";
 	{
 		Dictionary d;
 
