@@ -15,6 +15,7 @@ Dev 1.5.1 - `master`
     - Added support for domain warp on `FastNoiseLite` and `ZN_FastNoiseLite` resources when using GPU (previously required to prepend `FastNoiseLiteGradient` noise)
 
 - Fixes
+    - `VoxelTool`: `run_blocky_random_tick`: fixed uniform blocks were not picked up (PR #794)
     - `VoxelGeneratorGraph`: fixed `FastNoiseGradient` was incorrect when fractal type isn't `None` and using GPU
 
 
