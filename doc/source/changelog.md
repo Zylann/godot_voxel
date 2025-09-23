@@ -10,6 +10,9 @@ I try to minimize breaking changes, but there are usually a few in each release 
 Dev 1.5.1 - `master`
 --------------------
 
+- `VoxelGeneratorGraph`: 
+    - Editor: added `Add Node` item to the context menu
+
 - Fixes
     - `VoxelGeneratorGraph`: fixed `FastNoiseGradient` was incorrect when fractal type isn't `None` and using GPU
 

@@ -61,8 +61,9 @@ enum ToolbarMenuIDs {
 	MENU_PREVIEW_RESET_LOCATION,
 	MENU_GENERATE_SHADER,
 
+	MENU_ADD_NODE,
 	MENU_REMOVE_SELECTED_NODES,
-	MENU_REMOVE_CONNECTION,
+	MENU_REMOVE_CONNECTION
 };
 
 // Utilities
@@ -596,6 +597,10 @@ void VoxelGraphEditor::_on_graph_edit_gui_input(Ref<InputEvent> event) {
 
 					_context_menu->clear();
 
+					_context_menu->add_item(ZN_TTR("Add Node"), MENU_ADD_NODE);
+
+					_context_menu->add_separator();
+
 					if (selected_nodes.size() > 0) {
 						const String delete_node_text =
 								selected_nodes.size() > 1 ? ZN_TTR("Delete Nodes") : ZN_TTR("Delete Node");
@@ -836,6 +841,10 @@ void VoxelGraphEditor::_on_menu_id_pressed(int id) {
 			const int idx = menu->get_item_index(id);
 			menu->set_item_checked(idx, _live_update_enabled);
 		} break;
+
+		case MENU_ADD_NODE:
+			_node_dialog->popup_at_screen_position(_graph_edit->get_screen_position() + _click_position);
+			break;
 
 		case MENU_REMOVE_SELECTED_NODES:
 			delete_selected_nodes();
