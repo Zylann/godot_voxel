@@ -17,7 +17,13 @@ public:
 
 	// VoxelTool methods
 
-	void copy(Vector3i pos, VoxelBuffer &dst, uint8_t channels_mask) const override;
+	void copy(
+			const Vector3i pos,
+			VoxelBuffer &dst,
+			const uint8_t channels_mask,
+			const bool with_metadata
+	) const override;
+
 	void paste(Vector3i pos, const VoxelBuffer &src, uint8_t channels_mask) override;
 
 	void paste_masked(

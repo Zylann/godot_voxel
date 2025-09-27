@@ -386,7 +386,7 @@
 			<param index="0" name="pos" type="Vector3i" />
 			<param index="1" name="value" type="Variant" />
 			<description>
-				Attaches arbitrary data on a specific voxel. Old data is replaced.
+				Attaches arbitrary data on a specific voxel. Old data is replaced. Passing [code]null[/code] will erase metadata.
 				If this [VoxelBuffer] is saved, this metadata will also be saved along voxels, so make sure the data supports serialization (i.e you can't put nodes or arbitrary objects in it).
 			</description>
 		</method>

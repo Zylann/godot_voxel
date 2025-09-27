@@ -112,7 +112,7 @@ public:
 			const int32_t vertex_range_end,
 			const int32_t index_range_end
 	);
-	void on_mesh_block_exit(Vector3i render_grid_position, unsigned int lod_index);
+	void on_mesh_block_exit(const Vector3i render_grid_position, const unsigned int lod_index);
 	void on_area_edited(Box3i p_voxel_box);
 	void on_body_removed(Vector3i data_block_position, unsigned int render_block_index, unsigned int instance_index);
 	void on_scene_instance_removed(

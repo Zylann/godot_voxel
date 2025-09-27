@@ -4,6 +4,7 @@
 #include "../../generators/graph/voxel_generator_graph.h"
 #include "../../util/godot/classes/control.h"
 #include "../../util/godot/classes/editor_undo_redo_manager.h"
+#include "../../util/godot/classes/graph_edit_connection.h"
 #include "../../util/godot/debug_renderer.h"
 #include "../../util/godot/object_weak_ref.h"
 #include "../../util/math/vector2f.h"
@@ -95,6 +96,14 @@ private:
 	void paste_clipboard();
 	void create_node_gui_input_connections(int node_id);
 
+	void delete_selected_nodes();
+	void remove_connection(
+			const String from_node_name,
+			const int from_slot,
+			const String to_node_name,
+			const int to_slot
+	);
+
 	void _on_graph_edit_gui_input(Ref<InputEvent> event);
 	void _on_graph_edit_connection_request(String from_node_name, int from_slot, String to_node_name, int to_slot);
 	void _on_graph_edit_disconnection_request(String from_node_name, int from_slot, String to_node_name, int to_slot);
@@ -158,6 +167,8 @@ private:
 	MenuButton *_debug_menu_button = nullptr;
 	PopupMenu *_preview_axes_menu = nullptr;
 	VoxelGraphNodeDialog *_node_dialog = nullptr;
+	PopupMenu *_context_menu = nullptr;
+	zylann::godot::GraphEditConnection _context_connection;
 
 	GraphEditorPreview::ViewMode _node_preview_mode = GraphEditorPreview::VIEW_SLICE_XY;
 	Vector2f _preview_offset;

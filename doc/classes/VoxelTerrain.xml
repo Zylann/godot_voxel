@@ -100,18 +100,16 @@
 			<param index="0" name="position" type="Vector3i" />
 			<description>
 				Forces a specific block to be saved.
-				Note 1: all modified blocks are automatically saved before the terrain is destroyed.
-				Note 2: this will only have an effect if the stream setup on this terrain supports saving.
-				Note 3: saving is asynchronous and won't block the game. the save may complete only a short time after you call this method.
+				Note 1: this will only have an effect if the stream setup on this terrain supports saving.
+				Note 2: saving is asynchronous and won't block the game. the save may complete only a short time after you call this method.
 			</description>
 		</method>
 		<method name="save_modified_blocks">
 			<return type="VoxelSaveCompletionTracker" />
 			<description>
 				Forces all modified blocks to be saved.
-				Note 1: all modified blocks are automatically saved before the terrain is destroyed.
-				Note 2: this will only have an effect if the stream setup on this terrain supports saving.
-				Note 3: saving is asynchronous and won't block the game. the save may complete only a short time after you call this method.
+				Note 1: this will only have an effect if the stream setup on this terrain supports saving.
+				Note 2: saving is asynchronous and won't block the game. the save may complete only a short time after you call this method.
 				Use the returned tracker object to know when saving has completed. However, saves occurring after calling this method won't be tracked by this object.
 				Note that blocks getting unloaded as the viewer moves around can also trigger saving tasks, independently from this function.
 			</description>
@@ -138,7 +136,7 @@
 		</member>
 		<member name="block_enter_notification_enabled" type="bool" setter="set_block_enter_notification_enabled" getter="is_block_enter_notification_enabled" default="false">
 		</member>
-		<member name="bounds" type="AABB" setter="set_bounds" getter="get_bounds" default="AABB(-5.36871e+08, -5.36871e+08, -5.36871e+08, 1.07374e+09, 1.07374e+09, 1.07374e+09)">
+		<member name="bounds" type="AABB" setter="set_bounds" getter="get_bounds" default="AABB(-536870900, -536870900, -536870900, 1073741800, 1073741800, 1073741800)">
 			Defines the bounds within which the terrain is allowed to have voxels. If an infinite world generator is used, blocks will only generate within this region. Everything outside will be left empty.
 		</member>
 		<member name="collision_layer" type="int" setter="set_collision_layer" getter="get_collision_layer" default="1">

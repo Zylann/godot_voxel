@@ -16,11 +16,12 @@ namespace zylann::voxel {
 
 void copy_from_chunked_storage(
 		VoxelBuffer &dst_buffer,
-		Vector3i min_pos,
-		unsigned int block_size_po2,
-		uint32_t channels_mask,
+		const Vector3i min_pos,
+		const unsigned int block_size_po2,
+		const uint32_t channels_mask,
 		const VoxelBuffer *(*get_block_func)(void *, Vector3i),
-		void *get_block_func_ctx
+		void *get_block_func_ctx,
+		const bool with_metadata
 ) {
 	ZN_ASSERT_RETURN_MSG(Vector3iUtil::get_volume_u64(dst_buffer.get_size()) > 0, "The area to copy is empty");
 	ZN_ASSERT_RETURN(get_block_func != nullptr);
@@ -47,6 +48,14 @@ void copy_from_chunked_storage(
 						// Note: copy_from takes care of clamping the area if it's on an edge
 						dst_buffer.copy_channel_from(
 								*src_buffer, min_pos - src_block_origin, src_buffer->get_size(), Vector3i(), channel
+						);
+					}
+
+					if (with_metadata) {
+						dst_buffer.copy_voxel_metadata_in_area(
+								*src_buffer,
+								Box3i::from_min_max(min_pos - src_block_origin, src_buffer->get_size()),
+								Vector3i()
 						);
 					}
 
@@ -199,7 +208,7 @@ void run_blocky_random_tick(
 					const uint64_t v = voxels.get_voxel(0, 0, 0, channel);
 					if (lib_data.has_model(v)) {
 						const blocky::BakedModel &vt = lib_data.models[v];
-						if (vt.is_random_tickable) {
+						if (!vt.is_random_tickable) {
 							// Skip whole block
 							continue;
 						}
@@ -301,18 +310,35 @@ bool indices_to_bitarray_u16(Span<const int32_t> indices, DynamicBitset &bitarra
 	}
 #endif
 
-	int32_t max_value = 0;
+	int32_t max_value = -1;
 	for (const int32_t i : indices) {
 		max_value = math::max(i, max_value);
 	}
 
-	bitarray.resize_no_init(indices.size() / 8);
+	bitarray.resize_no_init(max_value + 1);
 
 	for (const int32_t i : indices) {
 		bitarray.set(i);
 	}
 
 	return true;
+}
+
+void indices_to_bitarray(Span<const uint8_t> indices, DynamicBitset &bitarray) {
+	if (indices.size() == 0) {
+		bitarray.clear();
+	}
+
+	uint8_t max_value = 0;
+	for (const uint8_t i : indices) {
+		max_value = math::max(i, max_value);
+	}
+
+	bitarray.resize_no_init(max_value + 1);
+
+	for (const uint8_t i : indices) {
+		bitarray.set(i);
+	}
 }
 
 } // namespace zylann::voxel

@@ -102,14 +102,7 @@ void test_run_blocky_random_tick() {
 	RandomPCG random;
 	random.seed(131183);
 	zylann::voxel::run_blocky_random_tick(
-			data,
-			voxel_box,
-			**library,
-			random,
-			1000,
-			4,
-			&cb,
-			[](void *self, Vector3i pos, int64_t val) {
+			data, voxel_box, **library, random, 1000, 4, &cb, [](void *self, Vector3i pos, int64_t val) {
 				Callback *cb = (Callback *)self;
 				return cb->exec(pos, val);
 			}
@@ -298,7 +291,7 @@ void test_discord_soakil_copypaste() {
 	VoxelBuffer buffer_before_edit(VoxelBuffer::ALLOCATOR_DEFAULT);
 	buffer_before_edit.create(Vector3i(20, 20, 20));
 	const Vector3i undo_pos(-10, -10, -10);
-	voxel_data.copy(undo_pos, buffer_before_edit, 0xff);
+	voxel_data.copy(undo_pos, buffer_before_edit, 0xff, true);
 
 	// Check the copy
 	{
@@ -340,7 +333,7 @@ void test_discord_soakil_copypaste() {
 	}
 
 	voxel_data.pre_generate_box(Box3i(undo_pos, buffer_before_edit.get_size()));
-	voxel_data.paste(undo_pos, buffer_before_edit, 0xff, false);
+	voxel_data.paste(undo_pos, buffer_before_edit, 0xff, false, true);
 
 	// Checks terrain is still as we expect. Not relying on copy() followed by equals(), because copy() is part of what
 	// we are testing

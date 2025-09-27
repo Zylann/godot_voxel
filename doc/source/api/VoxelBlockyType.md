@@ -19,10 +19,10 @@ Type                                                                            
 ## Methods: 
 
 
-Return                                           | Signature                                                                                                                                                                                    
------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-[VoxelBlockyAttribute](VoxelBlockyAttribute.md)  | [get_rotation_attribute](#i_get_rotation_attribute) ( ) const                                                                                                                                
-[void](#)                                        | [set_variant_model](#i_set_variant_model) ( [Array](https://docs.godotengine.org/en/stable/classes/class_array.html) _unnamed_arg0, [VoxelBlockyModel](VoxelBlockyModel.md) _unnamed_arg1 )  
+Return                                           | Signature                                                                                                                                                                  
+------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+[VoxelBlockyAttribute](VoxelBlockyAttribute.md)  | [get_rotation_attribute](#i_get_rotation_attribute) ( ) const                                                                                                              
+[void](#)                                        | [set_variant_model](#i_set_variant_model) ( [Array](https://docs.godotengine.org/en/stable/classes/class_array.html) key, [VoxelBlockyModel](VoxelBlockyModel.md) model )  
 <p></p>
 
 ## Constants: 
@@ -53,8 +53,10 @@ Return                                           | Signature
 
 *(This method has no documentation)*
 
-### [void](#)<span id="i_set_variant_model"></span> **set_variant_model**( [Array](https://docs.godotengine.org/en/stable/classes/class_array.html) _unnamed_arg0, [VoxelBlockyModel](VoxelBlockyModel.md) _unnamed_arg1 ) 
+### [void](#)<span id="i_set_variant_model"></span> **set_variant_model**( [Array](https://docs.godotengine.org/en/stable/classes/class_array.html) key, [VoxelBlockyModel](VoxelBlockyModel.md) model ) 
 
-*(This method has no documentation)*
+Explicitely sets which model to use for a given combination of attributes (key).
 
-_Generated on May 15, 2025_
+If you have attributes that automatically generate variants (such as rotations), you are expected to only set models for the default value of such attributes. Other models will not be preserved. This is because the default value will be used as a reference to generate the other models.
+
+_Generated on Aug 09, 2025_

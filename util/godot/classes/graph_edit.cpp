@@ -95,4 +95,44 @@ int get_graph_edit_snapping_distance(const GraphEdit &self) {
 #endif
 }
 
+GraphEditConnection get_graph_edit_closest_connection_at_point(
+		const GraphEdit &self,
+		const Vector2 point,
+		const real_t max_distance
+) {
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR < 3
+	// Not exposed. Could probably re-implement ourselves, but it doesn't seem worth it.
+	return GraphEditConnection();
+
+#else
+
+#if defined(ZN_GODOT)
+	Ref<GraphEdit::Connection> gd_connection = self.get_closest_connection_at_point(point, max_distance);
+	if (gd_connection.is_null()) {
+		return GraphEditConnection();
+	}
+	GraphEditConnection connection;
+	connection.from = gd_connection->from_node;
+	connection.from_port = gd_connection->from_port;
+	connection.to = gd_connection->to_node;
+	connection.to_port = gd_connection->to_port;
+	return connection;
+
+#elif defined(ZN_GODOT_EXTENSION)
+	const Dictionary gd_connection = self.get_closest_connection_at_point(point, max_distance);
+	if (gd_connection.is_empty()) {
+		return GraphEditConnection();
+	}
+	GraphEditConnection connection;
+	connection.from = gd_connection["from_node"];
+	connection.from_port = gd_connection["from_port"];
+	connection.to = gd_connection["to_node"];
+	connection.to_port = gd_connection["to_port"];
+	return connection;
+
+#endif
+
+#endif
+}
+
 } // namespace zylann::godot

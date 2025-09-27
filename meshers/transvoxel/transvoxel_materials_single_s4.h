@@ -205,9 +205,11 @@ struct Processor {
 
 	inline uint32_t on_cell(const FixedArray<uint32_t, NVoxels> &corner_voxel_indices, const uint8_t case_code) {
 		get_cell_materials<NVoxels>(voxel_material_indices, corner_voxel_indices, cell);
+#ifdef TOOLS_ENABLED
 		for (unsigned int i = 0; i < cell.component_indices.size(); ++i) {
-			ZN_ASSERT(cell.component_indices[i] <= 2);
+			ZN_ASSERT(cell.component_indices[i] < cell.selected_indices.size());
 		}
+#endif
 		return cell.packed_indices;
 	}
 

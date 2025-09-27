@@ -13,6 +13,7 @@
 #include "../../util/godot/classes/object.h"
 #include "../../util/godot/classes/rich_text_label.h"
 #include "../../util/godot/classes/tree.h"
+#include "../../util/godot/classes/tree_item.h"
 #include "../../util/godot/classes/v_box_container.h"
 #include "../../util/godot/classes/v_split_container.h"
 #include "../../util/godot/core/array.h"
@@ -236,7 +237,7 @@ VoxelGraphNodeDialog::VoxelGraphNodeDialog() {
 		const pg::NodeType &node_type = pg::NodeTypeDB::get_singleton().get_type(type_index);
 
 		Item item;
-		item.name = ZN_TTR(node_type.name);
+		item.name = node_type.name;
 		item.category = category_index;
 		item.description = description;
 		item.id = type_index;
@@ -314,7 +315,13 @@ void VoxelGraphNodeDialog::update_tree(bool autoselect) {
 		}
 
 		TreeItem *tree_item = _tree->create_item(parent_tree_item);
+
+		zylann::godot::TreeItemUtilities::set_auto_translate_mode(
+				*tree_item, 0, zylann::godot::AUTO_TRANSLATE_MODE_DISABLED
+		);
+
 		tree_item->set_text(0, item.name);
+
 		if (autoselected == false && autoselect) {
 			tree_item->select(0);
 			autoselected = true;

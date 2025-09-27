@@ -124,6 +124,8 @@ public:
 	bool try_get_output_port_address(ProgramGraph::PortLocation port, uint32_t &out_address) const;
 	int get_sdf_output_port_address() const;
 
+	bool has_texture_output() const;
+
 #ifdef VOXEL_ENABLE_GPU
 	// GPU support
 

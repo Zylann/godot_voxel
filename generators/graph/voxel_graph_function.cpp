@@ -488,7 +488,7 @@ void VoxelGraphFunction::set_node_name(uint32_t node_id, StringName p_name) {
 	if (node->name == p_name) {
 		return;
 	}
-	if (p_name != StringName()) {
+	if (!zylann::godot::is_empty(p_name)) {
 		const uint32_t existing_node_id = _graph.find_node_by_name(p_name);
 		if (existing_node_id != ProgramGraph::NULL_ID && node_id == existing_node_id) {
 			ZN_PRINT_ERROR(format("More than one graph node has the name \"{}\"", String(p_name)));
@@ -865,16 +865,34 @@ const ProgramGraph &VoxelGraphFunction::get_graph() const {
 
 void VoxelGraphFunction::register_subresource(Resource &resource) {
 	// print_line(String("{0}: Registering subresource {1}").format(varray(int64_t(this), int64_t(&resource))));
-	resource.connect(
-			VoxelStringNames::get_singleton().changed, callable_mp(this, &VoxelGraphFunction::_on_subresource_changed)
-	);
+
+	const ObjectID res_id(resource.get_instance_id());
+
+	// The same resource can be registered more than once, so we have to account for it
+	if (!contains(_subresources, res_id)) {
+		resource.connect(
+				VoxelStringNames::get_singleton().changed,
+				callable_mp(this, &VoxelGraphFunction::_on_subresource_changed)
+		);
+	}
+	_subresources.push_back(res_id);
 }
 
 void VoxelGraphFunction::unregister_subresource(Resource &resource) {
 	// print_line(String("{0}: Unregistering subresource {1}").format(varray(int64_t(this), int64_t(&resource))));
-	resource.disconnect(
-			VoxelStringNames::get_singleton().changed, callable_mp(this, &VoxelGraphFunction::_on_subresource_changed)
-	);
+
+	const ObjectID res_id(resource.get_instance_id());
+
+	size_t i;
+	if (find(_subresources, res_id, i)) {
+		unordered_remove(_subresources, i);
+	}
+	if (!contains(_subresources, res_id)) {
+		resource.disconnect(
+				VoxelStringNames::get_singleton().changed,
+				callable_mp(this, &VoxelGraphFunction::_on_subresource_changed)
+		);
+	}
 }
 
 void VoxelGraphFunction::register_subresources() {
@@ -962,7 +980,7 @@ Dictionary get_graph_as_variant_data(const ProgramGraph &graph) {
 			node_data["gui_size"] = node->gui_size;
 		}
 
-		if (node->name != StringName()) {
+		if (!zylann::godot::is_empty(node->name)) {
 			node_data["name"] = node->name;
 		}
 

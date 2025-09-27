@@ -11,21 +11,20 @@ using namespace godot;
 #include "../../containers/std_vector.h"
 #include "../core/string_name.h"
 #include "../core/version.h"
+#include "graph_edit_connection.h"
 
 namespace zylann::godot {
-
-struct GraphEditConnection {
-	StringName from;
-	StringName to;
-	int from_port = 0;
-	int to_port = 0;
-	// float activity = 0.0;
-};
 
 void get_graph_edit_connections(const GraphEdit &self, StdVector<GraphEditConnection> &out_connections);
 Vector2 get_graph_edit_scroll_offset(const GraphEdit &self);
 bool is_graph_edit_using_snapping(const GraphEdit &self);
 int get_graph_edit_snapping_distance(const GraphEdit &self);
+
+GraphEditConnection get_graph_edit_closest_connection_at_point(
+		const GraphEdit &self,
+		const Vector2 point,
+		const real_t max_distance = 4.0
+);
 
 } // namespace zylann::godot
 

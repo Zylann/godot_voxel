@@ -157,6 +157,14 @@ for z in size.z:
 The only reason for this particular choice was that most games use Y as the vertical coordinate, so some operations can be done quickly alongside the vertical axis. It was decided in early days of the project and was kept for consistency. But generally, this convention should only matter if you are working on low-level code.
 
 
+GDScript
+----------
+
+GDScript is already quite slow to perform intensive operations such as doing 3D for loops to process voxel buffers with complex conditions. You may use it that way for prototyping, but it is not scalable. Another approach is to use it as a "logic glue" to compose lower-level functions together that do the expensive work, such as `VoxelTool` or `VoxelBuffer` methods, or delegating to graphs.
+
+It also suffers from a significant performance penalty when used inside multiple threads in editor tests. This is especially relevant when implementing `VoxelGeneratorScript` for example. When run from the editor, Godot uses debug synchronization primitives that hugely slow down function calls, to the point using less threads could make your code faster. This issue is not present in exported builds.
+
+
 Access to voxels from different threads
 -----------------------------
 

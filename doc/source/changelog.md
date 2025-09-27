@@ -7,43 +7,78 @@ At the moment, this module doesn't have a distinct release schedule, so this cha
 
 I try to minimize breaking changes, but there are usually a few in each release which I list in detail, so watch out for that section.
 
+Dev 1.5.1 - `master`
+--------------------
 
-Dev 1.4.2
--------------
-
-Primarily developped with Godot 4.4.1+
-
-- `VoxelBuffer`: added functions to rotate/mirror contents
-- `VoxelGeneratorGraph`: implemented constant reduction, which slightly optimizes graphs running on CPU if they contain constant branches
-- `VoxelGeneratorHeightmap`: added `offset` property
-- `VoxelGraphFunction`: Editor: preview nodes should now work
-- `VoxelInstanceLibraryItem`: Exposed `floating_sdf_*` parameters to tune how floating instances are detected after digging ground around them.
-- `VoxelInstanceLibraryMultiMeshItem`: 
-    - Added `removal_behavior` property to trigger something when instances get removed
-    - Added `collision_distance` to only create colliders when below a certain distance to chunks
-- `VoxelInstanceGenerator`: Added an option to snap instances based on the voxel generator SDF (only available with `VoxelGeneratorGraph`).
-- `VoxelInstancer`: 
-    - Added `remove_instances_in_sphere`
-    - Added fading system so a shader can be used to fade instances as they load in and out
-- `VoxelMesherBlocky`: added tint mode to modulate voxel colors using the `COLOR` channel.
-- `VoxelMesherTransvoxel`: added `Single` texturing mode, which uses only one byte per voxel to store a texture index. `VoxelGeneratorGraph` was also updated to include this mode.
-- `VoxelTool`: added `do_mesh` to replace `stamp_sdf`. Supported on terrains only.
-- Build system: added options to turn off features when doing custom builds
-- Introduced `VoxelFormat` to allow overriding default channel depths (was required to use the new `Single` voxel textures mode)
+- `VoxelGeneratorGraph`: 
+    - Editor: added `Add Node` item to the context menu
+    - Added support for domain warp on `FastNoiseLite` and `ZN_FastNoiseLite` resources when using GPU (previously required to prepend `FastNoiseLiteGradient` noise)
 
 - Fixes
-    - `VoxelBlockyTypeLibrary`: fixed crash when setting `types` to empty array
+    - `VoxelTool`: `run_blocky_random_tick`: fixed uniform blocks were not picked up (PR #794)
+    - `VoxelGeneratorGraph`: fixed `FastNoiseGradient` was incorrect when fractal type isn't `None` and using GPU
+
+
+1.5 - 16/09/2025 - tag `v1.5`
+------------------------------
+
+- Improvements
+    - `VoxelBuffer`: added functions to rotate/mirror contents
+    - `VoxelEngine`: added function to manually change thread count (thanks to wildlachs)
+    - `VoxelGeneratorGraph`:
+        - Editor: selected nodes and connections can be removed using a right-click context menu (may be long-press on Android)
+        - implemented constant reduction, which slightly optimizes graphs running on CPU if they contain constant branches
+    - `VoxelGeneratorHeightmap`: added `offset` property
+    - `VoxelGraphFunction`: Editor: preview nodes should now work
+    - `VoxelInstanceLibraryItem`: Exposed `floating_sdf_*` parameters to tune how floating instances are detected after digging ground around them.
+    - `VoxelInstanceLibraryMultiMeshItem`: 
+        - Added `removal_behavior` property to trigger something when instances get removed
+        - Added `collision_distance` to only create colliders when below a certain distance to chunks
+    - `VoxelInstanceGenerator`: 
+        - Added an option to snap instances based on the voxel generator SDF (only available with `VoxelGeneratorGraph`).
+        - Exposed threshold for voxel texture filtering 
+        - Added falloff settings for height, slope and noise filtering, so density can fade progressively (issue 784).
+        - Added noise threshold to expand or shrink areas filtered by noise.
+    - `VoxelInstancer`: 
+        - Added `remove_instances_in_sphere`
+        - Added fading system so a shader can be used to fade instances as they load in and out
+        - Slightly improved random spread of instances over triangles
+    - `VoxelMesherBlocky`: added tint mode to modulate voxel colors using the `COLOR` channel.
+    - `VoxelMesherTransvoxel`: added `Single` texturing mode, which uses only one byte per voxel to store a texture index. `VoxelGeneratorGraph` was also updated to include this mode.
+    - `VoxelTool`: 
+        - added `do_mesh` to replace `stamp_sdf`. Supported on terrains only.
+        - The `channels_mask` parameter of `copy` and `paste` functions is now optional, defaulting to all channels
+    - `VoxelTerrain`: added debug flag to draw locations of voxel metadatas
+    - `FastNoise2`: 
+        - Exposed `CELLULAR_VALUE` noise type 
+        - Exposed properties to choose cell indices used in distance/value calculations
+    - Build system: added options to turn off features when doing custom builds
+    - Introduced `VoxelFormat` to allow overriding default channel depths (was required to use the new `Single` voxel textures mode)
+
+- Fixes
+    - `VoxelBlockyType`: fixed models added using `set_variant_model` were not always returned by `_variant_models_data` (however it can still happen for different reasons, check the documentation of `set_variant_model`)
+    - `VoxelBlockyTypeLibrary`: 
+        - fixed crash when setting `types` to empty array
+        - fixed incorrect loading of the ID map when a type has more than two attributes
+    - `VoxelBuffer`: fixed `copy_voxel_metadata_in_area` could crash in some cases with the error `Assertion failed: "is_position_valid(dst_pos)" is false.`
     - `VoxelInstancer`: 
         - Fixed instance removal failing randomly after at least one chunk gets unloaded
         - Fixed instances getting generated when digging down or building up in *already meshed* chunks that had no geometry before, when using `VoxelLodTerrain`
         - Fixed transition meshes should not be used as spawning surfaces, they caused density bias and position bias at chunk borders
+        - Fixed error when loading a scene with an instancer set with `up_mode = SPHERE` (issue 786; `voxel_instancer.cpp:906 - Condition "_parent == nullptr" is true`)
+        - Fixed some potential issues occurring after `mesh_block_size` gets modified while the terrain is already in the scene tree, where the instancer would not use the right block size (leading to `ERROR: Condition "render_to_data_factor <= 0 || render_to_data_factor > 2" is true`)
     - `VoxelGeneratorGraph`: 
         - Editor: fixed error sometimes printing after closing the graph editor
         - Editor: fixed error spam `Invalid param name` after editing a graph (in some yet unknown situations)
         - Editor: fixed node dialog didn't auto-select the first item when searching
         - Editor: decimal numbers that have no exact float representation are now displayed rounded instead of widening nodes excessively. Instead, the exact value is shown with a tooltip.
+        - Editor: fixed node names were incorrectly translated
         - Fixed incorrect texture painting leading to black triangles when using Mixel4 with OutputSingleTexture and GPU generation
+        - Fixed crash with specific setups where equivalent nodes are connected multiple times to equivalent ancestors (issue 783; `FATAL: Assertion failed: "p != equivalence" is false`)
+        - Fixed error when creating multiple nodes referring to a common resource (`ERROR: Signal 'changed' is already connected to given callable 'VoxelGraphFunction::_on_subresource_changed'`)
+        - Fixed incorrect "walls" showing up in areas that are assumed uniform by range analysis, when GPU generation is enabled (For example, when using a Select node to output SDF=1.0 in an area; commit: 350d3897dcec7e37016e4fb95851cd389947371b)
     - `VoxelMesherBlocky`: Fixed crash when invalid model IDs are present at chunk borders with `VoxelLodTerrain`
+    - `VoxelMeshSDF`: Fixed error when baking from a non-indexed mesh (which is exceptionally the case with Godot's CSG nodes)
     - `VoxelMesherTransvoxel`: Fixed some incorrect geometry changes near positive LOD borders, notably when voxel textures are used. Edge cases remain but can be fixed with a shader hack for now.
     - `VoxelStreamRegionFiles`: GDExtension: fixed error creating directories
     - `VoxelStreamSQLite`: 
@@ -52,12 +87,17 @@ Primarily developped with Godot 4.4.1+
     - `VoxelTool`:
         - `is_area_editable` was off by one in size, and was always returning `true` if the size of the AABB had any component smaller than 1
         - `paste_masked` didn't check the right coordinates to clear metadata in destinations containing at least one. It also caused a spam of `get_voxel` being at invalid position
+        - `paste_masked_writable_list` caused an index out of bounds error (spotted thanks to @HiperSlug)
+        - `set_voxel_metadata`: terrains: fixed passing `null` wasn't erasing metadata like with `VoxelBuffers`. 
+        - `copy`: fixed voxel metadata was not copied when the source is a terrain
     - `VoxelToolLodTerrain`: fixed `do_graph` tended to produce boxes when the transform was scaled and `sdf_strength` was not 1
     - `VoxelViewer`: reparenting (`remove_child` followed by `add_child`) should no longer reload terrain around the viewer
     - `VoxelAStarGrid3D`: fixed crash if `find_path` is called without setting a terrain first
+    - `ZN_SpotNoise`: fixed `get_spot_positions_in_area` functions were not working outside of the (0,0) cell
 
 - Breaking changes
     - `VoxelGeneratorGraph`: `SdfSphere` node: `radius` is now an input instead of a parameter (compat breakage only occurs if you used a script to set it: replace `set_node_param(id, 0, radius)` with `set_node_default_input(id, 3, radius)`)
+    - `VoxelTool.set_voxel_metadata`: on terrains, passing `null` now erases metadata, instead of creating a metadata with the value `null`, to be consistent with `VoxelBuffer` and fix issue 773.
 
 
 1.4.1 - 29/03/2025 - tag `v1.4.1`
@@ -86,10 +126,11 @@ Primarily developped with Godot 4.4.
 - `VoxelBuffer`:
     - Added functions to create/update a `Texture3D` from the SDF channel
     - Added functions to get/set a whole channel as a raw `PackedByteArray`
-- `VoxelInstanceGenerator`: Added `OnePerTriangle` emission mode
+- `VoxelInstanceGenerator`: 
+    - Added `OnePerTriangle` emission mode
+    - Added ability to filter spawning by voxel texture indices, when using `VoxelMesherTransvoxel` with `texturing_mode` set to `4-blend over 16 textures`
 - `VoxelTool`: `raycast` also returns a `normal` based on voxel data (it may be different from a physics raycast in some cases)
 - `VoxelToolLodTerrain`: Implemented raycast when the mesher is `VoxelMesherBlocky` or `VoxelMesherCubes`
-- `VoxelInstanceGenerator`: Added ability to filter spawning by voxel texture indices, when using `VoxelMesherTransvoxel` with `texturing_mode` set to `4-blend over 16 textures`
 - `VoxelMesherBlocky`: Added basic support for fluid models
 
 - Fixes

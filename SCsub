@@ -18,6 +18,16 @@ if not env["arch"].startswith("x86"):
 
 env_voxel = env_modules.Clone()
 
+if env_voxel["voxel_werror"]:
+	# Enable warnings as errors only for module code.
+	# This is initially to workaround MSVC updates causing unexpected warnings in older versions of Godot, which rarely
+	# get cherry picks of the fixes needed to avoid them. So instead of using global werror=yes, use this option.
+	# See also https://github.com/godotengine/godot/pull/106634
+	if env_voxel.msvc:
+		env_voxel.AppendUnique(CCFLAGS=["/WX"])
+	else:
+		env_voxel.AppendUnique(CCFLAGS=["-Werror"])
+
 voxel_files = common.get_sources(env_voxel, env.editor_build)
 
 env_voxel.Append(CPPDEFINES=[

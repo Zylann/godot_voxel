@@ -278,19 +278,19 @@ void VoxelTool::do_mesh(const VoxelMeshSDF &mesh_sdf, const Transform3D &transfo
 }
 #endif
 
-void VoxelTool::copy(Vector3i pos, VoxelBuffer &dst, uint8_t channels_mask) const {
+void VoxelTool::copy(Vector3i pos, VoxelBuffer &dst, uint8_t channels_mask, const bool with_metadata) const {
 	ERR_PRINT("Not implemented");
 	// Implemented in derived classes
 }
 
-void VoxelTool::copy(Vector3i pos, Ref<godot::VoxelBuffer> dst, uint8_t channel_mask) const {
+void VoxelTool::copy(Vector3i pos, Ref<godot::VoxelBuffer> dst, uint8_t channel_mask, const bool with_metadata) const {
 	ERR_FAIL_COND(dst.is_null());
 #ifdef TOOLS_ENABLED
 	if (Vector3iUtil::is_empty_size(dst->get_size())) {
 		ZN_PRINT_WARNING("The passed buffer has an empty size, nothing will be copied.");
 	}
 #endif
-	copy(pos, dst->get_buffer(), channel_mask);
+	copy(pos, dst->get_buffer(), channel_mask, with_metadata);
 }
 
 void VoxelTool::paste(Vector3i p_pos, const VoxelBuffer &src, uint8_t channels_mask) {
@@ -354,7 +354,7 @@ void VoxelTool::smooth_sphere(Vector3 sphere_center, float sphere_radius, int bl
 	if (_channel == VoxelBuffer::CHANNEL_SDF) {
 		// Note, this only applies to SDF. It won't blur voxel texture data.
 
-		copy(padded_voxel_box.position, buffer, (1 << VoxelBuffer::CHANNEL_SDF));
+		copy(padded_voxel_box.position, buffer, (1 << VoxelBuffer::CHANNEL_SDF), false);
 
 		VoxelBuffer smooth_buffer(VoxelBuffer::ALLOCATOR_POOL);
 		smooth_buffer.copy_format(buffer);
@@ -390,7 +390,7 @@ void VoxelTool::grow_sphere(Vector3 sphere_center, float sphere_radius, float st
 	if (_channel == VoxelBuffer::CHANNEL_SDF) {
 		// Note, this only applies to SDF. It won't affect voxel texture data.
 
-		copy(voxel_box.position, buffer, (1 << VoxelBuffer::CHANNEL_SDF));
+		copy(voxel_box.position, buffer, (1 << VoxelBuffer::CHANNEL_SDF), false);
 
 		const Vector3f relative_sphere_center = to_vec3f(sphere_center - to_vec3(voxel_box.position));
 		const float signed_strength = _mode == VoxelTool::MODE_REMOVE ? -strength : strength;
@@ -550,8 +550,8 @@ void VoxelTool::_b_do_mesh(Ref<VoxelMeshSDF> mesh_sdf, Transform3D transform, fl
 }
 #endif
 
-void VoxelTool::_b_copy(Vector3i pos, Ref<godot::VoxelBuffer> voxels, int channel_mask) {
-	copy(pos, voxels, channel_mask);
+void VoxelTool::_b_copy(Vector3i pos, Ref<godot::VoxelBuffer> voxels, int channel_mask, bool with_metadata) {
+	copy(pos, voxels, channel_mask, with_metadata);
 }
 
 void VoxelTool::_b_paste(Vector3i pos, Ref<godot::VoxelBuffer> voxels, int channels_mask) {
@@ -684,8 +684,17 @@ void VoxelTool::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_voxel_metadata", "pos", "meta"), &VoxelTool::_b_set_voxel_metadata);
 	ClassDB::bind_method(D_METHOD("get_voxel_metadata", "pos"), &VoxelTool::_b_get_voxel_metadata);
 
-	ClassDB::bind_method(D_METHOD("copy", "src_pos", "dst_buffer", "channels_mask"), &VoxelTool::_b_copy);
-	ClassDB::bind_method(D_METHOD("paste", "dst_pos", "src_buffer", "channels_mask"), &VoxelTool::_b_paste);
+	ClassDB::bind_method(
+			D_METHOD("copy", "src_pos", "dst_buffer", "channels_mask", "with_metadata"),
+			&VoxelTool::_b_copy,
+			DEFVAL(VoxelBuffer::ALL_CHANNELS_MASK),
+			DEFVAL(true)
+	);
+	ClassDB::bind_method(
+			D_METHOD("paste", "dst_pos", "src_buffer", "channels_mask"),
+			&VoxelTool::_b_paste,
+			DEFVAL(VoxelBuffer::ALL_CHANNELS_MASK)
+	);
 	ClassDB::bind_method(
 			D_METHOD("paste_masked", "dst_pos", "src_buffer", "channels_mask", "mask_channel", "mask_value"),
 			&VoxelTool::_b_paste_masked

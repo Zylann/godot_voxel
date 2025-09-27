@@ -19,7 +19,12 @@
         "core/os/memory.cpp": [
             {
                 "markup": "TracyAlloc(mem, p_bytes + (prepad ? DATA_OFFSET : 0));",
-                "match_text": "void *mem = malloc(p_bytes + (prepad ? DATA_OFFSET : 0));",
+                "match_text": "mem = calloc(1, p_bytes + (prepad ? DATA_OFFSET : 0));",
+                "mode": "append"
+            },
+            {
+                "markup": "TracyAlloc(mem, p_bytes + (prepad ? DATA_OFFSET : 0));",
+                "match_text": "mem = malloc(p_bytes + (prepad ? DATA_OFFSET : 0));",
                 "mode": "append"
             },
             {
@@ -58,15 +63,14 @@
         ],
         "drivers/vulkan/rendering_device_driver_vulkan.cpp": [
             "RenderingDeviceDriverVulkan::framebuffer_create(",
-            "RenderingDeviceDriverVulkan::shader_compile_binary_from_spirv(",
-            "RenderingDeviceDriverVulkan::shader_create_from_bytecode(",
+            "RenderingDeviceDriverVulkan::shader_create_from_container(",
             {
                 "//": "RenderingDeviceDriverVulkan::render_pipeline_create(",
                 "match_text": "const VkPipelineVertexInputStateCreateInfo *vertex_input_state_create_info = nullptr;",
                 "mode": "prepend"
             }
         ],
-        "editor/editor_file_system.cpp": [
+        "editor/file_system/editor_file_system.cpp": [
             "void EditorFileSystem::_scan_filesystem(",
             "Error EditorFileSystem::_resource_import(",
             "void EditorFileSystem::reimport_files(",
@@ -131,7 +135,9 @@
             "void GodotPhysicsServer3D::step("
         ],
         "servers/rendering/rendering_device.cpp": [
-            "void RenderingDevice::swap_buffers("
+            "void RenderingDevice::swap_buffers(",
+            "RenderingDevice::shader_compile_spirv_from_source(",
+            "RenderingDevice::shader_create_from_spirv("
         ],
         "servers/rendering/renderer_rd/forward_clustered/render_forward_clustered.cpp": [
             "void RenderForwardClustered::_render_scene("

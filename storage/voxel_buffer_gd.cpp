@@ -299,8 +299,8 @@ namespace zylann::voxel::godot {
 const char *VoxelBuffer::CHANNEL_ID_HINT_STRING = "Type,Sdf,Color,Indices,Weights,Data5,Data6,Data7";
 static thread_local bool s_create_shared = false;
 
-Variant get_voxel_metadata(zylann::voxel::VoxelBuffer &vb, const Vector3i pos) {
-	VoxelMetadata *meta = vb.get_voxel_metadata(pos);
+Variant get_voxel_metadata(const zylann::voxel::VoxelBuffer &vb, const Vector3i pos) {
+	const VoxelMetadata *meta = vb.get_voxel_metadata(pos);
 	if (meta == nullptr) {
 		return Variant();
 	}
@@ -562,7 +562,7 @@ void VoxelBuffer::op_mul_value_f(float scale, VoxelBuffer::ChannelId channel) {
 	op_buffer_value_f(
 			*_buffer,
 			scale,
-			static_cast<zylann::voxel::VoxelBuffer::ChannelId>(channel),
+			static_cast<zylann::voxel::VoxelBuffer::ChannelId>(channel), //
 			[](float a, float b) { return a * b; }
 	);
 }
