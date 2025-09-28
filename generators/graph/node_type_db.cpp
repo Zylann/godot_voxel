@@ -210,6 +210,25 @@ bool NodeTypeDB::try_get_input_index_from_name(uint32_t type_id, const String &n
 	return true;
 }
 
+bool NodeTypeDB::try_get_output_index_from_name(
+		const uint32_t type_id,
+		const String &name,
+		uint32_t &out_output_index
+) const {
+	ZN_ASSERT_RETURN_V(type_id < _types.size(), false);
+	const NodeType &t = _types[type_id];
+
+	for (uint32_t i = 0; i < t.outputs.size(); ++i) {
+		const NodeType::Port &output = t.outputs[i];
+		if (output.name == name) {
+			out_output_index = i;
+			return true;
+		}
+	}
+
+	return false;
+}
+
 VoxelGraphFunction::Port make_port_from_io_node(const ProgramGraph::Node &node, const NodeType &type) {
 	ZN_ASSERT(type.category == CATEGORY_INPUT || type.category == CATEGORY_OUTPUT);
 

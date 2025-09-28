@@ -641,25 +641,6 @@ Variant VoxelGraphFunction::get_node_param(uint32_t node_id, int param_index) co
 	return node->params[param_index];
 }
 
-Variant VoxelGraphFunction::get_node_default_input(uint32_t node_id, int input_index) const {
-	const ProgramGraph::Node *node = _graph.try_get_node(node_id);
-	ERR_FAIL_COND_V(node == nullptr, Variant());
-	ERR_FAIL_INDEX_V(input_index, static_cast<int>(node->default_inputs.size()), Variant());
-	return node->default_inputs[input_index];
-}
-
-void VoxelGraphFunction::set_node_default_input(uint32_t node_id, int input_index, Variant value) {
-	ProgramGraph::Node *node = _graph.try_get_node(node_id);
-	ERR_FAIL_COND(node == nullptr);
-	ERR_FAIL_INDEX(input_index, static_cast<int>(node->default_inputs.size()));
-	Variant &defval = node->default_inputs[input_index];
-	if (defval != value) {
-		// node->autoconnect_default_inputs = false;
-		defval = value;
-		emit_changed();
-	}
-}
-
 static bool try_get_input_index_from_name(
 		const ProgramGraph::Node &node,
 		const String &name,
@@ -695,6 +676,75 @@ static bool try_get_input_index_from_name(
 	}
 
 	return false;
+}
+
+static bool try_get_output_index_from_name(
+		const ProgramGraph::Node &node,
+		const String &name,
+		const NodeTypeDB &type_db,
+		uint32_t &out_index
+) {
+	const VoxelGraphFunction::NodeTypeID type_id = static_cast<VoxelGraphFunction::NodeTypeID>(node.type_id);
+	if (type_db.try_get_output_index_from_name(type_id, name, out_index)) {
+		return true;
+	}
+
+	if (type_id == VoxelGraphFunction::NODE_FUNCTION) {
+		ZN_ASSERT_RETURN_V(node.params.size() >= 1, false);
+		Ref<VoxelGraphFunction> function = node.params[0];
+		ZN_ASSERT_RETURN_V(function.is_valid(), false);
+		Span<const VoxelGraphFunction::Port> output_defs = function->get_output_definitions();
+		for (unsigned int i = 0; i < output_defs.size(); ++i) {
+			if (output_defs[i].name == name) {
+				out_index = i;
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
+int VoxelGraphFunction::get_node_input_index(const uint32_t node_id, const String input_name) const {
+	ProgramGraph::Node *node = _graph.try_get_node(node_id);
+	ZN_ASSERT_RETURN_V(node != nullptr, -1);
+
+	uint32_t input_index;
+	ZN_ASSERT_RETURN_V(try_get_input_index_from_name(*node, input_name, NodeTypeDB::get_singleton(), input_index), -1);
+	ZN_ASSERT_RETURN_V(input_index < node->default_inputs.size(), -1);
+
+	return input_index;
+}
+
+int VoxelGraphFunction::get_node_output_index(const uint32_t node_id, const String output_name) const {
+	ProgramGraph::Node *node = _graph.try_get_node(node_id);
+	ZN_ASSERT_RETURN_V(node != nullptr, -1);
+
+	uint32_t output_index;
+	ZN_ASSERT_RETURN_V(
+			try_get_output_index_from_name(*node, output_name, NodeTypeDB::get_singleton(), output_index), -1
+	);
+
+	return output_index;
+}
+
+Variant VoxelGraphFunction::get_node_default_input(uint32_t node_id, int input_index) const {
+	const ProgramGraph::Node *node = _graph.try_get_node(node_id);
+	ERR_FAIL_COND_V(node == nullptr, Variant());
+	ERR_FAIL_INDEX_V(input_index, static_cast<int>(node->default_inputs.size()), Variant());
+	return node->default_inputs[input_index];
+}
+
+void VoxelGraphFunction::set_node_default_input(uint32_t node_id, int input_index, Variant value) {
+	ProgramGraph::Node *node = _graph.try_get_node(node_id);
+	ERR_FAIL_COND(node == nullptr);
+	ERR_FAIL_INDEX(input_index, static_cast<int>(node->default_inputs.size()));
+	Variant &defval = node->default_inputs[input_index];
+	if (defval != value) {
+		// node->autoconnect_default_inputs = false;
+		defval = value;
+		emit_changed();
+	}
 }
 
 void VoxelGraphFunction::set_node_default_input_by_name(
@@ -2007,6 +2057,9 @@ void VoxelGraphFunction::_bind_methods() {
 			D_METHOD("set_node_default_inputs_autoconnect", "node_id", "enabled"),
 			&Self::set_node_default_inputs_autoconnect
 	);
+
+	ClassDB::bind_method(D_METHOD("get_node_input_index", "node_id", "input_name"), &Self::get_node_input_index);
+	ClassDB::bind_method(D_METHOD("get_node_output_index", "node_id", "output_name"), &Self::get_node_output_index);
 
 	ClassDB::bind_method(D_METHOD("get_node_gui_position", "node_id"), &Self::get_node_gui_position);
 	ClassDB::bind_method(D_METHOD("set_node_gui_position", "node_id", "position"), &Self::set_node_gui_position);
