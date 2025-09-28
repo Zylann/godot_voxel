@@ -667,7 +667,7 @@ static bool try_get_input_index_from_name(
 		uint32_t &out_index
 ) {
 	const VoxelGraphFunction::NodeTypeID type_id = static_cast<VoxelGraphFunction::NodeTypeID>(node.type_id);
-	if (type_db.try_get_param_index_from_name(type_id, name, out_index)) {
+	if (type_db.try_get_input_index_from_name(type_id, name, out_index)) {
 		return true;
 	}
 

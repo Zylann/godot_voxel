@@ -175,6 +175,7 @@ void run_voxel_tests(const testing::TestOptions &options) {
 	VOXEL_TEST(test_voxel_graph_multiple_function_instances);
 	VOXEL_TEST(test_voxel_graph_issue783);
 	VOXEL_TEST(test_voxel_graph_broad_block);
+	VOXEL_TEST(test_voxel_graph_set_default_input_by_name);
 
 	print_line("------------ Voxel tests end -------------");
 }

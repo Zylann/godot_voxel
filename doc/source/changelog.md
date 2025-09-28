@@ -17,6 +17,7 @@ Dev 1.5.1 - `master`
 - Fixes
     - `VoxelTool`: `run_blocky_random_tick`: fixed uniform blocks were not picked up (PR #794)
     - `VoxelGeneratorGraph`: fixed `FastNoiseGradient` was incorrect when fractal type isn't `None` and using GPU
+    - `VoxelGraphFunction`: fixed `set_node_default_input_by_name` would match parameters but it should have been inputs
 
 
 1.5 - 16/09/2025 - tag `v1.5`

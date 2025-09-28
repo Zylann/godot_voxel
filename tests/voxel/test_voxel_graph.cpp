@@ -2583,4 +2583,62 @@ void test_voxel_graph_broad_block() {
 	ZN_TEST_ASSERT(sd > 0.f);
 }
 
+void test_voxel_graph_set_default_input_by_name() {
+	{
+		Ref<VoxelGraphFunction> func;
+		func.instantiate();
+
+		const uint32_t node_id = func->create_node(VoxelGraphFunction::NODE_SDF_PLANE);
+
+		const float expected_value = 32.0;
+		func->set_node_default_input_by_name(node_id, "height", expected_value);
+
+		const uint32_t input_index = 1;
+		const float value = func->get_node_default_input(node_id, input_index);
+		ZN_TEST_ASSERT(value == expected_value);
+	}
+	{
+		const StringName input0_name = "in0";
+		const StringName input1_name = "in1";
+
+		Ref<VoxelGraphFunction> sub_func;
+		sub_func.instantiate();
+		{
+			const uint32_t n_input0 = sub_func->create_node(VoxelGraphFunction::NODE_CUSTOM_INPUT);
+			const uint32_t n_input1 = sub_func->create_node(VoxelGraphFunction::NODE_CUSTOM_INPUT);
+			const uint32_t n_add = sub_func->create_node(VoxelGraphFunction::NODE_ADD);
+			const uint32_t n_output = sub_func->create_node(VoxelGraphFunction::NODE_OUTPUT_SDF);
+
+			sub_func->set_node_name(n_input0, input0_name);
+			sub_func->set_node_name(n_input1, input1_name);
+
+			sub_func->add_connection(n_input0, 0, n_add, 0);
+			sub_func->add_connection(n_input1, 0, n_add, 1);
+			sub_func->add_connection(n_add, 0, n_output, 0);
+
+			sub_func->auto_pick_inputs_and_outputs();
+		}
+
+		Ref<VoxelGraphFunction> func;
+		func.instantiate();
+		const uint32_t n_sub_func = func->create_function_node(sub_func);
+		ZN_TEST_ASSERT(n_sub_func != ProgramGraph::NULL_ID);
+
+		const float expected_value_0 = 32.0;
+		const float expected_value_1 = 64.0;
+
+		func->set_node_default_input_by_name(n_sub_func, input0_name, expected_value_0);
+		func->set_node_default_input_by_name(n_sub_func, input1_name, expected_value_1);
+
+		const uint32_t input0_index = 0;
+		const uint32_t input1_index = 1;
+
+		const float value0 = func->get_node_default_input(n_sub_func, input0_index);
+		const float value1 = func->get_node_default_input(n_sub_func, input1_index);
+
+		ZN_TEST_ASSERT(value0 == expected_value_0);
+		ZN_TEST_ASSERT(value1 == expected_value_1);
+	}
+}
+
 } // namespace zylann::voxel::tests

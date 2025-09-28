@@ -45,6 +45,7 @@ void test_voxel_graph_constant_reduction();
 void test_voxel_graph_multiple_function_instances();
 void test_voxel_graph_issue783();
 void test_voxel_graph_broad_block();
+void test_voxel_graph_set_default_input_by_name();
 
 } // namespace zylann::voxel::tests
 
