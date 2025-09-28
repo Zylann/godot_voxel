@@ -13,10 +13,12 @@ Dev 1.5.1 - `master`
 - `VoxelGeneratorGraph`: 
     - Editor: added `Add Node` item to the context menu
     - Added support for domain warp on `FastNoiseLite` and `ZN_FastNoiseLite` resources when using GPU (previously required to prepend `FastNoiseLiteGradient` noise)
+    - Added methods to get the index of node inputs and output by their name
 
 - Fixes
     - `VoxelTool`: `run_blocky_random_tick`: fixed uniform blocks were not picked up (PR #794)
     - `VoxelGeneratorGraph`: fixed `FastNoiseGradient` was incorrect when fractal type isn't `None` and using GPU
+    - `VoxelGraphFunction`: fixed `set_node_default_input_by_name` would match parameters but it should have been inputs
 
 
 1.5 - 16/09/2025 - tag `v1.5`
