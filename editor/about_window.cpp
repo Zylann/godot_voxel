@@ -258,7 +258,8 @@ VoxelAboutWindow::VoxelAboutWindow() {
 						"Cyberphinx\n"
 						"Mia (Tigxette)\n"
 						"geryan (OGeryan)\n"
-						"kevATin";
+						"kevATin\n"
+						"axel37";
 	{
 		Dictionary d;
 
