@@ -102,7 +102,7 @@ public:
 	void bake_sphere_bumpmap(Ref<Image> im, float ref_radius, float min_height, float max_height);
 	void bake_sphere_normalmap(Ref<Image> im, float ref_radius, float strength);
 
-	int raycast_down_sdf_approx(const Vector3i ray_origin, const int ray_end_y, const int stride);
+	float raycast_sdf_approx(const Vector3 ray_origin, const Vector3 ray_end, const float stride) const;
 
 	void generate_image_from_sdf(Ref<Image> image, const Transform3D transform, const Vector2 size);
 

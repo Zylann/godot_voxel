@@ -1764,32 +1764,42 @@ void VoxelGeneratorGraph::bake_sphere_normalmap(Ref<Image> im, float ref_radius,
 	for_chunks_2d(im->get_width(), im->get_height(), 32, pc);
 }
 
-struct MaybeHitY {
-	int y;
-	bool valid;
+struct MaybeRayHit {
+	float fraction = 0.f;
+	bool valid = false;
 };
 
-MaybeHitY raycast_vertical_sdf_approx_batch(
-		const int ray_origin_y,
+MaybeRayHit raycast_sdf_approx_batch(
+		const Vector3f from,
+		const Vector3f to,
+		Span<float> x_array,
 		Span<float> y_array,
-		Span<const Span<const float>> inputs_spans,
-		const int stride,
+		Span<float> z_array,
 		const pg::Runtime &runtime,
 		const unsigned int sdf_output_buffer_index,
 		pg::Runtime::State &state
 ) {
-	{
-		int y = ray_origin_y;
-		for (float &dst_y : y_array) {
-			dst_y = y;
-			y -= stride;
-		}
+	const int step_count = x_array.size();
+
+	for (int i = 0; i < step_count; ++i) {
+		const float a = static_cast<float>(i) / static_cast<float>(step_count);
+		const Vector3f pos = math::lerp(from, to, a);
+		x_array[i] = pos.x;
+		y_array[i] = pos.y;
+		z_array[i] = pos.z;
 	}
+
+	FixedArray<Span<const float>, 3> inputs;
+	inputs[0] = x_array;
+	inputs[1] = y_array;
+	inputs[2] = z_array;
+
+	Span<const Span<const float>> inputs_spans = to_span_const(inputs);
 
 	// Generate a group of values
 	runtime.generate_set(state, inputs_spans, false, nullptr);
 	const pg::Runtime::Buffer &sd_output_buffer = state.get_buffer(sdf_output_buffer_index);
-	ZN_ASSERT(y_array.size() == sd_output_buffer.size);
+	ZN_ASSERT(x_array.size() == sd_output_buffer.size);
 	Span<const float> out_sd_values(sd_output_buffer.data, sd_output_buffer.size);
 
 	// Analyse values
@@ -1803,23 +1813,27 @@ MaybeHitY raycast_vertical_sdf_approx_batch(
 
 	if (hit_index < out_sd_values.size()) {
 		// Found a hit
-		MaybeHitY hit;
-		hit.y = y_array[hit_index];
+		MaybeRayHit hit;
+		hit.fraction = static_cast<float>(hit_index) / static_cast<float>(step_count);
 		hit.valid = true;
 		return hit;
 	} else {
-		return MaybeHitY{ 0, false };
+		return MaybeRayHit{ 0.f, false };
 	}
 }
 
-int VoxelGeneratorGraph::raycast_down_sdf_approx(const Vector3i ray_origin, const int ray_end_y, const int stride) {
-	// Casts a ray downwards through integer voxel positions, until a voxel is found generating with SDF < 0, or until
-	// `ray_end_y` is reached. If a hit is found, return its Y coordinate. If no hit is found, or if the first evaluated
-	// voxel is a hit, returns `ray_end_y`.
-	// Use case: determining where trees are growing when generating a specific chunk, relying on base terrain noise
-	// determinism, without actually accessing neighbor chunks, and when base terrain uses 3D noise instead of a pure
-	// heightmap.
+float VoxelGeneratorGraph::raycast_sdf_approx(
+		const Vector3 ray_origin,
+		const Vector3 ray_end,
+		const float stride
+) const {
+	// Generates values along a ray to find the first one where SDF < 0.0, and return distance along the ray. If no hit
+	// is found, returns -1.0.
+	// This is an approximation: the error margin of the returned value will be up to the given stride.
+	// The longer the distance, the more expensive it is.
+	// The lower the stride, the more expensive and accurate it is.
 
+	// Possible optimizations if the ray is vertical:
 	// TODO Detect if the graph is purely 2D, and if it is, fast-track to a heightmap single evaluation?
 	// TODO Optimize 2D parts of the graph if possible
 	// TODO Use range analysis? Could be effective on such a restricted XZ range
@@ -1827,12 +1841,8 @@ int VoxelGeneratorGraph::raycast_down_sdf_approx(const Vector3i ray_origin, cons
 
 	ZN_PROFILE_SCOPE();
 
-	ZN_ASSERT_RETURN_V_MSG(stride >= 1, ray_end_y, "Stride is too low");
-	// For sanity
-	ZN_ASSERT_RETURN_V_MSG(stride < 256, ray_end_y, "Stride is too high");
-
-	// Only works downwards and non-null distances.
-	ZN_ASSERT_RETURN_V(ray_origin.y > ray_end_y, ray_end_y);
+	ZN_ASSERT_RETURN_V_MSG(stride >= 0.001f, -1.f, "Stride is too low");
+	ZN_ASSERT_RETURN_V_MSG(Math::is_finite(stride), -1.f, "Stride is invalid");
 
 	std::shared_ptr<const Runtime> runtime_ptr;
 	{
@@ -1840,67 +1850,71 @@ int VoxelGeneratorGraph::raycast_down_sdf_approx(const Vector3i ray_origin, cons
 		runtime_ptr = _runtime;
 	}
 
-	ZN_ASSERT_RETURN_V(runtime_ptr != nullptr, ray_end_y);
+	ZN_ASSERT_RETURN_V(runtime_ptr != nullptr, -1.f);
 	ZN_ASSERT_RETURN_V_MSG(
-			runtime_ptr->sdf_output_buffer_index != -1, ray_end_y, "This function only works with an SDF output."
+			runtime_ptr->sdf_output_buffer_index != -1, -1.f, "This function only works with an SDF output."
 	);
 	ZN_ASSERT_RETURN_V_MSG(
-			runtime_ptr->sdf_input_index == -1,
-			ray_end_y,
-			"This function doesn't support graphs that have an SDF input."
+			runtime_ptr->sdf_input_index == -1, -1.f, "This function doesn't support graphs that have an SDF input."
 	);
+
+	const Vector3 diff = ray_end - ray_origin;
+	const real_t distance_sq = diff.length_squared();
+	if (distance_sq == 0.0f) {
+		return -1.f;
+	}
+
+	const real_t distance = Math::sqrt(distance_sq);
+	const Vector3 direction = diff / distance;
+
+	const unsigned int step_count = Math::ceil(distance / stride);
 
 	// We'll compute batches of values instead of one by one, as the graph runtime prefers it.
 	// It's chosen such that the runtime could use SIMD.
-	static const unsigned int BATCH_COUNT = 16;
+	static const unsigned int BATCH_LENGTH = 16;
 
-	FixedArray<float, BATCH_COUNT> x_array;
-	FixedArray<float, BATCH_COUNT> y_array;
-	FixedArray<float, BATCH_COUNT> z_array;
+	const unsigned int batch_count = math::ceildiv(step_count, BATCH_LENGTH);
+	const real_t batch_distance = distance / batch_count;
 
-	const unsigned int distance = ray_origin.y - ray_end_y;
-	const unsigned int batch_count = math::ceildiv(distance, x_array.size());
-	// For sanity
-	ZN_ASSERT_RETURN_V(batch_count < 256, ray_end_y);
-
-	for (float &x : x_array) {
-		x = ray_origin.x;
-	}
-	for (float &z : z_array) {
-		z = ray_origin.z;
-	}
+	FixedArray<float, BATCH_LENGTH> x_array;
+	FixedArray<float, BATCH_LENGTH> y_array;
+	FixedArray<float, BATCH_LENGTH> z_array;
 
 	Cache &cache = get_tls_cache();
 
 	runtime_ptr->runtime.prepare_state(cache.state, x_array.size(), false);
 
-	FixedArray<Span<const float>, 3> inputs;
+	FixedArray<Span<float>, 3> inputs;
 	inputs[0] = to_span(x_array);
 	inputs[1] = to_span(y_array);
 	inputs[2] = to_span(z_array);
 
-	int batch_start_y = ray_origin.y;
-	for (unsigned int batch_index = 0; batch_index < batch_count;
-		 ++batch_index, batch_start_y -= stride * y_array.size()) {
-		const MaybeHitY hit = raycast_vertical_sdf_approx_batch(
-				batch_start_y,
+	for (unsigned int batch_index = 0; batch_index < batch_count; ++batch_index) {
+		const real_t from_distance = batch_index * batch_distance;
+		const real_t to_distance = math::min(from_distance + batch_distance, distance);
+
+		const Vector3 from = ray_origin + from_distance * direction;
+		const Vector3 to = ray_origin + to_distance * direction;
+
+		const MaybeRayHit hit = raycast_sdf_approx_batch(
+				to_vec3f(from),
+				to_vec3f(to),
+				to_span(x_array),
 				to_span(y_array),
-				to_span_const(inputs),
-				stride,
+				to_span(z_array),
 				runtime_ptr->runtime,
 				runtime_ptr->sdf_output_buffer_index,
 				cache.state
 		);
+
 		if (hit.valid) {
-			if (stride == 1) {
-				return hit.y;
-			}
-			// TODO Affine search
+			return Math::lerp(from_distance, to_distance, hit.fraction);
+			// TODO Affine search by doing hierarchical search? Or leave it to the caller for now?
 			// Evaluate voxels between hit.y and hit.y+stride
 		}
 	}
 
-	return ray_end_y;
+	return -1.f;
 }
 
 void VoxelGeneratorGraph::generate_image_from_sdf(Ref<Image> image, const Transform3D transform, const Vector2 size) {
@@ -2522,6 +2536,7 @@ void VoxelGeneratorGraph::_bind_methods() {
 	ClassDB::bind_method(
 			D_METHOD("generate_image_from_sdf", "im", "transform", "size"), &Self::generate_image_from_sdf
 	);
+	ClassDB::bind_method(D_METHOD("raycast_sdf_approx", "ray_origin", "ray_end", "stride"), &Self::raycast_sdf_approx);
 
 	ClassDB::bind_method(D_METHOD("debug_load_waves_preset"), &Self::debug_load_waves_preset);
 	ClassDB::bind_method(
