@@ -14,6 +14,7 @@ Dev 1.5.1 - `master`
     - Editor: added `Add Node` item to the context menu
     - Added support for domain warp on `FastNoiseLite` and `ZN_FastNoiseLite` resources when using GPU (previously required to prepend `FastNoiseLiteGradient` noise)
     - Added methods to get the index of node inputs and output by their name
+    - Added `generate_image_from_sdf`
 
 - Fixes
     - `VoxelTool`: `run_blocky_random_tick`: fixed uniform blocks were not picked up (PR #794)

@@ -1903,6 +1903,77 @@ int VoxelGeneratorGraph::raycast_down_sdf_approx(const Vector3i ray_origin, cons
 	return ray_end_y;
 }
 
+void VoxelGeneratorGraph::generate_image_from_sdf(Ref<Image> image, const Transform3D transform, const Vector2 size) {
+	ZN_ASSERT_RETURN(image.is_valid());
+	ZN_ASSERT_RETURN(!image->is_compressed());
+
+	const Vector2i resolution = image->get_size();
+	ZN_ASSERT_RETURN(resolution.x > 0 && resolution.y > 0);
+
+	std::shared_ptr<const Runtime> runtime_ptr;
+	{
+		RWLockRead rlock(_runtime_lock);
+		runtime_ptr = _runtime;
+	}
+	ZN_ASSERT_RETURN(runtime_ptr != nullptr);
+	ZN_ASSERT_RETURN_MSG(runtime_ptr->sdf_output_buffer_index != -1, "This function only works with an SDF output.");
+	ZN_ASSERT_RETURN_MSG(
+			runtime_ptr->sdf_input_index == -1, "This function doesn't support graphs that have an SDF input."
+	);
+
+	StdVector<float> x_buffer;
+	StdVector<float> y_buffer;
+	StdVector<float> z_buffer;
+
+	// TODO Candidate for temp allocator
+	x_buffer.resize(resolution.x);
+	y_buffer.resize(resolution.x);
+	z_buffer.resize(resolution.x);
+
+	const Vector2 half_size = size * 0.5;
+
+	const pg::Runtime &runtime = runtime_ptr->runtime;
+
+	Cache &cache = get_tls_cache();
+
+	runtime_ptr->runtime.prepare_state(cache.state, x_buffer.size(), false);
+
+	FixedArray<Span<const float>, 3> inputs;
+	inputs[0] = to_span(x_buffer);
+	inputs[1] = to_span(y_buffer);
+	inputs[2] = to_span(z_buffer);
+
+	Span<const Span<const float>> inputs_spans = to_span_const(inputs);
+
+	for (int yi = 0; yi < resolution.y; ++yi) {
+		// We add 0.5 to sample at the center of pixels
+		const float yf = (static_cast<float>(resolution.y - yi - 1) + 0.5f) / static_cast<float>(resolution.y);
+		const float ly = Math::lerp(-half_size.y, half_size.y, yf);
+
+		for (int xi = 0; xi < resolution.x; ++xi) {
+			const float xf = (static_cast<float>(xi) + 0.5f) / static_cast<float>(resolution.x);
+			const float lx = Math::lerp(-half_size.x, half_size.x, xf);
+
+			const Vector3 pos = transform.xform(Vector3(lx, ly, 0.0));
+
+			x_buffer[xi] = pos.x;
+			y_buffer[xi] = pos.y;
+			z_buffer[xi] = pos.z;
+		}
+
+		runtime.generate_set(cache.state, inputs_spans, false, nullptr);
+		const pg::Runtime::Buffer &sd_output_buffer = cache.state.get_buffer(runtime_ptr->sdf_output_buffer_index);
+		ZN_ASSERT_RETURN(x_buffer.size() == sd_output_buffer.size);
+		Span<const float> out_sd_values(sd_output_buffer.data, sd_output_buffer.size);
+
+		for (int xi = 0; xi < resolution.x; ++xi) {
+			const float sd = out_sd_values[xi];
+			const Color color(sd, sd, sd);
+			image->set_pixel(xi, yi, color);
+		}
+	}
+}
+
 #ifdef VOXEL_ENABLE_GPU
 
 bool VoxelGeneratorGraph::get_shader_source(ShaderSourceData &out_data) const {
@@ -2447,6 +2518,9 @@ void VoxelGeneratorGraph::_bind_methods() {
 	);
 	ClassDB::bind_method(
 			D_METHOD("bake_sphere_normalmap", "im", "ref_radius", "strength"), &Self::bake_sphere_normalmap
+	);
+	ClassDB::bind_method(
+			D_METHOD("generate_image_from_sdf", "im", "transform", "size"), &Self::generate_image_from_sdf
 	);
 
 	ClassDB::bind_method(D_METHOD("debug_load_waves_preset"), &Self::debug_load_waves_preset);

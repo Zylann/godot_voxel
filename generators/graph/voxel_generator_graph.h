@@ -104,6 +104,8 @@ public:
 
 	int raycast_down_sdf_approx(const Vector3i ray_origin, const int ray_end_y, const int stride);
 
+	void generate_image_from_sdf(Ref<Image> image, const Transform3D transform, const Vector2 size);
+
 	// Internal
 
 	pg::CompilationResult compile(bool debug);
