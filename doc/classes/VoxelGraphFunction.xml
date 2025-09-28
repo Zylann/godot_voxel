@@ -123,11 +123,27 @@
 				Note: the order in which IDs are returned is not guaranteed to be the same after nodes are added or removed.
 			</description>
 		</method>
+		<method name="get_node_input_index" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="node_id" type="int" />
+			<param index="1" name="input_name" type="String" />
+			<description>
+				Gets the input index of a node from the input's name.
+			</description>
+		</method>
 		<method name="get_node_name" qualifiers="const">
 			<return type="StringName" />
 			<param index="0" name="node_id" type="int" />
 			<description>
 				Gets the user-defined name of the node.
+			</description>
+		</method>
+		<method name="get_node_output_index" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="node_id" type="int" />
+			<param index="1" name="output_name" type="String" />
+			<description>
+				Gets the output index of a node from the output's name.
 			</description>
 		</method>
 		<method name="get_node_param" qualifiers="const">

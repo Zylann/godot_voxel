@@ -36,7 +36,8 @@
 			<return type="void" />
 			<param index="0" name="src_pos" type="Vector3i" />
 			<param index="1" name="dst_buffer" type="VoxelBuffer" />
-			<param index="2" name="channels_mask" type="int" />
+			<param index="2" name="channels_mask" type="int" default="255" />
+			<param index="3" name="with_metadata" type="bool" default="true" />
 			<description>
 				Copies voxels in a box and stores them in the passed buffer. The source format will overwrite the destination.
 				[code]src_pos[/code] is the lowest corner of the box, and its size is determined by the size of [code]dst_buffer[/code].
@@ -143,7 +144,7 @@
 			<return type="void" />
 			<param index="0" name="dst_pos" type="Vector3i" />
 			<param index="1" name="src_buffer" type="VoxelBuffer" />
-			<param index="2" name="channels_mask" type="int" />
+			<param index="2" name="channels_mask" type="int" default="255" />
 			<description>
 				Paste voxels in a box from the given buffer at a specific location.
 				[code]dst_pos[/code] is the lowest corner of the box, and its size is determined by the size of [code]src_buffer[/code].
