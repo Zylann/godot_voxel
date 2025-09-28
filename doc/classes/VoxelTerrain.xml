@@ -153,6 +153,8 @@
 		</member>
 		<member name="debug_draw_volume_bounds" type="bool" setter="debug_set_draw_flag" getter="debug_get_draw_flag" default="false">
 		</member>
+		<member name="debug_draw_voxel_metadata" type="bool" setter="debug_set_draw_flag" getter="debug_get_draw_flag" default="false">
+		</member>
 		<member name="generate_collisions" type="bool" setter="set_generate_collisions" getter="get_generate_collisions" default="true">
 			Enables the generation of collision shapes using the classic physics engine. Use this feature if you need realistic or non-trivial collisions or physics.
 			Note 1: you also need [VoxelViewer] to request collisions, otherwise they won't generate.
@@ -203,7 +205,11 @@
 	<constants>
 		<constant name="DEBUG_DRAW_VOLUME_BOUNDS" value="0" enum="DebugDrawFlag">
 		</constant>
-		<constant name="DEBUG_DRAW_FLAGS_COUNT" value="2" enum="DebugDrawFlag">
+		<constant name="DEBUG_DRAW_VISUAL_AND_COLLISION_BLOCKS" value="1" enum="DebugDrawFlag">
+		</constant>
+		<constant name="DEBUG_DRAW_VOXEL_METADATA" value="2" enum="DebugDrawFlag">
+		</constant>
+		<constant name="DEBUG_DRAW_FLAGS_COUNT" value="3" enum="DebugDrawFlag">
 		</constant>
 	</constants>
 </class>
