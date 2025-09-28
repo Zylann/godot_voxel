@@ -1827,9 +1827,9 @@ int VoxelGeneratorGraph::raycast_down_sdf_approx(const Vector3i ray_origin, cons
 
 	ZN_PROFILE_SCOPE();
 
-	ZN_ASSERT_RETURN_V(stride >= 1, ray_end_y);
+	ZN_ASSERT_RETURN_V_MSG(stride >= 1, ray_end_y, "Stride is too low");
 	// For sanity
-	ZN_ASSERT_RETURN_V(stride < 256, ray_end_y);
+	ZN_ASSERT_RETURN_V_MSG(stride < 256, ray_end_y, "Stride is too high");
 
 	// Only works downwards and non-null distances.
 	ZN_ASSERT_RETURN_V(ray_origin.y > ray_end_y, ray_end_y);
