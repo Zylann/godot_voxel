@@ -1908,7 +1908,7 @@ float VoxelGeneratorGraph::raycast_sdf_approx(
 		);
 
 		if (hit.valid) {
-			return Math::lerp(from_distance, to_distance, hit.fraction);
+			return Math::lerp(from_distance, to_distance, static_cast<real_t>(hit.fraction));
 			// TODO Affine search by doing hierarchical search? Or leave it to the caller for now?
 			// Evaluate voxels between hit.y and hit.y+stride
 		}
@@ -1961,12 +1961,12 @@ void VoxelGeneratorGraph::generate_image_from_sdf(Ref<Image> image, const Transf
 
 	for (int yi = 0; yi < resolution.y; ++yi) {
 		// We add 0.5 to sample at the center of pixels
-		const float yf = (static_cast<float>(resolution.y - yi - 1) + 0.5f) / static_cast<float>(resolution.y);
-		const float ly = Math::lerp(-half_size.y, half_size.y, yf);
+		const real_t yf = (static_cast<real_t>(resolution.y - yi - 1) + 0.5) / static_cast<real_t>(resolution.y);
+		const real_t ly = Math::lerp(-half_size.y, half_size.y, yf);
 
 		for (int xi = 0; xi < resolution.x; ++xi) {
-			const float xf = (static_cast<float>(xi) + 0.5f) / static_cast<float>(resolution.x);
-			const float lx = Math::lerp(-half_size.x, half_size.x, xf);
+			const real_t xf = (static_cast<real_t>(xi) + 0.5) / static_cast<real_t>(resolution.x);
+			const real_t lx = Math::lerp(-half_size.x, half_size.x, xf);
 
 			const Vector3 pos = transform.xform(Vector3(lx, ly, 0.0));
 
