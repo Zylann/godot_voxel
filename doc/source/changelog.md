@@ -15,6 +15,7 @@ Dev 1.5.1 - `master`
     - Added support for domain warp on `FastNoiseLite` and `ZN_FastNoiseLite` resources when using GPU (previously required to prepend `FastNoiseLiteGradient` noise)
     - Added methods to get the index of node inputs and output by their name
     - Added `generate_image_from_sdf`
+    - Added `raycast_sdf_approx` to find where surface is from a ray
 
 - Fixes
     - `VoxelTool`: `run_blocky_random_tick`: fixed uniform blocks were not picked up (PR #794)
