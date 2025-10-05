@@ -12,8 +12,14 @@ namespace zylann::godot {
 
 void free_rendering_device_rid(RenderingDevice &rd, RID rid) {
 	ZN_DSTACK();
+
 #if defined(ZN_GODOT)
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR <= 5
 	rd.free(rid);
+#else
+	rd.free_rid(rid);
+#endif
+
 #elif defined(ZN_GODOT_EXTENSION)
 	rd.free_rid(rid);
 #endif
