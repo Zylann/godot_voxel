@@ -149,7 +149,7 @@ void run_blocky_random_tick(
 		bool (*callback)(void *, Vector3i, int64_t)
 ) {
 	ERR_FAIL_COND(batch_count <= 0);
-	ERR_FAIL_COND(voxel_count < 0);
+	ERR_FAIL_COND(voxel_count <= 0);
 	ERR_FAIL_COND(!math::is_valid_size(voxel_box.size));
 	ERR_FAIL_COND(callback == nullptr);
 
@@ -159,6 +159,8 @@ void run_blocky_random_tick(
 	const Box3i block_box = voxel_box.downscaled(block_size);
 
 	const int block_count = voxel_count / batch_count;
+	ERR_FAIL_COND(block_count < 1);
+
 	// const int bs_mask = map.get_block_size_mask();
 	const VoxelBuffer::ChannelId channel = VoxelBuffer::CHANNEL_TYPE;
 
