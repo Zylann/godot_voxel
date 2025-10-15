@@ -18,7 +18,9 @@ Dev 1.5.1 - `master`
     - Added `raycast_sdf_approx` to find where surface is from a ray
 
 - Fixes
-    - `VoxelTool`: `run_blocky_random_tick`: fixed uniform blocks were not picked up (PR #794)
+    - `VoxelTool`: 
+        `run_blocky_random_tick`: fixed uniform blocks were not picked up (PR #794)
+        `run_blocky_random_tick`: will now run over the remainder if voxel count is not divisible by batch size
     - `VoxelGeneratorGraph`: fixed `FastNoiseGradient` was incorrect when fractal type isn't `None` and using GPU
     - `VoxelGraphFunction`: fixed `set_node_default_input_by_name` would match parameters but it should have been inputs
 

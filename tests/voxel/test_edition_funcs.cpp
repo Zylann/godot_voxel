@@ -12,9 +12,7 @@
 
 namespace zylann::voxel::tests {
 
-void test_run_blocky_random_tick() {
-	const Box3i voxel_box(Vector3i(-24, -23, -22), Vector3i(64, 40, 40));
-
+void test_run_blocky_random_tick_with_params(const Box3i voxel_box, const int voxel_count, const int batch_count) {
 	// Create library with tickable voxels
 	Ref<VoxelBlockyLibrary> library;
 	library.instantiate();
@@ -69,22 +67,23 @@ void test_run_blocky_random_tick() {
 	}
 
 	struct Callback {
-		Box3i voxel_box;
+		const Box3i voxel_box;
 		Box3i pick_box;
 		bool first_pick = true;
 		bool ok = true;
 		int tickable_id = -1;
 
-		Callback(Box3i p_voxel_box, int p_tickable_id) : voxel_box(p_voxel_box), tickable_id(p_tickable_id) {}
+		Callback(const Box3i p_voxel_box, const int p_tickable_id) :
+				voxel_box(p_voxel_box), tickable_id(p_tickable_id) {}
 
-		bool exec(Vector3i pos, int block_id) {
+		bool exec(const Vector3i pos, const int block_id) {
 			if (ok) {
 				ok = _exec(pos, block_id);
 			}
 			return ok;
 		}
 
-		inline bool _exec(Vector3i pos, int block_id) {
+		inline bool _exec(const Vector3i pos, const int block_id) {
 			ZN_TEST_ASSERT_V(block_id == tickable_id, false);
 			ZN_TEST_ASSERT_V(voxel_box.contains(pos), false);
 			if (first_pick) {
@@ -102,7 +101,14 @@ void test_run_blocky_random_tick() {
 	RandomPCG random;
 	random.seed(131183);
 	zylann::voxel::run_blocky_random_tick(
-			data, voxel_box, **library, random, 1000, 4, &cb, [](void *self, Vector3i pos, int64_t val) {
+			data,
+			voxel_box,
+			**library,
+			random,
+			voxel_count,
+			batch_count,
+			&cb,
+			[](void *self, Vector3i pos, int64_t val) {
 				Callback *cb = (Callback *)self;
 				return cb->exec(pos, val);
 			}
@@ -125,6 +131,11 @@ void test_run_blocky_random_tick() {
 		ZN_TEST_ASSERT(Math::abs(nd) <= error_margin);
 		ZN_TEST_ASSERT(Math::abs(pd) <= error_margin);
 	}
+}
+
+void test_run_blocky_random_tick() {
+	test_run_blocky_random_tick_with_params(Box3i(Vector3i(-24, -23, -22), Vector3i(64, 40, 40)), 1000, 4);
+	test_run_blocky_random_tick_with_params(Box3i(Vector3i(1, 2, 3), Vector3i(10, 10, 10)), 500, 800);
 }
 
 void test_box_blur() {

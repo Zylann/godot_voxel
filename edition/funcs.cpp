@@ -158,7 +158,12 @@ void run_blocky_random_tick(
 	const unsigned int block_size = data.get_block_size();
 	const Box3i block_box = voxel_box.downscaled(block_size);
 
-	const int block_count = voxel_count / batch_count;
+	const int block_count = math::ceildiv(voxel_count, batch_count);
+
+	// Handle remainder in case voxel count is not a multiple of batch count
+	const int batch_rem = voxel_count % batch_count;
+	const int last_batch_count = batch_rem > 0 ? batch_rem : batch_count;
+
 	// const int bs_mask = map.get_block_size_mask();
 	const VoxelBuffer::ChannelId channel = VoxelBuffer::CHANNEL_TYPE;
 
@@ -166,6 +171,7 @@ void run_blocky_random_tick(
 		uint64_t value;
 		Vector3i rpos;
 	};
+	// TODO Candidate for temp allocator
 	static thread_local StdVector<Pick> picks;
 	picks.reserve(batch_count);
 
@@ -187,7 +193,7 @@ void run_blocky_random_tick(
 	const blocky::BakedLibrary &lib_data = lib.get_baked_data();
 
 	// Choose blocks at random
-	for (int bi = 0; bi < block_count; ++bi) {
+	for (int block_index = 0; block_index < block_count; ++block_index) {
 		const Vector3i block_pos = block_box.position + L::urand_vec3i(random, block_box.size);
 
 		const Vector3i block_origin = data.block_to_voxel(block_pos);
@@ -219,7 +225,9 @@ void run_blocky_random_tick(
 				Box3i local_voxel_box = voxel_box.clipped(block_voxel_box);
 				local_voxel_box.position -= block_origin;
 				const float volume_ratio = Vector3iUtil::get_volume_u64(local_voxel_box.size) / block_volume;
-				const int local_batch_count = Math::ceil(batch_count * volume_ratio);
+				const int local_batch_count_full_block =
+						(block_index == block_count - 1 ? last_batch_count : batch_count);
+				const int local_batch_count = Math::ceil(local_batch_count_full_block * volume_ratio);
 
 				// Choose a bunch of voxels at random within the block.
 				// Batching this way improves performance a little by reducing block lookups.
