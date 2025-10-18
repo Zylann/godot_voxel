@@ -17,7 +17,7 @@ int VoxelBlockSerializer::serialize_to_stream_peer(
 	ERR_FAIL_COND_V(voxel_buffer.is_null(), 0);
 	ERR_FAIL_COND_V(peer.is_null(), 0);
 
-	if (compress_mode != CompressedData::COMPRESSION_NONE) {
+	if (compress_mode != COMPRESSION_NONE) {
 		BlockSerializer::SerializeResult res = BlockSerializer::serialize_and_compress(
 				voxel_buffer->get_buffer(), static_cast<CompressedData::Compression>(compress_mode)
 		);
