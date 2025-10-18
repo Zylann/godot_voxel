@@ -205,7 +205,7 @@ void register_image_nodes(Span<NodeType> types) {
 		NodeType::Param coord_mode_param("coordinate_mode", Variant::INT, COORD_PIXEL);
 		coord_mode_param.enum_items.push_back("Pixels");
 		coord_mode_param.enum_items.push_back("UNorm");
-		coord_mode_param.enum_items.push_back("SNorm");
+		// coord_mode_param.enum_items.push_back("SNorm");
 		t.params.push_back(coord_mode_param);
 
 		t.params.push_back(NodeType::Param("filter", Variant::INT, FILTER_NEAREST));
