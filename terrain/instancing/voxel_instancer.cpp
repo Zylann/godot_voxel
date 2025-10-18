@@ -829,8 +829,10 @@ void VoxelInstancer::set_up_mode(UpMode mode) {
 		return;
 	}
 	_up_mode = mode;
-	for (auto it = _layers.begin(); it != _layers.end(); ++it) {
-		regenerate_layer(it->first, false);
+	if (_parent != nullptr && is_inside_tree()) {
+		for (auto it = _layers.begin(); it != _layers.end(); ++it) {
+			regenerate_layer(it->first, false);
+		}
 	}
 }
 
@@ -1331,7 +1333,7 @@ void VoxelInstancer::on_mesh_block_enter(
 	create_render_blocks(render_grid_position, lod_index, surface_arrays, vertex_range_end, index_range_end);
 }
 
-void VoxelInstancer::on_mesh_block_exit(Vector3i render_grid_position, unsigned int lod_index) {
+void VoxelInstancer::on_mesh_block_exit(const Vector3i render_grid_position, const unsigned int lod_index) {
 	if (lod_index >= _lods.size()) {
 		// The instancer doesn't handle large LODs
 		return;
@@ -1512,10 +1514,12 @@ VoxelInstancer::SceneInstance VoxelInstancer::create_scene_instance(
 			scene_item.get_scene().is_null(),
 			instance,
 			String("{0} ({1}) is missing an attached scene in {2} ({3})")
-					.format(varray(VoxelInstanceLibrarySceneItem::get_class_static(),
+					.format(
+							varray(VoxelInstanceLibrarySceneItem::get_class_static(),
 								   scene_item.get_item_name(),
-								   VoxelInstancer::get_class_static()),
-							get_path())
+								   VoxelInstancer::get_class_static(),
+								   get_path())
+					)
 	);
 	Node *root = scene_item.get_scene()->instantiate();
 	ERR_FAIL_COND_V(root == nullptr, instance);
@@ -1766,10 +1770,12 @@ void VoxelInstancer::update_scene_block_from_transforms(
 	ERR_FAIL_COND_MSG(
 			scene_item.get_scene().is_null(),
 			String("{0} ({1}) is missing an attached scene in {2} ({3})")
-					.format(varray(VoxelInstanceLibrarySceneItem::get_class_static(),
+					.format(
+							varray(VoxelInstanceLibrarySceneItem::get_class_static(),
 								   scene_item.get_item_name(),
-								   VoxelInstancer::get_class_static()),
-							get_path())
+								   VoxelInstancer::get_class_static(),
+								   get_path())
+					)
 	);
 
 	const int data_block_size_po2 = _parent_data_block_size_po2;
@@ -3236,7 +3242,8 @@ PackedStringArray VoxelInstancer::_get_configuration_warnings() const {
 
 void VoxelInstancer::get_configuration_warnings(PackedStringArray &warnings) const {
 	if (_parent == nullptr) {
-		warnings.append(ZN_TTR("This node must be child of a {0}.").format(varray(VoxelLodTerrain::get_class_static()))
+		warnings.append(
+				ZN_TTR("This node must be child of a {0}.").format(varray(VoxelLodTerrain::get_class_static()))
 		);
 	}
 	if (_library.is_null()) {

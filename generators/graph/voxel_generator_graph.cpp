@@ -7,6 +7,7 @@
 #include "../../util/godot/classes/image.h"
 #include "../../util/godot/classes/object.h"
 #include "../../util/godot/core/array.h"
+#include "../../util/godot/core/packed_arrays.h"
 #include "../../util/godot/core/string.h"
 #include "../../util/hash_funcs.h"
 #include "../../util/io/log.h"
@@ -983,7 +984,7 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelGenerator::Voxel
 }
 
 bool VoxelGeneratorGraph::generate_broad_block(VoxelGenerator::VoxelQueryData input) {
-	// This is a reduced version of whan `generate_block` does already, so it can be used before scheduling GPU work.
+	// This is a reduced version of what `generate_block` does already, so it can be used before scheduling GPU work.
 	// If range analysis and SDF clipping finds that we don't need to generate the full block, we can get away with the
 	// broad result. If any channel cannot be determined this way, we have to perform full generation.
 
@@ -1003,18 +1004,12 @@ bool VoxelGeneratorGraph::generate_broad_block(VoxelGenerator::VoxelQueryData in
 	const VoxelBuffer::ChannelId sdf_channel = VoxelBuffer::CHANNEL_SDF;
 	const Vector3i origin = input.origin_in_voxels;
 
-	// TODO This may be shared across the module
-	// Storing voxels is lossy on some depth configurations. They use normalized SDF,
-	// so we must scale the values to make better use of the offered resolution
-	const VoxelBuffer::Depth sdf_channel_depth = out_buffer.get_channel_depth(sdf_channel);
-	const float sdf_scale = VoxelBuffer::get_sdf_quantization_scale(sdf_channel_depth);
-
 	const VoxelBuffer::ChannelId type_channel = VoxelBuffer::CHANNEL_TYPE;
 
 	const int stride = 1 << input.lod;
 
 	// Clip threshold must be higher for higher lod indexes because distances for one sampled voxel are also larger
-	const float clip_threshold = sdf_scale * _sdf_clip_threshold * stride;
+	const float clip_threshold = _sdf_clip_threshold * stride;
 
 	Cache &cache = get_tls_cache();
 
@@ -1044,7 +1039,7 @@ bool VoxelGeneratorGraph::generate_broad_block(VoxelGenerator::VoxelQueryData in
 
 	bool sdf_is_air = true;
 	if (sdf_output_buffer_index != -1) {
-		const math::Interval sdf_range = cache.state.get_range(sdf_output_buffer_index) * sdf_scale;
+		const math::Interval sdf_range = cache.state.get_range(sdf_output_buffer_index);
 
 		if (sdf_range.min > clip_threshold && sdf_range.max > clip_threshold) {
 			out_buffer.fill_f(air_sdf, sdf_channel);
@@ -1452,6 +1447,14 @@ int VoxelGeneratorGraph::get_sdf_output_port_address() const {
 	return _runtime->sdf_output_buffer_index;
 }
 
+bool VoxelGeneratorGraph::has_texture_output() const {
+	RWLockRead rlock(_runtime_lock);
+	if (_runtime == nullptr) {
+		return false;
+	}
+	return _runtime->single_texture_output_index != -1 || _runtime->weight_outputs_count > 0;
+}
+
 inline Vector3 get_3d_pos_from_panorama_uv(Vector2 uv) {
 	const float xa = -math::TAU<real_t> * uv.x - math::PI<real_t>;
 	const float ya = math::PI<real_t> * (uv.y - 0.5);
@@ -1759,6 +1762,230 @@ void VoxelGeneratorGraph::bake_sphere_normalmap(Ref<Image> im, float ref_radius,
 
 	ProcessChunk pc(cache.state, **im, *runtime_ptr, strength, ref_radius);
 	for_chunks_2d(im->get_width(), im->get_height(), 32, pc);
+}
+
+struct MaybeRayHit {
+	float fraction = 0.f;
+	bool valid = false;
+};
+
+MaybeRayHit raycast_sdf_approx_batch(
+		const Vector3f from,
+		const Vector3f to,
+		Span<float> x_array,
+		Span<float> y_array,
+		Span<float> z_array,
+		const pg::Runtime &runtime,
+		const unsigned int sdf_output_buffer_index,
+		pg::Runtime::State &state
+) {
+	const int step_count = x_array.size();
+
+	for (int i = 0; i < step_count; ++i) {
+		const float a = static_cast<float>(i) / static_cast<float>(step_count);
+		const Vector3f pos = math::lerp(from, to, a);
+		x_array[i] = pos.x;
+		y_array[i] = pos.y;
+		z_array[i] = pos.z;
+	}
+
+	FixedArray<Span<const float>, 3> inputs;
+	inputs[0] = x_array;
+	inputs[1] = y_array;
+	inputs[2] = z_array;
+
+	Span<const Span<const float>> inputs_spans = to_span_const(inputs);
+
+	// Generate a group of values
+	runtime.generate_set(state, inputs_spans, false, nullptr);
+	const pg::Runtime::Buffer &sd_output_buffer = state.get_buffer(sdf_output_buffer_index);
+	ZN_ASSERT(x_array.size() == sd_output_buffer.size);
+	Span<const float> out_sd_values(sd_output_buffer.data, sd_output_buffer.size);
+
+	// Analyse values
+	unsigned int hit_index = 0;
+	for (const float sd : out_sd_values) {
+		if (sd < 0.f) {
+			break;
+		}
+		++hit_index;
+	}
+
+	if (hit_index < out_sd_values.size()) {
+		// Found a hit
+		MaybeRayHit hit;
+		hit.fraction = static_cast<float>(hit_index) / static_cast<float>(step_count);
+		hit.valid = true;
+		return hit;
+	} else {
+		return MaybeRayHit{ 0.f, false };
+	}
+}
+
+float VoxelGeneratorGraph::raycast_sdf_approx(
+		const Vector3 ray_origin,
+		const Vector3 ray_end,
+		const float stride
+) const {
+	// Generates values along a ray to find the first one where SDF < 0.0, and return distance along the ray. If no hit
+	// is found, returns -1.0.
+	// This is an approximation: the error margin of the returned value will be up to the given stride.
+	// The longer the distance, the more expensive it is.
+	// The lower the stride, the more expensive and accurate it is.
+
+	// Possible optimizations if the ray is vertical:
+	// TODO Detect if the graph is purely 2D, and if it is, fast-track to a heightmap single evaluation?
+	// TODO Optimize 2D parts of the graph if possible
+	// TODO Use range analysis? Could be effective on such a restricted XZ range
+	// TODO Allow rational stride, for LOD use cases?
+
+	ZN_PROFILE_SCOPE();
+
+	ZN_ASSERT_RETURN_V_MSG(stride >= 0.001f, -1.f, "Stride is too low");
+	ZN_ASSERT_RETURN_V_MSG(Math::is_finite(stride), -1.f, "Stride is invalid");
+
+	std::shared_ptr<const Runtime> runtime_ptr;
+	{
+		RWLockRead rlock(_runtime_lock);
+		runtime_ptr = _runtime;
+	}
+
+	ZN_ASSERT_RETURN_V(runtime_ptr != nullptr, -1.f);
+	ZN_ASSERT_RETURN_V_MSG(
+			runtime_ptr->sdf_output_buffer_index != -1, -1.f, "This function only works with an SDF output."
+	);
+	ZN_ASSERT_RETURN_V_MSG(
+			runtime_ptr->sdf_input_index == -1, -1.f, "This function doesn't support graphs that have an SDF input."
+	);
+
+	const Vector3 diff = ray_end - ray_origin;
+	const real_t distance_sq = diff.length_squared();
+	if (distance_sq == 0.0f) {
+		return -1.f;
+	}
+
+	const real_t distance = Math::sqrt(distance_sq);
+	const Vector3 direction = diff / distance;
+
+	const unsigned int step_count = Math::ceil(distance / stride);
+
+	// We'll compute batches of values instead of one by one, as the graph runtime prefers it.
+	// It's chosen such that the runtime could use SIMD.
+	static const unsigned int BATCH_LENGTH = 16;
+
+	const unsigned int batch_count = math::ceildiv(step_count, BATCH_LENGTH);
+	const real_t batch_distance = distance / batch_count;
+
+	FixedArray<float, BATCH_LENGTH> x_array;
+	FixedArray<float, BATCH_LENGTH> y_array;
+	FixedArray<float, BATCH_LENGTH> z_array;
+
+	Cache &cache = get_tls_cache();
+
+	runtime_ptr->runtime.prepare_state(cache.state, x_array.size(), false);
+
+	FixedArray<Span<float>, 3> inputs;
+	inputs[0] = to_span(x_array);
+	inputs[1] = to_span(y_array);
+	inputs[2] = to_span(z_array);
+
+	for (unsigned int batch_index = 0; batch_index < batch_count; ++batch_index) {
+		const real_t from_distance = batch_index * batch_distance;
+		const real_t to_distance = math::min(from_distance + batch_distance, distance);
+
+		const Vector3 from = ray_origin + from_distance * direction;
+		const Vector3 to = ray_origin + to_distance * direction;
+
+		const MaybeRayHit hit = raycast_sdf_approx_batch(
+				to_vec3f(from),
+				to_vec3f(to),
+				to_span(x_array),
+				to_span(y_array),
+				to_span(z_array),
+				runtime_ptr->runtime,
+				runtime_ptr->sdf_output_buffer_index,
+				cache.state
+		);
+
+		if (hit.valid) {
+			return Math::lerp(from_distance, to_distance, static_cast<real_t>(hit.fraction));
+			// TODO Affine search by doing hierarchical search? Or leave it to the caller for now?
+			// Evaluate voxels between hit.y and hit.y+stride
+		}
+	}
+
+	return -1.f;
+}
+
+void VoxelGeneratorGraph::generate_image_from_sdf(Ref<Image> image, const Transform3D transform, const Vector2 size) {
+	ZN_ASSERT_RETURN(image.is_valid());
+	ZN_ASSERT_RETURN(!image->is_compressed());
+
+	const Vector2i resolution = image->get_size();
+	ZN_ASSERT_RETURN(resolution.x > 0 && resolution.y > 0);
+
+	std::shared_ptr<const Runtime> runtime_ptr;
+	{
+		RWLockRead rlock(_runtime_lock);
+		runtime_ptr = _runtime;
+	}
+	ZN_ASSERT_RETURN(runtime_ptr != nullptr);
+	ZN_ASSERT_RETURN_MSG(runtime_ptr->sdf_output_buffer_index != -1, "This function only works with an SDF output.");
+	ZN_ASSERT_RETURN_MSG(
+			runtime_ptr->sdf_input_index == -1, "This function doesn't support graphs that have an SDF input."
+	);
+
+	StdVector<float> x_buffer;
+	StdVector<float> y_buffer;
+	StdVector<float> z_buffer;
+
+	// TODO Candidate for temp allocator
+	x_buffer.resize(resolution.x);
+	y_buffer.resize(resolution.x);
+	z_buffer.resize(resolution.x);
+
+	const Vector2 half_size = size * 0.5;
+
+	const pg::Runtime &runtime = runtime_ptr->runtime;
+
+	Cache &cache = get_tls_cache();
+
+	runtime_ptr->runtime.prepare_state(cache.state, x_buffer.size(), false);
+
+	FixedArray<Span<const float>, 3> inputs;
+	inputs[0] = to_span(x_buffer);
+	inputs[1] = to_span(y_buffer);
+	inputs[2] = to_span(z_buffer);
+
+	Span<const Span<const float>> inputs_spans = to_span_const(inputs);
+
+	for (int yi = 0; yi < resolution.y; ++yi) {
+		// We add 0.5 to sample at the center of pixels
+		const real_t yf = (static_cast<real_t>(resolution.y - yi - 1) + 0.5) / static_cast<real_t>(resolution.y);
+		const real_t ly = Math::lerp(-half_size.y, half_size.y, yf);
+
+		for (int xi = 0; xi < resolution.x; ++xi) {
+			const real_t xf = (static_cast<real_t>(xi) + 0.5) / static_cast<real_t>(resolution.x);
+			const real_t lx = Math::lerp(-half_size.x, half_size.x, xf);
+
+			const Vector3 pos = transform.xform(Vector3(lx, ly, 0.0));
+
+			x_buffer[xi] = pos.x;
+			y_buffer[xi] = pos.y;
+			z_buffer[xi] = pos.z;
+		}
+
+		runtime.generate_set(cache.state, inputs_spans, false, nullptr);
+		const pg::Runtime::Buffer &sd_output_buffer = cache.state.get_buffer(runtime_ptr->sdf_output_buffer_index);
+		ZN_ASSERT_RETURN(x_buffer.size() == sd_output_buffer.size);
+		Span<const float> out_sd_values(sd_output_buffer.data, sd_output_buffer.size);
+
+		for (int xi = 0; xi < resolution.x; ++xi) {
+			const float sd = out_sd_values[xi];
+			const Color color(sd, sd, sd);
+			image->set_pixel(xi, yi, color);
+		}
+	}
 }
 
 #ifdef VOXEL_ENABLE_GPU
@@ -2306,6 +2533,10 @@ void VoxelGeneratorGraph::_bind_methods() {
 	ClassDB::bind_method(
 			D_METHOD("bake_sphere_normalmap", "im", "ref_radius", "strength"), &Self::bake_sphere_normalmap
 	);
+	ClassDB::bind_method(
+			D_METHOD("generate_image_from_sdf", "im", "transform", "size"), &Self::generate_image_from_sdf
+	);
+	ClassDB::bind_method(D_METHOD("raycast_sdf_approx", "ray_origin", "ray_end", "stride"), &Self::raycast_sdf_approx);
 
 	ClassDB::bind_method(D_METHOD("debug_load_waves_preset"), &Self::debug_load_waves_preset);
 	ClassDB::bind_method(

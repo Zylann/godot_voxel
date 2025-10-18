@@ -27,8 +27,15 @@ public:
 	void set_voxel_metadata(Vector3i pos, Variant meta) override;
 	Variant get_voxel_metadata(Vector3i pos) const override;
 
-	void copy(Vector3i pos, VoxelBuffer &dst, uint8_t channels_mask) const override;
+	void copy(
+			const Vector3i pos,
+			VoxelBuffer &dst,
+			const uint8_t p_channels_mask,
+			const bool with_metadata
+	) const override;
+
 	void paste(Vector3i pos, const VoxelBuffer &src, uint8_t channels_mask) override;
+
 	void paste_masked(
 			Vector3i pos,
 			Ref<godot::VoxelBuffer> p_voxels,

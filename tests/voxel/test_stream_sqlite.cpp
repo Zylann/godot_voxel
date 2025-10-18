@@ -1,6 +1,7 @@
 #include "test_stream_sqlite.h"
 #include "../../streams/sqlite/block_location.h"
 #include "../../streams/sqlite/voxel_stream_sqlite.h"
+#include "../../streams/voxel_block_serializer_gd.h"
 #include "../../util/containers/container_funcs.h"
 #include "../../util/godot/core/random_pcg.h"
 #include "../../util/math/conv.h"
@@ -15,9 +16,10 @@ namespace zylann::voxel::tests {
 
 namespace {
 void test_voxel_stream_sqlite_basic(
-		bool with_key_cache,
-		VoxelStreamSQLite::CoordinateFormat coordinate_format,
-		Vector3i block_position
+		const bool with_key_cache,
+		const VoxelStreamSQLite::CoordinateFormat coordinate_format,
+		const Vector3i block_position,
+		const godot::VoxelBlockSerializer::Compression compression
 ) {
 	zylann::testing::TestDirectory test_dir;
 	ZN_TEST_ASSERT(test_dir.is_valid());
@@ -35,6 +37,7 @@ void test_voxel_stream_sqlite_basic(
 		stream->set_key_cache_enabled(with_key_cache);
 		stream->set_database_path(database_path);
 		stream->set_preferred_coordinate_format(coordinate_format);
+		stream->set_compression_mode(compression);
 		// Save block
 		{
 			VoxelStreamSQLite::VoxelQueryData q{ vb1, vb1_pos, 0, VoxelStream::RESULT_ERROR };
@@ -59,6 +62,7 @@ void test_voxel_stream_sqlite_basic(
 		stream.instantiate();
 		stream->set_key_cache_enabled(with_key_cache);
 		stream->set_database_path(database_path);
+		stream->set_compression_mode(compression);
 		{
 			VoxelBuffer loaded_vb1(VoxelBuffer::ALLOCATOR_DEFAULT);
 			VoxelStreamSQLite::VoxelQueryData q{ loaded_vb1, vb1_pos, 0, VoxelStream::RESULT_ERROR };
@@ -72,35 +76,84 @@ void test_voxel_stream_sqlite_basic(
 
 void test_voxel_stream_sqlite_basic() {
 	test_voxel_stream_sqlite_basic(
-			false, VoxelStreamSQLite::COORDINATE_FORMAT_INT64_X16_Y16_Z16_L16, Vector3i(1, 2, -3)
+			false,
+			VoxelStreamSQLite::COORDINATE_FORMAT_INT64_X16_Y16_Z16_L16,
+			Vector3i(1, 2, -3),
+			godot::VoxelBlockSerializer::Compression::COMPRESSION_LZ4
 	);
 	test_voxel_stream_sqlite_basic(
-			true, VoxelStreamSQLite::COORDINATE_FORMAT_INT64_X16_Y16_Z16_L16, Vector3i(1, 2, -3)
+			true,
+			VoxelStreamSQLite::COORDINATE_FORMAT_INT64_X16_Y16_Z16_L16,
+			Vector3i(1, 2, -3),
+			godot::VoxelBlockSerializer::Compression::COMPRESSION_LZ4
 	);
 	test_voxel_stream_sqlite_basic(
-			false, VoxelStreamSQLite::COORDINATE_FORMAT_INT64_X19_Y19_Z19_L7, Vector3i(1, 2, -3)
-	);
-	test_voxel_stream_sqlite_basic(true, VoxelStreamSQLite::COORDINATE_FORMAT_INT64_X19_Y19_Z19_L7, Vector3i(1, 2, -3));
-	test_voxel_stream_sqlite_basic(false, VoxelStreamSQLite::COORDINATE_FORMAT_STRING_CSD, Vector3i(1, 2, -3));
-	test_voxel_stream_sqlite_basic(true, VoxelStreamSQLite::COORDINATE_FORMAT_STRING_CSD, Vector3i(1, 2, -3));
-	test_voxel_stream_sqlite_basic(
-			false, VoxelStreamSQLite::COORDINATE_FORMAT_BLOB80_X25_Y25_Z25_L5, Vector3i(1, 2, -3)
+			false,
+			VoxelStreamSQLite::COORDINATE_FORMAT_INT64_X19_Y19_Z19_L7,
+			Vector3i(1, 2, -3),
+			godot::VoxelBlockSerializer::Compression::COMPRESSION_LZ4
 	);
 	test_voxel_stream_sqlite_basic(
-			true, VoxelStreamSQLite::COORDINATE_FORMAT_BLOB80_X25_Y25_Z25_L5, Vector3i(1, 2, -3)
-	);
-
-	// Extras with large coordinates
-	test_voxel_stream_sqlite_basic(
-			false, VoxelStreamSQLite::COORDINATE_FORMAT_INT64_X19_Y19_Z19_L7, Vector3i(100'000, 150'000, -200'000)
+			true,
+			VoxelStreamSQLite::COORDINATE_FORMAT_INT64_X19_Y19_Z19_L7,
+			Vector3i(1, 2, -3),
+			godot::VoxelBlockSerializer::Compression::COMPRESSION_LZ4
 	);
 	test_voxel_stream_sqlite_basic(
-			false, VoxelStreamSQLite::COORDINATE_FORMAT_STRING_CSD, Vector3i(10'000'000, -20'000'000, 30'000'000)
+			false,
+			VoxelStreamSQLite::COORDINATE_FORMAT_STRING_CSD,
+			Vector3i(1, 2, -3),
+			godot::VoxelBlockSerializer::Compression::COMPRESSION_LZ4
+	);
+	test_voxel_stream_sqlite_basic(
+			true,
+			VoxelStreamSQLite::COORDINATE_FORMAT_STRING_CSD,
+			Vector3i(1, 2, -3),
+			godot::VoxelBlockSerializer::Compression::COMPRESSION_LZ4
+	);
+	test_voxel_stream_sqlite_basic(
+			true,
+			VoxelStreamSQLite::COORDINATE_FORMAT_STRING_CSD,
+			Vector3i(1, 2, -3),
+			godot::VoxelBlockSerializer::Compression::COMPRESSION_ZSTD
+	);
+	test_voxel_stream_sqlite_basic(
+			true,
+			VoxelStreamSQLite::COORDINATE_FORMAT_STRING_CSD,
+			Vector3i(1, 2, -3),
+			godot::VoxelBlockSerializer::Compression::COMPRESSION_NONE
 	);
 	test_voxel_stream_sqlite_basic(
 			false,
 			VoxelStreamSQLite::COORDINATE_FORMAT_BLOB80_X25_Y25_Z25_L5,
-			Vector3i(10'000'000, -11'000'000, 12'000'000)
+			Vector3i(1, 2, -3),
+			godot::VoxelBlockSerializer::Compression::COMPRESSION_LZ4
+	);
+	test_voxel_stream_sqlite_basic(
+			true,
+			VoxelStreamSQLite::COORDINATE_FORMAT_BLOB80_X25_Y25_Z25_L5,
+			Vector3i(1, 2, -3),
+			godot::VoxelBlockSerializer::Compression::COMPRESSION_LZ4
+	);
+
+	// Extras with large coordinates
+	test_voxel_stream_sqlite_basic(
+			false,
+			VoxelStreamSQLite::COORDINATE_FORMAT_INT64_X19_Y19_Z19_L7,
+			Vector3i(100'000, 150'000, -200'000),
+			godot::VoxelBlockSerializer::Compression::COMPRESSION_LZ4
+	);
+	test_voxel_stream_sqlite_basic(
+			false,
+			VoxelStreamSQLite::COORDINATE_FORMAT_STRING_CSD,
+			Vector3i(10'000'000, -20'000'000, 30'000'000),
+			godot::VoxelBlockSerializer::Compression::COMPRESSION_LZ4
+	);
+	test_voxel_stream_sqlite_basic(
+			false,
+			VoxelStreamSQLite::COORDINATE_FORMAT_BLOB80_X25_Y25_Z25_L5,
+			Vector3i(10'000'000, -11'000'000, 12'000'000),
+			godot::VoxelBlockSerializer::Compression::COMPRESSION_LZ4
 	);
 }
 

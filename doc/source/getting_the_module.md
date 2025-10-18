@@ -172,7 +172,7 @@ Working builds used to be available on Github Actions (as "Mono Builds"). Unfort
 - Modules add new classes to the API which are not present in the official SDK. It would require to create SDKs for every combination of modules you want to use and upload them to Nuget, which isn't practical.
 - You could revert to the latest official SDK available on Nuget, but to access module APIs you would have to use workarounds such as `obj.Get(string)`, `Set(string)` and `Call(string, args)` in code, which is hard to use, inefficient and terrible to maintain.
 
-To obtain a working version, you have to generate the SDK yourself and use a local Nuget repository instead of the official one. Follow the steps described in the [Godot Documentation for C#](https://docs.godotengine.org/en/stable/contributing/development/compiling/compiling_with_dotnet.html).
+To obtain a working version, you have to generate the SDK yourself and use a local Nuget repository instead of the official one. Follow the steps described in the [Godot Documentation for C#](https://docs.godotengine.org/en/stable/engine_details/development/compiling/compiling_with_dotnet.html).
 
 
 ### Ownership checks

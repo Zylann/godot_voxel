@@ -20,6 +20,8 @@ After changing properties, you must call [update_generator](FastNoise2.md#i_upda
 Type                                                                        | Name                                                         | Default                         
 --------------------------------------------------------------------------- | ------------------------------------------------------------ | --------------------------------
 [CellularDistanceFunction](FastNoise2.md#enumerations)                      | [cellular_distance_function](#i_cellular_distance_function)  | CELLULAR_DISTANCE_EUCLIDEAN (0) 
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)        | [cellular_index0](#i_cellular_index0)                        | 0                               
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)        | [cellular_index1](#i_cellular_index1)                        | 1                               
 [float](https://docs.godotengine.org/en/stable/classes/class_float.html)    | [cellular_jitter](#i_cellular_jitter)                        | 1.0                             
 [CellularReturnType](FastNoise2.md#enumerations)                            | [cellular_return_type](#i_cellular_return_type)              | CELLULAR_RETURN_INDEX_0 (0)     
 [String](https://docs.godotengine.org/en/stable/classes/class_string.html)  | [encoded_node_tree](#i_encoded_node_tree)                    | ""                              
@@ -64,6 +66,7 @@ enum **NoiseType**:
 - <span id="i_TYPE_VALUE"></span>**TYPE_VALUE** = **3**
 - <span id="i_TYPE_CELLULAR"></span>**TYPE_CELLULAR** = **4**
 - <span id="i_TYPE_ENCODED_NODE_TREE"></span>**TYPE_ENCODED_NODE_TREE** = **5**
+- <span id="i_TYPE_CELLULAR_VALUE"></span>**TYPE_CELLULAR_VALUE** = **6**
 
 enum **FractalType**: 
 
@@ -109,6 +112,14 @@ enum **SIMDLevel**:
 ### [CellularDistanceFunction](FastNoise2.md#enumerations)<span id="i_cellular_distance_function"></span> **cellular_distance_function** = CELLULAR_DISTANCE_EUCLIDEAN (0)
 
 *(This property has no documentation)*
+
+### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_cellular_index0"></span> **cellular_index0** = 0
+
+N-th closest cell used in cellular distance or value calculations.
+
+### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_cellular_index1"></span> **cellular_index1** = 1
+
+N-th closest cell used as second component in some cellular distance calculations.
 
 ### [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_cellular_jitter"></span> **cellular_jitter** = 1.0
 
@@ -216,4 +227,4 @@ Gets the name of SIMD level.
 
 This method must be called after you change properties, so they can take effect.
 
-_Generated on May 15, 2025_
+_Generated on Aug 09, 2025_

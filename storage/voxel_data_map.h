@@ -75,32 +75,45 @@ public:
 	float get_voxel_f(Vector3i pos, unsigned int c) const;
 	void set_voxel_f(real_t value, Vector3i pos, unsigned int c);
 
-	inline void copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsigned int channels_mask) const {
-		copy(min_pos, dst_buffer, channels_mask, nullptr, nullptr);
+	inline void copy(
+			const Vector3i min_pos,
+			VoxelBuffer &dst_buffer,
+			const unsigned int channels_mask,
+			const bool with_metadata
+	) const {
+		copy(min_pos, dst_buffer, channels_mask, nullptr, nullptr, with_metadata);
 	}
 
 	// Gets a copy of all voxels in the area starting at min_pos having the same size as dst_buffer.
 	void copy(
-			Vector3i min_pos,
+			const Vector3i min_pos,
 			VoxelBuffer &dst_buffer,
-			unsigned int channels_mask,
+			const unsigned int channels_mask,
 			void *callback_data,
-			void (*gen_func)(void *, VoxelBuffer &, Vector3i)
+			void (*gen_func)(void *, VoxelBuffer &, Vector3i),
+			const bool with_metadata
 	) const;
 
-	void paste(Vector3i min_pos, const VoxelBuffer &src_buffer, unsigned int channels_mask, bool create_new_blocks);
+	void paste(
+			const Vector3i min_pos,
+			const VoxelBuffer &src_buffer,
+			const unsigned int channels_mask,
+			const bool create_new_blocks,
+			const bool with_metadata
+	);
 
 	void paste_masked(
-			Vector3i min_pos,
+			const Vector3i min_pos,
 			const VoxelBuffer &src_buffer,
-			unsigned int channels_mask,
-			bool use_src_mask,
-			uint8_t src_mask_channel,
-			uint64_t src_mask_value,
-			bool use_dst_mask,
-			uint8_t dst_mask_channel,
-			Span<const int32_t> dst_writable_values,
-			bool create_new_blocks
+			const unsigned int channels_mask,
+			const bool use_src_mask,
+			const uint8_t src_mask_channel,
+			const uint64_t src_mask_value,
+			const bool use_dst_mask,
+			const uint8_t dst_mask_channel,
+			const Span<const int32_t> dst_writable_values,
+			const bool create_new_blocks,
+			const bool with_metadata
 	);
 
 	// Moves the given buffer into a block of the map. The buffer is referenced, no copy is made.

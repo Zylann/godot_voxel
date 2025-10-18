@@ -82,9 +82,16 @@ struct GetPassInputBlock {
 
 } // namespace
 
-void VoxelToolMultipassGenerator::copy(Vector3i pos, VoxelBuffer &dst, uint8_t channels_mask) const {
+void VoxelToolMultipassGenerator::copy(
+		const Vector3i pos,
+		VoxelBuffer &dst,
+		const uint8_t channels_mask,
+		const bool with_metadata
+) const {
 	PassInput pass_input = _pass_input;
-	copy_from_chunked_storage(dst, pos, _block_size_po2, channels_mask, &get_pass_input_block_r, &pass_input);
+	copy_from_chunked_storage(
+			dst, pos, _block_size_po2, channels_mask, &get_pass_input_block_r, &pass_input, with_metadata
+	);
 }
 
 void VoxelToolMultipassGenerator::paste(Vector3i pos, const VoxelBuffer &src, uint8_t channels_mask) {

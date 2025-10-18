@@ -81,7 +81,8 @@ void test_region_file() {
 		ZN_TEST_ASSERT(open_error == OK);
 
 		// Save block
-		const Error save_error = region_file.save_block(Vector3i(1, 2, 3), voxel_buffer);
+		const Error save_error =
+				region_file.save_block(Vector3i(1, 2, 3), voxel_buffer, CompressedData::COMPRESSION_LZ4);
 		ZN_TEST_ASSERT(save_error == OK);
 
 		// Read back
@@ -135,7 +136,7 @@ void test_region_file() {
 			generator.generate(voxel_buffer);
 
 			// Save block
-			const Error save_error = region_file.save_block(pos, voxel_buffer);
+			const Error save_error = region_file.save_block(pos, voxel_buffer, CompressedData::COMPRESSION_LZ4);
 			ZN_TEST_ASSERT(save_error == OK);
 
 			// Note, the same position can occur twice, we just overwrite

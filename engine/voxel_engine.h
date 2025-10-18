@@ -274,6 +274,9 @@ public:
 
 	Stats get_stats() const;
 
+	int get_thread_count() const;
+	void set_thread_count(uint32_t count);
+
 #ifdef VOXEL_ENABLE_GPU
 	bool has_rendering_device() const {
 		return _gpu_task_runner.has_rendering_device();

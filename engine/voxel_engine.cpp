@@ -407,4 +407,12 @@ VoxelEngine::Stats VoxelEngine::get_stats() const {
 	return s;
 }
 
+int VoxelEngine::get_thread_count() const {
+	return _general_thread_pool.get_thread_count();
+}
+
+void VoxelEngine::set_thread_count(uint32_t count) {
+	_general_thread_pool.set_thread_count(count);
+}
+
 } // namespace zylann::voxel

@@ -42,6 +42,12 @@
 				[/codeblock]
 			</description>
 		</method>
+		<method name="get_thread_count" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the number of threads currently used internally by the [code]ThreadedTaskRunner[/code].
+			</description>
+		</method>
 		<method name="get_threaded_graphics_resource_building_enabled" qualifiers="const">
 			<return type="bool" />
 			<description>
@@ -95,6 +101,13 @@
 			<param index="0" name="options" type="Dictionary" />
 			<description>
 				Runs internal unit tests. This function is only available if the voxel engine is compiled with `voxel_tests=true`.
+			</description>
+		</method>
+		<method name="set_thread_count">
+			<return type="void" />
+			<param index="0" name="count" type="int" />
+			<description>
+				Sets the number of threads to be used internally by the [code]ThreadedTaskRunner[/code]. Setting this can cause lagging, and it might take some time until the number of threads actually matches the given value.
 			</description>
 		</method>
 	</methods>

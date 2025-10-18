@@ -23,10 +23,11 @@ enum Compression {
 	// All following bytes are compressed data using LZ4 defaults.
 	// This is the fastest compression format.
 	COMPRESSION_LZ4 = 2,
-	COMPRESSION_COUNT = 3
+	COMPRESSION_ZSTD = 3,
+	COMPRESSION_COUNT = 4
 };
 
-bool compress(Span<const uint8_t> src, StdVector<uint8_t> &dst, Compression comp);
+bool compress(Span<const uint8_t> src, StdVector<uint8_t> &dst, const Compression comp);
 bool decompress(Span<const uint8_t> src, StdVector<uint8_t> &dst);
 
 } // namespace zylann::voxel::CompressedData

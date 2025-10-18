@@ -193,6 +193,8 @@ public:
 	void get_expression_node_inputs(uint32_t node_id, StdVector<StdString> &out_names) const;
 	void set_expression_node_inputs(uint32_t node_id, PackedStringArray input_names);
 
+	int get_node_input_index(const uint32_t node_id, String input_name) const;
+	int get_node_output_index(const uint32_t node_id, const String output_name) const;
 	Variant get_node_default_input(uint32_t node_id, int input_index) const;
 	void set_node_default_input(uint32_t node_id, int input_index, Variant value);
 	void set_node_default_input_by_name(const uint32_t node_id, const String &input_name, const Variant &value);
@@ -366,6 +368,7 @@ private:
 	bool _automatic_io_setup_enabled = true;
 	StdVector<Port> _inputs;
 	StdVector<Port> _outputs;
+	StdVector<ObjectID> _subresources; // Can contain duplicates
 #ifdef TOOLS_ENABLED
 	// Godot doesn't make a difference between a resource newly created in the inspector, an existing empty one, or one
 	// created from script... It is necessary to know that in order to load a "hello world" graph in the editor when

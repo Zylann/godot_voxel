@@ -16,11 +16,12 @@ namespace zylann::voxel {
 
 void copy_from_chunked_storage(
 		VoxelBuffer &dst_buffer,
-		Vector3i min_pos,
-		unsigned int block_size_po2,
-		uint32_t channels_mask,
+		const Vector3i min_pos,
+		const unsigned int block_size_po2,
+		const uint32_t channels_mask,
 		const VoxelBuffer *(*get_block_func)(void *, Vector3i),
-		void *get_block_func_ctx
+		void *get_block_func_ctx,
+		const bool with_metadata
 ) {
 	ZN_ASSERT_RETURN_MSG(Vector3iUtil::get_volume_u64(dst_buffer.get_size()) > 0, "The area to copy is empty");
 	ZN_ASSERT_RETURN(get_block_func != nullptr);
@@ -47,6 +48,14 @@ void copy_from_chunked_storage(
 						// Note: copy_from takes care of clamping the area if it's on an edge
 						dst_buffer.copy_channel_from(
 								*src_buffer, min_pos - src_block_origin, src_buffer->get_size(), Vector3i(), channel
+						);
+					}
+
+					if (with_metadata) {
+						dst_buffer.copy_voxel_metadata_in_area(
+								*src_buffer,
+								Box3i::from_min_max(min_pos - src_block_origin, src_buffer->get_size()),
+								Vector3i()
 						);
 					}
 
@@ -149,7 +158,12 @@ void run_blocky_random_tick(
 	const unsigned int block_size = data.get_block_size();
 	const Box3i block_box = voxel_box.downscaled(block_size);
 
-	const int block_count = voxel_count / batch_count;
+	const int block_count = math::ceildiv(voxel_count, batch_count);
+
+	// Handle remainder in case voxel count is not a multiple of batch count
+	const int batch_rem = voxel_count % batch_count;
+	const int last_batch_count = batch_rem > 0 ? batch_rem : batch_count;
+
 	// const int bs_mask = map.get_block_size_mask();
 	const VoxelBuffer::ChannelId channel = VoxelBuffer::CHANNEL_TYPE;
 
@@ -157,6 +171,7 @@ void run_blocky_random_tick(
 		uint64_t value;
 		Vector3i rpos;
 	};
+	// TODO Candidate for temp allocator
 	static thread_local StdVector<Pick> picks;
 	picks.reserve(batch_count);
 
@@ -178,7 +193,7 @@ void run_blocky_random_tick(
 	const blocky::BakedLibrary &lib_data = lib.get_baked_data();
 
 	// Choose blocks at random
-	for (int bi = 0; bi < block_count; ++bi) {
+	for (int block_index = 0; block_index < block_count; ++block_index) {
 		const Vector3i block_pos = block_box.position + L::urand_vec3i(random, block_box.size);
 
 		const Vector3i block_origin = data.block_to_voxel(block_pos);
@@ -199,7 +214,7 @@ void run_blocky_random_tick(
 					const uint64_t v = voxels.get_voxel(0, 0, 0, channel);
 					if (lib_data.has_model(v)) {
 						const blocky::BakedModel &vt = lib_data.models[v];
-						if (vt.is_random_tickable) {
+						if (!vt.is_random_tickable) {
 							// Skip whole block
 							continue;
 						}
@@ -210,7 +225,9 @@ void run_blocky_random_tick(
 				Box3i local_voxel_box = voxel_box.clipped(block_voxel_box);
 				local_voxel_box.position -= block_origin;
 				const float volume_ratio = Vector3iUtil::get_volume_u64(local_voxel_box.size) / block_volume;
-				const int local_batch_count = Math::ceil(batch_count * volume_ratio);
+				const int local_batch_count_full_block =
+						(block_index == block_count - 1 ? last_batch_count : batch_count);
+				const int local_batch_count = Math::ceil(local_batch_count_full_block * volume_ratio);
 
 				// Choose a bunch of voxels at random within the block.
 				// Batching this way improves performance a little by reducing block lookups.
@@ -301,18 +318,35 @@ bool indices_to_bitarray_u16(Span<const int32_t> indices, DynamicBitset &bitarra
 	}
 #endif
 
-	int32_t max_value = 0;
+	int32_t max_value = -1;
 	for (const int32_t i : indices) {
 		max_value = math::max(i, max_value);
 	}
 
-	bitarray.resize_no_init(indices.size() / 8);
+	bitarray.resize_no_init(max_value + 1);
 
 	for (const int32_t i : indices) {
 		bitarray.set(i);
 	}
 
 	return true;
+}
+
+void indices_to_bitarray(Span<const uint8_t> indices, DynamicBitset &bitarray) {
+	if (indices.size() == 0) {
+		bitarray.clear();
+	}
+
+	uint8_t max_value = 0;
+	for (const uint8_t i : indices) {
+		max_value = math::max(i, max_value);
+	}
+
+	bitarray.resize_no_init(max_value + 1);
+
+	for (const uint8_t i : indices) {
+		bitarray.set(i);
+	}
 }
 
 } // namespace zylann::voxel

@@ -7,6 +7,7 @@
 #include "../../util/godot/classes/file_access.h"
 #include "../../util/math/color8.h"
 #include "../../util/math/vector3i.h"
+#include "../compressed_data.h"
 
 namespace zylann::voxel {
 
@@ -84,7 +85,7 @@ public:
 	const RegionFormat &get_format() const;
 
 	Error load_block(Vector3i position, VoxelBuffer &out_block);
-	Error save_block(Vector3i position, VoxelBuffer &block);
+	Error save_block(Vector3i position, VoxelBuffer &block, const CompressedData::Compression compression_mode);
 
 	unsigned int get_header_block_count() const;
 	bool has_block(Vector3i position) const;

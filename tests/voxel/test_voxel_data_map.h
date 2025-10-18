@@ -5,6 +5,7 @@ namespace zylann::voxel::tests {
 
 void test_voxel_data_map_paste_fill();
 void test_voxel_data_map_paste_mask();
+void test_voxel_data_map_paste_dst_mask();
 void test_voxel_data_map_copy();
 
 } // namespace zylann::voxel::tests

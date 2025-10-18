@@ -1115,29 +1115,48 @@ bool prepare_triangles(
 	// The mesh can't be closed if it has less than 4 vertices
 	ZN_ASSERT_RETURN_V(vertices.size() >= 4, false);
 
-	// The mesh can't be closed if it has less than 4 triangles
-	ZN_ASSERT_RETURN_V(indices.size() >= 12, false);
-	ZN_ASSERT_RETURN_V(indices.size() % 3 == 0, false);
+	if (indices.size() != 0) {
+		// The mesh can't be closed if it has less than 4 triangles
+		ZN_ASSERT_RETURN_V(indices.size() >= 12, false);
+		ZN_ASSERT_RETURN_V(indices.size() % 3 == 0, false);
 
-	triangles.resize(indices.size() / 3);
+		triangles.resize(indices.size() / 3);
 
-	for (size_t ti = 0; ti < triangles.size(); ++ti) {
-		const int ii = ti * 3;
-		const int i0 = indices[ii];
-		const int i1 = indices[ii + 1];
-		const int i2 = indices[ii + 2];
+		for (size_t ti = 0; ti < triangles.size(); ++ti) {
+			const int ii = ti * 3;
+			const int i0 = indices[ii];
+			const int i1 = indices[ii + 1];
+			const int i2 = indices[ii + 2];
 
-		Triangle &t = triangles[ti];
-		t.v1 = to_vec3f(vertices[i0]);
-		t.v2 = to_vec3f(vertices[i1]);
-		t.v3 = to_vec3f(vertices[i2]);
+			Triangle &t = triangles[ti];
+			t.v1 = to_vec3f(vertices[i0]);
+			t.v2 = to_vec3f(vertices[i1]);
+			t.v3 = to_vec3f(vertices[i2]);
 
-		// Hack to make sure all points are distinct
-		// const Vector3f midp = (t.v1 + t.v2 + t.v3) / 3.f;
-		// const float shrink_amount = 0.0001f;
-		// t.v1 = math::lerp(t.v1, midp, shrink_amount);
-		// t.v2 = math::lerp(t.v2, midp, shrink_amount);
-		// t.v3 = math::lerp(t.v3, midp, shrink_amount);
+			// Hack to make sure all points are distinct
+			// const Vector3f midp = (t.v1 + t.v2 + t.v3) / 3.f;
+			// const float shrink_amount = 0.0001f;
+			// t.v1 = math::lerp(t.v1, midp, shrink_amount);
+			// t.v2 = math::lerp(t.v2, midp, shrink_amount);
+			// t.v3 = math::lerp(t.v3, midp, shrink_amount);
+		}
+
+	} else {
+		// Non-indexed mesh
+
+		// The mesh can't be closed if it has less than 4 triangles
+		ZN_ASSERT_RETURN_V(vertices.size() >= 12, false);
+		ZN_ASSERT_RETURN_V(vertices.size() % 3 == 0, false);
+
+		triangles.resize(vertices.size() / 3);
+
+		for (size_t ti = 0; ti < triangles.size(); ++ti) {
+			const int i0 = ti * 3;
+			Triangle &t = triangles[ti];
+			t.v1 = to_vec3f(vertices[i0 + 0]);
+			t.v2 = to_vec3f(vertices[i0 + 1]);
+			t.v3 = to_vec3f(vertices[i0 + 2]);
+		}
 	}
 
 	Vector3f min_pos = to_vec3f(vertices[0]);

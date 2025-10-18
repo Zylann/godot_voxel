@@ -151,4 +151,4 @@ Gets whether the resource contains baked SDF data.
 
 Gets whether a asynchronous baking operation is pending.
 
-_Generated on May 15, 2025_
+_Generated on Aug 09, 2025_

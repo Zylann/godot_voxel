@@ -223,7 +223,7 @@ void VoxelStreamRegionFiles::_save_block(VoxelBuffer &voxel_buffer, Vector3i blo
 
 	CachedRegion *cache = open_region(region_pos, lod, true);
 	ERR_FAIL_COND_MSG(cache == nullptr, "Could not save region file data");
-	ERR_FAIL_COND(cache->region.save_block(block_rpos, voxel_buffer) != OK);
+	ERR_FAIL_COND(cache->region.save_block(block_rpos, voxel_buffer, _compression_mode) != OK);
 }
 
 String VoxelStreamRegionFiles::get_directory() const {

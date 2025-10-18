@@ -102,6 +102,10 @@ public:
 	void bake_sphere_bumpmap(Ref<Image> im, float ref_radius, float min_height, float max_height);
 	void bake_sphere_normalmap(Ref<Image> im, float ref_radius, float strength);
 
+	float raycast_sdf_approx(const Vector3 ray_origin, const Vector3 ray_end, const float stride) const;
+
+	void generate_image_from_sdf(Ref<Image> image, const Transform3D transform, const Vector2 size);
+
 	// Internal
 
 	pg::CompilationResult compile(bool debug);
@@ -121,6 +125,8 @@ public:
 
 	bool try_get_output_port_address(ProgramGraph::PortLocation port, uint32_t &out_address) const;
 	int get_sdf_output_port_address() const;
+
+	bool has_texture_output() const;
 
 #ifdef VOXEL_ENABLE_GPU
 	// GPU support

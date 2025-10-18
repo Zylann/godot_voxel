@@ -436,6 +436,10 @@ struct NodePair {
 	uint32_t node1_id; // On node1's branch
 	uint32_t node2_id; // On node2's branch
 
+	inline bool operator==(const NodePair &other) const {
+		return node1_id == other.node1_id && node2_id == other.node2_id;
+	}
+
 	inline bool operator!=(const NodePair &other) const {
 		return node1_id != other.node1_id || node2_id != other.node2_id;
 	}
@@ -449,6 +453,12 @@ bool is_node_equivalent(
 ) {
 	if (node1.id == node2.id) {
 		// They are the same node (this can happen while processing ancestors).
+		return true;
+	}
+	if (contains(equivalences, NodePair{ node1.id, node2.id })) {
+		// We already found that equivalence.
+		// This can happen in cases where the nodes have multiple inputs connected to the same equivalent ancestors.
+		// When evaluating inputs, we may recurse multiple times on the same ancestors.
 		return true;
 	}
 	if (node1.type_id != node2.type_id) {
@@ -517,7 +527,8 @@ bool is_node_equivalent(
 	NodePair equivalence{ node1.id, node2.id };
 #ifdef DEBUG_ENABLED
 	for (const NodePair &p : equivalences) {
-		ZN_ASSERT(p != equivalence);
+		// We already check for this, if we still get duplicates here something is wrong
+		ZN_ASSERT_RETURN_V(p != equivalence, true);
 	}
 #endif
 	equivalences.push_back(equivalence);

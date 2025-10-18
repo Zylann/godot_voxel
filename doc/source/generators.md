@@ -369,7 +369,7 @@ Inter-dependency is a core concept that makes this generator different from the 
 Let's say we define 2 passes:
 
 - Pass 1: base terrain. Just combinations of Perlin noise and shapes, where it is not necessary to access neighbors.
-- Pass 2: trees. They could have various shapes and overlap across chunks, and could check if they fit or of they have access to sunlight. That pass will access up to 1 chunk away.
+- Pass 2: trees. They could have various shapes and overlap across chunks, and could check if they fit or if they have access to sunlight. That pass will access up to 1 chunk away.
 
 With just these two passes, generating one *final* column requires to process a bunch of other columns:
 

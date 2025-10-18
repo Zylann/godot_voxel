@@ -329,7 +329,7 @@ Sets the float value of a voxel. This method should be used if you work on SDF d
 
 ### [void](#)<span id="i_set_voxel_metadata"></span> **set_voxel_metadata**( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) pos, [Variant](https://docs.godotengine.org/en/stable/classes/class_variant.html) value ) 
 
-Attaches arbitrary data on a specific voxel. Old data is replaced.
+Attaches arbitrary data on a specific voxel. Old data is replaced. Passing `null` will erase metadata.
 
 If this [VoxelBuffer](VoxelBuffer.md) is saved, this metadata will also be saved along voxels, so make sure the data supports serialization (i.e you can't put nodes or arbitrary objects in it).
 
@@ -341,4 +341,4 @@ If this [VoxelBuffer](VoxelBuffer.md) is saved, this metadata will also be saved
 
 Updates an existing 3D texture from the SDF channel. See [create_3d_texture_from_sdf_zxy](VoxelBuffer.md#i_create_3d_texture_from_sdf_zxy) for more information.
 
-_Generated on May 15, 2025_
+_Generated on Aug 09, 2025_

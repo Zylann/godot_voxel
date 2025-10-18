@@ -322,6 +322,13 @@ inline void sort(T &a, T &b) {
 }
 
 template <typename T>
+inline void sort(T &a, T &b, T &c) {
+	sort(a, c);
+	sort(a, b);
+	sort(b, c);
+}
+
+template <typename T>
 inline void sort(T &a, T &b, T &c, T &d) {
 	sort(a, b);
 	sort(c, d);

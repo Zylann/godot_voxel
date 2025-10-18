@@ -7,7 +7,32 @@
 
 namespace zylann::voxel::tests {
 
-void test_block_serializer() {
+void test_block_serializer_uncompressed() {
+	// Create an example buffer
+	const Vector3i block_size(8, 9, 10);
+	VoxelBuffer voxel_buffer(VoxelBuffer::ALLOCATOR_DEFAULT);
+	voxel_buffer.create(block_size);
+	voxel_buffer.fill_area(42, Vector3i(1, 2, 3), Vector3i(5, 5, 5), 0);
+	voxel_buffer.fill_area(43, Vector3i(2, 3, 4), Vector3i(6, 6, 6), 0);
+	voxel_buffer.fill_area(44, Vector3i(1, 2, 3), Vector3i(5, 5, 5), 1);
+
+	// Serialize without compression wrapper
+	BlockSerializer::SerializeResult result = BlockSerializer::serialize(voxel_buffer);
+	ZN_TEST_ASSERT(result.success);
+	StdVector<uint8_t> data = result.data;
+
+	ZN_TEST_ASSERT(data.size() > 0);
+	ZN_TEST_ASSERT(data[0] == BlockSerializer::BLOCK_FORMAT_VERSION);
+
+	// Deserialize
+	VoxelBuffer deserialized_voxel_buffer(VoxelBuffer::ALLOCATOR_DEFAULT);
+	ZN_TEST_ASSERT(BlockSerializer::deserialize(to_span_const(data), deserialized_voxel_buffer));
+
+	// Must be equal
+	ZN_TEST_ASSERT(voxel_buffer.equals(deserialized_voxel_buffer));
+}
+
+void test_block_serializer_compressed(const CompressedData::Compression compression_mode) {
 	// Create an example buffer
 	const Vector3i block_size(8, 9, 10);
 	VoxelBuffer voxel_buffer(VoxelBuffer::ALLOCATOR_DEFAULT);
@@ -17,24 +42,9 @@ void test_block_serializer() {
 	voxel_buffer.fill_area(44, Vector3i(1, 2, 3), Vector3i(5, 5, 5), 1);
 
 	{
-		// Serialize without compression wrapper
-		BlockSerializer::SerializeResult result = BlockSerializer::serialize(voxel_buffer);
-		ZN_TEST_ASSERT(result.success);
-		StdVector<uint8_t> data = result.data;
-
-		ZN_TEST_ASSERT(data.size() > 0);
-		ZN_TEST_ASSERT(data[0] == BlockSerializer::BLOCK_FORMAT_VERSION);
-
-		// Deserialize
-		VoxelBuffer deserialized_voxel_buffer(VoxelBuffer::ALLOCATOR_DEFAULT);
-		ZN_TEST_ASSERT(BlockSerializer::deserialize(to_span_const(data), deserialized_voxel_buffer));
-
-		// Must be equal
-		ZN_TEST_ASSERT(voxel_buffer.equals(deserialized_voxel_buffer));
-	}
-	{
 		// Serialize
-		BlockSerializer::SerializeResult result = BlockSerializer::serialize_and_compress(voxel_buffer);
+		const BlockSerializer::SerializeResult result =
+				BlockSerializer::serialize_and_compress(voxel_buffer, compression_mode);
 		ZN_TEST_ASSERT(result.success);
 		StdVector<uint8_t> data = result.data;
 
@@ -47,6 +57,13 @@ void test_block_serializer() {
 		// Must be equal
 		ZN_TEST_ASSERT(voxel_buffer.equals(deserialized_voxel_buffer));
 	}
+}
+
+void test_block_serializer() {
+	test_block_serializer_uncompressed();
+	test_block_serializer_compressed(CompressedData::COMPRESSION_NONE);
+	test_block_serializer_compressed(CompressedData::COMPRESSION_LZ4);
+	test_block_serializer_compressed(CompressedData::COMPRESSION_ZSTD);
 }
 
 void test_block_serializer_stream_peer() {
@@ -63,7 +80,9 @@ void test_block_serializer_stream_peer() {
 	peer.instantiate();
 	// peer->clear();
 
-	const int size = godot::VoxelBlockSerializer::serialize_to_stream_peer(peer, voxel_buffer, true);
+	const int64_t size = godot::VoxelBlockSerializer::serialize_to_stream_peer(
+			peer, voxel_buffer, godot::VoxelBlockSerializer::COMPRESSION_LZ4
+	);
 
 	PackedByteArray data_array = peer->get_data_array();
 

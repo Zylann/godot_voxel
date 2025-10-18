@@ -9,6 +9,7 @@
 #include "../../util/string/std_string.h"
 #include "../../util/string/std_stringstream.h"
 #include "../../util/testing/test_macros.h"
+#include <array>
 #include <sstream>
 
 namespace zylann::voxel::tests {
@@ -288,21 +289,26 @@ void test_voxel_buffer_metadata_gd() {
 namespace {
 
 template <size_t N>
-void load_from_array_literal(VoxelBuffer &vb, unsigned int channel, const uint8_t (&array)[N], Vector3i size) {
+void load_from_array_litteral_xzy(
+		VoxelBuffer &vb,
+		const uint8_t channel_index,
+		const uint8_t (&array)[N],
+		const Vector3i size
+) {
 	vb.create(size);
 	unsigned int i = 0;
 	for (int y = 0; y < size.y; ++y) {
 		for (int z = 0; z < size.z; ++z) {
 			for (int x = 0; x < size.x; ++x) {
 				ZN_ASSERT(i < N);
-				vb.set_voxel(array[i], Vector3i(x, y, z), channel);
+				vb.set_voxel(array[i], Vector3i(x, y, z), channel_index);
 				++i;
 			}
 		}
 	}
 }
 
-void print_channel_as_ascii(const VoxelBuffer &vb, unsigned int channel) {
+void print_channel_as_ascii(const VoxelBuffer &vb, unsigned int channel, const unsigned int padding) {
 	StdStringStream ss;
 
 	Vector3i pos;
@@ -311,6 +317,17 @@ void print_channel_as_ascii(const VoxelBuffer &vb, unsigned int channel) {
 		for (pos.z = 0; pos.z < vb.get_size().z; ++pos.z) {
 			for (pos.x = 0; pos.x < vb.get_size().x; ++pos.x) {
 				const int v = vb.get_voxel(pos, channel);
+
+				{
+					int d = 1;
+					for (unsigned int i = 0; i < padding; ++i) {
+						d *= 10;
+						if (v < d) {
+							ss << ' ';
+						}
+					}
+				}
+
 				ss << v << ' ';
 			}
 			ss << '\n';
@@ -327,7 +344,7 @@ void test_voxel_buffer_paste_masked() {
 	VoxelBuffer dst(VoxelBuffer::ALLOCATOR_DEFAULT);
 
 	// clang-format off
-	const uint8_t src_values[] = {
+	const uint8_t src_values[] {
 		0, 0, 0, 0, 0, //
 		0, 1, 0, 0, 0, //
 		0, 1, 1, 0, 0, //
@@ -366,7 +383,7 @@ void test_voxel_buffer_paste_masked() {
 	// };
 
 	// clang-format off
-	const uint8_t dst_values[] = {
+	const uint8_t dst_values[] {
 		3, 3, 3, 3, //
 		3, 3, 3, 3, //
 		3, 3, 3, 3, //
@@ -415,12 +432,12 @@ void test_voxel_buffer_paste_masked() {
 	};
 	// clang-format on
 
-	const uint8_t copied_channel_index = 0;
-	const uint8_t src_mask_channel_index = 0;
-	const uint8_t dst_mask_channel_index = 0;
+	const uint8_t copied_channel_index = VoxelBuffer::CHANNEL_TYPE;
+	const uint8_t src_mask_channel_index = VoxelBuffer::CHANNEL_TYPE;
+	const uint8_t dst_mask_channel_index = VoxelBuffer::CHANNEL_TYPE;
 
-	load_from_array_literal(src, copied_channel_index, src_values, Vector3i(5, 3, 4));
-	load_from_array_literal(dst, copied_channel_index, dst_values, Vector3i(4, 3, 5));
+	load_from_array_litteral_xzy(src, copied_channel_index, src_values, Vector3i(5, 3, 4));
+	load_from_array_litteral_xzy(dst, copied_channel_index, dst_values, Vector3i(4, 3, 5));
 
 	paste_src_masked_dst_writable_value(
 			to_single_element_span(copied_channel_index),
@@ -436,10 +453,10 @@ void test_voxel_buffer_paste_masked() {
 
 	VoxelBuffer expected(VoxelBuffer::ALLOCATOR_DEFAULT);
 	expected.create(dst.get_size());
-	load_from_array_literal(expected, copied_channel_index, expected_values, expected.get_size());
+	load_from_array_litteral_xzy(expected, copied_channel_index, expected_values, expected.get_size());
 
 	if (!dst.equals(expected)) {
-		print_channel_as_ascii(dst, copied_channel_index);
+		print_channel_as_ascii(dst, copied_channel_index, 0);
 	}
 
 	ZN_TEST_ASSERT(dst.equals(expected));
@@ -625,6 +642,79 @@ void test_voxel_buffer_set_channel_bytes() {
 		const godot::VoxelBuffer::ChannelId channel = godot::VoxelBuffer::CHANNEL_TYPE;
 		vb->set_channel_from_byte_array(channel, PackedByteArray());
 	}
+}
+
+void test_voxel_buffer_issue769() {
+	// indices_to_bitarray was incorrect
+
+	const uint8_t base_values[] = {
+		// clang-format off
+		0, 1,  2,  3, 
+		4, 5,  6,  7, 
+		8, 9, 10, 11
+		// clang-format on
+	};
+	const uint8_t pasted_values[] = {
+		// clang-format off
+		12, 13, 14, 
+		15, 16, 17,
+		// clang-format on
+	};
+	const Vector3i pasting_pos(1, 0, 1);
+	const std::array<uint8_t, 4> writable_values{ 5, 6, 7, 10 };
+	const uint8_t expected_values[] = {
+		// clang-format off
+		0,  1,  2,  3, 
+		4, 12, 13, 14, 
+		8,  9, 16, 11
+		// clang-format on
+	};
+
+	VoxelBuffer base_buffer(VoxelBuffer::ALLOCATOR_DEFAULT);
+	VoxelBuffer pasted_buffer(VoxelBuffer::ALLOCATOR_DEFAULT);
+	VoxelBuffer expected_buffer(VoxelBuffer::ALLOCATOR_DEFAULT);
+
+	const uint8_t channel_id = VoxelBuffer::CHANNEL_TYPE;
+
+	load_from_array_litteral_xzy(base_buffer, channel_id, base_values, Vector3i(4, 1, 3));
+	load_from_array_litteral_xzy(pasted_buffer, channel_id, pasted_values, Vector3i(3, 1, 2));
+	load_from_array_litteral_xzy(expected_buffer, channel_id, expected_values, Vector3i(4, 1, 3));
+
+	DynamicBitset bitarray;
+	indices_to_bitarray(to_span(writable_values), bitarray);
+
+	// Check the bitarray
+	for (const uint8_t v : writable_values) {
+		ZN_TEST_ASSERT(v < bitarray.size());
+		ZN_TEST_ASSERT(bitarray.get(v));
+	}
+	for (uint8_t v = 0; v < bitarray.size(); ++v) {
+		if (!contains(to_span(writable_values), v)) {
+			ZN_TEST_ASSERT(bitarray.get(v) == false);
+		}
+	}
+
+	paste_src_masked_dst_writable_bitarray(
+			to_single_element_span(channel_id),
+			pasted_buffer,
+			channel_id,
+			99,
+			base_buffer,
+			pasting_pos,
+			channel_id,
+			bitarray,
+			true
+	);
+
+#ifdef DEV_ENABLED
+	if (!base_buffer.equals(expected_buffer)) {
+		print_line("Result:");
+		print_channel_as_ascii(base_buffer, channel_id, 1);
+		print_line("Expected:");
+		print_channel_as_ascii(expected_buffer, channel_id, 1);
+	}
+#endif
+	ZN_TEST_ASSERT(base_buffer.equals(expected_buffer));
 }
 
 } // namespace zylann::voxel::tests

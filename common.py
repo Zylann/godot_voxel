@@ -21,6 +21,7 @@ def register_scons_options(env, is_extension):
     if not is_extension:
         env_vars.Add(BoolVariable("tracy", "Build with enabled Tracy Profiler integration", False))
         env_vars.Add(BoolVariable("voxel_fast_noise_2", "Build FastNoise2 support (x86-only)", True))
+        env_vars.Add(BoolVariable("voxel_werror", "Explicitely enable warninngs as errors for module code only", False))
 
     env_vars.Update(env)
 
@@ -34,12 +35,9 @@ def get_sources(env, is_editor_build):
     env.Append(CPPPATH=["."])
 
     env.Append(CPPDEFINES=[
-        # See https://github.com/zeux/meshoptimizer/issues/311
-        "MESHOPTIMIZER_ZYLANN_NEVER_COLLAPSE_BORDERS",
-        # Because of the above, the MeshOptimizer library in this module is different to an official one.
+        # The MeshOptimizer library in this module is different to the official one.
         # Godot 4 includes an official version, which means they would both conflict at linking time.
         # To prevent this clash we wrap the entire library within an additional namespace.
-        # This should be solved either by solving issue #311 or by porting the module to a dynamic library (GDExtension).
         "MESHOPTIMIZER_ZYLANN_WRAP_LIBRARY_IN_NAMESPACE",
     ])
     
@@ -137,6 +135,7 @@ def get_sources(env, is_editor_build):
         "util/godot/core/string.cpp",
         "util/godot/core/variant.cpp",
         "util/godot/core/packed_arrays.cpp",
+        "util/godot/core/packed_byte_array.cpp",
         "util/godot/core/rect2i.cpp",
 
         "util/godot/direct_mesh_instance.cpp",
@@ -217,7 +216,10 @@ def get_sources(env, is_editor_build):
             sources += ["engine/detail_rendering/render_detail_texture_gpu_task.cpp"]
 
             if tests_enabled:
-                sources += ["tests/voxel/test_detail_rendering_gpu.cpp"]
+                sources += [
+                    "tests/voxel/test_detail_rendering_gpu.cpp",
+                    "tests/voxel/test_transvoxel.cpp"
+                ]
         
     if modifiers_enabled:
         env.Append(CPPDEFINES={"VOXEL_ENABLE_MODIFIERS": 1})

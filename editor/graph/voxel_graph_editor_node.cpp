@@ -6,6 +6,8 @@
 #include "../../util/godot/classes/node.h"
 #include "../../util/godot/classes/style_box_empty.h"
 #include "../../util/godot/core/array.h"
+#include "../../util/godot/core/string_name.h"
+#include "../../util/godot/core/version.h"
 #include "../../util/godot/editor_scale.h"
 #include "../../util/math/color.h"
 #include "graph_editor_adapter.h"
@@ -20,6 +22,18 @@ static const Color PORT_COLOR(0.4, 0.4, 1.0);
 VoxelGraphEditorNode *VoxelGraphEditorNode::create(const VoxelGraphFunction &graph, uint32_t node_id) {
 	VoxelGraphEditorNode *node_view = memnew(VoxelGraphEditorNode);
 	node_view->set_position_offset(graph.get_node_gui_position(node_id) * EDSCALE);
+
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR >= 2
+	// Don't translate title, it shows the node's name
+	{
+		Node *titlebar = node_view->get_titlebar_hbox();
+		if (titlebar != nullptr) {
+			set_node_auto_translate_mode(*titlebar, zylann::godot::AUTO_TRANSLATE_MODE_DISABLED);
+		} else {
+			ZN_PRINT_ERROR("Title bar is null?");
+		}
+	}
+#endif
 
 	node_view->update_title(graph, node_id);
 
@@ -216,13 +230,13 @@ void VoxelGraphEditorNode::update_title(const VoxelGraphFunction &graph, uint32_
 		ERR_FAIL_COND(func.is_null());
 		String fname = func->get_path();
 		fname = fname.get_file();
-		if (node_name == StringName()) {
+		if (zylann::godot::is_empty(node_name)) {
 			set_title(fname);
 		} else {
 			set_title(String("{0} ({1})").format(varray(node_name, fname)));
 		}
 
-	} else if (node_name == StringName()) {
+	} else if (zylann::godot::is_empty(node_name)) {
 		set_title(type.name);
 
 	} else if (type_id == VoxelGraphFunction::NODE_COMMENT) {

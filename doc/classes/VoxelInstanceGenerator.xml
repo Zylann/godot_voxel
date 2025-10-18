@@ -32,9 +32,12 @@
 		<member name="jitter" type="float" setter="set_jitter" getter="get_jitter" default="1.0">
 			Controls randomness of spawning position when [member emit_mode] is set to [constant EMIT_ONE_PER_TRIANGLE].
 		</member>
-		<member name="max_height" type="float" setter="set_max_height" getter="get_max_height" default="3.40282e+38">
+		<member name="max_height" type="float" setter="set_max_height" getter="get_max_height" default="3.4028235e+38">
 			Instances will not be created above this height.
 			This also depends on the chosen [member VoxelInstancer.up_mode].
+		</member>
+		<member name="max_height_falloff" type="float" setter="set_max_height_falloff" getter="get_max_height_falloff" default="0.0">
+			Distance over which density will fade, when below [member max_height].
 		</member>
 		<member name="max_scale" type="float" setter="set_max_scale" getter="get_max_scale" default="1.0">
 			Minimum scale instances will be randomized with.
@@ -43,8 +46,14 @@
 			Instances will not spawn if the ground has a slope higher than this angle.
 			This also depends on the chosen [member VoxelInstancer.up_mode].
 		</member>
-		<member name="min_height" type="float" setter="set_min_height" getter="get_min_height" default="1.17549e-38">
+		<member name="max_slope_falloff_degrees" type="float" setter="set_max_slope_falloff_degrees" getter="get_max_slope_falloff_degrees" default="0.0">
+			Angular distance over which density will fade, when below [member max_slope_degrees].
+		</member>
+		<member name="min_height" type="float" setter="set_min_height" getter="get_min_height" default="1.1754944e-38">
 			Instances will not be created below this height. This also depends on the chosen [member VoxelInstancer.up_mode].
+		</member>
+		<member name="min_height_falloff" type="float" setter="set_min_height_falloff" getter="get_min_height_falloff" default="0.0">
+			Distance over which density will fade, when above [member min_height].
 		</member>
 		<member name="min_scale" type="float" setter="set_min_scale" getter="get_min_scale" default="1.0">
 			Maximum scale instances will be randomized with.
@@ -53,11 +62,17 @@
 			Instances will not spawn if the ground has a slope lower than this angle.
 			This also depends on the chosen [member VoxelInstancer.up_mode].
 		</member>
+		<member name="min_slope_falloff_degrees" type="float" setter="set_min_slope_falloff_degrees" getter="get_min_slope_falloff_degrees" default="0.0">
+			Angular distance over which density will fade, when above [member min_slope_degrees].
+		</member>
 		<member name="noise" type="Noise" setter="set_noise" getter="get_noise">
 			Noise used to filter out spawned instances, so that they may spawn in patterns described by the noise.
 		</member>
 		<member name="noise_dimension" type="int" setter="set_noise_dimension" getter="get_noise_dimension" enum="VoxelInstanceGenerator.Dimension" default="1">
 			Which dimension should be used when evaluating [member noise] and [member noise_graph].
+		</member>
+		<member name="noise_falloff" type="float" setter="set_noise_falloff" getter="get_noise_falloff" default="0.0">
+			Noise range over which density will fade. For example if falloff is 0.3, then density will fade when noise values are between 0 and 0.3.
 		</member>
 		<member name="noise_graph" type="VoxelGraphFunction" setter="set_noise_graph" getter="get_noise_graph">
 			Graph function used to filter out spawned instances, similar to [member noise], but allows more custom noise computations.
@@ -65,6 +80,9 @@
 		</member>
 		<member name="noise_on_scale" type="float" setter="set_noise_on_scale" getter="get_noise_on_scale" default="0.0">
 			How much [member noise] also affects the scale of instances.
+		</member>
+		<member name="noise_threshold" type="float" setter="set_noise_threshold" getter="get_noise_threshold" default="0.0">
+			Expands or shrink noise filtering. Higher values expand the areas where instances will spawn, lower values shrinks them.
 		</member>
 		<member name="offset_along_normal" type="float" setter="set_offset_along_normal" getter="get_offset_along_normal" default="0.0">
 			Offsets spawned instances along the normal of the ground.
@@ -105,6 +123,9 @@
 		</member>
 		<member name="voxel_texture_filter_enabled" type="bool" setter="set_voxel_texture_filter_enabled" getter="is_voxel_texture_filter_enabled" default="false">
 			When true, enables filtering of instances based on voxel texture indices. See [member voxel_texture_filter_array].
+		</member>
+		<member name="voxel_texture_filter_threshold" type="float" setter="set_voxel_texture_filter_threshold" getter="get_voxel_texture_filter_threshold" default="0.5">
+			When [member voxel_texture_filter_enabled] is active, controls how much of filtered texture has to be present for instances to spawn. The value must be betweem 0 and 1.
 		</member>
 	</members>
 	<constants>

@@ -2,7 +2,14 @@
 #define ZN_GODOT_RENDERING_SERVER_H
 
 #if defined(ZN_GODOT)
+#include "../core/version.h"
+
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR <= 5
 #include <servers/rendering_server.h>
+#else
+#include <servers/rendering/rendering_server.h>
+#endif
+
 #elif defined(ZN_GODOT_EXTENSION)
 #include <godot_cpp/classes/rendering_server.hpp>
 using namespace godot;
@@ -17,7 +24,12 @@ namespace zylann::godot {
 
 inline void free_rendering_server_rid(RenderingServer &rs, const RID &rid) {
 #if defined(ZN_GODOT)
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR <= 5
 	rs.free(rid);
+#else
+	rs.free_rid(rid);
+#endif
+
 #elif defined(ZN_GODOT_EXTENSION)
 	rs.free_rid(rid);
 #endif

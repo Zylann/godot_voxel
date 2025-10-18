@@ -70,6 +70,19 @@ inline Vector3f get_triangle_barycentric_coordinates(Vector2f p0, Vector2f p1, V
 	return weights;
 }
 
+// https://stackoverflow.com/questions/47410054/generate-random-locations-within-a-triangular-domain
+inline Vector3f get_triangle_random_barycentric(const float rand1, const float rand2) {
+	const float s = abs(rand1 - rand2);
+	const float t = 0.5f * (rand1 + rand2 - s);
+	const float u = 1.f - s - t;
+	return Vector3f(s, t, u);
+}
+
+template <typename T>
+inline T interpolate_triangle(const T a, const T b, const T c, const Vector3f barycentric) {
+	return a * barycentric.x + b * barycentric.y + c * barycentric.z;
+}
+
 struct TriangleIntersectionResult {
 	enum Case { //
 		INTERSECTION,

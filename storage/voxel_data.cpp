@@ -5,6 +5,7 @@
 #include "../util/string/format.h"
 #include "../util/thread/mutex.h"
 #include "metadata/voxel_metadata_variant.h"
+#include "voxel_buffer_gd.h"
 #include "voxel_data_grid.h"
 
 namespace zylann::voxel {
@@ -304,7 +305,12 @@ bool VoxelData::try_set_voxel_f(real_t value, Vector3i pos, unsigned int channel
 	return try_set_voxel(snorm_to_s16(value), pos, channel_index);
 }
 
-void VoxelData::copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsigned int channels_mask) const {
+void VoxelData::copy(
+		const Vector3i min_pos,
+		VoxelBuffer &dst_buffer,
+		const unsigned int channels_mask,
+		const bool with_metadata
+) const {
 	ZN_PROFILE_SCOPE();
 
 #ifdef DEBUG_ENABLED
@@ -332,7 +338,7 @@ void VoxelData::copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsigned int cha
 		RWLockRead rlock(data_lod0.map_lock);
 		// Only gets blocks we have voxel data of. Other blocks will be air.
 		// TODO Modifiers?
-		data_lod0.map.copy(min_pos, dst_buffer, channels_mask);
+		data_lod0.map.copy(min_pos, dst_buffer, channels_mask, with_metadata);
 
 	} else {
 		struct GenContext {
@@ -376,16 +382,18 @@ void VoxelData::copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsigned int cha
 #ifdef VOXEL_ENABLE_MODIFIERS
 					gctx2->modifiers.apply(voxels, AABB(pos, voxels.get_size()));
 #endif
-				}
+				},
+				with_metadata
 		);
 	}
 }
 
 void VoxelData::paste(
-		Vector3i min_pos,
+		const Vector3i min_pos,
 		const VoxelBuffer &src_buffer,
-		unsigned int channels_mask,
-		bool create_new_blocks
+		const unsigned int channels_mask,
+		const bool create_new_blocks,
+		const bool with_metadata
 ) {
 	ZN_PROFILE_SCOPE();
 
@@ -397,11 +405,11 @@ void VoxelData::paste(
 	if (create_new_blocks) {
 		// We will modify the hashmap so no other threads can perform lookups while we do that
 		RWLockWrite wlock(data_lod0.map_lock);
-		data_lod0.map.paste(min_pos, src_buffer, channels_mask, create_new_blocks);
+		data_lod0.map.paste(min_pos, src_buffer, channels_mask, create_new_blocks, with_metadata);
 	} else {
 		// We won't modify the hashmap so other threads can still perform lookups in different areas
 		RWLockRead rlock(data_lod0.map_lock);
-		data_lod0.map.paste(min_pos, src_buffer, channels_mask, create_new_blocks);
+		data_lod0.map.paste(min_pos, src_buffer, channels_mask, create_new_blocks, with_metadata);
 	}
 }
 
@@ -420,6 +428,8 @@ void VoxelData::paste_masked(
 	const Box3i blocks_box = Box3i(min_pos, src_buffer.get_size()).downscaled(data_lod0.map.get_block_size());
 	SpatialLock3D::Write swlock(data_lod0.spatial_lock, BoxBounds3i(blocks_box));
 
+	const bool with_metadata = true;
+
 	if (create_new_blocks) {
 		// We will modify the hashmap so no other threads can perform lookups while we do that
 		RWLockWrite wlock(data_lod0.map_lock);
@@ -433,7 +443,8 @@ void VoxelData::paste_masked(
 				false, // Unused dst mask
 				0,
 				Span<const int32_t>(),
-				create_new_blocks
+				create_new_blocks,
+				with_metadata
 		);
 	} else {
 		// We won't modify the hashmap so other threads can still perform lookups in different areas
@@ -448,7 +459,8 @@ void VoxelData::paste_masked(
 				false, // Unused dst mask
 				0,
 				Span<const int32_t>(),
-				create_new_blocks
+				create_new_blocks,
+				with_metadata
 		);
 	}
 }
@@ -468,35 +480,39 @@ void VoxelData::paste_masked_writable_list(
 	const Box3i blocks_box = Box3i(min_pos, src_buffer.get_size()).downscaled(data_lod0.map.get_block_size());
 	SpatialLock3D::Write swlock(data_lod0.spatial_lock, BoxBounds3i(blocks_box));
 
+	const bool with_metadata = true;
+
 	if (create_new_blocks) {
 		// We will modify the hashmap so no other threads can perform lookups while we do that
 		RWLockWrite wlock(data_lod0.map_lock);
-		data_lod0.map.paste_masked( //
-				min_pos, //
-				src_buffer, //
-				channels_mask, //
-				true, //
-				src_mask_channel, //
-				src_mask_value, //
-				true, //
-				dst_mask_channel, //
-				dst_writable_values, //
-				create_new_blocks //
+		data_lod0.map.paste_masked(
+				min_pos,
+				src_buffer,
+				channels_mask,
+				true,
+				src_mask_channel,
+				src_mask_value,
+				true,
+				dst_mask_channel,
+				dst_writable_values,
+				create_new_blocks,
+				with_metadata
 		);
 	} else {
 		// We won't modify the hashmap so other threads can still perform lookups in different areas
 		RWLockRead rlock(data_lod0.map_lock);
-		data_lod0.map.paste_masked( //
-				min_pos, //
-				src_buffer, //
-				channels_mask, //
-				true, //
-				src_mask_channel, //
-				src_mask_value, //
-				true, //
-				dst_mask_channel, //
-				dst_writable_values, //
-				create_new_blocks //
+		data_lod0.map.paste_masked(
+				min_pos,
+				src_buffer,
+				channels_mask,
+				true,
+				src_mask_channel,
+				src_mask_value,
+				true,
+				dst_mask_channel,
+				dst_writable_values,
+				create_new_blocks,
+				with_metadata
 		);
 	}
 }
@@ -1285,9 +1301,9 @@ void VoxelData::set_voxel_metadata(Vector3i pos, Variant meta) {
 	// TODO Ability to have metadata in areas where voxels have not been allocated?
 	// Otherwise we have to generate the block, because that's where it is stored at the moment.
 	ZN_ASSERT_RETURN_MSG(block->has_voxels(), "Area not cached");
-	VoxelMetadata *meta_storage = block->get_voxels().get_or_create_voxel_metadata(lod.map.to_local(pos));
-	ZN_ASSERT_RETURN(meta_storage != nullptr);
-	godot::set_as_variant(*meta_storage, meta);
+	VoxelBuffer &vb = block->get_voxels();
+	const Vector3i rpos = lod.map.to_local(pos);
+	zylann::voxel::godot::set_voxel_metadata(vb, rpos, meta);
 }
 
 Variant VoxelData::get_voxel_metadata(Vector3i pos) {
@@ -1301,11 +1317,9 @@ Variant VoxelData::get_voxel_metadata(Vector3i pos) {
 	VoxelDataBlock *block = lod.map.get_block(bpos);
 	ZN_ASSERT_RETURN_V_MSG(block != nullptr, Variant(), "Area not editable");
 	ZN_ASSERT_RETURN_V_MSG(block->has_voxels(), Variant(), "Area not cached");
-	const VoxelMetadata *meta = block->get_voxels_const().get_voxel_metadata(lod.map.to_local(pos));
-	if (meta == nullptr) {
-		return Variant();
-	}
-	return godot::get_as_variant(*meta);
+	const VoxelBuffer &vb = block->get_voxels_const();
+	const Vector3i rpos = lod.map.to_local(pos);
+	return zylann::voxel::godot::get_voxel_metadata(vb, rpos);
 }
 
 } // namespace zylann::voxel

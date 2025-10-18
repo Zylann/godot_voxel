@@ -50,12 +50,15 @@ Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(
 	);
 }
 
-void VoxelToolTerrain::copy(Vector3i pos, VoxelBuffer &dst, uint8_t channels_mask) const {
+void VoxelToolTerrain::copy(
+		const Vector3i pos,
+		VoxelBuffer &dst,
+		const uint8_t p_channels_mask,
+		const bool with_metadata
+) const {
 	ERR_FAIL_COND(_terrain == nullptr);
-	if (channels_mask == 0) {
-		channels_mask = (1 << _channel);
-	}
-	_terrain->get_storage().copy(pos, dst, channels_mask);
+	const uint8_t channels_mask = (p_channels_mask == 0) ? (1 << _channel) : p_channels_mask;
+	_terrain->get_storage().copy(pos, dst, channels_mask, with_metadata);
 }
 
 void VoxelToolTerrain::paste(Vector3i pos, const VoxelBuffer &src, uint8_t channels_mask) {
@@ -63,7 +66,7 @@ void VoxelToolTerrain::paste(Vector3i pos, const VoxelBuffer &src, uint8_t chann
 	if (channels_mask == 0) {
 		channels_mask = (1 << _channel);
 	}
-	_terrain->get_storage().paste(pos, src, channels_mask, false);
+	_terrain->get_storage().paste(pos, src, channels_mask, false, true);
 	_post_edit(Box3i(pos, src.get_size()));
 }
 
@@ -325,8 +328,7 @@ void VoxelToolTerrain::for_each_voxel_metadata_in_area(AABB voxel_area, const Ca
 		// reference types.
 
 		voxels_ptr->for_each_voxel_metadata_in_area(
-				rel_voxel_box,
-				[&callback, block_origin](Vector3i rel_pos, const VoxelMetadata &meta) {
+				rel_voxel_box, [&callback, block_origin](Vector3i rel_pos, const VoxelMetadata &meta) {
 					const Variant v = godot::get_as_variant(meta);
 					const Vector3i key = rel_pos + block_origin;
 #ifdef ZN_GODOT

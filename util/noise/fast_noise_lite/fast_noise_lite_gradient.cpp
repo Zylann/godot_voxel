@@ -107,6 +107,10 @@ ZN_FastNoiseLiteGradient::FractalType ZN_FastNoiseLiteGradient::get_fractal_type
 	return _fractal_type;
 }
 
+ZN_FastNoiseLiteGradient::_FastNoise::FractalType ZN_FastNoiseLiteGradient::get_fractal_type_fnl() const {
+	return to_fnl_fractal_type(_fractal_type);
+}
+
 void ZN_FastNoiseLiteGradient::set_fractal_octaves(int octaves) {
 	if (_fractal_octaves == octaves) {
 		return;
