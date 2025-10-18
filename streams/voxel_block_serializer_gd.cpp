@@ -7,12 +7,20 @@ using namespace zylann::godot;
 
 namespace zylann::voxel::godot {
 
-int VoxelBlockSerializer::serialize_to_stream_peer(Ref<StreamPeer> peer, Ref<VoxelBuffer> voxel_buffer, bool compress) {
+const char *VoxelBlockSerializer::COMPRESSION_MODE_HINT_STRING = "None,LZ4,ZSTD";
+
+int VoxelBlockSerializer::serialize_to_stream_peer(
+		Ref<StreamPeer> peer,
+		Ref<VoxelBuffer> voxel_buffer,
+		const Compression compress_mode
+) {
 	ERR_FAIL_COND_V(voxel_buffer.is_null(), 0);
 	ERR_FAIL_COND_V(peer.is_null(), 0);
 
-	if (compress) {
-		BlockSerializer::SerializeResult res = BlockSerializer::serialize_and_compress(voxel_buffer->get_buffer());
+	if (compress_mode != CompressedData::COMPRESSION_NONE) {
+		BlockSerializer::SerializeResult res = BlockSerializer::serialize_and_compress(
+				voxel_buffer->get_buffer(), static_cast<CompressedData::Compression>(compress_mode)
+		);
 		ERR_FAIL_COND_V(!res.success, -1);
 		stream_peer_put_data(**peer, to_span(res.data));
 		return res.data.size();
@@ -28,8 +36,8 @@ int VoxelBlockSerializer::serialize_to_stream_peer(Ref<StreamPeer> peer, Ref<Vox
 void VoxelBlockSerializer::deserialize_from_stream_peer(
 		Ref<StreamPeer> peer,
 		Ref<VoxelBuffer> voxel_buffer,
-		int size,
-		bool decompress
+		const int64_t size,
+		const bool decompress
 ) {
 	ERR_FAIL_COND(voxel_buffer.is_null());
 	ERR_FAIL_COND(peer.is_null());
@@ -53,12 +61,17 @@ void VoxelBlockSerializer::deserialize_from_stream_peer(
 	}
 }
 
-PackedByteArray VoxelBlockSerializer::serialize_to_byte_array(Ref<VoxelBuffer> voxel_buffer, bool compress) {
+PackedByteArray VoxelBlockSerializer::serialize_to_byte_array(
+		Ref<VoxelBuffer> voxel_buffer,
+		const Compression compress_mode
+) {
 	ERR_FAIL_COND_V(voxel_buffer.is_null(), PackedByteArray());
 
 	PackedByteArray bytes;
-	if (compress) {
-		BlockSerializer::SerializeResult res = BlockSerializer::serialize_and_compress(voxel_buffer->get_buffer());
+	if (compress_mode != COMPRESSION_NONE) {
+		BlockSerializer::SerializeResult res = BlockSerializer::serialize_and_compress(
+				voxel_buffer->get_buffer(), static_cast<CompressedData::Compression>(compress_mode)
+		);
 		ERR_FAIL_COND_V(!res.success, PackedByteArray());
 		copy_to(bytes, to_span(res.data));
 
@@ -117,6 +130,10 @@ void VoxelBlockSerializer::_bind_methods() {
 			D_METHOD("deserialize_from_byte_array", "bytes", "voxel_buffer", "decompress"),
 			&VoxelBlockSerializer::deserialize_from_byte_array
 	);
+
+	BIND_ENUM_CONSTANT(COMPRESSION_NONE);
+	BIND_ENUM_CONSTANT(COMPRESSION_LZ4);
+	BIND_ENUM_CONSTANT(COMPRESSION_ZSTD);
 }
 
 } // namespace zylann::voxel::godot

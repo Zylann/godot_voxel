@@ -7,7 +7,6 @@
 #include "../util/math/vector3i.h"
 #include "../util/profiling.h"
 #include "../util/string/format.h"
-#include "compressed_data.h"
 
 #if defined(ZN_GODOT) || defined(ZN_GODOT_EXTENSION)
 #include "../storage/metadata/voxel_metadata_factory.h"
@@ -696,7 +695,10 @@ bool deserialize(Span<const uint8_t> p_data, VoxelBuffer &out_voxel_buffer) {
 	return true;
 }
 
-SerializeResult serialize_and_compress(const VoxelBuffer &voxel_buffer) {
+SerializeResult serialize_and_compress(
+		const VoxelBuffer &voxel_buffer,
+		const CompressedData::Compression compression_mode
+) {
 	ZN_PROFILE_SCOPE();
 
 	StdVector<uint8_t> &compressed_data = get_tls_compressed_data();
@@ -706,7 +708,7 @@ SerializeResult serialize_and_compress(const VoxelBuffer &voxel_buffer) {
 	const StdVector<uint8_t> &data = res.data;
 
 	res.success = CompressedData::compress(
-			Span<const uint8_t>(data.data(), 0, data.size()), compressed_data, CompressedData::COMPRESSION_LZ4
+			Span<const uint8_t>(data.data(), 0, data.size()), compressed_data, compression_mode
 	);
 	ERR_FAIL_COND_V(!res.success, SerializeResult(compressed_data, false));
 

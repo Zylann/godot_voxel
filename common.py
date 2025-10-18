@@ -135,6 +135,7 @@ def get_sources(env, is_editor_build):
         "util/godot/core/string.cpp",
         "util/godot/core/variant.cpp",
         "util/godot/core/packed_arrays.cpp",
+        "util/godot/core/packed_byte_array.cpp",
         "util/godot/core/rect2i.cpp",
 
         "util/godot/direct_mesh_instance.cpp",

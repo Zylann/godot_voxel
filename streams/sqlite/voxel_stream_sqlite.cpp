@@ -471,6 +471,8 @@ void VoxelStreamSQLite::flush_cache_to_connection(sqlite::Connection *p_connecti
 	const Box3i coordinate_range = BlockLocation::get_coordinate_range(coordinate_format);
 	const unsigned int lod_count = BlockLocation::get_lod_count(coordinate_format);
 
+	const CompressedData::Compression compression_mode = _compression_mode;
+
 	// TODO Needs better error rollback handling
 	_cache.flush([p_connection,
 #ifdef VOXEL_ENABLE_INSTANCER
@@ -478,6 +480,7 @@ void VoxelStreamSQLite::flush_cache_to_connection(sqlite::Connection *p_connecti
 #endif
 				  &temp_compressed_data,
 				  coordinate_range,
+				  compression_mode,
 				  lod_count](VoxelStreamCache::Block &block) {
 		ZN_ASSERT_RETURN(validate_range(block.position, block.lod, coordinate_range, lod_count));
 
@@ -490,7 +493,8 @@ void VoxelStreamSQLite::flush_cache_to_connection(sqlite::Connection *p_connecti
 			if (block.voxels_deleted) {
 				p_connection->save_block(loc, Span<const uint8_t>(), sqlite::Connection::VOXELS);
 			} else {
-				BlockSerializer::SerializeResult res = BlockSerializer::serialize_and_compress(block.voxels);
+				BlockSerializer::SerializeResult res =
+						BlockSerializer::serialize_and_compress(block.voxels, compression_mode);
 				ERR_FAIL_COND(!res.success);
 				p_connection->save_block(loc, to_span(res.data), sqlite::Connection::VOXELS);
 			}

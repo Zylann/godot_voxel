@@ -4,6 +4,7 @@
 #include "../util/containers/span.h"
 #include "../util/containers/std_vector.h"
 #include "../util/godot/macros.h"
+#include "compressed_data.h"
 
 #include <cstdint>
 
@@ -34,7 +35,10 @@ struct SerializeResult {
 SerializeResult serialize(const VoxelBuffer &voxel_buffer);
 bool deserialize(Span<const uint8_t> p_data, VoxelBuffer &out_voxel_buffer);
 
-SerializeResult serialize_and_compress(const VoxelBuffer &voxel_buffer);
+SerializeResult serialize_and_compress(
+		const VoxelBuffer &voxel_buffer,
+		const CompressedData::Compression compression_mode
+);
 bool decompress_and_deserialize(Span<const uint8_t> p_data, VoxelBuffer &out_voxel_buffer);
 bool decompress_and_deserialize(FileAccess &f, unsigned int size_to_read, VoxelBuffer &out_voxel_buffer);
 

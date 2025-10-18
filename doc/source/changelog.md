@@ -16,6 +16,7 @@ Dev 1.5.1 - `master`
     - Added methods to get the index of node inputs and output by their name
     - Added `generate_image_from_sdf`
     - Added `raycast_sdf_approx` to find where surface is from a ray
+- `VoxelStream`: added option to compress saves using ZSTD instead of LZ4
 
 - Fixes
     - `VoxelTool`: 

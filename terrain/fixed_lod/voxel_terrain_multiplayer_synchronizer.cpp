@@ -52,7 +52,8 @@ void VoxelTerrainMultiplayerSynchronizer::send_block(
 ) {
 	ZN_PROFILE_SCOPE();
 
-	BlockSerializer::SerializeResult result = BlockSerializer::serialize_and_compress(data_block.get_voxels_const());
+	BlockSerializer::SerializeResult result =
+			BlockSerializer::serialize_and_compress(data_block.get_voxels_const(), CompressedData::COMPRESSION_LZ4);
 	ZN_ASSERT_RETURN(result.success);
 
 	PackedByteArray message_data;
@@ -94,7 +95,8 @@ void VoxelTerrainMultiplayerSynchronizer::send_area(Box3i voxel_box) {
 	voxels.create(voxel_box.size);
 	_terrain->get_storage().copy(voxel_box.position, voxels, 0xff, true);
 
-	BlockSerializer::SerializeResult result = BlockSerializer::serialize_and_compress(voxels);
+	BlockSerializer::SerializeResult result =
+			BlockSerializer::serialize_and_compress(voxels, CompressedData::COMPRESSION_LZ4);
 	ZN_ASSERT_RETURN(result.success);
 
 	PackedByteArray pba;

@@ -61,7 +61,7 @@
 		<method name="serialize_to_byte_array" qualifiers="static">
 			<return type="PackedByteArray" />
 			<param index="0" name="voxel_buffer" type="VoxelBuffer" />
-			<param index="1" name="compress" type="bool" />
+			<param index="1" name="compress" type="int" enum="VoxelBlockSerializer.Compression" />
 			<description>
 				Stores the data of a [VoxelBuffer] into a [PackedByteArray].
 			</description>
@@ -70,10 +70,21 @@
 			<return type="int" />
 			<param index="0" name="peer" type="StreamPeer" />
 			<param index="1" name="voxel_buffer" type="VoxelBuffer" />
-			<param index="2" name="compress" type="bool" />
+			<param index="2" name="compress" type="int" enum="VoxelBlockSerializer.Compression" />
 			<description>
 				Stores the data of a [VoxelBuffer] into a [StreamPeer]. Returns the number of written bytes.
 			</description>
 		</method>
 	</methods>
+	<constants>
+		<constant name="COMPRESSION_NONE" value="0" enum="Compression">
+			Don't compress the data.
+		</constant>
+		<constant name="COMPRESSION_LZ4" value="2" enum="Compression">
+			Use the LZ4 default compression algorithm. Fast, but lower compression ratio.
+		</constant>
+		<constant name="COMPRESSION_ZSTD" value="3" enum="Compression">
+			Use the Zstandard default compression algorithm. Good compression ratio but slower.
+		</constant>
+	</constants>
 </class>

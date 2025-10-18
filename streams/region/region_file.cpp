@@ -377,7 +377,11 @@ Error RegionFile::load_block(Vector3i position, VoxelBuffer &out_block) {
 	return OK;
 }
 
-Error RegionFile::save_block(Vector3i position, VoxelBuffer &block) {
+Error RegionFile::save_block(
+		Vector3i position,
+		VoxelBuffer &block,
+		const CompressedData::Compression compression_mode
+) {
 	ERR_FAIL_COND_V(_header.format.verify_block(block) == false, ERR_INVALID_PARAMETER);
 	ERR_FAIL_COND_V(!is_valid_block_position(position), ERR_INVALID_PARAMETER);
 
@@ -402,7 +406,7 @@ Error RegionFile::save_block(Vector3i position, VoxelBuffer &block) {
 		// Check position matches the sectors rule
 		CRASH_COND((block_offset - _blocks_begin_offset) % _header.format.sector_size != 0);
 
-		BlockSerializer::SerializeResult res = BlockSerializer::serialize_and_compress(block);
+		BlockSerializer::SerializeResult res = BlockSerializer::serialize_and_compress(block, compression_mode);
 		ERR_FAIL_COND_V(!res.success, ERR_INVALID_PARAMETER);
 		f.store_32(res.data.size());
 		const unsigned int written_size = sizeof(uint32_t) + res.data.size();
@@ -434,7 +438,7 @@ Error RegionFile::save_block(Vector3i position, VoxelBuffer &block) {
 		const int old_sector_count = block_info.get_sector_count();
 		CRASH_COND(old_sector_count < 1);
 
-		BlockSerializer::SerializeResult res = BlockSerializer::serialize_and_compress(block);
+		BlockSerializer::SerializeResult res = BlockSerializer::serialize_and_compress(block, compression_mode);
 		ERR_FAIL_COND_V(!res.success, ERR_INVALID_PARAMETER);
 		const StdVector<uint8_t> &data = res.data;
 		const size_t written_size = sizeof(uint32_t) + data.size();

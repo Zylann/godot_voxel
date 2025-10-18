@@ -2,6 +2,7 @@
 #define VOXEL_BLOCK_SERIALIZER_GD_H
 
 #include "../storage/voxel_buffer_gd.h"
+#include "compressed_data.h"
 
 ZN_GODOT_FORWARD_DECLARE(class StreamPeer);
 
@@ -14,20 +15,40 @@ class VoxelBuffer;
 class VoxelBlockSerializer : public RefCounted {
 	GDCLASS(VoxelBlockSerializer, RefCounted)
 public:
-	static int serialize_to_stream_peer(Ref<StreamPeer> peer, Ref<VoxelBuffer> voxel_buffer, bool compress);
+	enum Compression {
+		COMPRESSION_NONE = CompressedData::COMPRESSION_NONE,
+		COMPRESSION_LZ4 = CompressedData::COMPRESSION_LZ4,
+		COMPRESSION_ZSTD = CompressedData::COMPRESSION_ZSTD,
+	};
+
+	static const char *COMPRESSION_MODE_HINT_STRING;
+
+	static int serialize_to_stream_peer(
+			Ref<StreamPeer> peer,
+			Ref<VoxelBuffer> voxel_buffer,
+			const Compression compress_mode
+	);
+
 	static void deserialize_from_stream_peer(
 			Ref<StreamPeer> peer,
 			Ref<VoxelBuffer> voxel_buffer,
-			int size,
-			bool decompress
+			const int64_t size,
+			const bool compress_mode
 	);
 
-	static PackedByteArray serialize_to_byte_array(Ref<VoxelBuffer> voxel_buffer, bool compress);
-	static void deserialize_from_byte_array(PackedByteArray bytes, Ref<VoxelBuffer> voxel_buffer, bool decompress);
+	static PackedByteArray serialize_to_byte_array(Ref<VoxelBuffer> voxel_buffer, const Compression compress_mode);
+
+	static void deserialize_from_byte_array(
+			PackedByteArray bytes,
+			Ref<VoxelBuffer> voxel_buffer,
+			const bool decompress
+	);
 
 	static void _bind_methods();
 };
 
 } // namespace zylann::voxel::godot
+
+VARIANT_ENUM_CAST(zylann::voxel::godot::VoxelBlockSerializer::Compression);
 
 #endif // VOXEL_BLOCK_SERIALIZER_GD_H
