@@ -100,6 +100,9 @@ public:
 	Span<const AABB> get_collision_aabbs() const {
 		return to_span(_collision_aabbs);
 	}
+	const StdVector<AABB> &get_collision_aabbs_v() const {
+		return _collision_aabbs;
+	}
 
 	struct LegacyProperties {
 		enum GeometryType { GEOMETRY_NONE, GEOMETRY_CUBE, GEOMETRY_MESH };

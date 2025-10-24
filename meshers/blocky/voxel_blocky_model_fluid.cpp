@@ -140,7 +140,7 @@ void bake_fluid_model(
 	baked_model.color = fluid_model.get_color();
 	baked_model.is_random_tickable = fluid_model.is_random_tickable();
 	baked_model.box_collision_mask = fluid_model.get_collision_mask();
-	// baked_model.box_collision_aabbs = fluid_model.get_collision_aabbs();
+	baked_model.box_collision_aabbs = fluid_model.get_collision_aabbs_v();
 
 	// This is to be decided dynamically. The top side is always empty.
 	baked_model.model.empty_sides_mask = (1 << Cube::SIDE_POSITIVE_Y);
