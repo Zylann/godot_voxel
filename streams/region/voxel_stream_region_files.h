@@ -48,7 +48,6 @@ public:
 	void set_block_size_po2(int p_block_size_po2);
 	void set_region_size_po2(int p_region_size_po2);
 	void set_sector_size(int p_sector_size);
-	void set_lod_count(int p_lod_count);
 
 	void convert_files(Dictionary d);
 
@@ -83,7 +82,7 @@ private:
 
 	struct Meta {
 		uint8_t version = -1;
-		uint8_t lod_count = 0;
+		// uint8_t lod_count = 0;
 		uint8_t block_size_po2 = 0; // How many voxels in a cubic block
 		uint8_t region_size_po2 = 0; // How many blocks in one cubic region
 		FixedArray<VoxelBuffer::Depth, VoxelBuffer::MAX_CHANNELS> channel_depths;

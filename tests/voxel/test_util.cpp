@@ -1,5 +1,9 @@
 #include "test_util.h"
 #include "../../storage/voxel_buffer.h"
+#include "../../util/io/log.h"
+#include "../../util/string/std_string.h"
+#include "../../util/string/std_stringstream.h"
+#include <sstream>
 
 namespace zylann::voxel::tests {
 
@@ -44,6 +48,35 @@ bool sd_equals_approx(const VoxelBuffer &vb1, const VoxelBuffer &vb2) {
 		}
 	}
 	return true;
+}
+
+void print_channel_as_ascii(const VoxelBuffer &vb, unsigned int channel, const unsigned int padding) {
+	StdStringStream ss;
+
+	Vector3i pos;
+	for (pos.y = 0; pos.y < vb.get_size().y; ++pos.y) {
+		ss << "Y=" << pos.y << '\n';
+		for (pos.z = 0; pos.z < vb.get_size().z; ++pos.z) {
+			for (pos.x = 0; pos.x < vb.get_size().x; ++pos.x) {
+				const int v = vb.get_voxel(pos, channel);
+
+				{
+					int d = 1;
+					for (unsigned int i = 0; i < padding; ++i) {
+						d *= 10;
+						if (v < d) {
+							ss << ' ';
+						}
+					}
+				}
+
+				ss << v << ' ';
+			}
+			ss << '\n';
+		}
+	}
+
+	print_line(ss.str());
 }
 
 } // namespace zylann::voxel::tests

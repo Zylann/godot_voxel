@@ -51,7 +51,7 @@ VoxelStreamRegionFiles::VoxelStreamRegionFiles() {
 	_meta.block_size_po2 = 4;
 	_meta.region_size_po2 = 4;
 	_meta.sector_size = 512; // next_power_of_2(_meta.block_size.volume() / 10) // based on compression ratios
-	_meta.lod_count = 1;
+	// _meta.lod_count = 1;
 	fill(_meta.channel_depths, VoxelBuffer::DEFAULT_CHANNEL_DEPTH);
 	_meta.channel_depths[VoxelBuffer::CHANNEL_TYPE] = VoxelBuffer::DEFAULT_TYPE_CHANNEL_DEPTH;
 	_meta.channel_depths[VoxelBuffer::CHANNEL_SDF] = VoxelBuffer::DEFAULT_SDF_CHANNEL_DEPTH;
@@ -149,7 +149,7 @@ VoxelStreamRegionFiles::EmergeResult VoxelStreamRegionFiles::_load_block(
 	const Vector3i region_size = Vector3iUtil::create(1 << _meta.region_size_po2);
 
 	CRASH_COND(!_meta_loaded);
-	ERR_FAIL_COND_V(lod >= _meta.lod_count, EMERGE_FAILED);
+	ERR_FAIL_COND_V(lod >= constants::MAX_LOD, EMERGE_FAILED);
 	ERR_FAIL_COND_V(block_size != out_buffer.get_size(), EMERGE_FAILED);
 
 	// Configure depths, as they might not be specified in old block data.
@@ -280,7 +280,7 @@ zylann::godot::FileResult VoxelStreamRegionFiles::save_meta() {
 	d["version"] = _meta.version;
 	d["block_size_po2"] = _meta.block_size_po2;
 	d["region_size_po2"] = _meta.region_size_po2;
-	d["lod_count"] = _meta.lod_count;
+	// d["lod_count"] = _meta.lod_count;
 	d["sector_size"] = _meta.sector_size;
 
 	Array channel_depths;
@@ -387,7 +387,7 @@ zylann::godot::FileResult VoxelStreamRegionFiles::load_meta() {
 	ERR_FAIL_COND_V(!u8_from_json_variant(d["version"], meta.version), FILE_INVALID_DATA);
 	ERR_FAIL_COND_V(!u8_from_json_variant(d["block_size_po2"], meta.block_size_po2), FILE_INVALID_DATA);
 	ERR_FAIL_COND_V(!u8_from_json_variant(d["region_size_po2"], meta.region_size_po2), FILE_INVALID_DATA);
-	ERR_FAIL_COND_V(!u8_from_json_variant(d["lod_count"], meta.lod_count), FILE_INVALID_DATA);
+	// ERR_FAIL_COND_V(!u8_from_json_variant(d["lod_count"], meta.lod_count), FILE_INVALID_DATA);
 	ERR_FAIL_COND_V(!u32_from_json_variant(d["sector_size"], meta.sector_size), FILE_INVALID_DATA);
 
 	ERR_FAIL_COND_V(meta.version < 0, FILE_INVALID_DATA);
@@ -410,7 +410,7 @@ zylann::godot::FileResult VoxelStreamRegionFiles::load_meta() {
 bool VoxelStreamRegionFiles::check_meta(const Meta &meta) {
 	ERR_FAIL_COND_V(meta.block_size_po2 < 1 || meta.block_size_po2 > 8, false);
 	ERR_FAIL_COND_V(meta.region_size_po2 < 1 || meta.region_size_po2 > 8, false);
-	ERR_FAIL_COND_V(meta.lod_count <= 0 || meta.lod_count > 32, false);
+	// ERR_FAIL_COND_V(meta.lod_count <= 0 || meta.lod_count > 32, false);
 	ERR_FAIL_COND_V(meta.sector_size <= 0 || meta.sector_size > 65536, false);
 	return true;
 }
@@ -645,7 +645,7 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 
 	// Get list of all regions from the old stream
 	{
-		for (unsigned int lod_index = 0; lod_index < old_meta.lod_count; ++lod_index) {
+		for (unsigned int lod_index = 0; lod_index < constants::MAX_LOD; ++lod_index) {
 			const String lod_folder =
 					old_stream->_directory_path.path_join("regions").path_join("lod") + String::num_int64(lod_index);
 			const String ext = String(".") + RegionFormat::FILE_EXTENSION;
@@ -818,8 +818,7 @@ int VoxelStreamRegionFiles::get_block_size_po2() const {
 }
 
 int VoxelStreamRegionFiles::get_lod_count() const {
-	MutexLock lock(_mutex);
-	return _meta.lod_count;
+	return constants::MAX_LOD;
 }
 
 int VoxelStreamRegionFiles::get_sector_size() const {
@@ -880,29 +879,13 @@ void VoxelStreamRegionFiles::set_sector_size(int p_sector_size) {
 	emit_changed();
 }
 
-void VoxelStreamRegionFiles::set_lod_count(int p_lod_count) {
-	{
-		MutexLock lock(_mutex);
-		if (_meta.lod_count == p_lod_count) {
-			return;
-		}
-		ERR_FAIL_COND_MSG(
-				_meta_loaded, "Can't change existing LOD count without heavy conversion. Use convert_files()."
-		);
-		ERR_FAIL_COND(p_lod_count < 1);
-		ERR_FAIL_COND(p_lod_count > 32);
-		_meta.lod_count = p_lod_count;
-	}
-	emit_changed();
-}
-
 void VoxelStreamRegionFiles::convert_files(Dictionary d) {
 	Meta meta;
 	meta.version = _meta.version;
 	meta.block_size_po2 = int(d["block_size_po2"]);
 	meta.region_size_po2 = int(d["region_size_po2"]);
 	meta.sector_size = int(d["sector_size"]);
-	meta.lod_count = int(d["lod_count"]);
+	// meta.lod_count = int(d["lod_count"]);
 
 	{
 		MutexLock lock(_mutex);
@@ -941,13 +924,11 @@ void VoxelStreamRegionFiles::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_directory"), &VoxelStreamRegionFiles::get_directory);
 
 	ClassDB::bind_method(D_METHOD("get_block_size_po2"), &VoxelStreamRegionFiles::get_block_size_po2);
-	ClassDB::bind_method(D_METHOD("get_lod_count"), &VoxelStreamRegionFiles::get_lod_count);
 	ClassDB::bind_method(D_METHOD("get_region_size"), &VoxelStreamRegionFiles::get_region_size_v);
 	ClassDB::bind_method(D_METHOD("get_region_size_po2"), &VoxelStreamRegionFiles::get_region_size_po2);
 	ClassDB::bind_method(D_METHOD("get_sector_size"), &VoxelStreamRegionFiles::get_sector_size);
 
 	ClassDB::bind_method(D_METHOD("set_block_size_po2"), &VoxelStreamRegionFiles::set_block_size_po2);
-	ClassDB::bind_method(D_METHOD("set_lod_count"), &VoxelStreamRegionFiles::set_lod_count);
 	ClassDB::bind_method(D_METHOD("set_region_size_po2"), &VoxelStreamRegionFiles::set_region_size_po2);
 	ClassDB::bind_method(D_METHOD("set_sector_size"), &VoxelStreamRegionFiles::set_sector_size);
 
@@ -956,7 +937,6 @@ void VoxelStreamRegionFiles::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::STRING, "directory", PROPERTY_HINT_DIR), "set_directory", "get_directory");
 
 	ADD_GROUP("Dimensions", "");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "lod_count"), "set_lod_count", "get_lod_count");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "region_size_po2"), "set_region_size_po2", "get_region_size_po2");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "block_size_po2"), "set_block_size_po2", "get_block_size_po2");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "sector_size"), "set_sector_size", "get_sector_size");

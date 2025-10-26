@@ -10,15 +10,16 @@ I try to minimize breaking changes, but there are usually a few in each release 
 Dev 1.5.1 - `master`
 --------------------
 
-- `VoxelGeneratorGraph`: 
-    - Editor: added `Add Node` item to the context menu
-    - Added support for domain warp on `FastNoiseLite` and `ZN_FastNoiseLite` resources when using GPU (previously required to prepend `FastNoiseLiteGradient` noise)
-    - Added methods to get the index of node inputs and output by their name
-    - Added `generate_image_from_sdf`
-    - Added `raycast_sdf_approx` to find where surface is from a ray
-- `VoxelLodTerrain`: added debug flag to draw locations of voxel metadatas
-- `VoxelStream`: added option to compress saves using ZSTD instead of LZ4
-- `VoxelToolLodTerrain`: implemented `get/set_voxel_metadata` methods. Warning: caching is off by default, so getting metadata in non-edited areas will invoke the generator, like `get_voxel`.
+- Improvements
+    - `VoxelGeneratorGraph`: 
+        - Editor: added `Add Node` item to the context menu
+        - Added support for domain warp on `FastNoiseLite` and `ZN_FastNoiseLite` resources when using GPU (previously required to prepend `FastNoiseLiteGradient` noise)
+        - Added methods to get the index of node inputs and output by their name
+        - Added `generate_image_from_sdf`
+        - Added `raycast_sdf_approx` to find where surface is from a ray
+    - `VoxelLodTerrain`: added debug flag to draw locations of voxel metadatas
+    - `VoxelStream`: added option to compress saves using ZSTD instead of LZ4
+    - `VoxelToolLodTerrain`: implemented `get/set_voxel_metadata` methods. Warning: caching is off by default, so getting metadata in non-edited areas will invoke the generator, like `get_voxel`.
 
 - Fixes
     - `VoxelBlockyModelFluid`: fixed collision boxes were ignored by library baking
@@ -27,6 +28,10 @@ Dev 1.5.1 - `master`
     - `VoxelTool`: 
         `run_blocky_random_tick`: fixed uniform blocks were not picked up (PR #794)
         `run_blocky_random_tick`: will now run over the remainder if voxel count is not divisible by batch size
+
+- Breaking changes
+    - `VoxelStreamRegionFiles`: removed `lod_count` property. Any LOD can be saved without the need to preconfigure it.
+
 
 
 1.5 - 16/09/2025 - tag `v1.5`
