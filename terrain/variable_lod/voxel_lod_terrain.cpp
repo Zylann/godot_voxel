@@ -3551,6 +3551,29 @@ void VoxelLodTerrain::update_gizmos() {
 		);
 	}
 
+	if (debug_get_draw_flag(DEBUG_DRAW_VOXEL_METADATA)) {
+		const int data_block_size = get_data_block_size();
+		for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
+			_data->for_each_block_at_lod_r(
+					[&dr, parent_transform, data_block_size](const Vector3i &bpos, const VoxelDataBlock &block) {
+						if (block.has_voxels()) {
+							const VoxelBuffer &vb = block.get_voxels_const();
+							const FlatMapMoveOnly<Vector3i, VoxelMetadata> &meta_map = vb.get_voxel_metadata();
+							const Vector3i block_origin = bpos * data_block_size;
+
+							for (auto it = meta_map.begin(); it != meta_map.end(); ++it) {
+								const Vector3i rpos = it->key;
+								const Transform3D local_transform(Basis(), to_vec3(block_origin + rpos));
+								const Transform3D t = parent_transform * local_transform;
+								dr.draw_box(t, Color8(255, 255, 0, 255));
+							}
+						}
+					},
+					lod_index
+			);
+		}
+	}
+
 	// Debug updates
 	for (unsigned int i = 0; i < _debug_mesh_update_items.size();) {
 		DebugMeshUpdateItem &item = _debug_mesh_update_items[i];
@@ -4069,6 +4092,7 @@ void VoxelLodTerrain::_bind_methods() {
 	ADD_DEBUG_DRAW_FLAG("debug_draw_viewer_clipboxes", DEBUG_DRAW_VIEWER_CLIPBOXES);
 	ADD_DEBUG_DRAW_FLAG("debug_draw_loaded_visual_and_collision_blocks", DEBUG_DRAW_LOADED_VISUAL_AND_COLLISION_BLOCKS);
 	ADD_DEBUG_DRAW_FLAG("debug_draw_active_visual_and_collision_blocks", DEBUG_DRAW_ACTIVE_VISUAL_AND_COLLISION_BLOCKS);
+	ADD_DEBUG_DRAW_FLAG("debug_draw_voxel_metadata", DEBUG_DRAW_VOXEL_METADATA);
 
 	ADD_PROPERTY(
 			PropertyInfo(Variant::BOOL, "debug_draw_shadow_occluders", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR),
