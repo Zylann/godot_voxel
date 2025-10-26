@@ -413,11 +413,11 @@ void VoxelTool::_post_edit(const Box3i &box) {
 	ERR_PRINT("Not implemented");
 }
 
-void VoxelTool::set_voxel_metadata(Vector3i pos, Variant meta) {
+void VoxelTool::set_voxel_metadata(const Vector3i pos, const Variant &meta) {
 	ERR_PRINT("Not implemented");
 }
 
-Variant VoxelTool::get_voxel_metadata(Vector3i pos) const {
+Variant VoxelTool::get_voxel_metadata(const Vector3i pos) const {
 	ERR_PRINT("Not implemented");
 	return Variant();
 }

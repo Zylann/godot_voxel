@@ -24,8 +24,8 @@ public:
 			uint32_t p_collision_mask
 	) override;
 
-	void set_voxel_metadata(Vector3i pos, Variant meta) override;
-	Variant get_voxel_metadata(Vector3i pos) const override;
+	void set_voxel_metadata(const Vector3i pos, const Variant &meta) override;
+	Variant get_voxel_metadata(const Vector3i pos) const override;
 
 	void copy(
 			const Vector3i pos,

@@ -253,6 +253,19 @@ void VoxelToolLodTerrain::paste(Vector3i pos, const VoxelBuffer &src, uint8_t ch
 	_post_edit(box);
 }
 
+void VoxelToolLodTerrain::set_voxel_metadata(const Vector3i pos, const Variant &meta) {
+	ZN_ASSERT_RETURN(_terrain != nullptr);
+	VoxelData &data = _terrain->get_storage();
+	data.set_voxel_metadata(pos, meta);
+	_terrain->post_edit_area(Box3i(pos, Vector3i(1, 1, 1)), false);
+}
+
+Variant VoxelToolLodTerrain::get_voxel_metadata(const Vector3i pos) const {
+	ZN_ASSERT_RETURN_V(_terrain != nullptr, Variant());
+	VoxelData &data = _terrain->get_storage();
+	return data.get_voxel_metadata(pos);
+}
+
 float VoxelToolLodTerrain::get_voxel_f_interpolated(Vector3 position) const {
 	ZN_PROFILE_SCOPE();
 	ERR_FAIL_COND_V(_terrain == nullptr, 0);

@@ -307,7 +307,7 @@ Variant get_voxel_metadata(const zylann::voxel::VoxelBuffer &vb, const Vector3i 
 	return get_as_variant(*meta);
 }
 
-void set_voxel_metadata(zylann::voxel::VoxelBuffer &vb, const Vector3i pos, const Variant meta) {
+void set_voxel_metadata(zylann::voxel::VoxelBuffer &vb, const Vector3i pos, const Variant &meta) {
 	if (meta.get_type() == Variant::NIL) {
 		vb.erase_voxel_metadata(pos);
 	} else {

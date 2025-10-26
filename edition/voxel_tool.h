@@ -127,8 +127,8 @@ public:
 	// Checks if an edit affecting the given box can be applied, fully or partially
 	virtual bool is_area_editable(const Box3i &box) const;
 
-	virtual void set_voxel_metadata(Vector3i pos, Variant meta);
-	virtual Variant get_voxel_metadata(Vector3i pos) const;
+	virtual void set_voxel_metadata(const Vector3i pos, const Variant &meta);
+	virtual Variant get_voxel_metadata(const Vector3i pos) const;
 
 	virtual VoxelFormat get_format() const;
 

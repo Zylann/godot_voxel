@@ -289,7 +289,7 @@ void VoxelToolMultipassGenerator::do_path(Span<const Vector3> positions, Span<co
 	}
 }
 
-void VoxelToolMultipassGenerator::set_voxel_metadata(Vector3i pos, Variant meta) {
+void VoxelToolMultipassGenerator::set_voxel_metadata(const Vector3i pos, const Variant &meta) {
 	Vector3i rpos;
 	Block *block = get_block_and_relative_position(pos, rpos);
 	if (block == nullptr) {
@@ -298,7 +298,7 @@ void VoxelToolMultipassGenerator::set_voxel_metadata(Vector3i pos, Variant meta)
 	godot::set_voxel_metadata(block->voxels, rpos, meta);
 }
 
-Variant VoxelToolMultipassGenerator::get_voxel_metadata(Vector3i pos) const {
+Variant VoxelToolMultipassGenerator::get_voxel_metadata(const Vector3i pos) const {
 	Vector3i rpos;
 	Block *block = get_block_and_relative_position(pos, rpos);
 	if (block == nullptr) {

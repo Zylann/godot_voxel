@@ -247,14 +247,14 @@ void VoxelToolTerrain::_post_edit(const Box3i &box) {
 	_terrain->post_edit_area(box, true);
 }
 
-void VoxelToolTerrain::set_voxel_metadata(Vector3i pos, Variant meta) {
+void VoxelToolTerrain::set_voxel_metadata(const Vector3i pos, const Variant &meta) {
 	ERR_FAIL_COND(_terrain == nullptr);
 	VoxelData &data = _terrain->get_storage();
 	data.set_voxel_metadata(pos, meta);
 	_terrain->post_edit_area(Box3i(pos, Vector3i(1, 1, 1)), false);
 }
 
-Variant VoxelToolTerrain::get_voxel_metadata(Vector3i pos) const {
+Variant VoxelToolTerrain::get_voxel_metadata(const Vector3i pos) const {
 	ERR_FAIL_COND_V(_terrain == nullptr, Variant());
 	VoxelData &data = _terrain->get_storage();
 	return data.get_voxel_metadata(pos);

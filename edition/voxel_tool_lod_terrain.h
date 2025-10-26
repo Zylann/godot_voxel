@@ -34,6 +34,9 @@ public:
 	) const override;
 	void paste(Vector3i pos, const VoxelBuffer &src, uint8_t channels_mask) override;
 
+	void set_voxel_metadata(const Vector3i pos, const Variant &meta) override;
+	Variant get_voxel_metadata(const Vector3i pos) const override;
+
 	// Specialized API
 
 	int get_raycast_binary_search_iterations() const;

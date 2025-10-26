@@ -251,22 +251,19 @@ VoxelSingleValue VoxelData::get_voxel(Vector3i pos, unsigned int channel_index, 
 	}
 }
 
-// TODO Piggyback on `paste`? The implementation is quite complex, and it's not supposed to be an efficient use case
-bool VoxelData::try_set_voxel(uint64_t value, Vector3i pos, unsigned int channel_index) {
-	Lod &data_lod0 = _lods[0];
-	const Vector3i block_pos_lod0 = data_lod0.map.voxel_to_block(pos);
-
-	SpatialLock3D::Write swlock(data_lod0.spatial_lock, BoxBounds3i::from_position(block_pos_lod0));
-
+std::shared_ptr<VoxelBuffer> VoxelData::try_get_writable_voxel_buffer_assuming_spatial_lock(
+		Lod &lod,
+		const Vector3i bpos
+) {
 	bool can_generate = false;
-	std::shared_ptr<VoxelBuffer> voxels = try_get_voxel_buffer_with_lock(data_lod0, block_pos_lod0, can_generate);
+	std::shared_ptr<VoxelBuffer> voxels = try_get_voxel_buffer_with_lock(lod, bpos, can_generate);
 
 	if (voxels == nullptr) {
 		// Several reasons voxels aren't in memory
 
 		if ((_streaming_enabled && !can_generate) || (!_streaming_enabled && !_full_load_completed)) {
 			// We don't know what's actually in the block, it's not loaded. Can't edit.
-			return false;
+			return voxels;
 		}
 		// The block is either loaded, or streaming is off (everything is loaded), so either way the block we want to
 		// edit is known
@@ -276,17 +273,33 @@ bool VoxelData::try_set_voxel(uint64_t value, Vector3i pos, unsigned int channel
 
 		Ref<VoxelGenerator> generator = get_generator();
 		if (generator.is_valid()) {
-			VoxelGenerator::VoxelQueryData q{ *voxels, block_pos_lod0 << get_block_size_po2(), 0 };
+			VoxelGenerator::VoxelQueryData q{ *voxels, bpos << get_block_size_po2(), 0 };
 			generator->generate_block(q);
 #ifdef VOXEL_ENABLE_MODIFIERS
 			_modifiers.apply(q.voxel_buffer, AABB(q.origin_in_voxels, q.voxel_buffer.get_size()));
 #endif
 		}
 
-		RWLockWrite wlock(data_lod0.map_lock);
+		RWLockWrite wlock(lod.map_lock);
 		// No other thread can modify this area while we were generating, since we hold a spatial lock.
 
-		data_lod0.map.set_block_buffer(block_pos_lod0, voxels, true);
+		lod.map.set_block_buffer(bpos, voxels, true);
+	}
+
+	return voxels;
+}
+
+// TODO Piggyback on `paste`? The implementation is quite complex, and it's not supposed to be an efficient use case
+bool VoxelData::try_set_voxel(uint64_t value, Vector3i pos, unsigned int channel_index) {
+	Lod &data_lod0 = _lods[0];
+	const Vector3i block_pos_lod0 = data_lod0.map.voxel_to_block(pos);
+
+	SpatialLock3D::Write swlock(data_lod0.spatial_lock, BoxBounds3i::from_position(block_pos_lod0));
+
+	std::shared_ptr<VoxelBuffer> voxels =
+			try_get_writable_voxel_buffer_assuming_spatial_lock(data_lod0, block_pos_lod0);
+	if (voxels == nullptr) {
+		return false;
 	}
 
 	voxels->set_voxel(value, data_lod0.map.to_local(pos), channel_index);
@@ -1288,38 +1301,51 @@ std::shared_ptr<VoxelBuffer> VoxelData::try_get_block_voxels(Vector3i bpos) {
 	return nullptr;
 }
 
-void VoxelData::set_voxel_metadata(Vector3i pos, Variant meta) {
+void VoxelData::set_voxel_metadata(const Vector3i pos, const Variant &meta) {
 	Lod &lod = _lods[0];
 
 	const Vector3i bpos = lod.map.voxel_to_block(pos);
 
 	SpatialLock3D::Write swlock(lod.spatial_lock, BoxBounds3i::from_position(bpos));
-	RWLockRead rlock(lod.map_lock);
+	std::shared_ptr<VoxelBuffer> vb = try_get_writable_voxel_buffer_assuming_spatial_lock(lod, bpos);
+	ZN_ASSERT_RETURN_MSG(vb != nullptr, "Area not editable");
 
-	VoxelDataBlock *block = lod.map.get_block(bpos);
-	ZN_ASSERT_RETURN_MSG(block != nullptr, "Area not editable");
-	// TODO Ability to have metadata in areas where voxels have not been allocated?
-	// Otherwise we have to generate the block, because that's where it is stored at the moment.
-	ZN_ASSERT_RETURN_MSG(block->has_voxels(), "Area not cached");
-	VoxelBuffer &vb = block->get_voxels();
 	const Vector3i rpos = lod.map.to_local(pos);
-	zylann::voxel::godot::set_voxel_metadata(vb, rpos, meta);
+	zylann::voxel::godot::set_voxel_metadata(*vb, rpos, meta);
 }
 
-Variant VoxelData::get_voxel_metadata(Vector3i pos) {
-	Lod &lod = _lods[0];
+Variant VoxelData::get_voxel_metadata(const Vector3i pos) {
+	if (!_bounds_in_voxels.contains(pos)) {
+		return Variant();
+	}
 
+	const unsigned int lod_index = 0;
+	Lod &lod = _lods[lod_index];
 	const Vector3i bpos = lod.map.voxel_to_block(pos);
-
-	SpatialLock3D::Read srlock(lod.spatial_lock, BoxBounds3i::from_position(bpos));
-	RWLockRead rlock(lod.map_lock);
-
-	VoxelDataBlock *block = lod.map.get_block(bpos);
-	ZN_ASSERT_RETURN_V_MSG(block != nullptr, Variant(), "Area not editable");
-	ZN_ASSERT_RETURN_V_MSG(block->has_voxels(), Variant(), "Area not cached");
-	const VoxelBuffer &vb = block->get_voxels_const();
 	const Vector3i rpos = lod.map.to_local(pos);
-	return zylann::voxel::godot::get_voxel_metadata(vb, rpos);
+
+	bool generate = false;
+	{
+		SpatialLock3D::Read srlock(lod.spatial_lock, BoxBounds3i::from_position(bpos));
+		std::shared_ptr<VoxelBuffer> voxels = try_get_voxel_buffer_with_lock(lod, bpos, generate);
+
+		if (voxels != nullptr) {
+			return zylann::voxel::godot::get_voxel_metadata(*voxels, rpos);
+		}
+	}
+	if (generate || (_streaming_enabled == false && _full_load_completed)) {
+		Ref<VoxelGenerator> generator = get_generator();
+		if (generator.is_valid()) {
+			// TODO This feels bad. The combination of settings leading here wasn't really meant to be.
+			VoxelBuffer temp(VoxelBuffer::ALLOCATOR_POOL);
+			temp.create(Vector3i(1, 1, 1));
+			VoxelGenerator::VoxelQueryData q{ temp, pos, lod_index };
+			generator->generate_block(q);
+			return zylann::voxel::godot::get_voxel_metadata(temp, Vector3i(0, 0, 0));
+		}
+		return Variant();
+	}
+	return Variant();
 }
 
 } // namespace zylann::voxel

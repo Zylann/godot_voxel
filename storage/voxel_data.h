@@ -361,8 +361,8 @@ public:
 	// Metadata queries.
 	// Only at LOD0.
 
-	void set_voxel_metadata(Vector3i pos, Variant meta);
-	Variant get_voxel_metadata(Vector3i pos);
+	void set_voxel_metadata(const Vector3i pos, const Variant &meta);
+	Variant get_voxel_metadata(const Vector3i pos);
 
 private:
 	void reset_maps_no_settings_lock();
@@ -424,6 +424,8 @@ private:
 		}
 		return block->get_voxels_shared();
 	}
+
+	std::shared_ptr<VoxelBuffer> try_get_writable_voxel_buffer_assuming_spatial_lock(Lod &lod, const Vector3i bpos);
 
 	// Each LOD works in a set of coordinates spanning 2x more voxels the higher their index is.
 	// LOD 0 is the primary storage for edited data. Higher indices are "mip-maps".
