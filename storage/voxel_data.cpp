@@ -171,6 +171,10 @@ VoxelSingleValue VoxelData::get_voxel(Vector3i pos, unsigned int channel_index, 
 	bool generate = false;
 
 	if (!_streaming_enabled) {
+		if (_full_load_completed == false) {
+			return defval;
+		}
+
 		const Lod &data_lod0 = _lods[0];
 
 		data_lod0.spatial_lock.lock_read(BoxBounds3i::from_position(block_pos));
