@@ -84,8 +84,12 @@ public:
 	bool set_format(const RegionFormat &format);
 	const RegionFormat &get_format() const;
 
-	Error load_block(Vector3i position, VoxelBuffer &out_block);
-	Error save_block(Vector3i position, VoxelBuffer &block, const CompressedData::Compression compression_mode);
+	Error load_block(const Vector3i position, VoxelBuffer &out_block);
+	Error save_block(
+			const Vector3i position,
+			const VoxelBuffer &block,
+			const CompressedData::Compression compression_mode
+	);
 
 	unsigned int get_header_block_count() const;
 	bool has_block(Vector3i position) const;

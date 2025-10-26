@@ -341,7 +341,7 @@ bool RegionFile::is_valid_block_position(const Vector3 position) const {
 			position.z < _header.format.region_size.z;
 }
 
-Error RegionFile::load_block(Vector3i position, VoxelBuffer &out_block) {
+Error RegionFile::load_block(const Vector3i position, VoxelBuffer &out_block) {
 	ERR_FAIL_COND_V(_file_access.is_null(), ERR_FILE_CANT_READ);
 	FileAccess &f = **_file_access;
 
@@ -378,8 +378,8 @@ Error RegionFile::load_block(Vector3i position, VoxelBuffer &out_block) {
 }
 
 Error RegionFile::save_block(
-		Vector3i position,
-		VoxelBuffer &block,
+		const Vector3i position,
+		const VoxelBuffer &block,
 		const CompressedData::Compression compression_mode
 ) {
 	ERR_FAIL_COND_V(_header.format.verify_block(block) == false, ERR_INVALID_PARAMETER);

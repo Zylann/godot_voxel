@@ -126,8 +126,8 @@ int VoxelStreamRegionFiles::get_used_channels_mask() const {
 
 VoxelStreamRegionFiles::EmergeResult VoxelStreamRegionFiles::_load_block(
 		VoxelBuffer &out_buffer,
-		Vector3i block_pos,
-		int lod
+		const Vector3i block_pos,
+		const uint8_t lod
 ) {
 	ZN_PROFILE_SCOPE();
 
@@ -180,7 +180,7 @@ VoxelStreamRegionFiles::EmergeResult VoxelStreamRegionFiles::_load_block(
 	}
 }
 
-void VoxelStreamRegionFiles::_save_block(VoxelBuffer &voxel_buffer, Vector3i block_pos, int lod) {
+void VoxelStreamRegionFiles::_save_block(const VoxelBuffer &voxel_buffer, const Vector3i block_pos, const uint8_t lod) {
 	ZN_PROFILE_SCOPE();
 	using namespace zylann::godot;
 

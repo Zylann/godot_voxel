@@ -66,8 +66,8 @@ private:
 		EMERGE_FAILED
 	};
 
-	EmergeResult _load_block(VoxelBuffer &out_buffer, Vector3i block_pos, int lod);
-	void _save_block(VoxelBuffer &voxel_buffer, Vector3i block_pos, int lod);
+	EmergeResult _load_block(VoxelBuffer &out_buffer, const Vector3i block_pos, const uint8_t lod);
+	void _save_block(const VoxelBuffer &voxel_buffer, const Vector3i block_pos, const uint8_t lod);
 
 	zylann::godot::FileResult save_meta();
 	zylann::godot::FileResult load_meta();
