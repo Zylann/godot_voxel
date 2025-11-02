@@ -50,7 +50,9 @@ Return                                                                          
 [Vector2](https://docs.godotengine.org/en/stable/classes/class_vector2.html)                    | [get_node_gui_position](#i_get_node_gui_position) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) node_id ) const                                                                                                                                                                                                                                                    
 [Vector2](https://docs.godotengine.org/en/stable/classes/class_vector2.html)                    | [get_node_gui_size](#i_get_node_gui_size) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) node_id ) const                                                                                                                                                                                                                                                            
 [PackedInt32Array](https://docs.godotengine.org/en/stable/classes/class_packedint32array.html)  | [get_node_ids](#i_get_node_ids) ( ) const                                                                                                                                                                                                                                                                                                                                                   
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)                            | [get_node_input_index](#i_get_node_input_index) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) node_id, [String](https://docs.godotengine.org/en/stable/classes/class_string.html) input_name ) const                                                                                                                                                               
 [StringName](https://docs.godotengine.org/en/stable/classes/class_stringname.html)              | [get_node_name](#i_get_node_name) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) node_id ) const                                                                                                                                                                                                                                                                    
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)                            | [get_node_output_index](#i_get_node_output_index) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) node_id, [String](https://docs.godotengine.org/en/stable/classes/class_string.html) output_name ) const                                                                                                                                                            
 [Variant](https://docs.godotengine.org/en/stable/classes/class_variant.html)                    | [get_node_param](#i_get_node_param) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) node_id, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) param_index ) const                                                                                                                                                                                
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)                            | [get_node_type_count](#i_get_node_type_count) ( ) const                                                                                                                                                                                                                                                                                                                                     
 [NodeTypeID](VoxelGraphFunction.md#enumerations)                                                | [get_node_type_id](#i_get_node_type_id) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) node_id ) const                                                                                                                                                                                                                                                              
@@ -226,9 +228,17 @@ Get a list of IDs of all the nodes in the graph.
 
 Note: the order in which IDs are returned is not guaranteed to be the same after nodes are added or removed.
 
+### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_get_node_input_index"></span> **get_node_input_index**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) node_id, [String](https://docs.godotengine.org/en/stable/classes/class_string.html) input_name ) 
+
+Gets the input index of a node from the input's name.
+
 ### [StringName](https://docs.godotengine.org/en/stable/classes/class_stringname.html)<span id="i_get_node_name"></span> **get_node_name**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) node_id ) 
 
 Gets the user-defined name of the node.
+
+### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_get_node_output_index"></span> **get_node_output_index**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) node_id, [String](https://docs.godotengine.org/en/stable/classes/class_string.html) output_name ) 
+
+Gets the output index of a node from the output's name.
 
 ### [Variant](https://docs.godotengine.org/en/stable/classes/class_variant.html)<span id="i_get_node_param"></span> **get_node_param**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) node_id, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) param_index ) 
 
@@ -331,4 +341,4 @@ Set a parameter of a node, using its name as it appears in the editor.
 
 Set a parameter of a node to null. This method only exists to workaround an issue with Godot's UndoRedo system. Prefer using [set_node_param](VoxelGraphFunction.md#i_set_node_param).
 
-_Generated on Aug 09, 2025_
+_Generated on Nov 02, 2025_

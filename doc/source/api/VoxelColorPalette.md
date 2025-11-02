@@ -54,4 +54,4 @@ Gets the color at the given index.
 
 Sets the color at the given index.
 
-_Generated on Aug 09, 2025_
+_Generated on Nov 02, 2025_

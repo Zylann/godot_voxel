@@ -32,6 +32,7 @@ Type                                                                            
 [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)          | [debug_draw_shadow_occluders](#i_debug_draw_shadow_occluders)                                      | false                                                                        
 [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)          | [debug_draw_viewer_clipboxes](#i_debug_draw_viewer_clipboxes)                                      | false                                                                        
 [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)          | [debug_draw_volume_bounds](#i_debug_draw_volume_bounds)                                            | false                                                                        
+[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)          | [debug_draw_voxel_metadata](#i_debug_draw_voxel_metadata)                                          | false                                                                        
 [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)          | [full_load_mode_enabled](#i_full_load_mode_enabled)                                                | false                                                                        
 [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)          | [generate_collisions](#i_generate_collisions)                                                      | true                                                                         
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)            | [lod_count](#i_lod_count)                                                                          | 4                                                                            
@@ -107,7 +108,7 @@ enum **DebugDrawFlag**:
 - <span id="i_DEBUG_DRAW_VIEWER_CLIPBOXES"></span>**DEBUG_DRAW_VIEWER_CLIPBOXES** = **8**
 - <span id="i_DEBUG_DRAW_LOADED_VISUAL_AND_COLLISION_BLOCKS"></span>**DEBUG_DRAW_LOADED_VISUAL_AND_COLLISION_BLOCKS** = **9**
 - <span id="i_DEBUG_DRAW_ACTIVE_VISUAL_AND_COLLISION_BLOCKS"></span>**DEBUG_DRAW_ACTIVE_VISUAL_AND_COLLISION_BLOCKS** = **10**
-- <span id="i_DEBUG_DRAW_FLAGS_COUNT"></span>**DEBUG_DRAW_FLAGS_COUNT** = **11**
+- <span id="i_DEBUG_DRAW_FLAGS_COUNT"></span>**DEBUG_DRAW_FLAGS_COUNT** = **12**
 
 enum **StreamingSystem**: 
 
@@ -192,6 +193,10 @@ How long to wait before updating colliders after an edit, in milliseconds. Colli
 *(This property has no documentation)*
 
 ### [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_debug_draw_volume_bounds"></span> **debug_draw_volume_bounds** = false
+
+*(This property has no documentation)*
+
+### [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_debug_draw_voxel_metadata"></span> **debug_draw_voxel_metadata** = false
 
 *(This property has no documentation)*
 
@@ -438,6 +443,7 @@ The returned dictionary has the following structure:
 	"blocked_lods": int
 }
 ```
+Times are in microseconds.
 
 ### [VoxelTool](VoxelTool.md)<span id="i_get_voxel_tool"></span> **get_voxel_tool**( ) 
 
@@ -479,4 +485,4 @@ Converts a voxel position into a data block position for a specific LOD index.
 
 Converts a voxel position into a mesh block position for a specific LOD index.
 
-_Generated on Aug 09, 2025_
+_Generated on Nov 02, 2025_

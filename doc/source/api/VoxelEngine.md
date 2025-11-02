@@ -103,4 +103,4 @@ Runs internal unit tests. This function is only available if the voxel engine is
 
 Sets the number of threads to be used internally by the `ThreadedTaskRunner`. Setting this can cause lagging, and it might take some time until the number of threads actually matches the given value.
 
-_Generated on Aug 09, 2025_
+_Generated on Nov 02, 2025_

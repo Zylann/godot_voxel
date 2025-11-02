@@ -17,7 +17,6 @@ Type                                                                        | Na
 --------------------------------------------------------------------------- | -------------------------------------- | --------
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)        | [block_size_po2](#i_block_size_po2)    | 4       
 [String](https://docs.godotengine.org/en/stable/classes/class_string.html)  | [directory](#i_directory)              | ""      
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)        | [lod_count](#i_lod_count)              | 1       
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)        | [region_size_po2](#i_region_size_po2)  | 4       
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)        | [sector_size](#i_sector_size)          | 512     
 <p></p>
@@ -41,10 +40,6 @@ Return                                                                        | 
 
 Directory under which the data is saved.
 
-### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_lod_count"></span> **lod_count** = 1
-
-*(This property has no documentation)*
-
 ### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_region_size_po2"></span> **region_size_po2** = 4
 
 *(This property has no documentation)*
@@ -63,4 +58,4 @@ Directory under which the data is saved.
 
 *(This method has no documentation)*
 
-_Generated on Aug 09, 2025_
+_Generated on Nov 02, 2025_

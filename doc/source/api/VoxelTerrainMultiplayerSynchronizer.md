@@ -2,4 +2,4 @@
 
 Inherits: [Node](https://docs.godotengine.org/en/stable/classes/class_node.html)
 
-_Generated on Aug 09, 2025_
+_Generated on Nov 02, 2025_

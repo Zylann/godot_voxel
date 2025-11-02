@@ -75,4 +75,4 @@ When a marching cube cell is computed, vertices may be placed anywhere on edges 
 
 Generates only the part of the mesh that Transvoxel uses to connect surfaces with different level of detail. This method is mainly for testing purposes.
 
-_Generated on Aug 09, 2025_
+_Generated on Nov 02, 2025_

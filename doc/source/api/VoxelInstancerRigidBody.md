@@ -29,4 +29,4 @@ Gets the ID of the item in the instancer's [VoxelInstanceLibrary](VoxelInstanceL
 
 Alternative to `queue_free` in case you don't want to use `call_deferred` to add nodes under [VoxelInstancer](VoxelInstancer.md) from [VoxelInstanceLibraryMultiMeshItem._on_instance_removed](VoxelInstanceLibraryMultiMeshItem.md#i__on_instance_removed).
 
-_Generated on Aug 09, 2025_
+_Generated on Nov 02, 2025_

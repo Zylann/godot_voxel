@@ -37,4 +37,4 @@ Integer position of the voxel that was hit. In a blocky game, this would be the 
 
 Integer position of the previous voxel along the ray before the final hit. In a blocky game, this would be the position of the voxel to place on top of the pointed one.
 
-_Generated on Aug 09, 2025_
+_Generated on Nov 02, 2025_

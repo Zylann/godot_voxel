@@ -44,4 +44,4 @@ Gets the upper corner of the total editable area, in voxels, exclusive.
 
 Gets the lower corner of the main editable area, in voxels.
 
-_Generated on Aug 09, 2025_
+_Generated on Nov 02, 2025_

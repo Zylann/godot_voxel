@@ -59,4 +59,4 @@ Explicitely sets which model to use for a given combination of attributes (key).
 
 If you have attributes that automatically generate variants (such as rotations), you are expected to only set models for the default value of such attributes. Other models will not be preserved. This is because the default value will be used as a reference to generate the other models.
 
-_Generated on Aug 09, 2025_
+_Generated on Nov 02, 2025_

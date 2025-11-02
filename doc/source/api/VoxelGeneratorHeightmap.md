@@ -42,4 +42,4 @@ Scale applied to the signed distance field when using a smooth terrain configura
 
 Offsets height generation along the X and Z axes.
 
-_Generated on Aug 09, 2025_
+_Generated on Nov 02, 2025_

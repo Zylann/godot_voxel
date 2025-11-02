@@ -36,8 +36,13 @@ IMPORTANT: inserting new or removing metadata from inside this function is not a
 
 ### [void](#)<span id="i_run_blocky_random_tick"></span> **run_blocky_random_tick**( [AABB](https://docs.godotengine.org/en/stable/classes/class_aabb.html) area, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) voxel_count, [Callable](https://docs.godotengine.org/en/stable/classes/class_callable.html) callback, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) batch_count=16 ) 
 
-Picks random voxels within the specified area and executes a function on them. This only works for terrains using [VoxelMesherBlocky](VoxelMesherBlocky.md). Only voxels where [Voxel.random_tickable](https://docs.godotengine.org/en/stable/classes/class_voxel.html#class-voxel-property-random-tickable) is `true` will be picked.
+Picks random voxels within the specified area, and if they are random-tickable, executes a function on them. This only works for terrains using [VoxelMesherBlocky](VoxelMesherBlocky.md). Only voxels where [Voxel.random_tickable](https://docs.godotengine.org/en/stable/classes/class_voxel.html#class-voxel-property-random-tickable) is `true` will be picked.
 
 The given callback takes two arguments: voxel position (Vector3i), voxel value (int).
 
-_Generated on Aug 09, 2025_
+
+The purpose of `batch_count` is to optimize the picking process through the internal data structure. The algorithm goes as follows: `voxel_count` is divided in batches of length `batch_count`. For each batch, a random block intersecting `area` is chosen, and `batch_count` voxels are picked at random inside of it. If `voxel_count` is not divisible by `batch_count`, an extra block will be picked to do the remainder.
+
+`batch` can bias randomness by concentrating picks in specific blocks, but if this function is used every frame over time, that bias should average out. If you want no bias at all, set `batch_count` to 1.
+
+_Generated on Nov 02, 2025_

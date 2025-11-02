@@ -20,6 +20,7 @@ Type                                                                            
 [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)          | [debug_draw_shadow_occluders](#i_debug_draw_shadow_occluders)                        | false                                                                        
 [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)          | [debug_draw_visual_and_collision_blocks](#i_debug_draw_visual_and_collision_blocks)  | false                                                                        
 [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)          | [debug_draw_volume_bounds](#i_debug_draw_volume_bounds)                              | false                                                                        
+[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)          | [debug_draw_voxel_metadata](#i_debug_draw_voxel_metadata)                            | false                                                                        
 [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)          | [generate_collisions](#i_generate_collisions)                                        | true                                                                         
 [Material](https://docs.godotengine.org/en/stable/classes/class_material.html)  | [material_override](#i_material_override)                                            |                                                                              
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)            | [max_view_distance](#i_max_view_distance)                                            | 128                                                                          
@@ -73,7 +74,9 @@ Emitted when a mesh block gets unloaded. It is the counterpart of [VoxelTerrain.
 enum **DebugDrawFlag**: 
 
 - <span id="i_DEBUG_DRAW_VOLUME_BOUNDS"></span>**DEBUG_DRAW_VOLUME_BOUNDS** = **0**
-- <span id="i_DEBUG_DRAW_FLAGS_COUNT"></span>**DEBUG_DRAW_FLAGS_COUNT** = **2**
+- <span id="i_DEBUG_DRAW_VISUAL_AND_COLLISION_BLOCKS"></span>**DEBUG_DRAW_VISUAL_AND_COLLISION_BLOCKS** = **1**
+- <span id="i_DEBUG_DRAW_VOXEL_METADATA"></span>**DEBUG_DRAW_VOXEL_METADATA** = **2**
+- <span id="i_DEBUG_DRAW_FLAGS_COUNT"></span>**DEBUG_DRAW_FLAGS_COUNT** = **3**
 
 
 ## Property Descriptions
@@ -119,6 +122,10 @@ Defines the bounds within which the terrain is allowed to have voxels. If an inf
 *(This property has no documentation)*
 
 ### [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_debug_draw_volume_bounds"></span> **debug_draw_volume_bounds** = false
+
+*(This property has no documentation)*
+
+### [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_debug_draw_voxel_metadata"></span> **debug_draw_voxel_metadata** = false
 
 *(This property has no documentation)*
 
@@ -250,4 +257,4 @@ Note that blocks getting unloaded as the viewer moves around can also trigger sa
 
 *(This method has no documentation)*
 
-_Generated on Aug 09, 2025_
+_Generated on Nov 02, 2025_
