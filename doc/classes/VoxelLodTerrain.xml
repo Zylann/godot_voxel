@@ -285,6 +285,8 @@
 		</member>
 		<member name="debug_draw_volume_bounds" type="bool" setter="debug_set_draw_flag" getter="debug_get_draw_flag" default="false">
 		</member>
+		<member name="debug_draw_voxel_metadata" type="bool" setter="debug_set_draw_flag" getter="debug_get_draw_flag" default="false">
+		</member>
 		<member name="full_load_mode_enabled" type="bool" setter="set_full_load_mode_enabled" getter="is_full_load_mode_enabled" default="false">
 			If enabled, data streaming will be turned off, and all voxel data will be loaded from the [member stream] into memory.
 			This removes several constraints, such as being able to edit anywhere and allowing distant normalmaps to include edited regions. This comes at the expense of more memory usage. However, only edited regions use memory, so in practice it can be good enough.
@@ -390,7 +392,7 @@
 		</constant>
 		<constant name="DEBUG_DRAW_ACTIVE_VISUAL_AND_COLLISION_BLOCKS" value="10" enum="DebugDrawFlag">
 		</constant>
-		<constant name="DEBUG_DRAW_FLAGS_COUNT" value="11" enum="DebugDrawFlag">
+		<constant name="DEBUG_DRAW_FLAGS_COUNT" value="12" enum="DebugDrawFlag">
 		</constant>
 		<constant name="STREAMING_SYSTEM_LEGACY_OCTREE" value="0" enum="StreamingSystem">
 			Loads chunks around the viewer in a spherical pattern.

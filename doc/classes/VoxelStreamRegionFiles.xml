@@ -28,8 +28,6 @@
 		<member name="directory" type="String" setter="set_directory" getter="get_directory" default="&quot;&quot;">
 			Directory under which the data is saved.
 		</member>
-		<member name="lod_count" type="int" setter="set_lod_count" getter="get_lod_count" default="1">
-		</member>
 		<member name="region_size_po2" type="int" setter="set_region_size_po2" getter="get_region_size_po2" default="4">
 		</member>
 		<member name="sector_size" type="int" setter="set_sector_size" getter="get_sector_size" default="512">

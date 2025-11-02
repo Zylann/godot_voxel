@@ -103,7 +103,7 @@
 			<param index="1" name="ray_end" type="Vector3" />
 			<param index="2" name="stride" type="float" />
 			<description>
-				Generates values along a ray to find the first one where SDF &lt 0.0, and return distance along the ray. If no hit is found, returns -1.0.
+				Generates values along a ray to find the first one where SDF &amp;lt 0.0, and return distance along the ray. If no hit is found, returns -1.0.
 				This is an approximation: the error margin of the returned value will be up to the given stride.
 				The longer the distance, the more expensive it is.
 				The lower the stride, the more expensive and accurate it is.
