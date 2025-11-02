@@ -22,7 +22,7 @@ public:
 	void set_transform(Transform3D transform);
 	void add_shape(Ref<Shape3D> shape);
 	void remove_shape(int shape_index);
-	Ref<Shape3D> get_shape(int shape_index);
+	Ref<Shape3D> get_shape(int shape_index) const;
 	void set_world(World3D *world);
 	void set_shape_enabled(int shape_index, bool disabled);
 	void set_attached_object(const Object *obj);
