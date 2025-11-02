@@ -8,13 +8,21 @@ ZN_GODOT_FORWARD_DECLARE(class Node);
 
 namespace zylann::voxel {
 
-class VoxelTerrain;
+class VoxelData;
+class VoxelMesher;
 
 // Helper to get simple AABB physics
 class VoxelBoxMover : public RefCounted {
 	GDCLASS(VoxelBoxMover, RefCounted)
 public:
-	Vector3 get_motion(Vector3 pos, Vector3 motion, AABB aabb, VoxelTerrain &terrain);
+	Vector3 get_motion(
+			const Vector3 pos_world,
+			const Vector3 motion_world,
+			const AABB aabb_world,
+			const VoxelData &terrain_data,
+			const Transform3D &terrain_transform,
+			const VoxelMesher &mesher
+	);
 
 	void set_collision_mask(uint32_t mask);
 	inline uint32_t get_collision_mask() const {
