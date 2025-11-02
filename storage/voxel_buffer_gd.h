@@ -129,6 +129,9 @@ public:
 	real_t get_voxel_f(int x, int y, int z, unsigned int channel_index) const;
 	void set_voxel_f(real_t value, int x, int y, int z, unsigned int channel_index);
 
+	uint64_t get_voxel_v(Vector3i pos, unsigned int channel) const {
+		return _buffer->get_voxel(pos.x, pos.y, pos.z, channel);
+	}
 	void set_voxel_v(uint64_t value, Vector3i pos, unsigned int channel_index) {
 		_buffer->set_voxel(value, pos.x, pos.y, pos.z, channel_index);
 	}
