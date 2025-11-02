@@ -11,6 +11,7 @@ Dev 1.5.1 - `master`
 --------------------
 
 - Improvements
+    - `VoxelBoxMover`: added support for `VoxelLodTerrain`.
     - `VoxelGeneratorGraph`: 
         - Editor: added `Add Node` item to the context menu
         - Added support for domain warp on `FastNoiseLite` and `ZN_FastNoiseLite` resources when using GPU (previously required to prepend `FastNoiseLiteGradient` noise)
