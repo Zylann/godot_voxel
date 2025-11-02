@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VoxelMeshBlockUpdateInfo" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Information sent by a terrain when one of its meshes is created or updated.
+	</brief_description>
+	<description>
+		Information sent by a terrain when one of its meshes is created or updated. See [method VoxelTerrain._on_mesh_block_udpate].
+		Instances of this class must not be stored, as they will become invalid after the call they come from.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_grid_position" qualifiers="const">
+			<return type="Vector3i" />
+			<description>
+				Position of the mesh in block coordinates.
+			</description>
+		</method>
+		<method name="get_local_position" qualifiers="const">
+			<return type="Vector3" />
+			<description>
+				Position of the mesh in local coordinates (to the terrain).
+			</description>
+		</method>
+		<method name="get_mesh" qualifiers="const">
+			<return type="Mesh" />
+			<description>
+				Gets the mesh for this block. It can be null if no surface is present (there is no surface if the area contains only air or doesn't contain air).
+			</description>
+		</method>
+		<method name="is_first" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]false[/code] if this is the first time this block was meshed within a viewer area. Testing this is equivalent to using 
+			</description>
+		</method>
+	</methods>
+</class>

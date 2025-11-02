@@ -21,6 +21,14 @@
 			<description>
 			</description>
 		</method>
+		<method name="_on_mesh_block_update" qualifiers="virtual">
+			<return type="void" />
+			<param index="0" name="info" type="VoxelMeshBlockUpdateInfo" />
+			<description>
+				Called every time a mesh block receives a result from voxel meshing. This usually happens when a viewer spawns, moves around, or edits the terrain. This method is called at the same time as [signal mesh_block_entered], and also when the mesh changes.
+				This will not be called when a mesh block gets unloaded. For that, you may use [signal mesh_block_exited].
+			</description>
+		</method>
 		<method name="data_block_to_voxel" qualifiers="const">
 			<return type="Vector3i" />
 			<param index="0" name="block_pos" type="Vector3i" />

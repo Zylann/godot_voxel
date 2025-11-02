@@ -10,6 +10,7 @@
 #include "../../util/godot/memory.h"
 #include "../../util/math/box3i.h"
 #include "../voxel_data_block_enter_info.h"
+#include "../voxel_mesh_block_update_info.h"
 #include "../voxel_mesh_map.h"
 #include "../voxel_node.h"
 #include "voxel_mesh_block_vt.h"
@@ -272,6 +273,8 @@ private:
 	// Called each time voxels are edited within a region.
 	GDVIRTUAL2(_on_area_edited, Vector3i, Vector3i);
 
+	GDVIRTUAL1(_on_mesh_block_update, VoxelMeshBlockUpdateInfo *);
+
 	static void _bind_methods();
 
 	// Bindings
@@ -371,6 +374,7 @@ private:
 	Ref<Material> _material_override;
 
 	zylann::godot::ObjectUniquePtr<VoxelDataBlockEnterInfo> _data_block_enter_info_obj;
+	zylann::godot::ObjectUniquePtr<VoxelMeshBlockUpdateInfo> _mesh_update_info;
 
 	// References to external nodes.
 #ifdef VOXEL_ENABLE_INSTANCER

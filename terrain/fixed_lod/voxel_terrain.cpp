@@ -93,6 +93,8 @@ VoxelTerrain::VoxelTerrain() {
 
 	_volume_id = VoxelEngine::get_singleton().add_volume(callbacks);
 
+	_mesh_update_info = zylann::godot::make_unique<VoxelMeshBlockUpdateInfo>();
+
 	// TODO Can't setup a default mesher anymore due to a Godot 4 warning...
 	// For ease of use in editor
 	// Ref<VoxelMesherBlocky> default_mesher;
@@ -2048,6 +2050,13 @@ void VoxelTerrain::apply_mesh_update(const VoxelEngine::BlockMeshOutput &ob) {
 	// Can't set the state because there could be more than one update in progress. Perhaps it needs refactoring.
 	// block->set_mesh_state(VoxelMeshBlockVT::MESH_UP_TO_DATE);
 
+	_mesh_update_info->position = ob.position;
+	// _mesh_update_info->lod_index = ob.lod;
+	_mesh_update_info->first_load = block->is_loaded == false;
+	_mesh_update_info->mesh = mesh;
+	_mesh_update_info->block_size = 1 << _mesh_block_size_po2;
+	GDVIRTUAL_CALL(_on_mesh_block_update, _mesh_update_info.get());
+
 	if (block->is_loaded == false) {
 		block->is_loaded = true;
 		emit_mesh_block_entered(ob.position);
@@ -2472,6 +2481,7 @@ void VoxelTerrain::_bind_methods() {
 	GDVIRTUAL_BIND(_on_data_block_entered, "info");
 	GDVIRTUAL_BIND(_on_area_edited, "area_origin", "area_size");
 #endif
+	GDVIRTUAL_BIND(_on_mesh_block_update, "info");
 
 	ADD_GROUP("Bounds", "");
 

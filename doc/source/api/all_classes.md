@@ -79,3 +79,4 @@
         - [ZN_ThreadedTask](ZN_ThreadedTask.md)
     - [VoxelDataBlockEnterInfo](VoxelDataBlockEnterInfo.md)
     - [VoxelEngine](VoxelEngine.md)
+    - [VoxelMeshBlockUpdateInfo](VoxelMeshBlockUpdateInfo.md)

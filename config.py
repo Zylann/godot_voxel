@@ -64,6 +64,7 @@ def get_doc_classes():
         "VoxelInstancer",
         "VoxelInstancerRigidBody",
         "VoxelLodTerrain",
+        "VoxelMeshBlockUpdateInfo",
         "VoxelMesher",
         "VoxelMesherBlocky",
         "VoxelMesherCubes",

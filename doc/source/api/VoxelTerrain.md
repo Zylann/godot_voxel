@@ -35,6 +35,7 @@ Return                                                                          
 ----------------------------------------------------------------------------------------------- | -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 [void](#)                                                                                       | [_on_area_edited](#i__on_area_edited) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) area_origin, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) area_size ) virtual                                       
 [void](#)                                                                                       | [_on_data_block_entered](#i__on_data_block_entered) ( [VoxelDataBlockEnterInfo](VoxelDataBlockEnterInfo.md) info ) virtual                                                                                                                                                   
+[void](#)                                                                                       | [_on_mesh_block_update](#i__on_mesh_block_update) ( [VoxelMeshBlockUpdateInfo](VoxelMeshBlockUpdateInfo.md) info ) virtual                                                                                                                                                   
 [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html)                  | [data_block_to_voxel](#i_data_block_to_voxel) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) block_pos ) const                                                                                                                             
 [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)                          | [debug_get_draw_flag](#i_debug_get_draw_flag) ( [DebugDrawFlag](VoxelTerrain.md#enumerations) flag_index ) const                                                                                                                                                             
 [void](#)                                                                                       | [debug_set_draw_flag](#i_debug_set_draw_flag) ( [DebugDrawFlag](VoxelTerrain.md#enumerations) flag_index, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) enabled )                                                                                   
@@ -163,6 +164,12 @@ Enables GPU block generation, which can speed it up. This is only valid for gene
 ### [void](#)<span id="i__on_data_block_entered"></span> **_on_data_block_entered**( [VoxelDataBlockEnterInfo](VoxelDataBlockEnterInfo.md) info ) 
 
 *(This method has no documentation)*
+
+### [void](#)<span id="i__on_mesh_block_update"></span> **_on_mesh_block_update**( [VoxelMeshBlockUpdateInfo](VoxelMeshBlockUpdateInfo.md) info ) 
+
+Called every time a mesh block receives a result from voxel meshing. This usually happens when a viewer spawns, moves around, or edits the terrain. This method is called at the same time as [VoxelTerrain.mesh_block_entered](VoxelTerrain.md#signals), and also when the mesh changes.
+
+This will not be called when a mesh block gets unloaded. For that, you may use [VoxelTerrain.mesh_block_exited](VoxelTerrain.md#signals).
 
 ### [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html)<span id="i_data_block_to_voxel"></span> **data_block_to_voxel**( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) block_pos ) 
 

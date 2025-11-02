@@ -78,6 +78,7 @@ nav:
     - api/VoxelInstancer.md
     - api/VoxelInstancerRigidBody.md
     - api/VoxelLodTerrain.md
+    - api/VoxelMeshBlockUpdateInfo.md
     - api/VoxelMeshSDF.md
     - api/VoxelMesher.md
     - api/VoxelMesherBlocky.md

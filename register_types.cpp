@@ -275,6 +275,7 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 
 		ClassDB::register_class<VoxelColorPalette>();
 		ClassDB::register_class<VoxelDataBlockEnterInfo>();
+		ClassDB::register_class<VoxelMeshBlockUpdateInfo>();
 		ClassDB::register_class<VoxelSaveCompletionTracker>();
 		ClassDB::register_class<pg::VoxelGraphFunction>();
 
