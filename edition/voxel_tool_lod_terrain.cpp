@@ -549,7 +549,8 @@ void VoxelToolLodTerrain::run_blocky_random_tick(
 		const AABB voxel_area,
 		const int voxel_count,
 		const Callable &callback,
-		const int block_batch_count
+		const int block_batch_count,
+		const uint32_t tags_mask
 ) {
 	ZN_PROFILE_SCOPE();
 
@@ -575,7 +576,7 @@ void VoxelToolLodTerrain::run_blocky_random_tick(
 	VoxelData &data = _terrain->get_storage();
 
 	zylann::voxel::run_blocky_random_tick(
-			data, voxel_area, **library, _random, voxel_count, block_batch_count, callback
+			data, voxel_area, **library, _random, voxel_count, block_batch_count, tags_mask, callback
 	);
 }
 
@@ -604,9 +605,10 @@ void VoxelToolLodTerrain::_bind_methods() {
 			DEFVAL(0.0)
 	);
 	ClassDB::bind_method(
-			D_METHOD("run_blocky_random_tick", "area", "voxel_count", "callback", "batch_count"),
+			D_METHOD("run_blocky_random_tick", "area", "voxel_count", "callback", "batch_count", "tags_mask"),
 			&Self::run_blocky_random_tick,
-			DEFVAL(16)
+			DEFVAL(16),
+			DEFVAL(0xffffffff)
 	);
 }
 

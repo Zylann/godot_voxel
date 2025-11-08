@@ -62,7 +62,8 @@ public:
 			const AABB voxel_area,
 			const int voxel_count,
 			const Callable &callback,
-			const int block_batch_count
+			const int block_batch_count,
+			const uint32_t tags_mask
 	);
 
 	VoxelFormat get_format() const override;

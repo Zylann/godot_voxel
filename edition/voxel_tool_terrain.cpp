@@ -274,10 +274,11 @@ Ref<VoxelBlockyLibraryBase> get_voxel_library(const VoxelTerrain &terrain) {
 // area. Executes a function on random voxels in the provided area, using the type channel. This allows to implement
 // slow "natural" cellular automata behavior, as can be seen in Minecraft.
 void VoxelToolTerrain::run_blocky_random_tick(
-		AABB voxel_area,
-		int voxel_count,
+		const AABB voxel_area,
+		const int voxel_count,
 		const Callable &callback,
-		int batch_count
+		const int batch_count,
+		const uint32_t tags_mask
 ) {
 	ZN_PROFILE_SCOPE();
 
@@ -299,7 +300,9 @@ void VoxelToolTerrain::run_blocky_random_tick(
 	const VoxelBlockyLibraryBase &lib = **get_voxel_library(*_terrain);
 	VoxelData &data = _terrain->get_storage();
 
-	zylann::voxel::run_blocky_random_tick(data, voxel_area, lib, _random, voxel_count, batch_count, callback);
+	zylann::voxel::run_blocky_random_tick(
+			data, voxel_area, lib, _random, voxel_count, batch_count, tags_mask, callback
+	);
 }
 
 void VoxelToolTerrain::for_each_voxel_metadata_in_area(AABB voxel_area, const Callable &callback) {
@@ -441,9 +444,10 @@ VoxelFormat VoxelToolTerrain::get_format() const {
 
 void VoxelToolTerrain::_bind_methods() {
 	ClassDB::bind_method(
-			D_METHOD("run_blocky_random_tick", "area", "voxel_count", "callback", "batch_count"),
+			D_METHOD("run_blocky_random_tick", "area", "voxel_count", "callback", "batch_count", "tags_mask"),
 			&VoxelToolTerrain::run_blocky_random_tick,
-			DEFVAL(16)
+			DEFVAL(16),
+			DEFVAL(0xffffffff)
 	);
 	ClassDB::bind_method(
 			D_METHOD("for_each_voxel_metadata_in_area", "voxel_area", "callback"),

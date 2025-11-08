@@ -80,6 +80,9 @@ public:
 	void set_random_tickable(bool rt);
 	bool is_random_tickable() const;
 
+	void set_tags_mask(const uint32_t mask);
+	uint32_t get_tags_mask() const;
+
 #ifdef TOOLS_ENABLED
 	virtual void get_configuration_warnings(PackedStringArray &out_warnings) const;
 #endif
@@ -178,6 +181,7 @@ private:
 	// can be useful for denser transparent voxels, such as foliage.
 	bool _culls_neighbors = true;
 	bool _random_tickable = false;
+	uint32_t _tags_mask = 1;
 	uint8_t _mesh_ortho_rotation = 0;
 
 	bool _lod_skirts = true;
