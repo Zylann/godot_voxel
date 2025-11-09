@@ -10,6 +10,7 @@ Singleton holding common settings and handling voxel processing tasks in backgro
 Return                                                                              | Signature                                                                                                                 
 ----------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------
 [Dictionary](https://docs.godotengine.org/en/stable/classes/class_dictionary.html)  | [get_stats](#i_get_stats) ( ) const                                                                                       
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)                | [get_thread_count](#i_get_thread_count) ( ) const                                                                         
 [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)              | [get_threaded_graphics_resource_building_enabled](#i_get_threaded_graphics_resource_building_enabled) ( ) const           
 [String](https://docs.godotengine.org/en/stable/classes/class_string.html)          | [get_version_edition](#i_get_version_edition) ( ) const                                                                   
 [String](https://docs.godotengine.org/en/stable/classes/class_string.html)          | [get_version_git_hash](#i_get_version_git_hash) ( ) const                                                                 
@@ -19,6 +20,7 @@ Return                                                                          
 [String](https://docs.godotengine.org/en/stable/classes/class_string.html)          | [get_version_status](#i_get_version_status) ( ) const                                                                     
 [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html)      | [get_version_v](#i_get_version_v) ( ) const                                                                               
 [void](#)                                                                           | [run_tests](#i_run_tests) ( [Dictionary](https://docs.godotengine.org/en/stable/classes/class_dictionary.html) options )  
+[void](#)                                                                           | [set_thread_count](#i_set_thread_count) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) count )    
 <p></p>
 
 ## Method Descriptions
@@ -57,6 +59,10 @@ The returned dictionary has the following structure:
 }
 ```
 
+### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_get_thread_count"></span> **get_thread_count**( ) 
+
+Returns the number of threads currently used internally by the `ThreadedTaskRunner`.
+
 ### [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_get_threaded_graphics_resource_building_enabled"></span> **get_threaded_graphics_resource_building_enabled**( ) 
 
 Tells if the voxel engine is able to create graphics resources from different threads. This will usually be true if the current renderer's thread model is safe or multi-threaded, but might also be false if the renderer would poorly benefit from this (such as legacy OpenGL).
@@ -93,4 +99,8 @@ Gets the major (x), minor (y) and patch (z) version numbers of the voxel engine 
 
 Runs internal unit tests. This function is only available if the voxel engine is compiled with `voxel_tests=true`.
 
-_Generated on May 15, 2025_
+### [void](#)<span id="i_set_thread_count"></span> **set_thread_count**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) count ) 
+
+Sets the number of threads to be used internally by the `ThreadedTaskRunner`. Setting this can cause lagging, and it might take some time until the number of threads actually matches the given value.
+
+_Generated on Nov 02, 2025_

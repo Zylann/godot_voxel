@@ -231,6 +231,7 @@ void VoxelBlockyModel::bake(blocky::ModelBakingContext &ctx) const {
 	baked_data.color = _color;
 	baked_data.is_random_tickable = _random_tickable;
 	baked_data.box_collision_mask = _collision_mask;
+	baked_data.tags_mask = _tags_mask;
 	baked_data.box_collision_aabbs = _collision_aabbs;
 	baked_data.lod_skirts = _lod_skirts;
 
@@ -317,6 +318,14 @@ void VoxelBlockyModel::set_random_tickable(bool rt) {
 
 bool VoxelBlockyModel::is_random_tickable() const {
 	return _random_tickable;
+}
+
+void VoxelBlockyModel::set_tags_mask(const uint32_t mask) {
+	_tags_mask = mask;
+}
+
+uint32_t VoxelBlockyModel::get_tags_mask() const {
+	return _tags_mask;
 }
 
 #ifdef TOOLS_ENABLED
@@ -584,6 +593,9 @@ void VoxelBlockyModel::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("is_random_tickable"), &VoxelBlockyModel::is_random_tickable);
 	ClassDB::bind_method(D_METHOD("set_random_tickable"), &VoxelBlockyModel::set_random_tickable);
 
+	ClassDB::bind_method(D_METHOD("get_tags_mask"), &VoxelBlockyModel::get_tags_mask);
+	ClassDB::bind_method(D_METHOD("set_tags_mask"), &VoxelBlockyModel::set_tags_mask);
+
 	ClassDB::bind_method(
 			D_METHOD("set_mesh_collision_enabled", "surface_index", "enabled"),
 			&VoxelBlockyModel::set_mesh_collision_enabled
@@ -614,6 +626,14 @@ void VoxelBlockyModel::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "transparency_index"), "set_transparency_index", "get_transparency_index");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "culls_neighbors"), "set_culls_neighbors", "get_culls_neighbors");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "random_tickable"), "set_random_tickable", "is_random_tickable");
+
+	// TODO This is not supposed to be 3D layers.
+	// But I used it anyways because `PROPERTY_HINT_FLAGS` is inadequate and Godot exposes no way to make custom layers.
+	// We could make our own but that is a lot of work.
+	ADD_PROPERTY(
+			PropertyInfo(Variant::INT, "tags_mask", PROPERTY_HINT_LAYERS_3D_PHYSICS), "set_tags_mask", "get_tags_mask"
+	);
+
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "lod_skirts_enabled"), "set_lod_skirts_enabled", "get_lod_skirts_enabled");
 
 	ADD_GROUP("Box collision", "");

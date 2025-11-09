@@ -48,7 +48,6 @@ public:
 	void set_block_size_po2(int p_block_size_po2);
 	void set_region_size_po2(int p_region_size_po2);
 	void set_sector_size(int p_sector_size);
-	void set_lod_count(int p_lod_count);
 
 	void convert_files(Dictionary d);
 
@@ -67,8 +66,8 @@ private:
 		EMERGE_FAILED
 	};
 
-	EmergeResult _load_block(VoxelBuffer &out_buffer, Vector3i block_pos, int lod);
-	void _save_block(VoxelBuffer &voxel_buffer, Vector3i block_pos, int lod);
+	EmergeResult _load_block(VoxelBuffer &out_buffer, const Vector3i block_pos, const uint8_t lod);
+	void _save_block(const VoxelBuffer &voxel_buffer, const Vector3i block_pos, const uint8_t lod);
 
 	zylann::godot::FileResult save_meta();
 	zylann::godot::FileResult load_meta();
@@ -83,7 +82,7 @@ private:
 
 	struct Meta {
 		uint8_t version = -1;
-		uint8_t lod_count = 0;
+		// uint8_t lod_count = 0;
 		uint8_t block_size_po2 = 0; // How many voxels in a cubic block
 		uint8_t region_size_po2 = 0; // How many blocks in one cubic region
 		FixedArray<VoxelBuffer::Depth, VoxelBuffer::MAX_CHANNELS> channel_depths;

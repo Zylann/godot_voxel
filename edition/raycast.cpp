@@ -143,7 +143,7 @@ Vector3f get_interpolated_raw_sdf_gradient(const VoxelData &vd, const Vector3 po
 	const VoxelBuffer::ChannelId channel = VoxelBuffer::CHANNEL_SDF;
 	VoxelBuffer vb(VoxelBuffer::ALLOCATOR_POOL);
 	vb.create(Vector3i(4, 4, 4));
-	vd.copy(p00 - Vector3i(1, 1, 1), vb, (1 << channel));
+	vd.copy(p00 - Vector3i(1, 1, 1), vb, (1 << channel), false);
 	return get_interpolated_raw_sdf_gradient_4x4x4_p111(vb, pf);
 }
 

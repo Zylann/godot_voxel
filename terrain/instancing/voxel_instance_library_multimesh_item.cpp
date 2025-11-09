@@ -58,7 +58,7 @@ void deserialize_group_names(const Array &src, StdVector<StringName> &dst) {
 	dst.reserve(src.size());
 	for (int i = 0; i < src.size(); ++i) {
 		StringName name = src[i];
-		ERR_CONTINUE(name == StringName());
+		ERR_CONTINUE(zylann::godot::is_empty(name));
 		dst.push_back(name);
 	}
 }

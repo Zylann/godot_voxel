@@ -25,6 +25,19 @@ Variant create_resource_to_variant() {
 
 #ifdef VOXEL_ENABLE_GPU
 
+int godot_domain_warp_to_fnl(FastNoiseLite::DomainWarpFractalType gd_domain_warp_type) {
+	switch (gd_domain_warp_type) {
+		case FastNoiseLite::DOMAIN_WARP_FRACTAL_NONE:
+			return ::fast_noise_lite::FastNoiseLite::FractalType_None;
+		case FastNoiseLite::DOMAIN_WARP_FRACTAL_PROGRESSIVE:
+			return ::fast_noise_lite::FastNoiseLite::FractalType_DomainWarpProgressive;
+		case FastNoiseLite::DOMAIN_WARP_FRACTAL_INDEPENDENT:
+			return ::fast_noise_lite::FastNoiseLite::FractalType_DomainWarpIndependent;
+		default:
+			return ::fast_noise_lite::FastNoiseLite::FractalType_None;
+	}
+}
+
 void add_fast_noise_lite_state_config(ShaderGenContext &ctx, const FastNoiseLite &fnl) {
 	// TODO Add missing options
 	ctx.add_format(
@@ -48,6 +61,47 @@ void add_fast_noise_lite_state_config(ShaderGenContext &ctx, const FastNoiseLite
 			fnl.get_cellular_distance_function(),
 			fnl.get_cellular_return_type(),
 			fnl.get_cellular_jitter()
+	);
+	if (fnl.is_domain_warp_enabled()) {
+		ctx.add_format(
+				"fnl_state warp_state = fnlCreateState({});\n"
+				"warp_state.domain_warp_type = {};\n"
+				"warp_state.domain_warp_amp = {};\n"
+				"warp_state.fractal_type = {};\n"
+				"warp_state.octaves = {};\n"
+				"warp_state.gain = {};\n"
+				"warp_state.frequency = {};\n"
+				"warp_state.lacunarity = {};\n",
+				fnl.get_seed(),
+				fnl.get_noise_type(),
+				fnl.get_domain_warp_amplitude(),
+				godot_domain_warp_to_fnl(fnl.get_domain_warp_fractal_type()),
+				fnl.get_fractal_octaves(),
+				fnl.get_fractal_gain(),
+				fnl.get_domain_warp_frequency(),
+				fnl.get_domain_warp_fractal_lacunarity()
+		);
+	}
+}
+
+void add_fast_noise_lite_gradient_state_config(ShaderGenContext &ctx, const ZN_FastNoiseLiteGradient &fnl) {
+	ctx.add_format(
+			"fnl_state warp_state = fnlCreateState({});\n"
+			"warp_state.domain_warp_type = {};\n"
+			"warp_state.domain_warp_amp = {};\n"
+			"warp_state.fractal_type = {};\n"
+			"warp_state.octaves = {};\n"
+			"warp_state.gain = {};\n"
+			"warp_state.frequency = {};\n"
+			"warp_state.lacunarity = {};\n",
+			fnl.get_seed(),
+			fnl.get_noise_type(),
+			fnl.get_amplitude(),
+			fnl.get_fractal_type_fnl(),
+			fnl.get_fractal_octaves(),
+			fnl.get_fractal_gain(),
+			1.0 / fnl.get_period(),
+			fnl.get_fractal_lacunarity()
 	);
 }
 
@@ -75,27 +129,10 @@ void add_fast_noise_lite_state_config(ShaderGenContext &ctx, const ZN_FastNoiseL
 			fnl.get_cellular_return_type(),
 			fnl.get_cellular_jitter()
 	);
-}
-
-void add_fast_noise_lite_gradient_state_config(ShaderGenContext &ctx, const ZN_FastNoiseLiteGradient &fnl) {
-	ctx.add_format(
-			"fnl_state state = fnlCreateState({});\n"
-			"state.domain_warp_type = {};\n"
-			"state.domain_warp_amp = {};\n"
-			"state.fractal_type = {};\n"
-			"state.octaves = {};\n"
-			"state.gain = {};\n"
-			"state.frequency = {};\n"
-			"state.lacunarity = {};\n",
-			fnl.get_seed(),
-			fnl.get_noise_type(),
-			fnl.get_amplitude(),
-			fnl.get_fractal_type(),
-			fnl.get_fractal_octaves(),
-			fnl.get_fractal_gain(),
-			1.0 / fnl.get_period(),
-			fnl.get_fractal_lacunarity()
-	);
+	Ref<ZN_FastNoiseLiteGradient> fnlg = fnl.get_warp_noise();
+	if (fnlg.is_valid()) {
+		add_fast_noise_lite_gradient_state_config(ctx, **fnlg);
+	}
 }
 
 #endif
@@ -163,21 +200,26 @@ void register_noise_nodes(Span<NodeType> types) {
 									   .format(varray(noise->get_class())));
 				return;
 			}
-			if (fnl->is_domain_warp_enabled()) {
-				// TODO Support domain warp shader generation with Godot's implementation of FastNoiseLite
-				ctx.make_error(String(ZN_TTR("Shader generation from {0} with domain warp is not supported. Use {1}."))
-									   .format(varray(noise->get_class(), ZN_FastNoiseLiteGradient::get_class_static()))
-				);
-				return;
-			}
 			ctx.require_lib_code("vg_fnl", g_fast_noise_lite_shader);
 			add_fast_noise_lite_state_config(ctx, **fnl);
-			ctx.add_format(
-					"{} = fnlGetNoise2D(state, {}, {});\n",
-					ctx.get_output_name(0),
-					ctx.get_input_name(0),
-					ctx.get_input_name(1)
-			);
+			if (fnl->is_domain_warp_enabled()) {
+				ctx.add_format(
+						"float wx = {};\n"
+						"float wy = {};\n"
+						"fnlDomainWarp2D(warp_state, wx, wy);\n",
+						"{} = fnlGetNoise2D(state, wx, wy);\n",
+						ctx.get_input_name(0),
+						ctx.get_input_name(1),
+						ctx.get_output_name(0)
+				);
+			} else {
+				ctx.add_format(
+						"{} = fnlGetNoise2D(state, {}, {});\n",
+						ctx.get_output_name(0),
+						ctx.get_input_name(0),
+						ctx.get_input_name(1)
+				);
+			}
 		};
 #endif
 	}
@@ -244,23 +286,29 @@ void register_noise_nodes(Span<NodeType> types) {
 									   .format(varray(noise->get_class())));
 				return;
 			}
-			if (fnl->is_domain_warp_enabled()) {
-				// TODO Support domain warp shader generation with Godot's implementation of FastNoiseLite
-				ctx.make_error(String(ZN_TTR("Shader generation from {0} with domain warp is not supported. Use {1}."))
-									   .format(varray(noise->get_class(), ZN_FastNoiseLiteGradient::get_class_static()))
-				);
-				return;
-			}
 			ctx.require_lib_code("vg_fnl", g_fast_noise_lite_shader);
 			add_fast_noise_lite_state_config(ctx, **fnl);
-			// TODO Add missing options
-			ctx.add_format(
-					"{} = fnlGetNoise3D(state, {}, {}, {});\n",
-					ctx.get_output_name(0),
-					ctx.get_input_name(0),
-					ctx.get_input_name(1),
-					ctx.get_input_name(2)
-			);
+			if (fnl->is_domain_warp_enabled()) {
+				ctx.add_format(
+						"float wx = {};\n"
+						"float wy = {};\n"
+						"float wz = {};\n"
+						"fnlDomainWarp3D(warp_state, wx, wy, wz);\n"
+						"{} = fnlGetNoise3D(state, wx, wy, wz);\n",
+						ctx.get_input_name(0),
+						ctx.get_input_name(1),
+						ctx.get_input_name(2),
+						ctx.get_output_name(0)
+				);
+			} else {
+				ctx.add_format(
+						"{} = fnlGetNoise3D(state, {}, {}, {});\n",
+						ctx.get_output_name(0),
+						ctx.get_input_name(0),
+						ctx.get_input_name(1),
+						ctx.get_input_name(2)
+				);
+			}
 		};
 #endif
 	}
@@ -324,12 +372,25 @@ void register_noise_nodes(Span<NodeType> types) {
 			}
 			ctx.require_lib_code("vg_fnl", g_fast_noise_lite_shader);
 			add_fast_noise_lite_state_config(ctx, **noise);
-			ctx.add_format(
-					"{} = fnlGetNoise2D(state, {}, {});\n",
-					ctx.get_output_name(0),
-					ctx.get_input_name(0),
-					ctx.get_input_name(1)
-			);
+
+			if (noise->get_warp_noise().is_valid()) {
+				ctx.add_format(
+						"float wx = {};\n"
+						"float wy = {};\n"
+						"fnlDomainWarp2D(warp_state, wx, wy);\n",
+						"{} = fnlGetNoise2D(state, wx, wy);\n",
+						ctx.get_input_name(0),
+						ctx.get_input_name(1),
+						ctx.get_output_name(0)
+				);
+			} else {
+				ctx.add_format(
+						"{} = fnlGetNoise2D(state, {}, {});\n",
+						ctx.get_output_name(0),
+						ctx.get_input_name(0),
+						ctx.get_input_name(1)
+				);
+			}
 		};
 #endif
 	}
@@ -396,13 +457,28 @@ void register_noise_nodes(Span<NodeType> types) {
 			}
 			ctx.require_lib_code("vg_fnl", g_fast_noise_lite_shader);
 			add_fast_noise_lite_state_config(ctx, **noise);
-			ctx.add_format(
-					"{} = fnlGetNoise3D(state, {}, {}, {});\n",
-					ctx.get_output_name(0),
-					ctx.get_input_name(0),
-					ctx.get_input_name(1),
-					ctx.get_input_name(2)
-			);
+
+			if (noise->get_warp_noise().is_valid()) {
+				ctx.add_format(
+						"float wx = {};\n"
+						"float wy = {};\n"
+						"float wz = {};\n"
+						"fnlDomainWarp3D(warp_state, wx, wy, wz);\n"
+						"{} = fnlGetNoise3D(state, wx, wy, wz);\n",
+						ctx.get_input_name(0),
+						ctx.get_input_name(1),
+						ctx.get_input_name(2),
+						ctx.get_output_name(0)
+				);
+			} else {
+				ctx.add_format(
+						"{} = fnlGetNoise3D(state, {}, {}, {});\n",
+						ctx.get_output_name(0),
+						ctx.get_input_name(0),
+						ctx.get_input_name(1),
+						ctx.get_input_name(2)
+				);
+			}
 		};
 #endif
 	}
@@ -477,7 +553,7 @@ void register_noise_nodes(Span<NodeType> types) {
 			ctx.add_format(
 					"float wx = {};\n"
 					"float wy = {};\n"
-					"fnlDomainWarp2D(state, wx, wy);\n"
+					"fnlDomainWarp2D(warp_state, wx, wy);\n"
 					"{} = wx;\n"
 					"{} = wy;\n",
 					ctx.get_input_name(0),
@@ -568,7 +644,7 @@ void register_noise_nodes(Span<NodeType> types) {
 					"float wx = {};\n"
 					"float wy = {};\n"
 					"float wz = {};\n"
-					"fnlDomainWarp3D(state, wx, wy, wz);\n"
+					"fnlDomainWarp3D(warp_state, wx, wy, wz);\n"
 					"{} = wx;\n"
 					"{} = wy;\n"
 					"{} = wz;\n",

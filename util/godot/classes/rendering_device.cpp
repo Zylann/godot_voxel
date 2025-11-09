@@ -12,8 +12,14 @@ namespace zylann::godot {
 
 void free_rendering_device_rid(RenderingDevice &rd, RID rid) {
 	ZN_DSTACK();
+
 #if defined(ZN_GODOT)
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR <= 5
 	rd.free(rid);
+#else
+	rd.free_rid(rid);
+#endif
+
 #elif defined(ZN_GODOT_EXTENSION)
 	rd.free_rid(rid);
 #endif
@@ -55,8 +61,11 @@ RID shader_create_from_spirv(RenderingDevice &rd, RDShaderSPIRV &p_spirv, String
 		RenderingDevice::ShaderStage stage = RenderingDevice::ShaderStage(i);
 
 		String error = p_spirv.get_stage_compile_error(stage);
-		ERR_FAIL_COND_V_MSG(!error.is_empty(), RID(),
-				"Can't create a shader from an errored bytecode. Check errors in source bytecode.");
+		ERR_FAIL_COND_V_MSG(
+				!error.is_empty(),
+				RID(),
+				"Can't create a shader from an errored bytecode. Check errors in source bytecode."
+		);
 
 		PackedByteArray bytecode = p_spirv.get_stage_bytecode(stage);
 		if (bytecode.is_empty()) {
@@ -81,8 +90,12 @@ RID shader_create_from_spirv(RenderingDevice &rd, RDShaderSPIRV &p_spirv, String
 #endif
 }
 
-RID texture_create(RenderingDevice &rd, RDTextureFormat &p_format, RDTextureView &p_view,
-		const TypedArray<PackedByteArray> &p_data) {
+RID texture_create(
+		RenderingDevice &rd,
+		RDTextureFormat &p_format,
+		RDTextureView &p_view,
+		const TypedArray<PackedByteArray> &p_data
+) {
 #if defined(ZN_GODOT)
 	// This is a partial re-implementation of `RenderingDevice::_texture_create` because it's private
 
@@ -165,7 +178,12 @@ RID sampler_create(RenderingDevice &rd, const RDSamplerState &sampler_state) {
 }
 
 Error update_storage_buffer(
-		RenderingDevice &rd, RID rid, unsigned int offset, unsigned int size, const PackedByteArray &pba) {
+		RenderingDevice &rd,
+		RID rid,
+		unsigned int offset,
+		unsigned int size,
+		const PackedByteArray &pba
+) {
 #if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR <= 2
 
 	// Godot versions up to 4.2 required to pass barrier options.

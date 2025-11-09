@@ -231,8 +231,9 @@ public:
 		DEBUG_DRAW_VIEWER_CLIPBOXES = 8,
 		DEBUG_DRAW_LOADED_VISUAL_AND_COLLISION_BLOCKS = 9,
 		DEBUG_DRAW_ACTIVE_VISUAL_AND_COLLISION_BLOCKS = 10,
+		DEBUG_DRAW_VOXEL_METADATA = 11,
 
-		DEBUG_DRAW_FLAGS_COUNT = 11
+		DEBUG_DRAW_FLAGS_COUNT = 12
 	};
 
 	void debug_set_draw_enabled(bool enabled);
@@ -347,6 +348,12 @@ private:
 
 	LocalCameraInfo get_local_camera_info() const;
 
+#ifdef TOOLS_ENABLED
+	void update_gizmos();
+#endif
+
+	// Bindings
+
 	Ref<VoxelSaveCompletionTracker> _b_save_modified_blocks();
 	void _b_set_voxel_bounds(AABB aabb);
 	AABB _b_get_voxel_bounds() const;
@@ -360,10 +367,6 @@ private:
 	bool _b_is_area_meshed(AABB aabb, int lod_index) const;
 
 	Dictionary _b_get_statistics() const;
-
-#ifdef TOOLS_ENABLED
-	void update_gizmos();
-#endif
 
 	static void _bind_methods();
 

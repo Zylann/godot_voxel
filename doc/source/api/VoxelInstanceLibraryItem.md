@@ -57,4 +57,4 @@ Note: saving relies on identifying the item in save files with the same number g
 
 See also [https://voxel-tools.readthedocs.io/en/latest/instancing/#persistence](https://voxel-tools.readthedocs.io/en/latest/instancing/#persistence)
 
-_Generated on May 15, 2025_
+_Generated on Nov 02, 2025_

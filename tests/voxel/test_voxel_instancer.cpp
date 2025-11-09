@@ -1,5 +1,9 @@
 #include "test_voxel_instancer.h"
+#include "../../generators/voxel_generator.h"
 #include "../../streams/instance_data.h"
+#include "../../terrain/instancing/voxel_instance_generator.h"
+#include "../../util/godot/classes/array_mesh.h"
+#include "../../util/godot/core/packed_arrays.h"
 #include "../../util/math/conv.h"
 #include "../../util/testing/test_macros.h"
 
@@ -119,6 +123,100 @@ void test_instance_data_serialization() {
 			ZN_TEST_ASSERT(rot_dw <= rotation_error);
 		}
 	}
+}
+
+void test_instance_generator_material_filter_issue774() {
+	struct Attrib {
+		uint32_t packed_indices;
+		uint32_t packed_weights;
+
+		static uint32_t unorm_to_u8(float v) {
+			return static_cast<uint32_t>(v * 255.f);
+		}
+
+		static Attrib make(
+				const uint32_t i0,
+				const uint32_t i1,
+				const uint32_t i2,
+				const uint32_t i3,
+				const float w0,
+				const float w1,
+				const float w2,
+				const float w3
+		) {
+			Attrib a;
+			a.packed_indices = i0 | (i1 << 8) | (i2 << 16) | (i3 << 24);
+			const uint32_t wi0 = unorm_to_u8(w0);
+			const uint32_t wi1 = unorm_to_u8(w1);
+			const uint32_t wi2 = unorm_to_u8(w2);
+			const uint32_t wi3 = unorm_to_u8(w3);
+			a.packed_weights = wi0 | (wi1 << 8) | (wi2 << 16) | (wi3 << 24);
+			return a;
+		}
+	};
+
+	Array mesh_arrays;
+	{
+		//    o
+		//   /|   Z
+		//  / |   |
+		// o--o   o--X
+
+		PackedVector3Array vertices;
+		vertices.push_back(Vector3(0, 0, 0));
+		vertices.push_back(Vector3(1, 0, 0));
+		vertices.push_back(Vector3(1, 0, 1));
+
+		PackedVector3Array normals;
+		normals.push_back(Vector3(0, 1, 0));
+		normals.push_back(Vector3(0, 1, 0));
+		normals.push_back(Vector3(0, 1, 1));
+
+		PackedInt32Array indices;
+		indices.push_back(0);
+		indices.push_back(1);
+		indices.push_back(2);
+
+		StdVector<Attrib> attribs;
+		attribs.push_back(Attrib::make(0, 1, 2, 3, 1.f, 0.f, 0.f, 0.f));
+		attribs.push_back(Attrib::make(0, 1, 2, 3, 0.f, 1.f, 0.f, 0.f));
+		attribs.push_back(Attrib::make(0, 1, 2, 3, 0.f, 1.f, 0.f, 0.f));
+		PackedFloat32Array custom1;
+		custom1.resize(2 * attribs.size());
+		Span<const float> attribs_f = to_span(attribs).reinterpret_cast_to<const float>();
+		zylann::godot::copy_to(custom1, attribs_f);
+
+		mesh_arrays.resize(ArrayMesh::ARRAY_MAX);
+		mesh_arrays[ArrayMesh::ARRAY_VERTEX] = vertices;
+		mesh_arrays[ArrayMesh::ARRAY_NORMAL] = normals;
+		mesh_arrays[ArrayMesh::ARRAY_CUSTOM1] = custom1;
+		mesh_arrays[ArrayMesh::ARRAY_INDEX] = indices;
+	}
+
+	StdVector<Transform3f> transforms;
+
+	Ref<VoxelInstanceGenerator> generator;
+	generator.instantiate();
+	generator->set_emit_mode(VoxelInstanceGenerator::EMIT_FROM_FACES);
+	generator->set_density(5.f);
+	generator->set_voxel_material_filter_enabled(true);
+	generator->set_voxel_material_filter_mask(1 << 0);
+	generator->set_voxel_material_filter_threshold(0.f);
+	generator->generate_transforms(
+			transforms,
+			Vector3i(0, 0, 0),
+			0,
+			0,
+			mesh_arrays,
+			-1,
+			-1,
+			UP_MODE_POSITIVE_Y,
+			0xff,
+			16.f,
+			Ref<VoxelGenerator>()
+	);
+
+	ZN_TEST_ASSERT(transforms.size() > 0);
 }
 
 } // namespace zylann::voxel::tests

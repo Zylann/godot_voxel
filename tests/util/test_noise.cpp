@@ -1,6 +1,8 @@
 #include "test_noise.h"
+#include "../../util/godot/core/packed_arrays.h"
 #include "../../util/noise/fast_noise_lite/fast_noise_lite.h"
 #include "../../util/noise/fast_noise_lite/fast_noise_lite_range.h"
+#include "../../util/noise/spot_noise_gd.h"
 #include "../../util/testing/test_macros.h"
 
 namespace zylann::tests {
@@ -46,6 +48,26 @@ void test_fnl_range() {
 	}
 
 	ZN_TEST_ASSERT(analytic_range.contains(empiric_range));
+}
+
+void test_spot_noise() {
+	Ref<ZN_SpotNoise> noise;
+	noise.instantiate();
+	const float cell_size = 42.f;
+	noise->set_cell_size(cell_size);
+	noise->set_jitter(0.6f);
+	const Rect2 rect(200.f, -20.f, 100.f, 150.f);
+	// This wasn't working outside of the (0,0) cell, reported on Discord by Phoenix
+	const PackedVector2Array positions = noise->get_spot_positions_in_area_2d(rect);
+
+	// Get cells that we know will generate in the rectangle
+	const Vector2i cmin = Vector2i((rect.position / cell_size).ceil());
+	const Vector2i cmax = Vector2i(((rect.position + rect.size) / cell_size).floor());
+	const Vector2i csize = cmax - cmin;
+
+	const int minimum_expected_spot_count = csize.x * csize.y;
+	const int obtained_spot_count = positions.size();
+	ZN_TEST_ASSERT(obtained_spot_count >= minimum_expected_spot_count);
 }
 
 } // namespace zylann::tests

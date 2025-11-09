@@ -1,3 +1,4 @@
+#include "fast_noise_lite_range.h"
 #include "../noise_range_utility.h"
 #include "fast_noise_lite.h"
 #include "fast_noise_lite_gradient.h"
@@ -9,10 +10,10 @@ using namespace math;
 namespace {
 
 Interval get_fnl_cellular_value_range_2d(const ZN_FastNoiseLite &noise, Interval x, Interval y) {
-	const float c0 = noise.get_noise_2d(x.min, y.min);
-	const float c1 = noise.get_noise_2d(x.max, y.min);
-	const float c2 = noise.get_noise_2d(x.min, y.max);
-	const float c3 = noise.get_noise_2d(x.max, y.max);
+	const float c0 = noise.get_noise_2d_unwarped(x.min, y.min);
+	const float c1 = noise.get_noise_2d_unwarped(x.max, y.min);
+	const float c2 = noise.get_noise_2d_unwarped(x.min, y.max);
+	const float c3 = noise.get_noise_2d_unwarped(x.max, y.max);
 	if (c0 == c1 && c1 == c2 && c2 == c3) {
 		return Interval::from_single_value(c0);
 	}
@@ -353,8 +354,13 @@ Interval fnl_get_noise(const ZN_FastNoiseLite &noise, Interval x, Interval y, In
 } // namespace
 
 Interval get_fnl_range_2d(const ZN_FastNoiseLite &noise, Interval x, Interval y) {
+	Ref<ZN_FastNoiseLiteGradient> grad = noise.get_warp_noise();
+	if (grad.is_valid()) {
+		math::Interval2 gr = get_fnl_gradient_range_2d(**grad, x, y);
+		x.add_interval(gr.x);
+		y.add_interval(gr.y);
+	}
 	// TODO More precise analysis using derivatives
-	// TODO Take warp noise into account
 	switch (noise.get_noise_type()) {
 		case ZN_FastNoiseLite::TYPE_CELLULAR:
 			if (noise.get_cellular_return_type() == ZN_FastNoiseLite::CELLULAR_RETURN_CELL_VALUE) {
@@ -367,10 +373,13 @@ Interval get_fnl_range_2d(const ZN_FastNoiseLite &noise, Interval x, Interval y)
 }
 
 Interval get_fnl_range_3d(const ZN_FastNoiseLite &noise, Interval x, Interval y, Interval z) {
-	if (noise.get_warp_noise().is_null()) {
-		return fnl_get_noise(noise, x, y, z);
+	Ref<ZN_FastNoiseLiteGradient> grad = noise.get_warp_noise();
+	if (grad.is_valid()) {
+		math::Interval3 gr = get_fnl_gradient_range_3d(**grad, x, y, z);
+		x.add_interval(gr.x);
+		y.add_interval(gr.y);
+		z.add_interval(gr.z);
 	}
-	// TODO Take warp noise into account
 	switch (noise.get_noise_type()) {
 		case ZN_FastNoiseLite::TYPE_CELLULAR:
 			if (noise.get_cellular_return_type() == ZN_FastNoiseLite::CELLULAR_RETURN_CELL_VALUE) {
@@ -378,16 +387,16 @@ Interval get_fnl_range_3d(const ZN_FastNoiseLite &noise, Interval x, Interval y,
 			}
 			return get_fnl_cellular_range(noise);
 		default:
-			return Interval{ -1.f, 1.f };
+			return fnl_get_noise(noise, x, y, z);
 	}
 }
 
 math::Interval2 get_fnl_gradient_range_2d(const ZN_FastNoiseLiteGradient &noise, Interval x, Interval y) {
 	// TODO More precise analysis
 	const float amp = Math::abs(noise.get_amplitude());
-	return math::Interval2{ //
-							Interval{ x.min - amp, x.max + amp }, //
-							Interval{ y.min - amp, y.max + amp }
+	return math::Interval2{
+		Interval{ x.min - amp, x.max + amp }, //
+		Interval{ y.min - amp, y.max + amp } //
 	};
 }
 

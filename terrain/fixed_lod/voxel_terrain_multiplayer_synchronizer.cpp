@@ -52,7 +52,8 @@ void VoxelTerrainMultiplayerSynchronizer::send_block(
 ) {
 	ZN_PROFILE_SCOPE();
 
-	BlockSerializer::SerializeResult result = BlockSerializer::serialize_and_compress(data_block.get_voxels_const());
+	BlockSerializer::SerializeResult result =
+			BlockSerializer::serialize_and_compress(data_block.get_voxels_const(), CompressedData::COMPRESSION_LZ4);
 	ZN_ASSERT_RETURN(result.success);
 
 	PackedByteArray message_data;
@@ -92,9 +93,10 @@ void VoxelTerrainMultiplayerSynchronizer::send_area(Box3i voxel_box) {
 	// Not particularly efficient for single-voxel edits, but should scale ok with bigger boxes
 	VoxelBuffer voxels(VoxelBuffer::ALLOCATOR_POOL);
 	voxels.create(voxel_box.size);
-	_terrain->get_storage().copy(voxel_box.position, voxels, 0xff);
+	_terrain->get_storage().copy(voxel_box.position, voxels, 0xff, true);
 
-	BlockSerializer::SerializeResult result = BlockSerializer::serialize_and_compress(voxels);
+	BlockSerializer::SerializeResult result =
+			BlockSerializer::serialize_and_compress(voxels, CompressedData::COMPRESSION_LZ4);
 	ZN_ASSERT_RETURN(result.success);
 
 	PackedByteArray pba;
@@ -232,7 +234,7 @@ void VoxelTerrainMultiplayerSynchronizer::_b_receive_area(PackedByteArray messag
 	VoxelBuffer voxels(VoxelBuffer::ALLOCATOR_POOL);
 	ZN_ASSERT_RETURN(BlockSerializer::decompress_and_deserialize(mr.data.sub(mr.pos, voxel_data_size), voxels));
 
-	_terrain->get_storage().paste(pos, voxels, 0xff, false);
+	_terrain->get_storage().paste(pos, voxels, 0xff, false, true);
 	_terrain->post_edit_area(
 			Box3i(pos, voxels.get_size()),
 			// Don't bother for now, update mesh regardless. If necessary we would have to add a flag with the message

@@ -50,4 +50,4 @@ Gets a model from its index.
 
 Finds the index of the first model having the specified resource name. If not found, returns `null`.
 
-_Generated on May 15, 2025_
+_Generated on Nov 02, 2025_

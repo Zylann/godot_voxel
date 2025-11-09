@@ -36,9 +36,13 @@
 			<param index="1" name="voxel_count" type="int" />
 			<param index="2" name="callback" type="Callable" />
 			<param index="3" name="batch_count" type="int" default="16" />
+			<param index="4" name="tags_mask" type="int" default="4294967295" />
 			<description>
-				Picks random voxels within the specified area and executes a function on them. This only works for terrains using [VoxelMesherBlocky]. Only voxels where [member Voxel.random_tickable] is [code]true[/code] will be picked.
+				Picks random voxels within the specified area. If voxel models have [member VoxelBlockyModel.random_tickable] set to [code]true[/code] and [member VoxelBlockyModel.tags_mask] matches any bit in [code]tags_mask[/code], executes a function on them. This only works for terrains using [VoxelMesherBlocky].
 				The given callback takes two arguments: voxel position (Vector3i), voxel value (int).
+
+				The purpose of [code]batch_count[/code] is to optimize the picking process through the internal data structure. The algorithm goes as follows: [code]voxel_count[/code] is divided in batches of length [code]batch_count[/code]. For each batch, a random block intersecting [code]area[/code] is chosen, and [code]batch_count[/code] voxels are picked at random inside of it. If [code]voxel_count[/code] is not divisible by [code]batch_count[/code], an extra block will be picked to do the remainder.
+				[code]batch[/code] can bias randomness by concentrating picks in specific blocks, but if this function is used every frame over time, that bias should average out. If you want no bias at all, set [code]batch_count[/code] to 1.
 			</description>
 		</method>
 	</methods>

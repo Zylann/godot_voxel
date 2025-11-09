@@ -301,15 +301,15 @@ namespace zylann::voxel::godot {
 const char *VoxelBuffer::CHANNEL_ID_HINT_STRING = "Type,Sdf,Color,Indices,Weights,Data5,Data6,Data7";
 static thread_local bool s_create_shared = false;
 
-Variant get_voxel_metadata(zylann::voxel::VoxelBuffer &vb, const Vector3i pos) {
-	VoxelMetadata *meta = vb.get_voxel_metadata(pos);
+Variant get_voxel_metadata(const zylann::voxel::VoxelBuffer &vb, const Vector3i pos) {
+	const VoxelMetadata *meta = vb.get_voxel_metadata(pos);
 	if (meta == nullptr) {
 		return Variant();
 	}
 	return get_as_variant(*meta);
 }
 
-void set_voxel_metadata(zylann::voxel::VoxelBuffer &vb, const Vector3i pos, const Variant meta) {
+void set_voxel_metadata(zylann::voxel::VoxelBuffer &vb, const Vector3i pos, const Variant &meta) {
 	if (meta.get_type() == Variant::NIL) {
 		vb.erase_voxel_metadata(pos);
 	} else {
@@ -564,7 +564,7 @@ void VoxelBuffer::op_mul_value_f(float scale, VoxelBuffer::ChannelId channel) {
 	op_buffer_value_f(
 			*_buffer,
 			scale,
-			static_cast<zylann::voxel::VoxelBuffer::ChannelId>(channel),
+			static_cast<zylann::voxel::VoxelBuffer::ChannelId>(channel), //
 			[](float a, float b) { return a * b; }
 	);
 }
@@ -933,6 +933,7 @@ void VoxelBuffer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_voxel_v", "value", "pos", "channel"), &VoxelBuffer::set_voxel_v, DEFVAL(0));
 	ClassDB::bind_method(D_METHOD("get_voxel", "x", "y", "z", "channel"), &VoxelBuffer::get_voxel, DEFVAL(0));
 	ClassDB::bind_method(D_METHOD("get_voxel_f", "x", "y", "z", "channel"), &VoxelBuffer::get_voxel_f, DEFVAL(0));
+	ClassDB::bind_method(D_METHOD("get_voxel_v", "pos", "channel"), &VoxelBuffer::get_voxel_v, DEFVAL(0));
 	ClassDB::bind_method(D_METHOD("get_voxel_tool"), &VoxelBuffer::get_voxel_tool);
 
 	ClassDB::bind_method(D_METHOD("get_channel_depth", "channel"), &VoxelBuffer::get_channel_depth);

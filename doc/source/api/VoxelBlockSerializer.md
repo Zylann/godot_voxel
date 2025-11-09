@@ -49,9 +49,18 @@ Return                                                                          
 --------------------------------------------------------------------------------------------- | -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 [void](#)                                                                                     | [deserialize_from_byte_array](#i_deserialize_from_byte_array) ( [PackedByteArray](https://docs.godotengine.org/en/stable/classes/class_packedbytearray.html) bytes, [VoxelBuffer](VoxelBuffer.md) voxel_buffer, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) decompress ) static                                                                   
 [void](#)                                                                                     | [deserialize_from_stream_peer](#i_deserialize_from_stream_peer) ( [StreamPeer](https://docs.godotengine.org/en/stable/classes/class_streampeer.html) peer, [VoxelBuffer](VoxelBuffer.md) voxel_buffer, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) size, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) decompress ) static 
-[PackedByteArray](https://docs.godotengine.org/en/stable/classes/class_packedbytearray.html)  | [serialize_to_byte_array](#i_serialize_to_byte_array) ( [VoxelBuffer](VoxelBuffer.md) voxel_buffer, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) compress ) static                                                                                                                                                                                 
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)                          | [serialize_to_stream_peer](#i_serialize_to_stream_peer) ( [StreamPeer](https://docs.godotengine.org/en/stable/classes/class_streampeer.html) peer, [VoxelBuffer](VoxelBuffer.md) voxel_buffer, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) compress ) static                                                                                      
+[PackedByteArray](https://docs.godotengine.org/en/stable/classes/class_packedbytearray.html)  | [serialize_to_byte_array](#i_serialize_to_byte_array) ( [VoxelBuffer](VoxelBuffer.md) voxel_buffer, [Compression](VoxelBlockSerializer.md#enumerations) compress ) static                                                                                                                                                                                                    
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)                          | [serialize_to_stream_peer](#i_serialize_to_stream_peer) ( [StreamPeer](https://docs.godotengine.org/en/stable/classes/class_streampeer.html) peer, [VoxelBuffer](VoxelBuffer.md) voxel_buffer, [Compression](VoxelBlockSerializer.md#enumerations) compress ) static                                                                                                         
 <p></p>
+
+## Enumerations: 
+
+enum **Compression**: 
+
+- <span id="i_COMPRESSION_NONE"></span>**COMPRESSION_NONE** = **0** --- Don't compress the data.
+- <span id="i_COMPRESSION_LZ4"></span>**COMPRESSION_LZ4** = **2** --- Use the LZ4 default compression algorithm. Fast, but lower compression ratio.
+- <span id="i_COMPRESSION_ZSTD"></span>**COMPRESSION_ZSTD** = **3** --- Use the Zstandard default compression algorithm. Good compression ratio but slower.
+
 
 ## Method Descriptions
 
@@ -63,12 +72,12 @@ Reads the data of a [VoxelBuffer](VoxelBuffer.md) from a [PackedByteArray](https
 
 Reads the data of a [VoxelBuffer](VoxelBuffer.md) from a [StreamPeer](https://docs.godotengine.org/en/stable/classes/class_streampeer.html). You must provide the number of bytes to read.
 
-### [PackedByteArray](https://docs.godotengine.org/en/stable/classes/class_packedbytearray.html)<span id="i_serialize_to_byte_array"></span> **serialize_to_byte_array**( [VoxelBuffer](VoxelBuffer.md) voxel_buffer, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) compress ) 
+### [PackedByteArray](https://docs.godotengine.org/en/stable/classes/class_packedbytearray.html)<span id="i_serialize_to_byte_array"></span> **serialize_to_byte_array**( [VoxelBuffer](VoxelBuffer.md) voxel_buffer, [Compression](VoxelBlockSerializer.md#enumerations) compress ) 
 
 Stores the data of a [VoxelBuffer](VoxelBuffer.md) into a [PackedByteArray](https://docs.godotengine.org/en/stable/classes/class_packedbytearray.html).
 
-### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_serialize_to_stream_peer"></span> **serialize_to_stream_peer**( [StreamPeer](https://docs.godotengine.org/en/stable/classes/class_streampeer.html) peer, [VoxelBuffer](VoxelBuffer.md) voxel_buffer, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) compress ) 
+### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_serialize_to_stream_peer"></span> **serialize_to_stream_peer**( [StreamPeer](https://docs.godotengine.org/en/stable/classes/class_streampeer.html) peer, [VoxelBuffer](VoxelBuffer.md) voxel_buffer, [Compression](VoxelBlockSerializer.md#enumerations) compress ) 
 
 Stores the data of a [VoxelBuffer](VoxelBuffer.md) into a [StreamPeer](https://docs.godotengine.org/en/stable/classes/class_streampeer.html). Returns the number of written bytes.
 
-_Generated on May 15, 2025_
+_Generated on Nov 02, 2025_

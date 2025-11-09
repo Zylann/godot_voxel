@@ -82,9 +82,16 @@ struct GetPassInputBlock {
 
 } // namespace
 
-void VoxelToolMultipassGenerator::copy(Vector3i pos, VoxelBuffer &dst, uint8_t channels_mask) const {
+void VoxelToolMultipassGenerator::copy(
+		const Vector3i pos,
+		VoxelBuffer &dst,
+		const uint8_t channels_mask,
+		const bool with_metadata
+) const {
 	PassInput pass_input = _pass_input;
-	copy_from_chunked_storage(dst, pos, _block_size_po2, channels_mask, &get_pass_input_block_r, &pass_input);
+	copy_from_chunked_storage(
+			dst, pos, _block_size_po2, channels_mask, &get_pass_input_block_r, &pass_input, with_metadata
+	);
 }
 
 void VoxelToolMultipassGenerator::paste(Vector3i pos, const VoxelBuffer &src, uint8_t channels_mask) {
@@ -282,7 +289,7 @@ void VoxelToolMultipassGenerator::do_path(Span<const Vector3> positions, Span<co
 	}
 }
 
-void VoxelToolMultipassGenerator::set_voxel_metadata(Vector3i pos, Variant meta) {
+void VoxelToolMultipassGenerator::set_voxel_metadata(const Vector3i pos, const Variant &meta) {
 	Vector3i rpos;
 	Block *block = get_block_and_relative_position(pos, rpos);
 	if (block == nullptr) {
@@ -291,7 +298,7 @@ void VoxelToolMultipassGenerator::set_voxel_metadata(Vector3i pos, Variant meta)
 	godot::set_voxel_metadata(block->voxels, rpos, meta);
 }
 
-Variant VoxelToolMultipassGenerator::get_voxel_metadata(Vector3i pos) const {
+Variant VoxelToolMultipassGenerator::get_voxel_metadata(const Vector3i pos) const {
 	Vector3i rpos;
 	Block *block = get_block_and_relative_position(pos, rpos);
 	if (block == nullptr) {

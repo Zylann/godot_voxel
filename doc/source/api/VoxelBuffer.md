@@ -43,6 +43,7 @@ Return                                                                          
 [float](https://docs.godotengine.org/en/stable/classes/class_float.html)                      | [get_voxel_f](#i_get_voxel_f) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) x, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) y, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) z, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channel=0 ) const                                                                                                                                           
 [Variant](https://docs.godotengine.org/en/stable/classes/class_variant.html)                  | [get_voxel_metadata](#i_get_voxel_metadata) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) pos ) const                                                                                                                                                                                                                                                                                                                                                 
 [VoxelTool](VoxelTool.md)                                                                     | [get_voxel_tool](#i_get_voxel_tool) ( )                                                                                                                                                                                                                                                                                                                                                                                                                                                  
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)                          | [get_voxel_v](#i_get_voxel_v) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) pos, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channel=0 ) const                                                                                                                                                                                                                                                                               
 [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)                        | [is_uniform](#i_is_uniform) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channel ) const                                                                                                                                                                                                                                                                                                                                                                       
 [void](#)                                                                                     | [mirror](#i_mirror) ( [Axis](https://docs.godotengine.org/en/stable/classes/class_vector3i.html#enum-vector3i-axis) axis )                                                                                                                                                                                                                                                                                                                                                               
 [void](#)                                                                                     | [op_add_buffer_f](#i_op_add_buffer_f) ( [VoxelBuffer](VoxelBuffer.md) other, [ChannelId](VoxelBuffer.md#enumerations) channel )                                                                                                                                                                                                                                                                                                                                                          
@@ -261,6 +262,10 @@ Gets the metadata attached to a specific voxel in this buffer.
 
 Constructs a [VoxelTool](VoxelTool.md) instance bound to this buffer. This provides access to some extra common functions.
 
+### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_get_voxel_v"></span> **get_voxel_v**( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) pos, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channel=0 ) 
+
+Gets the raw value of a voxel within this buffer.
+
 ### [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_is_uniform"></span> **is_uniform**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channel ) 
 
 Checks if every voxel within a channel has the same value.
@@ -329,7 +334,7 @@ Sets the float value of a voxel. This method should be used if you work on SDF d
 
 ### [void](#)<span id="i_set_voxel_metadata"></span> **set_voxel_metadata**( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) pos, [Variant](https://docs.godotengine.org/en/stable/classes/class_variant.html) value ) 
 
-Attaches arbitrary data on a specific voxel. Old data is replaced.
+Attaches arbitrary data on a specific voxel. Old data is replaced. Passing `null` will erase metadata.
 
 If this [VoxelBuffer](VoxelBuffer.md) is saved, this metadata will also be saved along voxels, so make sure the data supports serialization (i.e you can't put nodes or arbitrary objects in it).
 
@@ -341,4 +346,4 @@ If this [VoxelBuffer](VoxelBuffer.md) is saved, this metadata will also be saved
 
 Updates an existing 3D texture from the SDF channel. See [create_3d_texture_from_sdf_zxy](VoxelBuffer.md#i_create_3d_texture_from_sdf_zxy) for more information.
 
-_Generated on May 15, 2025_
+_Generated on Nov 02, 2025_

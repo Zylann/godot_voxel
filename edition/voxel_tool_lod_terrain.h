@@ -26,8 +26,16 @@ public:
 #ifdef VOXEL_ENABLE_MESH_SDF
 	void do_mesh(const VoxelMeshSDF &mesh_sdf, const Transform3D &transform, const float isolevel) override;
 #endif
-	void copy(Vector3i pos, VoxelBuffer &dst, uint8_t channels_mask) const override;
+	void copy(
+			const Vector3i pos,
+			VoxelBuffer &dst,
+			const uint8_t p_channels_mask,
+			const bool with_metadata
+	) const override;
 	void paste(Vector3i pos, const VoxelBuffer &src, uint8_t channels_mask) override;
+
+	void set_voxel_metadata(const Vector3i pos, const Variant &meta) override;
+	Variant get_voxel_metadata(const Vector3i pos) const override;
 
 	// Specialized API
 
@@ -54,7 +62,8 @@ public:
 			const AABB voxel_area,
 			const int voxel_count,
 			const Callable &callback,
-			const int block_batch_count
+			const int block_batch_count,
+			const uint32_t tags_mask
 	);
 
 	VoxelFormat get_format() const override;

@@ -2440,4 +2440,262 @@ void test_voxel_graph_constant_reduction() {
 	ZN_TEST_ASSERT(graph->equals(**expected_graph));
 }
 
+void test_voxel_graph_multiple_function_instances() {
+	Ref<VoxelGraphFunction> function;
+	function.instantiate();
+	{
+		// X --- Add --- Out
+		//      /
+		//     Y
+		const uint32_t n_in_x = function->create_node(VoxelGraphFunction::NODE_INPUT_X);
+		const uint32_t n_in_y = function->create_node(VoxelGraphFunction::NODE_INPUT_Y);
+		const uint32_t n_add = function->create_node(VoxelGraphFunction::NODE_ADD);
+		const uint32_t n_out = function->create_node(VoxelGraphFunction::NODE_OUTPUT_SDF);
+
+		function->add_connection(n_in_x, 0, n_add, 0);
+		function->add_connection(n_in_y, 0, n_add, 1);
+		function->add_connection(n_add, 0, n_out, 0);
+
+		function->auto_pick_inputs_and_outputs();
+	}
+
+	Ref<VoxelGeneratorGraph> graph;
+	graph.instantiate();
+	{
+		Ref<VoxelGraphFunction> mf = graph->get_main_function();
+
+		//     X
+		//      \
+		// Y --- F1 --- Add --- Out
+		//             /
+		//     X --- F2
+		//          /
+		//         Y
+		const uint32_t n_in_x = mf->create_node(VoxelGraphFunction::NODE_INPUT_X);
+		const uint32_t n_in_y = mf->create_node(VoxelGraphFunction::NODE_INPUT_Y);
+		const uint32_t n_f1 = mf->create_function_node(function);
+		const uint32_t n_f2 = mf->create_function_node(function);
+		const uint32_t n_add = mf->create_node(VoxelGraphFunction::NODE_ADD);
+		const uint32_t n_out = mf->create_node(VoxelGraphFunction::NODE_OUTPUT_SDF);
+
+		mf->add_connection(n_in_x, 0, n_f1, 0);
+		mf->add_connection(n_in_y, 0, n_f1, 1);
+		mf->add_connection(n_in_x, 0, n_f2, 0);
+		mf->add_connection(n_in_y, 0, n_f2, 1);
+		mf->add_connection(n_f1, 0, n_add, 0);
+		mf->add_connection(n_f2, 0, n_add, 1);
+		mf->add_connection(n_add, 0, n_out, 0);
+
+		const CompilationResult result_debug = graph->compile(true);
+		ZN_TEST_ASSERT(result_debug.success);
+	}
+}
+
+void test_voxel_graph_issue783() {
+	Ref<VoxelGeneratorGraph> graph;
+	graph.instantiate();
+	{
+		Ref<VoxelGraphFunction> mf = graph->get_main_function();
+
+		//               ---
+		//        A1 ---|    B1
+		//      /        ---   \
+		//     X                Add --- Out
+		//      \        ---   /
+		//        A2 ---|    B2
+		//               ---
+		//
+		// A1 and A2 are equivalent
+		// B1 and B2 are equivalent
+
+		// TODO This test somewhat depends on StdUnorderedMap implementation details.
+		// The input conditions may or may not satisfy what we are testing depending on the order in which nodes are
+		// added. We want the "equivalence merging" step of the optimizer to evaluate B1 and B2 BEFORE A1 and A2.
+		// If A1 and A2 are checked first, they will be merged and input conditions will be different for B1 and B2.
+		const uint32_t n_out = mf->create_node(VoxelGraphFunction::NODE_OUTPUT_SDF);
+		const uint32_t n_add = mf->create_node(VoxelGraphFunction::NODE_ADD);
+		const uint32_t n_b2 = mf->create_node(VoxelGraphFunction::NODE_ADD);
+		const uint32_t n_b1 = mf->create_node(VoxelGraphFunction::NODE_ADD);
+		const uint32_t n_a2 = mf->create_node(VoxelGraphFunction::NODE_ABS);
+		const uint32_t n_a1 = mf->create_node(VoxelGraphFunction::NODE_ABS);
+		const uint32_t n_in_x = mf->create_node(VoxelGraphFunction::NODE_INPUT_X);
+
+		mf->add_connection(n_in_x, 0, n_a1, 0);
+		mf->add_connection(n_in_x, 0, n_a2, 0);
+		mf->add_connection(n_a1, 0, n_b1, 0);
+		mf->add_connection(n_a1, 0, n_b1, 1);
+		mf->add_connection(n_a2, 0, n_b2, 0);
+		mf->add_connection(n_a2, 0, n_b2, 1);
+		mf->add_connection(n_b1, 0, n_add, 0);
+		mf->add_connection(n_b2, 0, n_add, 1);
+		mf->add_connection(n_add, 0, n_out, 0);
+
+		// TODO This should not error. Need a way to fail test if an error prints
+		const CompilationResult result_debug = graph->compile(true);
+		ZN_TEST_ASSERT(result_debug.success);
+	}
+}
+
+void test_voxel_graph_broad_block() {
+	// generate_broad_block used to scale SDF when filling the output buffer, but it should not have done that because
+	// VoxelBuffer already scales internally. So when range analysis returns single-value outputs that are small enough
+	// (for example using 1.0 in Select to output air in an area) then it was rounded to 0, which for Transvoxel means
+	// solid.
+
+	Ref<VoxelGeneratorGraph> graph;
+	graph.instantiate();
+
+	{
+		Ref<VoxelGraphFunction> mf = graph->get_main_function();
+
+		// Y --- SdfPlane --- A
+		//                    B Select --- Out
+		//              X --- T
+
+		const uint32_t n_x = mf->create_node(VoxelGraphFunction::NODE_INPUT_X);
+		const uint32_t n_y = mf->create_node(VoxelGraphFunction::NODE_INPUT_Y);
+		const uint32_t n_select = mf->create_node(VoxelGraphFunction::NODE_SELECT);
+		const uint32_t n_plane = mf->create_node(VoxelGraphFunction::NODE_SDF_PLANE);
+		const uint32_t n_out = mf->create_node(VoxelGraphFunction::NODE_OUTPUT_SDF);
+
+		mf->add_connection(n_y, 0, n_plane, 0);
+
+		mf->add_connection(n_plane, 0, n_select, 0);
+		mf->set_node_default_input(n_select, 1, 1.f);
+		const uint32_t param_threshold = 0;
+		mf->set_node_param(n_select, param_threshold, 50.f); // x < 50 ? A : B
+		mf->add_connection(n_x, 0, n_select, 2);
+
+		mf->add_connection(n_select, 0, n_out, 0);
+	}
+
+	const CompilationResult comp_result = graph->compile(false);
+	ZN_TEST_ASSERT(comp_result.success);
+
+	VoxelBuffer voxels(VoxelBuffer::ALLOCATOR_DEFAULT);
+	voxels.create(Vector3i(16, 16, 16));
+
+	VoxelGenerator::VoxelQueryData query{ voxels, Vector3i(224, -32, 0), 0 };
+	const bool is_broad = graph->generate_broad_block(query);
+	ZN_TEST_ASSERT(is_broad);
+	ZN_TEST_ASSERT(voxels.get_channel_compression(VoxelBuffer::CHANNEL_SDF) == VoxelBuffer::COMPRESSION_UNIFORM);
+	const float sd = voxels.get_voxel_f(Vector3i(0, 0, 0), VoxelBuffer::CHANNEL_SDF);
+	ZN_TEST_ASSERT(sd > 0.f);
+}
+
+void test_voxel_graph_set_default_input_by_name() {
+	{
+		Ref<VoxelGraphFunction> func;
+		func.instantiate();
+
+		const uint32_t node_id = func->create_node(VoxelGraphFunction::NODE_SDF_PLANE);
+
+		const float expected_value = 32.0;
+		func->set_node_default_input_by_name(node_id, "height", expected_value);
+
+		const uint32_t input_index = 1;
+		const float value = func->get_node_default_input(node_id, input_index);
+		ZN_TEST_ASSERT(value == expected_value);
+	}
+	{
+		const StringName input0_name = "in0";
+		const StringName input1_name = "in1";
+
+		Ref<VoxelGraphFunction> sub_func;
+		sub_func.instantiate();
+		{
+			const uint32_t n_input0 = sub_func->create_node(VoxelGraphFunction::NODE_CUSTOM_INPUT);
+			const uint32_t n_input1 = sub_func->create_node(VoxelGraphFunction::NODE_CUSTOM_INPUT);
+			const uint32_t n_add = sub_func->create_node(VoxelGraphFunction::NODE_ADD);
+			const uint32_t n_output = sub_func->create_node(VoxelGraphFunction::NODE_OUTPUT_SDF);
+
+			sub_func->set_node_name(n_input0, input0_name);
+			sub_func->set_node_name(n_input1, input1_name);
+
+			sub_func->add_connection(n_input0, 0, n_add, 0);
+			sub_func->add_connection(n_input1, 0, n_add, 1);
+			sub_func->add_connection(n_add, 0, n_output, 0);
+
+			sub_func->auto_pick_inputs_and_outputs();
+		}
+
+		Ref<VoxelGraphFunction> func;
+		func.instantiate();
+		const uint32_t n_sub_func = func->create_function_node(sub_func);
+		ZN_TEST_ASSERT(n_sub_func != ProgramGraph::NULL_ID);
+
+		const float expected_value_0 = 32.0;
+		const float expected_value_1 = 64.0;
+
+		func->set_node_default_input_by_name(n_sub_func, input0_name, expected_value_0);
+		func->set_node_default_input_by_name(n_sub_func, input1_name, expected_value_1);
+
+		const uint32_t input0_index = 0;
+		const uint32_t input1_index = 1;
+
+		const float value0 = func->get_node_default_input(n_sub_func, input0_index);
+		const float value1 = func->get_node_default_input(n_sub_func, input1_index);
+
+		ZN_TEST_ASSERT(value0 == expected_value_0);
+		ZN_TEST_ASSERT(value1 == expected_value_1);
+	}
+}
+
+void test_voxel_graph_get_io_indices() {
+	{
+		Ref<VoxelGraphFunction> func;
+		func.instantiate();
+		const uint32_t node_id = func->create_node(VoxelGraphFunction::NODE_SDF_PLANE);
+		const int index = func->get_node_input_index(node_id, "height");
+		ZN_TEST_ASSERT(index == 1);
+	}
+	{
+		const StringName input0_name = "in0";
+		const StringName input1_name = "in1";
+
+		const StringName output0_name = "out0";
+		const StringName output1_name = "out1";
+
+		Ref<VoxelGraphFunction> sub_func;
+		sub_func.instantiate();
+		{
+			const uint32_t n_input0 = sub_func->create_node(VoxelGraphFunction::NODE_CUSTOM_INPUT);
+			const uint32_t n_input1 = sub_func->create_node(VoxelGraphFunction::NODE_CUSTOM_INPUT);
+			const uint32_t n_add = sub_func->create_node(VoxelGraphFunction::NODE_ADD);
+			const uint32_t n_output0 = sub_func->create_node(VoxelGraphFunction::NODE_CUSTOM_OUTPUT);
+			const uint32_t n_output1 = sub_func->create_node(VoxelGraphFunction::NODE_CUSTOM_OUTPUT);
+
+			sub_func->set_node_name(n_input0, input0_name);
+			sub_func->set_node_name(n_input1, input1_name);
+
+			sub_func->set_node_name(n_output0, output0_name);
+			sub_func->set_node_name(n_output1, output1_name);
+
+			sub_func->add_connection(n_input0, 0, n_add, 0);
+			sub_func->add_connection(n_input1, 0, n_add, 1);
+			sub_func->add_connection(n_add, 0, n_output0, 0);
+			sub_func->add_connection(n_add, 0, n_output1, 0);
+
+			sub_func->auto_pick_inputs_and_outputs();
+		}
+
+		Ref<VoxelGraphFunction> func;
+		func.instantiate();
+		const uint32_t n_sub_func = func->create_function_node(sub_func);
+		ZN_TEST_ASSERT(n_sub_func != ProgramGraph::NULL_ID);
+
+		const uint32_t input0_index = func->get_node_input_index(n_sub_func, input0_name);
+		const uint32_t input1_index = func->get_node_input_index(n_sub_func, input1_name);
+
+		const uint32_t output0_index = func->get_node_output_index(n_sub_func, output0_name);
+		const uint32_t output1_index = func->get_node_output_index(n_sub_func, output1_name);
+
+		ZN_TEST_ASSERT(input0_index == 0);
+		ZN_TEST_ASSERT(input1_index == 1);
+
+		ZN_TEST_ASSERT(output0_index == 0);
+		ZN_TEST_ASSERT(output1_index == 1);
+	}
+}
+
 } // namespace zylann::voxel::tests

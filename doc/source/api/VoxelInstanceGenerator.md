@@ -18,16 +18,22 @@ Type                                                                            
 [float](https://docs.godotengine.org/en/stable/classes/class_float.html)                        | [density](#i_density)                                                              | 0.1                        
 [EmitMode](VoxelInstanceGenerator.md#enumerations)                                              | [emit_mode](#i_emit_mode)                                                          | EMIT_FROM_VERTICES (0)     
 [float](https://docs.godotengine.org/en/stable/classes/class_float.html)                        | [jitter](#i_jitter)                                                                | 1.0                        
-[float](https://docs.godotengine.org/en/stable/classes/class_float.html)                        | [max_height](#i_max_height)                                                        | 3.40282e+38                
+[float](https://docs.godotengine.org/en/stable/classes/class_float.html)                        | [max_height](#i_max_height)                                                        | 3.4028235e+38              
+[float](https://docs.godotengine.org/en/stable/classes/class_float.html)                        | [max_height_falloff](#i_max_height_falloff)                                        | 0.0                        
 [float](https://docs.godotengine.org/en/stable/classes/class_float.html)                        | [max_scale](#i_max_scale)                                                          | 1.0                        
 [float](https://docs.godotengine.org/en/stable/classes/class_float.html)                        | [max_slope_degrees](#i_max_slope_degrees)                                          | 180.0                      
-[float](https://docs.godotengine.org/en/stable/classes/class_float.html)                        | [min_height](#i_min_height)                                                        | 1.17549e-38                
+[float](https://docs.godotengine.org/en/stable/classes/class_float.html)                        | [max_slope_falloff_degrees](#i_max_slope_falloff_degrees)                          | 0.0                        
+[float](https://docs.godotengine.org/en/stable/classes/class_float.html)                        | [min_height](#i_min_height)                                                        | 1.1754944e-38              
+[float](https://docs.godotengine.org/en/stable/classes/class_float.html)                        | [min_height_falloff](#i_min_height_falloff)                                        | 0.0                        
 [float](https://docs.godotengine.org/en/stable/classes/class_float.html)                        | [min_scale](#i_min_scale)                                                          | 1.0                        
 [float](https://docs.godotengine.org/en/stable/classes/class_float.html)                        | [min_slope_degrees](#i_min_slope_degrees)                                          | 0.0                        
+[float](https://docs.godotengine.org/en/stable/classes/class_float.html)                        | [min_slope_falloff_degrees](#i_min_slope_falloff_degrees)                          | 0.0                        
 [Noise](https://docs.godotengine.org/en/stable/classes/class_noise.html)                        | [noise](#i_noise)                                                                  |                            
 [Dimension](VoxelInstanceGenerator.md#enumerations)                                             | [noise_dimension](#i_noise_dimension)                                              | DIMENSION_3D (1)           
+[float](https://docs.godotengine.org/en/stable/classes/class_float.html)                        | [noise_falloff](#i_noise_falloff)                                                  | 0.0                        
 [VoxelGraphFunction](VoxelGraphFunction.md)                                                     | [noise_graph](#i_noise_graph)                                                      |                            
 [float](https://docs.godotengine.org/en/stable/classes/class_float.html)                        | [noise_on_scale](#i_noise_on_scale)                                                | 0.0                        
+[float](https://docs.godotengine.org/en/stable/classes/class_float.html)                        | [noise_threshold](#i_noise_threshold)                                              | 0.0                        
 [float](https://docs.godotengine.org/en/stable/classes/class_float.html)                        | [offset_along_normal](#i_offset_along_normal)                                      | 0.0                        
 [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)                          | [random_rotation](#i_random_rotation)                                              | true                       
 [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)                          | [random_vertical_flip](#i_random_vertical_flip)                                    | false                      
@@ -39,6 +45,7 @@ Type                                                                            
 [float](https://docs.godotengine.org/en/stable/classes/class_float.html)                        | [vertical_alignment](#i_vertical_alignment)                                        | 1.0                        
 [PackedInt32Array](https://docs.godotengine.org/en/stable/classes/class_packedint32array.html)  | [voxel_texture_filter_array](#i_voxel_texture_filter_array)                        | PackedInt32Array(0)        
 [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)                          | [voxel_texture_filter_enabled](#i_voxel_texture_filter_enabled)                    | false                      
+[float](https://docs.godotengine.org/en/stable/classes/class_float.html)                        | [voxel_texture_filter_threshold](#i_voxel_texture_filter_threshold)                | 0.5                        
 <p></p>
 
 ## Methods: 
@@ -89,11 +96,15 @@ In which way instances are primarily emitted.
 
 Controls randomness of spawning position when [emit_mode](VoxelInstanceGenerator.md#i_emit_mode) is set to [EMIT_ONE_PER_TRIANGLE](VoxelInstanceGenerator.md#i_EMIT_ONE_PER_TRIANGLE).
 
-### [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_max_height"></span> **max_height** = 3.40282e+38
+### [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_max_height"></span> **max_height** = 3.4028235e+38
 
 Instances will not be created above this height.
 
 This also depends on the chosen [VoxelInstancer.up_mode](VoxelInstancer.md#i_up_mode).
+
+### [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_max_height_falloff"></span> **max_height_falloff** = 0.0
+
+Distance over which density will fade, when below [max_height](VoxelInstanceGenerator.md#i_max_height).
 
 ### [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_max_scale"></span> **max_scale** = 1.0
 
@@ -105,9 +116,17 @@ Instances will not spawn if the ground has a slope higher than this angle.
 
 This also depends on the chosen [VoxelInstancer.up_mode](VoxelInstancer.md#i_up_mode).
 
-### [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_min_height"></span> **min_height** = 1.17549e-38
+### [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_max_slope_falloff_degrees"></span> **max_slope_falloff_degrees** = 0.0
+
+Angular distance over which density will fade, when below [max_slope_degrees](VoxelInstanceGenerator.md#i_max_slope_degrees).
+
+### [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_min_height"></span> **min_height** = 1.1754944e-38
 
 Instances will not be created below this height. This also depends on the chosen [VoxelInstancer.up_mode](VoxelInstancer.md#i_up_mode).
+
+### [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_min_height_falloff"></span> **min_height_falloff** = 0.0
+
+Distance over which density will fade, when above [min_height](VoxelInstanceGenerator.md#i_min_height).
 
 ### [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_min_scale"></span> **min_scale** = 1.0
 
@@ -119,6 +138,10 @@ Instances will not spawn if the ground has a slope lower than this angle.
 
 This also depends on the chosen [VoxelInstancer.up_mode](VoxelInstancer.md#i_up_mode).
 
+### [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_min_slope_falloff_degrees"></span> **min_slope_falloff_degrees** = 0.0
+
+Angular distance over which density will fade, when above [min_slope_degrees](VoxelInstanceGenerator.md#i_min_slope_degrees).
+
 ### [Noise](https://docs.godotengine.org/en/stable/classes/class_noise.html)<span id="i_noise"></span> **noise**
 
 Noise used to filter out spawned instances, so that they may spawn in patterns described by the noise.
@@ -126,6 +149,10 @@ Noise used to filter out spawned instances, so that they may spawn in patterns d
 ### [Dimension](VoxelInstanceGenerator.md#enumerations)<span id="i_noise_dimension"></span> **noise_dimension** = DIMENSION_3D (1)
 
 Which dimension should be used when evaluating [noise](VoxelInstanceGenerator.md#i_noise) and [noise_graph](VoxelInstanceGenerator.md#i_noise_graph).
+
+### [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_noise_falloff"></span> **noise_falloff** = 0.0
+
+Noise range over which density will fade. For example if falloff is 0.3, then density will fade when noise values are between 0 and 0.3.
 
 ### [VoxelGraphFunction](VoxelGraphFunction.md)<span id="i_noise_graph"></span> **noise_graph**
 
@@ -136,6 +163,10 @@ The graph must have 2 inputs (X and Z) if [noise_dimension](VoxelInstanceGenerat
 ### [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_noise_on_scale"></span> **noise_on_scale** = 0.0
 
 How much [noise](VoxelInstanceGenerator.md#i_noise) also affects the scale of instances.
+
+### [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_noise_threshold"></span> **noise_threshold** = 0.0
+
+Expands or shrink noise filtering. Higher values expand the areas where instances will spawn, lower values shrinks them.
 
 ### [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_offset_along_normal"></span> **offset_along_normal** = 0.0
 
@@ -195,6 +226,10 @@ This only works when [voxel_texture_filter_enabled](VoxelInstanceGenerator.md#i_
 
 When true, enables filtering of instances based on voxel texture indices. See [voxel_texture_filter_array](VoxelInstanceGenerator.md#i_voxel_texture_filter_array).
 
+### [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_voxel_texture_filter_threshold"></span> **voxel_texture_filter_threshold** = 0.5
+
+When [voxel_texture_filter_enabled](VoxelInstanceGenerator.md#i_voxel_texture_filter_enabled) is active, controls how much of filtered texture has to be present for instances to spawn. The value must be betweem 0 and 1.
+
 ## Method Descriptions
 
 ### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_get_voxel_texture_filter_mask"></span> **get_voxel_texture_filter_mask**( ) 
@@ -205,4 +240,4 @@ When true, enables filtering of instances based on voxel texture indices. See [v
 
 *(This method has no documentation)*
 
-_Generated on May 15, 2025_
+_Generated on Nov 02, 2025_

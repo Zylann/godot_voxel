@@ -56,6 +56,8 @@ If set to `true`, the engine will generate meshes around this viewer. This may b
 
 How far should voxels generate around this viewer.
 
+Note: the effective view distance may be limited by the terrain node.
+
 ### [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_view_distance_vertical_ratio"></span> **view_distance_vertical_ratio** = 1.0
 
 Modifies vertical view distance to be a ratio of the [view_distance](VoxelViewer.md#i_view_distance) property. For example, if [view_distance](VoxelViewer.md#i_view_distance) is 100 and this property is 0.5, then horizontal view distance will be 100 and vertical view distance will be 50.
@@ -70,4 +72,4 @@ Modifies vertical view distance to be a ratio of the [view_distance](VoxelViewer
 
 *(This method has no documentation)*
 
-_Generated on May 15, 2025_
+_Generated on Nov 02, 2025_

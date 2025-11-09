@@ -57,6 +57,7 @@ public:
 		String to_string(Span<const Ref<VoxelBlockyAttribute>> context_attributes) const;
 		bool parse_from_array(const Array &array);
 		Array to_array() const;
+		void sort();
 	};
 
 	// Get or set models specifically associated to a particular variant (they are not necessarily the final result)

@@ -28,4 +28,4 @@ Altitude of the ground.
 
 If [channel](VoxelGeneratorFlat.md#i_channel) is set to any channel other than [VoxelBuffer.CHANNEL_SDF](VoxelBuffer.md#i_CHANNEL_SDF), this value will be used to fill ground voxels, while air voxels will be set to 0.
 
-_Generated on May 15, 2025_
+_Generated on Nov 02, 2025_

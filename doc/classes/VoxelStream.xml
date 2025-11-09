@@ -48,6 +48,10 @@
 		</method>
 	</methods>
 	<members>
+		<member name="compression_mode" type="int" setter="set_compression_mode" getter="get_compression_mode" enum="VoxelBlockSerializer.Compression" default="2">
+			Specifies which compression algorithm is used when saving blocks. This can reduce the size of save files at the cost of save/load performance.
+			Existing blocks that formerly used a different compression mode can still be loaded, and will use the new mode if saved again.
+		</member>
 		<member name="save_generator_output" type="bool" setter="set_save_generator_output" getter="get_save_generator_output" default="false">
 			When this is enabled, if a block cannot be found in the stream and it gets generated, then the generated block will immediately be saved into the stream. This can be used if the generator is too expensive to run on the fly (like Minecraft does), but it will require more disk usage (amount of I/Os and space) and increase network traffic. If this setting is off, only modified blocks will be saved.
 		</member>

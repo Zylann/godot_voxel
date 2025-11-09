@@ -302,6 +302,34 @@ float FastNoise2::get_cellular_jitter() const {
 	return _cellular_jitter;
 }
 
+void FastNoise2::set_cellular_index0(int i) {
+	const int sci = math::clamp(i, 0, MAX_CELLULAR_INDEX);
+	const uint8_t ci = sci;
+	if (ci == _cellular_index0) {
+		return;
+	}
+	_cellular_index0 = ci;
+	emit_changed();
+}
+
+int FastNoise2::get_cellular_index0() const {
+	return _cellular_index0;
+}
+
+void FastNoise2::set_cellular_index1(int i) {
+	const int sci = math::clamp(i, 0, MAX_CELLULAR_INDEX);
+	const uint8_t ci = sci;
+	if (ci == _cellular_index1) {
+		return;
+	}
+	_cellular_index1 = ci;
+	emit_changed();
+}
+
+int FastNoise2::get_cellular_index1() const {
+	return _cellular_index1;
+}
+
 float FastNoise2::get_noise_2d_single(Vector2 pos) const {
 	ERR_FAIL_COND_V(!is_valid(), 0.0);
 	return _generator->GenSingle2D(pos.x, pos.y, _seed);
@@ -476,6 +504,16 @@ void FastNoise2::update_generator() {
 			cd->SetDistanceFunction(FastNoise::DistanceFunction(_cellular_distance_function));
 			cd->SetReturnType(FastNoise::CellularDistance::ReturnType(_cellular_return_type));
 			cd->SetJitterModifier(_cellular_jitter);
+			cd->SetDistanceIndex0(_cellular_index0);
+			cd->SetDistanceIndex1(_cellular_index1);
+			noise_node = cd;
+		} break;
+
+		case TYPE_CELLULAR_VALUE: {
+			FastNoise::SmartNode<FastNoise::CellularValue> cd = FastNoise::New<FastNoise::CellularValue>();
+			cd->SetDistanceFunction(FastNoise::DistanceFunction(_cellular_distance_function));
+			cd->SetJitterModifier(_cellular_jitter);
+			cd->SetValueIndex(_cellular_index0);
 			noise_node = cd;
 		} break;
 
@@ -603,6 +641,12 @@ void FastNoise2::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_cellular_jitter", "return_type"), &FastNoise2::set_cellular_jitter);
 	ClassDB::bind_method(D_METHOD("get_cellular_jitter"), &FastNoise2::get_cellular_jitter);
 
+	ClassDB::bind_method(D_METHOD("set_cellular_index0", "i"), &FastNoise2::set_cellular_index0);
+	ClassDB::bind_method(D_METHOD("get_cellular_index0"), &FastNoise2::get_cellular_index0);
+
+	ClassDB::bind_method(D_METHOD("set_cellular_index1", "i"), &FastNoise2::set_cellular_index1);
+	ClassDB::bind_method(D_METHOD("get_cellular_index1"), &FastNoise2::get_cellular_index1);
+
 	// ClassDB::bind_method(D_METHOD("set_rotation_type_3d", "type"), &FastNoiseLite::set_rotation_type_3d);
 	// ClassDB::bind_method(D_METHOD("get_rotation_type_3d"), &FastNoiseLite::get_rotation_type_3d);
 
@@ -711,6 +755,9 @@ void FastNoise2::_bind_methods() {
 			"get_cellular_return_type"
 	);
 
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "cellular_index0"), "set_cellular_index0", "get_cellular_index0");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "cellular_index1"), "set_cellular_index1", "get_cellular_index1");
+
 	ADD_PROPERTY(
 			PropertyInfo(Variant::FLOAT, "cellular_jitter", PROPERTY_HINT_RANGE, "0.0,1.0,0.01"),
 			"set_cellular_jitter",
@@ -753,6 +800,7 @@ void FastNoise2::_bind_methods() {
 	BIND_ENUM_CONSTANT(TYPE_VALUE);
 	BIND_ENUM_CONSTANT(TYPE_CELLULAR);
 	BIND_ENUM_CONSTANT(TYPE_ENCODED_NODE_TREE);
+	BIND_ENUM_CONSTANT(TYPE_CELLULAR_VALUE);
 
 	BIND_ENUM_CONSTANT(FRACTAL_NONE);
 	BIND_ENUM_CONSTANT(FRACTAL_FBM);

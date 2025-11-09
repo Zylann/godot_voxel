@@ -117,4 +117,4 @@ Enables or disables mesh-based collision on a specific surface. It allows a mode
 
 Gets the 90-degree rotation ID that will be applied to the model when the library is baked. This is a number representing one of 24 possible 90-degree rotations. You can also use [rotate_90](VoxelBlockyModel.md#i_rotate_90).
 
-_Generated on May 15, 2025_
+_Generated on Nov 02, 2025_

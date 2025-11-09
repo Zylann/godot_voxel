@@ -10,6 +10,7 @@ using namespace godot;
 
 #include "../../containers/std_vector.h"
 #include "../../errors.h"
+#include "../core/version.h"
 
 namespace zylann::godot {
 
@@ -26,6 +27,18 @@ inline T *get_node_typed(const Node &self, const NodePath &path) {
 }
 
 void get_node_groups(const Node &node, StdVector<StringName> &out_groups);
+
+enum AutoTranslateMode {
+	AUTO_TRANSLATE_MODE_INHERIT,
+	AUTO_TRANSLATE_MODE_ALWAYS,
+	AUTO_TRANSLATE_MODE_DISABLED,
+};
+
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR >= 3
+Node::AutoTranslateMode to_godot_auto_translate_mode(const AutoTranslateMode zn_mode);
+#endif
+
+void set_node_auto_translate_mode(Node &node, const AutoTranslateMode mode);
 
 } // namespace zylann::godot
 

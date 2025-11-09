@@ -88,6 +88,14 @@ void VoxelStream::flush() {
 	// Can be implemented in subclasses
 }
 
+void VoxelStream::set_compression_mode(const godot::VoxelBlockSerializer::Compression mode) {
+	_compression_mode = static_cast<CompressedData::Compression>(mode);
+}
+
+godot::VoxelBlockSerializer::Compression VoxelStream::get_compression_mode() const {
+	return static_cast<godot::VoxelBlockSerializer::Compression>(_compression_mode);
+}
+
 // Binding land
 
 VoxelStream::ResultCode VoxelStream::_b_load_voxel_block(
@@ -135,10 +143,23 @@ void VoxelStream::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("flush"), &VoxelStream::flush);
 
+	ClassDB::bind_method(D_METHOD("get_compression_mode"), &VoxelStream::get_compression_mode);
+	ClassDB::bind_method(D_METHOD("set_compression_mode", "mode"), &VoxelStream::set_compression_mode);
+
 	ADD_PROPERTY(
 			PropertyInfo(Variant::BOOL, "save_generator_output"),
 			"set_save_generator_output",
 			"get_save_generator_output"
+	);
+	ADD_PROPERTY(
+			PropertyInfo(
+					Variant::INT,
+					"compression_mode",
+					PROPERTY_HINT_ENUM,
+					godot::VoxelBlockSerializer::COMPRESSION_MODE_HINT_STRING
+			),
+			"set_compression_mode",
+			"get_compression_mode"
 	);
 
 	BIND_ENUM_CONSTANT(RESULT_ERROR);

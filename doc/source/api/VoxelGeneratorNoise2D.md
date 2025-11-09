@@ -31,4 +31,4 @@ It is assumed that the curve's domain goes from 0 to 1.
 
 Noise used to produce the heightmap. It is required for the generator to work.
 
-_Generated on May 15, 2025_
+_Generated on Nov 02, 2025_

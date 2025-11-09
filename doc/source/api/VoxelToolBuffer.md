@@ -10,4 +10,4 @@ There are no functions specific to [VoxelBuffer](VoxelBuffer.md). You may check 
 
 Note: contrary to other implementations, this one allows editing even if the area is partially out of bounds.
 
-_Generated on May 15, 2025_
+_Generated on Nov 02, 2025_

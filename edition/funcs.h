@@ -65,11 +65,12 @@ float get_sdf_interpolated(const Volume_F &f, Vector3 pos) {
 // Standalone helper function to copy voxels from any 3D chunked container
 void copy_from_chunked_storage(
 		VoxelBuffer &dst_buffer,
-		Vector3i min_pos,
-		unsigned int block_size_po2,
-		uint32_t channels_mask,
+		const Vector3i min_pos,
+		const unsigned int block_size_po2,
+		const uint32_t channels_mask,
 		const VoxelBuffer *(*get_block_func)(void *, Vector3i),
-		void *get_block_func_ctx
+		void *get_block_func_ctx,
+		const bool with_metadata
 );
 
 // Standalone helper function to paste voxels to any 3D chunked container
@@ -176,6 +177,7 @@ struct SrcMasked_DstWritableBitArray {
 } // namespace paste_functors
 
 bool indices_to_bitarray_u16(Span<const int32_t> indices, DynamicBitset &bitarray);
+void indices_to_bitarray(Span<const uint8_t> indices, DynamicBitset &bitarray);
 
 template <typename FGetBlock>
 void paste_to_chunked_storage_masked_writable_list(
@@ -226,22 +228,24 @@ class VoxelBlockyLibraryBase;
 // The `_static` suffix is because it otherwise conflicts with the non-static method when registering the class
 void run_blocky_random_tick(
 		VoxelData &data,
-		Box3i voxel_box,
+		const Box3i voxel_box,
 		const VoxelBlockyLibraryBase &lib,
 		RandomPCG &random,
-		int voxel_count,
-		int batch_count,
+		const int voxel_count,
+		const int batch_count,
+		const uint32_t tags_mask,
 		void *callback_data,
 		bool (*callback)(void *, Vector3i, int64_t)
 );
 
 void run_blocky_random_tick(
 		VoxelData &data,
-		AABB voxel_box_f,
+		const AABB voxel_box_f,
 		const VoxelBlockyLibraryBase &lib,
 		RandomPCG &random,
-		int voxel_count,
-		int batch_count,
+		const int voxel_count,
+		const int batch_count,
+		const uint32_t tags_mask,
 		const Callable &callback
 );
 
@@ -621,9 +625,7 @@ inline void write_box_in_chunked_storage_1_channel(
 		VoxelBuffer::ChannelId channel_id
 ) {
 	process_chunked_storage(
-			box,
-			block_access,
-			[&op, channel_id](VoxelBuffer &vb, const Box3i local_box, Vector3i origin) {
+			box, block_access, [&op, channel_id](VoxelBuffer &vb, const Box3i local_box, Vector3i origin) {
 				vb.write_box(local_box, channel_id, op, origin);
 			}
 	);

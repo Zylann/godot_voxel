@@ -222,13 +222,16 @@ void VoxelToolLodTerrain::do_sphere_async(Vector3 center, float radius) {
 	_terrain->push_async_edit(task, op.box, task->get_tracker());
 }
 
-void VoxelToolLodTerrain::copy(Vector3i pos, VoxelBuffer &dst, uint8_t channels_mask) const {
+void VoxelToolLodTerrain::copy(
+		const Vector3i pos,
+		VoxelBuffer &dst,
+		const uint8_t p_channels_mask,
+		const bool with_metadata
+) const {
 	ZN_PROFILE_SCOPE();
 	ERR_FAIL_COND(_terrain == nullptr);
-	if (channels_mask == 0) {
-		channels_mask = (1 << _channel);
-	}
-	_terrain->get_storage().copy(pos, dst, channels_mask);
+	const unsigned int channels_mask = (p_channels_mask == 0 ? (1 << _channel) : p_channels_mask);
+	_terrain->get_storage().copy(pos, dst, channels_mask, with_metadata);
 }
 
 void VoxelToolLodTerrain::paste(Vector3i pos, const VoxelBuffer &src, uint8_t channels_mask) {
@@ -245,9 +248,22 @@ void VoxelToolLodTerrain::paste(Vector3i pos, const VoxelBuffer &src, uint8_t ch
 	VoxelData &data = _terrain->get_storage();
 
 	data.pre_generate_box(box);
-	data.paste(pos, src, channels_mask, false);
+	data.paste(pos, src, channels_mask, false, true);
 
 	_post_edit(box);
+}
+
+void VoxelToolLodTerrain::set_voxel_metadata(const Vector3i pos, const Variant &meta) {
+	ZN_ASSERT_RETURN(_terrain != nullptr);
+	VoxelData &data = _terrain->get_storage();
+	data.set_voxel_metadata(pos, meta);
+	_terrain->post_edit_area(Box3i(pos, Vector3i(1, 1, 1)), false);
+}
+
+Variant VoxelToolLodTerrain::get_voxel_metadata(const Vector3i pos) const {
+	ZN_ASSERT_RETURN_V(_terrain != nullptr, Variant());
+	VoxelData &data = _terrain->get_storage();
+	return data.get_voxel_metadata(pos);
 }
 
 float VoxelToolLodTerrain::get_voxel_f_interpolated(Vector3 position) const {
@@ -437,7 +453,7 @@ void VoxelToolLodTerrain::do_graph(Ref<VoxelGeneratorGraph> graph, Transform3D t
 
 	VoxelBuffer buffer(VoxelBuffer::ALLOCATOR_POOL);
 	buffer.create(box.size);
-	data.copy(box.position, buffer, 1 << channel_index);
+	data.copy(box.position, buffer, 1 << channel_index, false);
 
 	buffer.decompress_channel(channel_index);
 
@@ -524,7 +540,7 @@ void VoxelToolLodTerrain::do_graph(Ref<VoxelGeneratorGraph> graph, Transform3D t
 
 	scale_and_store_sdf(buffer, in_sdf_full);
 
-	data.paste(box.position, buffer, 1 << channel_index, false);
+	data.paste(box.position, buffer, 1 << channel_index, false, false);
 
 	_post_edit(box);
 }
@@ -533,7 +549,8 @@ void VoxelToolLodTerrain::run_blocky_random_tick(
 		const AABB voxel_area,
 		const int voxel_count,
 		const Callable &callback,
-		const int block_batch_count
+		const int block_batch_count,
+		const uint32_t tags_mask
 ) {
 	ZN_PROFILE_SCOPE();
 
@@ -559,7 +576,7 @@ void VoxelToolLodTerrain::run_blocky_random_tick(
 	VoxelData &data = _terrain->get_storage();
 
 	zylann::voxel::run_blocky_random_tick(
-			data, voxel_area, **library, _random, voxel_count, block_batch_count, callback
+			data, voxel_area, **library, _random, voxel_count, block_batch_count, tags_mask, callback
 	);
 }
 
@@ -588,9 +605,10 @@ void VoxelToolLodTerrain::_bind_methods() {
 			DEFVAL(0.0)
 	);
 	ClassDB::bind_method(
-			D_METHOD("run_blocky_random_tick", "area", "voxel_count", "callback", "batch_count"),
+			D_METHOD("run_blocky_random_tick", "area", "voxel_count", "callback", "batch_count", "tags_mask"),
 			&Self::run_blocky_random_tick,
-			DEFVAL(16)
+			DEFVAL(16),
+			DEFVAL(0xffffffff)
 	);
 }
 

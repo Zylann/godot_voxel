@@ -12,9 +12,7 @@
 
 namespace zylann::voxel::tests {
 
-void test_run_blocky_random_tick() {
-	const Box3i voxel_box(Vector3i(-24, -23, -22), Vector3i(64, 40, 40));
-
+void test_run_blocky_random_tick_with_params(const Box3i voxel_box, const int voxel_count, const int batch_count) {
 	// Create library with tickable voxels
 	Ref<VoxelBlockyLibrary> library;
 	library.instantiate();
@@ -69,22 +67,23 @@ void test_run_blocky_random_tick() {
 	}
 
 	struct Callback {
-		Box3i voxel_box;
+		const Box3i voxel_box;
 		Box3i pick_box;
 		bool first_pick = true;
 		bool ok = true;
 		int tickable_id = -1;
 
-		Callback(Box3i p_voxel_box, int p_tickable_id) : voxel_box(p_voxel_box), tickable_id(p_tickable_id) {}
+		Callback(const Box3i p_voxel_box, const int p_tickable_id) :
+				voxel_box(p_voxel_box), tickable_id(p_tickable_id) {}
 
-		bool exec(Vector3i pos, int block_id) {
+		bool exec(const Vector3i pos, const int block_id) {
 			if (ok) {
 				ok = _exec(pos, block_id);
 			}
 			return ok;
 		}
 
-		inline bool _exec(Vector3i pos, int block_id) {
+		inline bool _exec(const Vector3i pos, const int block_id) {
 			ZN_TEST_ASSERT_V(block_id == tickable_id, false);
 			ZN_TEST_ASSERT_V(voxel_box.contains(pos), false);
 			if (first_pick) {
@@ -106,8 +105,9 @@ void test_run_blocky_random_tick() {
 			voxel_box,
 			**library,
 			random,
-			1000,
-			4,
+			voxel_count,
+			batch_count,
+			0xffffffff,
 			&cb,
 			[](void *self, Vector3i pos, int64_t val) {
 				Callback *cb = (Callback *)self;
@@ -132,6 +132,11 @@ void test_run_blocky_random_tick() {
 		ZN_TEST_ASSERT(Math::abs(nd) <= error_margin);
 		ZN_TEST_ASSERT(Math::abs(pd) <= error_margin);
 	}
+}
+
+void test_run_blocky_random_tick() {
+	test_run_blocky_random_tick_with_params(Box3i(Vector3i(-24, -23, -22), Vector3i(64, 40, 40)), 1000, 4);
+	test_run_blocky_random_tick_with_params(Box3i(Vector3i(1, 2, 3), Vector3i(10, 10, 10)), 500, 800);
 }
 
 void test_box_blur() {
@@ -298,7 +303,7 @@ void test_discord_soakil_copypaste() {
 	VoxelBuffer buffer_before_edit(VoxelBuffer::ALLOCATOR_DEFAULT);
 	buffer_before_edit.create(Vector3i(20, 20, 20));
 	const Vector3i undo_pos(-10, -10, -10);
-	voxel_data.copy(undo_pos, buffer_before_edit, 0xff);
+	voxel_data.copy(undo_pos, buffer_before_edit, 0xff, true);
 
 	// Check the copy
 	{
@@ -340,7 +345,7 @@ void test_discord_soakil_copypaste() {
 	}
 
 	voxel_data.pre_generate_box(Box3i(undo_pos, buffer_before_edit.get_size()));
-	voxel_data.paste(undo_pos, buffer_before_edit, 0xff, false);
+	voxel_data.paste(undo_pos, buffer_before_edit, 0xff, false, true);
 
 	// Checks terrain is still as we expect. Not relying on copy() followed by equals(), because copy() is part of what
 	// we are testing

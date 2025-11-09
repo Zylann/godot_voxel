@@ -77,4 +77,4 @@ Only voxels at LOD 0 will be considered.
 *This method is deprecated. Use [VoxelTool.do_mesh](VoxelTool.md#i_do_mesh) instead.*
 
 
-_Generated on May 15, 2025_
+_Generated on Nov 02, 2025_

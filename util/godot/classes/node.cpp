@@ -1,4 +1,9 @@
 #include "node.h"
+#include "../core/version.h"
+
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR < 3
+#include "control.h"
+#endif
 
 namespace zylann::godot {
 
@@ -36,6 +41,44 @@ void get_node_groups(const Node &node, StdVector<StringName> &out_groups) {
 	TypedArray<StringName> groups = node.get_groups();
 	for (int i = 0; i < groups.size(); ++i) {
 		out_groups.push_back(groups[i]);
+	}
+#endif
+}
+
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR >= 3
+Node::AutoTranslateMode to_godot_auto_translate_mode(const AutoTranslateMode zn_mode) {
+	switch (zn_mode) {
+		case AUTO_TRANSLATE_MODE_INHERIT:
+			return Node::AUTO_TRANSLATE_MODE_INHERIT;
+		case AUTO_TRANSLATE_MODE_ALWAYS:
+			return Node::AUTO_TRANSLATE_MODE_ALWAYS;
+		case AUTO_TRANSLATE_MODE_DISABLED:
+			return Node::AUTO_TRANSLATE_MODE_DISABLED;
+		default:
+			ZN_PRINT_ERROR("Unhandled enum");
+			return Node::AUTO_TRANSLATE_MODE_INHERIT;
+	}
+}
+#endif
+
+void set_node_auto_translate_mode(Node &node, const AutoTranslateMode mode) {
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR >= 3
+	node.set_auto_translate_mode(to_godot_auto_translate_mode(mode));
+#else
+	Control *control = Object::cast_to<Control>(&node);
+	if (control == nullptr) {
+		return;
+	}
+	switch (mode) {
+		case AUTO_TRANSLATE_MODE_ALWAYS:
+			control->set_auto_translate(true);
+			break;
+		case AUTO_TRANSLATE_MODE_DISABLED:
+			control->set_auto_translate(false);
+			break;
+		default:
+			// Can't do
+			return;
 	}
 #endif
 }

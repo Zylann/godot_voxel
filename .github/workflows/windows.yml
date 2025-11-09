@@ -12,7 +12,7 @@ concurrency:
 # Global Cache Settings
 # SCONS_CACHE for windows must be set in the build environment
 env:
-  GODOT_BASE_BRANCH: "4.4.1-stable"
+  GODOT_BASE_BRANCH: "4.5-stable"
   SCONS_CACHE_MSVC_CONFIG: true
   SCONS_CACHE_LIMIT_GB: 4
 
@@ -25,13 +25,13 @@ jobs:
     strategy:
       matrix:
         include:
-          - name: 4.4.1 Editor
+          - name: 4.5 Editor
             target: editor
             precision: single
             executable_name: godot.windows.editor.x86_64.exe
             tracy: no
           
-          - name: 4.4.1 Profiling Editor
+          - name: 4.5 Profiling Editor
             target: editor
             precision: single
             # This is not a built-in feature of Godot so we have to do some changes manually
@@ -39,13 +39,13 @@ jobs:
             original_executable_name: godot.windows.editor.x86_64.exe
             tracy: yes
 
-          - name: 4.4.1 Editor Float64
+          - name: 4.5 Editor Float64
             target: editor
             precision: double
             executable_name: godot.windows.editor.double.x86_64.exe
             tracy: no
 
-          - name: 4.4.1 Template
+          - name: 4.5 Template
             target: template_release
             precision: single
             executable_name: godot.windows.template_release.x86_64.exe
@@ -126,6 +126,13 @@ jobs:
           cd angle
           dir
 
+      # Add DirectX 12 support.
+      # This is not provided by default.
+      # See https://docs.godotengine.org/en/stable/contributing/development/compiling/compiling_for_windows.html#compiling-with-support-for-direct3d-12
+      - name: Add D3D12
+        run: |
+          python misc/scripts/install_d3d12_sdk_windows.py
+
       # Compile with explicit flags.
       #
       # TODO `PYTHONIOENCODING` is not working!
@@ -134,10 +141,12 @@ jobs:
       # Currently we specify it, but the issue remain unsolved if it shows up again.
       # See https://github.com/godotengine/godot/issues/103520
       #
+      # We can't use `werror=yes` because older versions of Godot might trigger warnings in newer MSVC versions.
+      # So we use `voxel_werror` to set warnings as errors only in our module instead.
       - name: Compilation
         run: |
           set PYTHONIOENCODING=utf-8
-          scons verbose=yes warnings=extra werror=yes strict_checks=yes strict_checks=yes platform=windows tests=no target=${{matrix.target}} dev_build=no precision=${{matrix.precision}} tracy=${{matrix.tracy}} production=yes "cache_path=${{github.workspace}}/.scons_cache/" cache_limit=${{env.SCONS_CACHE_LIMIT_GB}} "angle_libs=${{github.workspace}}/angle"
+          scons verbose=yes warnings=extra voxel_werror=yes strict_checks=yes strict_checks=yes platform=windows tests=no target=${{matrix.target}} dev_build=no precision=${{matrix.precision}} tracy=${{matrix.tracy}} production=yes "cache_path=${{github.workspace}}/.scons_cache/" cache_limit=${{env.SCONS_CACHE_LIMIT_GB}} "angle_libs=${{github.workspace}}/angle" d3d12=yes
 
       - name: "Rename executable"
         if: ${{ matrix.tracy == 'yes' }}

@@ -50,12 +50,15 @@ Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(
 	);
 }
 
-void VoxelToolTerrain::copy(Vector3i pos, VoxelBuffer &dst, uint8_t channels_mask) const {
+void VoxelToolTerrain::copy(
+		const Vector3i pos,
+		VoxelBuffer &dst,
+		const uint8_t p_channels_mask,
+		const bool with_metadata
+) const {
 	ERR_FAIL_COND(_terrain == nullptr);
-	if (channels_mask == 0) {
-		channels_mask = (1 << _channel);
-	}
-	_terrain->get_storage().copy(pos, dst, channels_mask);
+	const uint8_t channels_mask = (p_channels_mask == 0) ? (1 << _channel) : p_channels_mask;
+	_terrain->get_storage().copy(pos, dst, channels_mask, with_metadata);
 }
 
 void VoxelToolTerrain::paste(Vector3i pos, const VoxelBuffer &src, uint8_t channels_mask) {
@@ -63,7 +66,7 @@ void VoxelToolTerrain::paste(Vector3i pos, const VoxelBuffer &src, uint8_t chann
 	if (channels_mask == 0) {
 		channels_mask = (1 << _channel);
 	}
-	_terrain->get_storage().paste(pos, src, channels_mask, false);
+	_terrain->get_storage().paste(pos, src, channels_mask, false, true);
 	_post_edit(Box3i(pos, src.get_size()));
 }
 
@@ -244,14 +247,14 @@ void VoxelToolTerrain::_post_edit(const Box3i &box) {
 	_terrain->post_edit_area(box, true);
 }
 
-void VoxelToolTerrain::set_voxel_metadata(Vector3i pos, Variant meta) {
+void VoxelToolTerrain::set_voxel_metadata(const Vector3i pos, const Variant &meta) {
 	ERR_FAIL_COND(_terrain == nullptr);
 	VoxelData &data = _terrain->get_storage();
 	data.set_voxel_metadata(pos, meta);
 	_terrain->post_edit_area(Box3i(pos, Vector3i(1, 1, 1)), false);
 }
 
-Variant VoxelToolTerrain::get_voxel_metadata(Vector3i pos) const {
+Variant VoxelToolTerrain::get_voxel_metadata(const Vector3i pos) const {
 	ERR_FAIL_COND_V(_terrain == nullptr, Variant());
 	VoxelData &data = _terrain->get_storage();
 	return data.get_voxel_metadata(pos);
@@ -271,10 +274,11 @@ Ref<VoxelBlockyLibraryBase> get_voxel_library(const VoxelTerrain &terrain) {
 // area. Executes a function on random voxels in the provided area, using the type channel. This allows to implement
 // slow "natural" cellular automata behavior, as can be seen in Minecraft.
 void VoxelToolTerrain::run_blocky_random_tick(
-		AABB voxel_area,
-		int voxel_count,
+		const AABB voxel_area,
+		const int voxel_count,
 		const Callable &callback,
-		int batch_count
+		const int batch_count,
+		const uint32_t tags_mask
 ) {
 	ZN_PROFILE_SCOPE();
 
@@ -296,7 +300,9 @@ void VoxelToolTerrain::run_blocky_random_tick(
 	const VoxelBlockyLibraryBase &lib = **get_voxel_library(*_terrain);
 	VoxelData &data = _terrain->get_storage();
 
-	zylann::voxel::run_blocky_random_tick(data, voxel_area, lib, _random, voxel_count, batch_count, callback);
+	zylann::voxel::run_blocky_random_tick(
+			data, voxel_area, lib, _random, voxel_count, batch_count, tags_mask, callback
+	);
 }
 
 void VoxelToolTerrain::for_each_voxel_metadata_in_area(AABB voxel_area, const Callable &callback) {
@@ -325,8 +331,7 @@ void VoxelToolTerrain::for_each_voxel_metadata_in_area(AABB voxel_area, const Ca
 		// reference types.
 
 		voxels_ptr->for_each_voxel_metadata_in_area(
-				rel_voxel_box,
-				[&callback, block_origin](Vector3i rel_pos, const VoxelMetadata &meta) {
+				rel_voxel_box, [&callback, block_origin](Vector3i rel_pos, const VoxelMetadata &meta) {
 					const Variant v = godot::get_as_variant(meta);
 					const Vector3i key = rel_pos + block_origin;
 #ifdef ZN_GODOT
@@ -439,9 +444,10 @@ VoxelFormat VoxelToolTerrain::get_format() const {
 
 void VoxelToolTerrain::_bind_methods() {
 	ClassDB::bind_method(
-			D_METHOD("run_blocky_random_tick", "area", "voxel_count", "callback", "batch_count"),
+			D_METHOD("run_blocky_random_tick", "area", "voxel_count", "callback", "batch_count", "tags_mask"),
 			&VoxelToolTerrain::run_blocky_random_tick,
-			DEFVAL(16)
+			DEFVAL(16),
+			DEFVAL(0xffffffff)
 	);
 	ClassDB::bind_method(
 			D_METHOD("for_each_voxel_metadata_in_area", "voxel_area", "callback"),

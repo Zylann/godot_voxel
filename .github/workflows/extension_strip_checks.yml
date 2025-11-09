@@ -53,17 +53,17 @@ jobs:
           windows-compiler: msvc
           buildtool: scons
 
-      # Load build cache
-      - name: Cache .scons_cache
-        uses: actions/cache@v4
-        with:
-          path: ${{ github.workspace }}/.scons-cache/
-          key: ${{ matrix.id }}_gdextension_sc_cache
+      # Don't use cache, it can hide the issues we are trying to detect here
+      # - name: Cache .scons_cache
+      #   uses: actions/cache@v4
+      #   with:
+      #     path: ${{ github.workspace }}/.scons-cache/
+      #     key: ${{ matrix.id }}_gdextension_sc_cache
 
       - name: Build
         shell: sh
-        env:
-          SCONS_CACHE: ${{ github.workspace }}/.scons-cache/
+        # env:
+        #   SCONS_CACHE: ${{ github.workspace }}/.scons-cache/
         run: |
           scons target=editor platform=linux arch=x86_64 dev_build=no verbose=yes use_llvm=yes ${{ matrix.sconsflags }}
 

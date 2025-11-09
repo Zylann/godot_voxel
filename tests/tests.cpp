@@ -28,6 +28,7 @@
 #include "voxel/test_voxel_mesher_cubes.h"
 
 #ifdef VOXEL_ENABLE_SMOOTH_MESHING
+#include "voxel/test_transvoxel.h"
 #ifdef VOXEL_ENABLE_GPU
 #include "voxel/test_detail_rendering_gpu.h"
 #endif
@@ -71,6 +72,7 @@ void run_voxel_tests(const testing::TestOptions &options) {
 	VOXEL_TEST(test_box3i_for_inner_outline);
 	VOXEL_TEST(test_voxel_data_map_paste_fill);
 	VOXEL_TEST(test_voxel_data_map_paste_mask);
+	VOXEL_TEST(test_voxel_data_map_paste_dst_mask);
 	VOXEL_TEST(test_voxel_data_map_copy);
 	VOXEL_TEST(test_encode_weights_packed_u16);
 	VOXEL_TEST(test_copy_3d_region_zxy);
@@ -123,6 +125,7 @@ void run_voxel_tests(const testing::TestOptions &options) {
 	VOXEL_TEST(test_block_serializer_stream_peer);
 	VOXEL_TEST(test_region_file);
 	VOXEL_TEST(test_voxel_stream_region_files);
+	VOXEL_TEST(test_voxel_stream_region_files_lods);
 #ifdef VOXEL_ENABLE_FAST_NOISE_2
 	VOXEL_TEST(test_fast_noise_2_basic);
 	VOXEL_TEST(test_fast_noise_2_empty_encoded_node_tree);
@@ -158,10 +161,23 @@ void run_voxel_tests(const testing::TestOptions &options) {
 	VOXEL_TEST(test_sdf_hemisphere);
 	VOXEL_TEST(test_fnl_range);
 	VOXEL_TEST(test_voxel_buffer_set_channel_bytes);
+	VOXEL_TEST(test_voxel_buffer_issue769);
 	VOXEL_TEST(test_raycast_sdf);
 	VOXEL_TEST(test_raycast_blocky);
 	VOXEL_TEST(test_raycast_blocky_no_cache_graph);
 	VOXEL_TEST(test_voxel_graph_constant_reduction);
+#ifdef VOXEL_ENABLE_SMOOTH_MESHING
+	VOXEL_TEST(test_transvoxel_issue772);
+#endif
+#ifdef VOXEL_ENABLE_INSTANCER
+	VOXEL_TEST(test_instance_generator_material_filter_issue774);
+#endif
+	VOXEL_TEST(test_spot_noise);
+	VOXEL_TEST(test_voxel_graph_multiple_function_instances);
+	VOXEL_TEST(test_voxel_graph_issue783);
+	VOXEL_TEST(test_voxel_graph_broad_block);
+	VOXEL_TEST(test_voxel_graph_set_default_input_by_name);
+	VOXEL_TEST(test_voxel_graph_get_io_indices);
 
 	print_line("------------ Voxel tests end -------------");
 }

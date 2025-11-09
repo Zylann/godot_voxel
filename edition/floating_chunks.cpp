@@ -136,7 +136,7 @@ Array separate_floating_chunks(
 	{
 		ZN_PROFILE_SCOPE_NAMED("Copy");
 		source_copy_buffer.create(world_box.size);
-		voxel_tool.copy(world_box.position, source_copy_buffer, channels_mask);
+		voxel_tool.copy(world_box.position, source_copy_buffer, channels_mask, false);
 	}
 
 	// Label distinct voxel groups
@@ -282,7 +282,7 @@ Array separate_floating_chunks(
 			buffer.create(size.x, size.y, size.z);
 
 			// Read voxels from the source volume
-			voxel_tool.copy(world_pos, buffer, channels_mask);
+			voxel_tool.copy(world_pos, buffer, channels_mask, false);
 
 			// Cleanup padding borders
 			const Box3i inner_box(

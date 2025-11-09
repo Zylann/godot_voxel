@@ -79,7 +79,8 @@ PackedVector2Array ZN_SpotNoise::get_spot_positions_in_area_2d(Rect2 rect) const
 	Vector2i cpos;
 	for (cpos.y = cminp.y; cpos.y < cmaxp.y; ++cpos.y) {
 		for (cpos.x = cminp.x; cpos.x < cmaxp.x; ++cpos.x) {
-			const Vector2 spot_pos = to_vec2(SpotNoise::get_spot_position_2d_norm(cpos, _jitter, _seed));
+			const Vector2 spot_pos =
+					Vector2(cpos) + to_vec2(SpotNoise::get_spot_position_2d_norm(cpos, _jitter, _seed));
 			if (norm_rect.has_point(spot_pos)) {
 				positions.append(spot_pos * _cell_size);
 			}
@@ -97,7 +98,8 @@ PackedVector3Array ZN_SpotNoise::get_spot_positions_in_area_3d(AABB aabb) const 
 	for (cpos.z = cminp.z; cpos.z < cmaxp.z; ++cpos.z) {
 		for (cpos.y = cminp.y; cpos.y < cmaxp.y; ++cpos.y) {
 			for (cpos.x = cminp.x; cpos.x < cmaxp.x; ++cpos.x) {
-				const Vector3 spot_pos = to_vec3(SpotNoise::get_spot_position_3d_norm(cpos, _jitter, _seed));
+				const Vector3 spot_pos =
+						Vector3(cpos) + to_vec3(SpotNoise::get_spot_position_3d_norm(cpos, _jitter, _seed));
 				if (norm_aabb.has_point(spot_pos)) {
 					positions.append(spot_pos * _cell_size);
 				}

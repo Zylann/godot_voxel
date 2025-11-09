@@ -59,7 +59,7 @@ Variant get_as_variant(const VoxelMetadata &meta) {
 	}
 }
 
-void set_as_variant(VoxelMetadata &meta, Variant v) {
+void set_as_variant(VoxelMetadata &meta, const Variant &v) {
 	if (v.get_type() == Variant::NIL) {
 		meta.clear();
 	} else {

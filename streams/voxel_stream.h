@@ -10,6 +10,8 @@
 #include "../util/math/vector3i.h"
 #include "../util/memory/memory.h"
 #include "../util/thread/rw_lock.h"
+#include "compressed_data.h"
+#include "voxel_block_serializer_gd.h"
 
 #include <cstdint>
 
@@ -141,6 +143,12 @@ public:
 	// when the resource is destroyed or their configuration changes. Some implementations may do nothing if they have
 	// no cache.
 	virtual void flush();
+
+	void set_compression_mode(const godot::VoxelBlockSerializer::Compression mode);
+	godot::VoxelBlockSerializer::Compression get_compression_mode() const;
+
+protected:
+	CompressedData::Compression _compression_mode = CompressedData::COMPRESSION_LZ4;
 
 private:
 	static void _bind_methods();
