@@ -11,7 +11,7 @@ Dev 1.5.1 - `master`
 --------------------
 
 - Improvements
-    - `VoxelBlockyModel`: added `tags_mask` property. Initially, it can be used to filter selected voxels when using `VoxelToolTerrain.run_blocky_random_tick`
+    - `VoxelBlockyModel`: added `tags_mask` property. Initially, it can be used to filter selected voxels when using `VoxelToolTerrain.run_blocky_random_tick`.
     - `VoxelBoxMover`: added support for `VoxelLodTerrain`.
     - `VoxelGeneratorGraph`: 
         - Editor: added `Add Node` item to the context menu
