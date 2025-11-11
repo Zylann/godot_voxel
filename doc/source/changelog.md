@@ -25,7 +25,9 @@ Dev 1.5.1 - `master`
 
 - Fixes
     - `VoxelBlockyModelFluid`: fixed collision boxes were ignored by library baking
-    - `VoxelGeneratorGraph`: fixed `FastNoiseGradient` was incorrect when fractal type isn't `None` and using GPU
+    - `VoxelGeneratorGraph`: 
+        - fixed `FastNoiseGradient` was incorrect when fractal type isn't `None` and using GPU
+        - fixed `auto_connect_default_inputs` was not saved and reverted to its default value
     - `VoxelGraphFunction`: fixed `set_node_default_input_by_name` would match parameters but it should have been inputs
     - `VoxelTool`: 
         `run_blocky_random_tick`: fixed uniform blocks were not picked up (PR #794)
