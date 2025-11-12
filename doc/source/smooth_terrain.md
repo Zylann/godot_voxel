@@ -664,26 +664,26 @@ vec3 get_voxel_normal_model() {
 	int tile_index = lookup_value.r | ((lookup_value.g & 0x3f) << 8);
 	int tile_direction = lookup_value.g >> 6;
 
-	vec3 tile_texcoord = vec3(0.0, 0.0, float(tile_index));
+	vec2 tile_texcoord = vec2(0.0);
 	// TODO Could do it non-branching with weighted addition
 	switch(tile_direction) {
 		case 0:
-			tile_texcoord.xy = cell_fract.zy;
+			tile_texcoord = cell_fract.zy;
 			break;
 		case 1:
-			tile_texcoord.xy = cell_fract.xz;
+			tile_texcoord = cell_fract.xz;
 			break;
 		case 2:
-			tile_texcoord.xy = cell_fract.xy;
+			tile_texcoord = cell_fract.xy;
 			break;
 	}
 	float padding = 0.5 / float(normalmap_tile_size);
-	tile_texcoord.xy = pad_uv(tile_texcoord.xy, padding);
+	tile_texcoord = pad_uv(tile_texcoord, padding);
 
 	ivec2 atlas_size = textureSize(u_voxel_normalmap_atlas, 0);
 	int tiles_per_row = atlas_size.x / normalmap_tile_size;
 	ivec2 tile_pos_pixels = ivec2(tile_index % tiles_per_row, tile_index / tiles_per_row) * normalmap_tile_size;
-	vec2 atlas_texcoord = (vec2(tile_pos_pixels) + float(normalmap_tile_size) * tile_texcoord.xy) / vec2(atlas_size);
+	vec2 atlas_texcoord = (vec2(tile_pos_pixels) + float(normalmap_tile_size) * tile_texcoord) / vec2(atlas_size);
 	vec3 encoded_normal = texture(u_voxel_normalmap_atlas, atlas_texcoord).rgb;
 
 	// You may switch between these two snippets depending on if you use octahedral compression or not
