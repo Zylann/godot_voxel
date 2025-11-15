@@ -10,6 +10,7 @@ void test_voxel_buffer_paste_masked();
 void test_voxel_buffer_paste_masked_metadata();
 void test_voxel_buffer_paste_masked_metadata_oob();
 void test_voxel_buffer_set_channel_bytes();
+void test_voxel_buffer_get_channel_bytes();
 void test_voxel_buffer_issue769();
 
 } // namespace zylann::voxel::tests

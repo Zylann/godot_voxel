@@ -280,8 +280,7 @@ PackedByteArray get_channel_as_byte_array(const VoxelBuffer &vb, const VoxelBuff
 		case VoxelBuffer::COMPRESSION_NONE: {
 			Span<const uint8_t> src;
 			ZN_ASSERT_RETURN_V(vb.get_channel_as_bytes_read_only(channel, src), pba);
-			Span<uint8_t> pba_s(pba.ptrw(), volume);
-			src.copy_to(pba_s);
+			zylann::godot::copy_to(pba, src);
 		} break;
 
 		default:

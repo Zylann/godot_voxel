@@ -161,6 +161,7 @@ void run_voxel_tests(const testing::TestOptions &options) {
 	VOXEL_TEST(test_sdf_hemisphere);
 	VOXEL_TEST(test_fnl_range);
 	VOXEL_TEST(test_voxel_buffer_set_channel_bytes);
+	VOXEL_TEST(test_voxel_buffer_get_channel_bytes);
 	VOXEL_TEST(test_voxel_buffer_issue769);
 	VOXEL_TEST(test_raycast_sdf);
 	VOXEL_TEST(test_raycast_blocky);

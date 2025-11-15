@@ -25,6 +25,7 @@ Dev 1.5.1 - `master`
 
 - Fixes
     - `VoxelBlockyModelFluid`: fixed collision boxes were ignored by library baking
+    - `VoxelBuffer`: fixed `get_channel_as_byte_array` was crashing when used on non-uniform buffers
     - `VoxelGeneratorGraph`: 
         - fixed `FastNoiseGradient` was incorrect when fractal type isn't `None` and using GPU
         - fixed `auto_connect_default_inputs` was not saved and reverted to its default value

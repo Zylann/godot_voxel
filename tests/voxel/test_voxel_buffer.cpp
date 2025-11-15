@@ -689,4 +689,45 @@ void test_voxel_buffer_issue769() {
 	ZN_TEST_ASSERT(base_buffer.equals(expected_buffer));
 }
 
+void test_voxel_buffer_get_channel_bytes() {
+	{
+		Ref<godot::VoxelBuffer> vb;
+		vb.instantiate();
+
+		vb->create(3, 2, 1);
+		const godot::VoxelBuffer::ChannelId channel_id = godot::VoxelBuffer::CHANNEL_SDF;
+		vb->set_channel_depth(channel_id, godot::VoxelBuffer::DEPTH_16_BIT);
+		vb->fill(42, channel_id);
+		const Vector3i res = vb->get_size();
+
+		PackedByteArray pba = vb->get_channel_as_byte_array(channel_id);
+		const uint64_t expected_len = Vector3iUtil::get_volume_u64(res) * sizeof(uint16_t);
+		ZN_TEST_ASSERT(static_cast<uint64_t>(pba.size()) == expected_len);
+	}
+	{
+		// Issue #825
+		// `get_channel_as_bytes` was crashing due to missing resizing of the destination buffer.
+
+		Ref<godot::VoxelBuffer> vb;
+		vb.instantiate();
+
+		vb->create(3, 2, 1);
+		const godot::VoxelBuffer::ChannelId channel_id = godot::VoxelBuffer::CHANNEL_SDF;
+		vb->set_channel_depth(channel_id, godot::VoxelBuffer::DEPTH_16_BIT);
+		const Vector3i res = vb->get_size();
+		int i = 0;
+		for (int z = 0; z < res.z; ++z) {
+			for (int y = 0; y < res.y; ++y) {
+				for (int x = 0; x < res.x; ++x) {
+					vb->set_voxel(i, x, y, z, channel_id);
+				}
+			}
+		}
+
+		PackedByteArray pba = vb->get_channel_as_byte_array(channel_id);
+		const uint64_t expected_len = Vector3iUtil::get_volume_u64(res) * sizeof(uint16_t);
+		ZN_TEST_ASSERT(static_cast<uint64_t>(pba.size()) == expected_len);
+	}
+}
+
 } // namespace zylann::voxel::tests
