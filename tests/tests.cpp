@@ -2,6 +2,7 @@
 #include "../util/profiling.h"
 #include "../util/testing/test_options.h"
 
+#include "util/test_bit_packed_int_array.h"
 #include "util/test_box3i.h"
 #include "util/test_container_funcs.h"
 #include "util/test_expression_parser.h"
@@ -179,6 +180,10 @@ void run_voxel_tests(const testing::TestOptions &options) {
 	VOXEL_TEST(test_voxel_graph_broad_block);
 	VOXEL_TEST(test_voxel_graph_set_default_input_by_name);
 	VOXEL_TEST(test_voxel_graph_get_io_indices);
+	VOXEL_TEST(test_bit_packed_int_array_basic);
+	VOXEL_TEST(test_palette_compressed_int_array_basic);
+	VOXEL_TEST(test_palette_compressed_int_array_compacting);
+	VOXEL_TEST(test_palette_compressed_int_array_fuzz);
 
 	print_line("------------ Voxel tests end -------------");
 }

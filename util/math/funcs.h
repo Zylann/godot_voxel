@@ -189,6 +189,13 @@ inline int ceildiv(unsigned int x, unsigned int d) {
 	return (x + d - 1) / d;
 }
 
+inline size_t ceildiv_st(const size_t x, const size_t d) {
+#ifdef DEBUG_ENABLED
+	ZN_ASSERT(d > 0);
+#endif
+	return ((x + d - 1) / d);
+}
+
 // TODO Rename `wrapi`
 // `Math::wrapi` with zero min
 inline int wrap(int x, int d) {
@@ -291,6 +298,15 @@ inline unsigned int get_next_power_of_two_32_shift(unsigned int num) {
 	}
 	ZN_CRASH_MSG("Number too big");
 	return 0;
+}
+
+// Gets the minimum number of bits required to represent `v`
+inline unsigned int get_required_bits_u32(const uint32_t v) {
+	unsigned int bits = 1;
+	while (static_cast<uint64_t>(v) >= (uint64_t(1) << bits)) {
+		bits += 1;
+	}
+	return bits;
 }
 
 // If the provided address `a` is not aligned to the number of bytes specified in `align`,
