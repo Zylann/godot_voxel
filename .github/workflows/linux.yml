@@ -91,30 +91,30 @@ jobs:
 
           # --- Builds with artifacts ---
 
-          - name: 4.5 Editor
+          - name: 4.5.1 Editor
             precision: single
             target: editor
             production: yes
             executable_name: godot.linuxbsd.editor.x86_64
-            godot_base_branch: "4.5-stable"
+            godot_base_branch: "4.5.1-stable"
             warnings: extra
             werror: yes
 
-          - name: 4.5 Template
+          - name: 4.5.1 Template
             precision: single
             target: template_release
             production: yes
             executable_name: godot.linuxbsd.template_release.x86_64
-            godot_base_branch: "4.5-stable"
+            godot_base_branch: "4.5.1-stable"
             warnings: extra
             werror: yes
 
-          - name: 4.5 Editor Float64
+          - name: 4.5.1 Editor Float64
             precision: double
             target: editor
             production: yes
             executable_name: godot.linuxbsd.editor.double.x86_64
-            godot_base_branch: "4.5-stable"
+            godot_base_branch: "4.5.1-stable"
             warnings: extra
             werror: yes
 
