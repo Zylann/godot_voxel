@@ -2420,8 +2420,12 @@ void VoxelLodTerrain::process_fading_blocks(float delta) {
 			while (it != fading_blocks.end()) {
 				VoxelMeshBlockVLT *block = it->second;
 				ZN_ASSERT(block != nullptr);
-				// The collection of fading blocks must only contain fading blocks
-				ERR_FAIL_COND(block->fading_state == VoxelMeshBlockVLT::FADING_NONE);
+				// The collection of fading blocks must only contain fading blocks. If this happens, it hints at a bug
+				if (block->fading_state == VoxelMeshBlockVLT::FADING_NONE) {
+					ERR_PRINT("Unexpected non-fading block still referenced in fading blocks (bug?)");
+					it = fading_blocks.erase(it);
+					continue;
+				}
 
 				const bool finished = block->update_fading(speed);
 
