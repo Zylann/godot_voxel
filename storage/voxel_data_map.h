@@ -55,6 +55,9 @@ public:
 	void create(unsigned int lod_index);
 
 	void set_format(const VoxelFormat format);
+	inline const VoxelFormat &get_format() const {
+		return _format;
+	}
 
 	inline unsigned int get_block_size() const {
 		return BLOCK_SIZE;

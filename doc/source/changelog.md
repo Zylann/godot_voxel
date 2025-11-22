@@ -30,7 +30,9 @@ Dev 1.5.1 - `master`
         - fixed `FastNoiseGradient` was incorrect when fractal type isn't `None` and using GPU
         - fixed `auto_connect_default_inputs` was not saved and reverted to its default value
     - `VoxelGraphFunction`: fixed `set_node_default_input_by_name` would match parameters but it should have been inputs
-    - `VoxelLodTerrain`: fixed potential mesh fading error when Clipbox is used and a viewer moves away from a block while another non-visual viewer still keeps its physics loaded.
+    - `VoxelLodTerrain`:
+        - fixed potential mesh fading error when Clipbox is used and a viewer moves away from a block while another non-visual viewer still keeps its physics loaded.
+        - fixed some cases in LOD update and non-cached blocks that would potentially ignore the `VoxelFormat` override
     - `VoxelTool`: 
         `run_blocky_random_tick`: fixed uniform blocks were not picked up (PR #794)
         `run_blocky_random_tick`: will now run over the remainder if voxel count is not divisible by batch size

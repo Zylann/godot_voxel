@@ -273,7 +273,7 @@ std::shared_ptr<VoxelBuffer> VoxelData::try_get_writable_voxel_buffer_assuming_s
 		// edit is known
 
 		voxels = make_shared_instance<VoxelBuffer>(VoxelBuffer::ALLOCATOR_POOL);
-		voxels->create(Vector3iUtil::create(get_block_size()));
+		voxels->create(Vector3iUtil::create(get_block_size()), &lod.map.get_format());
 
 		Ref<VoxelGenerator> generator = get_generator();
 		if (generator.is_valid()) {
@@ -904,16 +904,16 @@ void VoxelData::update_lods(Span<const Vector3i> modified_lod0_blocks, StdVector
 						uint8_t dst_lod_index,
 						int data_block_size,
 						int data_block_size_po2,
-						Ref<VoxelGenerator> generator
+						Ref<VoxelGenerator> generator,
 #ifdef VOXEL_ENABLE_MODIFIERS
-						,
-						const VoxelModifierStack &modifiers
+						const VoxelModifierStack &modifiers,
 #endif
+						const VoxelFormat &format
 				) {
 					//
 					std::shared_ptr<VoxelBuffer> voxels =
 							make_shared_instance<VoxelBuffer>(VoxelBuffer::ALLOCATOR_POOL);
-					voxels->create(Vector3iUtil::create(data_block_size));
+					voxels->create(Vector3iUtil::create(data_block_size), &format);
 					VoxelGenerator::VoxelQueryData q{ //
 													  *voxels, //
 													  dst_bpos << (dst_lod_index + data_block_size_po2), //
@@ -942,11 +942,11 @@ void VoxelData::update_lods(Span<const Vector3i> modified_lod0_blocks, StdVector
 							dst_lod_index,
 							data_block_size,
 							data_block_size_po2,
-							generator
+							generator,
 #ifdef VOXEL_ENABLE_MODIFIERS
-							,
-							_modifiers
+							_modifiers,
 #endif
+							_format
 					);
 
 					{
@@ -983,11 +983,11 @@ void VoxelData::update_lods(Span<const Vector3i> modified_lod0_blocks, StdVector
 						dst_lod_index,
 						data_block_size,
 						data_block_size_po2,
-						generator
+						generator,
 #ifdef VOXEL_ENABLE_MODIFIERS
-						,
-						_modifiers
+						_modifiers,
 #endif
+						_format
 				);
 				dst_block->set_voxels(voxels);
 			}
