@@ -110,7 +110,7 @@ public:
 	bool try_set_voxel(uint64_t value, Vector3i pos, unsigned int channel_index);
 
 	float get_voxel_f(Vector3i pos, unsigned int channel_index) const;
-	bool try_set_voxel_f(real_t value, Vector3i pos, unsigned int channel_index);
+	bool try_set_voxel_f(const real_t value, const Vector3i pos, const unsigned int channel_index);
 
 	// Copies voxel data in a box from LOD0.
 	// `channels_mask` bits tell which channel is read.

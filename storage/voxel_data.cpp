@@ -317,9 +317,9 @@ float VoxelData::get_voxel_f(Vector3i pos, unsigned int channel_index) const {
 	return get_voxel(pos, channel_index, defval).f;
 }
 
-bool VoxelData::try_set_voxel_f(real_t value, Vector3i pos, unsigned int channel_index) {
-	// TODO Handle format instead of hardcoding 16-bits
-	return try_set_voxel(snorm_to_s16(value), pos, channel_index);
+bool VoxelData::try_set_voxel_f(const real_t value, const Vector3i pos, const unsigned int channel_index) {
+	const uint64_t raw = VoxelBuffer::real_to_raw_voxel(value, _format.depths[channel_index]);
+	return try_set_voxel(raw, pos, channel_index);
 }
 
 void VoxelData::copy(

@@ -34,8 +34,9 @@ Dev 1.5.1 - `master`
         - fixed potential mesh fading error when Clipbox is used and a viewer moves away from a block while another non-visual viewer still keeps its physics loaded.
         - fixed some cases in LOD update and non-cached blocks that would potentially ignore the `VoxelFormat` override
     - `VoxelTool`: 
-        `run_blocky_random_tick`: fixed uniform blocks were not picked up (PR #794)
-        `run_blocky_random_tick`: will now run over the remainder if voxel count is not divisible by batch size
+        - `run_blocky_random_tick`: fixed uniform blocks were not picked up (PR #794)
+        - `run_blocky_random_tick`: will now run over the remainder if voxel count is not divisible by batch size
+        - Terrains: fixed `set_voxel_f` which wasn't scaling SDF properly
 
 - Breaking changes
     - `VoxelStreamRegionFiles`: removed `lod_count` property. Any LOD can be saved without the need to preconfigure it.
