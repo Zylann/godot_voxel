@@ -138,6 +138,9 @@ VoxelStreamRegionFiles::EmergeResult VoxelStreamRegionFiles::_load_block(
 	}
 
 	if (!_meta_loaded) {
+		// TODO This is sub-optimal when loading a terrain from scratch when there hasn't been anything saved yet.
+		// It pretty much tries to open the file for every chunk, fails and then returns "OK_FALLBACK", but the
+		// repeated IO is wasting time
 		const zylann::godot::FileResult load_res = load_meta();
 		if (load_res != zylann::godot::FILE_OK) {
 			// No block was ever saved
