@@ -101,6 +101,14 @@ public:
 
 	void remove_instances_in_sphere(const Vector3 p_center, const float p_radius);
 
+	enum NodeConversionFlags {
+		NODE_CONVERSION_DUPLICATE_MESHES = 1 << 0,
+		NODE_CONVERSION_DUPLICATE_MULTIMESHES = 1 << 1,
+		NODE_CONVERSION_INCLUDE_MATERIAL_OVERRIDES = 1 << 2
+	};
+
+	Node3D *convert_to_nodes(const uint32_t flags) const;
+
 	// Event handlers
 
 	// void on_data_block_loaded(Vector3i grid_position, unsigned int lod_index, UniquePtr<InstanceBlockData>

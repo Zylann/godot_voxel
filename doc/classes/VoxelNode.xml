@@ -7,6 +7,22 @@
 	</description>
 	<tutorials>
 	</tutorials>
+	<methods>
+		<method name="convert_to_nodes" qualifiers="const">
+			<return type="Node3D" />
+			<param index="0" name="flags" type="int" enum="VoxelNode.NodeConversionFlags" is_bitfield="true" />
+			<description>
+				Generates a tree representing the terrain at the time of calling, only using Godot vanilla nodes.
+				This method can be used as a way to produce a snapshot of the terrain as a vanilla scene that can be opened with standard Godot versions without plugins. It could also be used for debug purposes, or as a way to workaround Godot features that expect mesh instance nodes (such as some GI baking options, navigation generation or GLTF export).
+				The returned root is not added to the scene tree. It is up to you to decide what to do with it. If you want it to be present in the scene, you should add it as child of an existing node. Otherwise, don't forget to free it.
+				Output structure: every chunk of the terrain will create its own [MeshInstance3D], with a unique [ArrayMesh] resource attached to it. Meshes and/or mesh instances may also have materials attached to them. Depending on how the terrain is configured, these materials can be unique per chunk. If the terrain has LODs, chunks will be stored under a corresponding LOD node. If the terrain has an instancer, multimesh chunks can be included. See [enum NodeConversionFlags] for options.
+				Performance: this can be an expensive operation. It might slow down your game.
+				Packing to scene file: it is possible to save the output as a [PackedScene], by assigning [member Node.owner] (see Godot's documentation). It contains a lot of unique meshes so the saved scenes can be very large. Prefer saving as binary [code].scn[/code] if it's a problem. If the terrain uses a [ShaderMaterial] with detail rendering, chunks will also have unique textures, further increasing size.
+				GLTF: if your terrain uses [ShaderMaterial] and you want to convert the terrain to a [GLTFDocument], these materials won't carry over because GLTF does not support it. That also means if you use [VoxelMesherTransvoxel] with LOD, meshes in your GLTF document will have unwanted extra geometry and cracks at the seams (which would normally be handled by shader).
+				LOD: if your terrain has LOD, you will only get a snapshot of which LODs are currently active. Detailed meshes will be centered around viewers, and have less and less details further away.
+			</description>
+		</method>
+	</methods>
 	<members>
 		<member name="cast_shadow" type="int" setter="set_shadow_casting" getter="get_shadow_casting" enum="GeometryInstance3D.ShadowCastingSetting" default="1">
 			Sets the shadow casting mode that meshes of the terrain will use.
@@ -31,4 +47,15 @@
 			Primary source of persistent voxel data. If left unassigned, the whole volume will use the generator.
 		</member>
 	</members>
+	<constants>
+		<constant name="NODE_CONVERSION_INCLUDE_INSTANCER" value="1" enum="NodeConversionFlags" is_bitfield="true">
+			If the terrain has a [VoxelInstancer], instances spawned by it will be included in the result as a [MultiMeshInstance] per chunk.
+		</constant>
+		<constant name="NODE_CONVERSION_INCLUDE_INVISIBLE_BLOCKS" value="2" enum="NodeConversionFlags" is_bitfield="true">
+			Some chunks are internally hidden by the terrain system, notably as part of the LOD system. If this flag is provided, these chunks will be included in the output.
+		</constant>
+		<constant name="NODE_CONVERSION_INCLUDE_MATERIAL_OVERRIDES" value="4" enum="NodeConversionFlags" is_bitfield="true">
+			Specifies that material overrides present on the terrain should be applied to chunks of the result.
+		</constant>
+	</constants>
 </class>

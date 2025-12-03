@@ -3694,31 +3694,75 @@ int VoxelLodTerrain::_b_debug_get_data_block_count() const {
 	return _data->get_block_count();
 }
 
-Node3D *VoxelLodTerrain::debug_dump_as_nodes(bool include_instancer) const {
+Node3D *VoxelLodTerrain::convert_to_nodes(const BitField<NodeConversionFlags> flags) const {
 	Node3D *root = memnew(Node3D);
 	root->set_name(get_name());
+	root->set_transform(get_transform());
 
 	const unsigned int lod_count = get_lod_count();
+
+	const GeometryInstance3D::GIMode gi_mode = get_gi_mode();
+	const GeometryInstance3D::ShadowCastingSetting shadow_casting = get_shadow_casting();
+	const int render_layers_mask = get_render_layers_mask();
+
+	Ref<Material> non_shader_material = get_material();
+	Ref<ShaderMaterial> shader_material = non_shader_material;
+	if (shader_material.is_valid()) {
+		non_shader_material = Ref<Material>();
+	}
 
 	for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
 		const VoxelMeshMap<VoxelMeshBlockVLT> &mesh_map = _mesh_maps_per_lod[lod_index];
 
-		// To make the scene easier to inspect
+		// Split LODs under specific parents to make the scene easier to inspect
 		Node3D *lod_node = memnew(Node3D);
 		lod_node->set_name(String("LOD{0}").format(varray(lod_index)));
 		root->add_child(lod_node);
 
-		mesh_map.for_each_block([lod_node](const VoxelMeshBlockVLT &block) {
+		mesh_map.for_each_block([lod_node,
+								 flags,
+								 lod_index,
+								 gi_mode,
+								 shadow_casting,
+								 render_layers_mask,
+								 non_shader_material](const VoxelMeshBlockVLT &block) {
 			block.for_each_mesh_instance_with_transform(
-					[lod_node, &block](const zylann::godot::DirectMeshInstance &dmi, Transform3D t) {
+					[lod_node,
+					 &block,
+					 flags,
+					 lod_index,
+					 gi_mode,
+					 shadow_casting,
+					 render_layers_mask,
+					 non_shader_material](const zylann::godot::DirectMeshInstance &dmi, const Transform3D transform) {
+						if (!flags.has_flag(NODE_CONVERSION_INCLUDE_INVISIBLE_BLOCKS)) {
+							if (!block.is_visible()) {
+								return;
+							}
+						}
 						Ref<Mesh> mesh = dmi.get_mesh();
 
 						if (mesh.is_valid()) {
 							MeshInstance3D *mi = memnew(MeshInstance3D);
+							mi->set_name(String("Block_{0}_{1}_{2}_LOD{3}")
+												 .format(varray(
+														 block.position.x, block.position.y, block.position.z, lod_index
+												 )));
 							mi->set_mesh(mesh);
-							mi->set_transform(t);
-							// TODO Transition mesh visibility?
+							mi->set_transform(transform);
 							mi->set_visible(block.is_visible());
+							mi->set_gi_mode(gi_mode);
+							mi->set_cast_shadows_setting(shadow_casting);
+							mi->set_layer_mask(render_layers_mask);
+
+							if (flags.has_flag(NODE_CONVERSION_INCLUDE_MATERIAL_OVERRIDES)) {
+								if (non_shader_material.is_valid()) {
+									mi->set_material_override(non_shader_material);
+								} else {
+									mi->set_material_override(block.get_shader_material());
+								}
+							}
+
 							lod_node->add_child(mi);
 						}
 					}
@@ -3727,8 +3771,12 @@ Node3D *VoxelLodTerrain::debug_dump_as_nodes(bool include_instancer) const {
 	}
 
 #ifdef VOXEL_ENABLE_INSTANCER
-	if (include_instancer && _instancer != nullptr) {
-		Node *instances_root = _instancer->debug_dump_as_nodes();
+	if (flags.has_flag(NODE_CONVERSION_INCLUDE_INSTANCER) && _instancer != nullptr) {
+		Node *instances_root = _instancer->convert_to_nodes(
+				flags.has_flag(NODE_CONVERSION_INCLUDE_MATERIAL_OVERRIDES)
+						? VoxelInstancer::NODE_CONVERSION_INCLUDE_MATERIAL_OVERRIDES
+						: 0
+		);
 		if (instances_root != nullptr) {
 			root->add_child(instances_root);
 		}
@@ -3736,6 +3784,12 @@ Node3D *VoxelLodTerrain::debug_dump_as_nodes(bool include_instancer) const {
 #endif
 
 	return root;
+}
+
+Node3D *VoxelLodTerrain::debug_dump_as_nodes(bool include_instancer) const {
+	return convert_to_nodes(
+			NODE_CONVERSION_INCLUDE_INVISIBLE_BLOCKS | (include_instancer ? NODE_CONVERSION_INCLUDE_INSTANCER : 0)
+	);
 }
 
 Error VoxelLodTerrain::debug_dump_as_scene(String fpath, bool include_instancer) const {

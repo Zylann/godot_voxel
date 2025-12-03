@@ -152,6 +152,8 @@ public:
 	// 	Vector3i position;
 	// };
 
+	Node3D *convert_to_nodes(const BitField<NodeConversionFlags> flags) const override;
+
 	// Debug
 
 	enum DebugDrawFlag {

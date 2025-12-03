@@ -105,6 +105,12 @@ Ref<VoxelTool> VoxelNode::get_voxel_tool() {
 	return Ref<VoxelTool>();
 }
 
+Node3D *VoxelNode::convert_to_nodes(const BitField<NodeConversionFlags> flags) const {
+	ZN_PRINT_ERROR("Not implemented");
+	// Implemented in subclasses
+	return nullptr;
+}
+
 #ifdef TOOLS_ENABLED
 
 #if defined(ZN_GODOT)
@@ -332,6 +338,8 @@ void VoxelNode::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_render_layers_mask", "mask"), &VoxelNode::set_render_layers_mask);
 	ClassDB::bind_method(D_METHOD("get_render_layers_mask"), &VoxelNode::get_render_layers_mask);
 
+	ClassDB::bind_method(D_METHOD("convert_to_nodes", "flags"), &VoxelNode::convert_to_nodes);
+
 	ADD_PROPERTY(
 			PropertyInfo(Variant::OBJECT, "stream", PROPERTY_HINT_RESOURCE_TYPE, VoxelStream::get_class_static()),
 			"set_stream",
@@ -372,6 +380,10 @@ void VoxelNode::_bind_methods() {
 			"set_render_layers_mask",
 			"get_render_layers_mask"
 	);
+
+	BIND_BITFIELD_FLAG(NODE_CONVERSION_INCLUDE_INSTANCER);
+	BIND_BITFIELD_FLAG(NODE_CONVERSION_INCLUDE_INVISIBLE_BLOCKS);
+	BIND_BITFIELD_FLAG(NODE_CONVERSION_INCLUDE_MATERIAL_OVERRIDES);
 }
 
 } // namespace zylann::voxel

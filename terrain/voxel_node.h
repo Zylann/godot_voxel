@@ -52,6 +52,14 @@ public:
 
 	virtual Ref<VoxelTool> get_voxel_tool();
 
+	enum NodeConversionFlags {
+		NODE_CONVERSION_INCLUDE_INSTANCER = 1 << 0,
+		NODE_CONVERSION_INCLUDE_INVISIBLE_BLOCKS = 1 << 1,
+		NODE_CONVERSION_INCLUDE_MATERIAL_OVERRIDES = 1 << 2
+	};
+
+	virtual Node3D *convert_to_nodes(const BitField<NodeConversionFlags> flags) const;
+
 #ifdef TOOLS_ENABLED
 #if defined(ZN_GODOT)
 	PackedStringArray get_configuration_warnings() const override;
@@ -103,5 +111,7 @@ private:
 };
 
 } // namespace zylann::voxel
+
+VARIANT_BITFIELD_CAST(zylann::voxel::VoxelNode::NodeConversionFlags);
 
 #endif // VOXEL_NODE_H

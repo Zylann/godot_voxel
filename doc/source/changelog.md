@@ -20,6 +20,7 @@ Dev 1.5.1 - `master`
         - Added `generate_image_from_sdf`
         - Added `raycast_sdf_approx` to find where surface is from a ray
     - `VoxelLodTerrain`: added debug flag to draw locations of voxel metadatas
+    - `VoxelNode`: added `convert_to_nodes` method, which creates a snapshot of the terrain using vanilla Godot nodes.
     - `VoxelStream`: added option to compress saves using ZSTD instead of LZ4
     - `VoxelToolLodTerrain`: implemented `get/set_voxel_metadata` methods. Warning: caching is off by default, so getting metadata in non-edited areas will invoke the generator, like `get_voxel`.
 

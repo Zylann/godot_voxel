@@ -211,6 +211,8 @@ public:
 	StreamingSystem get_streaming_system() const;
 	void set_streaming_system(StreamingSystem v);
 
+	Node3D *convert_to_nodes(const BitField<NodeConversionFlags> flags) const override;
+
 	// Debugging
 
 	Array debug_raycast_mesh_block(Vector3 world_origin, Vector3 world_direction) const;

@@ -16,6 +16,7 @@
 #include "../../util/godot/classes/base_material_3d.h" // For property hint in release mode in GDExtension...
 #include "../../util/godot/classes/concave_polygon_shape_3d.h"
 #include "../../util/godot/classes/engine.h"
+#include "../../util/godot/classes/mesh_instance_3d.h"
 #include "../../util/godot/classes/multiplayer_api.h"
 #include "../../util/godot/classes/multiplayer_peer.h"
 #include "../../util/godot/classes/scene_tree.h"
@@ -578,6 +579,73 @@ void VoxelTerrain::save_all_modified_blocks(bool with_copy, std::shared_ptr<Asyn
 
 const VoxelTerrain::Stats &VoxelTerrain::get_stats() const {
 	return _stats;
+}
+
+Node3D *VoxelTerrain::convert_to_nodes(const BitField<NodeConversionFlags> flags) const {
+	Node3D *root = memnew(Node3D);
+	root->set_name(get_name());
+	root->set_transform(get_transform());
+
+	const GeometryInstance3D::GIMode gi_mode = get_gi_mode();
+	const GeometryInstance3D::ShadowCastingSetting shadow_casting = get_shadow_casting();
+	const int render_layers_mask = get_render_layers_mask();
+
+	Ref<Material> non_shader_material = get_material_override();
+	Ref<ShaderMaterial> shader_material = non_shader_material;
+	if (shader_material.is_valid()) {
+		non_shader_material = Ref<Material>();
+	}
+
+	const int block_size = get_mesh_block_size();
+
+	_mesh_map.for_each_block(
+			[root, flags, gi_mode, shadow_casting, render_layers_mask, non_shader_material, block_size](
+					const VoxelMeshBlockVT &block
+			) {
+				if (!flags.has_flag(NODE_CONVERSION_INCLUDE_INVISIBLE_BLOCKS)) {
+					if (!block.is_visible()) {
+						return;
+					}
+				}
+				Ref<Mesh> mesh = block.get_mesh();
+
+				if (mesh.is_valid()) {
+					MeshInstance3D *mi = memnew(MeshInstance3D);
+					mi->set_name(String("Block_{0}_{1}_{2}")
+										 .format(varray(block.position.x, block.position.y, block.position.z)));
+					mi->set_mesh(mesh);
+					const Transform3D transform(Basis(), Vector3(block.position * block_size));
+					mi->set_transform(transform);
+					mi->set_visible(block.is_visible());
+					mi->set_gi_mode(gi_mode);
+					mi->set_cast_shadows_setting(shadow_casting);
+					mi->set_layer_mask(render_layers_mask);
+
+					if (flags.has_flag(NODE_CONVERSION_INCLUDE_MATERIAL_OVERRIDES)) {
+						if (non_shader_material.is_valid()) {
+							mi->set_material_override(non_shader_material);
+						}
+					}
+
+					root->add_child(mi);
+				}
+			}
+	);
+
+#ifdef VOXEL_ENABLE_INSTANCER
+	if (flags.has_flag(NODE_CONVERSION_INCLUDE_INSTANCER) && _instancer != nullptr) {
+		Node *instances_root = _instancer->convert_to_nodes(
+				flags.has_flag(NODE_CONVERSION_INCLUDE_MATERIAL_OVERRIDES)
+						? VoxelInstancer::NODE_CONVERSION_INCLUDE_MATERIAL_OVERRIDES
+						: 0
+		);
+		if (instances_root != nullptr) {
+			root->add_child(instances_root);
+		}
+	}
+#endif
+
+	return root;
 }
 
 #ifdef VOXEL_ENABLE_INSTANCER
