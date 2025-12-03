@@ -378,3 +378,28 @@ if hit != null:
 ```
 
 If you use `VoxelMesherBlocky`, it is possible to filter out some voxel types by specifying the `collision mask` argument. This will be matched against the `collision mask` property found on `VoxelBlockyModel` resources.
+
+
+Custom meshing
+----------------
+
+Games with blocky voxels often have a custom way to interpret voxel data and converting it into geometry, for a variety of reasons:
+
+- Using more than just an ID in voxel data to affect results
+- Handling rotations and transformations at meshing time instead of precomputing them
+- Separating shape, texture, colors or other properties from voxel data instead of mapping one ID to one model
+- Procedural shapes half-way between cubic voxels and smooth voxels, depending on special rules with neighbors
+- Packing vertex data to be used in custom shaders
+- Etc...
+
+There are mainly two ways this can go:
+
+- Write your own custom mesher that does exactly what your game needs. This however requires that you implement that logic in C++, because meshing is a resource-intensive process. This would be ideal because it allows to make all assumptions you want with your game's logic and the way you want to interpret voxel data. It is one big reason so many voxel games use their own code instead of a library doing it for them. But it obviously means the engine cannot provide such mesher for you, it would otherwise be a big maintainance burden and having a mesher for every game would bloat the engine.
+- Write a generic mesher relying on baked assets and settings that work in a mostly unified way. This changes the problem to be an asset management issue, which can be easier to solve than having to code a mesher. One voxel = one model. Models that need to be rotated are just variants. Different states or textures are more variants too. This is the approach used in the engine. The downside is that you have to bend your needs to fit this pipeline. The burden of generating variants is on you, and might not work out in some extreme cases.
+
+If you still want to use a custom mesher, the only current ways are:
+
+- Create your own [C++ module](https://docs.godotengine.org/en/stable/engine_details/architecture/custom_modules_in_cpp.html) to create your own mesher: no need to modify the voxel module, but you will have to compile Godot, inherit the base class `VoxelMesher` and implement its virtual methods (check how the engine's own meshers are implemented for examples).
+- Modify an existing mesher in the module itself, or start from a copy of one.
+
+While in theory we could expose a way for GDScript to inherit `VoxelMesher`, scripts are too slow to take on the task of individually polygonize each voxel, and it's not yet clear what form the API would take. A development branch [mesher_script](https://github.com/Zylann/godot_voxel/tree/mesher_script) attempts to implement that, but isn't ready to use.
