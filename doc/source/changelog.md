@@ -25,6 +25,7 @@ Dev 1.5.1 - `master`
     - `VoxelToolLodTerrain`: implemented `get/set_voxel_metadata` methods. Warning: caching is off by default, so getting metadata in non-edited areas will invoke the generator, like `get_voxel`.
 
 - Fixes
+    - `VoxelAStarGrid3D`: fixed crash after calling `set_region` with negative size
     - `VoxelBlockyModelFluid`: fixed collision boxes were ignored by library baking
     - `VoxelBuffer`: fixed `get_channel_as_byte_array` was crashing when used on non-uniform buffers
     - `VoxelGeneratorGraph`: 
