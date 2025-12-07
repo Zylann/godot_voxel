@@ -374,8 +374,9 @@ private:
 		// Multi-threaded access strategy:
 		// - Spatial lock first
 		// - Map lock second, while the spatial lock is acquired, just to lookup the map
-		// This should be safe assuming the address of hashmap's values remains stable when insertion or removal occurs.
-		// If two lods really need to be locked as well, lock the lower index first, and higher index next.
+		// This should be safe assuming the address of hashmap's values remains stable when insertion or removal of
+		// other elements occurs. If two lods really need to be locked as well, lock the lower index first, and higher
+		// index next.
 
 		// Lock protecting the map itself, because it uses a hashmap.
 		// This lock should be locked in write mode only when the map gets modified (adding or removing blocks).
