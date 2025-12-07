@@ -420,11 +420,14 @@ It was tested with [Tracy 0.10](https://github.com/wolfpld/tracy/releases/tag/v0
 
 ![Tracy screenshot](images/tracy.webp)
 
-Alternative profilers are also mentionned in the [Godot docs](https://docs.godotengine.org/en/latest/contributing/development/debugging/using_cpp_profilers.html). They profile everything and appear to be based on CPU sampling, while Tracy is an instrumenting profiler providing specific, live results on a timeline.
+Alternative profilers are also mentionned in the [Godot docs](https://docs.godotengine.org/en/stable/engine_details/development/debugging/using_cpp_profilers.html#doc-using-cpp-profilers). They profile everything and appear to be based on CPU sampling, while Tracy is an instrumenting profiler providing specific, live results on a timeline.
 
 A typical workflow is to launch Tracy, start a connection, and then launch the game, which will establish a connection and record all events. Tracy can also be launched and connect after the game, in which case the data will accumulate inside the game.
 
 ### Tracy-enabled builds
+
+!!! note
+    These builds are experimental and will be reworked when Godot 4.6 is released with better Tracy support.
 
 As an experiment, builds of Godot with the module and Tracy integrated are available for Windows, on [Github Actions](https://github.com/Zylann/godot_voxel/actions/workflows/windows.yml). The file to download will have `tracy` in the name. Note, you will need a Github account to download it.
 
@@ -435,20 +438,27 @@ These builds not only include a lot of instrumentation for the voxel module, but
 
 Outside of this case, you have to compile yourself to get Tracy support.
 
+Once you are done profiling, don't forget to switch back to a normal build, otherwise profiling data will accumulate in memory without being retrieved.
+
 ### Adding Tracy
+
+#### In Godot 4.6 and later
+
+Since Godot 4.6, Tracy is natively supported as an option of Godot's build system. You need to recompile the engine with additional SCons options: `profiler=tracy profiler_path=<path to the public folder in Tracy>`.
+
+#### in Godot 4.5 and older
 
 To add Tracy support, clone it under `thirdparty/tracy` (Godot's `thirdparty` folder, not the module).
 Then compile the engine by including `tracy=yes` in the SCons command line.
 
-Tracy isn't a feature of Godot's build system, so internally some of the work is actually done in the voxel module's build script.
-
-Once you are done profiling, don't forget to switch back to a normal build, otherwise profiling data will accumulate in memory without being retrieved.
+This way so internally some of the work is actually done in the voxel module's build script.
 
 !!! note
-    Tracy has a concept of frame mark, which is usually provided by the application, to tell the profiler when each frame begins. Godot does not provide profiling macros natively, so the frame mark was hacked into `VoxelEngine` process function. This allows to see frames of the main thread in the timeline, but they will be offset from their real beginning.
+    Tracy has a concept of frame mark, which is usually provided by the application, to tell the profiler when each frame begins. Godot doesn't have a hook for us to insert that call at the right time, so the frame mark was hacked into `VoxelEngine` process function. This allows to see frames of the main thread in the timeline, but they might be offset from their real beginning.
 
-!!! warning
-    Profiling data can use a lot of memory (can reach gigabytes of RAM), so make sure your computer has enough and keep your session duration in check.
+#### In GDExtension build
+
+Not supported at the moment, but with a few tweaks of the build system it could be made to work.
 
 
 ### How to add profiler scopes
