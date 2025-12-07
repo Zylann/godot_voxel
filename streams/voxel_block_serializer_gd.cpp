@@ -9,6 +9,34 @@ namespace zylann::voxel::godot {
 
 const char *VoxelBlockSerializer::COMPRESSION_MODE_HINT_STRING = "None,LZ4,ZSTD";
 
+VoxelBlockSerializer::Compression VoxelBlockSerializer::compression_to_gd(const CompressedData::Compression src) {
+	switch (src) {
+		case CompressedData::COMPRESSION_NONE:
+			return COMPRESSION_NONE;
+		case CompressedData::COMPRESSION_LZ4:
+			return COMPRESSION_LZ4;
+		case CompressedData::COMPRESSION_ZSTD:
+			return COMPRESSION_ZSTD;
+		default:
+			ZN_PRINT_ERROR("Unknown compression mode");
+			return COMPRESSION_NONE;
+	}
+}
+
+CompressedData::Compression VoxelBlockSerializer::compression_from_gd(const Compression src) {
+	switch (src) {
+		case COMPRESSION_NONE:
+			return CompressedData::COMPRESSION_NONE;
+		case COMPRESSION_LZ4:
+			return CompressedData::COMPRESSION_LZ4;
+		case COMPRESSION_ZSTD:
+			return CompressedData::COMPRESSION_ZSTD;
+		default:
+			ZN_PRINT_ERROR("Unknown compression mode");
+			return CompressedData::COMPRESSION_NONE;
+	}
+}
+
 int VoxelBlockSerializer::serialize_to_stream_peer(
 		Ref<StreamPeer> peer,
 		Ref<VoxelBuffer> voxel_buffer,

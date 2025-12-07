@@ -16,10 +16,15 @@ class VoxelBlockSerializer : public RefCounted {
 	GDCLASS(VoxelBlockSerializer, RefCounted)
 public:
 	enum Compression {
-		COMPRESSION_NONE = CompressedData::COMPRESSION_NONE,
-		COMPRESSION_LZ4 = CompressedData::COMPRESSION_LZ4,
-		COMPRESSION_ZSTD = CompressedData::COMPRESSION_ZSTD,
+		COMPRESSION_NONE,
+		COMPRESSION_LZ4,
+		COMPRESSION_ZSTD,
 	};
+
+	// Must use this because the internal enum does not have consecutive IDs (can't change because of saves),
+	// and Godot wants consecutive IDs...
+	static Compression compression_to_gd(const CompressedData::Compression src);
+	static CompressedData::Compression compression_from_gd(const Compression src);
 
 	static const char *COMPRESSION_MODE_HINT_STRING;
 

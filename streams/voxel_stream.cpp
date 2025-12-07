@@ -89,11 +89,11 @@ void VoxelStream::flush() {
 }
 
 void VoxelStream::set_compression_mode(const godot::VoxelBlockSerializer::Compression mode) {
-	_compression_mode = static_cast<CompressedData::Compression>(mode);
+	_compression_mode = godot::VoxelBlockSerializer::compression_from_gd(mode);
 }
 
 godot::VoxelBlockSerializer::Compression VoxelStream::get_compression_mode() const {
-	return static_cast<godot::VoxelBlockSerializer::Compression>(_compression_mode);
+	return godot::VoxelBlockSerializer::compression_to_gd(_compression_mode);
 }
 
 // Binding land
