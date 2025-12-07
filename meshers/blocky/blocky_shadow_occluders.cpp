@@ -1,5 +1,6 @@
 #include "blocky_shadow_occluders.h"
 #include "../../util/math/conv.h"
+#include "../../util/profiling.h"
 #include "voxel_mesher_blocky.h"
 
 namespace zylann::voxel::blocky {
