@@ -192,7 +192,7 @@ void collect_boxes_blocky(
 		const VoxelMesherBlocky &mesher,
 		const Vector3i minp,
 		const Vector3i maxp,
-		const uint32_t collision_nask,
+		const uint32_t collision_mask,
 		StdVector<AABB> &potential_boxes
 ) {
 	Ref<VoxelBlockyLibraryBase> library_ref = mesher.get_library();
@@ -214,7 +214,7 @@ void collect_boxes_blocky(
 				if (baked_data.has_model(type_id)) {
 					const blocky::BakedModel &model = baked_data.models[type_id];
 
-					if ((model.box_collision_mask & collision_nask) == 0) {
+					if ((model.box_collision_mask & collision_mask) == 0) {
 						continue;
 					}
 
