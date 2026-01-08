@@ -43,6 +43,15 @@
 				Climbing modifies the motion vector upwards so that the body is snapped on top of the step. This can have implications in character controller code, such as considering the character to be on the floor instead of having jumped.
 			</description>
 		</method>
+		<method name="intersects" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="aabb" type="AABB" />
+			<param index="1" name="terrain" type="Object" />
+			<description>
+				Tests if an axis-aligned box intersects with any voxel collision box.
+				Note: due to floating point precision, you might get false positives when testing against boxes that are touching voxels bounds. If this is undesired, you might want to shrink your AABB slightly.
+			</description>
+		</method>
 		<method name="is_step_climbing_enabled" qualifiers="const">
 			<return type="bool" />
 			<description>

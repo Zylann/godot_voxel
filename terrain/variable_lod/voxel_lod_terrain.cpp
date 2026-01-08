@@ -2581,6 +2581,11 @@ void VoxelLodTerrain::get_meshed_block_positions_at_lod(int lod_index, StdVector
 	});
 }
 
+VoxelData &VoxelLodTerrain::get_storage() const {
+	ZN_ASSERT(_data != nullptr);
+	return *_data;
+}
+
 void VoxelLodTerrain::save_all_modified_blocks(bool with_copy, std::shared_ptr<AsyncDependencyTracker> tracker) {
 	ZN_PROFILE_SCOPE();
 

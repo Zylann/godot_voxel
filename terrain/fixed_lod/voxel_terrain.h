@@ -103,10 +103,7 @@ public:
 	bool get_generator_use_gpu() const;
 #endif
 
-	VoxelData &get_storage() const {
-		ZN_ASSERT(_data != nullptr);
-		return *_data;
-	}
+	VoxelData &get_storage() const override;
 
 	std::shared_ptr<VoxelData> get_storage_shared() const {
 		return _data;

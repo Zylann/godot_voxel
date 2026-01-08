@@ -12,7 +12,9 @@ Dev 1.5.1 - `master`
 
 - Improvements
     - `VoxelBlockyModel`: added `tags_mask` property. Initially, it can be used to filter selected voxels when using `VoxelToolTerrain.run_blocky_random_tick`.
-    - `VoxelBoxMover`: added support for `VoxelLodTerrain`.
+    - `VoxelBoxMover`: 
+        - Added support for `VoxelLodTerrain`.
+        - Added `intersects` method to check if an AABB overlaps with blocky voxels.
     - `VoxelGeneratorGraph`: 
         - Editor: added `Add Node` item to the context menu
         - Added support for domain warp on `FastNoiseLite` and `ZN_FastNoiseLite` resources when using GPU (previously required to prepend `FastNoiseLiteGradient` noise)

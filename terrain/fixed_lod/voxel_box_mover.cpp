@@ -340,7 +340,7 @@ Vector3 VoxelBoxMover::get_motion(
 				collect_boxes(terrain_data, mesher, hyp_box, _collision_mask, potential_boxes);
 
 				// If the box fits on top of the step
-				if (!intersects(to_span(potential_boxes), hyp_box)) {
+				if (!zylann::voxel::intersects(to_span(potential_boxes), hyp_box)) {
 					// Change motion so that it brings the box on top of the step
 					slided_motion = hyp_box.position - box.position;
 					_has_stepped_up = true;
@@ -379,40 +379,59 @@ float VoxelBoxMover::get_max_step_height() const {
 	return _max_step_height;
 }
 
+bool VoxelBoxMover::intersects(
+		const AABB aabb_world,
+		const VoxelData &terrain_data,
+		const Transform3D &terrain_transform,
+		const VoxelMesher &mesher
+) const {
+	// Transform to local in case the volume is transformed
+	const Transform3D to_world = terrain_transform;
+	const Transform3D to_local = to_world.affine_inverse();
+	const AABB aabb = to_local.xform(aabb_world);
+
+	// TODO Candidate for temp allocator
+	static thread_local StdVector<AABB> s_colliding_boxes;
+	StdVector<AABB> &potential_boxes = s_colliding_boxes;
+	potential_boxes.clear();
+
+	// Collect potential collisions with the terrain (broad phase)
+	collect_boxes(terrain_data, mesher, aabb, _collision_mask, potential_boxes);
+
+	return zylann::voxel::intersects(to_span(potential_boxes), aabb);
+}
+
 #if defined(ZN_GODOT)
 Vector3 VoxelBoxMover::_b_get_motion(Vector3 pos, Vector3 motion, AABB aabb, Node *terrain_node) {
 #elif defined(ZN_GODOT_EXTENSION)
-Vector3 VoxelBoxMover::_b_get_motion(Vector3 pos, Vector3 motion, AABB aabb, Object *terrain_node_o) {
-	Node *terrain_node = Object::cast_to<Node>(terrain_node_o);
+Vector3 VoxelBoxMover::_b_get_motion(Vector3 pos, Vector3 motion, AABB aabb, Object *terrain_node) {
 #endif
 	ERR_FAIL_COND_V(terrain_node == nullptr, Vector3());
+	VoxelNode *terrain = Object::cast_to<VoxelNode>(terrain_node);
+	ERR_FAIL_COND_V(terrain == nullptr, Vector3());
 
-	{
-		VoxelTerrain *terrain = Object::cast_to<VoxelTerrain>(terrain_node);
-		if (terrain != nullptr) {
-			Ref<VoxelMesher> mesher = terrain->get_mesher();
-			// The mesher is required to know how collisions should be processed
-			ERR_FAIL_COND_V(mesher.is_null(), Vector3());
-			return get_motion(pos, motion, aabb, terrain->get_storage(), terrain->get_global_transform(), **mesher);
-		}
-	}
+	// The mesher is required to know how collisions should be processed
+	Ref<VoxelMesher> mesher = terrain->get_mesher();
+	ERR_FAIL_COND_V(mesher.is_null(), Vector3());
 
-	{
-		VoxelLodTerrain *terrain = Object::cast_to<VoxelLodTerrain>(terrain_node);
-		if (terrain != nullptr) {
-			Ref<VoxelMesher> mesher = terrain->get_mesher();
-			// The mesher is required to know how collisions should be processed
-			ERR_FAIL_COND_V(mesher.is_null(), Vector3());
-			return get_motion(pos, motion, aabb, terrain->get_storage(), terrain->get_global_transform(), **mesher);
-		}
-	}
+	return get_motion(pos, motion, aabb, terrain->get_storage(), terrain->get_global_transform(), **mesher);
+}
 
-	ERR_PRINT("Expected terrain node");
-	return Vector3();
+bool VoxelBoxMover::_b_intersects(AABB p_aabb, Object *p_terrain_node) const {
+	ERR_FAIL_COND_V(p_terrain_node == nullptr, false);
+	VoxelNode *terrain = Object::cast_to<VoxelNode>(p_terrain_node);
+	ERR_FAIL_COND_V(terrain == nullptr, false);
+
+	// The mesher is required to know how collisions should be processed
+	Ref<VoxelMesher> mesher = terrain->get_mesher();
+	ERR_FAIL_COND_V(mesher.is_null(), false);
+
+	return intersects(p_aabb, terrain->get_storage(), terrain->get_global_transform(), **mesher);
 }
 
 void VoxelBoxMover::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_motion", "pos", "motion", "aabb", "terrain"), &VoxelBoxMover::_b_get_motion);
+	ClassDB::bind_method(D_METHOD("intersects", "aabb", "terrain"), &VoxelBoxMover::_b_intersects);
 
 	ClassDB::bind_method(D_METHOD("set_collision_mask", "mask"), &VoxelBoxMover::set_collision_mask);
 	ClassDB::bind_method(D_METHOD("get_collision_mask"), &VoxelBoxMover::get_collision_mask);

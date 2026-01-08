@@ -24,6 +24,13 @@ public:
 			const VoxelMesher &mesher
 	);
 
+	bool intersects(
+			const AABB aabb_world,
+			const VoxelData &terrain_data,
+			const Transform3D &terrain_transform,
+			const VoxelMesher &mesher
+	) const;
+
 	void set_collision_mask(uint32_t mask);
 	inline uint32_t get_collision_mask() const {
 		return _collision_mask;
@@ -42,8 +49,10 @@ private:
 	Vector3 _b_get_motion(Vector3 p_pos, Vector3 p_motion, AABB p_aabb, Node *p_terrain_node);
 #elif defined(ZN_GODOT_EXTENSION)
 	// TODO GDX: it seems binding a method taking a `Node*` fails to compile. It is supposed to be working.
-	Vector3 _b_get_motion(Vector3 p_pos, Vector3 p_motion, AABB p_aabb, Object *p_terrain_node_o);
+	Vector3 _b_get_motion(Vector3 p_pos, Vector3 p_motion, AABB p_aabb, Object *p_terrain_node);
 #endif
+
+	bool _b_intersects(AABB p_aabb, Object *p_terrain_node) const;
 
 	static void _bind_methods();
 

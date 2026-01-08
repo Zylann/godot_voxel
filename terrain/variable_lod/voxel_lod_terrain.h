@@ -285,10 +285,7 @@ public:
 
 	void get_meshed_block_positions_at_lod(int lod_index, StdVector<Vector3i> &out_positions) const;
 
-	inline VoxelData &get_storage() const {
-		ZN_ASSERT(_data != nullptr);
-		return *_data;
-	}
+	VoxelData &get_storage() const override;
 
 	inline std::shared_ptr<VoxelData> get_storage_shared() const {
 		return _data;

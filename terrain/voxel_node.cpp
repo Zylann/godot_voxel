@@ -5,6 +5,7 @@
 #include "../generators/voxel_generator.h"
 #include "../meshers/blocky/voxel_mesher_blocky.h"
 #include "../meshers/voxel_mesher.h"
+#include "../storage/voxel_data.h"
 #include "../streams/voxel_stream.h"
 #include "../util/godot/classes/script.h"
 #include "../util/godot/core/string.h"
@@ -44,6 +45,13 @@ void VoxelNode::set_generator(Ref<VoxelGenerator> generator) {
 Ref<VoxelGenerator> VoxelNode::get_generator() const {
 	// Implemented in subclasses
 	return Ref<VoxelGenerator>();
+}
+
+VoxelData &VoxelNode::get_storage() const {
+	// Have to implement for the class to be bindable to Godot, but shouldnt be called
+	ZN_CRASH_MSG("Not available");
+	static VoxelData s_dummy;
+	return s_dummy;
 }
 
 void VoxelNode::set_format(Ref<godot::VoxelFormat> format) {

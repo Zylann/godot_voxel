@@ -132,6 +132,11 @@ bool VoxelTerrain::get_generator_use_gpu() const {
 }
 #endif
 
+VoxelData &VoxelTerrain::get_storage() const {
+	ZN_ASSERT(_data != nullptr);
+	return *_data;
+}
+
 void VoxelTerrain::set_stream(Ref<VoxelStream> p_stream) {
 	if (p_stream == get_stream()) {
 		return;

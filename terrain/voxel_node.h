@@ -17,6 +17,7 @@
 namespace zylann::voxel {
 
 class VoxelTool;
+class VoxelData;
 
 // Base class for voxel volumes
 class VoxelNode : public Node3D {
@@ -30,6 +31,8 @@ public:
 
 	virtual void set_generator(Ref<VoxelGenerator> generator);
 	virtual Ref<VoxelGenerator> get_generator() const;
+
+	virtual VoxelData &get_storage() const;
 
 	void set_format(Ref<godot::VoxelFormat> format);
 	Ref<godot::VoxelFormat> get_format() const;
