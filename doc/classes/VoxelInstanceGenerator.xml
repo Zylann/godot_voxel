@@ -119,7 +119,7 @@
 		</member>
 		<member name="voxel_texture_filter_array" type="PackedInt32Array" setter="set_voxel_texture_filter_array" getter="get_voxel_texture_filter_array" default="PackedInt32Array(0)">
 			Specifies which voxel texture indices on top of which instances may spawn.
-			This only works when [member voxel_texture_filter_enabled] is enabled, and [VoxelMesherTransvoxel] is used with [member VoxelMesherTransvoxel.texturing_mode] set to [constant VoxelMesherTransvoxel.TEXTURES_BLEND_4_OVER_16].
+			This only works when [member voxel_texture_filter_enabled] is enabled, and [VoxelMesherTransvoxel] is used with [member VoxelMesherTransvoxel.texturing_mode] set to [constant VoxelMesherTransvoxel.TEXTURES_MIXEL4_S4] or [constant VoxelMesherTransvoxel.TEXTURES_SINGLE_S4]. Indices are currently limited between 0 and 31 included.
 		</member>
 		<member name="voxel_texture_filter_enabled" type="bool" setter="set_voxel_texture_filter_enabled" getter="is_voxel_texture_filter_enabled" default="false">
 			When true, enables filtering of instances based on voxel texture indices. See [member voxel_texture_filter_array].
