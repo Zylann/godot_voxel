@@ -124,6 +124,8 @@
 				[code]strength[/code] value that controls maximal value that will be added/removed to/from voxels. Suggested range is [0, 10].
 				Note 1: This is currently implemented only for terrain that uses SDF data (smooth voxels).
 				Note 2: This is meant to be analogous to Surface tool from Unreal Engine Voxel Plugin.
+				Note 3: This method assumes terrain SDF is coherent. If it isn't, you may notice differences in speeds at which terrain erodes or grows. For example, some generators fallback to a constant SDF when far away from the surface in order to speed up calculations (see [member VoxelGeneratorGraph.sdf_clip_threshold]).
+				Note 4: If you want to use this method to dig terrain "smoothly" by calling it every frame, an alternative is to use [do_sphere] but instead of the center being on the surface, move it back by about 0.95% of the radius so only a small fraction of the sphere will penetrate, digging a hole progressively.
 			</description>
 		</method>
 		<method name="is_area_editable" qualifiers="const">

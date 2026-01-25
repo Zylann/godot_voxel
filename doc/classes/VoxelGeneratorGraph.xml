@@ -115,7 +115,8 @@
 			When enabled, if the graph outputs SDF data, generated blocks that would otherwise be clipped will be inverted. This has the effect of them showing up as "walls artifacts", which is useful to visualize where the optimization occurs.
 		</member>
 		<member name="sdf_clip_threshold" type="float" setter="set_sdf_clip_threshold" getter="get_sdf_clip_threshold" default="1.5">
-			When generating SDF blocks for a terrain, if the range analysis of a block is beyond this threshold, its SDF data will be considered either fully 1, or fully -1. This optimizes memory and processing time.
+			When generating SDF blocks for a terrain, if the range analysis of a block is beyond this threshold, its SDF data will be considered either fully air, or fully matter (using high constants, positive or negative). This optimizes memory because chunks entirely underground or in the air will have the same value on every voxel. It also saves processing time because SDF calculations (noise etc) are skipped. To turn off this optimization, set it to a high value.
+			Downside: if you use operations to edit the terrain assuming coherent SDF, they might behave incorrectly at boundaries where the clipping starts to occur. This is notably the case of [method VoxelTool.grow_sphere].
 		</member>
 		<member name="subdivision_size" type="int" setter="set_subdivision_size" getter="get_subdivision_size" default="16">
 			When generating SDF blocks for a terrain, and if block size is divisible by this value, range analysis will operate on such subdivision. This allows to optimize away more precise areas. However, it may not be set too small otherwise overhead will outweight the benefits.
