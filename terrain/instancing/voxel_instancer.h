@@ -431,7 +431,7 @@ private:
 		// Unordered list of layer IDs using this LOD level.
 		StdVector<int> layers;
 
-		// Blocks that have have unsaved changes.
+		// Blocks that have unsaved changes.
 		// Keys follows the data block coordinate system.
 		// Can contain coordinates where no instance blocks are present (can happen because of support for render blocks
 		// being twice as big; not ideal, but shouldn't cause issues)
