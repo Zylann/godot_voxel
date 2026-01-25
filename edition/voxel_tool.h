@@ -143,6 +143,13 @@ protected:
 	virtual void _set_voxel_f(Vector3i pos, float v);
 	virtual void _post_edit(const Box3i &box);
 
+	void do_path_chunked(
+			VoxelData &vdata,
+			Span<const Vector3> positions,
+			Span<const float> radii,
+			const bool with_pre_generate
+	);
+
 #ifdef VOXEL_ENABLE_MESH_SDF
 	void do_mesh_chunked(
 			const VoxelMeshSDF &mesh_sdf,

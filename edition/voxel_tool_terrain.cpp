@@ -355,79 +355,8 @@ void VoxelToolTerrain::for_each_voxel_metadata_in_area(AABB voxel_area, const Ca
 }
 
 void VoxelToolTerrain::do_path(Span<const Vector3> positions, Span<const float> radii) {
-	ZN_PROFILE_SCOPE();
-	ZN_ASSERT_RETURN(positions.size() >= 2);
-	ZN_ASSERT_RETURN(positions.size() == radii.size());
-
-	// TODO Increase margin a bit with smooth voxels?
-	const int margin = 1;
-
-	// Compute total bounding box
-
-	const AABB total_aabb = get_path_aabb(positions, radii).grow(margin);
-	const Box3i total_voxel_box(to_vec3i(math::floor(total_aabb.position)), to_vec3i(math::ceil(total_aabb.size)));
-
-	VoxelDataGrid grid;
-
-	VoxelData &data = _terrain->get_storage();
-
-	data.get_blocks_grid(grid, total_voxel_box, 0);
-
-	{
-		VoxelDataGrid::LockWrite wlock(grid);
-
-		// Rasterize
-
-		for (unsigned int point_index = 1; point_index < positions.size(); ++point_index) {
-			// TODO Could run this in local space so we dont need doubles
-			// TODO Apply terrain scale
-			const Vector3f p0 = to_vec3f(positions[point_index - 1]);
-			const Vector3f p1 = to_vec3f(positions[point_index]);
-
-			const float r0 = radii[point_index - 1];
-			const float r1 = radii[point_index];
-
-			ops::DoShapeChunked<ops::SdfRoundCone, ops::VoxelDataGridAccess> op;
-			op.block_access.grid = &grid;
-			op.shape.cone.a = p0;
-			op.shape.cone.b = p1;
-			op.shape.cone.r1 = r0;
-			op.shape.cone.r2 = r1;
-			op.shape.cone.update();
-			op.shape.sdf_scale = get_sdf_scale();
-			op.box = op.shape.get_box().padded(margin);
-			op.mode = ops::Mode(get_mode());
-			op.texture_params = _texture_params;
-			op.blocky_value = _value;
-			op.channel = get_channel();
-			op.strength = get_sdf_strength();
-
-			op();
-
-			// Experimented with drawing a 100-point path, the cost of everything outside cone calculation was:
-			// - Non-template: 2.55 ms
-			// - Template: 1.00 ms
-			// With cone calculation:
-			// - Non-template: 5.7 ms
-			// - Template: 4.5 ms
-			// So the template version is faster, but not that much.
-			//
-			// math::SdfRoundConePrecalc cone;
-			// cone.a = p0;
-			// cone.b = p1;
-			// cone.r1 = r0;
-			// cone.r2 = r1;
-			// cone.update();
-			// uint64_t value = _value;
-			// segment_box.for_each_cell_zxy([&grid, &cone, value](Vector3i pos) {
-			// 	if (cone(pos) < 0.f) {
-			// 		grid.set_voxel_no_lock(pos, value, VoxelBuffer::CHANNEL_TYPE);
-			// 	}
-			// });
-		}
-	}
-
-	_post_edit(total_voxel_box);
+	ZN_ASSERT_RETURN(_terrain != nullptr);
+	do_path_chunked(_terrain->get_storage(), positions, radii, false);
 }
 
 #ifdef VOXEL_ENABLE_MESH_SDF

@@ -165,6 +165,11 @@ void VoxelToolLodTerrain::do_hemisphere(Vector3 center, float radius, Vector3 fl
 	_post_edit(op.box);
 }
 
+void VoxelToolLodTerrain::do_path(Span<const Vector3> positions, Span<const float> radii) {
+	ZN_ASSERT_RETURN(_terrain != nullptr);
+	do_path_chunked(_terrain->get_storage(), positions, radii, true);
+}
+
 template <typename Op_T>
 class VoxelToolAsyncEdit : public IThreadedTask {
 public:
