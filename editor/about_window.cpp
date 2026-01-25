@@ -259,7 +259,8 @@ VoxelAboutWindow::VoxelAboutWindow() {
 						"Mia (Tigxette)\n"
 						"geryan (OGeryan)\n"
 						"kevATin\n"
-						"axel37";
+						"axel37\n"
+						"StockerGaming";
 	{
 		Dictionary d;
 
