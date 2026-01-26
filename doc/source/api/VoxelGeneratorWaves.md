@@ -23,4 +23,4 @@ Offset (or phase) of the waves.
 
 Length of the waves. Note that this only controls length across the X and Z axes. Height is controlled by [VoxelGeneratorHeightmap.height_start](VoxelGeneratorHeightmap.md#i_height_start) and [VoxelGeneratorHeightmap.height_range](VoxelGeneratorHeightmap.md#i_height_range).
 
-_Generated on Nov 02, 2025_
+_Generated on Jan 26, 2026_

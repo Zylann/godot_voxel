@@ -31,4 +31,4 @@ Return                                                                | Signatur
 
 Use this to indicate which channels your generator will use. It returns a bitmask, so for example you may provide information like this: `(1 << channel1) | (1 << channel2)`
 
-_Generated on Nov 02, 2025_
+_Generated on Jan 26, 2026_

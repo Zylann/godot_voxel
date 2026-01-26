@@ -23,6 +23,7 @@ Return                                                                        | 
 [float](https://docs.godotengine.org/en/stable/classes/class_float.html)      | [get_max_step_height](#i_get_max_step_height) ( ) const                                                                                                                                                                                                                                                                                                             
 [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html)  | [get_motion](#i_get_motion) ( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) pos, [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) motion, [AABB](https://docs.godotengine.org/en/stable/classes/class_aabb.html) aabb, [Node](https://docs.godotengine.org/en/stable/classes/class_node.html) terrain )  
 [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)        | [has_stepped_up](#i_has_stepped_up) ( ) const                                                                                                                                                                                                                                                                                                                       
+[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)        | [intersects](#i_intersects) ( [AABB](https://docs.godotengine.org/en/stable/classes/class_aabb.html) aabb, [Object](https://docs.godotengine.org/en/stable/classes/class_object.html) terrain ) const                                                                                                                                                               
 [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)        | [is_step_climbing_enabled](#i_is_step_climbing_enabled) ( ) const                                                                                                                                                                                                                                                                                                   
 [void](#)                                                                     | [set_collision_mask](#i_set_collision_mask) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) mask )                                                                                                                                                                                                                                           
 [void](#)                                                                     | [set_max_step_height](#i_set_max_step_height) ( [float](https://docs.godotengine.org/en/stable/classes/class_float.html) height )                                                                                                                                                                                                                                   
@@ -51,6 +52,12 @@ When step climbing is enabled, tells when the last call to [get_motion](VoxelBox
 
 Climbing modifies the motion vector upwards so that the body is snapped on top of the step. This can have implications in character controller code, such as considering the character to be on the floor instead of having jumped.
 
+### [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_intersects"></span> **intersects**( [AABB](https://docs.godotengine.org/en/stable/classes/class_aabb.html) aabb, [Object](https://docs.godotengine.org/en/stable/classes/class_object.html) terrain ) 
+
+Tests if an axis-aligned box intersects with any voxel collision box.
+
+Note: due to floating point precision, you might get false positives when testing against boxes that are touching voxels bounds. If this is undesired, you might want to shrink your AABB slightly.
+
 ### [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_is_step_climbing_enabled"></span> **is_step_climbing_enabled**( ) 
 
 Tells if step climbing is enabled.
@@ -71,4 +78,4 @@ Sets the maximum height that can be climbed like "stairs".
 
 When enabled, [get_motion](VoxelBoxMover.md#i_get_motion) will attempt to climb up small steps. This allows to implement Minecraft-like stairs.
 
-_Generated on Nov 02, 2025_
+_Generated on Jan 26, 2026_

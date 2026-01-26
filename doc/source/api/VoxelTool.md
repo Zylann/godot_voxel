@@ -197,6 +197,10 @@ Note 1: This is currently implemented only for terrain that uses SDF data (smoot
 
 Note 2: This is meant to be analogous to Surface tool from Unreal Engine Voxel Plugin.
 
+Note 3: This method assumes terrain SDF is coherent. If it isn't, you may notice differences in speeds at which terrain erodes or grows. For example, some generators fallback to a constant SDF when far away from the surface in order to speed up calculations (see [VoxelGeneratorGraph.sdf_clip_threshold](VoxelGeneratorGraph.md#i_sdf_clip_threshold)).
+
+Note 4: If you want to use this method to dig terrain "smoothly" by calling it every frame, an alternative is to use [do_sphere](VoxelTool.md#i_do_sphere) but instead of the center being on the surface, move it back by about 0.95% of the radius so only a small fraction of the sphere will penetrate, digging a hole progressively.
+
 ### [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_is_area_editable"></span> **is_area_editable**( [AABB](https://docs.godotengine.org/en/stable/classes/class_aabb.html) box ) 
 
 Returns `true` if the specified voxel area can be edited. This can also be interpreted as the area being "loaded". Note: when using LOD, only the nearest LOD (0) is editable. Other factors can influence whether an area is editable or not, such as streaming mode or terrain bounds.
@@ -295,4 +299,4 @@ Decodes raw voxel integer data from the WEIGHTS channel into a normalized 4-floa
 
 Encodes a 4-integer vector into 16-bit integer voxel data, for use in the INDICES channel.
 
-_Generated on Nov 02, 2025_
+_Generated on Jan 26, 2026_

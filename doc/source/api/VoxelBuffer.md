@@ -346,4 +346,4 @@ If this [VoxelBuffer](VoxelBuffer.md) is saved, this metadata will also be saved
 
 Updates an existing 3D texture from the SDF channel. See [create_3d_texture_from_sdf_zxy](VoxelBuffer.md#i_create_3d_texture_from_sdf_zxy) for more information.
 
-_Generated on Nov 02, 2025_
+_Generated on Jan 26, 2026_

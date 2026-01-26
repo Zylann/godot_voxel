@@ -43,4 +43,4 @@ enum **Axis**:
 
 *(This method has no documentation)*
 
-_Generated on Nov 02, 2025_
+_Generated on Jan 26, 2026_

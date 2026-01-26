@@ -33,4 +33,4 @@ Type                                                                      | Name
 
 Sets the image that will be used as a heightmap. Only the red channel will be used. It is preferable to use an image using the `RF` or `RH` format, which contain higher resolution heights. Common images only have 8-bit depth and will appear blocky.
 
-_Generated on Nov 02, 2025_
+_Generated on Jan 26, 2026_

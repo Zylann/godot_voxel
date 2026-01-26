@@ -23,6 +23,7 @@ Type                                                                        | Na
 [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)      | [culls_neighbors](#i_culls_neighbors)        | true              
 [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)      | [lod_skirts_enabled](#i_lod_skirts_enabled)  | true              
 [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)      | [random_tickable](#i_random_tickable)        | false             
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)        | [tags_mask](#i_tags_mask)                    | 1                 
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)        | [transparency_index](#i_transparency_index)  | 0                 
 <p></p>
 
@@ -81,6 +82,10 @@ You may turn this off if the model is transparent, as the skirt would become vis
 
 If enabled, voxels having this ID in the TYPE channel will be used by [VoxelToolTerrain.run_blocky_random_tick](VoxelToolTerrain.md#i_run_blocky_random_tick).
 
+### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_tags_mask"></span> **tags_mask** = 1
+
+Bitmask used to filter this model in some operations. For example, see [VoxelToolTerrain.run_blocky_random_tick](VoxelToolTerrain.md#i_run_blocky_random_tick).
+
 ### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_transparency_index"></span> **transparency_index** = 0
 
 Determines how transparency is handled when the sides of the model are culled by neighbor voxels.
@@ -117,4 +122,4 @@ Enables or disables mesh-based collision on a specific surface. It allows a mode
 
 Gets the 90-degree rotation ID that will be applied to the model when the library is baked. This is a number representing one of 24 possible 90-degree rotations. You can also use [rotate_90](VoxelBlockyModel.md#i_rotate_90).
 
-_Generated on Nov 02, 2025_
+_Generated on Jan 26, 2026_

@@ -50,4 +50,4 @@ Gets a list of all distinct materials found in all models of the library.
 
 Note, if at least one non-empty model has no material, there will be one `null` entry in this list to represent "The default material".
 
-_Generated on Nov 02, 2025_
+_Generated on Jan 26, 2026_

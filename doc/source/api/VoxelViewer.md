@@ -58,9 +58,13 @@ How far should voxels generate around this viewer.
 
 Note: the effective view distance may be limited by the terrain node.
 
+Note 2: when using [VoxelLodTerrain](VoxelLodTerrain.md), this distance essentially acts as a limit to how far the last LOD extends.
+
 ### [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_view_distance_vertical_ratio"></span> **view_distance_vertical_ratio** = 1.0
 
 Modifies vertical view distance to be a ratio of the [view_distance](VoxelViewer.md#i_view_distance) property. For example, if [view_distance](VoxelViewer.md#i_view_distance) is 100 and this property is 0.5, then horizontal view distance will be 100 and vertical view distance will be 50.
+
+This property has limitations: it is only implemented on [VoxelLodTerrain](VoxelLodTerrain.md) when using [VoxelLodTerrain.STREAMING_SYSTEM_CLIPBOX](VoxelLodTerrain.md#i_STREAMING_SYSTEM_CLIPBOX), and applies only to the last LOD, like view distance.
 
 ## Method Descriptions
 
@@ -72,4 +76,4 @@ Modifies vertical view distance to be a ratio of the [view_distance](VoxelViewer
 
 *(This method has no documentation)*
 
-_Generated on Nov 02, 2025_
+_Generated on Jan 26, 2026_

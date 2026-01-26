@@ -58,8 +58,8 @@ Return                                                                          
 enum **Compression**: 
 
 - <span id="i_COMPRESSION_NONE"></span>**COMPRESSION_NONE** = **0** --- Don't compress the data.
-- <span id="i_COMPRESSION_LZ4"></span>**COMPRESSION_LZ4** = **2** --- Use the LZ4 default compression algorithm. Fast, but lower compression ratio.
-- <span id="i_COMPRESSION_ZSTD"></span>**COMPRESSION_ZSTD** = **3** --- Use the Zstandard default compression algorithm. Good compression ratio but slower.
+- <span id="i_COMPRESSION_LZ4"></span>**COMPRESSION_LZ4** = **1** --- Use the LZ4 default compression algorithm. Fast, but lower compression ratio.
+- <span id="i_COMPRESSION_ZSTD"></span>**COMPRESSION_ZSTD** = **2** --- Use the Zstandard default compression algorithm. Good compression ratio but slower.
 
 
 ## Method Descriptions
@@ -80,4 +80,4 @@ Stores the data of a [VoxelBuffer](VoxelBuffer.md) into a [PackedByteArray](http
 
 Stores the data of a [VoxelBuffer](VoxelBuffer.md) into a [StreamPeer](https://docs.godotengine.org/en/stable/classes/class_streampeer.html). Returns the number of written bytes.
 
-_Generated on Nov 02, 2025_
+_Generated on Jan 26, 2026_

@@ -485,4 +485,4 @@ Converts a voxel position into a data block position for a specific LOD index.
 
 Converts a voxel position into a mesh block position for a specific LOD index.
 
-_Generated on Nov 02, 2025_
+_Generated on Jan 26, 2026_

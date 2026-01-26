@@ -11,7 +11,7 @@ Implements loading and saving voxel blocks, mainly using files.
 
 Type                                                                    | Name                                               | Default             
 ----------------------------------------------------------------------- | -------------------------------------------------- | --------------------
-[Compression](VoxelBlockSerializer.md#enumerations)                     | [compression_mode](#i_compression_mode)            | COMPRESSION_LZ4 (2) 
+[Compression](VoxelBlockSerializer.md#enumerations)                     | [compression_mode](#i_compression_mode)            | COMPRESSION_LZ4 (1) 
 [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)  | [save_generator_output](#i_save_generator_output)  | false               
 <p></p>
 
@@ -38,7 +38,7 @@ enum **ResultCode**:
 
 ## Property Descriptions
 
-### [Compression](VoxelBlockSerializer.md#enumerations)<span id="i_compression_mode"></span> **compression_mode** = COMPRESSION_LZ4 (2)
+### [Compression](VoxelBlockSerializer.md#enumerations)<span id="i_compression_mode"></span> **compression_mode** = COMPRESSION_LZ4 (1)
 
 Specifies which compression algorithm is used when saving blocks. This can reduce the size of save files at the cost of save/load performance.
 
@@ -78,4 +78,4 @@ Note that terrains save asynchronously, so flushing might not always fulfill you
 
 `block_position`: Position of the block in block coordinates within the specified LOD.
 
-_Generated on Nov 02, 2025_
+_Generated on Jan 26, 2026_

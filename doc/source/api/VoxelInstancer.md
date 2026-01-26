@@ -121,4 +121,4 @@ Where to consider the "up" direction is on the terrain when generating instances
 
 Removes all instances having their origin inside the given sphere. Coordinates are local to the instancer.
 
-_Generated on Nov 02, 2025_
+_Generated on Jan 26, 2026_

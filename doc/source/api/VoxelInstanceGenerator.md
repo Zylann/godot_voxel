@@ -220,7 +220,7 @@ This depends on [VoxelInstancer.up_mode](VoxelInstancer.md#i_up_mode).
 
 Specifies which voxel texture indices on top of which instances may spawn.
 
-This only works when [voxel_texture_filter_enabled](VoxelInstanceGenerator.md#i_voxel_texture_filter_enabled) is enabled, and [VoxelMesherTransvoxel](VoxelMesherTransvoxel.md) is used with [VoxelMesherTransvoxel.texturing_mode](VoxelMesherTransvoxel.md#i_texturing_mode) set to [VoxelMesherTransvoxel.TEXTURES_BLEND_4_OVER_16](VoxelMesherTransvoxel.md#i_TEXTURES_BLEND_4_OVER_16).
+This only works when [voxel_texture_filter_enabled](VoxelInstanceGenerator.md#i_voxel_texture_filter_enabled) is enabled, and [VoxelMesherTransvoxel](VoxelMesherTransvoxel.md) is used with [VoxelMesherTransvoxel.texturing_mode](VoxelMesherTransvoxel.md#i_texturing_mode) set to [VoxelMesherTransvoxel.TEXTURES_MIXEL4_S4](VoxelMesherTransvoxel.md#i_TEXTURES_MIXEL4_S4) or [VoxelMesherTransvoxel.TEXTURES_SINGLE_S4](VoxelMesherTransvoxel.md#i_TEXTURES_SINGLE_S4). Indices are currently limited between 0 and 31 included.
 
 ### [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_voxel_texture_filter_enabled"></span> **voxel_texture_filter_enabled** = false
 
@@ -240,4 +240,4 @@ When [voxel_texture_filter_enabled](VoxelInstanceGenerator.md#i_voxel_texture_fi
 
 *(This method has no documentation)*
 
-_Generated on Nov 02, 2025_
+_Generated on Jan 26, 2026_

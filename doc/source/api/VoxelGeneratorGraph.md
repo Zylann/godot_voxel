@@ -67,7 +67,9 @@ When enabled, if the graph outputs SDF data, generated blocks that would otherwi
 
 ### [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_sdf_clip_threshold"></span> **sdf_clip_threshold** = 1.5
 
-When generating SDF blocks for a terrain, if the range analysis of a block is beyond this threshold, its SDF data will be considered either fully 1, or fully -1. This optimizes memory and processing time.
+When generating SDF blocks for a terrain, if the range analysis of a block is beyond this threshold, its SDF data will be considered either fully air, or fully matter (using high constants, positive or negative). This optimizes memory because chunks entirely underground or in the air will have the same value on every voxel. It also saves processing time because SDF calculations (noise etc) are skipped. To turn off this optimization, set it to a high value.
+
+Downside: if you use operations to edit the terrain assuming coherent SDF, they might behave incorrectly at boundaries where the clipping starts to occur. This is notably the case of [VoxelTool.grow_sphere](VoxelTool.md#i_grow_sphere).
 
 ### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_subdivision_size"></span> **subdivision_size** = 16
 
@@ -167,4 +169,4 @@ The longer the distance, the more expensive it is.
 
 The lower the stride, the more expensive and accurate it is.
 
-_Generated on Nov 02, 2025_
+_Generated on Jan 26, 2026_
