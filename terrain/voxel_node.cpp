@@ -135,6 +135,22 @@ PackedStringArray VoxelNode::_get_configuration_warnings() const {
 }
 #endif
 
+static String channel_mask_to_string(const uint32_t mask) {
+	String s = "[";
+	bool comma = false;
+	for (unsigned int i = 0; i < VoxelBuffer::MAX_CHANNELS; ++i) {
+		if ((mask & (1 << i)) != 0) {
+			if (comma) {
+				s += ", ";
+			}
+			s += VoxelBuffer::get_channel_name(static_cast<VoxelBuffer::ChannelId>(i));
+			comma = true;
+		}
+	}
+	s += "]";
+	return s;
+}
+
 void VoxelNode::get_configuration_warnings(PackedStringArray &warnings) const {
 	Ref<VoxelMesher> mesher = get_mesher();
 	Ref<VoxelStream> stream = get_stream();
@@ -168,10 +184,12 @@ void VoxelNode::get_configuration_warnings(PackedStringArray &warnings) const {
 			const int mesher_channels = mesher->get_used_channels_mask();
 
 			if ((stream_channels & mesher_channels) == 0) {
-				warnings.append(
-						ZN_TTR("The current stream is providing voxel data only on channels that are not used by "
-							   "the current mesher. This will result in nothing being visible.")
-				);
+				warnings.append(ZN_TTR("The current stream is providing voxel data on channels {0}, but the current "
+									   "mesher uses {1}. This might result in nothing being visible.")
+										.format(
+												varray(channel_mask_to_string(stream_channels),
+													   channel_mask_to_string(mesher_channels))
+										));
 			}
 		}
 	}
@@ -199,10 +217,19 @@ void VoxelNode::get_configuration_warnings(PackedStringArray &warnings) const {
 			const int mesher_channels = mesher->get_used_channels_mask();
 
 			if ((generator_channels & mesher_channels) == 0) {
-				warnings.append(
-						ZN_TTR("The current generator is providing voxel data only on channels that are not used by "
-							   "the current mesher. This will result in nothing being visible.")
-				);
+				String gen_name = generator->get_class();
+				if (generator_script.is_valid()) {
+					gen_name += String(" with script ") + generator_script->get_path();
+				}
+
+				warnings.append(ZN_TTR("The current generator ({0}) is providing voxel data on channels {1}, but the "
+									   "current mesher ({2}) uses {3}. This might result in nothing being visible.")
+										.format(
+												varray(gen_name,
+													   channel_mask_to_string(generator_channels),
+													   mesher->get_class(),
+													   channel_mask_to_string(mesher_channels))
+										));
 			}
 		}
 	}
