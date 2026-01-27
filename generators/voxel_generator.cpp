@@ -172,7 +172,8 @@ std::shared_ptr<ComputeShader> compile_detail_rendering_compute_shader(
 				if (output.type == VoxelGenerator::ShaderOutput::TYPE_SDF) {
 					sdf_output_index = output_index;
 				}
-				source_text += String("\tfloat v{0};\n").format(varray(output_index));
+				// Use _out prefix to avoid collision with library code variables
+				source_text += String("\tfloat _out{0};\n").format(varray(output_index));
 			}
 			ERR_FAIL_COND_V_MSG(
 					sdf_output_index == -1,
@@ -182,10 +183,10 @@ std::shared_ptr<ComputeShader> compile_detail_rendering_compute_shader(
 			// Call the generator shader function
 			source_text += "\tgenerate(pos";
 			for (unsigned int output_index = 0; output_index < shader_data.outputs.size(); ++output_index) {
-				source_text += String(", v{0}").format(varray(output_index));
+				source_text += String(", _out{0}").format(varray(output_index));
 			}
 			source_text += ");\n";
-			source_text += String("\treturn v{0};\n}\n").format(varray(sdf_output_index));
+			source_text += String("\treturn _out{0};\n}\n").format(varray(sdf_output_index));
 		}
 
 		// Footer

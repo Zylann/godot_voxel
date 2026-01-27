@@ -89,7 +89,8 @@ void CodeGenHelper::require_lib_code(const char *lib_name, const char **code) {
 }
 
 void CodeGenHelper::generate_var_name(FwdMutableStdString out_var_name) {
-	const StdString s = format("v{}", _next_var_name_id);
+	// Use prefix _vg_ to avoid collisions with library code and other variables
+	const StdString s = format("_vg{}", _next_var_name_id);
 	++_next_var_name_id;
 	out_var_name.s = s;
 }

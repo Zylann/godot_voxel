@@ -26,8 +26,8 @@ int get_zxy_index(ivec3 pos, ivec3 size) {
 	return pos.y + size.y * (pos.x + size.x * pos.z);
 }
 
-int get_volume(ivec3 v) {
-	return v.x * v.y * v.z;
+int get_volume(ivec3 size) {
+	return size.x * size.y * size.z;
 }
 
 void main() {
