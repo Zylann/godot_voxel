@@ -34,18 +34,30 @@ protected:
 };
 
 TextWriter &operator<<(TextWriter &w, const bool v);
-TextWriter &operator<<(TextWriter &w, const int8_t v);
-TextWriter &operator<<(TextWriter &w, const int16_t v);
-TextWriter &operator<<(TextWriter &w, const int32_t v);
-TextWriter &operator<<(TextWriter &w, const int64_t v);
-TextWriter &operator<<(TextWriter &w, const uint8_t v);
-TextWriter &operator<<(TextWriter &w, const uint16_t v);
-TextWriter &operator<<(TextWriter &w, const uint32_t v);
-TextWriter &operator<<(TextWriter &w, const uint64_t v);
+
+// TextWriter &operator<<(TextWriter &w, const int8_t v);
+// TextWriter &operator<<(TextWriter &w, const int16_t v);
+// TextWriter &operator<<(TextWriter &w, const int32_t v);
+// TextWriter &operator<<(TextWriter &w, const int64_t v);
+// TextWriter &operator<<(TextWriter &w, const uint8_t v);
+// TextWriter &operator<<(TextWriter &w, const uint16_t v);
+// TextWriter &operator<<(TextWriter &w, const uint32_t v);
+// TextWriter &operator<<(TextWriter &w, const uint64_t v);
+
+TextWriter &operator<<(TextWriter &w, const short v);
+TextWriter &operator<<(TextWriter &w, const int v);
+TextWriter &operator<<(TextWriter &w, const long v);
+TextWriter &operator<<(TextWriter &w, const long long v);
+TextWriter &operator<<(TextWriter &w, const unsigned short v);
+TextWriter &operator<<(TextWriter &w, const unsigned int v);
+TextWriter &operator<<(TextWriter &w, const unsigned long v);
+TextWriter &operator<<(TextWriter &w, const unsigned long long v);
+
 TextWriter &operator<<(TextWriter &w, const char v);
+TextWriter &operator<<(TextWriter &w, const char *v);
+
 TextWriter &operator<<(TextWriter &w, const float v);
 TextWriter &operator<<(TextWriter &w, const double v);
-TextWriter &operator<<(TextWriter &w, const char *v);
 
 } // namespace zylann
 
