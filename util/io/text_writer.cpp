@@ -1,5 +1,6 @@
 #include "text_writer.h"
 #include "../string/conv.h"
+#include <cstring>
 
 namespace zylann {
 
