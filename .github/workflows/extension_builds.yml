@@ -88,7 +88,8 @@ jobs:
       # This allows to make production builds that are compatible with older Linux distros.
       # See the kind of nasty things we try to avoid: https://github.com/Zylann/godot_voxel/issues/842
       # This step is after checkout because the checkout step changes the working directory for all following steps.
-      # TODO Enhancement: cache buildroot so future runs can use it?
+      # Also adds system directory in a way that persists between steps.
+      # TODO Enhancement: cache buildroot so future runs can use it? Would save 15s
       - name: Setup buildroot
         if: ${{ matrix.target.platform == 'linux' }}
         run: |
