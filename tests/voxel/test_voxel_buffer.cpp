@@ -7,7 +7,6 @@
 #include "../../util/io/log.h"
 #include "../../util/string/format.h"
 #include "../../util/string/std_string.h"
-#include "../../util/string/std_stringstream.h"
 #include "../../util/testing/test_macros.h"
 #include "test_util.h"
 #include <array>

@@ -2,7 +2,6 @@
 #define ZYLANN_BOX2I_H
 
 #include "../containers/std_vector.h"
-#include "../string/std_stringstream.h"
 #include "funcs.h"
 #include "vector2i.h"
 
@@ -259,7 +258,8 @@ inline bool operator==(const Box2i &a, const Box2i &b) {
 	return a.position == b.position && a.size == b.size;
 }
 
-StdStringStream &operator<<(StdStringStream &ss, const Box2i &box);
+class TextWriter;
+TextWriter &operator<<(TextWriter &w, const Box2i &box);
 
 } // namespace zylann
 

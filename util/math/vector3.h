@@ -2,7 +2,6 @@
 #define ZN_MATH_VECTOR3_H
 
 #include "../godot/core/vector3.h"
-#include "../string/std_stringstream.h"
 #include "funcs.h"
 
 // 3-dimensional vector which components are either 32-bit float or 64-bit float depending on how Godot was compiled.
@@ -85,7 +84,8 @@ inline real_t get_largest_coord(Vector3 v) {
 } // namespace zylann::math
 
 namespace zylann {
-StdStringStream &operator<<(StdStringStream &ss, const Vector3 &v);
-}
+class TextWriter;
+TextWriter &operator<<(TextWriter &w, const Vector3 &v);
+} // namespace zylann
 
 #endif // ZN_MATH_VECTOR3_H

@@ -8,11 +8,10 @@
 using namespace godot;
 #endif
 
-#include "../../string/std_stringstream.h"
-
 namespace zylann {
 
-StdStringStream &operator<<(StdStringStream &ss, const Rect2i &box);
+class TextWriter;
+TextWriter &operator<<(TextWriter &w, const Rect2i &box);
 
 } // namespace zylann
 

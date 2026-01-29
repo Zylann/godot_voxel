@@ -2,7 +2,6 @@
 #define ZYLANN_BOX2F_H
 
 #include "../containers/small_vector.h"
-#include "../string/std_stringstream.h"
 #include "funcs.h"
 #include "vector2f.h"
 
@@ -90,7 +89,8 @@ public:
 	}
 };
 
-StdStringStream &operator<<(StdStringStream &ss, const Box2f &box);
+class TextWriter;
+TextWriter &operator<<(TextWriter &ss, const Box2f &box);
 
 } // namespace zylann
 

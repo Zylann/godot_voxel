@@ -2,7 +2,6 @@
 #define ZYLANN_VECTOR2F_H
 
 #include "../errors.h"
-#include "../string/std_stringstream.h"
 #include "vector2t.h"
 
 namespace zylann {
@@ -28,7 +27,8 @@ inline bool is_equal_approx(const Vector2f a, const Vector2f b) {
 
 } // namespace math
 
-StdStringStream &operator<<(StdStringStream &ss, const Vector2f &v);
+class TextWriter;
+TextWriter &operator<<(TextWriter &w, const Vector2f &v);
 
 } // namespace zylann
 

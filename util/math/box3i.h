@@ -3,7 +3,6 @@
 
 #include "../containers/small_vector.h"
 #include "../containers/std_vector.h"
-#include "../string/std_stringstream.h"
 #include "vector3i.h"
 
 namespace zylann {
@@ -380,7 +379,8 @@ inline bool operator==(const Box3i &a, const Box3i &b) {
 	return a.position == b.position && a.size == b.size;
 }
 
-StdStringStream &operator<<(StdStringStream &ss, const Box3i &box);
+class TextWriter;
+TextWriter &operator<<(TextWriter &w, const Box3i &box);
 
 } // namespace zylann
 

@@ -7,7 +7,6 @@
 #include "../godot/macros.h"
 #include "../hash_funcs.h"
 #include "../macros.h"
-#include "../string/std_stringstream.h"
 #include "funcs.h"
 #include <functional> // For std::hash
 
@@ -161,7 +160,8 @@ inline int dot(const Vector3i &a, const Vector3i &b) {
 
 } // namespace math
 
-StdStringStream &operator<<(StdStringStream &ss, const Vector3i &v);
+class TextWriter;
+TextWriter &operator<<(TextWriter &w, const Vector3i &v);
 
 } // namespace zylann
 

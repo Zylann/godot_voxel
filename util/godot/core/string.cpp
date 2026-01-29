@@ -1,5 +1,6 @@
 #include "string.h"
-#include <sstream>
+// #include <sstream>
+#include "../../io/text_writer.h"
 
 namespace zylann::godot {
 
@@ -29,12 +30,11 @@ PackedStringArray to_godot(const StdVector<StdString> &sv) {
 
 ZN_GODOT_NAMESPACE_BEGIN
 
-zylann::StdStringStream &operator<<(zylann::StdStringStream &ss, GodotStringWrapper s) {
+zylann::TextWriter &operator<<(zylann::TextWriter &w, GodotStringWrapper s) {
 	const CharString cs = s.s.utf8();
 	// String has non-explicit constructors from various types making this ambiguous
-	const char *ca = cs.get_data();
-	ss << ca;
-	return ss;
+	w.write_chars(zylann::Span<const char>(cs.get_data(), cs.length()));
+	return w;
 }
 
 ZN_GODOT_NAMESPACE_END

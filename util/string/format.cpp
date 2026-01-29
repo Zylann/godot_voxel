@@ -1,11 +1,12 @@
 #include "format.h"
+#include "../io/std_string_text_writer.h"
 
 namespace zylann {
 
 #ifdef DEV_ENABLED
 
 StdString to_hex_table(Span<const uint8_t> data) {
-	StdStringStream ss;
+	StdStringTextWriter ss;
 	struct L {
 		static inline char to_hex(uint8_t nibble) {
 			if (nibble < 10) {
@@ -16,12 +17,12 @@ StdString to_hex_table(Span<const uint8_t> data) {
 		}
 	};
 	ss << "---";
-	ss << std::endl;
+	ss << '\n';
 	ss << "Data size: ";
 	ss << data.size();
 	for (unsigned int i = 0; i < data.size(); ++i) {
 		if ((i % 16) == 0) {
-			ss << std::endl;
+			ss << '\n';
 			ss << i;
 			const unsigned int margin = 6;
 			unsigned int p = 10;
@@ -40,9 +41,9 @@ StdString to_hex_table(Span<const uint8_t> data) {
 		ss << L::to_hex(low_nibble);
 		ss << " ";
 	}
-	ss << std::endl;
+	ss << '\n';
 	ss << "---";
-	return ss.str();
+	return ss.get_written();
 }
 
 #endif

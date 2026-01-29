@@ -5,11 +5,11 @@
 #include "../../util/godot/classes/time.h"
 #include "../../util/godot/core/random_pcg.h"
 #include "../../util/io/log.h"
+#include "../../util/io/std_string_text_writer.h"
 #include "../../util/math/vector3i.h"
 #include "../../util/memory/memory.h"
 #include "../../util/profiling.h"
 #include "../../util/string/format.h"
-#include "../../util/string/std_stringstream.h"
 #include "../../util/tasks/threaded_task_runner.h"
 #include "../../util/testing/test_macros.h"
 
@@ -262,11 +262,11 @@ void test_threaded_task_runner_debug_names() {
 
 	// Print how many times each name came up.
 	// Doing this to check if the test runs as expected and to prevent compiler optimization on getting the names
-	StdStringStream ss;
+	StdStringTextWriter ss;
 	for (auto it = name_counts.begin(); it != name_counts.end(); ++it) {
 		ss << it->first << ": " << it->second << "; ";
 	}
-	print_line(ss.str());
+	print_line(ss.get_written());
 }
 
 void test_task_priority_values() {

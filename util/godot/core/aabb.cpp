@@ -1,16 +1,16 @@
 #include "aabb.h"
+#include "../../io/text_writer.h"
 #include "../../math/vector3.h"
-#include <sstream>
 
 namespace zylann {
 
-StdStringStream &operator<<(StdStringStream &ss, const AABB &v) {
-	ss << "(o:";
-	ss << v.position;
-	ss << ", s:";
-	ss << v.size;
-	ss << ")";
-	return ss;
+TextWriter &operator<<(TextWriter &w, const AABB &v) {
+	w << "(o:";
+	w << v.position;
+	w << ", s:";
+	w << v.size;
+	w << ")";
+	return w;
 }
 
 } // namespace zylann

@@ -1,8 +1,8 @@
 #include "test_util.h"
 #include "../../storage/voxel_buffer.h"
 #include "../../util/io/log.h"
+#include "../../util/io/std_string_text_writer.h"
 #include "../../util/string/std_string.h"
-#include "../../util/string/std_stringstream.h"
 #include <sstream>
 
 namespace zylann::voxel::tests {
@@ -51,7 +51,7 @@ bool sd_equals_approx(const VoxelBuffer &vb1, const VoxelBuffer &vb2) {
 }
 
 void print_channel_as_ascii(const VoxelBuffer &vb, unsigned int channel, const unsigned int padding) {
-	StdStringStream ss;
+	StdStringTextWriter ss;
 
 	Vector3i pos;
 	for (pos.y = 0; pos.y < vb.get_size().y; ++pos.y) {
@@ -76,7 +76,7 @@ void print_channel_as_ascii(const VoxelBuffer &vb, unsigned int channel, const u
 		}
 	}
 
-	print_line(ss.str());
+	print_line(ss.get_written());
 }
 
 } // namespace zylann::voxel::tests

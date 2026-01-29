@@ -2,22 +2,52 @@
 #include "../io/log.h"
 #include "format.h"
 #include <charconv>
+#include <system_error>
 
 #define USE_STD
 
 namespace zylann {
 
-unsigned int int32_to_string_base10(const int32_t x, Span<uint8_t> s) {
-#ifdef USE_STD
-	Span<char> cs = s.reinterpret_cast_to<char>();
-	char *begin = cs.data();
-	char *end = cs.data() + cs.size();
+template <typename TFloat>
+unsigned int float_to_string(const TFloat x, Span<char> s) {
+	char *begin = s.data();
+	char *end = s.data() + s.size();
+	const std::to_chars_result res = std::to_chars(begin, end, x, std::chars_format::general);
+	ZN_ASSERT_MSG(
+			res.ec == std::errc(),
+			format("Can't convert float to string, error {}", std::make_error_code(res.ec).message())
+	);
+	return res.ptr - begin;
+}
+
+unsigned int float32_to_string(const float x, Span<char> s) {
+	return float_to_string<float>(x, s);
+}
+
+unsigned int float64_to_string(const double x, Span<char> s) {
+	return float_to_string<double>(x, s);
+}
+
+template <typename TInt>
+unsigned int int_to_string(const TInt x, Span<char> s, const unsigned int base) {
+	char *begin = s.data();
+	char *end = s.data() + s.size();
 	const std::to_chars_result res = std::to_chars(begin, end, x, 10);
 	ZN_ASSERT_MSG(
 			res.ec == std::errc(),
-			format("Can't convert integer to string, error {}", std::make_error_code(res.ec).message())
+			format("Can't convert int to string, error {}", std::make_error_code(res.ec).message())
 	);
 	return res.ptr - begin;
+}
+
+unsigned int int64_to_string_base10(const int64_t x, Span<char> s) {
+	return int_to_string(x, s, 10);
+}
+
+unsigned int int32_to_string_base10(const int32_t x, Span<uint8_t> s) {
+#ifdef USE_STD
+	Span<char> cs = s.reinterpret_cast_to<char>();
+	return int_to_string(x, cs, 10);
 #else
 	const unsigned int base = 10;
 

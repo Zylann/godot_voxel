@@ -1,10 +1,10 @@
 #include "gpu_storage_buffer_pool.h"
 #include "../../util/dstack.h"
 #include "../../util/io/log.h"
+#include "../../util/io/std_string_text_writer.h"
 #include "../../util/math/funcs.h"
 #include "../../util/profiling.h"
 #include "../../util/string/format.h"
-#include "../../util/string/std_stringstream.h"
 
 #include <algorithm>
 #include <limits>
@@ -152,7 +152,7 @@ void GPUStorageBufferPool::recycle(GPUStorageBuffer b) {
 }
 
 void GPUStorageBufferPool::debug_print() const {
-	StdStringStream ss;
+	StdStringTextWriter ss;
 	ss << "---- GPUStorageBufferPool ----\n";
 	for (unsigned int i = 0; i < _pools.size(); ++i) {
 		const Pool &pool = _pools[i];
@@ -164,7 +164,7 @@ void GPUStorageBufferPool::debug_print() const {
 		   << ", capacity: " << pool.buffers.capacity() << "\n";
 	}
 	ss << "----";
-	print_line(ss.str());
+	print_line(ss.get_written());
 }
 
 } // namespace zylann::voxel

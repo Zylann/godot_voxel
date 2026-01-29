@@ -1,6 +1,5 @@
 #include "expression_parser.h"
-#include "std_stringstream.h"
-#include <sstream> // our alias only includes forward-declarations
+#include "../io/std_string_text_writer.h"
 
 #include <algorithm>
 #include <cmath>
@@ -757,7 +756,7 @@ const char *to_string(OperatorNode::Operation op) {
 	}
 }
 
-void tree_to_string(const Node &node, int depth, StdStringStream &output, Span<const Function> functions) {
+void tree_to_string(const Node &node, int depth, TextWriter &output, Span<const Function> functions) {
 	for (int i = 0; i < depth; ++i) {
 		output << "  ";
 	}
@@ -805,9 +804,9 @@ void tree_to_string(const Node &node, int depth, StdStringStream &output, Span<c
 }
 
 StdString tree_to_string(const Node &node, Span<const Function> functions) {
-	StdStringStream ss;
-	tree_to_string(node, 0, ss, functions);
-	return ss.str();
+	StdStringTextWriter w;
+	tree_to_string(node, 0, w, functions);
+	return w.get_written();
 }
 
 StdString to_string(const Error error) {

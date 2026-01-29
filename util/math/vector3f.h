@@ -2,7 +2,6 @@
 #define ZYLANN_VECTOR3F_H
 
 #include "../errors.h"
-#include "../string/std_stringstream.h"
 #include "vector3t.h"
 
 namespace zylann {
@@ -64,7 +63,8 @@ inline bool is_equal_approx(const Vector3f a, const Vector3f b) {
 
 } // namespace math
 
-StdStringStream &operator<<(StdStringStream &ss, const Vector3f &v);
+class TextWriter;
+TextWriter &operator<<(TextWriter &w, const Vector3f &v);
 
 } // namespace zylann
 

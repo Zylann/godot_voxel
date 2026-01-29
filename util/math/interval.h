@@ -1,7 +1,6 @@
 #ifndef ZN_INTERVAL_H
 #define ZN_INTERVAL_H
 
-#include "../string/std_stringstream.h"
 #include "funcs.h"
 #include <limits>
 #include <type_traits>
@@ -541,7 +540,8 @@ inline IntervalT<T> pow(IntervalT<T> x, IntervalT<T> p) {
 
 } // namespace math
 
-StdStringStream &operator<<(StdStringStream &ss, const math::Interval &v);
+class TextWriter;
+TextWriter &operator<<(TextWriter &ss, const math::Interval &v);
 
 } // namespace zylann
 

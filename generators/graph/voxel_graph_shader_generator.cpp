@@ -82,9 +82,7 @@ CompilationResult generate_shader(
 
 	expanded_graph.find_dependencies(to_span(terminal_nodes), order);
 
-	StdStringStream main_ss;
-	StdStringStream lib_ss;
-	CodeGenHelper codegen(main_ss, lib_ss);
+	CodeGenHelper codegen;
 
 	codegen.add("void generate(vec3 pos");
 
@@ -107,7 +105,8 @@ CompilationResult generate_shader(
 					outputs.push_back(ShaderOutput{ ShaderOutput::TYPE_TYPE });
 					break;
 				default:
-					ZN_PRINT_WARNING(format("Output type {} is not supported yet in shader generator.", node_type.name)
+					ZN_PRINT_WARNING(
+							format("Output type {} is not supported yet in shader generator.", node_type.name)
 					);
 					break;
 			}
@@ -152,8 +151,7 @@ CompilationResult generate_shader(
 			case VoxelGraphFunction::NODE_CONSTANT: {
 				ZN_ASSERT(node.outputs.size() == 1);
 				const ProgramGraph::PortLocation output_port{ node_id, 0 };
-				StdString name;
-				codegen.generate_var_name(name);
+				const StdString name = codegen.generate_var_name();
 				port_to_var.insert({ output_port, name });
 				ZN_ASSERT(node.params.size() == 1);
 				codegen.add_format("float {} = {};\n", name, float(node.params[0]));
@@ -223,15 +221,14 @@ CompilationResult generate_shader(
 				// No incoming connections to this input. Make up a variable so following code can stay the same.
 				// It will only be used for this node.
 				StdString &var_name = unconnected_input_var_names[port_index];
-				codegen.generate_var_name(var_name);
+				var_name = codegen.generate_var_name();
 				input_names[port_index] = var_name.c_str();
 				codegen.add_format("float {} = {};\n", var_name, float(node.default_inputs[port_index]));
 			}
 		}
 
 		for (unsigned int port_index = 0; port_index < node.outputs.size(); ++port_index) {
-			StdString var_name;
-			codegen.generate_var_name(var_name);
+			const StdString var_name = codegen.generate_var_name();
 			auto p = port_to_var.insert({ { node_id, port_index }, var_name });
 			ZN_ASSERT(p.second); // Conflict with an existing port?
 			output_names[port_index] = p.first->second.c_str();
@@ -265,7 +262,7 @@ CompilationResult generate_shader(
 	codegen.dedent();
 	codegen.add("}\n");
 
-	codegen.print(source_code);
+	source_code.s = codegen.print();
 
 	CompilationResult result;
 	result.success = true;

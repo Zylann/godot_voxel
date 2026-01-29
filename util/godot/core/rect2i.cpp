@@ -1,16 +1,16 @@
 #include "rect2i.h"
+#include "../../io/text_writer.h"
 #include "../../math/vector2i.h"
-#include <sstream>
 
 namespace zylann {
 
-StdStringStream &operator<<(StdStringStream &ss, const Rect2i &rect) {
-	ss << "(o:";
-	ss << rect.position;
-	ss << ", s:";
-	ss << rect.size;
-	ss << ")";
-	return ss;
+TextWriter &operator<<(TextWriter &w, const Rect2i &rect) {
+	w << "(o:";
+	w << rect.position;
+	w << ", s:";
+	w << rect.size;
+	w << ")";
+	return w;
 }
 
 } // namespace zylann
