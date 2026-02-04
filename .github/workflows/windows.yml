@@ -30,7 +30,7 @@ jobs:
             precision: single
             executable_name: godot.windows.editor.x86_64.exe
 
-          - name: 4.6 Editor + Tracy
+          - name: 4.6 Editor + Tracy 0.13.1
             target: editor
             precision: single
             executable_name: godot.windows.tracy.editor.x86_64.exe
