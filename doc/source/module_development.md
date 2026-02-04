@@ -416,7 +416,7 @@ Profile with Tracy
 
 This module contains macros to profile specific code sections. By default, these macros expand to [Tracy Profiler](https://github.com/wolfpld/tracy) zones. It allows to check how long code takes to run, and displays it in a timeline.
 
-It was tested with [Tracy 0.10](https://github.com/wolfpld/tracy/releases/tag/v0.10).
+It was tested with [Tracy 0.10](https://github.com/wolfpld/tracy/releases/tag/v0.10), but later versions probably work too.
 
 ![Tracy screenshot](images/tracy.webp)
 
@@ -429,9 +429,7 @@ A typical workflow is to launch Tracy, start a connection, and then launch the g
 !!! note
     These builds are experimental and will be reworked when Godot 4.6 is released with better Tracy support.
 
-As an experiment, builds of Godot with the module and Tracy integrated are available for Windows, on [Github Actions](https://github.com/Zylann/godot_voxel/actions/workflows/windows.yml). The file to download will have `tracy` in the name. Note, you will need a Github account to download it.
-
-These builds not only include a lot of instrumentation for the voxel module, but also include extra instrumentation in various Godot internals. These instrumentations are injected [using a script](https://github.com/Zylann/godot_voxel/blob/master/misc/instrument.py) prior to compilation.
+Builds of Godot with the module and Tracy integrated are available for Windows, on [Github Actions](https://github.com/Zylann/godot_voxel/actions/workflows/windows.yml). The file to download will have `tracy` in the name. Note, you will need a Github account to download it.
 
 !!! warning
     These builds start recording data immediately on startup. *That includes the project manager and the editor*. It can use a lot of memory (2 Gb just starting the editor). If you only want to profile the game, [use the command line](https://docs.godotengine.org/en/stable/tutorials/editor/command_line_tutorial.html#command-line-tutorial) to directly launch that build of Godot with your game, or just drop the executable at the root of your project and launch it.
