@@ -7,8 +7,8 @@ At the moment, this module doesn't have a distinct release schedule, so this cha
 
 I try to minimize breaking changes, but there are usually a few in each release which I list in detail, so watch out for that section.
 
-Dev 1.5.1 - `master`
---------------------
+Dev 1.6 - 04/02/2026 - tag `v1.6`
+-----------------------------------
 
 - Improvements
     - `VoxelBlockyModel`: added `tags_mask` property. Initially, it can be used to filter selected voxels when using `VoxelToolTerrain.run_blocky_random_tick`.
