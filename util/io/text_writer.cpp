@@ -69,46 +69,6 @@ TextWriter &operator<<(TextWriter &w, const bool v) {
 	return w;
 }
 
-// TextWriter &operator<<(TextWriter &w, const int8_t v) {
-// 	w.write_i64(v);
-// 	return w;
-// }
-
-// TextWriter &operator<<(TextWriter &w, const int16_t v) {
-// 	w.write_i64(v);
-// 	return w;
-// }
-
-// TextWriter &operator<<(TextWriter &w, const int32_t v) {
-// 	w.write_i64(v);
-// 	return w;
-// }
-
-// TextWriter &operator<<(TextWriter &w, const int64_t v) {
-// 	w.write_i64(v);
-// 	return w;
-// }
-
-// TextWriter &operator<<(TextWriter &w, const uint8_t v) {
-// 	w.write_i64(v);
-// 	return w;
-// }
-
-// TextWriter &operator<<(TextWriter &w, const uint16_t v) {
-// 	w.write_i64(v);
-// 	return w;
-// }
-
-// TextWriter &operator<<(TextWriter &w, const uint32_t v) {
-// 	w.write_i64(v);
-// 	return w;
-// }
-
-// TextWriter &operator<<(TextWriter &w, const uint64_t v) {
-// 	w.write_i64(v);
-// 	return w;
-// }
-
 TextWriter &operator<<(TextWriter &w, const short v) {
 	w.write_i64(v);
 	return w;
