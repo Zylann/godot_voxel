@@ -835,7 +835,7 @@ void VoxelLodTerrain::get_lod_distances(Span<float> distances) {
 
 	if (settings.streaming_system == VoxelLodTerrainUpdateData::STREAMING_SYSTEM_LEGACY_OCTREE) {
 		for (int lod_index = 1; lod_index < lod_count; ++lod_index) {
-			distances[lod_index] = settings.lod_distance;
+			distances[lod_index] = settings.lod_distance * (1 << lod_index);
 		}
 
 	} else {
@@ -2732,6 +2732,12 @@ void VoxelLodTerrain::set_streaming_system(StreamingSystem v) {
 	_on_stream_params_changed();
 #ifdef TOOLS_ENABLED
 	notify_property_list_changed();
+#endif
+
+#ifdef VOXEL_ENABLE_INSTANCER
+	if (_instancer != nullptr) {
+		_instancer->update_mesh_lod_distances_from_parent();
+	}
 #endif
 }
 
