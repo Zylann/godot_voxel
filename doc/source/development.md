@@ -1,7 +1,7 @@
-Module development
+Development
 =====================
 
-This page will give some info about the project's internals.
+This page will give some info about the project's internals and how to compile it.
 It may be useful if you want to contribute, or write custom C++ code for your game in order to get better performance.
 
 The source code can be found on [Github](https://github.com/Zylann/godot_voxel).
@@ -89,7 +89,9 @@ scons platform=web [etc...]
 
 Important: you need to use the same Emscripten version that was used by Godot's export template for the web.
 TODO: where can we get which exact version of Emscripten to use when using official export templates? This doesn't seem to be documented.
+
 Current guessses:
+
 - 4.0.11 ([according to Github Actions](https://github.com/godotengine/godot/blob/bf95b62586e31b8a3503f5903d7764d7c52bf2ab/.github/workflows/web_builds.yml#L12))
 - 4.0.20 (in Godot 4.6, [according to this post](https://github.com/godotengine/godot-cpp/issues/1907#issuecomment-3790865190))
 - It is printed in Godot's editor console if you debug a web build (i.e you would have to first make a basic game without extensions to try this)

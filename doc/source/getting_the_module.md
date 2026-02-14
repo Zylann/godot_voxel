@@ -124,7 +124,7 @@ There are development builds of the GDExtension available on [Github Actions](ht
 ### Building yourself
 
 If the provided binaries don't include the platform or options you need, or if you need customizations, you can still make your own build.
-See [Module Development](development.md#gdextension)
+See [Development](development.md#gdextension)
 
 
 ### Exporting
