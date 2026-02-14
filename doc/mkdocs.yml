@@ -28,7 +28,7 @@ nav:
   - 'scripting.md'
   - 'procedural_generation.md'
   - 'performance.md'
-  - 'module_development.md'
+  - 'development.md'
   - 'changelog.md'
   - '___.md'
   - 'Scripting API':
