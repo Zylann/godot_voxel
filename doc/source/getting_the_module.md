@@ -143,6 +143,24 @@ You can check which platforms are provided by the extension in the config file a
 
 If what you need is not in this list, you may try [Building yourslef](#building-yourself).
 
+#### Web builds
+
+Currently web exports are not provided, but you could attempt to build them yourself.
+
+Building for the web requires a WebAssembly compiler, [Emscripten](https://emscripten.org/).
+
+Important: you need to use the same Emscripten version that was used by Godot's export template for the web.
+TODO: where can we get which exact version of Emscripten to use when using official export templates? This doesn't seem to be documented.
+Current guessses:
+- 4.0.11 ([according to Github Actions](https://github.com/godotengine/godot/blob/bf95b62586e31b8a3503f5903d7764d7c52bf2ab/.github/workflows/web_builds.yml#L12))
+- 4.0.20 (in Godot 4.6, [according to this post](https://github.com/godotengine/godot-cpp/issues/1907#issuecomment-3790865190))
+- It is printed in the browser's console if you run a web build
+- 5.0.0 doesn't work as of 2026/02/14
+
+Alternatively, you could [build your own Godot export template](https://docs.godotengine.org/en/stable/engine_details/development/compiling/compiling_for_web.html#compiling-for-the-web) using the version of Emscripten of your choice.
+
+There might be some other caveats: [https://github.com/Zylann/godot_voxel/issues/745](https://github.com/Zylann/godot_voxel/issues/745)
+
 
 #### Stripping out icons
 
