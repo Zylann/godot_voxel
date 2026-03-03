@@ -79,7 +79,7 @@ void VoxelMeshBlockVLT::set_mesh(
 #ifdef TOOLS_ENABLED
 			_shadow_occluder.set_cast_shadows_setting(shadow_occluder_mode);
 #else
-			_shadow_occluder.set_cast_shadows_setting(RenderingServer::SHADOW_CASTING_SETTING_SHADOWS_ONLY);
+			_shadow_occluder.set_cast_shadows_setting(RenderingServerEnums::SHADOW_CASTING_SETTING_SHADOWS_ONLY);
 #endif
 			// TODO Should we hide it if shadow casting is off?
 			// TBH it would be even better for the user to simply turn these off in the mesher...
