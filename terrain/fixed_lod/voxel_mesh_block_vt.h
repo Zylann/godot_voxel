@@ -80,7 +80,7 @@ public:
 #ifdef TOOLS_ENABLED
 				shadow_occluder.set_cast_shadows_setting(shadow_occluder_mode);
 #else
-				shadow_occluder.set_cast_shadows_setting(RenderingServer::SHADOW_CASTING_SETTING_SHADOWS_ONLY);
+				shadow_occluder.set_cast_shadows_setting(RenderingServerEnums::SHADOW_CASTING_SETTING_SHADOWS_ONLY);
 #endif
 				set_mesh_instance_visible(shadow_occluder, _visible && _parent_visible);
 			}
