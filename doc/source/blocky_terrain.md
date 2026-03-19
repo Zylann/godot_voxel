@@ -322,7 +322,7 @@ var model_id := library.get_model_index_default(&"leaves")
 `VoxelMesherCubes`
 ------------------
 
-This mesher exclusively generates cubes with spefific colors.
+This mesher exclusively generates cubes with specific colors.
 
 TODO
 
