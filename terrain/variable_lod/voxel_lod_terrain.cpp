@@ -672,10 +672,10 @@ void VoxelLodTerrain::push_async_edit(IThreadedTask *task, Box3i box, std::share
 }
 
 Ref<VoxelTool> VoxelLodTerrain::get_voxel_tool() {
-	VoxelToolLodTerrain *vt = memnew(VoxelToolLodTerrain(this));
+	Ref<VoxelToolLodTerrain> vt(memnew(VoxelToolLodTerrain(this)));
 	// Set to most commonly used channel on this kind of terrain
 	vt->set_channel(VoxelBuffer::CHANNEL_SDF);
-	return Ref<VoxelTool>(vt);
+	return vt;
 }
 
 int VoxelLodTerrain::get_view_distance() const {
