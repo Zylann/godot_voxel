@@ -38,5 +38,4 @@ If applicable, add screenshots to help explain your problem.
 - OS: [e.g. iOS]
 - Graphics card (you can find out in Godot's console log)
 - Godot version [e.g. 4.1.1]
-- Module version (or commit hash if you got it from Github directly)
-- Renderer used
+- Version of the plugin: check About window in Terrain menu; is it an extension build or module build?
