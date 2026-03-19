@@ -9,6 +9,10 @@
 #include "../../util/godot/core/string.h"
 #include "voxel_graph_editor_plugin.h"
 
+#ifdef ZN_GODOT
+#include "../../util/godot/core/callable_mp.h"
+#endif
+
 namespace zylann::voxel {
 
 using namespace pg;

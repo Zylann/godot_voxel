@@ -20,6 +20,7 @@
 #include <array>
 
 #ifdef ZN_GODOT
+#include "../../../util/godot/core/callable_mp.h"
 #include "../../../util/godot/core/class_db.h"
 #endif
 

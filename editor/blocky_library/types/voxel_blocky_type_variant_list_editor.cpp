@@ -10,6 +10,10 @@
 #include "../../../util/godot/core/array.h"
 #include "../../../util/godot/core/string.h"
 
+#ifdef ZN_GODOT
+#include "../../../util/godot/core/callable_mp.h"
+#endif
+
 namespace zylann::voxel {
 
 VoxelBlockyTypeVariantListEditor::VoxelBlockyTypeVariantListEditor() {

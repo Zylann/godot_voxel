@@ -8,6 +8,10 @@
 #include "../../util/string/format.h"
 #include "node_type_db.h"
 
+#ifdef ZN_GODOT
+#include "../../util/godot/core/callable_mp.h"
+#endif
+
 #include <algorithm>
 
 namespace zylann::voxel::pg {

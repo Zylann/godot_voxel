@@ -4,6 +4,7 @@
 #include "voxel_blocky_type_library_ids_dialog.h"
 
 #ifdef ZN_GODOT
+#include "../../../util/godot/core/callable_mp.h"
 #include "../../../util/godot/core/class_db.h"
 #endif
 

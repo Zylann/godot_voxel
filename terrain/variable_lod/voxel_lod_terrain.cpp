@@ -44,6 +44,10 @@
 #include "../instancing/voxel_instancer.h"
 #endif
 
+#ifdef ZN_GODOT
+#include "../../util/godot/core/class_db.h"
+#endif
+
 namespace zylann::voxel {
 
 namespace {

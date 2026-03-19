@@ -8,6 +8,7 @@
 #include "voxel_instance_library_multimesh_item_editor_plugin.h"
 
 #ifdef ZN_GODOT
+#include "../../util/godot/core/callable_mp.h"
 #include "../../util/godot/core/class_db.h"
 #endif
 

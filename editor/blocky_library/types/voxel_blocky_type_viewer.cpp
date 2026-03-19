@@ -6,6 +6,10 @@
 #include "../../../util/godot/editor_scale.h"
 #include "voxel_blocky_type_attribute_combination_selector.h"
 
+#ifdef ZN_GODOT
+#include "../../../util/godot/core/callable_mp.h"
+#endif
+
 namespace zylann::voxel {
 
 VoxelBlockyTypeViewer::VoxelBlockyTypeViewer() {

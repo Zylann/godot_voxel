@@ -7,6 +7,10 @@
 #include "../../util/godot/core/string.h"
 #include "../../util/godot/editor_scale.h"
 
+#ifdef ZN_GODOT
+#include "../../util/godot/core/callable_mp.h"
+#endif
+
 namespace zylann::voxel {
 
 VoxelRangeAnalysisDialog::VoxelRangeAnalysisDialog() {

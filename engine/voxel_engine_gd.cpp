@@ -15,6 +15,10 @@
 #include "../util/testing/test_options.h"
 #endif
 
+#ifdef ZN_GODOT
+#include "../util/godot/core/callable_mp.h"
+#endif
+
 using namespace zylann::godot;
 
 namespace zylann::voxel::godot {

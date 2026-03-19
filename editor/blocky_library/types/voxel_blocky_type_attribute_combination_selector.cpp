@@ -4,6 +4,10 @@
 #include "../../../util/godot/classes/option_button.h"
 #include "../../../util/godot/editor_scale.h"
 
+#ifdef ZN_GODOT
+#include "../../../util/godot/core/callable_mp.h"
+#endif
+
 namespace zylann::voxel {
 
 const char *VoxelBlockyTypeAttributeCombinationSelector::SIGNAL_COMBINATION_CHANGED = "combination_changed";

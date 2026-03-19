@@ -1,5 +1,6 @@
 #include "noise_analysis_window.h"
 #include "../../util/containers/std_vector.h"
+#include "../../util/godot/core/callable_mp.h"
 #include "../../util/godot/core/packed_arrays.h"
 #include "../../util/godot/editor_scale.h"
 #include "chart_view.h"

@@ -18,6 +18,10 @@
 #include "../graph/voxel_graph_node_inspector_wrapper.h"
 #include "voxel_terrain_editor_task_indicator.h"
 
+#ifdef ZN_GODOT
+#include "../../util/godot/core/callable_mp.h"
+#endif
+
 namespace zylann::voxel {
 
 VoxelTerrainEditorPlugin::VoxelTerrainEditorPlugin() {}

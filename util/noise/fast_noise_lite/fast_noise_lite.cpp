@@ -3,6 +3,7 @@
 #include "../../math/funcs.h"
 
 #ifdef ZN_GODOT
+#include "../../godot/core/callable_mp.h"
 #include "../../godot/core/class_db.h"
 #endif
 

@@ -9,6 +9,10 @@
 #include "../about_window.h"
 #include "voxel_instancer_stat_view.h"
 
+#ifdef ZN_GODOT
+#include "../../util/godot/core/callable_mp.h"
+#endif
+
 namespace zylann::voxel {
 
 namespace {

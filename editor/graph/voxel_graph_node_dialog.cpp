@@ -23,9 +23,13 @@
 #include "graph_nodes_doc_data.h"
 
 #ifdef ZN_GODOT
+
 #if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR >= 4
 #include <editor/editor_node.h>
 #endif
+
+#include "../../util/godot/core/callable_mp.h"
+
 #endif
 
 namespace zylann::voxel {

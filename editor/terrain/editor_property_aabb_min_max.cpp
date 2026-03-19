@@ -4,6 +4,10 @@
 #include "../../util/godot/classes/label.h"
 #include "../../util/godot/classes/node.h"
 
+#ifdef ZN_GODOT
+#include "../../util/godot/core/callable_mp.h"
+#endif
+
 namespace zylann {
 
 ZN_EditorPropertyAABBMinMax::ZN_EditorPropertyAABBMinMax() {

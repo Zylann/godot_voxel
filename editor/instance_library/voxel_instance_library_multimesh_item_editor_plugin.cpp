@@ -5,6 +5,10 @@
 #include "../../util/godot/classes/editor_undo_redo_manager.h"
 #include "../../util/godot/classes/resource_loader.h"
 
+#ifdef ZN_GODOT
+#include "../../util/godot/core/callable_mp.h"
+#endif
+
 namespace zylann::voxel {
 
 VoxelInstanceLibraryMultiMeshItemEditorPlugin::VoxelInstanceLibraryMultiMeshItemEditorPlugin() {}

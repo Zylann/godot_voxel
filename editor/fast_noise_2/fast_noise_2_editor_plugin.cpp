@@ -10,6 +10,10 @@
 
 #include <core/core_string_names.h>
 
+#ifdef ZN_GODOT
+#include "../../util/godot/core/callable_mp.h"
+#endif
+
 namespace zylann {
 
 class FastNoise2Viewer : public Control {

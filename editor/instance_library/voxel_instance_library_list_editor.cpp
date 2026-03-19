@@ -18,6 +18,10 @@
 #include "../../util/profiling.h"
 #include "voxel_instance_library_editor_plugin.h"
 
+#ifdef ZN_GODOT
+#include "../../util/godot/core/callable_mp.h"
+#endif
+
 namespace zylann::voxel {
 
 VoxelInstanceLibraryListEditor::VoxelInstanceLibraryListEditor() {}

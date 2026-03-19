@@ -14,6 +14,11 @@
 #include "../../util/godot/core/array.h"
 #include "../../util/godot/editor_scale.h"
 
+#ifdef ZN_GODOT
+#include "../../util/godot/core/callable_mp.h"
+#include "../../util/godot/core/class_db.h"
+#endif
+
 namespace zylann::voxel {
 
 using namespace pg;
