@@ -6,7 +6,9 @@
 #if defined(ZN_GODOT)
 #include <core/object/ref_counted.h>
 #elif defined(ZN_GODOT_EXTENSION)
-#include <godot_cpp/classes/ref_counted.hpp>
+// Ref<T> is not available if you only include ref_counted.hpp and no derived class.
+// ref.hpp, on the other hand, includes ref_counted.hpp.
+#include <godot_cpp/classes/ref.hpp>
 using namespace godot;
 #endif
 
