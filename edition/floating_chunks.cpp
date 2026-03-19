@@ -15,7 +15,7 @@
 #include "voxel_tool.h"
 
 #ifdef ZN_GODOT
-#include <core/object/callable_method_pointer.h>
+#include "../util/godot/core/callable_mp.h"
 #endif
 
 namespace zylann::voxel {
