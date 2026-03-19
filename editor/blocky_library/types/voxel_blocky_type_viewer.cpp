@@ -25,22 +25,26 @@ VoxelBlockyTypeViewer::VoxelBlockyTypeViewer() {
 void VoxelBlockyTypeViewer::set_combination_selector(VoxelBlockyTypeAttributeCombinationSelector *selector) {
 	// Supposed to be setup only once.
 	ZN_ASSERT_RETURN(_combination_selector == nullptr);
-	selector->connect(VoxelBlockyTypeAttributeCombinationSelector::SIGNAL_COMBINATION_CHANGED,
-			callable_mp(this, &VoxelBlockyTypeViewer::_on_combination_changed));
+	selector->connect(
+			VoxelBlockyTypeAttributeCombinationSelector::SIGNAL_COMBINATION_CHANGED,
+			callable_mp(this, &VoxelBlockyTypeViewer::_on_combination_changed)
+	);
 	_combination_selector = selector;
 }
 
 void VoxelBlockyTypeViewer::set_type(Ref<VoxelBlockyType> type) {
 	if (_type.is_valid()) {
 		_type->disconnect(
-				VoxelStringNames::get_singleton().changed, callable_mp(this, &VoxelBlockyTypeViewer::_on_type_changed));
+				VoxelStringNames::get_singleton().changed, callable_mp(this, &VoxelBlockyTypeViewer::_on_type_changed)
+		);
 	}
 
 	_type = type;
 
 	if (_type.is_valid()) {
 		_type->connect(
-				VoxelStringNames::get_singleton().changed, callable_mp(this, &VoxelBlockyTypeViewer::_on_type_changed));
+				VoxelStringNames::get_singleton().changed, callable_mp(this, &VoxelBlockyTypeViewer::_on_type_changed)
+		);
 	}
 
 	update_model();

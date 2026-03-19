@@ -28,7 +28,8 @@ VoxelGraphEditorIODialog::VoxelGraphEditorIODialog() {
 	_auto_generate_button = memnew(Button);
 	_auto_generate_button->set_text(ZN_TTR("Auto-generate"));
 	_auto_generate_button->connect(
-			"pressed", callable_mp(this, &VoxelGraphEditorIODialog::_on_auto_generate_button_pressed));
+			"pressed", callable_mp(this, &VoxelGraphEditorIODialog::_on_auto_generate_button_pressed)
+	);
 	vb->add_child(_auto_generate_button);
 
 	HBoxContainer *hb = memnew(HBoxContainer);

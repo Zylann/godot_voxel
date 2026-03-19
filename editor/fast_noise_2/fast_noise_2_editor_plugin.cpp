@@ -56,14 +56,16 @@ public:
 
 		if (_noise.is_valid()) {
 			_noise->disconnect(
-					CoreStringNames::get_singleton()->changed, callable_mp(this, &FastNoise2Viewer::_on_noise_changed));
+					CoreStringNames::get_singleton()->changed, callable_mp(this, &FastNoise2Viewer::_on_noise_changed)
+			);
 		}
 
 		_noise = noise;
 
 		if (_noise.is_valid()) {
 			_noise->connect(
-					CoreStringNames::get_singleton()->changed, callable_mp(this, &FastNoise2Viewer::_on_noise_changed));
+					CoreStringNames::get_singleton()->changed, callable_mp(this, &FastNoise2Viewer::_on_noise_changed)
+			);
 			set_process(true);
 			update_preview();
 

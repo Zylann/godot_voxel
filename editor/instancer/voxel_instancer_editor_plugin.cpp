@@ -39,7 +39,8 @@ void VoxelInstancerEditorPlugin::init() {
 		}
 	}
 	menu_button->get_popup()->connect(
-			"id_pressed", callable_mp(this, &VoxelInstancerEditorPlugin::_on_menu_item_selected));
+			"id_pressed", callable_mp(this, &VoxelInstancerEditorPlugin::_on_menu_item_selected)
+	);
 	menu_button->hide();
 	add_control_to_container(CONTAINER_SPATIAL_EDITOR_MENU, menu_button);
 	_menu_button = menu_button;
