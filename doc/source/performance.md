@@ -247,7 +247,7 @@ Tuning `VoxelGeneratorGraph`
 
 `VoxelGeneratorGraph` uses a number of optimization strategies to make the calculations faster. You may want to fine-tune them in some cases depending on the kind of volume you want to generate, although it should run ok by default. When you get more familiar with the tool it may be useful to know how it works under the hood, notably to troubleshoot generation issues when they occur.
 
-### Buffer processing
+### Buffer processing (CPU)
 
 Contrary to many node-based or expression tools existing in Godot so far, voxel graphs are not tailored to run on voxels one by one. The main use case is to process a bunch of them. Indeed, for a 16x16x16 block, there are 4096 voxels to generate. That would mean traversing the entire graph 4096 times, and the cost of doing that individually can exceed the cost of the calculations themselves. Besides, switching constantly between node types to run different operations is not CPU-friendly due to all the jumps required.
 
@@ -259,7 +259,7 @@ Finally, the generator executes the list, node by node, and each node computes a
 
 Buffer processing is mostly an internal detail so there are no particular settings on the scripting API.
 
-### Range analysis
+### Range analysis (CPU)
 
 Before processing voxels in a specific region of space (a box), the generator first runs a [range analysis](https://en.wikipedia.org/wiki/Interval_arithmetic) pass. Each node has an alternative implementation using intervals, with the sole purpose of estimating the range of values it will output in the area. It's like a broad-phase before the heavy work.
 
@@ -276,7 +276,7 @@ You can also hover the output label of any node to see what range was calculated
 
 Results of this pass are used for several optimization techniques described below.
 
-### SDF clipping
+### SDF clipping (CPU)
 
 3D volumes represented with meshes to form a terrain have an interesting property: to generate them, we are mostly interested in the areas where voxel values are crossing the isolevel (zero). That means we could completely discard regions of space that are guaranteed to never get near zero, and simplify them to a single value (like "only matter" or "only air"). Doing that in 3 dimensions has tremendous speed implications so it is a major feature of this generator.
 
@@ -299,7 +299,7 @@ It is also possible to instruct the generator to invert clipped blocks, which wi
 ![Sdf clipping debug](images/sdf_clip_debug.webp)
 
 
-### Local optimization
+### Local optimization (CPU)
 
 Conditionals (`if/else`) are not supported by this voxel graph implementation. The main reason is because of the buffer processing approach. The CPU can churn through buffers very fast, but branching on a per-voxel basis would disrupt it. Besides, range analysis might get a lot more complicated if branching was added. They can exist within nodes, but cannot exist as a graph-level primitive. So the usual approach is to blend things by mixing, adding, subtracting parts of the graph. But when a graph becomes big, even with SDF clipping, performance could be better. Conditionals are often used to optimize locally, so how can we do this without?
 
@@ -327,14 +327,14 @@ This setting can be toggled in the inspector.
     This feature may be more or less precise depending on the range of values parts of the graph are producing. So it is possible that two different graphs providing the same result can run at different speeds. For this reason, analysing ranges can prove useful to understand why parts of the graph are still computed.
 
 
-### Subdivision
+### Subdivision (CPU)
 
 Previous optimizations are tied to the size of the considered area. The bigger the area, the less precise they will be. For example, with a larger box, it is more likely to find a place where voxels produce a surface. It is also more likely for more biomes or other shapes to appear and blend together. Besides, changing the size of our world chunks isn't a light decision.
 
 So a simple improvement is to tell the generator to further subdivide itself the region of space it works on. Usually a subdivision size of 16x16x16 is ok. 8x8x8 is even more precise, but below that size the cost of iteration will eventually exceed the cost of computations again (see Buffer processing). Subdivision sizes must also divide volume block sizes without remainder. This is mostly to avoid having to deal with buffers of different sizes.
 
 
-### XZ caching
+### XZ caching (CPU)
 
 When generating voxel-based terrains, despite the attractiveness of overhangs, there can be a large part of your generator only relying on the X and Z coordinates. Typically, generating from 2D noise as a base layer is one of these situations.
 When the generator is done with a slice along X and Z, it increases Y and does the slice above. But since 2D noise only depends on X and Z, it would get recomputed again. And noise is expensive.
@@ -366,8 +366,19 @@ When generating a block of voxels, the `XZ` group is executed once for the first
 This optimization only applies on both X and Z axes. It can be toggled in the inspector.
 
 
-### Buffer reduction
+### Buffer reduction (CPU)
 
 The graph attempts to use as few temporary buffers as possible. For example, if you have 10 nodes processing before the output, it won't necessarily allocate 10 unique buffers to store intermediary outputs. Instead, buffers will be re-used for multiple nodes, if that doesn't change the result. Buffers are assigned ahead-of-time, when the graph is compiled. It saves memory, and might improve performance because less data has to be loaded into CPU cache.
 This feature is disabled when the graph is compiled in debug mode, as it allows inspecting the state of each output.
 
+### GPU
+
+Earlier sections were related to the CPU backend of `VoxelGeneratorGraph`. There is a GPU backend, which runs very differently. None of the CPU optimization settings apply to that backend.
+
+The GPU backend will generate a compute shader for each kind of usage (at time of writing: chunk generation, and detail texture rendering). These compute shaders are dispatched from a separate `RenderingDevice`, in a background thread, so while they use the graphics card, they usually don't lead to framerate drops. You can see the generated code using the `Generate Shader` menu in the graph editor.
+
+Shader compilation is done on a separate thread as well, and can take a while depending on the complexity of your graph. It can be noticed if the first chunk takes an unusual amount of time to generate.
+If you notice this but still want to use the GPU backend, you may simplify your graph:
+- Reduce the number of noise nodes, in particular `FastNoiseLite`. While this node gets the same results as the CPU version, it's a huge library in regard to shaders, and the more calls there are, the more complex compilation will get (either from GLSL to SPIRV, but also from SPIRV to GPU-specific format).
+- Use less complex noise types. Cellular kinds are more costly.
+- Replace noise nodes with image nodes that seamlessly repeat, i.e bake noise up-front. This is also faster to execute, at the cost of eventual repetition. Combining them at different rates can make it less obvious.
