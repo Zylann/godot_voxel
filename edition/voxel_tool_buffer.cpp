@@ -1,5 +1,6 @@
 #include "voxel_tool_buffer.h"
 #include "../storage/voxel_buffer_gd.h"
+#include "../util/godot/core/packed_arrays.h"
 #include "../util/math/conv.h"
 #include "../util/profiling.h"
 #include "funcs.h"
@@ -182,6 +183,65 @@ void VoxelToolBuffer::paste_masked(
 	const SmallVector<uint8_t, VoxelBuffer::MAX_CHANNELS> channels = VoxelBuffer::mask_to_channels_list(channels_mask);
 
 	paste_src_masked(to_span(channels), src, mask_channel, mask_value, dst, p_pos, true);
+}
+
+void VoxelToolBuffer::paste_masked_writable_list(
+		Vector3i pos,
+		Ref<godot::VoxelBuffer> p_voxels,
+		uint8_t channels_mask,
+		uint8_t src_mask_channel,
+		uint64_t src_mask_value,
+		uint8_t dst_mask_channel,
+		PackedInt32Array dst_writable_list
+) {
+	ERR_FAIL_COND(_buffer.is_null());
+	ERR_FAIL_COND(p_voxels.is_null());
+
+	VoxelBuffer &dst = _buffer->get_buffer();
+	const VoxelBuffer &src = p_voxels->get_buffer();
+
+	if (channels_mask == 0) {
+		channels_mask = (1 << get_channel());
+	}
+
+	const SmallVector<uint8_t, VoxelBuffer::MAX_CHANNELS> channels = VoxelBuffer::mask_to_channels_list(channels_mask);
+
+	Span<const int32_t> dst_writable_list_s = to_span(dst_writable_list);
+
+	if (dst_writable_list_s.size() == 0) {
+		return;
+	}
+
+	const bool with_metadata = true;
+
+	if (dst_writable_list_s.size() == 1) {
+		paste_src_masked_dst_writable_value(
+				to_span(channels),
+				src,
+				src_mask_channel,
+				src_mask_value,
+				dst,
+				pos,
+				dst_mask_channel,
+				dst_writable_list_s[0],
+				with_metadata
+		);
+
+	} else {
+		DynamicBitset bitarray;
+		ZN_ASSERT_RETURN(indices_to_bitarray_u16(dst_writable_list_s, bitarray));
+		paste_src_masked_dst_writable_bitarray(
+				to_span(channels),
+				src,
+				src_mask_channel,
+				src_mask_value,
+				dst,
+				pos,
+				dst_mask_channel,
+				bitarray,
+				with_metadata
+		);
+	}
 }
 
 void VoxelToolBuffer::do_path(Span<const Vector3> positions, Span<const float> radii) {
