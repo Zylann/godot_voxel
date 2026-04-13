@@ -40,6 +40,7 @@ class VoxelInstancer;
 class VoxelTerrain : public VoxelNode {
 	GDCLASS(VoxelTerrain, VoxelNode)
 public:
+	// Maximum view distance when any terrain boundary is larger than it
 	static const unsigned int MAX_VIEW_DISTANCE_FOR_LARGE_VOLUME = 512;
 
 	VoxelTerrain();
