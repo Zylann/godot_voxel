@@ -316,42 +316,42 @@ Vector3 VoxelBoxMover::get_motion(
 	// Minecraft-style stair climbing:
 	// If we were moving, changed horizontal direction due to collision, and resulting motion is about horizontal
 	_has_stepped_up = false;
-	if (_step_climbing_enabled &&
-		// Movement is horizontal?
-		Math::abs(slided_motion.y) < 0.001 && Vector2(motion.x, motion.z).length_squared() > 0.0001 &&
-		// Motor movement isn't the same as resulting slided motion?
-		Vector2(motion.x, motion.z).normalized().dot(Vector2(slided_motion.x, slided_motion.z).normalized()) < 0.99) {
-		// We hit an obstacle
-		real_t hit_y;
-		// Find out the height of the step
-		if (boxcast_down(to_span(potential_boxes), get_xz(expanded_box.position), get_xz(expanded_box.size), hit_y)) {
-			// If the step is up and not too high
-			if (hit_y > box.position.y && (hit_y - box.position.y) <= _max_step_height) {
-				// Check if we would fit if we move the box above the step.
-				// Raise it slightly higher to avoid precision issues. Even if the final motion would move the box
-				// exactly on top of the stair, gameplay code could do some additional calculations with that motion
-				// (converting it to velocity?) which may induce precision errors causing the box to fall through.
-				const real_t epsilon = 0.0001f;
-				const AABB hyp_box(
-						Vector3(box.position.x + motion.x, hit_y + epsilon, box.position.z + motion.z), box.size
-				);
+	const real_t epsilon = 0.0001f;
+	if (_step_climbing_enabled && Math::abs(motion.y) <= 0.001 && Vector2(motion.x, motion.z).length_squared() > epsilon) {
+		Vector2 intended_h_motion(motion.x, motion.z);
+		Vector2 actual_h_motion(slided_motion.x, slided_motion.z);
 
-				potential_boxes.clear();
-				collect_boxes(terrain_data, mesher, hyp_box, _collision_mask, potential_boxes);
+		// Only step if we're blocked horizontally, i.e. the actual motion is less than the intended
+		if (actual_h_motion.length_squared() < intended_h_motion.length_squared() - epsilon) {
+			// Basically we're now going to manually push the player up to the max step height, check for the possible horizontal motion,
+			// push the player back down to the "real" step height of the terrain, and then check if we've gotten farther than before.
+			AABB step_box = box; // Starting box
+			
+			// Lift box manually to max step height, use get_motion() incase we're blocked by a ceiling
+			Vector3 lift_motion = zylann::voxel::get_motion(step_box, Vector3(0, _max_step_height, 0), to_span(potential_boxes));
+			step_box.position.y += lift_motion.y;
 
-				// If the box fits on top of the step
-				if (!zylann::voxel::intersects(to_span(potential_boxes), hyp_box)) {
-					// Change motion so that it brings the box on top of the step
-					slided_motion = hyp_box.position - box.position;
-					_has_stepped_up = true;
-				}
+			// Try to get the horizontal motion in this "lifted" mode
+			Vector3 h_motion_elev = zylann::voxel::get_motion(step_box, Vector3(motion.x, 0, motion.z), to_span(potential_boxes));
+			step_box.position.x += h_motion_elev.x;
+			step_box.position.z += h_motion_elev.z;
+
+			// Push the player back down to the "real" terrain/step floor
+			Vector3 drop_motion = zylann::voxel::get_motion(step_box, Vector3(0, -lift_motion.y, 0), to_span(potential_boxes));
+			step_box.position.y += drop_motion.y;
+
+			// Check if the distance using this "push-up" method is greater than the initial motion
+			Vector2 step_h_diff(step_box.position.x - box.position.x, step_box.position.z - box.position.z);
+			
+			if (step_h_diff.length_squared() > actual_h_motion.length_squared() + epsilon) {
+				slided_motion = step_box.position - box.position;
+				_has_stepped_up = true;
 			}
 		}
 	}
 
 	// Switch back to world
 	const Vector3 world_slided_motion = to_world.basis.xform(slided_motion);
-
 	return world_slided_motion;
 }
 
