@@ -3,6 +3,11 @@
 #include "../../../util/godot/core/string.h"
 #include "voxel_blocky_type_library_ids_dialog.h"
 
+#ifdef ZN_GODOT
+#include "../../../util/godot/core/callable_mp.h"
+#include "../../../util/godot/core/class_db.h"
+#endif
+
 namespace zylann::voxel {
 
 bool VoxelBlockyTypeLibraryEditorInspectorPlugin::_zn_can_handle(const Object *p_object) const {
@@ -17,9 +22,11 @@ void VoxelBlockyTypeLibraryEditorInspectorPlugin::_zn_parse_end(Object *p_object
 	Button *button = memnew(Button);
 	button->set_text(ZN_TTR("Inspect IDs..."));
 
-	button->connect("pressed",
+	button->connect(
+			"pressed",
 			callable_mp(this, &VoxelBlockyTypeLibraryEditorInspectorPlugin::_on_inspect_ids_button_pressed)
-					.bind(library));
+					.bind(library)
+	);
 
 	// TODO I want to add this button at the end OF THE VoxelBlockyTypeLibrary PART OF THE INSPECTOR,
 	// NOT AT THE VERY BOTTOM... but how do I do that?

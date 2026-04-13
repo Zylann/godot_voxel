@@ -2,8 +2,18 @@
 #define ZN_GODOT_GDVIRTUAL_H
 
 #if defined(ZN_GODOT)
-#include <core/object/script_language.h> // needed for GDVIRTUAL macro
-#include <core/object/gdvirtual.gen.inc> // Also needed for GDVIRTUAL macro...
+#include "../core/version.h"
+
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR <= 1
+#include <core/object/script_language.h>
+#endif
+
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR <= 6
+#include <core/object/gdvirtual.gen.inc>
+#else
+#include <core/object/gdvirtual.gen.h>
+#endif
+
 #elif defined(ZN_GODOT_EXTENSION)
 #include <godot_cpp/core/gdvirtual.gen.inc>
 #endif

@@ -211,6 +211,8 @@ public:
 	StreamingSystem get_streaming_system() const;
 	void set_streaming_system(StreamingSystem v);
 
+	Node3D *convert_to_nodes(const BitField<NodeConversionFlags> flags) const override;
+
 	// Debugging
 
 	Array debug_raycast_mesh_block(Vector3 world_origin, Vector3 world_direction) const;
@@ -231,8 +233,9 @@ public:
 		DEBUG_DRAW_VIEWER_CLIPBOXES = 8,
 		DEBUG_DRAW_LOADED_VISUAL_AND_COLLISION_BLOCKS = 9,
 		DEBUG_DRAW_ACTIVE_VISUAL_AND_COLLISION_BLOCKS = 10,
+		DEBUG_DRAW_VOXEL_METADATA = 11,
 
-		DEBUG_DRAW_FLAGS_COUNT = 11
+		DEBUG_DRAW_FLAGS_COUNT = 12
 	};
 
 	void debug_set_draw_enabled(bool enabled);
@@ -282,10 +285,7 @@ public:
 
 	void get_meshed_block_positions_at_lod(int lod_index, StdVector<Vector3i> &out_positions) const;
 
-	inline VoxelData &get_storage() const {
-		ZN_ASSERT(_data != nullptr);
-		return *_data;
-	}
+	VoxelData &get_storage() const override;
 
 	inline std::shared_ptr<VoxelData> get_storage_shared() const {
 		return _data;
@@ -347,6 +347,12 @@ private:
 
 	LocalCameraInfo get_local_camera_info() const;
 
+#ifdef TOOLS_ENABLED
+	void update_gizmos();
+#endif
+
+	// Bindings
+
 	Ref<VoxelSaveCompletionTracker> _b_save_modified_blocks();
 	void _b_set_voxel_bounds(AABB aabb);
 	AABB _b_get_voxel_bounds() const;
@@ -360,10 +366,6 @@ private:
 	bool _b_is_area_meshed(AABB aabb, int lod_index) const;
 
 	Dictionary _b_get_statistics() const;
-
-#ifdef TOOLS_ENABLED
-	void update_gizmos();
-#endif
 
 	static void _bind_methods();
 

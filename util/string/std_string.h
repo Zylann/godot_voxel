@@ -22,6 +22,11 @@ struct FwdMutableStdString {
 	FwdMutableStdString(StdString &p_s) : s(p_s) {}
 };
 
+class TextWriter;
+
+TextWriter &operator<<(TextWriter &w, const StdString &s);
+TextWriter &operator<<(TextWriter &w, const std::string_view s);
+
 } // namespace zylann
 
 #ifdef __GNUC__

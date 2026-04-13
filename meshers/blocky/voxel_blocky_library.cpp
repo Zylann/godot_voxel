@@ -1,9 +1,11 @@
 #include "voxel_blocky_library.h"
 #include "../../constants/voxel_string_names.h"
+
 #ifdef ZN_GODOT_EXTENSION
 // For `MAKE_RESOURCE_TYPE_HINT`
 #include "../../util/godot/classes/object.h"
 #endif
+
 #include "../../util/godot/classes/time.h"
 #include "../../util/godot/core/array.h"
 #include "../../util/godot/core/string.h"
@@ -18,8 +20,13 @@
 #include "voxel_blocky_model_empty.h"
 #include "voxel_blocky_model_fluid.h"
 #include "voxel_blocky_model_mesh.h"
+
 #ifdef TOOLS_ENABLED
 #include "../../util/godot/classes/resource.h"
+#endif
+
+#ifdef ZN_GODOT
+#include "../../util/godot/core/class_db.h"
 #endif
 
 #include <bitset>

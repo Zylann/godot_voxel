@@ -73,7 +73,7 @@ void DirectStaticBody::remove_shape(int shape_index) {
 	}
 }
 
-Ref<Shape3D> DirectStaticBody::get_shape(int shape_index) {
+Ref<Shape3D> DirectStaticBody::get_shape(int shape_index) const {
 	ERR_FAIL_COND_V(shape_index < 0 || shape_index > 1, Ref<Shape3D>());
 	return _shape;
 }

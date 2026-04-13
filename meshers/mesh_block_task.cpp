@@ -526,12 +526,13 @@ void MeshBlockTask::build_mesh() {
 	// smooth terrain.
 	Ref<VoxelMesherTransvoxel> transvoxel_mesher;
 
-	if (require_visual //
-		&& zylann::godot::try_get_as(mesher, transvoxel_mesher) //
-		&& detail_texture_settings.enabled //
-		&& !mesh_is_empty //
-		&& lod_index >= detail_texture_settings.begin_lod_index //
-		&& require_detail_texture //
+	if (
+			require_visual //
+			&& zylann::godot::try_get_as(mesher, transvoxel_mesher) //
+			&& detail_texture_settings.enabled //
+			&& !mesh_is_empty //
+			&& lod_index >= detail_texture_settings.begin_lod_index //
+			&& require_detail_texture //
 	) {
 		ZN_PROFILE_SCOPE_NAMED("Schedule detail render");
 

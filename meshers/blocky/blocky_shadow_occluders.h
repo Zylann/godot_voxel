@@ -5,7 +5,6 @@
 #include "../../util/containers/std_vector.h"
 #include "../../util/math/vector3f.h"
 #include "../../util/math/vector3i.h"
-#include "../../util/profiling.h"
 #include "blocky_baked_library.h"
 
 namespace zylann::voxel::blocky {

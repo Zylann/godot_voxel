@@ -1,6 +1,10 @@
 #include "voxel_blocky_attribute_rotation.h"
 #include "../../../constants/voxel_string_names.h"
 
+#ifdef ZN_GODOT
+#include "../../../util/godot/core/class_db.h"
+#endif
+
 namespace zylann::voxel {
 
 // Full-on orthogonal rotation is actually hard to use directly as a single property... there cannot be straightforward

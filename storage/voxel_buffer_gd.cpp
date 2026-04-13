@@ -9,6 +9,10 @@
 #include "../util/string/format.h"
 #include "metadata/voxel_metadata_variant.h"
 
+#ifdef ZN_GODOT
+#include "../util/godot/core/class_db.h"
+#endif
+
 namespace zylann::voxel {
 
 template <typename F>
@@ -280,8 +284,7 @@ PackedByteArray get_channel_as_byte_array(const VoxelBuffer &vb, const VoxelBuff
 		case VoxelBuffer::COMPRESSION_NONE: {
 			Span<const uint8_t> src;
 			ZN_ASSERT_RETURN_V(vb.get_channel_as_bytes_read_only(channel, src), pba);
-			Span<uint8_t> pba_s(pba.ptrw(), volume);
-			src.copy_to(pba_s);
+			zylann::godot::copy_to(pba, src);
 		} break;
 
 		default:
@@ -307,7 +310,7 @@ Variant get_voxel_metadata(const zylann::voxel::VoxelBuffer &vb, const Vector3i 
 	return get_as_variant(*meta);
 }
 
-void set_voxel_metadata(zylann::voxel::VoxelBuffer &vb, const Vector3i pos, const Variant meta) {
+void set_voxel_metadata(zylann::voxel::VoxelBuffer &vb, const Vector3i pos, const Variant &meta) {
 	if (meta.get_type() == Variant::NIL) {
 		vb.erase_voxel_metadata(pos);
 	} else {
@@ -875,6 +878,7 @@ void VoxelBuffer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_voxel_v", "value", "pos", "channel"), &VoxelBuffer::set_voxel_v, DEFVAL(0));
 	ClassDB::bind_method(D_METHOD("get_voxel", "x", "y", "z", "channel"), &VoxelBuffer::get_voxel, DEFVAL(0));
 	ClassDB::bind_method(D_METHOD("get_voxel_f", "x", "y", "z", "channel"), &VoxelBuffer::get_voxel_f, DEFVAL(0));
+	ClassDB::bind_method(D_METHOD("get_voxel_v", "pos", "channel"), &VoxelBuffer::get_voxel_v, DEFVAL(0));
 	ClassDB::bind_method(D_METHOD("get_voxel_tool"), &VoxelBuffer::get_voxel_tool);
 
 	ClassDB::bind_method(D_METHOD("get_channel_depth", "channel"), &VoxelBuffer::get_channel_depth);

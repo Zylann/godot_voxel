@@ -7,6 +7,11 @@
 #include "voxel_instance_library_editor_plugin.h"
 #include "voxel_instance_library_multimesh_item_editor_plugin.h"
 
+#ifdef ZN_GODOT
+#include "../../util/godot/core/callable_mp.h"
+#include "../../util/godot/core/class_db.h"
+#endif
+
 namespace zylann::voxel {
 
 bool VoxelInstanceLibraryMultiMeshItemInspectorPlugin::_zn_can_handle(const Object *p_object) const {
@@ -25,15 +30,20 @@ void VoxelInstanceLibraryMultiMeshItemInspectorPlugin::_zn_parse_group(Object *p
 			Button *button = memnew(Button);
 			button->set_tooltip_text(
 					ZN_TTR("Set properties based on an existing scene. This might copy mesh and material data if "
-						   "the scene embeds them. Properties will not update if the scene changes later."));
+						   "the scene embeds them. Properties will not update if the scene changes later.")
+			);
 			button->set_text(ZN_TTR("Update from scene..."));
 
 			// Using a bind() instead of relying on "currently edited" item in the editor plugin allows to support
 			// multiple sub-inspectors. Plugins are not instanced per-inspected-object, but custom controls are.
-			button->connect("pressed",
-					callable_mp(listener,
-							&VoxelInstanceLibraryMultiMeshItemEditorPlugin::_on_update_from_scene_button_pressed)
-							.bind(item));
+			button->connect(
+					"pressed",
+					callable_mp(
+							listener,
+							&VoxelInstanceLibraryMultiMeshItemEditorPlugin::_on_update_from_scene_button_pressed
+					)
+							.bind(item)
+			);
 
 			add_custom_control(button);
 
@@ -52,9 +62,15 @@ void VoxelInstanceLibraryMultiMeshItemInspectorPlugin::_zn_parse_group(Object *p
 	// }
 }
 
-bool VoxelInstanceLibraryMultiMeshItemInspectorPlugin::_zn_parse_property(Object *p_object, const Variant::Type p_type,
-		const String &p_path, const PropertyHint p_hint, const String &p_hint_text,
-		const BitField<PropertyUsageFlags> p_usage, const bool p_wide) {
+bool VoxelInstanceLibraryMultiMeshItemInspectorPlugin::_zn_parse_property(
+		Object *p_object,
+		const Variant::Type p_type,
+		const String &p_path,
+		const PropertyHint p_hint,
+		const String &p_hint_text,
+		const BitField<PropertyUsageFlags> p_usage,
+		const bool p_wide
+) {
 	// TODO Godot invokes `parse_property` on ALL editor plugins when inspecting items of an Array!
 	// See https://github.com/godotengine/godot/issues/71236
 	if (p_object == nullptr) {
@@ -63,9 +79,12 @@ bool VoxelInstanceLibraryMultiMeshItemInspectorPlugin::_zn_parse_property(Object
 	}
 	// Hide manual properties if a scene is assigned, because it will override them
 	const VoxelInstanceLibraryMultiMeshItem *item = Object::cast_to<VoxelInstanceLibraryMultiMeshItem>(p_object);
-	ERR_FAIL_COND_V_MSG(item == nullptr, false,
+	ERR_FAIL_COND_V_MSG(
+			item == nullptr,
+			false,
 			String("Did not expect {0}, see https://github.com/godotengine/godot/issues/71236")
-					.format(varray(p_object->get_class())));
+					.format(varray(p_object->get_class()))
+	);
 	if (item->get_scene().is_null()) {
 		return false;
 	}

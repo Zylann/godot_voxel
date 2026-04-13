@@ -12,6 +12,10 @@
 #include "../../util/profiling.h"
 #include "../../util/string/format.h"
 
+#ifdef ZN_GODOT
+#include "../../util/godot/core/class_db.h"
+#endif
+
 // TODO Binary greedy mesher optimization
 // https://www.youtube.com/watch?v=qnGoGq7DWMc
 
@@ -335,8 +339,8 @@ void build_voxel_mesh_as_greedy_cubes(
 
 					// Check if the next rows of faces are the same along Y
 					unsigned int ry = fy + 1;
-					while (ry < mask_size_y && L::is_range_equal(mask, fx + ry * mask_size_x, rx + ry * mask_size_x, m)
-					) {
+					while (ry < mask_size_y &&
+						   L::is_range_equal(mask, fx + ry * mask_size_x, rx + ry * mask_size_x, m)) {
 						++ry;
 					}
 
@@ -546,8 +550,8 @@ void build_voxel_mesh_as_greedy_cubes_atlased(
 
 					// Check if the next rows of faces are the same along Y
 					unsigned int ry = fy + 1;
-					while (ry < mask_size_y && L::is_range_equal(mask, fx + ry * mask_size_x, rx + ry * mask_size_x, m)
-					) {
+					while (ry < mask_size_y &&
+						   L::is_range_equal(mask, fx + ry * mask_size_x, rx + ry * mask_size_x, m)) {
 						++ry;
 					}
 

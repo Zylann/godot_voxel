@@ -2,21 +2,21 @@
 #define ZN_CODE_GEN_HELPER_H
 
 #include "../../util/containers/std_unordered_set.h"
-#include "../../util/string/fwd_std_string.h"
-#include "../../util/string/std_stringstream.h"
+#include "../../util/string/std_string.h"
+// Stopped using StdStringstream for the time being, because of issues supporting some Linux distros
+// https://github.com/Zylann/godot_voxel/issues/842
+// #include "../../util/string/std_stringstream.h"
 
 namespace zylann {
 
 class CodeGenHelper {
 public:
-	CodeGenHelper(StdStringStream &main_ss, StdStringStream &lib_ss);
-
 	void indent();
 	void dedent();
 
 	void add(const char *s, unsigned int len);
 	void add(const char *s);
-	void add(FwdConstStdString s);
+	void add(const StdString &s);
 	void add(double x);
 	void add(float x);
 	void add(int x);
@@ -37,9 +37,9 @@ public:
 
 	void require_lib_code(const char *lib_name, const char *code);
 	void require_lib_code(const char *lib_name, const char **code);
-	void generate_var_name(FwdMutableStdString out_var_name);
+	StdString generate_var_name();
 
-	void print(FwdMutableStdString output);
+	StdString print() const;
 
 private:
 	template <typename T>
@@ -63,8 +63,8 @@ private:
 		return c;
 	}
 
-	StdStringStream &_main_ss;
-	StdStringStream &_lib_ss;
+	StdString _main_code;
+	StdString _lib_code;
 	unsigned int _indent_level = 0;
 	unsigned int _next_var_name_id = 0;
 	StdUnorderedSet<const char *> _included_libs;

@@ -84,6 +84,22 @@ jobs:
           ref: ${{inputs.godot-cpp-branch}}
           path: ${{env.GODOT_CPP_PATH}}
 
+      # Setup custom buildroot so we may use an old but compatible GLIBC version, while keeping recent toolchain.
+      # This allows to make production builds that are compatible with older Linux distros.
+      # See the kind of nasty things we try to avoid: https://github.com/Zylann/godot_voxel/issues/842
+      # This step is after checkout because the checkout step changes the working directory for all following steps.
+      # Also adds system directory in a way that persists between steps.
+      # TODO Enhancement: cache buildroot so future runs can use it? Would save 15s
+      - name: Setup buildroot
+        if: ${{ matrix.target.platform == 'linux' }}
+        run: |
+          wget https://github.com/godotengine/buildroot/releases/download/godot-2023.08.x-4/x86_64-godot-linux-gnu_sdk-buildroot.tar.bz2
+          tar -xjf x86_64-godot-linux-gnu_sdk-buildroot.tar.bz2
+          cd x86_64-godot-linux-gnu_sdk-buildroot
+          ./relocate-sdk.sh
+          cd ..
+          echo "${GITHUB_WORKSPACE}/x86_64-godot-linux-gnu_sdk-buildroot/bin" >> "$GITHUB_PATH"
+
       # Setup dependencies (Python, SCons, Android SDK...)
       - name: Setup godot-cpp
         # uses: ${{env.GODOT_CPP_PATH}}/.github/actions/setup-godot-cpp
@@ -107,7 +123,7 @@ jobs:
         env:
           SCONS_CACHE: ${{ github.workspace }}/.scons-cache/
         run: |
-          scons target=${{ matrix.target-type }} platform=${{ matrix.target.platform }} arch=${{ matrix.target.arch }} precision=${{ matrix.float-precision }} dev_build=no verbose=yes
+          scons target=${{ matrix.target-type }} platform=${{ matrix.target.platform }} arch=${{ matrix.target.arch }} precision=${{ matrix.float-precision }} dev_build=no verbose=yes use_static_cpp=yes
 
       # Sign the binary (macOS only)
       # - name: Mac Sign

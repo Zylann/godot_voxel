@@ -2,6 +2,10 @@
 #include "../constants/voxel_string_names.h"
 #include "../util/string/format.h"
 
+#ifdef ZN_GODOT
+#include "../util/godot/core/class_db.h"
+#endif
+
 namespace zylann::voxel::godot {
 
 void VoxelFormat::set_channel_depth(const VoxelBuffer::ChannelId channel_index, const VoxelBuffer::Depth depth) {

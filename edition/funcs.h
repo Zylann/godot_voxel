@@ -228,22 +228,24 @@ class VoxelBlockyLibraryBase;
 // The `_static` suffix is because it otherwise conflicts with the non-static method when registering the class
 void run_blocky_random_tick(
 		VoxelData &data,
-		Box3i voxel_box,
+		const Box3i voxel_box,
 		const VoxelBlockyLibraryBase &lib,
 		RandomPCG &random,
-		int voxel_count,
-		int batch_count,
+		const int voxel_count,
+		const int batch_count,
+		const uint32_t tags_mask,
 		void *callback_data,
 		bool (*callback)(void *, Vector3i, int64_t)
 );
 
 void run_blocky_random_tick(
 		VoxelData &data,
-		AABB voxel_box_f,
+		const AABB voxel_box_f,
 		const VoxelBlockyLibraryBase &lib,
 		RandomPCG &random,
-		int voxel_count,
-		int batch_count,
+		const int voxel_count,
+		const int batch_count,
+		const uint32_t tags_mask,
 		const Callable &callback
 );
 

@@ -1,5 +1,8 @@
 #include "voxel_color_palette.h"
 #include "../../util/containers/span.h"
+#ifdef ZN_GODOT
+#include "../../util/godot/core/class_db.h"
+#endif
 
 namespace zylann::voxel {
 

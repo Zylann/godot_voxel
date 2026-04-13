@@ -5,6 +5,10 @@
 #include "blocky_model_baking_context.h"
 #include "voxel_blocky_model_mesh.h"
 
+#ifdef ZN_GODOT
+#include "../../util/godot/core/class_db.h"
+#endif
+
 namespace zylann::voxel {
 
 VoxelBlockyModelCube::VoxelBlockyModelCube() {

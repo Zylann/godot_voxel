@@ -1,5 +1,9 @@
 #include "voxel_save_completion_tracker.h"
 
+#ifdef ZN_GODOT
+#include "../util/godot/core/class_db.h"
+#endif
+
 namespace zylann::voxel {
 
 Ref<VoxelSaveCompletionTracker> VoxelSaveCompletionTracker::create(std::shared_ptr<AsyncDependencyTracker> tracker) {

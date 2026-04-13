@@ -59,14 +59,14 @@ public:
 	void set_mesh(
 			Ref<Mesh> mesh,
 			GeometryInstance3D::GIMode gi_mode,
-			RenderingServer::ShadowCastingSetting shadow_casting,
+			RenderingServerEnums::ShadowCastingSetting shadow_casting,
 			int render_layers_mask,
 			Ref<Mesh> shadow_occluder_mesh,
 			int32_t p_col_vertex_max,
 			int32_t p_col_index_max
 #ifdef TOOLS_ENABLED
 			,
-			RenderingServer::ShadowCastingSetting shadow_occluder_mode
+			RenderingServerEnums::ShadowCastingSetting shadow_occluder_mode
 #endif
 	);
 	void drop_visuals();
@@ -77,14 +77,14 @@ public:
 	}
 
 	void set_gi_mode(GeometryInstance3D::GIMode mode);
-	void set_shadow_casting(RenderingServer::ShadowCastingSetting mode);
+	void set_shadow_casting(RenderingServerEnums::ShadowCastingSetting mode);
 	void set_render_layers_mask(int mask);
 
 	void set_transition_mesh(
 			Ref<Mesh> mesh,
 			unsigned int side,
 			GeometryInstance3D::GIMode gi_mode,
-			RenderingServer::ShadowCastingSetting shadow_casting,
+			RenderingServerEnums::ShadowCastingSetting shadow_casting,
 			int render_layers_mask
 	);
 
@@ -115,7 +115,7 @@ public:
 	}
 
 #ifdef TOOLS_ENABLED
-	inline void set_shadow_occluder_mode(RenderingServer::ShadowCastingSetting mode) {
+	inline void set_shadow_occluder_mode(RenderingServerEnums::ShadowCastingSetting mode) {
 		_shadow_occluder.set_cast_shadows_setting(mode);
 	}
 #endif

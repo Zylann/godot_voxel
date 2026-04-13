@@ -4,6 +4,10 @@
 #include "../../util/dstack.h"
 #include "vox_data.h"
 
+#ifdef ZN_GODOT
+#include "../../util/godot/core/class_db.h"
+#endif
+
 namespace zylann::voxel {
 
 int /*Error*/ VoxelVoxLoader::load_from_file(

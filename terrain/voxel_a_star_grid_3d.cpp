@@ -167,6 +167,7 @@ TypedArray<Vector3i> VoxelAStarGrid3D::find_path_internal(Vector3i from_position
 
 void VoxelAStarGrid3D::set_region(Box3i region) {
 	ZN_ASSERT_RETURN(_is_running_async == false);
+	ZN_ASSERT_RETURN_MSG(Vector3iUtil::is_valid_size(region.size), format("Invalid region size: {}", region.size));
 	_path_finder.set_region(region);
 }
 

@@ -3,6 +3,7 @@
 #include "../voxel_modifier_mesh.h"
 
 #ifdef TOOLS_ENABLED
+#include "../../util/godot/core/callable_mp.h"
 #include "../../util/godot/core/string.h"
 #endif
 
@@ -85,8 +86,9 @@ void VoxelModifierMesh::get_configuration_warnings(PackedStringArray &warnings) 
 	VoxelModifier::get_configuration_warnings(warnings);
 
 	if (_mesh_sdf.is_null()) {
-		warnings.append(ZN_TTR("A {0} resource is required for {1} to function.")
-								.format(varray(VoxelMeshSDF::get_class_static(), VoxelModifierMesh::get_class_static()))
+		warnings.append(
+				ZN_TTR("A {0} resource is required for {1} to function.")
+						.format(varray(VoxelMeshSDF::get_class_static(), VoxelModifierMesh::get_class_static()))
 		);
 	} else {
 		if (_mesh_sdf->get_mesh().is_null()) {

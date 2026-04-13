@@ -8,6 +8,10 @@
 #include "../../util/string/format.h"
 #include "node_type_db.h"
 
+#ifdef ZN_GODOT
+#include "../../util/godot/core/callable_mp.h"
+#endif
+
 #include <algorithm>
 
 namespace zylann::voxel::pg {
@@ -1040,9 +1044,7 @@ Dictionary get_graph_as_variant_data(const ProgramGraph &graph) {
 			node_data[param.name] = node->params[j];
 		}
 
-		if (node->autoconnect_default_inputs) {
-			node_data["auto_connect"] = true;
-		}
+		node_data["auto_connect"] = node->autoconnect_default_inputs;
 
 		// Static default inputs
 		for (size_t j = 0; j < type.inputs.size(); ++j) {

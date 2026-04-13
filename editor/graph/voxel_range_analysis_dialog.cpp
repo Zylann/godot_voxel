@@ -7,6 +7,10 @@
 #include "../../util/godot/core/string.h"
 #include "../../util/godot/editor_scale.h"
 
+#ifdef ZN_GODOT
+#include "../../util/godot/core/callable_mp.h"
+#endif
+
 namespace zylann::voxel {
 
 VoxelRangeAnalysisDialog::VoxelRangeAnalysisDialog() {
@@ -24,9 +28,11 @@ VoxelRangeAnalysisDialog::VoxelRangeAnalysisDialog() {
 	Label *tip = memnew(Label);
 	// TODO Had to use `\n` and disable autowrap, otherwise the popup height becomes crazy high
 	// See https://github.com/godotengine/godot/issues/47005
-	tip->set_text(ZN_TTR("When enabled, hover node output labels to\ninspect their "
-						 "estimated range within the\nconfigured area.\n"
-						 "Nodes that may be optimized out locally will be greyed out."));
+	tip->set_text(
+			ZN_TTR("When enabled, hover node output labels to\ninspect their "
+				   "estimated range within the\nconfigured area.\n"
+				   "Nodes that may be optimized out locally will be greyed out.")
+	);
 	// tip->set_autowrap(true);
 	tip->set_modulate(Color(1.f, 1.f, 1.f, 0.8f));
 	vb->add_child(tip);

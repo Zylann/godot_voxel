@@ -3,13 +3,18 @@
 #include "../storage/voxel_buffer_gd.h"
 #include "../util/godot/check_ref_ownership.h"
 
+#ifdef ZN_GODOT
+#include "../util/godot/core/class_db.h"
+#endif
+
 namespace zylann::voxel {
 
 void VoxelStreamScript::load_voxel_block(VoxelStream::VoxelQueryData &query_data) {
 	Variant output;
 	// Create a temporary wrapper so Godot can pass it to scripts
 	Ref<godot::VoxelBuffer> buffer_wrapper(memnew(
-			godot::VoxelBuffer(static_cast<godot::VoxelBuffer::Allocator>(query_data.voxel_buffer.get_allocator()))));
+			godot::VoxelBuffer(static_cast<godot::VoxelBuffer::Allocator>(query_data.voxel_buffer.get_allocator()))
+	));
 	buffer_wrapper->get_buffer().copy_format(query_data.voxel_buffer);
 	buffer_wrapper->get_buffer().create(query_data.voxel_buffer.get_size());
 
@@ -35,7 +40,8 @@ void VoxelStreamScript::load_voxel_block(VoxelStream::VoxelQueryData &query_data
 void VoxelStreamScript::save_voxel_block(VoxelStream::VoxelQueryData &query_data) {
 	// For now the callee can exceptionally take ownership of this wrapper, because we copy the data to it.
 	Ref<godot::VoxelBuffer> buffer_wrapper(memnew(
-			godot::VoxelBuffer(static_cast<godot::VoxelBuffer::Allocator>(query_data.voxel_buffer.get_allocator()))));
+			godot::VoxelBuffer(static_cast<godot::VoxelBuffer::Allocator>(query_data.voxel_buffer.get_allocator()))
+	));
 	query_data.voxel_buffer.copy_to(buffer_wrapper->get_buffer(), true);
 	if (!GDVIRTUAL_CALL(_save_voxel_block, buffer_wrapper, query_data.position_in_blocks, query_data.lod_index)) {
 		WARN_PRINT_ONCE("VoxelStreamScript::_save_voxel_block is unimplemented!");

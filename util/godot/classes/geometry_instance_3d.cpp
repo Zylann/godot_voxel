@@ -31,8 +31,8 @@ void set_geometry_instance_gi_mode(RID rid, GeometryInstance3D::GIMode mode) {
 			return;
 	}
 
-	vs.instance_geometry_set_flag(rid, RenderingServer::INSTANCE_FLAG_USE_BAKED_LIGHT, baked_light);
-	vs.instance_geometry_set_flag(rid, RenderingServer::INSTANCE_FLAG_USE_DYNAMIC_GI, dynamic_gi);
+	vs.instance_geometry_set_flag(rid, RenderingServerEnums::INSTANCE_FLAG_USE_BAKED_LIGHT, baked_light);
+	vs.instance_geometry_set_flag(rid, RenderingServerEnums::INSTANCE_FLAG_USE_DYNAMIC_GI, dynamic_gi);
 }
 
 } // namespace zylann::godot

@@ -44,6 +44,10 @@
 #include "../instancing/voxel_instancer.h"
 #endif
 
+#ifdef ZN_GODOT
+#include "../../util/godot/core/class_db.h"
+#endif
+
 namespace zylann::voxel {
 
 namespace {
@@ -364,7 +368,8 @@ void VoxelLodTerrain::_on_gi_mode_changed() {
 }
 
 void VoxelLodTerrain::_on_shadow_casting_changed() {
-	const RenderingServer::ShadowCastingSetting mode = RenderingServer::ShadowCastingSetting(get_shadow_casting());
+	const RenderingServerEnums::ShadowCastingSetting mode =
+			RenderingServerEnums::ShadowCastingSetting(get_shadow_casting());
 	for (unsigned int lod_index = 0; lod_index < _update_data->state.lods.size(); ++lod_index) {
 		_mesh_maps_per_lod[lod_index].for_each_block([mode](VoxelMeshBlockVLT &block) { //
 			block.set_shadow_casting(mode);
@@ -667,10 +672,10 @@ void VoxelLodTerrain::push_async_edit(IThreadedTask *task, Box3i box, std::share
 }
 
 Ref<VoxelTool> VoxelLodTerrain::get_voxel_tool() {
-	VoxelToolLodTerrain *vt = memnew(VoxelToolLodTerrain(this));
+	Ref<VoxelToolLodTerrain> vt(memnew(VoxelToolLodTerrain(this)));
 	// Set to most commonly used channel on this kind of terrain
 	vt->set_channel(VoxelBuffer::CHANNEL_SDF);
-	return Ref<VoxelTool>(vt);
+	return vt;
 }
 
 int VoxelLodTerrain::get_view_distance() const {
@@ -835,7 +840,7 @@ void VoxelLodTerrain::get_lod_distances(Span<float> distances) {
 
 	if (settings.streaming_system == VoxelLodTerrainUpdateData::STREAMING_SYSTEM_LEGACY_OCTREE) {
 		for (int lod_index = 1; lod_index < lod_count; ++lod_index) {
-			distances[lod_index] = settings.lod_distance;
+			distances[lod_index] = settings.lod_distance * (1 << lod_index);
 		}
 
 	} else {
@@ -1438,6 +1443,10 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 			}
 			// TODO When moving out of a region that already has collision-only viewers (causing the present visual-only
 			// unload), we may want to fade visuals the same way we do when the whole block is removed?
+
+			// `drop_visual` will cancel fading if any
+			StdMap<Vector3i, VoxelMeshBlockVLT *> &fading_map = _fading_blocks_per_lod[lod_index];
+			fading_map.erase(bpos);
 		}
 		lod.mesh_blocks_to_drop_visual.clear();
 
@@ -2054,15 +2063,15 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 		}
 
 #ifdef TOOLS_ENABLED
-		const RenderingServer::ShadowCastingSetting shadow_occluder_mode = _debug_draw_shadow_occluders
-				? RenderingServer::SHADOW_CASTING_SETTING_ON
-				: RenderingServer::SHADOW_CASTING_SETTING_SHADOWS_ONLY;
+		const RenderingServerEnums::ShadowCastingSetting shadow_occluder_mode = _debug_draw_shadow_occluders
+				? RenderingServerEnums::SHADOW_CASTING_SETTING_ON
+				: RenderingServerEnums::SHADOW_CASTING_SETTING_SHADOWS_ONLY;
 #endif
 
 		block->set_mesh(
 				mesh,
 				get_gi_mode(),
-				RenderingServer::ShadowCastingSetting(get_shadow_casting()),
+				RenderingServerEnums::ShadowCastingSetting(get_shadow_casting()),
 				get_render_layers_mask(),
 				shadow_occluder_mesh,
 				ob.surfaces.collision_surface.submesh_vertex_end,
@@ -2102,7 +2111,7 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 					transition_mesh,
 					dir,
 					get_gi_mode(),
-					RenderingServer::ShadowCastingSetting(get_shadow_casting()),
+					RenderingServerEnums::ShadowCastingSetting(get_shadow_casting()),
 					get_render_layers_mask()
 			);
 		}
@@ -2416,8 +2425,12 @@ void VoxelLodTerrain::process_fading_blocks(float delta) {
 			while (it != fading_blocks.end()) {
 				VoxelMeshBlockVLT *block = it->second;
 				ZN_ASSERT(block != nullptr);
-				// The collection of fading blocks must only contain fading blocks
-				ERR_FAIL_COND(block->fading_state == VoxelMeshBlockVLT::FADING_NONE);
+				// The collection of fading blocks must only contain fading blocks. If this happens, it hints at a bug
+				if (block->fading_state == VoxelMeshBlockVLT::FADING_NONE) {
+					ERR_PRINT("Unexpected non-fading block still referenced in fading blocks (bug?)");
+					it = fading_blocks.erase(it);
+					continue;
+				}
 
 				const bool finished = block->update_fading(speed);
 
@@ -2573,6 +2586,11 @@ void VoxelLodTerrain::get_meshed_block_positions_at_lod(int lod_index, StdVector
 	});
 }
 
+VoxelData &VoxelLodTerrain::get_storage() const {
+	ZN_ASSERT(_data != nullptr);
+	return *_data;
+}
+
 void VoxelLodTerrain::save_all_modified_blocks(bool with_copy, std::shared_ptr<AsyncDependencyTracker> tracker) {
 	ZN_PROFILE_SCOPE();
 
@@ -2719,6 +2737,12 @@ void VoxelLodTerrain::set_streaming_system(StreamingSystem v) {
 	_on_stream_params_changed();
 #ifdef TOOLS_ENABLED
 	notify_property_list_changed();
+#endif
+
+#ifdef VOXEL_ENABLE_INSTANCER
+	if (_instancer != nullptr) {
+		_instancer->update_mesh_lod_distances_from_parent();
+	}
 #endif
 }
 
@@ -3338,8 +3362,9 @@ void VoxelLodTerrain::debug_set_draw_shadow_occluders(bool enable) {
 		return;
 	}
 	_debug_draw_shadow_occluders = enable;
-	const RenderingServer::ShadowCastingSetting mode =
-			enable ? RenderingServer::SHADOW_CASTING_SETTING_ON : RenderingServer::SHADOW_CASTING_SETTING_SHADOWS_ONLY;
+	const RenderingServerEnums::ShadowCastingSetting mode = enable
+			? RenderingServerEnums::SHADOW_CASTING_SETTING_ON
+			: RenderingServerEnums::SHADOW_CASTING_SETTING_SHADOWS_ONLY;
 	for (VoxelMeshMap<VoxelMeshBlockVLT> &mesh_map : _mesh_maps_per_lod) {
 		mesh_map.for_each_block([mode](VoxelMeshBlockVLT &block) { //
 			block.set_shadow_occluder_mode(mode);
@@ -3551,6 +3576,29 @@ void VoxelLodTerrain::update_gizmos() {
 		);
 	}
 
+	if (debug_get_draw_flag(DEBUG_DRAW_VOXEL_METADATA)) {
+		const int data_block_size = get_data_block_size();
+		for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
+			_data->for_each_block_at_lod_r(
+					[&dr, parent_transform, data_block_size](const Vector3i &bpos, const VoxelDataBlock &block) {
+						if (block.has_voxels()) {
+							const VoxelBuffer &vb = block.get_voxels_const();
+							const FlatMapMoveOnly<Vector3i, VoxelMetadata> &meta_map = vb.get_voxel_metadata();
+							const Vector3i block_origin = bpos * data_block_size;
+
+							for (auto it = meta_map.begin(); it != meta_map.end(); ++it) {
+								const Vector3i rpos = it->key;
+								const Transform3D local_transform(Basis(), to_vec3(block_origin + rpos));
+								const Transform3D t = parent_transform * local_transform;
+								dr.draw_box(t, Color8(255, 255, 0, 255));
+							}
+						}
+					},
+					lod_index
+			);
+		}
+	}
+
 	// Debug updates
 	for (unsigned int i = 0; i < _debug_mesh_update_items.size();) {
 		DebugMeshUpdateItem &item = _debug_mesh_update_items[i];
@@ -3663,31 +3711,75 @@ int VoxelLodTerrain::_b_debug_get_data_block_count() const {
 	return _data->get_block_count();
 }
 
-Node3D *VoxelLodTerrain::debug_dump_as_nodes(bool include_instancer) const {
+Node3D *VoxelLodTerrain::convert_to_nodes(const BitField<NodeConversionFlags> flags) const {
 	Node3D *root = memnew(Node3D);
 	root->set_name(get_name());
+	root->set_transform(get_transform());
 
 	const unsigned int lod_count = get_lod_count();
+
+	const GeometryInstance3D::GIMode gi_mode = get_gi_mode();
+	const GeometryInstance3D::ShadowCastingSetting shadow_casting = get_shadow_casting();
+	const int render_layers_mask = get_render_layers_mask();
+
+	Ref<Material> non_shader_material = get_material();
+	Ref<ShaderMaterial> shader_material = non_shader_material;
+	if (shader_material.is_valid()) {
+		non_shader_material = Ref<Material>();
+	}
 
 	for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
 		const VoxelMeshMap<VoxelMeshBlockVLT> &mesh_map = _mesh_maps_per_lod[lod_index];
 
-		// To make the scene easier to inspect
+		// Split LODs under specific parents to make the scene easier to inspect
 		Node3D *lod_node = memnew(Node3D);
 		lod_node->set_name(String("LOD{0}").format(varray(lod_index)));
 		root->add_child(lod_node);
 
-		mesh_map.for_each_block([lod_node](const VoxelMeshBlockVLT &block) {
+		mesh_map.for_each_block([lod_node,
+								 flags,
+								 lod_index,
+								 gi_mode,
+								 shadow_casting,
+								 render_layers_mask,
+								 non_shader_material](const VoxelMeshBlockVLT &block) {
 			block.for_each_mesh_instance_with_transform(
-					[lod_node, &block](const zylann::godot::DirectMeshInstance &dmi, Transform3D t) {
+					[lod_node,
+					 &block,
+					 flags,
+					 lod_index,
+					 gi_mode,
+					 shadow_casting,
+					 render_layers_mask,
+					 non_shader_material](const zylann::godot::DirectMeshInstance &dmi, const Transform3D transform) {
+						if (!flags.has_flag(NODE_CONVERSION_INCLUDE_INVISIBLE_BLOCKS)) {
+							if (!block.is_visible()) {
+								return;
+							}
+						}
 						Ref<Mesh> mesh = dmi.get_mesh();
 
 						if (mesh.is_valid()) {
 							MeshInstance3D *mi = memnew(MeshInstance3D);
+							mi->set_name(String("Block_{0}_{1}_{2}_LOD{3}")
+												 .format(varray(
+														 block.position.x, block.position.y, block.position.z, lod_index
+												 )));
 							mi->set_mesh(mesh);
-							mi->set_transform(t);
-							// TODO Transition mesh visibility?
+							mi->set_transform(transform);
 							mi->set_visible(block.is_visible());
+							mi->set_gi_mode(gi_mode);
+							mi->set_cast_shadows_setting(shadow_casting);
+							mi->set_layer_mask(render_layers_mask);
+
+							if (flags.has_flag(NODE_CONVERSION_INCLUDE_MATERIAL_OVERRIDES)) {
+								if (non_shader_material.is_valid()) {
+									mi->set_material_override(non_shader_material);
+								} else {
+									mi->set_material_override(block.get_shader_material());
+								}
+							}
+
 							lod_node->add_child(mi);
 						}
 					}
@@ -3696,8 +3788,12 @@ Node3D *VoxelLodTerrain::debug_dump_as_nodes(bool include_instancer) const {
 	}
 
 #ifdef VOXEL_ENABLE_INSTANCER
-	if (include_instancer && _instancer != nullptr) {
-		Node *instances_root = _instancer->debug_dump_as_nodes();
+	if (flags.has_flag(NODE_CONVERSION_INCLUDE_INSTANCER) && _instancer != nullptr) {
+		Node *instances_root = _instancer->convert_to_nodes(
+				flags.has_flag(NODE_CONVERSION_INCLUDE_MATERIAL_OVERRIDES)
+						? VoxelInstancer::NODE_CONVERSION_INCLUDE_MATERIAL_OVERRIDES
+						: 0
+		);
 		if (instances_root != nullptr) {
 			root->add_child(instances_root);
 		}
@@ -3705,6 +3801,12 @@ Node3D *VoxelLodTerrain::debug_dump_as_nodes(bool include_instancer) const {
 #endif
 
 	return root;
+}
+
+Node3D *VoxelLodTerrain::debug_dump_as_nodes(bool include_instancer) const {
+	return convert_to_nodes(
+			NODE_CONVERSION_INCLUDE_INVISIBLE_BLOCKS | (include_instancer ? NODE_CONVERSION_INCLUDE_INSTANCER : 0)
+	);
 }
 
 Error VoxelLodTerrain::debug_dump_as_scene(String fpath, bool include_instancer) const {
@@ -4069,6 +4171,7 @@ void VoxelLodTerrain::_bind_methods() {
 	ADD_DEBUG_DRAW_FLAG("debug_draw_viewer_clipboxes", DEBUG_DRAW_VIEWER_CLIPBOXES);
 	ADD_DEBUG_DRAW_FLAG("debug_draw_loaded_visual_and_collision_blocks", DEBUG_DRAW_LOADED_VISUAL_AND_COLLISION_BLOCKS);
 	ADD_DEBUG_DRAW_FLAG("debug_draw_active_visual_and_collision_blocks", DEBUG_DRAW_ACTIVE_VISUAL_AND_COLLISION_BLOCKS);
+	ADD_DEBUG_DRAW_FLAG("debug_draw_voxel_metadata", DEBUG_DRAW_VOXEL_METADATA);
 
 	ADD_PROPERTY(
 			PropertyInfo(Variant::BOOL, "debug_draw_shadow_occluders", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR),

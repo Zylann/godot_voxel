@@ -17,6 +17,7 @@
 namespace zylann::voxel {
 
 class VoxelTool;
+class VoxelData;
 
 // Base class for voxel volumes
 class VoxelNode : public Node3D {
@@ -30,6 +31,8 @@ public:
 
 	virtual void set_generator(Ref<VoxelGenerator> generator);
 	virtual Ref<VoxelGenerator> get_generator() const;
+
+	virtual VoxelData &get_storage() const;
 
 	void set_format(Ref<godot::VoxelFormat> format);
 	Ref<godot::VoxelFormat> get_format() const;
@@ -51,6 +54,14 @@ public:
 	virtual std::shared_ptr<StreamingDependency> get_streaming_dependency() const;
 
 	virtual Ref<VoxelTool> get_voxel_tool();
+
+	enum NodeConversionFlags {
+		NODE_CONVERSION_INCLUDE_INSTANCER = 1 << 0,
+		NODE_CONVERSION_INCLUDE_INVISIBLE_BLOCKS = 1 << 1,
+		NODE_CONVERSION_INCLUDE_MATERIAL_OVERRIDES = 1 << 2
+	};
+
+	virtual Node3D *convert_to_nodes(const BitField<NodeConversionFlags> flags) const;
 
 #ifdef TOOLS_ENABLED
 #if defined(ZN_GODOT)
@@ -103,5 +114,7 @@ private:
 };
 
 } // namespace zylann::voxel
+
+VARIANT_BITFIELD_CAST(zylann::voxel::VoxelNode::NodeConversionFlags);
 
 #endif // VOXEL_NODE_H

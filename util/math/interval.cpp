@@ -1,6 +1,6 @@
 #include "interval.h"
+#include "../io/text_writer.h"
 #include "../string/format.h"
-#include <sstream>
 
 namespace zylann {
 
@@ -27,9 +27,9 @@ void check_range_once(double min, double max) {
 } // namespace interval_impl
 } // namespace math
 
-StdStringStream &operator<<(StdStringStream &ss, const math::Interval &v) {
-	ss << "[" << v.min << ", " << v.max << "]";
-	return ss;
+TextWriter &operator<<(TextWriter &w, const math::Interval &v) {
+	w << "[" << v.min << ", " << v.max << "]";
+	return w;
 }
 
 } // namespace zylann

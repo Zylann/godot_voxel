@@ -129,6 +129,7 @@ struct BakedModel {
 	bool lod_skirts;
 
 	uint32_t box_collision_mask;
+	uint32_t tags_mask;
 	StdVector<AABB> box_collision_aabbs;
 
 	inline void clear() {

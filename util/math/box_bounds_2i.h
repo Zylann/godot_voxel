@@ -1,7 +1,6 @@
 #ifndef ZN_BOX_BOUNDS_2I_H
 #define ZN_BOX_BOUNDS_2I_H
 
-#include "../string/std_stringstream.h"
 #include "box2i.h"
 
 namespace zylann {
@@ -59,7 +58,8 @@ struct BoxBounds2i {
 	}
 };
 
-StdStringStream &operator<<(StdStringStream &ss, const BoxBounds2i &box);
+class TextWriter;
+TextWriter &operator<<(TextWriter &w, const BoxBounds2i &box);
 
 } // namespace zylann
 

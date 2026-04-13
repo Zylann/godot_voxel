@@ -110,7 +110,7 @@ public:
 	bool try_set_voxel(uint64_t value, Vector3i pos, unsigned int channel_index);
 
 	float get_voxel_f(Vector3i pos, unsigned int channel_index) const;
-	bool try_set_voxel_f(real_t value, Vector3i pos, unsigned int channel_index);
+	bool try_set_voxel_f(const real_t value, const Vector3i pos, const unsigned int channel_index);
 
 	// Copies voxel data in a box from LOD0.
 	// `channels_mask` bits tell which channel is read.
@@ -361,8 +361,8 @@ public:
 	// Metadata queries.
 	// Only at LOD0.
 
-	void set_voxel_metadata(Vector3i pos, Variant meta);
-	Variant get_voxel_metadata(Vector3i pos);
+	void set_voxel_metadata(const Vector3i pos, const Variant &meta);
+	Variant get_voxel_metadata(const Vector3i pos);
 
 private:
 	void reset_maps_no_settings_lock();
@@ -374,8 +374,9 @@ private:
 		// Multi-threaded access strategy:
 		// - Spatial lock first
 		// - Map lock second, while the spatial lock is acquired, just to lookup the map
-		// This should be safe assuming the address of hashmap's values remains stable when insertion or removal occurs.
-		// If two lods really need to be locked as well, lock the lower index first, and higher index next.
+		// This should be safe assuming the address of hashmap's values remains stable when insertion or removal of
+		// other elements occurs. If two lods really need to be locked as well, lock the lower index first, and higher
+		// index next.
 
 		// Lock protecting the map itself, because it uses a hashmap.
 		// This lock should be locked in write mode only when the map gets modified (adding or removing blocks).
@@ -424,6 +425,8 @@ private:
 		}
 		return block->get_voxels_shared();
 	}
+
+	std::shared_ptr<VoxelBuffer> try_get_writable_voxel_buffer_assuming_spatial_lock(Lod &lod, const Vector3i bpos);
 
 	// Each LOD works in a set of coordinates spanning 2x more voxels the higher their index is.
 	// LOD 0 is the primary storage for edited data. Higher indices are "mip-maps".

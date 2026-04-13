@@ -140,11 +140,12 @@ AABB get_path_aabb(Span<const Vector3> positions, Span<const float> radii) {
 
 void run_blocky_random_tick(
 		VoxelData &data,
-		Box3i voxel_box,
+		const Box3i voxel_box,
 		const VoxelBlockyLibraryBase &lib,
 		RandomPCG &random,
-		int voxel_count,
-		int batch_count,
+		const int voxel_count,
+		const int batch_count,
+		const uint32_t tags_mask,
 		void *callback_data,
 		bool (*callback)(void *, Vector3i, int64_t)
 ) {
@@ -214,7 +215,7 @@ void run_blocky_random_tick(
 					const uint64_t v = voxels.get_voxel(0, 0, 0, channel);
 					if (lib_data.has_model(v)) {
 						const blocky::BakedModel &vt = lib_data.models[v];
-						if (!vt.is_random_tickable) {
+						if (vt.is_random_tickable == false || (vt.tags_mask & tags_mask) == 0) {
 							// Skip whole block
 							continue;
 						}
@@ -249,7 +250,7 @@ void run_blocky_random_tick(
 			if (lib_data.has_model(pick.value)) {
 				const blocky::BakedModel &vt = lib_data.models[pick.value];
 
-				if (vt.is_random_tickable) {
+				if (vt.is_random_tickable && (vt.tags_mask & tags_mask) != 0) {
 					ERR_FAIL_COND(!callback(callback_data, pick.rpos + block_origin, pick.value));
 				}
 			}
@@ -259,11 +260,12 @@ void run_blocky_random_tick(
 
 void run_blocky_random_tick(
 		VoxelData &data,
-		AABB voxel_box_f,
+		const AABB voxel_box_f,
 		const VoxelBlockyLibraryBase &lib,
 		RandomPCG &random,
-		int voxel_count,
-		int batch_count,
+		const int voxel_count,
+		const int batch_count,
+		const uint32_t tags_mask,
 		const Callable &callback
 ) {
 	struct CallbackData {
@@ -280,6 +282,7 @@ void run_blocky_random_tick(
 			random,
 			voxel_count,
 			batch_count,
+			tags_mask,
 			&cb_self,
 			[](void *self, Vector3i pos, int64_t val) {
 				const CallbackData *cd = reinterpret_cast<const CallbackData *>(self);

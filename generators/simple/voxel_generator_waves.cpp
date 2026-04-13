@@ -1,6 +1,10 @@
 #include "voxel_generator_waves.h"
 #include <cmath>
 
+#ifdef ZN_GODOT
+#include "../../util/godot/core/class_db.h"
+#endif
+
 namespace zylann::voxel {
 
 VoxelGeneratorWaves::VoxelGeneratorWaves() {

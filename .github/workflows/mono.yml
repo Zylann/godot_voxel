@@ -11,7 +11,7 @@ concurrency:
 
 # Global Cache Settings
 env:
-  GODOT_BASE_BRANCH: "4.5-stable"
+  GODOT_BASE_BRANCH: "4.6-stable"
   SCONS_CACHE_LIMIT_GB: 4
 
 jobs:
@@ -246,6 +246,13 @@ jobs:
       - name: Build the managed libraries
         run: |
           python ./modules/mono/build_scripts/build_assemblies.py --godot-output-dir=./bin
+
+      # Add DirectX 12 support.
+      # This is not provided by default, despite Godot using D3D by default since 4.6.
+      # See https://docs.godotengine.org/en/stable/contributing/development/compiling/compiling_for_windows.html#compiling-with-support-for-direct3d-12
+      - name: Add D3D12
+        run: |
+          python misc/scripts/install_d3d12_sdk_windows.py
 
       # Compile with explicit flags.
       # `PYTHONIOENCODING` was needed due to certain characters the Godot build system might print (such as '∞'), 

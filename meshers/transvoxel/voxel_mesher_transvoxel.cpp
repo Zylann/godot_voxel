@@ -187,7 +187,8 @@ void simplify(
 				sizeof(Vector3f),
 				target_index_count,
 				p_error_threshold,
-				zylannmeshopt::meshopt_SimplifyLockBorder, // Crucial for chunk borders, see https://github.com/zeux/meshoptimizer/issues/311
+				// Crucial for chunk borders, see https://github.com/zeux/meshoptimizer/issues/311
+				zylannmeshopt::meshopt_SimplifyLockBorder,
 				&lod_error
 		);
 
@@ -382,7 +383,7 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 	output.primitive_type = Mesh::PRIMITIVE_TRIANGLES;
 
 	// Transvoxel transitions data
-	output.mesh_flags = (RenderingServer::ARRAY_CUSTOM_RGBA_FLOAT << Mesh::ARRAY_FORMAT_CUSTOM0_SHIFT);
+	output.mesh_flags = (RenderingServerEnums::ARRAY_CUSTOM_RGBA_FLOAT << Mesh::ARRAY_FORMAT_CUSTOM0_SHIFT);
 
 	// Texture data
 	switch (texture_mode) {
@@ -390,7 +391,7 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 			break;
 		case TEXTURES_MIXEL4_S4:
 		case TEXTURES_SINGLE_S4:
-			output.mesh_flags |= (RenderingServer::ARRAY_CUSTOM_RG_FLOAT << Mesh::ARRAY_FORMAT_CUSTOM1_SHIFT);
+			output.mesh_flags |= (RenderingServerEnums::ARRAY_CUSTOM_RG_FLOAT << Mesh::ARRAY_FORMAT_CUSTOM1_SHIFT);
 			break;
 		default:
 			ZN_PRINT_ERROR("Unhandled texture mode");

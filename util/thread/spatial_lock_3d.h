@@ -16,7 +16,7 @@ namespace zylann {
 
 // Locking on a large voxel data structure can be done with this, instead of putting RWLocks on every chunk or
 // every octree node. This also reduces the amount of required mutexes considerably (that matters on some platforms with
-// low limits).
+// low limits; it also reduces memory usage, as mutex implementations can occupy a lot of bytes).
 //
 // Some methods allow to `try` locking areas. They should be used in contextes where blocking is worse than
 // delaying operations. Such contextes may then postpone their work, or cancel it. If that's not possible, then it
@@ -48,11 +48,14 @@ public:
 	bool try_lock_read(const BoxBounds3i &box) {
 		_boxes_mutex.lock();
 		if (can_lock_for_read(box)) {
-			_boxes.push_back(Box{ box, MODE_READ,
+			_boxes.push_back(
+					Box{ box,
+						 MODE_READ,
 #ifdef ZN_SPATIAL_LOCK_3D_CHECKS
-					Thread::get_caller_id()
+						 Thread::get_caller_id()
 #endif
-			});
+					}
+			);
 			_boxes_mutex.unlock();
 			return true;
 		} else {
@@ -74,11 +77,14 @@ public:
 	bool try_lock_write(const BoxBounds3i &box) {
 		_boxes_mutex.lock();
 		if (can_lock_for_write(box)) {
-			_boxes.push_back(Box{ box, MODE_WRITE,
+			_boxes.push_back(
+					Box{ box,
+						 MODE_WRITE,
 #ifdef ZN_SPATIAL_LOCK_3D_CHECKS
-					Thread::get_caller_id()
+						 Thread::get_caller_id()
 #endif
-			});
+					}
+			);
 			_boxes_mutex.unlock();
 			return true;
 		} else {
@@ -144,8 +150,9 @@ private:
 			//   This is a deadlock.
 			// Note: this is not true if threads only lock for reading, but if we didn't ever write we'd not use locks.
 			// Note: this is also not true if threads use `try_lock` instead!
-			ZN_ASSERT_RETURN_V_MSG(existing_box.thread_id != thread_id, false,
-					"Locking two areas from the same threads is not allowed");
+			ZN_ASSERT_RETURN_V_MSG(
+					existing_box.thread_id != thread_id, false, "Locking two areas from the same threads is not allowed"
+			);
 #endif
 			if (existing_box.bounds.intersects(box) && existing_box.mode == MODE_WRITE) {
 				return false;
@@ -164,8 +171,9 @@ private:
 			const Box &existing_box = _boxes[i];
 
 #ifdef ZN_SPATIAL_LOCK_3D_CHECKS
-			ZN_ASSERT_RETURN_V_MSG(existing_box.thread_id != thread_id, false,
-					"Locking two areas from the same threads is not allowed");
+			ZN_ASSERT_RETURN_V_MSG(
+					existing_box.thread_id != thread_id, false, "Locking two areas from the same threads is not allowed"
+			);
 #endif
 			if (existing_box.bounds.intersects(box)) {
 				return false;

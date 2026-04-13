@@ -10,7 +10,9 @@ jobs:
   build_binaries:
     uses: Zylann/godot_voxel/.github/workflows/extension_builds.yml@master
     with:
-      godot-cpp-branch: godot-4.5-stable
+      # "stable" version tags exist, but they actually seem to mark the first commit that supported a given Godot
+      # version. So if fixes were pushed after that, it wouldn't have them. So we have to target the branch instead.
+      godot-cpp-branch: 4.5
 
   dist:
     runs-on: ubuntu-22.04

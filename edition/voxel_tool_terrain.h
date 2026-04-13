@@ -24,8 +24,8 @@ public:
 			uint32_t p_collision_mask
 	) override;
 
-	void set_voxel_metadata(Vector3i pos, Variant meta) override;
-	Variant get_voxel_metadata(Vector3i pos) const override;
+	void set_voxel_metadata(const Vector3i pos, const Variant &meta) override;
+	Variant get_voxel_metadata(const Vector3i pos) const override;
 
 	void copy(
 			const Vector3i pos,
@@ -65,7 +65,13 @@ public:
 
 	void do_hemisphere(Vector3 center, float radius, Vector3 flat_direction, float smoothness);
 
-	void run_blocky_random_tick(AABB voxel_area, int voxel_count, const Callable &callback, int block_batch_count);
+	void run_blocky_random_tick(
+			const AABB voxel_area,
+			const int voxel_count,
+			const Callable &callback,
+			const int block_batch_count,
+			const uint32_t tags_mask
+	);
 
 	void for_each_voxel_metadata_in_area(AABB voxel_area, const Callable &callback);
 

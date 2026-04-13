@@ -15,6 +15,10 @@
 #include "blocky_lod_skirts.h"
 #include "blocky_shadow_occluders.h"
 
+#ifdef ZN_GODOT
+#include "../../util/godot/core/class_db.h"
+#endif
+
 using namespace zylann::godot;
 
 namespace zylann::voxel {

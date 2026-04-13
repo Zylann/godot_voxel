@@ -10,6 +10,10 @@
 #include "../../../util/godot/core/array.h"
 #include "../../../util/godot/core/string.h"
 
+#ifdef ZN_GODOT
+#include "../../../util/godot/core/callable_mp.h"
+#endif
+
 namespace zylann::voxel {
 
 VoxelBlockyTypeVariantListEditor::VoxelBlockyTypeVariantListEditor() {
@@ -24,15 +28,19 @@ VoxelBlockyTypeVariantListEditor::VoxelBlockyTypeVariantListEditor() {
 
 void VoxelBlockyTypeVariantListEditor::set_type(Ref<VoxelBlockyType> type) {
 	if (_type.is_valid()) {
-		_type->disconnect(VoxelStringNames::get_singleton().changed,
-				callable_mp(this, &VoxelBlockyTypeVariantListEditor::_on_type_changed));
+		_type->disconnect(
+				VoxelStringNames::get_singleton().changed,
+				callable_mp(this, &VoxelBlockyTypeVariantListEditor::_on_type_changed)
+		);
 	}
 
 	_type = type;
 
 	if (_type.is_valid()) {
-		_type->connect(VoxelStringNames::get_singleton().changed,
-				callable_mp(this, &VoxelBlockyTypeVariantListEditor::_on_type_changed));
+		_type->connect(
+				VoxelStringNames::get_singleton().changed,
+				callable_mp(this, &VoxelBlockyTypeVariantListEditor::_on_type_changed)
+		);
 	}
 
 	update_list();
@@ -89,10 +97,13 @@ void VoxelBlockyTypeVariantListEditor::update_list() {
 		// buttons to (hopefully) come back where they were
 		ed.resource_picker->set_edited_resource(model);
 		ed.resource_picker->set_h_size_flags(Control::SIZE_EXPAND_FILL);
-		ed.resource_picker->connect("resource_changed",
-				callable_mp(this, &VoxelBlockyTypeVariantListEditor::_on_model_changed).bind(editor_index));
 		ed.resource_picker->connect(
-				"resource_selected", callable_mp(this, &VoxelBlockyTypeVariantListEditor::_on_model_picker_selected));
+				"resource_changed",
+				callable_mp(this, &VoxelBlockyTypeVariantListEditor::_on_model_changed).bind(editor_index)
+		);
+		ed.resource_picker->connect(
+				"resource_selected", callable_mp(this, &VoxelBlockyTypeVariantListEditor::_on_model_picker_selected)
+		);
 
 		container.add_child(ed.key_label);
 		container.add_child(ed.resource_picker);

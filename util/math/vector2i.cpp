@@ -1,11 +1,11 @@
 #include "vector2i.h"
-#include <sstream>
+#include "../io/text_writer.h"
 
 namespace zylann {
 
-StdStringStream &operator<<(StdStringStream &ss, const Vector2i &v) {
-	ss << "(" << v.x << ", " << v.y << ")";
-	return ss;
+TextWriter &operator<<(TextWriter &w, const Vector2i &v) {
+	w << "(" << v.x << ", " << v.y << ")";
+	return w;
 }
 
 } // namespace zylann

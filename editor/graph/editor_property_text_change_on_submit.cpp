@@ -1,6 +1,10 @@
 #include "editor_property_text_change_on_submit.h"
 #include "../../util/godot/classes/line_edit.h"
 
+#ifdef ZN_GODOT
+#include "../../util/godot/core/callable_mp.h"
+#endif
+
 namespace zylann {
 
 ZN_EditorPropertyTextChangeOnSubmit::ZN_EditorPropertyTextChangeOnSubmit() {

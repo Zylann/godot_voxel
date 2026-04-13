@@ -5,9 +5,15 @@
 #include "../generators/voxel_generator.h"
 #include "../meshers/blocky/voxel_mesher_blocky.h"
 #include "../meshers/voxel_mesher.h"
+#include "../storage/voxel_data.h"
 #include "../streams/voxel_stream.h"
 #include "../util/godot/classes/script.h"
 #include "../util/godot/core/string.h"
+
+#ifdef ZN_GODOT
+#include "../util/godot/core/callable_mp.h"
+#include "../util/godot/core/class_db.h"
+#endif
 
 #ifdef VOXEL_ENABLE_SMOOTH_MESHING
 #include "../meshers/transvoxel/voxel_mesher_transvoxel.h"
@@ -44,6 +50,13 @@ void VoxelNode::set_generator(Ref<VoxelGenerator> generator) {
 Ref<VoxelGenerator> VoxelNode::get_generator() const {
 	// Implemented in subclasses
 	return Ref<VoxelGenerator>();
+}
+
+VoxelData &VoxelNode::get_storage() const {
+	// Have to implement for the class to be bindable to Godot, but shouldnt be called
+	ZN_CRASH_MSG("Not available");
+	static VoxelData s_dummy;
+	return s_dummy;
 }
 
 void VoxelNode::set_format(Ref<godot::VoxelFormat> format) {
@@ -105,6 +118,12 @@ Ref<VoxelTool> VoxelNode::get_voxel_tool() {
 	return Ref<VoxelTool>();
 }
 
+Node3D *VoxelNode::convert_to_nodes(const BitField<NodeConversionFlags> flags) const {
+	ZN_PRINT_ERROR("Not implemented");
+	// Implemented in subclasses
+	return nullptr;
+}
+
 #ifdef TOOLS_ENABLED
 
 #if defined(ZN_GODOT)
@@ -120,6 +139,22 @@ PackedStringArray VoxelNode::_get_configuration_warnings() const {
 	return warnings;
 }
 #endif
+
+static String channel_mask_to_string(const uint32_t mask) {
+	String s = "[";
+	bool comma = false;
+	for (unsigned int i = 0; i < VoxelBuffer::MAX_CHANNELS; ++i) {
+		if ((mask & (1 << i)) != 0) {
+			if (comma) {
+				s += ", ";
+			}
+			s += VoxelBuffer::get_channel_name(static_cast<VoxelBuffer::ChannelId>(i));
+			comma = true;
+		}
+	}
+	s += "]";
+	return s;
+}
 
 void VoxelNode::get_configuration_warnings(PackedStringArray &warnings) const {
 	Ref<VoxelMesher> mesher = get_mesher();
@@ -154,10 +189,12 @@ void VoxelNode::get_configuration_warnings(PackedStringArray &warnings) const {
 			const int mesher_channels = mesher->get_used_channels_mask();
 
 			if ((stream_channels & mesher_channels) == 0) {
-				warnings.append(
-						ZN_TTR("The current stream is providing voxel data only on channels that are not used by "
-							   "the current mesher. This will result in nothing being visible.")
-				);
+				warnings.append(ZN_TTR("The current stream is providing voxel data on channels {0}, but the current "
+									   "mesher uses {1}. This might result in nothing being visible.")
+										.format(
+												varray(channel_mask_to_string(stream_channels),
+													   channel_mask_to_string(mesher_channels))
+										));
 			}
 		}
 	}
@@ -185,10 +222,19 @@ void VoxelNode::get_configuration_warnings(PackedStringArray &warnings) const {
 			const int mesher_channels = mesher->get_used_channels_mask();
 
 			if ((generator_channels & mesher_channels) == 0) {
-				warnings.append(
-						ZN_TTR("The current generator is providing voxel data only on channels that are not used by "
-							   "the current mesher. This will result in nothing being visible.")
-				);
+				String gen_name = generator->get_class();
+				if (generator_script.is_valid()) {
+					gen_name += String(" with script ") + generator_script->get_path();
+				}
+
+				warnings.append(ZN_TTR("The current generator ({0}) is providing voxel data on channels {1}, but the "
+									   "current mesher ({2}) uses {3}. This might result in nothing being visible.")
+										.format(
+												varray(gen_name,
+													   channel_mask_to_string(generator_channels),
+													   mesher->get_class(),
+													   channel_mask_to_string(mesher_channels))
+										));
 			}
 		}
 	}
@@ -332,6 +378,8 @@ void VoxelNode::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_render_layers_mask", "mask"), &VoxelNode::set_render_layers_mask);
 	ClassDB::bind_method(D_METHOD("get_render_layers_mask"), &VoxelNode::get_render_layers_mask);
 
+	ClassDB::bind_method(D_METHOD("convert_to_nodes", "flags"), &VoxelNode::convert_to_nodes);
+
 	ADD_PROPERTY(
 			PropertyInfo(Variant::OBJECT, "stream", PROPERTY_HINT_RESOURCE_TYPE, VoxelStream::get_class_static()),
 			"set_stream",
@@ -372,6 +420,10 @@ void VoxelNode::_bind_methods() {
 			"set_render_layers_mask",
 			"get_render_layers_mask"
 	);
+
+	BIND_BITFIELD_FLAG(NODE_CONVERSION_INCLUDE_INSTANCER);
+	BIND_BITFIELD_FLAG(NODE_CONVERSION_INCLUDE_INVISIBLE_BLOCKS);
+	BIND_BITFIELD_FLAG(NODE_CONVERSION_INCLUDE_MATERIAL_OVERRIDES);
 }
 
 } // namespace zylann::voxel

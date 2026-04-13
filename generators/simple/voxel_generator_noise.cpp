@@ -3,6 +3,11 @@
 #include "../../util/godot/classes/fast_noise_lite.h"
 #include "../../util/math/funcs.h"
 
+#ifdef ZN_GODOT
+#include "../../util/godot/core/callable_mp.h"
+#include "../../util/godot/core/class_db.h"
+#endif
+
 namespace zylann::voxel {
 
 VoxelGeneratorNoise::VoxelGeneratorNoise() {}

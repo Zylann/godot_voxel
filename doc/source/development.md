@@ -1,7 +1,7 @@
-Module development
+Development
 =====================
 
-This page will give some info about the project's internals.
+This page will give some info about the project's internals and how to compile it.
 It may be useful if you want to contribute, or write custom C++ code for your game in order to get better performance.
 
 The source code can be found on [Github](https://github.com/Zylann/godot_voxel).
@@ -77,6 +77,29 @@ By default, the GDExtension config file of this project is setup for debug build
 When doing release packages, the config file is replaced with `voxel.gdextension-release` instead, which is pre-configured with non-dev version of the library for all platforms.
 
 There are known issues with GDExtension, check the [issue tracker](https://github.com/Zylann/godot_voxel/issues/333).
+
+#### Web builds
+
+Building for the web requires a WebAssembly compiler, [Emscripten](https://emscripten.org/).
+
+Then you would use the corresponding platform in the SCons command line:
+```
+scons platform=web [etc...]
+```
+
+Important: you need to use the same Emscripten version that was used by Godot's export template for the web.
+TODO: where can we get which exact version of Emscripten to use when using official export templates? This doesn't seem to be documented.
+
+Current guessses:
+
+- 4.0.11 ([according to Github Actions](https://github.com/godotengine/godot/blob/bf95b62586e31b8a3503f5903d7764d7c52bf2ab/.github/workflows/web_builds.yml#L12))
+- 4.0.20 (in Godot 4.6, [according to this post](https://github.com/godotengine/godot-cpp/issues/1907#issuecomment-3790865190))
+- It is printed in Godot's editor console if you debug a web build (i.e you would have to first make a basic game without extensions to try this)
+- 5.0.0 doesn't work as of 2026/02/14
+
+Alternatively, you could [build your own Godot export template](https://docs.godotengine.org/en/stable/engine_details/development/compiling/compiling_for_web.html#compiling-for-the-web) using the version of Emscripten of your choice.
+
+There might be some other caveats: [https://github.com/Zylann/godot_voxel/issues/745](https://github.com/Zylann/godot_voxel/issues/745)
 
 
 Contributing
@@ -416,39 +439,47 @@ Profile with Tracy
 
 This module contains macros to profile specific code sections. By default, these macros expand to [Tracy Profiler](https://github.com/wolfpld/tracy) zones. It allows to check how long code takes to run, and displays it in a timeline.
 
-It was tested with [Tracy 0.10](https://github.com/wolfpld/tracy/releases/tag/v0.10).
+It was tested with [Tracy 0.10](https://github.com/wolfpld/tracy/releases/tag/v0.10), but later versions probably work too.
 
 ![Tracy screenshot](images/tracy.webp)
 
-Alternative profilers are also mentionned in the [Godot docs](https://docs.godotengine.org/en/latest/contributing/development/debugging/using_cpp_profilers.html). They profile everything and appear to be based on CPU sampling, while Tracy is an instrumenting profiler providing specific, live results on a timeline.
+Alternative profilers are also mentionned in the [Godot docs](https://docs.godotengine.org/en/stable/engine_details/development/debugging/using_cpp_profilers.html#doc-using-cpp-profilers). They profile everything and appear to be based on CPU sampling, while Tracy is an instrumenting profiler providing specific, live results on a timeline.
 
 A typical workflow is to launch Tracy, start a connection, and then launch the game, which will establish a connection and record all events. Tracy can also be launched and connect after the game, in which case the data will accumulate inside the game.
 
 ### Tracy-enabled builds
 
-As an experiment, builds of Godot with the module and Tracy integrated are available for Windows, on [Github Actions](https://github.com/Zylann/godot_voxel/actions/workflows/windows.yml). The file to download will have `tracy` in the name. Note, you will need a Github account to download it.
+!!! note
+    These builds are experimental and will be reworked when Godot 4.6 is released with better Tracy support.
 
-These builds not only include a lot of instrumentation for the voxel module, but also include extra instrumentation in various Godot internals. These instrumentations are injected [using a script](https://github.com/Zylann/godot_voxel/blob/master/misc/instrument.py) prior to compilation.
+Builds of Godot with the module and Tracy integrated are available for Windows, on [Github Actions](https://github.com/Zylann/godot_voxel/actions/workflows/windows.yml). The file to download will have `tracy` in the name. Note, you will need a Github account to download it.
 
 !!! warning
     These builds start recording data immediately on startup. *That includes the project manager and the editor*. It can use a lot of memory (2 Gb just starting the editor). If you only want to profile the game, [use the command line](https://docs.godotengine.org/en/stable/tutorials/editor/command_line_tutorial.html#command-line-tutorial) to directly launch that build of Godot with your game, or just drop the executable at the root of your project and launch it.
 
 Outside of this case, you have to compile yourself to get Tracy support.
 
+Once you are done profiling, don't forget to switch back to a normal build, otherwise profiling data will accumulate in memory without being retrieved.
+
 ### Adding Tracy
+
+#### In Godot 4.6 and later
+
+Since Godot 4.6, Tracy is natively supported as an option of Godot's build system. You need to recompile the engine with additional SCons options: `profiler=tracy profiler_path=<path to the public folder in Tracy>`.
+
+#### in Godot 4.5 and older
 
 To add Tracy support, clone it under `thirdparty/tracy` (Godot's `thirdparty` folder, not the module).
 Then compile the engine by including `tracy=yes` in the SCons command line.
 
-Tracy isn't a feature of Godot's build system, so internally some of the work is actually done in the voxel module's build script.
-
-Once you are done profiling, don't forget to switch back to a normal build, otherwise profiling data will accumulate in memory without being retrieved.
+This way so internally some of the work is actually done in the voxel module's build script.
 
 !!! note
-    Tracy has a concept of frame mark, which is usually provided by the application, to tell the profiler when each frame begins. Godot does not provide profiling macros natively, so the frame mark was hacked into `VoxelEngine` process function. This allows to see frames of the main thread in the timeline, but they will be offset from their real beginning.
+    Tracy has a concept of frame mark, which is usually provided by the application, to tell the profiler when each frame begins. Godot doesn't have a hook for us to insert that call at the right time, so the frame mark was hacked into `VoxelEngine` process function. This allows to see frames of the main thread in the timeline, but they might be offset from their real beginning.
 
-!!! warning
-    Profiling data can use a lot of memory (can reach gigabytes of RAM), so make sure your computer has enough and keep your session duration in check.
+#### In GDExtension build
+
+Not supported at the moment, but with a few tweaks of the build system it could be made to work.
 
 
 ### How to add profiler scopes

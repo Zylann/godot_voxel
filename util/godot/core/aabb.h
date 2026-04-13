@@ -8,11 +8,10 @@
 using namespace godot;
 #endif
 
-#include "../../string/std_stringstream.h"
-
 namespace zylann {
 
-StdStringStream &operator<<(StdStringStream &ss, const AABB &v);
+class TextWriter;
+TextWriter &operator<<(TextWriter &ss, const AABB &v);
 
 inline real_t distance_squared(const AABB &aabb, const Vector3 p) {
 	const Vector3 d = (aabb.position - p).max(p - (aabb.position + aabb.size)).max(Vector3());

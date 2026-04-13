@@ -1,6 +1,9 @@
 #include "voxel_blocky_attribute_direction.h"
 #include "../../../constants/voxel_string_names.h"
 #include "../../../util/math/ortho_basis.h"
+#ifdef ZN_GODOT
+#include "../../../util/godot/core/class_db.h"
+#endif
 
 namespace zylann::voxel {
 
@@ -86,7 +89,8 @@ bool VoxelBlockyAttributeDirection::is_horizontal_only() const {
 void VoxelBlockyAttributeDirection::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("is_horizontal_only"), &VoxelBlockyAttributeDirection::is_horizontal_only);
 	ClassDB::bind_method(
-			D_METHOD("set_horizontal_only", "enabled"), &VoxelBlockyAttributeDirection::set_horizontal_only);
+			D_METHOD("set_horizontal_only", "enabled"), &VoxelBlockyAttributeDirection::set_horizontal_only
+	);
 	ClassDB::bind_method(D_METHOD("from_vec3", "v"), &VoxelBlockyAttributeDirection::from_vec3);
 
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "horizontal_only"), "set_horizontal_only", "is_horizontal_only");

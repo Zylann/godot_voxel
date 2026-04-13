@@ -8,10 +8,10 @@
 #ifdef TOOLS_ENABLED
 #include "../../util/profiling_clock.h"
 #endif
+#include "../../util/io/std_string_text_writer.h"
 #include "node_type_db.h"
 #include "voxel_generator_graph.h"
 
-#include <sstream>
 #include <unordered_set>
 
 // #ifdef DEBUG_ENABLED
@@ -577,7 +577,7 @@ void Runtime::analyze_range(State &state, Span<const math::Interval> p_inputs) c
 void Runtime::debug_print_operations() {
 	const Span<const uint16_t> operations(_program.operations.data(), 0, _program.operations.size());
 
-	StdStringStream ss;
+	StdStringTextWriter ss;
 	unsigned int op_index = 0;
 	uint32_t pc = 0;
 	while (pc < operations.size()) {
@@ -620,7 +620,7 @@ void Runtime::debug_print_operations() {
 		++op_index;
 	}
 
-	print_line(ss.str());
+	print_line(ss.get_written());
 }
 
 #endif

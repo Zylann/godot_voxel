@@ -1,11 +1,11 @@
 #include "vector3.h"
-#include <sstream>
+#include "../io/text_writer.h"
 
 namespace zylann {
 
-StdStringStream &operator<<(StdStringStream &ss, const Vector3 &v) {
-	ss << "(" << v.x << ", " << v.y << ", " << v.z << ")";
-	return ss;
+TextWriter &operator<<(TextWriter &w, const Vector3 &v) {
+	w << "(" << v.x << ", " << v.y << ", " << v.z << ")";
+	return w;
 }
 
 } // namespace zylann

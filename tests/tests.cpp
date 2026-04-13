@@ -125,6 +125,7 @@ void run_voxel_tests(const testing::TestOptions &options) {
 	VOXEL_TEST(test_block_serializer_stream_peer);
 	VOXEL_TEST(test_region_file);
 	VOXEL_TEST(test_voxel_stream_region_files);
+	VOXEL_TEST(test_voxel_stream_region_files_lods);
 #ifdef VOXEL_ENABLE_FAST_NOISE_2
 	VOXEL_TEST(test_fast_noise_2_basic);
 	VOXEL_TEST(test_fast_noise_2_empty_encoded_node_tree);
@@ -160,6 +161,7 @@ void run_voxel_tests(const testing::TestOptions &options) {
 	VOXEL_TEST(test_sdf_hemisphere);
 	VOXEL_TEST(test_fnl_range);
 	VOXEL_TEST(test_voxel_buffer_set_channel_bytes);
+	VOXEL_TEST(test_voxel_buffer_get_channel_bytes);
 	VOXEL_TEST(test_voxel_buffer_issue769);
 	VOXEL_TEST(test_raycast_sdf);
 	VOXEL_TEST(test_raycast_blocky);

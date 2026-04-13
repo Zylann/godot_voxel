@@ -2,6 +2,11 @@
 #include "../../constants/voxel_string_names.h"
 #include "voxel_instancer.h"
 
+#ifdef ZN_GODOT
+#include "../../util/godot/core/callable_mp.h"
+#include "../../util/godot/core/class_db.h"
+#endif
+
 #include <algorithm>
 
 namespace zylann::voxel {

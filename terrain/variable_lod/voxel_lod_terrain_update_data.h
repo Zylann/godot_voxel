@@ -75,7 +75,6 @@ struct VoxelLodTerrainUpdateData {
 		// If true, try to generate blocks and store them in the data map before posting mesh requests.
 		// If false, meshing will generate non-edited voxels on the fly instead.
 		// If streaming is disabled, this option has no effect.
-		// Not really exposed for now, will wait for it to be really needed. It might never be.
 		bool cache_generated_blocks = false;
 		bool collision_enabled = true;
 		bool detail_textures_use_gpu = false;

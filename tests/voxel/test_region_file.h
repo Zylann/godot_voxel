@@ -5,6 +5,7 @@ namespace zylann::voxel::tests {
 
 void test_region_file();
 void test_voxel_stream_region_files();
+void test_voxel_stream_region_files_lods();
 
 } // namespace zylann::voxel::tests
 

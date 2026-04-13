@@ -40,7 +40,9 @@ Return                                                                          
 [Vector2](https://docs.godotengine.org/en/stable/classes/class_vector2.html)        | [debug_analyze_range](#i_debug_analyze_range) ( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) min_pos, [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) max_pos ) const                                                                                                                                                      
 [void](#)                                                                           | [debug_load_waves_preset](#i_debug_load_waves_preset) ( )                                                                                                                                                                                                                                                                                                                               
 [float](https://docs.godotengine.org/en/stable/classes/class_float.html)            | [debug_measure_microseconds_per_voxel](#i_debug_measure_microseconds_per_voxel) ( [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) use_singular_queries )                                                                                                                                                                                                         
+[void](#)                                                                           | [generate_image_from_sdf](#i_generate_image_from_sdf) ( [Image](https://docs.godotengine.org/en/stable/classes/class_image.html) im, [Transform3D](https://docs.godotengine.org/en/stable/classes/class_transform3d.html) transform, [Vector2](https://docs.godotengine.org/en/stable/classes/class_vector2.html) size )                                                                
 [VoxelGraphFunction](VoxelGraphFunction.md)                                         | [get_main_function](#i_get_main_function) ( ) const                                                                                                                                                                                                                                                                                                                                     
+[float](https://docs.godotengine.org/en/stable/classes/class_float.html)            | [raycast_sdf_approx](#i_raycast_sdf_approx) ( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) ray_origin, [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) ray_end, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) stride ) const                                                                    
 <p></p>
 
 ## Signals: 
@@ -65,7 +67,9 @@ When enabled, if the graph outputs SDF data, generated blocks that would otherwi
 
 ### [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_sdf_clip_threshold"></span> **sdf_clip_threshold** = 1.5
 
-When generating SDF blocks for a terrain, if the range analysis of a block is beyond this threshold, its SDF data will be considered either fully 1, or fully -1. This optimizes memory and processing time.
+When generating SDF blocks for a terrain, if the range analysis of a block is beyond this threshold, its SDF data will be considered either fully air, or fully matter (using high constants, positive or negative). This optimizes memory because chunks entirely underground or in the air will have the same value on every voxel. It also saves processing time because SDF calculations (noise etc) are skipped. To turn off this optimization, set it to a high value.
+
+Downside: if you use operations to edit the terrain assuming coherent SDF, they might behave incorrectly at boundaries where the clipping starts to occur. This is notably the case of [VoxelTool.grow_sphere](VoxelTool.md#i_grow_sphere).
 
 ### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_subdivision_size"></span> **subdivision_size** = 16
 
@@ -145,8 +149,24 @@ The node ID will be -1 if the error is not about a particular node.
 
 *(This method has no documentation)*
 
+### [void](#)<span id="i_generate_image_from_sdf"></span> **generate_image_from_sdf**( [Image](https://docs.godotengine.org/en/stable/classes/class_image.html) im, [Transform3D](https://docs.godotengine.org/en/stable/classes/class_transform3d.html) transform, [Vector2](https://docs.godotengine.org/en/stable/classes/class_vector2.html) size ) 
+
+Genereates SDF data within a plane centered on the given transform spanning its X and Y axes, and stores results in pixels of the image. Samples are centered on pixels.
+
+The image should preferably have a 32-bit float format, and must not be compressed.
+
 ### [VoxelGraphFunction](VoxelGraphFunction.md)<span id="i_get_main_function"></span> **get_main_function**( ) 
 
 Gets the graph used for generation.
 
-_Generated on Aug 09, 2025_
+### [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_raycast_sdf_approx"></span> **raycast_sdf_approx**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) ray_origin, [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) ray_end, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) stride ) 
+
+Generates values along a ray to find the first one where SDF &lt 0.0, and return distance along the ray. If no hit is found, returns -1.0.
+
+This is an approximation: the error margin of the returned value will be up to the given stride.
+
+The longer the distance, the more expensive it is.
+
+The lower the stride, the more expensive and accurate it is.
+
+_Generated on Jan 26, 2026_

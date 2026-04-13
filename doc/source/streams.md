@@ -111,5 +111,6 @@ Save format specifications
 ----------------------------
 
 - [Region format](specs/region_format_v3.md)
-- [Block format](specs/block_format_v2.md)
-- [SQLite format](specs/sqlite_format.md)
+- [Block format](specs/block_format_v4.md)
+- [Instance format](specs/instances_format_v1.md)
+- [SQLite format](specs/sqlite_format_v1.md)

@@ -165,6 +165,11 @@ void VoxelToolLodTerrain::do_hemisphere(Vector3 center, float radius, Vector3 fl
 	_post_edit(op.box);
 }
 
+void VoxelToolLodTerrain::do_path(Span<const Vector3> positions, Span<const float> radii) {
+	ZN_ASSERT_RETURN(_terrain != nullptr);
+	do_path_chunked(_terrain->get_storage(), positions, radii, true);
+}
+
 template <typename Op_T>
 class VoxelToolAsyncEdit : public IThreadedTask {
 public:
@@ -251,6 +256,19 @@ void VoxelToolLodTerrain::paste(Vector3i pos, const VoxelBuffer &src, uint8_t ch
 	data.paste(pos, src, channels_mask, false, true);
 
 	_post_edit(box);
+}
+
+void VoxelToolLodTerrain::set_voxel_metadata(const Vector3i pos, const Variant &meta) {
+	ZN_ASSERT_RETURN(_terrain != nullptr);
+	VoxelData &data = _terrain->get_storage();
+	data.set_voxel_metadata(pos, meta);
+	_terrain->post_edit_area(Box3i(pos, Vector3i(1, 1, 1)), false);
+}
+
+Variant VoxelToolLodTerrain::get_voxel_metadata(const Vector3i pos) const {
+	ZN_ASSERT_RETURN_V(_terrain != nullptr, Variant());
+	VoxelData &data = _terrain->get_storage();
+	return data.get_voxel_metadata(pos);
 }
 
 float VoxelToolLodTerrain::get_voxel_f_interpolated(Vector3 position) const {
@@ -536,7 +554,8 @@ void VoxelToolLodTerrain::run_blocky_random_tick(
 		const AABB voxel_area,
 		const int voxel_count,
 		const Callable &callback,
-		const int block_batch_count
+		const int block_batch_count,
+		const uint32_t tags_mask
 ) {
 	ZN_PROFILE_SCOPE();
 
@@ -562,7 +581,7 @@ void VoxelToolLodTerrain::run_blocky_random_tick(
 	VoxelData &data = _terrain->get_storage();
 
 	zylann::voxel::run_blocky_random_tick(
-			data, voxel_area, **library, _random, voxel_count, block_batch_count, callback
+			data, voxel_area, **library, _random, voxel_count, block_batch_count, tags_mask, callback
 	);
 }
 
@@ -591,9 +610,10 @@ void VoxelToolLodTerrain::_bind_methods() {
 			DEFVAL(0.0)
 	);
 	ClassDB::bind_method(
-			D_METHOD("run_blocky_random_tick", "area", "voxel_count", "callback", "batch_count"),
+			D_METHOD("run_blocky_random_tick", "area", "voxel_count", "callback", "batch_count", "tags_mask"),
 			&Self::run_blocky_random_tick,
-			DEFVAL(16)
+			DEFVAL(16),
+			DEFVAL(0xffffffff)
 	);
 }
 

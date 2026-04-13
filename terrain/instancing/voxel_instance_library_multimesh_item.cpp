@@ -7,6 +7,10 @@
 #include "../../util/godot/core/packed_arrays.h"
 #include "voxel_instancer.h"
 
+#ifdef ZN_GODOT
+#include "../../util/godot/core/class_db.h"
+#endif
+
 namespace zylann::voxel {
 
 const char *VoxelInstanceLibraryMultiMeshItem::MANUAL_SETTINGS_GROUP_NAME = "Manual settings";
@@ -167,7 +171,7 @@ Ref<Material> VoxelInstanceLibraryMultiMeshItem::get_material_override() const {
 	return settings.material_override;
 }
 
-void VoxelInstanceLibraryMultiMeshItem::set_cast_shadows_setting(RenderingServer::ShadowCastingSetting mode) {
+void VoxelInstanceLibraryMultiMeshItem::set_cast_shadows_setting(RenderingServerEnums::ShadowCastingSetting mode) {
 	Settings &settings = _manual_settings;
 	if (mode == settings.shadow_casting_setting) {
 		return;
@@ -190,7 +194,7 @@ GeometryInstance3D::GIMode VoxelInstanceLibraryMultiMeshItem::get_gi_mode() cons
 	return settings.gi_mode;
 }
 
-RenderingServer::ShadowCastingSetting VoxelInstanceLibraryMultiMeshItem::get_cast_shadows_setting() const {
+RenderingServerEnums::ShadowCastingSetting VoxelInstanceLibraryMultiMeshItem::get_cast_shadows_setting() const {
 	const Settings &settings = _manual_settings;
 	return settings.shadow_casting_setting;
 }
@@ -384,23 +388,23 @@ bool VoxelInstanceLibraryMultiMeshItem::_get(const StringName &p_name, Variant &
 
 namespace {
 
-RenderingServer::ShadowCastingSetting node_to_visual_server_enum(GeometryInstance3D::ShadowCastingSetting v) {
+RenderingServerEnums::ShadowCastingSetting node_to_visual_server_enum(GeometryInstance3D::ShadowCastingSetting v) {
 	switch (v) {
 		case GeometryInstance3D::SHADOW_CASTING_SETTING_OFF:
-			return RenderingServer::SHADOW_CASTING_SETTING_OFF;
+			return RenderingServerEnums::SHADOW_CASTING_SETTING_OFF;
 
 		case GeometryInstance3D::SHADOW_CASTING_SETTING_ON:
-			return RenderingServer::SHADOW_CASTING_SETTING_ON;
+			return RenderingServerEnums::SHADOW_CASTING_SETTING_ON;
 
 		case GeometryInstance3D::SHADOW_CASTING_SETTING_DOUBLE_SIDED:
-			return RenderingServer::SHADOW_CASTING_SETTING_DOUBLE_SIDED;
+			return RenderingServerEnums::SHADOW_CASTING_SETTING_DOUBLE_SIDED;
 
 		case GeometryInstance3D::SHADOW_CASTING_SETTING_SHADOWS_ONLY:
-			return RenderingServer::SHADOW_CASTING_SETTING_SHADOWS_ONLY;
+			return RenderingServerEnums::SHADOW_CASTING_SETTING_SHADOWS_ONLY;
 
 		default:
 			ERR_PRINT("Unknown ShadowCastingSetting value");
-			return RenderingServer::SHADOW_CASTING_SETTING_OFF;
+			return RenderingServerEnums::SHADOW_CASTING_SETTING_OFF;
 	}
 }
 
@@ -568,7 +572,7 @@ void VoxelInstanceLibraryMultiMeshItem::deserialize_multimesh_item_properties(Ar
 	settings.mesh_lod_count = a[ai++];
 	settings.material_override = a[ai++];
 	settings.render_layer = a[ai++];
-	settings.shadow_casting_setting = RenderingServer::ShadowCastingSetting(int(a[ai++])); // ugh...
+	settings.shadow_casting_setting = RenderingServerEnums::ShadowCastingSetting(int(a[ai++])); // ugh...
 	settings.gi_mode = GeometryInstance3D::GIMode(int(a[ai++])); // ugh...
 	settings.collision_layer = a[ai++];
 	settings.collision_mask = a[ai++];

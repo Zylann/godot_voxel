@@ -4,6 +4,10 @@
 #include "../util/thread/thread.h"
 #include "instance_data.h"
 
+#ifdef ZN_GODOT
+#include "../util/godot/core/class_db.h"
+#endif
+
 namespace zylann::voxel {
 
 void VoxelStreamMemory::load_voxel_blocks(Span<VoxelQueryData> p_blocks) {

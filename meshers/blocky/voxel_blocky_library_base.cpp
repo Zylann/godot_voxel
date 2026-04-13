@@ -10,6 +10,10 @@
 #include "voxel_mesher_blocky.h"
 #include <bitset>
 
+#ifdef ZN_GODOT
+#include "../../util/godot/core/class_db.h"
+#endif
+
 namespace zylann::voxel {
 
 void VoxelBlockyLibraryBase::load_default() {

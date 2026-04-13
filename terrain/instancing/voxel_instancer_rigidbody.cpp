@@ -1,5 +1,9 @@
 #include "voxel_instancer_rigidbody.h"
 
+#ifdef ZN_GODOT
+#include "../../util/godot/core/class_db.h"
+#endif
+
 namespace zylann::voxel {
 
 VoxelInstancerRigidBody::VoxelInstancerRigidBody() {

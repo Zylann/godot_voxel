@@ -1,5 +1,9 @@
 #include "voxel_raycast_result.h"
 
+#ifdef ZN_GODOT
+#include "../util/godot/core/class_db.h"
+#endif
+
 namespace zylann::voxel {
 
 Vector3i VoxelRaycastResult::_b_get_position() const {

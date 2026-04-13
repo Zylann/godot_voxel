@@ -10,7 +10,6 @@ using namespace godot;
 #endif
 
 #include "../../string/std_string.h"
-#include "../../string/std_stringstream.h"
 #include <string_view>
 
 #ifdef TOOLS_ENABLED
@@ -21,6 +20,10 @@ using namespace godot;
 #include "../../containers/span.h"
 #include "../core/version.h"
 #include "../macros.h"
+
+namespace zylann {
+class TextWriter;
+}
 
 namespace zylann::godot {
 
@@ -100,7 +103,7 @@ struct GodotStringWrapper {
 	GodotStringWrapper(const String &p_s) : s(p_s) {}
 	const String &s;
 };
-zylann::StdStringStream &operator<<(zylann::StdStringStream &ss, GodotStringWrapper s);
+zylann::TextWriter &operator<<(zylann::TextWriter &ss, GodotStringWrapper s);
 
 ZN_GODOT_NAMESPACE_END
 

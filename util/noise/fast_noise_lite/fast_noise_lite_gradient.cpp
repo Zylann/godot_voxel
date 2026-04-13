@@ -1,5 +1,8 @@
 #include "fast_noise_lite_gradient.h"
 #include "../../godot/core/array.h"
+#ifdef ZN_GODOT
+#include "../../godot/core/class_db.h"
+#endif
 
 namespace zylann {
 

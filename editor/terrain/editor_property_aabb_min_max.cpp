@@ -4,6 +4,10 @@
 #include "../../util/godot/classes/label.h"
 #include "../../util/godot/classes/node.h"
 
+#ifdef ZN_GODOT
+#include "../../util/godot/core/callable_mp.h"
+#endif
+
 namespace zylann {
 
 ZN_EditorPropertyAABBMinMax::ZN_EditorPropertyAABBMinMax() {
@@ -94,7 +98,12 @@ void ZN_EditorPropertyAABBMinMax::_notification(int p_what) {
 }
 
 void ZN_EditorPropertyAABBMinMax::setup(
-		double p_min, double p_max, double p_step, bool p_no_slider, const String &p_suffix) {
+		double p_min,
+		double p_max,
+		double p_step,
+		bool p_no_slider,
+		const String &p_suffix
+) {
 	for (unsigned int i = 0; i < _spinboxes.size(); i++) {
 		_spinboxes[i]->set_min(p_min);
 		_spinboxes[i]->set_max(p_max);

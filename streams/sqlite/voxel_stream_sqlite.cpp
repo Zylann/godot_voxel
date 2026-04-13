@@ -7,6 +7,10 @@
 #include "../compressed_data.h"
 #include "connection.h"
 
+#ifdef ZN_GODOT
+#include "../../util/godot/core/class_db.h"
+#endif
+
 #include <string_view>
 #include <unordered_set>
 

@@ -107,6 +107,7 @@ void test_run_blocky_random_tick_with_params(const Box3i voxel_box, const int vo
 			random,
 			voxel_count,
 			batch_count,
+			0xffffffff,
 			&cb,
 			[](void *self, Vector3i pos, int64_t val) {
 				Callback *cb = (Callback *)self;

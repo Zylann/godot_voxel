@@ -4,6 +4,7 @@
 		Implements isosurface generation (smooth voxels) using the [url=https://transvoxel.org/]Transvoxel[/url] algorithm.
 	</brief_description>
 	<description>
+		Uses the [url=https://transvoxel.org/]Transvoxel[/url] algorithm to polygonizes smooth voxels. Note: if you want to use LOD, you will need special vertex shader code to properly render seams (otherwise they will render as thin sheets between chunks). Check [url]https://voxel-tools.readthedocs.io/en/latest/smooth_terrain/#transvoxel[/url] or demos featuring smooth terrain for more information.
 	</description>
 	<tutorials>
 	</tutorials>

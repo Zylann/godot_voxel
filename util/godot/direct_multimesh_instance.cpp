@@ -89,7 +89,7 @@ void DirectMultiMeshInstance::set_material_override(Ref<Material> material) {
 	}
 }
 
-void DirectMultiMeshInstance::set_cast_shadows_setting(RenderingServer::ShadowCastingSetting mode) {
+void DirectMultiMeshInstance::set_cast_shadows_setting(RenderingServerEnums::ShadowCastingSetting mode) {
 	ERR_FAIL_COND(!_multimesh_instance.is_valid());
 	RenderingServer &vs = *RenderingServer::get_singleton();
 	vs.instance_geometry_set_cast_shadows_setting(_multimesh_instance, mode);

@@ -10,6 +10,10 @@
 
 #include <core/core_string_names.h>
 
+#ifdef ZN_GODOT
+#include "../../util/godot/core/callable_mp.h"
+#endif
+
 namespace zylann {
 
 class FastNoise2Viewer : public Control {
@@ -56,14 +60,16 @@ public:
 
 		if (_noise.is_valid()) {
 			_noise->disconnect(
-					CoreStringNames::get_singleton()->changed, callable_mp(this, &FastNoise2Viewer::_on_noise_changed));
+					CoreStringNames::get_singleton()->changed, callable_mp(this, &FastNoise2Viewer::_on_noise_changed)
+			);
 		}
 
 		_noise = noise;
 
 		if (_noise.is_valid()) {
 			_noise->connect(
-					CoreStringNames::get_singleton()->changed, callable_mp(this, &FastNoise2Viewer::_on_noise_changed));
+					CoreStringNames::get_singleton()->changed, callable_mp(this, &FastNoise2Viewer::_on_noise_changed)
+			);
 			set_process(true);
 			update_preview();
 

@@ -1,5 +1,9 @@
 #include "threaded_task_gd.h"
 
+#ifdef ZN_GODOT
+#include "../../godot/core/class_db.h"
+#endif
+
 namespace zylann {
 
 // Using a decoupled pattern so we can do a few more safety checks for scripters

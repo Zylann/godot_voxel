@@ -4,6 +4,10 @@
 #include "../../../util/godot/classes/option_button.h"
 #include "../../../util/godot/editor_scale.h"
 
+#ifdef ZN_GODOT
+#include "../../../util/godot/core/callable_mp.h"
+#endif
+
 namespace zylann::voxel {
 
 const char *VoxelBlockyTypeAttributeCombinationSelector::SIGNAL_COMBINATION_CHANGED = "combination_changed";
@@ -14,15 +18,19 @@ VoxelBlockyTypeAttributeCombinationSelector::VoxelBlockyTypeAttributeCombination
 
 void VoxelBlockyTypeAttributeCombinationSelector::set_type(Ref<VoxelBlockyType> type) {
 	if (_type.is_valid()) {
-		_type->disconnect(VoxelStringNames::get_singleton().changed,
-				callable_mp(this, &VoxelBlockyTypeAttributeCombinationSelector::_on_type_changed));
+		_type->disconnect(
+				VoxelStringNames::get_singleton().changed,
+				callable_mp(this, &VoxelBlockyTypeAttributeCombinationSelector::_on_type_changed)
+		);
 	}
 
 	_type = type;
 
 	if (_type.is_valid()) {
-		_type->connect(VoxelStringNames::get_singleton().changed,
-				callable_mp(this, &VoxelBlockyTypeAttributeCombinationSelector::_on_type_changed));
+		_type->connect(
+				VoxelStringNames::get_singleton().changed,
+				callable_mp(this, &VoxelBlockyTypeAttributeCombinationSelector::_on_type_changed)
+		);
 	}
 
 	update_attribute_editors();
@@ -51,7 +59,9 @@ VoxelBlockyType::VariantKey VoxelBlockyTypeAttributeCombinationSelector::get_var
 }
 
 bool VoxelBlockyTypeAttributeCombinationSelector::get_attribute_editor_index(
-		const StringName &attrib_name, unsigned int &out_index) const {
+		const StringName &attrib_name,
+		unsigned int &out_index
+) const {
 	unsigned int i = 0;
 	for (const AttributeEditor &ed : _attribute_editors) {
 		if (ed.name == attrib_name) {
@@ -64,7 +74,9 @@ bool VoxelBlockyTypeAttributeCombinationSelector::get_attribute_editor_index(
 }
 
 bool VoxelBlockyTypeAttributeCombinationSelector::get_preview_attribute_value(
-		const StringName &attrib_name, uint8_t &out_value) const {
+		const StringName &attrib_name,
+		uint8_t &out_value
+) const {
 	unsigned int i;
 	if (get_attribute_editor_index(attrib_name, i)) {
 		out_value = _attribute_editors[i].value;
@@ -153,9 +165,11 @@ void VoxelBlockyTypeAttributeCombinationSelector::update_attribute_editors() {
 		// Select before connecting the signal, we don't need the notification at this stage
 		ed.selector->select(index_to_select);
 
-		ed.selector->connect("item_selected",
+		ed.selector->connect(
+				"item_selected",
 				callable_mp(this, &VoxelBlockyTypeAttributeCombinationSelector::_on_attribute_editor_value_selected)
-						.bind(editor_index));
+						.bind(editor_index)
+		);
 
 		// Make a copy so we can detect changes later. It should be cheap as attributes are small resources.
 		ed.attribute_copy = attrib->duplicate();
@@ -182,7 +196,9 @@ void VoxelBlockyTypeAttributeCombinationSelector::_on_type_changed() {
 }
 
 void VoxelBlockyTypeAttributeCombinationSelector::_on_attribute_editor_value_selected(
-		int value_index, int editor_index) {
+		int value_index,
+		int editor_index
+) {
 	AttributeEditor &ed = _attribute_editors[editor_index];
 	ed.value = ed.selector->get_item_id(value_index);
 	emit_signal(SIGNAL_COMBINATION_CHANGED);

@@ -14,6 +14,10 @@
 #include "../util/profiling.h"
 #include "voxel_tool.h"
 
+#ifdef ZN_GODOT
+#include "../util/godot/core/callable_mp.h"
+#endif
+
 namespace zylann::voxel {
 
 void box_propagate_ccl(Span<uint8_t> cells, const Vector3i size) {

@@ -21,8 +21,18 @@ public:
 			uint64_t mask_value
 	) override;
 
-	void set_voxel_metadata(Vector3i pos, Variant meta) override;
-	Variant get_voxel_metadata(Vector3i pos) const override;
+	void paste_masked_writable_list(
+			Vector3i pos,
+			Ref<godot::VoxelBuffer> p_voxels,
+			uint8_t channels_mask,
+			uint8_t src_mask_channel,
+			uint64_t src_mask_value,
+			uint8_t dst_mask_channel,
+			PackedInt32Array dst_writable_list
+	) override;
+
+	void set_voxel_metadata(const Vector3i pos, const Variant &meta) override;
+	Variant get_voxel_metadata(const Vector3i pos) const override;
 
 	void do_sphere(Vector3 center, float radius) override;
 	void do_box(Vector3i begin, Vector3i end) override;

@@ -3,6 +3,10 @@
 #include "../storage/voxel_buffer_gd.h"
 #include "../util/godot/check_ref_ownership.h"
 
+#ifdef ZN_GODOT
+#include "../util/godot/core/class_db.h"
+#endif
+
 namespace zylann::voxel {
 
 VoxelGeneratorScript::VoxelGeneratorScript() {}

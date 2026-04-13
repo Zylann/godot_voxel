@@ -36,7 +36,7 @@ void VoxelMeshBlock::set_gi_mode(GeometryInstance3D::GIMode mode) {
 	}
 }
 
-void VoxelMeshBlock::set_shadow_casting(RenderingServer::ShadowCastingSetting setting) {
+void VoxelMeshBlock::set_shadow_casting(RenderingServerEnums::ShadowCastingSetting setting) {
 	if (_mesh_instance.is_valid()) {
 		_mesh_instance.set_cast_shadows_setting(setting);
 	}
@@ -51,7 +51,7 @@ void VoxelMeshBlock::set_render_layers_mask(int mask) {
 void VoxelMeshBlock::set_mesh(
 		Ref<Mesh> mesh,
 		GeometryInstance3D::GIMode gi_mode,
-		RenderingServer::ShadowCastingSetting shadow_setting,
+		RenderingServerEnums::ShadowCastingSetting shadow_setting,
 		int render_layers_mask
 ) {
 	// TODO Don't add mesh instance to the world if it's not visible.

@@ -1,11 +1,11 @@
 #include "ids.h"
-#include <sstream>
+#include "../util/io/text_writer.h"
 
 namespace zylann {
 
-StdStringStream &operator<<(StdStringStream &ss, const SlotMapKey<uint16_t, uint16_t> &v) {
-	ss << "{i: " << v.index << ", v: " << v.version.value << "}";
-	return ss;
+TextWriter &operator<<(TextWriter &w, const SlotMapKey<uint16_t, uint16_t> &v) {
+	w << "{i: " << v.index << ", v: " << v.version.value << "}";
+	return w;
 }
 
 } // namespace zylann

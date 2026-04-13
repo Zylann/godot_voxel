@@ -648,12 +648,12 @@ vec3 get_voxel_normal_model() {
 	float cell_size = u_voxel_cell_size;
 	int block_size = u_voxel_block_size;
 	int normalmap_tile_size = u_voxel_virtual_texture_tile_size;
-	
-	vec3 cell_posf = vertex_pos_model / cell_size;
+
+	vec3 cell_posf = v_vertex_pos_model / cell_size;
 	cell_posf = cell_posf * u_voxel_virtual_texture_offset_scale.w + u_voxel_virtual_texture_offset_scale.xyz;
 	ivec3 cell_pos = ivec3(floor(cell_posf));
 	vec3 cell_fract = fract(cell_posf);
-	
+
 	int cell_index = cell_pos.x + cell_pos.y * block_size + cell_pos.z * block_size * block_size;
 	int lookup_sqri = int(ceil(sqrt(float(block_size * block_size * block_size))));
 	ivec2 lookup_pos = ivec2(cell_index % lookup_sqri, cell_index / lookup_sqri);
@@ -663,22 +663,22 @@ vec3 get_voxel_normal_model() {
 	ivec2 lookup_value = ivec2(round(lookup_valuef * 255.0));
 	int tile_index = lookup_value.r | ((lookup_value.g & 0x3f) << 8);
 	int tile_direction = lookup_value.g >> 6;
-	
-	vec3 tile_texcoord = vec3(0.0, 0.0, float(tile_index));
+
+	vec2 tile_texcoord = vec2(0.0);
 	// TODO Could do it non-branching with weighted addition
 	switch(tile_direction) {
 		case 0:
-			tile_texcoord.xy = cell_fract.zy;
+			tile_texcoord = cell_fract.zy;
 			break;
 		case 1:
-			tile_texcoord.xy = cell_fract.xz;
+			tile_texcoord = cell_fract.xz;
 			break;
 		case 2:
-			tile_texcoord.xy = cell_fract.xy;
+			tile_texcoord = cell_fract.xy;
 			break;
 	}
-	float padding = 0.5 / normalmap_tile_size;
-	tile_texcoord.xy = pad_uv(tile_texcoord.xy, padding);
+	float padding = 0.5 / float(normalmap_tile_size);
+	tile_texcoord = pad_uv(tile_texcoord, padding);
 
 	ivec2 atlas_size = textureSize(u_voxel_normalmap_atlas, 0);
 	int tiles_per_row = atlas_size.x / normalmap_tile_size;
@@ -700,8 +700,8 @@ vec3 get_voxel_normal_view(vec3 geometry_normal_view, mat4 model_to_view) {
 		// Detail texture not available in this mesh
 		return geometry_normal_view;
 	}
-	vec3 debug;
-	vec3 tile_normal_model = get_voxel_normal_model(debug);
+
+	vec3 tile_normal_model = get_voxel_normal_model();
 	vec3 tile_normal_view = (model_to_view * vec4(tile_normal_model, 0.0)).xyz;
 	// In some edge cases the normal can be invalid (length close to zero), causing black artifacts.
 	// Workaround this by falling back on the geometry normal.

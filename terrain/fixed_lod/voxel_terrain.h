@@ -40,6 +40,7 @@ class VoxelInstancer;
 class VoxelTerrain : public VoxelNode {
 	GDCLASS(VoxelTerrain, VoxelNode)
 public:
+	// Maximum view distance when any terrain boundary is larger than it
 	static const unsigned int MAX_VIEW_DISTANCE_FOR_LARGE_VOLUME = 512;
 
 	VoxelTerrain();
@@ -103,10 +104,7 @@ public:
 	bool get_generator_use_gpu() const;
 #endif
 
-	VoxelData &get_storage() const {
-		ZN_ASSERT(_data != nullptr);
-		return *_data;
-	}
+	VoxelData &get_storage() const override;
 
 	std::shared_ptr<VoxelData> get_storage_shared() const {
 		return _data;
@@ -151,6 +149,8 @@ public:
 	// 	std::shared_ptr<VoxelBuffer> voxels;
 	// 	Vector3i position;
 	// };
+
+	Node3D *convert_to_nodes(const BitField<NodeConversionFlags> flags) const override;
 
 	// Debug
 

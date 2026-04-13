@@ -2,6 +2,10 @@
 #include "../math/conv.h"
 #include "spot_noise.h"
 
+#ifdef ZN_GODOT
+#include "../godot/core/class_db.h"
+#endif
+
 namespace zylann {
 
 int ZN_SpotNoise::get_seed() const {

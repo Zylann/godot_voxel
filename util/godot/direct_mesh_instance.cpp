@@ -89,7 +89,7 @@ void DirectMeshInstance::set_visible(bool visible) {
 	vs.instance_set_visible(_mesh_instance, visible);
 }
 
-void DirectMeshInstance::set_cast_shadows_setting(RenderingServer::ShadowCastingSetting mode) {
+void DirectMeshInstance::set_cast_shadows_setting(RenderingServerEnums::ShadowCastingSetting mode) {
 	ERR_FAIL_COND(!_mesh_instance.is_valid());
 	RenderingServer &vs = *RenderingServer::get_singleton();
 	vs.instance_geometry_set_cast_shadows_setting(_mesh_instance, mode);

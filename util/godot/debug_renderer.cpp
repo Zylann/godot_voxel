@@ -70,7 +70,7 @@ void DebugRenderer::init() {
 	// TODO When shadow casting is on, directional shadows completely break.
 	// The reason is still unknown.
 	// It should be off anyways, but it's rather concerning.
-	_multimesh_instance.set_cast_shadows_setting(RenderingServer::SHADOW_CASTING_SETTING_OFF);
+	_multimesh_instance.set_cast_shadows_setting(RenderingServerEnums::SHADOW_CASTING_SETTING_OFF);
 	_multimesh.instantiate();
 	Ref<Mesh> wirecube = create_debug_wirecube(Color(1, 1, 1));
 	_multimesh->set_mesh(wirecube);

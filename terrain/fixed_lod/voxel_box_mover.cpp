@@ -5,7 +5,7 @@
 #include "../../storage/voxel_data.h"
 #include "../../util/containers/std_vector.h"
 #include "../../util/profiling.h"
-// #include "../../util/string/format.h"
+#include "../variable_lod/voxel_lod_terrain.h"
 #include "voxel_terrain.h"
 
 namespace zylann::voxel {
@@ -188,68 +188,41 @@ bool intersects(Span<const AABB> aabbs, const AABB &box) {
 	return false;
 }
 
-void collect_boxes(VoxelTerrain &p_terrain, AABB query_box, uint32_t collision_nask, StdVector<AABB> &potential_boxes) {
-	ZN_PROFILE_SCOPE();
-	const VoxelData &voxels = p_terrain.get_storage();
+void collect_boxes_blocky(
+		const VoxelData &voxels,
+		const VoxelMesherBlocky &mesher,
+		const Vector3i minp,
+		const Vector3i maxp,
+		const uint32_t collision_mask,
+		StdVector<AABB> &potential_boxes
+) {
+	Ref<VoxelBlockyLibraryBase> library_ref = mesher.get_library();
+	ERR_FAIL_COND_MSG(library_ref.is_null(), "VoxelMesherBlocky has no library assigned");
+	const int channel = VoxelBuffer::CHANNEL_TYPE;
+	VoxelSingleValue defval;
+	defval.i = 0;
 
-	const int min_x = int(Math::floor(query_box.position.x));
-	const int min_y = int(Math::floor(query_box.position.y));
-	const int min_z = int(Math::floor(query_box.position.z));
+	const blocky::BakedLibrary &baked_data = library_ref->get_baked_data();
 
-	const Vector3 query_box_end = query_box.position + query_box.size;
-	const int max_x = int(Math::ceil(query_box_end.x));
-	const int max_y = int(Math::ceil(query_box_end.y));
-	const int max_z = int(Math::ceil(query_box_end.z));
+	Vector3i i = minp;
 
-	Vector3i i(min_x, min_y, min_z);
+	// TODO Optimization: read the whole box of voxels at once, querying individually is slower
+	for (i.z = minp.z; i.z < maxp.z; ++i.z) {
+		for (i.y = minp.y; i.y < maxp.y; ++i.y) {
+			for (i.x = minp.x; i.x < maxp.x; ++i.x) {
+				const int type_id = voxels.get_voxel(i, channel, defval).i;
 
-	Ref<VoxelMesherBlocky> mesher_blocky;
-	Ref<VoxelMesherCubes> mesher_cubes;
+				if (baked_data.has_model(type_id)) {
+					const blocky::BakedModel &model = baked_data.models[type_id];
 
-	if (zylann::godot::try_get_as(p_terrain.get_mesher(), mesher_blocky)) {
-		Ref<VoxelBlockyLibraryBase> library_ref = mesher_blocky->get_library();
-		ERR_FAIL_COND_MSG(library_ref.is_null(), "VoxelMesherBlocky has no library assigned");
-		const int channel = VoxelBuffer::CHANNEL_TYPE;
-		VoxelSingleValue defval;
-		defval.i = 0;
-
-		const blocky::BakedLibrary &baked_data = library_ref->get_baked_data();
-
-		// TODO Optimization: read the whole box of voxels at once, querying individually is slower
-		for (i.z = min_z; i.z < max_z; ++i.z) {
-			for (i.y = min_y; i.y < max_y; ++i.y) {
-				for (i.x = min_x; i.x < max_x; ++i.x) {
-					const int type_id = voxels.get_voxel(i, channel, defval).i;
-
-					if (baked_data.has_model(type_id)) {
-						const blocky::BakedModel &model = baked_data.models[type_id];
-
-						if ((model.box_collision_mask & collision_nask) == 0) {
-							continue;
-						}
-
-						for (const AABB &aabb : model.box_collision_aabbs) {
-							AABB world_box = aabb;
-							world_box.position += i;
-							potential_boxes.push_back(world_box);
-						}
+					if ((model.box_collision_mask & collision_mask) == 0) {
+						continue;
 					}
-				}
-			}
-		}
 
-	} else if (zylann::godot::try_get_as(p_terrain.get_mesher(), mesher_cubes)) {
-		const int channel = VoxelBuffer::CHANNEL_COLOR;
-		VoxelSingleValue defval;
-		defval.i = 0;
-
-		// TODO Optimization: read the whole box of voxels at once, querying individually is slower
-		for (i.z = min_z; i.z < max_z; ++i.z) {
-			for (i.y = min_y; i.y < max_y; ++i.y) {
-				for (i.x = min_x; i.x < max_x; ++i.x) {
-					const int color_data = voxels.get_voxel(i, channel, defval).i;
-					if (color_data != 0) {
-						potential_boxes.push_back(AABB(i, Vector3(1, 1, 1)));
+					for (const AABB &aabb : model.box_collision_aabbs) {
+						AABB world_box = aabb;
+						world_box.position += i;
+						potential_boxes.push_back(world_box);
 					}
 				}
 			}
@@ -257,19 +230,75 @@ void collect_boxes(VoxelTerrain &p_terrain, AABB query_box, uint32_t collision_n
 	}
 }
 
+void collect_boxes_cubes(
+		const VoxelData &voxels,
+		const Vector3i minp,
+		const Vector3i maxp,
+		StdVector<AABB> &potential_boxes
+) {
+	const int channel = VoxelBuffer::CHANNEL_COLOR;
+	VoxelSingleValue defval;
+	defval.i = 0;
+
+	Vector3i i = minp;
+
+	// TODO Optimization: read the whole box of voxels at once, querying individually is slower
+	for (i.z = minp.z; i.z < maxp.z; ++i.z) {
+		for (i.y = minp.y; i.y < maxp.y; ++i.y) {
+			for (i.x = minp.x; i.x < maxp.x; ++i.x) {
+				const int color_data = voxels.get_voxel(i, channel, defval).i;
+				if (color_data != 0) {
+					potential_boxes.push_back(AABB(i, Vector3(1, 1, 1)));
+				}
+			}
+		}
+	}
+}
+
+void collect_boxes(
+		const VoxelData &voxels,
+		const VoxelMesher &mesher,
+		const AABB query_box,
+		const uint32_t collision_nask,
+		StdVector<AABB> &potential_boxes
+) {
+	ZN_PROFILE_SCOPE();
+
+	const Vector3i minp = math::floor_to_int(query_box.position);
+	const Vector3i maxp = math::ceil_to_int(query_box.position + query_box.size);
+
+	const VoxelMesherBlocky *mesher_blocky = Object::cast_to<VoxelMesherBlocky>(&mesher);
+	if (mesher_blocky != nullptr) {
+		collect_boxes_blocky(voxels, *mesher_blocky, minp, maxp, collision_nask, potential_boxes);
+		return;
+	}
+
+	const VoxelMesherCubes *mesher_cubes = Object::cast_to<VoxelMesherCubes>(&mesher);
+	if (mesher_cubes != nullptr) {
+		collect_boxes_cubes(voxels, minp, maxp, potential_boxes);
+		return;
+	}
+}
+
 } // namespace
 
-Vector3 VoxelBoxMover::get_motion(Vector3 p_pos, Vector3 p_motion, AABB p_aabb, VoxelTerrain &p_terrain) {
+Vector3 VoxelBoxMover::get_motion(
+		const Vector3 pos_world,
+		const Vector3 motion_world,
+		const AABB aabb_world,
+		const VoxelData &terrain_data,
+		const Transform3D &terrain_transform,
+		const VoxelMesher &mesher
+) {
 	ZN_PROFILE_SCOPE();
-	// The mesher is required to know how collisions should be processed
-	ERR_FAIL_COND_V(p_terrain.get_mesher().is_null(), Vector3());
 
 	// Transform to local in case the volume is transformed
-	const Transform3D to_world = p_terrain.get_global_transform();
+	const Transform3D to_world = terrain_transform;
 	const Transform3D to_local = to_world.affine_inverse();
-	const Vector3 pos = to_local.xform(p_pos);
-	const Vector3 input_motion = to_local.basis.xform(p_motion);
-	const AABB aabb = Transform3D(to_local.basis, Vector3()).xform(p_aabb);
+
+	const Vector3 pos = to_local.xform(pos_world);
+	const Vector3 input_motion = to_local.basis.xform(motion_world);
+	const AABB aabb = Transform3D(to_local.basis, Vector3()).xform(aabb_world);
 
 	const AABB box(aabb.position + pos, aabb.size);
 
@@ -279,13 +308,14 @@ Vector3 VoxelBoxMover::get_motion(Vector3 p_pos, Vector3 p_motion, AABB p_aabb, 
 		expanded_box.size.y += _max_step_height;
 	}
 
+	// TODO Candidate for temp allocator
 	static thread_local StdVector<AABB> s_colliding_boxes;
 	StdVector<AABB> &potential_boxes = s_colliding_boxes;
 	potential_boxes.clear();
 
 	// Collect potential collisions with the terrain (broad phase)
 	// TODO If motion is really big, we may want something more optimal or reject it
-	collect_boxes(p_terrain, expanded_box, _collision_mask, potential_boxes);
+	collect_boxes(terrain_data, mesher, expanded_box, _collision_mask, potential_boxes);
 
 	const Vector3 slided_motion1 = zylann::voxel::get_motion(box, input_motion, to_span(potential_boxes));
 	Vector3 final_motion = slided_motion1;
@@ -378,20 +408,59 @@ float VoxelBoxMover::get_max_step_height() const {
 	return _max_step_height;
 }
 
+bool VoxelBoxMover::intersects(
+		const AABB aabb_world,
+		const VoxelData &terrain_data,
+		const Transform3D &terrain_transform,
+		const VoxelMesher &mesher
+) const {
+	// Transform to local in case the volume is transformed
+	const Transform3D to_world = terrain_transform;
+	const Transform3D to_local = to_world.affine_inverse();
+	const AABB aabb = to_local.xform(aabb_world);
+
+	// TODO Candidate for temp allocator
+	static thread_local StdVector<AABB> s_colliding_boxes;
+	StdVector<AABB> &potential_boxes = s_colliding_boxes;
+	potential_boxes.clear();
+
+	// Collect potential collisions with the terrain (broad phase)
+	collect_boxes(terrain_data, mesher, aabb, _collision_mask, potential_boxes);
+
+	return zylann::voxel::intersects(to_span(potential_boxes), aabb);
+}
+
 #if defined(ZN_GODOT)
 Vector3 VoxelBoxMover::_b_get_motion(Vector3 pos, Vector3 motion, AABB aabb, Node *terrain_node) {
 #elif defined(ZN_GODOT_EXTENSION)
-Vector3 VoxelBoxMover::_b_get_motion(Vector3 pos, Vector3 motion, AABB aabb, Object *terrain_node_o) {
-	Node *terrain_node = Object::cast_to<Node>(terrain_node_o);
+Vector3 VoxelBoxMover::_b_get_motion(Vector3 pos, Vector3 motion, AABB aabb, Object *terrain_node) {
 #endif
 	ERR_FAIL_COND_V(terrain_node == nullptr, Vector3());
-	VoxelTerrain *terrain = Object::cast_to<VoxelTerrain>(terrain_node);
+	VoxelNode *terrain = Object::cast_to<VoxelNode>(terrain_node);
 	ERR_FAIL_COND_V(terrain == nullptr, Vector3());
-	return get_motion(pos, motion, aabb, *terrain);
+
+	// The mesher is required to know how collisions should be processed
+	Ref<VoxelMesher> mesher = terrain->get_mesher();
+	ERR_FAIL_COND_V(mesher.is_null(), Vector3());
+
+	return get_motion(pos, motion, aabb, terrain->get_storage(), terrain->get_global_transform(), **mesher);
+}
+
+bool VoxelBoxMover::_b_intersects(AABB p_aabb, Object *p_terrain_node) const {
+	ERR_FAIL_COND_V(p_terrain_node == nullptr, false);
+	VoxelNode *terrain = Object::cast_to<VoxelNode>(p_terrain_node);
+	ERR_FAIL_COND_V(terrain == nullptr, false);
+
+	// The mesher is required to know how collisions should be processed
+	Ref<VoxelMesher> mesher = terrain->get_mesher();
+	ERR_FAIL_COND_V(mesher.is_null(), false);
+
+	return intersects(p_aabb, terrain->get_storage(), terrain->get_global_transform(), **mesher);
 }
 
 void VoxelBoxMover::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_motion", "pos", "motion", "aabb", "terrain"), &VoxelBoxMover::_b_get_motion);
+	ClassDB::bind_method(D_METHOD("intersects", "aabb", "terrain"), &VoxelBoxMover::_b_intersects);
 
 	ClassDB::bind_method(D_METHOD("set_collision_mask", "mask"), &VoxelBoxMover::set_collision_mask);
 	ClassDB::bind_method(D_METHOD("get_collision_mask"), &VoxelBoxMover::get_collision_mask);

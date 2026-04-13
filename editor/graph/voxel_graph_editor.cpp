@@ -39,6 +39,10 @@
 #include "voxel_graph_node_dialog.h"
 #include "voxel_range_analysis_dialog.h"
 
+#ifdef ZN_GODOT
+#include "../../util/godot/core/callable_mp.h"
+#endif
+
 namespace zylann::voxel {
 
 using namespace pg;

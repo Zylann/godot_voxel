@@ -1,15 +1,15 @@
 #include "box2i.h"
-#include <sstream>
+#include "../io/text_writer.h"
 
 namespace zylann {
 
-StdStringStream &operator<<(StdStringStream &ss, const Box2i &box) {
-	ss << "(o:";
-	ss << box.position;
-	ss << ", s:";
-	ss << box.size;
-	ss << ")";
-	return ss;
+TextWriter &operator<<(TextWriter &w, const Box2i &box) {
+	w << "(o:";
+	w << box.position;
+	w << ", s:";
+	w << box.size;
+	w << ")";
+	return w;
 }
 
 } // namespace zylann

@@ -138,6 +138,7 @@
 		</member>
 		<member name="bounds" type="AABB" setter="set_bounds" getter="get_bounds" default="AABB(-536870900, -536870900, -536870900, 1073741800, 1073741800, 1073741800)">
 			Defines the bounds within which the terrain is allowed to have voxels. If an infinite world generator is used, blocks will only generate within this region. Everything outside will be left empty.
+			If any dimension of the new bounds is larger than 512 and [member max_view_distance] is larger than 512, then [member max_view_distance] will be clamped to 512. This measure is to avoid crashing due to a potential huge amount of chunks that would load.
 		</member>
 		<member name="collision_layer" type="int" setter="set_collision_layer" getter="get_collision_layer" default="1">
 		</member>
@@ -164,7 +165,6 @@
 		</member>
 		<member name="max_view_distance" type="int" setter="set_max_view_distance" getter="get_max_view_distance" default="128">
 			Sets the maximum distance this terrain can support. If a [VoxelViewer] requests more, it will be clamped.
-			Note: there is an internal limit of 512 for constant LOD terrains, because going further can affect performance and memory very badly at the moment.
 		</member>
 		<member name="mesh_block_size" type="int" setter="set_mesh_block_size" getter="get_mesh_block_size" default="16">
 		</member>

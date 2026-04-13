@@ -11,6 +11,7 @@
 #include "../../util/godot/classes/fast_noise_lite.h"
 #include "../../util/godot/classes/image.h"
 #include "../../util/godot/core/random_pcg.h"
+#include "../../util/io/std_string_text_writer.h"
 #include "../../util/math/conv.h"
 #include "../../util/math/sdf.h"
 #include "../../util/noise/fast_noise_lite/fast_noise_lite.h"
@@ -675,8 +676,8 @@ void print_sdf_as_ascii(const VoxelBuffer &vb) {
 		print_line(format("Y = {}", pos.y));
 		for (pos.z = 0; pos.z < vb.get_size().z; ++pos.z) {
 			// Prints two views of the same row side by side
-			StdStringStream ss;
-			StdStringStream ss2;
+			StdStringTextWriter ss;
+			StdStringTextWriter ss2;
 			for (pos.x = 0; pos.x < vb.get_size().x; ++pos.x) {
 				const float sd = vb.get_voxel_f(pos, channel);
 				char c;
@@ -704,8 +705,8 @@ void print_sdf_as_ascii(const VoxelBuffer &vb) {
 				ss2 << ' ';
 			}
 			ss << " | ";
-			ss << ss2.str();
-			print_line(ss.str());
+			ss << ss2.get_written();
+			print_line(ss.get_written());
 		}
 	}
 }

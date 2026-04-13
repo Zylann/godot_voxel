@@ -10,9 +10,17 @@
 #include <servers/rendering/rendering_server.h>
 #endif
 
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR <= 6
+using RenderingServerEnums = RenderingServer;
+#else
+// RenderingServer enums are now in a dedicated namespace called RenderingServerEnums
+#include <servers/rendering/rendering_server_enums.h>
+#endif
+
 #elif defined(ZN_GODOT_EXTENSION)
 #include <godot_cpp/classes/rendering_server.hpp>
 using namespace godot;
+using RenderingServerEnums = RenderingServer;
 #endif
 
 #include "../../containers/std_vector.h"

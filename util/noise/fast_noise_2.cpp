@@ -5,6 +5,10 @@
 #include "../math/vector3.h"
 #include <core/io/image.h>
 
+#ifdef ZN_GODOT
+#include "../godot/core/class_db.h"
+#endif
+
 namespace zylann {
 
 FastNoise2::FastNoise2() {

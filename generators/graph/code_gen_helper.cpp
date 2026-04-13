@@ -8,8 +8,6 @@
 
 namespace zylann {
 
-CodeGenHelper::CodeGenHelper(StdStringStream &main_ss, StdStringStream &lib_ss) : _main_ss(main_ss), _lib_ss(lib_ss) {}
-
 void CodeGenHelper::indent() {
 	++_indent_level;
 }
@@ -24,11 +22,11 @@ void CodeGenHelper::add(const char *s, unsigned int len) {
 		const char c = s[i];
 		if (_newline) {
 			for (unsigned int j = 0; j < _indent_level; ++j) {
-				_main_ss << "    ";
+				_main_code += "    ";
 			}
 			_newline = false;
 		}
-		_main_ss << c;
+		_main_code += c;
 		if (c == '\n') {
 			_newline = true;
 		}
@@ -39,8 +37,8 @@ void CodeGenHelper::add(const char *s) {
 	add(s, strlen(s));
 }
 
-void CodeGenHelper::add(FwdConstStdString s) {
-	add(s.s.c_str(), s.s.size());
+void CodeGenHelper::add(const StdString &s) {
+	add(s.c_str(), s.size());
 }
 
 void CodeGenHelper::add(float x) {
@@ -68,9 +66,9 @@ void CodeGenHelper::add(int x) {
 void CodeGenHelper::require_lib_code(const char *lib_name, const char *code) {
 	auto p = _included_libs.insert(lib_name);
 	if (p.second) {
-		_lib_ss << "\n\n";
-		_lib_ss << code;
-		_lib_ss << "\n\n";
+		_lib_code += "\n\n";
+		_lib_code += code;
+		_lib_code += "\n\n";
 	}
 }
 
@@ -79,23 +77,25 @@ void CodeGenHelper::require_lib_code(const char *lib_name, const char *code) {
 void CodeGenHelper::require_lib_code(const char *lib_name, const char **code) {
 	auto p = _included_libs.insert(lib_name);
 	if (p.second) {
-		_lib_ss << "\n\n";
+		_lib_code += "\n\n";
 		while (*code != 0) {
-			_lib_ss << *code;
+			_lib_code += *code;
 			++code;
 		}
-		_lib_ss << "\n\n";
+		_lib_code += "\n\n";
 	}
 }
 
-void CodeGenHelper::generate_var_name(FwdMutableStdString out_var_name) {
+StdString CodeGenHelper::generate_var_name() {
 	const StdString s = format("v{}", _next_var_name_id);
 	++_next_var_name_id;
-	out_var_name.s = s;
+	return s;
 }
 
-void CodeGenHelper::print(FwdMutableStdString output) {
-	output.s = _lib_ss.str() + _main_ss.str();
+StdString CodeGenHelper::print() const {
+	StdString out = _lib_code;
+	out += _main_code;
+	return out;
 }
 
 } // namespace zylann

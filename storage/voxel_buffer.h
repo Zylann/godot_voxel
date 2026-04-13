@@ -19,6 +19,19 @@ namespace voxel {
 
 struct VoxelFormat;
 
+static_assert(sizeof(uint32_t) == sizeof(float), "uint32_t and float cannot be marshalled back and forth");
+static_assert(sizeof(uint64_t) == sizeof(double), "uint64_t and double cannot be marshalled back and forth");
+
+union MarshallFloat {
+	float f;
+	uint32_t i;
+};
+
+union MarshallDouble {
+	double d;
+	uint64_t l;
+};
+
 // Dense voxels data storage.
 // Organized in channels of configurable bit depth.
 // Values can be interpreted either as unsigned integers or normalized floats.
@@ -88,6 +101,61 @@ public:
 				ZN_CRASH();
 		}
 		return DEPTH_COUNT;
+	}
+
+	static inline uint64_t real_to_raw_voxel(const real_t value, const Depth depth) {
+		switch (depth) {
+			case DEPTH_8_BIT:
+				return snorm_to_s8(value * constants::QUANTIZED_SDF_8_BITS_SCALE);
+
+			case DEPTH_16_BIT:
+				return snorm_to_s16(value * constants::QUANTIZED_SDF_16_BITS_SCALE);
+
+			case DEPTH_32_BIT: {
+				MarshallFloat m;
+				m.f = value;
+				return m.i;
+			}
+			case DEPTH_64_BIT: {
+				MarshallDouble m;
+				m.d = value;
+				return m.l;
+			}
+			default:
+#ifdef DEV_ENABLED
+				CRASH_NOW();
+#endif
+				return 0;
+		}
+	}
+
+	static inline real_t raw_voxel_to_real(const uint64_t value, const Depth depth) {
+		// Depths below 32 are normalized between -1 and 1
+		switch (depth) {
+			case DEPTH_8_BIT:
+				return s8_to_snorm(value) * constants::QUANTIZED_SDF_8_BITS_SCALE_INV;
+
+			case DEPTH_16_BIT:
+				return s16_to_snorm(value) * constants::QUANTIZED_SDF_16_BITS_SCALE_INV;
+
+			case DEPTH_32_BIT: {
+				MarshallFloat m;
+				m.i = value;
+				return m.f;
+			}
+
+			case DEPTH_64_BIT: {
+				MarshallDouble m;
+				m.l = value;
+				return m.d;
+			}
+
+			default:
+#ifdef DEV_ENABLED
+				CRASH_NOW();
+#endif
+				return 0;
+		}
 	}
 
 	static const Depth DEFAULT_CHANNEL_DEPTH = DEPTH_8_BIT;

@@ -6,6 +6,10 @@
 #include "../../../util/math/funcs.h"
 #include "../../../util/math/ortho_basis.h"
 
+#ifdef ZN_GODOT
+#include "../../../util/godot/core/class_db.h"
+#endif
+
 namespace zylann::voxel {
 
 StringName VoxelBlockyAttribute::get_attribute_name() const {

@@ -1,13 +1,13 @@
 #ifndef VOXEL_STREAM_SQLITE_H
 #define VOXEL_STREAM_SQLITE_H
 
-#include "../../util/containers/std_unordered_set.h"
 #include "../../util/containers/std_vector.h"
 #include "../../util/string/std_string.h"
 #include "../../util/thread/mutex.h"
 #include "../voxel_block_serializer.h"
 #include "../voxel_stream.h"
 #include "../voxel_stream_cache.h"
+#include "block_key_cache.h"
 
 namespace zylann::voxel::sqlite {
 class Connection;
@@ -77,42 +77,6 @@ public:
 
 private:
 	void rebuild_key_cache();
-
-	struct BlockKeysCache {
-		FixedArray<StdUnorderedSet<Vector3i>, constants::MAX_LOD> lods;
-		RWLock rw_lock;
-
-		inline bool contains(Vector3i bpos, unsigned int lod_index) const {
-			const StdUnorderedSet<Vector3i> &keys = lods[lod_index];
-			RWLockRead rlock(rw_lock);
-			return keys.find(bpos) != keys.end();
-		}
-
-		inline void add_no_lock(Vector3i bpos, unsigned int lod_index) {
-			lods[lod_index].insert(bpos);
-		}
-
-		inline void add(Vector3i bpos, unsigned int lod_index) {
-			RWLockWrite wlock(rw_lock);
-			add_no_lock(bpos, lod_index);
-		}
-
-		inline void clear() {
-			RWLockWrite wlock(rw_lock);
-			for (unsigned int i = 0; i < lods.size(); ++i) {
-				lods[i].clear();
-			}
-		}
-
-		// inline size_t get_memory_usage() const {
-		// 	size_t mem = 0;
-		// 	for (unsigned int i = 0; i < lods.size(); ++i) {
-		// 		const StdUnorderedSet<Vector3i> &keys = lods[i];
-		// 		mem += sizeof(Vector3i) * keys.size();
-		// 	}
-		// 	return mem;
-		// }
-	};
 
 	// An SQlite3 database is safe to use with multiple threads in serialized mode,
 	// but after having a look at the implementation while stepping with a debugger, here are what actually happens:

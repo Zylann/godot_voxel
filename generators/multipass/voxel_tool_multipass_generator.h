@@ -48,8 +48,8 @@ public:
 
 	void do_path(Span<const Vector3> positions, Span<const float> radii) override;
 
-	void set_voxel_metadata(Vector3i pos, Variant meta) override;
-	Variant get_voxel_metadata(Vector3i pos) const override;
+	void set_voxel_metadata(const Vector3i pos, const Variant &meta) override;
+	Variant get_voxel_metadata(const Vector3i pos) const override;
 
 	// TODO Implement more methods
 

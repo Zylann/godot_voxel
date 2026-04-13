@@ -26,7 +26,7 @@ public:
 	void set_mesh(Ref<Mesh> mesh);
 	void set_material_override(Ref<Material> material);
 	void set_visible(bool visible);
-	void set_cast_shadows_setting(RenderingServer::ShadowCastingSetting mode);
+	void set_cast_shadows_setting(RenderingServerEnums::ShadowCastingSetting mode);
 	void set_shader_instance_parameter(StringName key, Variant value);
 	void set_gi_mode(GeometryInstance3D::GIMode mode);
 	void set_render_layers_mask(int mask);

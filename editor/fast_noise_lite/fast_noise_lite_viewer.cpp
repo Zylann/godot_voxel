@@ -5,6 +5,11 @@
 #include "../../util/godot/classes/texture_rect.h"
 #include "../../util/godot/editor_scale.h"
 
+#ifdef ZN_GODOT
+#include "../../util/godot/core/callable_mp.h"
+#include "../../util/godot/core/class_db.h"
+#endif
+
 namespace zylann {
 
 ZN_FastNoiseLiteViewer::ZN_FastNoiseLiteViewer() {

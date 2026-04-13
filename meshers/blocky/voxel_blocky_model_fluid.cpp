@@ -9,6 +9,11 @@
 #include "blocky_model_baking_context.h"
 #include "voxel_blocky_library_base.h"
 
+#ifdef ZN_GODOT
+#include "../../util/godot/core/class_db.h"
+#include "../../util/godot/core/callable_mp.h"
+#endif
+
 namespace zylann::voxel {
 
 VoxelBlockyModelFluid::VoxelBlockyModelFluid() {}
@@ -140,13 +145,16 @@ void bake_fluid_model(
 	baked_model.color = fluid_model.get_color();
 	baked_model.is_random_tickable = fluid_model.is_random_tickable();
 	baked_model.box_collision_mask = fluid_model.get_collision_mask();
-	// baked_model.box_collision_aabbs = fluid_model.get_collision_aabbs();
+	baked_model.tags_mask = fluid_model.get_tags_mask();
+	baked_model.box_collision_aabbs = fluid_model.get_collision_aabbs_v();
 
 	// This is to be decided dynamically. The top side is always empty.
 	baked_model.model.empty_sides_mask = (1 << Cube::SIDE_POSITIVE_Y);
 
 	baked_model.model.surface_count = 1;
 	baked_model.model.surfaces[0].material_id = materials.get_or_create_index(fluid->get_material());
+	// Fluids have no mesh collision because mesh colliders are meant for solid stuff
+	baked_model.model.surfaces[0].collision_enabled = false; // fluid_model.is_mesh_collision_enabled(0);
 }
 
 } // namespace blocky

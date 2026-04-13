@@ -7,23 +7,57 @@ At the moment, this module doesn't have a distinct release schedule, so this cha
 
 I try to minimize breaking changes, but there are usually a few in each release which I list in detail, so watch out for that section.
 
-Dev 1.5.1 - `master`
---------------------
-
-- `VoxelGeneratorGraph`: 
-    - Editor: added `Add Node` item to the context menu
-    - Added support for domain warp on `FastNoiseLite` and `ZN_FastNoiseLite` resources when using GPU (previously required to prepend `FastNoiseLiteGradient` noise)
-    - Added methods to get the index of node inputs and output by their name
-    - Added `generate_image_from_sdf`
-    - Added `raycast_sdf_approx` to find where surface is from a ray
-- `VoxelStream`: added option to compress saves using ZSTD instead of LZ4
+Development - master branch
+-----------------------------
 
 - Fixes
-    - `VoxelTool`: 
-        `run_blocky_random_tick`: fixed uniform blocks were not picked up (PR #794)
-        `run_blocky_random_tick`: will now run over the remainder if voxel count is not divisible by batch size
-    - `VoxelGeneratorGraph`: fixed `FastNoiseGradient` was incorrect when fractal type isn't `None` and using GPU
+    - `VoxelBlockyModelFluid`: fixed fluid voxels below another fluid voxel were producing mesh collisions. They should never do because mesh collisions are for solid stuff.
+    - `VoxelInstanceLibraryMultimeshItem`: fixed mesh LOD distances did not scale properly with `lod_index` when using `VoxelLodTerrain` with the `Octree` streaming system
+    - `VoxelTool`: fixed `do_path` was sometimes generating `is_valid_block_position` errors
+    - `VoxelToolBuffer`: `paste_masked_writable_list` is now implemented
+    - Extension: fixed crash when expanding plugin resources in the inspector and other similar actions involving previews (see https://github.com/godotengine/godot-cpp/pull/1928)
+
+
+1.6 - 04/02/2026 - tag `v1.6`
+-----------------------------------
+
+- Improvements
+    - `VoxelBlockyModel`: added `tags_mask` property. Initially, it can be used to filter selected voxels when using `VoxelToolTerrain.run_blocky_random_tick`.
+    - `VoxelBoxMover`: 
+        - Added support for `VoxelLodTerrain`.
+        - Added `intersects` method to check if an AABB overlaps with blocky voxels.
+    - `VoxelGeneratorGraph`: 
+        - Editor: added `Add Node` item to the context menu
+        - Added support for domain warp on `FastNoiseLite` and `ZN_FastNoiseLite` resources when using GPU (previously required to prepend `FastNoiseLiteGradient` noise)
+        - Added methods to get the index of node inputs and output by their name
+        - Added `generate_image_from_sdf`
+        - Added `raycast_sdf_approx` to find where surface is from a ray
+    - `VoxelLodTerrain`: added debug flag to draw locations of voxel metadatas
+    - `VoxelNode`: added `convert_to_nodes` method, which creates a snapshot of the terrain using vanilla Godot nodes.
+    - `VoxelStream`: added option to compress saves using ZSTD instead of LZ4
+    - `VoxelToolLodTerrain`: 
+        - implemented `get/set_voxel_metadata` methods. Warning: caching is off by default, so getting metadata in non-edited areas will invoke the generator, like `get_voxel`.
+        - implemented `do_path`
+
+- Fixes
+    - `VoxelAStarGrid3D`: fixed crash after calling `set_region` with negative size
+    - `VoxelBlockyModelFluid`: fixed collision boxes were ignored by library baking
+    - `VoxelBuffer`: fixed `get_channel_as_byte_array` was crashing when used on non-uniform buffers
+    - `VoxelGeneratorGraph`: 
+        - fixed `FastNoiseGradient` was incorrect when fractal type isn't `None` and using GPU
+        - fixed `auto_connect_default_inputs` was not saved and reverted to its default value
     - `VoxelGraphFunction`: fixed `set_node_default_input_by_name` would match parameters but it should have been inputs
+    - `VoxelLodTerrain`:
+        - fixed potential mesh fading error when Clipbox is used and a viewer moves away from a block while another non-visual viewer still keeps its physics loaded.
+        - fixed some cases in LOD update and non-cached blocks that would potentially ignore the `VoxelFormat` override
+    - `VoxelTool`: 
+        - `run_blocky_random_tick`: fixed uniform blocks were not picked up (PR #794)
+        - `run_blocky_random_tick`: will now run over the remainder if voxel count is not divisible by batch size
+        - Terrains: fixed `set_voxel_f` which wasn't scaling SDF properly
+
+- Breaking changes
+    - `VoxelStreamRegionFiles`: removed `lod_count` property. Any LOD can be saved without the need to preconfigure it.
+
 
 
 1.5 - 16/09/2025 - tag `v1.5`

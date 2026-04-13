@@ -3,8 +3,10 @@
 #include "../../streams/region/voxel_stream_region_files.h"
 #include "../../util/containers/std_unordered_map.h"
 #include "../../util/godot/core/random_pcg.h"
+#include "../../util/string/format.h"
 #include "../../util/testing/test_directory.h"
 #include "../../util/testing/test_macros.h"
+#include "test_util.h"
 
 namespace zylann::voxel::tests {
 
@@ -199,6 +201,131 @@ void test_voxel_stream_region_files() {
 		// Dividing coordinate so it saves multiple times the same block. That should not crash.
 		VoxelStream::VoxelQueryData q{ buffer, Vector3(cycle / 16, 0, 0), 0, VoxelStream::RESULT_ERROR };
 		stream->save_voxel_block(q);
+	}
+}
+
+void test_voxel_stream_region_files_lods() {
+	const uint32_t block_size_po2 = 4;
+	const uint32_t block_size = 1 << block_size_po2;
+	const uint8_t lod_count = 3;
+	const uint32_t cycles = 1000;
+	const Vector3i center_blocks = Vector3i();
+	const uint32_t radius_blocks = 8;
+	const uint32_t seed = 131183;
+
+	zylann::testing::TestDirectory test_dir;
+	ZN_TEST_ASSERT(test_dir.is_valid());
+
+	Ref<VoxelStreamRegionFiles> stream;
+	stream.instantiate();
+	stream->set_block_size_po2(block_size_po2);
+	stream->set_directory(test_dir.get_path());
+
+	struct L {
+		static int randi(RandomPCG &rng, const int min, const int max) {
+			return min + static_cast<int>(rng.rand() % (max - min));
+		}
+		static Vector3i get_random_position(RandomPCG &rng, const Vector3i center, const uint32_t radius) {
+			return Vector3i(
+					randi(rng, center.x - radius, center.x + radius),
+					randi(rng, center.y - radius, center.y + radius),
+					randi(rng, center.z - radius, center.z + radius)
+			);
+		}
+		static void generate_block(RandomPCG &rng, VoxelBuffer &buffer, uint32_t index) {
+			// Make a block with enough data to take some significant space even if compressed
+			for (int z = 0; z < buffer.get_size().z; ++z) {
+				for (int x = 0; x < buffer.get_size().x; ++x) {
+					for (int y = 0; y < buffer.get_size().y; ++y) {
+						buffer.set_voxel(rng.rand() % 10000, x, y, z, 0);
+						// buffer.set_voxel((x + y + z + index) % 10000, x, y, z, 0);
+					}
+				}
+			}
+		}
+	};
+
+	struct SavedBlock {
+		VoxelBuffer voxels;
+		Vector3i pos;
+		uint8_t lod;
+		bool overwritten = false;
+	};
+
+	StdVector<SavedBlock> saved_blocks;
+
+	{
+		RandomPCG rng;
+		rng.seed(seed);
+
+		uint32_t index = 0;
+		for (uint8_t lod_index = 0; lod_index < lod_count; ++lod_index) {
+			for (uint32_t cycle = 0; cycle < cycles; ++cycle) {
+				VoxelBuffer buffer(VoxelBuffer::ALLOCATOR_DEFAULT);
+				buffer.create(block_size, block_size, block_size);
+				L::generate_block(rng, buffer, index);
+
+				const Vector3i block_pos = L::get_random_position(rng, center_blocks, radius_blocks);
+
+				VoxelStream::VoxelQueryData q{ buffer, block_pos, lod_index, VoxelStream::RESULT_ERROR };
+				stream->save_voxel_block(q);
+
+				for (SavedBlock &b : saved_blocks) {
+					if (b.overwritten) {
+						continue;
+					}
+					if (b.lod == lod_index && b.pos == block_pos) {
+						b.overwritten = true;
+						break;
+					}
+				}
+
+				saved_blocks.push_back({ std::move(buffer), block_pos, lod_index, false });
+				index += 1;
+			}
+		}
+	}
+	{
+		for (uint32_t index = 0; index < saved_blocks.size(); ++index) {
+			const SavedBlock &expected_block = saved_blocks[index];
+			if (expected_block.overwritten) {
+				continue;
+			}
+
+			VoxelBuffer found_buffer(VoxelBuffer::ALLOCATOR_DEFAULT);
+			found_buffer.create(block_size, block_size, block_size);
+
+			VoxelStream::VoxelQueryData q{
+				found_buffer, expected_block.pos, expected_block.lod, VoxelStream::RESULT_ERROR
+			};
+			stream->load_voxel_block(q);
+
+			ZN_TEST_ASSERT(q.result == VoxelStream::RESULT_BLOCK_FOUND);
+			if (!q.voxel_buffer.equals(expected_block.voxels)) {
+				for (unsigned int i = 0; i < saved_blocks.size(); ++i) {
+					if (i == index) {
+						continue;
+					}
+					const SavedBlock &b = saved_blocks[i];
+					if (b.voxels.equals(q.voxel_buffer)) {
+						ZN_PRINT_VERBOSE(
+								format("Loaded block #{} at {} lod {} found unequal, but is equal to #{} at {} lod {} "
+									   "overwritten: {}",
+									   index,
+									   expected_block.pos,
+									   static_cast<int>(expected_block.lod),
+									   i,
+									   b.pos,
+									   static_cast<int>(b.lod),
+									   b.overwritten)
+						);
+					}
+				}
+				print_channel_as_ascii(q.voxel_buffer, 0, 4);
+			}
+
+			ZN_TEST_ASSERT(q.voxel_buffer.equals(expected_block.voxels));
+		}
 	}
 }
 

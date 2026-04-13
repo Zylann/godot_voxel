@@ -15,6 +15,11 @@
 #include "../../util/profiling.h"
 #include "../../util/string/format.h"
 
+#ifdef ZN_GODOT
+#include "../../util/godot/core/callable_mp.h"
+#include "../../util/godot/core/class_db.h"
+#endif
+
 #if defined(_MSC_VER)
 #pragma warning(disable : 4701) // Potentially uninitialized local variable used.
 #endif

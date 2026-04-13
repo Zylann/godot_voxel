@@ -3053,6 +3053,12 @@ void VoxelInstancer::debug_dump_as_scene(String fpath) const {
 }
 
 Node *VoxelInstancer::debug_dump_as_nodes() const {
+	return convert_to_nodes(NODE_CONVERSION_DUPLICATE_MESHES | NODE_CONVERSION_DUPLICATE_MULTIMESHES);
+}
+
+Node3D *VoxelInstancer::convert_to_nodes(const uint32_t flags) const {
+	ZN_ASSERT_RETURN_V(_library.is_valid(), nullptr);
+
 	const unsigned int mesh_block_size = 1 << _parent_mesh_block_size_po2;
 
 	Node3D *root = memnew(Node3D);
@@ -3070,6 +3076,17 @@ Node *VoxelInstancer::debug_dump_as_nodes() const {
 		layer_node->set_name(String("Layer{0}").format(varray(layer_it->first)));
 		root->add_child(layer_node);
 
+		Ref<Material> mat_override;
+		const VoxelInstanceLibraryItem *item_base = _library->get_item_const(layer_it->first);
+		const VoxelInstanceLibraryMultiMeshItem *mm_item =
+				Object::cast_to<const VoxelInstanceLibraryMultiMeshItem>(item_base);
+
+		if (mm_item != nullptr) {
+			if ((flags & NODE_CONVERSION_INCLUDE_MATERIAL_OVERRIDES) != 0) {
+				mat_override = mm_item->get_material_override();
+			}
+		}
+
 		// For each block in layer
 		for (auto block_it = layer.blocks.begin(); block_it != layer.blocks.end(); ++block_it) {
 			const unsigned int block_index = block_it->second;
@@ -3079,27 +3096,49 @@ Node *VoxelInstancer::debug_dump_as_nodes() const {
 			if (block.multimesh_instance.is_valid()) {
 				const Transform3D block_local_transform(Basis(), Vector3(block.grid_position * lod_block_size));
 
-				Ref<MultiMesh> multimesh = block.multimesh_instance.get_multimesh();
-				ERR_CONTINUE(multimesh.is_null());
-				Ref<Mesh> src_mesh = multimesh->get_mesh();
+				Ref<MultiMesh> src_multimesh = block.multimesh_instance.get_multimesh();
+				ERR_CONTINUE(src_multimesh.is_null());
+				Ref<Mesh> src_mesh = src_multimesh->get_mesh();
 				ERR_CONTINUE(src_mesh.is_null());
 
-				// Duplicating the meshes because often they don't get saved even with `FLAG_BUNDLE_RESOURCES`
-				auto mesh_copy_it = mesh_copies.find(src_mesh);
-				Ref<Mesh> mesh_copy;
-				if (mesh_copy_it == mesh_copies.end()) {
-					mesh_copy = src_mesh->duplicate();
-					mesh_copies.insert({ src_mesh, mesh_copy });
+				Ref<Mesh> mesh;
+				if ((flags & NODE_CONVERSION_DUPLICATE_MESHES) != 0) {
+					// Duplicating the meshes can be necessary because often they don't get saved even with
+					// `FLAG_BUNDLE_RESOURCES` when saving to a PackedScene
+					auto mesh_copy_it = mesh_copies.find(src_mesh);
+					Ref<Mesh> mesh_copy;
+					if (mesh_copy_it == mesh_copies.end()) {
+						mesh_copy = src_mesh->duplicate();
+						mesh_copies.insert({ src_mesh, mesh_copy });
+					} else {
+						mesh_copy = mesh_copy_it->second;
+					}
+					mesh = mesh_copy;
 				} else {
-					mesh_copy = mesh_copy_it->second;
+					mesh = src_mesh;
 				}
 
-				Ref<MultiMesh> multimesh_copy = multimesh->duplicate();
-				multimesh_copy->set_mesh(mesh_copy);
+				Ref<MultiMesh> multimesh;
+				if ((flags & NODE_CONVERSION_DUPLICATE_MULTIMESHES) != 0) {
+					Ref<MultiMesh> multimesh_copy = src_multimesh->duplicate();
+					multimesh_copy->set_mesh(mesh);
+				} else {
+					multimesh = src_multimesh;
+				}
 
 				MultiMeshInstance3D *mmi = memnew(MultiMeshInstance3D);
-				mmi->set_multimesh(multimesh_copy);
+				mmi->set_multimesh(multimesh);
 				mmi->set_transform(block_local_transform);
+				mmi->set_material_override(mat_override);
+
+				if (mm_item != nullptr) {
+					mmi->set_cast_shadows_setting(
+							GeometryInstance3D::ShadowCastingSetting(mm_item->get_cast_shadows_setting())
+					);
+					mmi->set_layer_mask(mm_item->get_render_layer());
+					mmi->set_gi_mode(mm_item->get_gi_mode());
+				}
+
 				layer_node->add_child(mmi);
 			}
 

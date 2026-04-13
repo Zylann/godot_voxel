@@ -15,6 +15,10 @@
 #include "../util/testing/test_options.h"
 #endif
 
+#ifdef ZN_GODOT
+#include "../util/godot/core/callable_mp.h"
+#endif
+
 using namespace zylann::godot;
 
 namespace zylann::voxel::godot {
@@ -183,8 +187,9 @@ int VoxelEngine::get_thread_count() const {
 
 void VoxelEngine::set_thread_count(int count) {
 	constexpr int MAX_THREADS = static_cast<int>(ThreadedTaskRunner::MAX_THREADS);
-	ERR_FAIL_COND_MSG(count < 1 || count > MAX_THREADS,
-			vformat("Thread count must be a number from 1 to %d", MAX_THREADS));
+	ERR_FAIL_COND_MSG(
+			count < 1 || count > MAX_THREADS, vformat("Thread count must be a number from 1 to %d", MAX_THREADS)
+	);
 	zylann::voxel::VoxelEngine::get_singleton().set_thread_count(static_cast<uint32_t>(count));
 }
 

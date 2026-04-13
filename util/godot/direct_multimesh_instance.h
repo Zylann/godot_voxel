@@ -31,7 +31,7 @@ public:
 	void set_transform(Transform3D world_transform);
 	void set_visible(bool visible);
 	void set_material_override(Ref<Material> material);
-	void set_cast_shadows_setting(RenderingServer::ShadowCastingSetting mode);
+	void set_cast_shadows_setting(RenderingServerEnums::ShadowCastingSetting mode);
 	void set_shader_instance_parameter(const StringName &key, const Variant &value);
 	void set_render_layer(int render_layer);
 	void set_gi_mode(GeometryInstance3D::GIMode mode);

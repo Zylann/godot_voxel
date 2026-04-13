@@ -35,7 +35,7 @@ struct InstanceLibraryMultiMeshItemSettings {
 	// but this is in case OBJ meshes are used, which often dont have a material of their own
 	Ref<Material> material_override;
 
-	RenderingServer::ShadowCastingSetting shadow_casting_setting = RenderingServer::SHADOW_CASTING_SETTING_ON;
+	RenderingServerEnums::ShadowCastingSetting shadow_casting_setting = RenderingServerEnums::SHADOW_CASTING_SETTING_ON;
 	GeometryInstance3D::GIMode gi_mode = GeometryInstance3D::GIMode::GI_MODE_STATIC;
 
 	int collision_mask = 1;
@@ -83,8 +83,8 @@ public:
 	void set_material_override(Ref<Material> material);
 	Ref<Material> get_material_override() const;
 
-	void set_cast_shadows_setting(RenderingServer::ShadowCastingSetting mode);
-	RenderingServer::ShadowCastingSetting get_cast_shadows_setting() const;
+	void set_cast_shadows_setting(RenderingServerEnums::ShadowCastingSetting mode);
+	RenderingServerEnums::ShadowCastingSetting get_cast_shadows_setting() const;
 
 	void set_gi_mode(GeometryInstance3D::GIMode mode);
 	GeometryInstance3D::GIMode get_gi_mode() const;

@@ -1,5 +1,9 @@
 #include "voxel_instance_library_scene_item.h"
 
+#ifdef ZN_GODOT
+#include "../../util/godot/core/class_db.h"
+#endif
+
 namespace zylann::voxel {
 
 void VoxelInstanceLibrarySceneItem::set_scene(Ref<PackedScene> scene) {

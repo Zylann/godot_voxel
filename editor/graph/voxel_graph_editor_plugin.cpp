@@ -19,6 +19,10 @@
 #include "voxel_graph_editor_window.h"
 #include "voxel_graph_function_inspector_plugin.h"
 
+#ifdef ZN_GODOT
+#include "../../util/godot/core/callable_mp.h"
+#endif
+
 namespace zylann::voxel {
 
 using namespace pg;

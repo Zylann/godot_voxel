@@ -80,10 +80,10 @@
 		<constant name="COMPRESSION_NONE" value="0" enum="Compression">
 			Don't compress the data.
 		</constant>
-		<constant name="COMPRESSION_LZ4" value="2" enum="Compression">
+		<constant name="COMPRESSION_LZ4" value="1" enum="Compression">
 			Use the LZ4 default compression algorithm. Fast, but lower compression ratio.
 		</constant>
-		<constant name="COMPRESSION_ZSTD" value="3" enum="Compression">
+		<constant name="COMPRESSION_ZSTD" value="2" enum="Compression">
 			Use the Zstandard default compression algorithm. Good compression ratio but slower.
 		</constant>
 	</constants>

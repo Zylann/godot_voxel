@@ -127,8 +127,8 @@ public:
 	// Checks if an edit affecting the given box can be applied, fully or partially
 	virtual bool is_area_editable(const Box3i &box) const;
 
-	virtual void set_voxel_metadata(Vector3i pos, Variant meta);
-	virtual Variant get_voxel_metadata(Vector3i pos) const;
+	virtual void set_voxel_metadata(const Vector3i pos, const Variant &meta);
+	virtual Variant get_voxel_metadata(const Vector3i pos) const;
 
 	virtual VoxelFormat get_format() const;
 
@@ -142,6 +142,13 @@ protected:
 	virtual void _set_voxel(Vector3i pos, uint64_t v);
 	virtual void _set_voxel_f(Vector3i pos, float v);
 	virtual void _post_edit(const Box3i &box);
+
+	void do_path_chunked(
+			VoxelData &vdata,
+			Span<const Vector3> positions,
+			Span<const float> radii,
+			const bool with_pre_generate
+	);
 
 #ifdef VOXEL_ENABLE_MESH_SDF
 	void do_mesh_chunked(

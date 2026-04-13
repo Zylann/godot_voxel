@@ -1,7 +1,7 @@
 Multiplayer
 =============
 
-Multiplayer in a voxel game can be implemented with lots of different details. Not all the features of the engine are supported, it is still a bit experimental and might change in the future. So how to setup multiplayer is explained in sections with a date. The most recent one will often relate to a new/better/simpler way, and old ones might eventually be removed.
+Multiplayer in a voxel game can be implemented with lots of different details. Not all the features of the engine are supported, it is still very experimental and might change in the future. So how to setup multiplayer is explained in sections with a date, based on last experiments. The most recent one will often relate to a new/better/simpler way, and old ones might eventually be removed.
 
 !!! note
     This page assumes you already have knowledge in general multiplayer programming. It is strongly recommended you learn it beforehand. You can have a look at [Godot's documentation page about networking](https://docs.godotengine.org/en/stable/tutorials/networking/index.html).

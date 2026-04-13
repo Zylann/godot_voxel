@@ -6,7 +6,6 @@
 #include "../godot/macros.h"
 #include "../hash_funcs.h"
 #include "../macros.h"
-#include "../string/std_stringstream.h"
 #include "funcs.h"
 #include <functional> // For std::hash
 
@@ -68,7 +67,8 @@ inline Vector2i min(const Vector2i a, const Vector2i b) {
 
 } // namespace math
 
-StdStringStream &operator<<(StdStringStream &ss, const Vector2i &v);
+class TextWriter;
+TextWriter &operator<<(TextWriter &w, const Vector2i &v);
 
 } // namespace zylann
 

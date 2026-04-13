@@ -19,6 +19,11 @@
 #include "../voxel_blocky_library_base.h"
 #include <array>
 
+#ifdef ZN_GODOT
+#include "../../../util/godot/core/callable_mp.h"
+#include "../../../util/godot/core/class_db.h"
+#endif
+
 namespace zylann::voxel {
 
 // Making types can get quite complicated, config files sound like a better solution compared to messing around in the

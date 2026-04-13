@@ -3,6 +3,10 @@
 #include "../../util/containers/span.h"
 #include "../../util/godot/classes/image.h"
 
+#ifdef ZN_GODOT
+#include "../../util/godot/core/class_db.h"
+#endif
+
 namespace zylann::voxel {
 
 namespace {

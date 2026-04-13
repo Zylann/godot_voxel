@@ -9,6 +9,10 @@
 #include "../../util/string/format.h"
 #include "generate_block_multipass_cb_task.h"
 
+#ifdef ZN_GODOT
+#include "../../util/godot/core/class_db.h"
+#endif
+
 namespace zylann::voxel {
 
 using namespace VoxelGeneratorMultipassCBStructs;

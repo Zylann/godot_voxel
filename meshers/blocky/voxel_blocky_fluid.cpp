@@ -2,6 +2,9 @@
 #include "../../util/godot/classes/material.h"
 #include "blocky_material_indexer.h"
 #include "voxel_blocky_model_cube.h"
+#ifdef ZN_GODOT
+#include "../../util/godot/core/class_db.h"
+#endif
 
 namespace zylann::voxel {
 
