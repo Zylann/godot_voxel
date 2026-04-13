@@ -322,11 +322,13 @@ Vector3 VoxelBoxMover::get_motion(
 
 	_has_stepped_up = false;
 
+	const real_t motion_diff_epsilon = 0.005;
+
 	if (_step_climbing_enabled &&
 		// Movement is horizontal?
 		Math::abs(slided_motion1.y) < 0.001 && get_xz(input_motion).length_squared() > 0.0001 &&
 		// Horizontal direction of input motion isn't the same as resulting slided motion?
-		get_xz(input_motion).distance_squared_to(get_xz(slided_motion1)) > 0.1 * 0.1) {
+		get_xz(input_motion).distance_squared_to(get_xz(slided_motion1)) > motion_diff_epsilon * motion_diff_epsilon) {
 		//
 		AABB mobox = box;
 
