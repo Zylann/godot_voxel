@@ -323,6 +323,15 @@ Vector3 VoxelBoxMover::get_motion(
 
 		// Only step if we're blocked horizontally, i.e. the actual motion is less than the intended
 		if (actual_h_motion.length_squared() < intended_h_motion.length_squared() - epsilon) {
+			// Actually forgot to get new collision boxes from the terrain for the "step moved" position.
+			// If we don't do this, we will glitch through all solid voxels above us when stepping.
+			AABB step_temp_box = box;
+			step_temp_box.size.y += _max_step_height;
+			step_temp_box = expand_with_vector(step_temp_box, motion);
+
+			potential_boxes.clear();
+			collect_boxes(terrain_data, mesher, step_temp_box, _collision_mask, potential_boxes);
+
 			// Basically we're now going to manually push the player up to the max step height, check for the possible horizontal motion,
 			// push the player back down to the "real" step height of the terrain, and then check if we've gotten farther than before.
 			AABB step_box = box; // Starting box
