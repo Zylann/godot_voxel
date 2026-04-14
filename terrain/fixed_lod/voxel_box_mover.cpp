@@ -365,11 +365,11 @@ Vector3 VoxelBoxMover::get_motion(
 		// Do a second attempt at moving
 		Vector3 slided_motion2 = zylann::voxel::get_motion(mobox, momotion, to_span(potential_boxes), margin);
 
+		const real_t epsilon = 0.0001;
 		{
 			// Move the box back down as far as we raised it or until we touch ground
 			const real_t step_h = mobox.position.y - box.position.y;
 			const Vector3 slided_pos = mobox.position + slided_motion2;
-			const real_t epsilon = 0.0001;
 			const real_t hit_y = rect_cast_down(
 					to_span(potential_boxes),
 					Rect2(get_xz(slided_pos), get_xz(box.size)),
@@ -381,7 +381,7 @@ Vector3 VoxelBoxMover::get_motion(
 			slided_motion2.y += effective_step_h;
 		}
 
-		if (slided_motion2.length_squared() > slided_motion1.length_squared()) {
+		if (slided_motion2.length_squared() > slided_motion1.length_squared() + epsilon) {
 			// print_line(
 			// 		format("Preferring step climb {} over {} (going from {} to {})",
 			// 			   slided_motion2,
