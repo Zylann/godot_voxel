@@ -5,6 +5,7 @@
 #include "../../storage/voxel_data.h"
 #include "../../util/containers/std_vector.h"
 #include "../../util/profiling.h"
+// #include "../../util/string/format.h"
 #include "../variable_lod/voxel_lod_terrain.h"
 #include "voxel_terrain.h"
 
@@ -37,9 +38,7 @@ AABB expand_with_vector(AABB box, Vector3 v) {
 	return box;
 }
 
-real_t calculate_i_offset(const AABB &box, AABB other, real_t motion, int i, int j, int k) {
-	const real_t EPSILON = 0.001;
-
+real_t calculate_i_offset(const AABB &box, AABB other, real_t motion, int i, int j, int k, const real_t margin) {
 	const Vector3 other_end = other.position + other.size;
 	const Vector3 box_end = box.position + box.size;
 
@@ -52,14 +51,14 @@ real_t calculate_i_offset(const AABB &box, AABB other, real_t motion, int i, int
 	}
 
 	if (motion > 0.0 && other_end[i] <= box.position[i]) {
-		const real_t off = box.position[i] - other_end[i] - EPSILON;
+		const real_t off = box.position[i] - other_end[i] - margin;
 		if (off < motion) {
 			motion = off;
 		}
 	}
 
 	if (motion < 0.0 && other.position[i] >= box_end[i]) {
-		const real_t off = box_end[i] - other.position[i] + EPSILON;
+		const real_t off = box_end[i] - other.position[i] + margin;
 		if (off > motion) {
 			motion = off;
 		}
@@ -86,7 +85,7 @@ real_t calculate_i_offset(const AABB &box, AABB other, real_t motion, int i, int
 //
 // TODO one way to fix this would be to try a "hot side" projection instead
 //
-Vector3 get_motion(AABB box, Vector3 motion, Span<const AABB> environment_boxes) {
+Vector3 get_motion(AABB box, Vector3 motion, Span<const AABB> environment_boxes, const real_t margin) {
 	// The bounding box is expanded to include it's estimated version at next update.
 	// This also makes the algorithm tunnelling-free
 	const AABB expanded_box = expand_with_vector(box, motion);
@@ -109,17 +108,17 @@ Vector3 get_motion(AABB box, Vector3 motion, Span<const AABB> environment_boxes)
 	Vector3 new_motion = motion;
 
 	for (unsigned int i = 0; i < colliding_boxes.size(); ++i) {
-		new_motion.y = calculate_i_offset(colliding_boxes[i], box, new_motion.y, 1, 0, 2);
+		new_motion.y = calculate_i_offset(colliding_boxes[i], box, new_motion.y, 1, 0, 2, margin);
 	}
 	box.position.y += new_motion.y;
 
 	for (unsigned int i = 0; i < colliding_boxes.size(); ++i) {
-		new_motion.x = calculate_i_offset(colliding_boxes[i], box, new_motion.x, 0, 1, 2);
+		new_motion.x = calculate_i_offset(colliding_boxes[i], box, new_motion.x, 0, 1, 2, margin);
 	}
 	box.position.x += new_motion.x;
 
 	for (unsigned int i = 0; i < colliding_boxes.size(); ++i) {
-		new_motion.z = calculate_i_offset(colliding_boxes[i], box, new_motion.z, 2, 1, 0);
+		new_motion.z = calculate_i_offset(colliding_boxes[i], box, new_motion.z, 2, 1, 0, margin);
 	}
 	box.position.z += new_motion.z;
 
@@ -131,7 +130,13 @@ inline Vector2 get_xz(Vector3 v) {
 }
 
 // Finds the first obstacle to a rectangle moving down through axis-aligned boxes
-real_t rect_cast_down(Span<const AABB> boxes, const Rect2 rect, const real_t from_y, const real_t min_y) {
+real_t rect_cast_down(
+		Span<const AABB> boxes,
+		const Rect2 rect,
+		const real_t from_y,
+		const real_t min_y,
+		const real_t margin
+) {
 	real_t hit_y = min_y;
 	for (const AABB box : boxes) {
 		if (box.position.y > from_y) {
@@ -143,20 +148,26 @@ real_t rect_cast_down(Span<const AABB> boxes, const Rect2 rect, const real_t fro
 			// Ignore overlap
 			continue;
 		}
-		if (box_top < min_y) {
+		if (box_top + margin < min_y) {
 			// Too far
 			continue;
 		}
 		if (!rect.intersects(Rect2(get_xz(box.position), get_xz(box.size)))) {
 			continue;
 		}
-		hit_y = box_top;
+		hit_y = math::max(hit_y, box_top + margin);
 	}
 	return hit_y;
 }
 
 // Finds the first obstacle to a rectangle moving up through axis-aligned boxes
-real_t rect_cast_up(Span<const AABB> boxes, const Rect2 rect, const real_t from_y, const real_t max_y) {
+real_t rect_cast_up(
+		Span<const AABB> boxes,
+		const Rect2 rect,
+		const real_t from_y,
+		const real_t max_y,
+		const real_t margin
+) {
 	real_t hit_y = max_y;
 	for (const AABB box : boxes) {
 		if (box.position.y + box.size.y < from_y) {
@@ -167,14 +178,14 @@ real_t rect_cast_up(Span<const AABB> boxes, const Rect2 rect, const real_t from_
 			// Ignore overlap
 			continue;
 		}
-		if (box.position.y > max_y) {
+		if (box.position.y - margin > max_y) {
 			// Too far
 			continue;
 		}
 		if (!rect.intersects(Rect2(get_xz(box.position), get_xz(box.size)))) {
 			continue;
 		}
-		hit_y = math::min(hit_y, box.position.y);
+		hit_y = math::min(hit_y, box.position.y - margin);
 	}
 	return hit_y;
 }
@@ -317,7 +328,8 @@ Vector3 VoxelBoxMover::get_motion(
 	// TODO If motion is really big, we may want something more optimal or reject it
 	collect_boxes(terrain_data, mesher, expanded_box, _collision_mask, potential_boxes);
 
-	const Vector3 slided_motion1 = zylann::voxel::get_motion(box, input_motion, to_span(potential_boxes));
+	const real_t margin = 0.001;
+	const Vector3 slided_motion1 = zylann::voxel::get_motion(box, input_motion, to_span(potential_boxes), margin);
 	Vector3 final_motion = slided_motion1;
 
 	_has_stepped_up = false;
@@ -339,7 +351,8 @@ Vector3 VoxelBoxMover::get_motion(
 					to_span(potential_boxes),
 					Rect2(get_xz(box.position), get_xz(box.size)),
 					me_top,
-					me_top + _max_step_height
+					me_top + _max_step_height,
+					margin
 			);
 			const real_t step_h = hit_h - me_top;
 			mobox.position.y += step_h;
@@ -350,7 +363,7 @@ Vector3 VoxelBoxMover::get_motion(
 		const Vector3 momotion(input_motion.x, slided_motion1.y, input_motion.z);
 
 		// Do a second attempt at moving
-		Vector3 slided_motion2 = zylann::voxel::get_motion(mobox, momotion, to_span(potential_boxes));
+		Vector3 slided_motion2 = zylann::voxel::get_motion(mobox, momotion, to_span(potential_boxes), margin);
 
 		{
 			// Move the box back down as far as we raised it or until we touch ground
@@ -361,7 +374,8 @@ Vector3 VoxelBoxMover::get_motion(
 					to_span(potential_boxes),
 					Rect2(get_xz(slided_pos), get_xz(box.size)),
 					slided_pos.y + epsilon,
-					slided_pos.y - step_h
+					slided_pos.y - step_h,
+					margin
 			);
 			const real_t effective_step_h = math::max<real_t>(hit_y + epsilon - box.position.y, 0);
 			slided_motion2.y += effective_step_h;
