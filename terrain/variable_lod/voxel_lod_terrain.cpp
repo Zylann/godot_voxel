@@ -854,6 +854,8 @@ void VoxelLodTerrain::set_use_custom_lod_distances(const bool enabled) {
 		compute_auto_lod_distances(_update_data->settings.lod_distances, _lod0_distance, _lodn_distance);
 		on_lod_distances_changed();
 	}
+
+	notify_property_list_changed();
 }
 
 bool VoxelLodTerrain::get_use_custom_lod_distances() const {
