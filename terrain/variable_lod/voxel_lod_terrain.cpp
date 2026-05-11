@@ -3209,7 +3209,7 @@ void VoxelLodTerrain::_validate_property(PropertyInfo &p_property) const {
 	const VoxelStringNames &sn = VoxelStringNames::get_singleton();
 	if (p_property.name == sn.custom_lod_distances) {
 		if (!_use_custom_lod_distances) {
-			p_property.usage == PROPERTY_USAGE_NO_EDITOR;
+			p_property.usage = PROPERTY_USAGE_NO_EDITOR;
 		}
 		return;
 	}
