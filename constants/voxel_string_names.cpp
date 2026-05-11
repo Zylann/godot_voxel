@@ -126,6 +126,8 @@ VoxelStringNames::VoxelStringNames() {
 	noise_on_scale = StringName("noise_on_scale");
 
 	add_child = StringName("add_child");
+
+	custom_lod_distances = StringName("custom_lod_distances");
 }
 
 } // namespace zylann::voxel

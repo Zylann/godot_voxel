@@ -114,6 +114,8 @@ public:
 	StringName noise_on_scale;
 
 	StringName add_child;
+
+	StringName custom_lod_distances;
 };
 
 } // namespace zylann::voxel

@@ -58,13 +58,16 @@ void test_octree_update() {
 
 		bool can_split(Vector3i node_pos, int lod_index, LodOctree::NodeData &data) {
 			return LodOctree::is_below_split_distance(
-					node_pos, lod_index, viewer_pos_octree_space, lod_distance_octree_space
+					node_pos, lod_index, viewer_pos_octree_space, lod_distance_octree_space * (1 << lod_index)
 			);
 		}
 
 		bool can_join(Vector3i node_pos, int parent_lod_index) {
 			return !LodOctree::is_below_split_distance(
-					node_pos, parent_lod_index, viewer_pos_octree_space, lod_distance_octree_space
+					node_pos,
+					parent_lod_index,
+					viewer_pos_octree_space,
+					lod_distance_octree_space * (1 << parent_lod_index)
 			);
 		}
 	};

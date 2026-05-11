@@ -103,30 +103,20 @@ Box3i enforce_neighboring_rule(Box3i box, const Box3i &child_lod_box, bool make_
 	return box;
 }
 
-inline int get_lod_distance_in_mesh_chunks(float lod_distance_in_voxels, int mesh_block_size) {
-	return math::max(static_cast<int>(Math::ceil(lod_distance_in_voxels)) / mesh_block_size, 1);
+inline int get_lod_distance_in_chunks(const float lod_distance_in_voxels, const int chunk_size) {
+	return math::max(static_cast<int>(Math::ceil(lod_distance_in_voxels)) / chunk_size, 1);
 }
 
 // Compute distance in chunks relative to the current LOD, between the viewer and the end of that LOD
 Vector3i get_relative_lod_distance_in_chunks(
-		int lod_index,
-		int lod_count,
-		int lod0_distance_in_chunks,
-		int lodn_distance_in_chunks,
-		int lod_chunk_size,
-		Vector3i max_view_distance_voxels
+		const int lod_index,
+		const int lod_count,
+		// Distance in chunks of the current LOD
+		const int lod_distance_in_chunks,
+		const int lod_chunk_size,
+		const Vector3i max_view_distance_voxels
 ) {
-	int ld;
-	if (lod_index == 0) {
-		// First LOD uses dedicated distance
-		ld = lod0_distance_in_chunks;
-	} else {
-		// Following LODs use another distance.
-		// The returned distance is relative to chunks of the current LOD so we divide LOD0 distance rather than
-		// multiplying LODN distance
-		ld = (lod0_distance_in_chunks >> lod_index) + lodn_distance_in_chunks;
-	}
-	Vector3i ld3(ld, ld, ld);
+	Vector3i ld3(lod_distance_in_chunks, lod_distance_in_chunks, lod_distance_in_chunks);
 	if (lod_index == lod_count - 1) {
 		// Last LOD may extend all the way to max view distance if possible
 		ld3 = math::max(ld3, math::ceildiv(max_view_distance_voxels, Vector3iUtil::create(lod_chunk_size)));
@@ -189,14 +179,12 @@ void process_viewers(
 	const int mesh_block_size = 1 << volume_settings.mesh_block_size_po2;
 	const int mesh_to_data_factor = mesh_block_size / data_block_size;
 
-	const int lod0_distance_in_mesh_chunks =
-			get_lod_distance_in_mesh_chunks(volume_settings.lod_distance, mesh_block_size);
-	const int lodn_distance_in_mesh_chunks =
-			get_lod_distance_in_mesh_chunks(volume_settings.secondary_lod_distance, mesh_block_size);
-
-	// Data chunks are driven by mesh chunks, because mesh needs data
-	const int lod0_distance_in_data_chunks = lod0_distance_in_mesh_chunks * mesh_to_data_factor;
-	const int lodn_distance_in_data_chunks = lodn_distance_in_mesh_chunks * mesh_to_data_factor;
+	// Distances in chunks of each LOD
+	std::array<int, constants::MAX_LOD> lod_distances_in_mesh_chunks;
+	for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
+		lod_distances_in_mesh_chunks[lod_index] =
+				get_lod_distance_in_chunks(volume_settings.lod_distances[lod_index], mesh_block_size << lod_index);
+	}
 
 	// const Box3i volume_bounds_in_data_blocks = volume_bounds_in_voxels.downscaled(1 << data_block_size_po2);
 	// const Box3i volume_bounds_in_mesh_blocks = volume_bounds_in_voxels.downscaled(1 << mesh_block_size_po2);
@@ -269,8 +257,7 @@ void process_viewers(
 				const Vector3i ld = get_relative_lod_distance_in_chunks(
 						lod_index,
 						lod_count,
-						lod0_distance_in_mesh_chunks,
-						lodn_distance_in_mesh_chunks,
+						lod_distances_in_mesh_chunks[lod_index],
 						lod_mesh_block_size,
 						Vector3i(
 								paired_viewer.state.view_distance_voxels.horizontal,
@@ -352,6 +339,8 @@ void process_viewers(
 			}
 
 		} else {
+			// Data blocks only
+
 			for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
 				paired_viewer.state.mesh_box_per_lod[lod_index] = Box3i();
 			}
@@ -368,8 +357,8 @@ void process_viewers(
 				const Vector3i ld = get_relative_lod_distance_in_chunks(
 						lod_index,
 						lod_count,
-						lod0_distance_in_data_chunks,
-						lodn_distance_in_data_chunks,
+						// Data chunks are driven by mesh chunks, because mesh needs data
+						lod_distances_in_mesh_chunks[lod_index] * mesh_to_data_factor,
 						lod_data_block_size,
 						Vector3i(
 								paired_viewer.state.view_distance_voxels.horizontal,

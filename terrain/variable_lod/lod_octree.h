@@ -193,10 +193,15 @@ public:
 
 	// Convenience for use in UpdateActions::can_split.
 	// Coordinates are in octree space (where 1 unit = size of a leaf node)
-	static bool is_below_split_distance(Vector3i node_pos, unsigned int lod, Vector3 view_pos, float lod_distance) {
+	static bool is_below_split_distance(
+			const Vector3i node_pos,
+			const unsigned int lod,
+			const Vector3 view_pos,
+			const float lod_distance
+	) {
 		const unsigned int lod_factor = 1 << lod;
 		const Vector3 world_center = static_cast<real_t>(lod_factor) * (Vector3(node_pos) + Vector3(0.5, 0.5, 0.5));
-		const float split_distance_sq = math::squared(lod_distance * lod_factor);
+		const float split_distance_sq = math::squared(lod_distance);
 		return world_center.distance_squared_to(view_pos) < split_distance_sq;
 	}
 

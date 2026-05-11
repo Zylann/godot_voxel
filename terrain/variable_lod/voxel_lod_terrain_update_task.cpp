@@ -36,7 +36,7 @@ void init_sparse_octree_priority_dependency(
 		const int data_block_size,
 		const std::shared_ptr<PriorityDependency::ViewersData> &shared_viewers_data,
 		const Transform3D &volume_transform,
-		const float octree_lod_distance
+		const float lod_distance // In LOD0 coordinates
 ) {
 	const Vector3i voxel_pos = get_block_center(block_position, data_block_size, lod);
 	const float block_radius = (data_block_size << lod) / 2;
@@ -50,7 +50,7 @@ void init_sparse_octree_priority_dependency(
 	// TODO Should `data_block_size` be used here? Should it be mesh_block_size instead?
 	dep.drop_distance_squared = math::squared(
 			2.f * transformed_block_radius *
-			VoxelEngine::get_octree_lod_block_region_extent(octree_lod_distance, data_block_size)
+			VoxelEngine::get_octree_lod_block_region_extent(lod_distance, static_cast<int>(data_block_size) << lod)
 	);
 }
 
@@ -98,7 +98,7 @@ void request_block_generate(
 			data_block_size,
 			shared_viewers_data,
 			volume_transform,
-			settings.lod_distance
+			settings.lod_distances[lod_index]
 	);
 
 	IThreadedTask *task = stream_dependency->generator->create_block_task(params);
@@ -149,7 +149,7 @@ void request_block_load(
 				data_block_size,
 				shared_viewers_data,
 				volume_transform,
-				settings.lod_distance
+				settings.lod_distances[lod_index]
 		);
 
 		const bool request_instances = false;
@@ -379,7 +379,7 @@ void send_mesh_requests(
 					mesh_block_size,
 					shared_viewers_data,
 					volume_transform,
-					settings.lod_distance
+					settings.lod_distances[lod_index]
 			);
 
 			task_scheduler.push_main_task(task);

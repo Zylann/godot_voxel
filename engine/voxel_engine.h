@@ -247,10 +247,10 @@ public:
 		return _file_locker;
 	}
 
-	static inline int get_octree_lod_block_region_extent(float lod_distance, float block_size) {
-		// This is a bounding radius of blocks around a viewer within which we may load them.
-		// `lod_distance` is the distance under which a block should subdivide into a smaller one.
-		// Each LOD is fractal so that value is the same for each of them, multiplied by 2^lod.
+	// Calculates the bounding radius of blocks around a viewer within which we may load them.
+	// `lod_distance` is the distance under which a block should subdivide into a smaller one.
+	// The returned distance is in blocks (of the size passed in).
+	static inline int get_octree_lod_block_region_extent(const float lod_distance, const float block_size) {
 		return static_cast<int>(Math::ceil(lod_distance / block_size)) * 2 + 2;
 	}
 

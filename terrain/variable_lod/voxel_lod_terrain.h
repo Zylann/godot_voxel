@@ -7,12 +7,14 @@
 #include "../../util/containers/std_map.h"
 #include "../../util/containers/std_unordered_map.h"
 #include "../../util/containers/std_vector.h"
+#include "../../util/memory/memory.h"
 #include "../voxel_mesh_map.h"
 #include "../voxel_node.h"
 #include "lod_octree.h"
 #include "shader_material_pool_vlt.h"
 #include "voxel_lod_terrain_update_data.h"
 #include "voxel_mesh_block_vlt.h"
+#include <array>
 
 #ifdef TOOLS_ENABLED
 #include "../../util/godot/debug_renderer.h"
@@ -59,6 +61,14 @@ public:
 	void set_secondary_lod_distance(float p_lod_distance);
 	float get_secondary_lod_distance() const;
 
+	void get_lod_distances(Span<float> distances);
+
+	void set_use_custom_lod_distances(const bool enabled);
+	bool get_use_custom_lod_distances() const;
+
+	void set_custom_lod_distances(const PackedFloat32Array &p_distances);
+	PackedFloat32Array get_custom_lod_distances() const;
+
 	void set_lod_count(int p_lod_count);
 	int get_lod_count() const;
 
@@ -78,8 +88,8 @@ public:
 	void set_collision_margin(float margin);
 	float get_collision_margin() const;
 
-	int get_data_block_region_extent() const;
-	int get_mesh_block_region_extent() const;
+	int get_data_block_region_extent(const int lod_index) const;
+	int get_mesh_block_region_extent(const int lod_index) const;
 
 	Vector3i voxel_to_data_block_position(Vector3 vpos, int lod_index) const;
 	Vector3i voxel_to_mesh_block_position(Vector3 vpos, int lod_index) const;
@@ -261,6 +271,7 @@ public:
 
 #ifdef TOOLS_ENABLED
 	void get_configuration_warnings(PackedStringArray &warnings) const override;
+	void _validate_property(PropertyInfo &p_property) const;
 #endif // TOOLS_ENABLED
 
 	// Internal
@@ -290,8 +301,6 @@ public:
 	inline std::shared_ptr<VoxelData> get_storage_shared() const {
 		return _data;
 	}
-
-	void get_lod_distances(Span<float> distances);
 
 	void on_format_changed() override;
 
@@ -332,6 +341,8 @@ private:
 	void set_mesh_block_visual_active(VoxelMeshBlockVLT &block, bool active, bool with_fading, unsigned int lod_index);
 
 	void _on_stream_params_changed();
+
+	void on_lod_distances_changed();
 
 	void update_shader_material_pool_template();
 
@@ -430,6 +441,15 @@ private:
 #endif
 
 	Ref<VoxelMesher> _mesher;
+
+	// Simplified LOD distance settings. An array of distances that gets computed at lower level.
+	float _lod0_distance = 0.f;
+	float _lodn_distance = 0.f;
+
+	bool _use_custom_lod_distances = false;
+	bool _pending_lod_distances_change = false;
+
+	UniquePtr<std::array<float, constants::MAX_LOD>> _custom_lod_distances = { nullptr };
 
 	// Data stored with a shared pointer so it can be sent to asynchronous tasks
 	bool _threaded_update_enabled = false;

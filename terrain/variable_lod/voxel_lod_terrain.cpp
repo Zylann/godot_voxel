@@ -23,6 +23,7 @@
 #include "../../util/godot/classes/shader.h"
 #include "../../util/godot/classes/viewport.h"
 #include "../../util/godot/core/array.h"
+#include "../../util/godot/core/packed_arrays.h"
 #include "../../util/godot/core/string.h"
 #include "../../util/math/color.h"
 #include "../../util/math/conv.h"
@@ -88,6 +89,17 @@ void copy_vlt_block_params(ShaderMaterial &src, ShaderMaterial &dst) {
 	copy_param(src, dst, sn.u_transition_mask);
 	copy_param(src, dst, sn.u_lod_fade);
 	copy_param(src, dst, sn.u_voxel_lod_info);
+}
+
+void compute_auto_lod_distances(
+		std::array<float, constants::MAX_LOD> &distances,
+		const float lod0_distance,
+		const float lodn_distance
+) {
+	distances[0] = lod0_distance;
+	for (unsigned int lod_index = 1; lod_index < distances.size(); ++lod_index) {
+		distances[lod_index] = lod0_distance + (lodn_distance * static_cast<float>(1 << lod_index));
+	}
 }
 
 } // namespace
@@ -179,6 +191,9 @@ VoxelLodTerrain::VoxelLodTerrain() {
 
 	set_lod_distance(48.f);
 	set_secondary_lod_distance(48.f);
+
+	// Set valid default
+	compute_auto_lod_distances(_update_data->settings.lod_distances, _lod0_distance, _lodn_distance);
 }
 
 VoxelLodTerrain::~VoxelLodTerrain() {
@@ -774,8 +789,8 @@ void VoxelLodTerrain::stop_streamer() {
 	//_reception_buffers.data_output.clear();
 }
 
-void VoxelLodTerrain::set_lod_distance(float p_lod_distance) {
-	if (p_lod_distance == _update_data->settings.lod_distance) {
+void VoxelLodTerrain::set_lod_distance(const float p_lod_distance) {
+	if (p_lod_distance == _lod0_distance) {
 		return;
 	}
 
@@ -783,25 +798,17 @@ void VoxelLodTerrain::set_lod_distance(float p_lod_distance) {
 
 	// Distance must be greater than a threshold,
 	// otherwise lods will decimate too fast and it will look messy
-	const float lod_distance =
-			math::clamp(p_lod_distance, constants::MINIMUM_LOD_DISTANCE, constants::MAXIMUM_LOD_DISTANCE);
-	_update_data->settings.lod_distance = lod_distance;
-	_update_data->state.octree_streaming.force_update_octrees_next_update = true;
-	// VoxelEngine::get_singleton().set_volume_octree_lod_distance(_volume_id, get_lod_distance());
+	_lod0_distance = math::clamp(p_lod_distance, constants::MINIMUM_LOD_DISTANCE, constants::MAXIMUM_LOD_DISTANCE);
 
-#ifdef VOXEL_ENABLE_INSTANCER
-	if (_instancer != nullptr) {
-		_instancer->update_mesh_lod_distances_from_parent();
-	}
-#endif
+	_pending_lod_distances_change = true;
 }
 
 float VoxelLodTerrain::get_lod_distance() const {
-	return _update_data->settings.lod_distance;
+	return _lod0_distance;
 }
 
 void VoxelLodTerrain::set_secondary_lod_distance(float p_lod_distance) {
-	if (p_lod_distance == _update_data->settings.secondary_lod_distance) {
+	if (p_lod_distance == _lodn_distance) {
 		return;
 	}
 
@@ -809,9 +816,16 @@ void VoxelLodTerrain::set_secondary_lod_distance(float p_lod_distance) {
 
 	// Distance must be greater than a threshold,
 	// otherwise lods will decimate too fast and it will look messy
-	const float secondary_lod_distance =
-			math::clamp(p_lod_distance, constants::MINIMUM_LOD_DISTANCE, constants::MAXIMUM_LOD_DISTANCE);
-	_update_data->settings.secondary_lod_distance = secondary_lod_distance;
+	_lodn_distance = math::clamp(p_lod_distance, constants::MINIMUM_LOD_DISTANCE, constants::MAXIMUM_LOD_DISTANCE);
+
+	_pending_lod_distances_change = true;
+}
+
+float VoxelLodTerrain::get_secondary_lod_distance() const {
+	return _lodn_distance;
+}
+
+void VoxelLodTerrain::on_lod_distances_changed() {
 	_update_data->state.octree_streaming.force_update_octrees_next_update = true;
 	// VoxelEngine::get_singleton().set_volume_octree_lod_distance(_volume_id, get_lod_distance());
 
@@ -822,8 +836,93 @@ void VoxelLodTerrain::set_secondary_lod_distance(float p_lod_distance) {
 #endif
 }
 
-float VoxelLodTerrain::get_secondary_lod_distance() const {
-	return _update_data->settings.secondary_lod_distance;
+void VoxelLodTerrain::set_use_custom_lod_distances(const bool enabled) {
+	if (_use_custom_lod_distances == enabled) {
+		return;
+	}
+
+	_update_data->wait_for_end_of_task();
+
+	_use_custom_lod_distances = enabled;
+	if (_use_custom_lod_distances) {
+		if (_custom_lod_distances == nullptr) {
+			// Initialize with current valid distances
+			_custom_lod_distances = make_unique_instance<std::array<float, constants::MAX_LOD>>();
+			*_custom_lod_distances = _update_data->settings.lod_distances;
+		}
+	} else {
+		compute_auto_lod_distances(_update_data->settings.lod_distances, _lod0_distance, _lodn_distance);
+		on_lod_distances_changed();
+	}
+}
+
+bool VoxelLodTerrain::get_use_custom_lod_distances() const {
+	return _use_custom_lod_distances;
+}
+
+void VoxelLodTerrain::set_custom_lod_distances(const PackedFloat32Array &p_distances) {
+	Span<const float> p_distances_s = to_span(p_distances);
+
+	ZN_ASSERT_RETURN(p_distances_s.size() >= get_lod_count());
+	ZN_ASSERT_RETURN(p_distances_s.size() < constants::MAX_LOD);
+
+	// Check if distances are valid
+	for (unsigned int lod_index = 0; lod_index < p_distances_s.size(); ++lod_index) {
+		const float d0 = lod_index == 0 ? 0.f : p_distances_s[lod_index - 1];
+		const float d1 = p_distances[lod_index];
+
+		ZN_ASSERT_RETURN_MSG(d1 > d0, "LOD distances must be strictly increasing");
+
+		const float min_d = constants::MINIMUM_LOD_DISTANCE * (1 << lod_index);
+
+		if (lod_index == 0) {
+			ZN_ASSERT_RETURN_MSG(d0 >= min_d, format("LOD distance 0 is too small. Minimum is {}, got {}", min_d, d0));
+		} else {
+			const float diff = d1 - d0;
+			ZN_ASSERT_RETURN_MSG(
+					diff >= min_d,
+					format("Difference between LOD distances {} and {} is too small. Minimum is {}, got {}",
+						   min_d,
+						   diff)
+			);
+		}
+	}
+
+	// _update_data->wait_for_end_of_task();
+
+	// When Godot sets properties during scene loading, we can't reliably depend on the order in which it sets them. So
+	// we can't immediately apply custom LOD distances here, because we can't tell yet if the feature is actually
+	// enabled. So we store them in a dedicated array and will apply them later.
+
+	if (_custom_lod_distances == nullptr) {
+		_custom_lod_distances = make_unique_instance<std::array<float, constants::MAX_LOD>>();
+	}
+	Span<float> dst = to_span(*_custom_lod_distances);
+
+	for (unsigned int i = 0; i < p_distances_s.size(); ++i) {
+		dst[i] = p_distances_s[i];
+	}
+	// Fill LODs beyond max count, in case the user increases LOD count later, to avoid finding invalid distances
+	for (unsigned int i = p_distances_s.size(); i < dst.size(); ++i) {
+		dst[i] = dst[i - 1] * 2.f;
+	}
+
+	_pending_lod_distances_change = true;
+}
+
+PackedFloat32Array VoxelLodTerrain::get_custom_lod_distances() const {
+	PackedFloat32Array distances;
+
+	if (_custom_lod_distances == nullptr) {
+		return distances;
+	}
+	Span<const float> src = to_span(*_custom_lod_distances);
+
+	distances.resize(get_lod_count());
+	Span<float> dst(distances.ptrw(), distances.size());
+	src.sub(0, dst.size()).copy_to(dst);
+
+	return distances;
 }
 
 void VoxelLodTerrain::get_lod_distances(Span<float> distances) {
@@ -836,17 +935,8 @@ void VoxelLodTerrain::get_lod_distances(Span<float> distances) {
 	const VoxelLodTerrainUpdateData::Settings &settings = _update_data->settings;
 	const int lod_count = math::min(get_lod_count(), static_cast<int>(distances.size()));
 
-	distances[0] = settings.lod_distance;
-
-	if (settings.streaming_system == VoxelLodTerrainUpdateData::STREAMING_SYSTEM_LEGACY_OCTREE) {
-		for (int lod_index = 1; lod_index < lod_count; ++lod_index) {
-			distances[lod_index] = settings.lod_distance * (1 << lod_index);
-		}
-
-	} else {
-		for (int lod_index = 1; lod_index < lod_count; ++lod_index) {
-			distances[lod_index] = settings.lod_distance + settings.secondary_lod_distance * (1 << lod_index);
-		}
+	for (int lod_index = 1; lod_index < lod_count; ++lod_index) {
+		distances[lod_index] = settings.lod_distances[lod_index];
 	}
 }
 
@@ -1036,12 +1126,18 @@ float VoxelLodTerrain::get_collision_margin() const {
 	return _collision_margin;
 }
 
-int VoxelLodTerrain::get_data_block_region_extent() const {
-	return VoxelEngine::get_octree_lod_block_region_extent(_update_data->settings.lod_distance, get_data_block_size());
+int VoxelLodTerrain::get_data_block_region_extent(const int lod_index) const {
+	ZN_ASSERT_RETURN_V(lod_index >= 0 && lod_index < _update_data->settings.lod_distances.size(), 0);
+	return VoxelEngine::get_octree_lod_block_region_extent(
+			_update_data->settings.lod_distances[lod_index], get_data_block_size() * (1 << lod_index)
+	);
 }
 
-int VoxelLodTerrain::get_mesh_block_region_extent() const {
-	return VoxelEngine::get_octree_lod_block_region_extent(_update_data->settings.lod_distance, get_mesh_block_size());
+int VoxelLodTerrain::get_mesh_block_region_extent(const int lod_index) const {
+	ZN_ASSERT_RETURN_V(lod_index >= 0 && lod_index < _update_data->settings.lod_distances.size(), 0);
+	return VoxelEngine::get_octree_lod_block_region_extent(
+			_update_data->settings.lod_distances[lod_index], get_mesh_block_size() * (1 << lod_index)
+	);
 }
 
 Vector3i VoxelLodTerrain::voxel_to_data_block_position(Vector3 vpos, int lod_index) const {
@@ -1266,6 +1362,24 @@ void VoxelLodTerrain::process(float delta) {
 
 	if (_update_data->task_is_complete) {
 		ZN_PROFILE_SCOPE();
+
+		// Apply LOD distances.
+		// Can't do it directly in setters anymore due to new options and annoying limitations on how Godot loads
+		// properties
+		if (_pending_lod_distances_change) {
+			if (_use_custom_lod_distances) {
+				if (_custom_lod_distances != nullptr) {
+					_update_data->settings.lod_distances = *_custom_lod_distances;
+				} else {
+					// Fallback in case the property is somehow enabled yet no distances have been set by the user
+					compute_auto_lod_distances(_update_data->settings.lod_distances, _lod0_distance, _lodn_distance);
+				}
+			} else {
+				compute_auto_lod_distances(_update_data->settings.lod_distances, _lod0_distance, _lodn_distance);
+			}
+			on_lod_distances_changed();
+			_pending_lod_distances_change = false;
+		}
 
 		apply_main_thread_update_tasks();
 
@@ -3088,6 +3202,19 @@ void VoxelLodTerrain::get_configuration_warnings(PackedStringArray &warnings) co
 	}
 }
 
+void VoxelLodTerrain::_validate_property(PropertyInfo &p_property) const {
+	if (!Engine::get_singleton()->is_editor_hint()) {
+		return;
+	}
+	const VoxelStringNames &sn = VoxelStringNames::get_singleton();
+	if (p_property.name == sn.custom_lod_distances) {
+		if (!_use_custom_lod_distances) {
+			p_property.usage == PROPERTY_USAGE_NO_EDITOR;
+		}
+		return;
+	}
+}
+
 #endif // TOOLS_ENABLED
 
 Ref<VoxelSaveCompletionTracker> VoxelLodTerrain::_b_save_modified_blocks() {
@@ -3886,6 +4013,12 @@ void VoxelLodTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_secondary_lod_distance", "lod_distance"), &Self::set_secondary_lod_distance);
 	ClassDB::bind_method(D_METHOD("get_secondary_lod_distance"), &Self::get_secondary_lod_distance);
 
+	ClassDB::bind_method(D_METHOD("set_use_custom_lod_distances", "enabled"), &Self::set_use_custom_lod_distances);
+	ClassDB::bind_method(D_METHOD("get_use_custom_lod_distances"), &Self::get_use_custom_lod_distances);
+
+	ClassDB::bind_method(D_METHOD("set_custom_lod_distances", "distances"), &Self::set_custom_lod_distances);
+	ClassDB::bind_method(D_METHOD("get_custom_lod_distances"), &Self::get_custom_lod_distances);
+
 	// Misc
 
 	ClassDB::bind_method(
@@ -3956,7 +4089,7 @@ void VoxelLodTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_mesh_block_size"), &Self::set_mesh_block_size);
 
 	ClassDB::bind_method(D_METHOD("get_data_block_size"), &Self::get_data_block_size);
-	ClassDB::bind_method(D_METHOD("get_data_block_region_extent"), &Self::get_data_block_region_extent);
+	ClassDB::bind_method(D_METHOD("get_data_block_region_extent", "lod_index"), &Self::get_data_block_region_extent);
 
 	ClassDB::bind_method(D_METHOD("set_full_load_mode_enabled"), &Self::set_full_load_mode_enabled);
 	ClassDB::bind_method(D_METHOD("is_full_load_mode_enabled"), &Self::is_full_load_mode_enabled);
@@ -4030,12 +4163,25 @@ void VoxelLodTerrain::_bind_methods() {
 	ADD_GROUP("Level of detail", "");
 
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "lod_count"), "set_lod_count", "get_lod_count");
+
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "lod_distance"), "set_lod_distance", "get_lod_distance");
 	ADD_PROPERTY(
 			PropertyInfo(Variant::FLOAT, "secondary_lod_distance"),
 			"set_secondary_lod_distance",
 			"get_secondary_lod_distance"
 	);
+
+	ADD_PROPERTY(
+			PropertyInfo(Variant::BOOL, "use_custom_lod_distances"),
+			"set_use_custom_lod_distances",
+			"get_use_custom_lod_distances"
+	);
+	ADD_PROPERTY(
+			PropertyInfo(Variant::PACKED_FLOAT32_ARRAY, "custom_lod_distances"),
+			"set_custom_lod_distances",
+			"get_custom_lod_distances"
+	);
+
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "lod_fade_duration"), "set_lod_fade_duration", "get_lod_fade_duration");
 
 	ADD_GROUP("Material", "");

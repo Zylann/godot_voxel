@@ -22,8 +22,7 @@ void process_unload_data_blocks_sliding_box(
 	// This should be the same distance relatively to each LOD
 	const int data_block_size = data.get_block_size();
 	const int data_block_size_po2 = data.get_block_size_po2();
-	const int data_block_region_extent =
-			VoxelEngine::get_octree_lod_block_region_extent(settings.lod_distance, data_block_size);
+
 	const Box3i bounds_in_voxels = data.get_bounds();
 
 	const int mesh_block_size = 1 << settings.mesh_block_size_po2;
@@ -50,6 +49,10 @@ void process_unload_data_blocks_sliding_box(
 		const Box3i bounds_in_blocks =
 				Box3i(bounds_in_voxels.position >> block_size_po2, //
 					  bounds_in_voxels.size >> block_size_po2);
+
+		const int data_block_region_extent = VoxelEngine::get_octree_lod_block_region_extent(
+				settings.lod_distances[lod_index], data_block_size << lod_index
+		);
 
 		const Box3i new_box =
 				Box3i::from_center_extents(viewer_block_pos_within_lod, Vector3iUtil::create(data_block_region_extent));
@@ -127,8 +130,7 @@ void process_unload_mesh_blocks_sliding_box(
 	// This should be the same distance relatively to each LOD
 	const int mesh_block_size_po2 = settings.mesh_block_size_po2;
 	const int mesh_block_size = 1 << mesh_block_size_po2;
-	const int mesh_block_region_extent =
-			VoxelEngine::get_octree_lod_block_region_extent(settings.lod_distance, mesh_block_size);
+
 	const int lod_count = data.get_lod_count();
 	const Box3i bounds_in_voxels = data.get_bounds();
 
@@ -145,6 +147,10 @@ void process_unload_mesh_blocks_sliding_box(
 		const Box3i bounds_in_blocks =
 				Box3i(bounds_in_voxels.position >> block_size_po2, //
 					  bounds_in_voxels.size >> block_size_po2);
+
+		const int mesh_block_region_extent = VoxelEngine::get_octree_lod_block_region_extent(
+				settings.lod_distances[lod_index], mesh_block_size << lod_index
+		);
 
 		const Box3i new_box =
 				Box3i::from_center_extents(viewer_block_pos_within_lod, Vector3iUtil::create(mesh_block_region_extent));
@@ -544,7 +550,10 @@ void process_octrees_fitting(
 
 	state.octree_streaming.local_viewer_pos_previous_octree_update = p_viewer_pos;
 
-	const float lod_distance_octree_space = settings.lod_distance / octree_leaf_node_size;
+	std::array<float, constants::MAX_LOD> lod_distances_octree_space_array;
+	for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
+		lod_distances_octree_space_array[lod_index] = settings.lod_distances[lod_index] / octree_leaf_node_size;
+	}
 
 	unsigned int blocked_octree_nodes = 0;
 
@@ -564,7 +573,7 @@ void process_octrees_fitting(
 			StdVector<VoxelLodTerrainUpdateData::BlockToLoad> &data_blocks_to_load;
 			Vector3i block_offset_lod0;
 			unsigned int blocked_count = 0;
-			float lod_distance_octree_space;
+			Span<const float> lod_distances_octree_space;
 			Vector3 viewer_pos_octree_space;
 			uint32_t &lods_to_update_transitions;
 
@@ -637,7 +646,7 @@ void process_octrees_fitting(
 			bool can_split(Vector3i node_pos, int lod_index, LodOctree::NodeData &node_data) {
 				ZN_PROFILE_SCOPE();
 				if (!LodOctree::is_below_split_distance(
-							node_pos, lod_index, viewer_pos_octree_space, lod_distance_octree_space
+							node_pos, lod_index, viewer_pos_octree_space, lod_distances_octree_space[lod_index]
 					)) {
 					return false;
 				}
@@ -675,7 +684,10 @@ void process_octrees_fitting(
 			bool can_join(Vector3i node_pos, int parent_lod_index) {
 				ZN_PROFILE_SCOPE();
 				if (LodOctree::is_below_split_distance(
-							node_pos, parent_lod_index, viewer_pos_octree_space, lod_distance_octree_space
+							node_pos,
+							parent_lod_index,
+							viewer_pos_octree_space,
+							lod_distances_octree_space[parent_lod_index]
 					)) {
 					return false;
 				}
@@ -715,7 +727,7 @@ void process_octrees_fitting(
 									  data_blocks_to_load,
 									  block_offset_lod0,
 									  0,
-									  lod_distance_octree_space,
+									  to_span(lod_distances_octree_space_array).sub(0, lod_count),
 									  relative_viewer_pos / octree_leaf_node_size,
 									  lods_to_update_transitions };
 		VoxelLodTerrainUpdateData::OctreeItem &item = octree_it->second;
