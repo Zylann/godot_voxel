@@ -4166,6 +4166,12 @@ void VoxelLodTerrain::_bind_methods() {
 
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "lod_count"), "set_lod_count", "get_lod_count");
 
+	ADD_PROPERTY(
+			PropertyInfo(Variant::BOOL, "use_custom_lod_distances"),
+			"set_use_custom_lod_distances",
+			"get_use_custom_lod_distances"
+	);
+
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "lod_distance"), "set_lod_distance", "get_lod_distance");
 	ADD_PROPERTY(
 			PropertyInfo(Variant::FLOAT, "secondary_lod_distance"),
@@ -4173,11 +4179,6 @@ void VoxelLodTerrain::_bind_methods() {
 			"get_secondary_lod_distance"
 	);
 
-	ADD_PROPERTY(
-			PropertyInfo(Variant::BOOL, "use_custom_lod_distances"),
-			"set_use_custom_lod_distances",
-			"get_use_custom_lod_distances"
-	);
 	ADD_PROPERTY(
 			PropertyInfo(Variant::PACKED_FLOAT32_ARRAY, "custom_lod_distances"),
 			"set_custom_lod_distances",
