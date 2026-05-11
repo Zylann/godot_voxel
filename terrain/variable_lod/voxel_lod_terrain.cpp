@@ -3215,6 +3215,18 @@ void VoxelLodTerrain::_validate_property(PropertyInfo &p_property) const {
 		}
 		return;
 	}
+	if (p_property.name == sn.lod_distance) {
+		if (_use_custom_lod_distances) {
+			p_property.usage = PROPERTY_USAGE_NO_EDITOR;
+		}
+		return;
+	}
+	if (p_property.name == sn.secondary_lod_distance) {
+		if (_use_custom_lod_distances) {
+			p_property.usage = PROPERTY_USAGE_NO_EDITOR;
+		}
+		return;
+	}
 }
 
 #endif // TOOLS_ENABLED

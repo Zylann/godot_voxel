@@ -127,6 +127,8 @@ VoxelStringNames::VoxelStringNames() {
 
 	add_child = StringName("add_child");
 
+	lod_distance = StringName("lod_distance");
+	secondary_lod_distance = StringName("secondary_lod_distance");
 	custom_lod_distances = StringName("custom_lod_distances");
 }
 

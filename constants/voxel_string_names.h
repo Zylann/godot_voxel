@@ -115,6 +115,8 @@ public:
 
 	StringName add_child;
 
+	StringName lod_distance;
+	StringName secondary_lod_distance;
 	StringName custom_lod_distances;
 };
 
