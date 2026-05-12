@@ -102,6 +102,7 @@
 #endif
 
 #include "util/godot/classes/engine.h"
+#include "util/godot/classes/os.h" // for get_command_line_arguments
 #include "util/godot/classes/project_settings.h"
 #include "util/godot/core/class_db.h"
 // Just for size reminders
