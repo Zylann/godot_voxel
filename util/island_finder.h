@@ -3,6 +3,7 @@
 
 #include "containers/fixed_array.h"
 #include "containers/span.h"
+#include "godot/core/sort_array.h"
 #include "math/box3i.h"
 
 namespace zylann {
