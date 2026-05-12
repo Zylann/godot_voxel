@@ -158,5 +158,7 @@ public:
 
 } // namespace godot
 
+using namespace godot;
+
 #endif // ZN_GODOT
 #endif // RANDOM_PCG_H
