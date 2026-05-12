@@ -2,10 +2,8 @@
 #define ZN_TEST_OPTIONS_H
 
 #include "../containers/std_vector.h"
-#include "../godot/macros.h"
+#include "../godot/core/dictionary.h"
 #include "../string/std_string.h"
-
-ZN_GODOT_FORWARD_DECLARE(class Dictionary);
 
 namespace zylann::testing {
 
