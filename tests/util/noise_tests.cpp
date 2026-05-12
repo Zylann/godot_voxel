@@ -1,6 +1,7 @@
 #include "../../util/godot/classes/image.h"
 #include "../../util/godot/core/array.h"
 #include "../../util/godot/core/print_string.h"
+#include "../../util/godot/core/random_pcg.h"
 #include "../../util/io/log.h"
 #include "../../util/math/funcs.h"
 #include "../../util/noise/fast_noise_lite/fast_noise_lite.h"
@@ -72,7 +73,7 @@ FloatT get_derivative(FloatT x, FloatT y, FloatT z, FloatT step, F3 noise_func_3
 }
 
 template <typename F2, typename F3, typename FloatT>
-void test_min_max(F2 noise_func_2d, F3 noise_func_3d) {
+void test_min_max(F2 noise_func_2d, F3 noise_func_3d, RandomPCG &rng) {
 	FloatT min_value_2d = std::numeric_limits<FloatT>::max();
 	FloatT max_value_2d = std::numeric_limits<FloatT>::min();
 
@@ -80,9 +81,9 @@ void test_min_max(F2 noise_func_2d, F3 noise_func_3d) {
 	FloatT max_value_3d = std::numeric_limits<FloatT>::min();
 
 	for (int i = 0; i < ITERATIONS; ++i) {
-		FloatT x = Math::randd() * 2000.0 - 1000.0;
-		FloatT y = Math::randd() * 2000.0 - 1000.0;
-		FloatT z = Math::randd() * 2000.0 - 1000.0;
+		FloatT x = rng.randd() * 2000.0 - 1000.0;
+		FloatT y = rng.randd() * 2000.0 - 1000.0;
+		FloatT z = rng.randd() * 2000.0 - 1000.0;
 
 		FloatT n = noise_func_2d(x, y);
 
@@ -101,7 +102,7 @@ void test_min_max(F2 noise_func_2d, F3 noise_func_3d) {
 
 // Generic analysis for noise functions
 template <typename F2, typename F3, typename FloatT>
-void test_derivatives_tpl(F2 noise_func_2d, F3 noise_func_3d) {
+void test_derivatives_tpl(F2 noise_func_2d, F3 noise_func_3d, RandomPCG &rng) {
 	const int iterations = ITERATIONS;
 	const int step_resolution_count = STEP_RESOLUTION_COUNT;
 	const FloatT step_min = STEP_MIN;
@@ -120,8 +121,8 @@ void test_derivatives_tpl(F2 noise_func_2d, F3 noise_func_3d) {
 		const FloatT step = Math::lerp(0.0001, 0.001, static_cast<FloatT>(j) / step_resolution_count_f);
 
 		for (int i = 0; i < iterations; ++i) {
-			const FloatT x = Math::randd() * 2000.0 - 1000.0;
-			const FloatT y = Math::randd() * 2000.0 - 1000.0;
+			const FloatT x = rng.randd() * 2000.0 - 1000.0;
+			const FloatT y = rng.randd() * 2000.0 - 1000.0;
 
 			FloatT d = get_derivative(x, y, step, noise_func_2d);
 			if (d > max_derivative) {
@@ -149,9 +150,9 @@ void test_derivatives_tpl(F2 noise_func_2d, F3 noise_func_3d) {
 		const FloatT step = Math::lerp(0.0001, 0.001, static_cast<FloatT>(j) / step_resolution_count_f);
 
 		for (int i = 0; i < iterations; ++i) {
-			const FloatT x = Math::randd() * 2000.0 - 1000.0;
-			const FloatT y = Math::randd() * 2000.0 - 1000.0;
-			const FloatT z = Math::randd() * 2000.0 - 1000.0;
+			const FloatT x = rng.randd() * 2000.0 - 1000.0;
+			const FloatT y = rng.randd() * 2000.0 - 1000.0;
+			const FloatT z = rng.randd() * 2000.0 - 1000.0;
 
 			FloatT d = get_derivative(x, y, z, step, noise_func_3d);
 			if (d > max_derivative) {
@@ -215,22 +216,29 @@ void test_derivatives_with_image(String fname, int steps_resolution, F3 noise_fu
 }
 
 template <typename F2, typename F3>
-void test_noise(String name, int tests, F2 noise_func_2d, F3 noise_func_3d) {
+void test_noise(String name, int tests, F2 noise_func_2d, F3 noise_func_3d, RandomPCG &rng) {
 	::print_line(String("--- {0}:").format(varray(name)));
 
 	if (tests & TEST_MIN_MAX) {
-		test_min_max<F2, F3, double>(noise_func_2d, noise_func_3d);
+		test_min_max<F2, F3, double>(noise_func_2d, noise_func_3d, rng);
 	}
 	if (tests & TEST_DERIVATIVES) {
-		test_derivatives_tpl<F2, F3, double>(noise_func_2d, noise_func_3d);
+		test_derivatives_tpl<F2, F3, double>(noise_func_2d, noise_func_3d, rng);
 		test_derivatives_with_image(name + "_3D", 10, noise_func_3d);
 	}
 }
 
 void test_fnl_noise(fast_noise_lite::FastNoiseLite &fnl, String name, int tests) {
+	RandomPCG rng;
+	rng.seed(131183);
+
 	test_noise(
-			name, tests, [&fnl](double x, double y) { return fnl.GetNoise(x, y); },
-			[&fnl](double x, double y, double z) { return fnl.GetNoise(x, y, z); });
+			name,
+			tests,
+			[&fnl](double x, double y) { return fnl.GetNoise(x, y); },
+			[&fnl](double x, double y, double z) { return fnl.GetNoise(x, y, z); },
+			rng
+	);
 }
 
 void test_noises() {
@@ -282,7 +290,8 @@ void test_noises() {
 	for (int cell_distance_function = 0; cell_distance_function < 4; ++cell_distance_function) {
 		for (int cell_return_type = 0; cell_return_type < 7; ++cell_return_type) {
 			fn.SetCellularDistanceFunction(
-					static_cast<fast_noise_lite::FastNoiseLite::CellularDistanceFunction>(cell_distance_function));
+					static_cast<fast_noise_lite::FastNoiseLite::CellularDistanceFunction>(cell_distance_function)
+			);
 			fn.SetCellularReturnType(static_cast<fast_noise_lite::FastNoiseLite::CellularReturnType>(cell_return_type));
 
 			const char *cell_distance_function_name = cell_distance_function_names[cell_distance_function];
