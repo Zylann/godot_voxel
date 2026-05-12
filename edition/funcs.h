@@ -788,7 +788,7 @@ struct DoShapeSingleBuffer {
 	}
 };
 
-#ifdef DEBUG_ENABLED
+#if defined(DEBUG_ENABLED) || defined(VOXEL_TESTS)
 void box_blur_slow_ref(const VoxelBuffer &src, VoxelBuffer &dst, int radius, Vector3f sphere_pos, float sphere_radius);
 #endif
 
