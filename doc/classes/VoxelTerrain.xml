@@ -167,6 +167,10 @@
 			Sets the maximum distance this terrain can support. If a [VoxelViewer] requests more, it will be clamped.
 		</member>
 		<member name="mesh_block_size" type="int" setter="set_mesh_block_size" getter="get_mesh_block_size" default="16">
+			Sets how many voxels across meshes of the terrain span.
+			Voxel chunks are stored in cubic chunks of 16x16x16 voxels, and by default meshes of the terrain match that size. But you can set this to 32 so meshes will span 2x2x2 voxel chunks. This is a performance tradeoff. Higher mesh size may speed up rendering, at the cost of slower mesh updates.
+			Values other than 16 and 32 are not supported.
+			Note: this setting also affects [VoxelInstancer] chunks.
 		</member>
 		<member name="run_stream_in_editor" type="bool" setter="set_run_stream_in_editor" getter="is_stream_running_in_editor" default="true">
 			Makes the terrain appear in the editor.

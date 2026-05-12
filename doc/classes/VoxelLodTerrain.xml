@@ -309,7 +309,10 @@
 			Note: if you use a [ShaderMaterial], it will be instanced on every chunk in order to support per-chunk/LOD features, so dynamic changes done to parameters will not apply. You can use [url=https://docs.godotengine.org/en/stable/tutorials/shaders/shader_reference/shading_language.html#global-uniforms]global uniforms[/url] to workaround this limitation.
 		</member>
 		<member name="mesh_block_size" type="int" setter="set_mesh_block_size" getter="get_mesh_block_size" default="16">
-			Size of meshes used for chunks of this volume, in voxels. Can only be set to either 16 or 32. Using 32 is expected to increase rendering performance, and slightly increase the cost of edits.
+			Sets how many voxels across meshes of the terrain span.
+			Voxel chunks are stored in cubic chunks of 16x16x16 voxels, and by default meshes of the terrain match that size. But you can set this to 32 so meshes will span 2x2x2 voxel chunks. This is a performance tradeoff. Higher mesh size may speed up rendering, at the cost of slower mesh updates.
+			Values other than 16 and 32 are not supported.
+			Note: this setting also affects [VoxelInstancer] chunks.
 		</member>
 		<member name="normalmap_begin_lod_index" type="int" setter="set_normalmap_begin_lod_index" getter="get_normalmap_begin_lod_index" default="2">
 			From which LOD index normalmaps will be generated. There won't be normalmaps below this index.
