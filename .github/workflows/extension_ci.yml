@@ -9,7 +9,11 @@ jobs:
   build_binaries:
     uses: Zylann/godot_voxel/.github/workflows/extension_builds.yml@master
     with:
-      godot-cpp-branch: master
+      # TODO Using slightly older commit because it fails to compile cast_to<const T*>
+      # https://github.com/godotengine/godot-cpp/pull/1974#issuecomment-4434507799
+      # godot-cpp-branch: master
+      godot-cpp-branch: b4ce22a76b56bb5f734a5161d6105eb4b8d1021d
+
       # float-precisions: [single, double]
       with_tests: yes
 
