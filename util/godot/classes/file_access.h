@@ -15,6 +15,14 @@ using namespace godot;
 
 namespace zylann::godot {
 
+inline bool file_exists(const String &path) {
+#if defined(ZN_GODOT)
+	return FileAccess::exists(path);
+#elif defined(ZN_GODOT_EXTENSION)
+	return FileAccess::file_exists(path);
+#endif
+}
+
 inline Ref<FileAccess> open_file(const String path, FileAccess::ModeFlags mode_flags, Error &out_error) {
 #if defined(ZN_GODOT)
 	return FileAccess::open(path, mode_flags, &out_error);

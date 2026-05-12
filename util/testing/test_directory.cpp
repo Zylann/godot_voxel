@@ -7,7 +7,7 @@ namespace zylann::testing {
 const char *DEFAULT_TEST_DATA_DIRECTORY = "zylann_testing_dir";
 
 bool create_empty_file(String fpath) {
-	if (!FileAccess::exists(fpath)) {
+	if (!zylann::godot::file_exists(fpath)) {
 		Ref<FileAccess> f = FileAccess::open(fpath, FileAccess::WRITE);
 		if (f.is_valid()) {
 			f->store_line("");
@@ -24,10 +24,8 @@ bool remove_dir_if_exists(const char *p_dirpath) {
 	// If this is an empty string we could end up deleting the whole project, don't risk that
 	ERR_FAIL_COND_V(dirpath.is_empty(), false);
 
-	if (DirAccess::exists(dirpath)) {
-		Ref<DirAccess> da = DirAccess::create(DirAccess::ACCESS_FILESYSTEM);
-		ERR_FAIL_COND_V(da.is_null(), false);
-
+	Ref<DirAccess> da = DirAccess::open(".");
+	if (da->dir_exists(dirpath)) {
 		String prev_dir = da->get_current_dir();
 
 		// Note, this does not change the working directory of the application.
@@ -36,13 +34,14 @@ bool remove_dir_if_exists(const char *p_dirpath) {
 		ERR_FAIL_COND_V(cd_err != OK, false);
 
 		// `remove` fails if the directory is not empty
-		const Error contents_remove_err = da->erase_contents_recursive();
+		const Error contents_remove_err = zylann::godot::erase_directory_contents_recursive(**da);
 		ERR_FAIL_COND_V(contents_remove_err != OK, false);
 		// OS::get_singleton()->move_to_trash(dirpath); // ?
 
 		const Error cd_err2 = da->change_dir(prev_dir);
 		ERR_FAIL_COND_V(cd_err2 != OK, false);
 
+		// Remove empty dir
 		const Error remove_err = da->remove(dirpath);
 		ERR_FAIL_COND_V(remove_err != OK, false);
 	}
@@ -52,7 +51,7 @@ bool remove_dir_if_exists(const char *p_dirpath) {
 
 bool create_clean_dir(const char *dirpath) {
 	ERR_FAIL_COND_V(dirpath == nullptr, false);
-	Ref<DirAccess> da = DirAccess::create(DirAccess::ACCESS_FILESYSTEM);
+	Ref<DirAccess> da = DirAccess::open(".");
 	ERR_FAIL_COND_V(da.is_null(), false);
 
 	ERR_FAIL_COND_V(!remove_dir_if_exists(dirpath), false);
