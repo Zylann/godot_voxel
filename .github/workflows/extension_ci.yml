@@ -11,4 +11,5 @@ jobs:
     with:
       godot-cpp-branch: master
       # float-precisions: [single, double]
+      with_tests: yes
 
