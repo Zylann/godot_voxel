@@ -3,8 +3,6 @@
 
 namespace zylann::godot {
 
-#ifdef TOOLS_ENABLED
-
 Error erase_directory_contents_recursive(DirAccess &da) {
 #ifdef ZN_GODOT
 	return da.erase_contents_recursive();
@@ -63,7 +61,5 @@ Error erase_directory_contents_recursive(DirAccess &da) {
 	return OK;
 #endif
 }
-
-#endif
 
 } // namespace zylann::godot

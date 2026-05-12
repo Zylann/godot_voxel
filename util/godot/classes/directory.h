@@ -31,10 +31,7 @@ inline Error rename_directory(const String &from, const String &to) {
 	return DirAccess::rename_absolute(from, to);
 }
 
-// Only used in editor builds for now, so let's save some bytes
-#ifdef TOOLS_ENABLED
 Error erase_directory_contents_recursive(DirAccess &da);
-#endif
 
 } // namespace zylann::godot
 
