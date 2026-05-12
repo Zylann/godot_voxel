@@ -9,8 +9,8 @@
 #elif defined(ZN_GODOT_EXTENSION)
 #include <godot_cpp/variant/utility_functions.hpp>
 
-inline void print_line(const Variant &v) {
-	UtilityFunctions::print(v);
+inline void print_line(const godot::Variant &v) {
+	godot::UtilityFunctions::print(v);
 }
 
 #endif

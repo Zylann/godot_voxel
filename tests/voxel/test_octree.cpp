@@ -4,11 +4,11 @@
 #include "../../util/containers/std_map.h"
 #include "../../util/containers/std_unordered_map.h"
 #include "../../util/containers/std_unordered_set.h"
+#include "../../util/godot/core/array.h"
+#include "../../util/godot/core/print_string.h"
 #include "../../util/math/conv.h"
 #include "../../util/profiling_clock.h"
 #include "../../util/testing/test_macros.h"
-
-#include <core/string/print_string.h>
 
 namespace zylann::voxel::tests {
 
@@ -228,8 +228,7 @@ void test_octree_find_in_box() {
 		full_box.for_each_cell([&octree, &checksum2](Vector3i pos) {
 			const Box3i area_box(pos - Vector3i(1, 1, 1), Vector3i(3, 3, 3));
 			octree.for_leaves_in_box(
-					area_box,
-					[&checksum2](Vector3i node_pos, int lod, const LodOctree::NodeData &node_data) {
+					area_box, [&checksum2](Vector3i node_pos, int lod, const LodOctree::NodeData &node_data) {
 						checksum2 += node_data.state;
 					}
 			);
