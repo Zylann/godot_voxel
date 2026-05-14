@@ -150,7 +150,7 @@ bool compress(Span<const uint8_t> src, StdVector<uint8_t> &dst, const Compressio
 		case COMPRESSION_LZ4_BE: {
 			ZN_PRINT_ERROR("Using deprecated LZ4_BE compression!");
 			dst.clear();
-			MemoryWriter f(dst, ENDIANNESS_LITTLE_ENDIAN);
+			MemoryWriter f(dst, ENDIANNESS_BIG_ENDIAN);
 			f.store_8(comp);
 			compress_lz4(f, src, dst);
 		} break;

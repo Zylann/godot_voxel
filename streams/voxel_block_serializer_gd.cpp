@@ -50,9 +50,8 @@ int VoxelBlockSerializer::serialize_to_stream_peer(
 	ERR_FAIL_COND_V(peer.is_null(), 0);
 
 	if (compress_mode != COMPRESSION_NONE) {
-		BlockSerializer::SerializeResult res = BlockSerializer::serialize_and_compress(
-				voxel_buffer->get_buffer(), static_cast<CompressedData::Compression>(compress_mode)
-		);
+		BlockSerializer::SerializeResult res =
+				BlockSerializer::serialize_and_compress(voxel_buffer->get_buffer(), compression_from_gd(compress_mode));
 		ERR_FAIL_COND_V(!res.success, -1);
 		stream_peer_put_data(**peer, to_span(res.data));
 		return res.data.size();
@@ -101,9 +100,8 @@ PackedByteArray VoxelBlockSerializer::serialize_to_byte_array(
 
 	PackedByteArray bytes;
 	if (compress_mode != COMPRESSION_NONE) {
-		BlockSerializer::SerializeResult res = BlockSerializer::serialize_and_compress(
-				voxel_buffer->get_buffer(), static_cast<CompressedData::Compression>(compress_mode)
-		);
+		BlockSerializer::SerializeResult res =
+				BlockSerializer::serialize_and_compress(voxel_buffer->get_buffer(), compression_from_gd(compress_mode));
 		ERR_FAIL_COND_V(!res.success, PackedByteArray());
 		copy_to(bytes, to_span(res.data));
 

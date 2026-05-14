@@ -13,6 +13,7 @@ Development - master branch
 - Fixes
     - Extension: fixed crash when expanding plugin resources in the inspector and other similar actions involving previews (see https://github.com/godotengine/godot-cpp/pull/1928)
     - Noises: editor: allow to set `period` larger than what inspector sliders allow, by typing the value.
+    - `VoxelBlockSerializer`: fixed incorrect serialization when using a compression mode. LZ4 mode was incorrectly writing the LZ4_BE header, which couldn't be deserialized (and still can't without manually replacing the header with LZ4), and ZSTD mode was producing LZ4 instead.
     - `VoxelBlockyModelFluid`: fixed fluid voxels below another fluid voxel were producing mesh collisions. They should never do because mesh collisions are for solid stuff.
     - `VoxelBoxMover`: fixed some cases where step climbing didn't trigger or made player intersect with blocks (thanks to help from NuclearPhoenixx #813)
     - `VoxelInstanceLibraryMultimeshItem`: fixed mesh LOD distances did not scale properly with `lod_index` when using `VoxelLodTerrain` with the `Octree` streaming system
