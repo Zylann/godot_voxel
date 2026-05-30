@@ -1,8 +1,14 @@
 #include "compute_shader.h"
+#include "../../util/godot/classes/directory.h"
+#include "../../util/godot/classes/engine.h"
+#include "../../util/godot/classes/file_access.h"
 #include "../../util/godot/classes/rd_shader_source.h"
 #include "../../util/godot/classes/rendering_server.h"
 #include "../../util/godot/core/array.h" // for `varray` in GDExtension builds
+#include "../../util/godot/core/packed_arrays.h"
 #include "../../util/godot/core/print_string.h"
+#include "../../util/godot/classes/project_settings.h"
+#include "../../util/io/log.h"
 #include "../../util/profiling.h"
 #include "../../util/string/format.h"
 #include "../voxel_engine.h"
@@ -29,32 +35,98 @@ String format_source_code_with_line_numbers(String src) {
 	return dst;
 }
 
-RID load_compute_shader_from_glsl(RenderingDevice &rd, String source_text, String name) {
-	ZN_PRINT_VERBOSE(format("Creating VoxelRD compute shader {}", name));
-	// For debugging
-	// {
-	// 	Ref<FileAccess> f = FileAccess::open("debug_" + name + ".txt", FileAccess::WRITE);
-	// 	ZN_ASSERT(f.is_valid());
-	// 	f->store_string(source_text);
-	// }
+namespace {
 
+String get_voxel_compute_shader_cache_base_dir() {
+	String base_dir;
+#if defined(ZN_GODOT)
+	base_dir = Engine::get_singleton()->get_shader_cache_path();
+#endif
+	if (base_dir.is_empty()) {
+		base_dir = "user://shader_cache";
+	}
+	return base_dir;
+}
+
+String get_compute_shader_cache_dir(const String &name) {
+	return get_voxel_compute_shader_cache_base_dir()
+			.path_join(name.validate_filename());
+}
+
+String get_compute_shader_binary_cache_path(const String &source_hash, const String &device_cache_uuid, const String &name) {
+	
+	return get_compute_shader_cache_dir(name)
+			.path_join(vformat("%s.%s.bin.cache", source_hash, device_cache_uuid));
+}
+
+PackedByteArray load_compute_shader_binary_from_cache(const String &cache_file_path, const String &shader_name) {
+	if (!zylann::godot::file_exists(cache_file_path)) {
+		return PackedByteArray();
+	}
+
+	Error open_error;
+	Ref<FileAccess> file = zylann::godot::open_file(cache_file_path, FileAccess::READ, open_error);
+	if (file.is_null()) {
+		ZN_PRINT_VERBOSE(format("Could not open VoxelRD compute shader binary cache file {} for {}", cache_file_path, shader_name));
+		return PackedByteArray();
+	}
+
+	const uint64_t length = file->get_length();
+	if (length == 0) {
+		ZN_PRINT_VERBOSE(format("VoxelRD compute shader binary cache file is empty for {}", shader_name));
+		return PackedByteArray();
+	}
+
+	PackedByteArray bytes;
+	bytes.resize(length);
+	const uint64_t read_count = zylann::godot::get_buffer(**file, Span<uint8_t>(bytes.ptrw(), bytes.size()));
+	if (read_count != length) {
+		ZN_PRINT_VERBOSE(format("Could not read full VoxelRD compute shader binary cache file for {}", shader_name));
+		return PackedByteArray();
+	}
+
+	return bytes;
+}
+
+void save_compute_shader_binary_to_cache(
+		const String &cache_file_path,
+		const PackedByteArray &shader_binary,
+		const String &shader_name
+) {
+	if (shader_binary.is_empty()) {
+		return;
+	}
+
+	const Error dir_error = DirAccess::make_dir_recursive_absolute(cache_file_path.get_base_dir());
+	if (dir_error != OK) {
+		ZN_PRINT_WARNING(format("Could not create voxel compute shader binary cache directory for {}", shader_name));
+		return;
+	}
+
+	Error open_error;
+	Ref<FileAccess> file = zylann::godot::open_file(cache_file_path, FileAccess::WRITE, open_error);
+	if (file.is_null()) {
+		ZN_PRINT_WARNING(format("Could not open VoxelRD compute shader binary cache file {} for writing", cache_file_path));
+		return;
+	}
+
+	zylann::godot::store_buffer(**file, to_span(shader_binary));
+}
+
+} // namespace
+
+Ref<RDShaderSPIRV> compile_compute_shader_spirv_from_glsl(RenderingDevice &rd, String source_text, String name) {
+	// Refactored since both cache and non cache paths need this
+	
 	Ref<RDShaderSource> shader_source;
 	shader_source.instantiate();
 	shader_source->set_language(RenderingDevice::SHADER_LANGUAGE_GLSL);
 	shader_source->set_stage_source(RenderingDevice::SHADER_STAGE_COMPUTE, source_text);
 
-	// ZN_ASSERT_RETURN_MSG(
-	// 		VoxelEngine::get_singleton().has_rendering_device(),
-	// 		format("Can't create compute shader \"{}\". Maybe the selected renderer doesn't support it? ({})",
-	// 			   name,
-	// 			   zylann::godot::get_current_rendering_method())
-	// );
-	// MutexLock mlock(VoxelEngine::get_singleton().get_rendering_device_mutex());
-
 	Ref<RDShaderSPIRV> shader_spirv = zylann::godot::shader_compile_spirv_from_source(rd, **shader_source, false);
-	ERR_FAIL_COND_V(shader_spirv.is_null(), RID());
+	ERR_FAIL_COND_V(shader_spirv.is_null(), Ref<RDShaderSPIRV>());
 
-	const String error_message = shader_spirv->get_stage_compile_error(RenderingDevice::SHADER_STAGE_COMPUTE);
+	String error_message = shader_spirv->get_stage_compile_error(RenderingDevice::SHADER_STAGE_COMPUTE);
 	if (error_message != "") {
 		ERR_PRINT(String("Failed to compile compute shader '{0}'").format(varray(name)));
 		::print_line(error_message);
@@ -64,11 +136,71 @@ RID load_compute_shader_from_glsl(RenderingDevice &rd, String source_text, Strin
 			::print_line(formatted_source_text);
 		}
 
-		return RID();
+		return Ref<RDShaderSPIRV>();
 	}
 
-	// TODO What name should I give this shader? Seems it is used for caching
-	const RID shader_rid = zylann::godot::shader_create_from_spirv(rd, **shader_spirv, name);
+	return shader_spirv;
+}
+
+RID load_compute_shader_from_glsl(RenderingDevice &rd, String source_text, String name) {
+	ZN_PRINT_VERBOSE(format("Creating VoxelRD compute shader {}", name));
+	// For debugging
+	// {
+	// 	Ref<FileAccess> f = FileAccess::open("debug_" + name + ".txt", FileAccess::WRITE);
+	// 	ZN_ASSERT(f.is_valid());
+	// 	f->store_string(source_text);
+	// }
+
+	// ZN_ASSERT_RETURN_MSG(
+	// 		VoxelEngine::get_singleton().has_rendering_device(),
+	// 		format("Can't create compute shader \"{}\". Maybe the selected renderer doesn't support it? ({})",
+	// 			   name,
+	// 			   zylann::godot::get_current_rendering_method())
+	// );
+	// MutexLock mlock(VoxelEngine::get_singleton().get_rendering_device_mutex());
+
+	Ref<RDShaderSPIRV> shader_spirv = compile_compute_shader_spirv_from_glsl(rd, source_text, name);
+	ERR_FAIL_COND_V(shader_spirv.is_null(), RID());
+
+	RID shader_rid = zylann::godot::shader_create_from_spirv(rd, **shader_spirv, name);
+	ERR_FAIL_COND_V(!shader_rid.is_valid(), RID());
+
+	return shader_rid;
+}
+
+RID load_compute_shader_from_glsl_cached(RenderingDevice &rd, String source_text, String name) {
+	ZN_PRINT_VERBOSE(format("Creating VoxelRD compute shader {}", name));
+
+	const String source_hash = source_text.sha256_text();
+	const String binary_cache_file_path =
+			get_compute_shader_binary_cache_path(source_hash, rd.get_device_pipeline_cache_uuid(), name);
+
+	PackedByteArray shader_binary = load_compute_shader_binary_from_cache(binary_cache_file_path, name);
+	if (!shader_binary.is_empty()) {
+		RID shader_rid = rd.shader_create_from_bytecode(shader_binary);
+		if (shader_rid.is_valid()) {
+			ZN_PRINT_VERBOSE(format("Loaded VoxelRD compute shader {} from binary cache", name));
+			return shader_rid;
+		}
+		ZN_PRINT_VERBOSE(format("VoxelRD compute shader binary cache rejected by RenderingDevice for {}", name));
+	}
+
+	Ref<RDShaderSPIRV> shader_spirv = compile_compute_shader_spirv_from_glsl(rd, source_text, name);
+	ERR_FAIL_COND_V(shader_spirv.is_null(), RID());
+
+	shader_binary = zylann::godot::shader_compile_binary_from_spirv(rd, **shader_spirv, name);
+	ERR_FAIL_COND_V(shader_binary.is_empty(), RID());
+
+	save_compute_shader_binary_to_cache(binary_cache_file_path, shader_binary, name);
+
+	RID shader_rid = rd.shader_create_from_bytecode(shader_binary);
+	if (shader_rid.is_valid()) {
+		return shader_rid;
+	}
+
+	ZN_PRINT_VERBOSE(format("VoxelRD compute shader binary rejected by RenderingDevice for {}, falling back to SPIR-V", name));
+
+	shader_rid = zylann::godot::shader_create_from_spirv(rd, **shader_spirv, name);
 	ERR_FAIL_COND_V(!shader_rid.is_valid(), RID());
 
 	return shader_rid;
@@ -92,7 +224,14 @@ void ComputeShaderInternal::clear(RenderingDevice &rd) {
 void ComputeShaderInternal::load_from_glsl(RenderingDevice &rd, String source_text, String name) {
 	ZN_PROFILE_SCOPE();
 	clear(rd);
-	rid = load_compute_shader_from_glsl(rd, source_text, name);
+
+	ZN_ASSERT(ProjectSettings::get_singleton() != nullptr);
+	const bool shader_cache_enabled = ProjectSettings::get_singleton()->get("voxel/shaders/shader_cache/enabled");
+	if (shader_cache_enabled) {
+		rid = load_compute_shader_from_glsl_cached(rd, source_text, name);
+	} else {
+		rid = load_compute_shader_from_glsl(rd, source_text, name);
+	}
 #if DEBUG_ENABLED
 	debug_name = name;
 #endif
