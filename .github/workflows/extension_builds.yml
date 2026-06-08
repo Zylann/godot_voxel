@@ -97,7 +97,7 @@ jobs:
       # Also adds system directory in a way that persists between steps.
       # TODO Enhancement: cache buildroot so future runs can use it? Would save 15s
       - name: Setup buildroot (x86)
-        if: ${{ matrix.target.platform == 'linux' && arch == 'x86_64' }}
+        if: ${{ matrix.target.platform == 'linux' && matrix.target.arch == 'x86_64' }}
         run: |
           wget https://github.com/godotengine/buildroot/releases/download/godot-2023.08.x-4/x86_64-godot-linux-gnu_sdk-buildroot.tar.bz2
           tar -xjf x86_64-godot-linux-gnu_sdk-buildroot.tar.bz2
