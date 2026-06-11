@@ -43,23 +43,19 @@ String get_voxel_compute_shader_cache_base_dir() {
 	base_dir = Engine::get_singleton()->get_shader_cache_path();
 #endif
 	if (base_dir.is_empty()) {
-		base_dir = "user://shader_cache";
+		base_dir = "user://";
 	}
-	return base_dir;
-}
-
-String get_compute_shader_cache_dir(const String &name) {
-	return get_voxel_compute_shader_cache_base_dir()
-			.path_join(name.validate_filename());
+	return base_dir.path_join("shader_cache");
 }
 
 String get_compute_shader_binary_cache_path(const String &source_hash, const String &device_cache_uuid, const String &name) {
 	
-	return get_compute_shader_cache_dir(name)
+	return get_voxel_compute_shader_cache_base_dir()
+			.path_join(name.validate_filename())
 			.path_join(vformat("%s.%s.bin.cache", source_hash, device_cache_uuid));
 }
 
-PackedByteArray load_compute_shader_binary_from_cache(const String &cache_file_path, const String &shader_name) {
+PackedByteArray load_compute_shader_binary_from_cache(const String &cache_file_path) {
 	if (!zylann::godot::file_exists(cache_file_path)) {
 		return PackedByteArray();
 	}
@@ -67,13 +63,13 @@ PackedByteArray load_compute_shader_binary_from_cache(const String &cache_file_p
 	Error open_error;
 	Ref<FileAccess> file = zylann::godot::open_file(cache_file_path, FileAccess::READ, open_error);
 	if (file.is_null()) {
-		ZN_PRINT_VERBOSE(format("Could not open VoxelRD compute shader binary cache file {} for {}", cache_file_path, shader_name));
+		ZN_PRINT_VERBOSE(format("Could not open VoxelRD compute shader binary cache file {} (error {})", cache_file_path, open_error));
 		return PackedByteArray();
 	}
 
 	const uint64_t length = file->get_length();
 	if (length == 0) {
-		ZN_PRINT_VERBOSE(format("VoxelRD compute shader binary cache file is empty for {}", shader_name));
+		ZN_PRINT_VERBOSE(format("VoxelRD compute shader binary cache file is empty for {}", cache_file_path));
 		return PackedByteArray();
 	}
 
@@ -81,7 +77,7 @@ PackedByteArray load_compute_shader_binary_from_cache(const String &cache_file_p
 	bytes.resize(length);
 	const uint64_t read_count = zylann::godot::get_buffer(**file, Span<uint8_t>(bytes.ptrw(), bytes.size()));
 	if (read_count != length) {
-		ZN_PRINT_VERBOSE(format("Could not read full VoxelRD compute shader binary cache file for {}", shader_name));
+		ZN_PRINT_VERBOSE(format("Could not read full VoxelRD compute shader binary cache file for {}", cache_file_path));
 		return PackedByteArray();
 	}
 
@@ -106,7 +102,7 @@ void save_compute_shader_binary_to_cache(
 	Error open_error;
 	Ref<FileAccess> file = zylann::godot::open_file(cache_file_path, FileAccess::WRITE, open_error);
 	if (file.is_null()) {
-		ZN_PRINT_WARNING(format("Could not open VoxelRD compute shader binary cache file {} for writing", cache_file_path));
+		ZN_PRINT_WARNING(format("Could not open VoxelRD compute shader binary cache file {} for writing (error {})", cache_file_path, open_error));
 		return;
 	}
 
@@ -116,8 +112,6 @@ void save_compute_shader_binary_to_cache(
 } // namespace
 
 Ref<RDShaderSPIRV> compile_compute_shader_spirv_from_glsl(RenderingDevice &rd, String source_text, String name) {
-	// Refactored since both cache and non cache paths need this
-	
 	Ref<RDShaderSource> shader_source;
 	shader_source.instantiate();
 	shader_source->set_language(RenderingDevice::SHADER_LANGUAGE_GLSL);
@@ -142,7 +136,7 @@ Ref<RDShaderSPIRV> compile_compute_shader_spirv_from_glsl(RenderingDevice &rd, S
 	return shader_spirv;
 }
 
-RID load_compute_shader_from_glsl(RenderingDevice &rd, String source_text, String name) {
+RID load_compute_shader_from_glsl(RenderingDevice &rd, String source_text, String name, bool shader_cache_enabled) {
 	ZN_PRINT_VERBOSE(format("Creating VoxelRD compute shader {}", name));
 	// For debugging
 	// {
@@ -159,49 +153,44 @@ RID load_compute_shader_from_glsl(RenderingDevice &rd, String source_text, Strin
 	// );
 	// MutexLock mlock(VoxelEngine::get_singleton().get_rendering_device_mutex());
 
-	Ref<RDShaderSPIRV> shader_spirv = compile_compute_shader_spirv_from_glsl(rd, source_text, name);
-	ERR_FAIL_COND_V(shader_spirv.is_null(), RID());
-
-	RID shader_rid = zylann::godot::shader_create_from_spirv(rd, **shader_spirv, name);
-	ERR_FAIL_COND_V(!shader_rid.is_valid(), RID());
-
-	return shader_rid;
-}
-
-RID load_compute_shader_from_glsl_cached(RenderingDevice &rd, String source_text, String name) {
 	ZN_PRINT_VERBOSE(format("Creating VoxelRD compute shader {}", name));
 
 	const String source_hash = source_text.sha256_text();
 	const String binary_cache_file_path =
 			get_compute_shader_binary_cache_path(source_hash, rd.get_device_pipeline_cache_uuid(), name);
+	
+	PackedByteArray shader_binary;
+	RID shader_rid;
 
-	PackedByteArray shader_binary = load_compute_shader_binary_from_cache(binary_cache_file_path, name);
+	// Load the shader cache if enabled
+	if(shader_cache_enabled){
+		shader_binary = load_compute_shader_binary_from_cache(binary_cache_file_path);
+	}
+
 	if (!shader_binary.is_empty()) {
-		RID shader_rid = rd.shader_create_from_bytecode(shader_binary);
+		shader_rid = rd.shader_create_from_bytecode(shader_binary);
 		if (shader_rid.is_valid()) {
 			ZN_PRINT_VERBOSE(format("Loaded VoxelRD compute shader {} from binary cache", name));
 			return shader_rid;
 		}
-		ZN_PRINT_VERBOSE(format("VoxelRD compute shader binary cache rejected by RenderingDevice for {}", name));
-	}
 
+		ZN_PRINT_VERBOSE(format("VoxelRD compute shader binary cache rejected by RenderingDevice for {}", name));
+	}  
+
+	// Either no cache existed or the cache was rejected, remake it
 	Ref<RDShaderSPIRV> shader_spirv = compile_compute_shader_spirv_from_glsl(rd, source_text, name);
 	ERR_FAIL_COND_V(shader_spirv.is_null(), RID());
 
 	shader_binary = zylann::godot::shader_compile_binary_from_spirv(rd, **shader_spirv, name);
 	ERR_FAIL_COND_V(shader_binary.is_empty(), RID());
 
-	save_compute_shader_binary_to_cache(binary_cache_file_path, shader_binary, name);
+	// Only cache if enabled
+	if(shader_cache_enabled)
+	{
+		save_compute_shader_binary_to_cache(binary_cache_file_path, shader_binary, name);
+	}		
 
-	RID shader_rid = rd.shader_create_from_bytecode(shader_binary);
-	if (shader_rid.is_valid()) {
-		return shader_rid;
-	}
-
-	ZN_PRINT_VERBOSE(format("VoxelRD compute shader binary rejected by RenderingDevice for {}, falling back to SPIR-V", name));
-
-	shader_rid = zylann::godot::shader_create_from_spirv(rd, **shader_spirv, name);
-	ERR_FAIL_COND_V(!shader_rid.is_valid(), RID());
+	shader_rid = rd.shader_create_from_bytecode(shader_binary);
 
 	return shader_rid;
 }
@@ -227,11 +216,8 @@ void ComputeShaderInternal::load_from_glsl(RenderingDevice &rd, String source_te
 
 	ZN_ASSERT(ProjectSettings::get_singleton() != nullptr);
 	const bool shader_cache_enabled = ProjectSettings::get_singleton()->get("voxel/shaders/shader_cache/enabled");
-	if (shader_cache_enabled) {
-		rid = load_compute_shader_from_glsl_cached(rd, source_text, name);
-	} else {
-		rid = load_compute_shader_from_glsl(rd, source_text, name);
-	}
+	rid = load_compute_shader_from_glsl(rd, source_text, name, shader_cache_enabled);
+
 #if DEBUG_ENABLED
 	debug_name = name;
 #endif
