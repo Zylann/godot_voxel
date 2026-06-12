@@ -62,24 +62,27 @@ PackedByteArray load_compute_shader_binary_from_cache(const String &cache_file_p
 
 	Error open_error;
 	Ref<FileAccess> file = zylann::godot::open_file(cache_file_path, FileAccess::READ, open_error);
-	if (file.is_null()) {
-		ZN_PRINT_VERBOSE(format("Could not open VoxelRD compute shader binary cache file {} (error {})", cache_file_path, open_error));
-		return PackedByteArray();
-	}
+	ZN_ASSERT_RETURN_V_MSG(
+			file.is_valid(),
+			PackedByteArray(),
+			format("Could not open VoxelRD compute shader binary cache file {} (error {})", cache_file_path, open_error)
+	);
 
 	const uint64_t length = file->get_length();
-	if (length == 0) {
-		ZN_PRINT_VERBOSE(format("VoxelRD compute shader binary cache file is empty for {}", cache_file_path));
-		return PackedByteArray();
-	}
+	ZN_ASSERT_RETURN_V_MSG(
+			length != 0,
+			PackedByteArray(),
+			format("VoxelRD compute shader binary cache file is empty for {}", cache_file_path)
+	);
 
 	PackedByteArray bytes;
 	bytes.resize(length);
 	const uint64_t read_count = zylann::godot::get_buffer(**file, Span<uint8_t>(bytes.ptrw(), bytes.size()));
-	if (read_count != length) {
-		ZN_PRINT_VERBOSE(format("Could not read full VoxelRD compute shader binary cache file for {}", cache_file_path));
-		return PackedByteArray();
-	}
+	ZN_ASSERT_RETURN_V_MSG(
+			read_count == length,
+			PackedByteArray(),
+			format("Could not read full VoxelRD compute shader binary cache file for {}", cache_file_path)
+	);
 
 	return bytes;
 }
