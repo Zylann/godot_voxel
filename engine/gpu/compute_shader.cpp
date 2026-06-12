@@ -37,7 +37,7 @@ String format_source_code_with_line_numbers(String src) {
 
 namespace {
 
-String get_voxel_compute_shader_cache_base_dir() {
+String get_compute_shader_cache_base_dir() {
 	String base_dir;
 #if defined(ZN_GODOT)
 	base_dir = Engine::get_singleton()->get_shader_cache_path();
@@ -50,7 +50,7 @@ String get_voxel_compute_shader_cache_base_dir() {
 
 String get_compute_shader_binary_cache_path(const String &source_hash, const String &device_cache_uuid, const String &name) {
 	
-	return get_voxel_compute_shader_cache_base_dir()
+	return get_compute_shader_cache_base_dir()
 			.path_join(name.validate_filename())
 			.path_join(vformat("%s.%s.bin.cache", source_hash, device_cache_uuid));
 }
@@ -214,8 +214,9 @@ void ComputeShaderInternal::load_from_glsl(RenderingDevice &rd, String source_te
 	ZN_PROFILE_SCOPE();
 	clear(rd);
 
-	ZN_ASSERT(ProjectSettings::get_singleton() != nullptr);
-	const bool shader_cache_enabled = ProjectSettings::get_singleton()->get("voxel/shaders/shader_cache/enabled");
+	ProjectSettings *project_settings = ProjectSettings::get_singleton();
+	ZN_ASSERT_RETURN_MSG(project_settings != nullptr, "ProjectSettings singleton is not available");
+	const bool shader_cache_enabled = project_settings->get("voxel/shaders/shader_cache/enabled");
 	rid = load_compute_shader_from_glsl(rd, source_text, name, shader_cache_enabled);
 
 #if DEBUG_ENABLED
