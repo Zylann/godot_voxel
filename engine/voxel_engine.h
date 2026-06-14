@@ -222,6 +222,7 @@ public:
 	void push_async_io_tasks(Span<IThreadedTask *> tasks);
 
 #ifdef VOXEL_ENABLE_GPU
+	bool supports_gpu_generation() const;
 	void push_gpu_task(IGPUTask *task);
 
 	template <typename F>
@@ -276,12 +277,6 @@ public:
 
 	int get_thread_count() const;
 	void set_thread_count(uint32_t count);
-
-#ifdef VOXEL_ENABLE_GPU
-	bool has_rendering_device() const {
-		return _gpu_task_runner.has_rendering_device();
-	}
-#endif
 
 	// RenderingDevice &get_rendering_device() const {
 	// 	ZN_ASSERT(_rendering_device != nullptr);
