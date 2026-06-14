@@ -52,9 +52,9 @@ Ref<RDShaderSPIRV> shader_compile_spirv_from_source(RenderingDevice &rd, RDShade
 #endif
 }
 
-RID shader_create_from_spirv(RenderingDevice &rd, RDShaderSPIRV &p_spirv, String name) {
+PackedByteArray shader_compile_binary_from_spirv(RenderingDevice &rd, RDShaderSPIRV &p_spirv, String name) {
 #if defined(ZN_GODOT)
-	// This is a copy of `RenderingDevice::_shader_create_from_spirv` because it's private
+	// This is a copy of `RenderingDevice::_shader_compile_binary_from_spirv` because it's private.
 
 	Vector<RenderingDevice::ShaderStageSPIRVData> stage_data;
 	for (int i = 0; i < RD::SHADER_STAGE_MAX; i++) {
@@ -63,7 +63,7 @@ RID shader_create_from_spirv(RenderingDevice &rd, RDShaderSPIRV &p_spirv, String
 		String error = p_spirv.get_stage_compile_error(stage);
 		ERR_FAIL_COND_V_MSG(
 				!error.is_empty(),
-				RID(),
+				PackedByteArray(),
 				"Can't create a shader from an errored bytecode. Check errors in source bytecode."
 		);
 
@@ -82,11 +82,11 @@ RID shader_create_from_spirv(RenderingDevice &rd, RDShaderSPIRV &p_spirv, String
 		stage_data.push_back(sd);
 	}
 
-	return rd.shader_create_from_spirv(stage_data, name);
+	return rd.shader_compile_binary_from_spirv(stage_data, name);
 
 #elif defined(ZN_GODOT_EXTENSION)
 	Ref<RDShaderSPIRV> spirv_data_ref(&p_spirv);
-	return rd.shader_create_from_spirv(spirv_data_ref, name);
+	return rd.shader_compile_binary_from_spirv(spirv_data_ref, name);
 #endif
 }
 

@@ -61,6 +61,8 @@ VoxelEngine::Config VoxelEngine::get_config_from_godot() {
 
 	add_custom_project_setting(Variant::BOOL, "voxel/ownership_checks", PROPERTY_HINT_NONE, "", true, true);
 
+	add_custom_project_setting(Variant::BOOL, "voxel/shaders/shader_cache/enabled", PROPERTY_HINT_NONE, "Enable the shader cache, which stores compute shader binaries for faster loading.", true, false);
+
 	config.inner.main_thread_budget_usec = 1000 * int(ps.get("voxel/threads/main/time_budget_ms"));
 
 	config.inner.thread_count_minimum = math::max(1, int(ps.get("voxel/threads/count/minimum")));
