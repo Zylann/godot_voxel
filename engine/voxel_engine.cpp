@@ -8,7 +8,6 @@
 #include "../util/godot/classes/os.h"
 #include "../util/godot/classes/project_settings.h"
 #include "../util/godot/classes/rd_sampler_state.h"
-#include "../util/godot/classes/rendering_device.h"
 #include "../util/godot/classes/rendering_server.h"
 #include "../util/io/log.h"
 #include "../util/macros.h"
@@ -288,20 +287,6 @@ void VoxelEngine::push_async_io_tasks(Span<zylann::IThreadedTask *> tasks) {
 }
 
 #ifdef VOXEL_ENABLE_GPU
-bool VoxelEngine::supports_gpu_generation() const {
-	RenderingServer *rs = RenderingServer::get_singleton();
-	if (rs == nullptr) {
-		return false;
-	}
-
-	RenderingDevice *rd = rs->get_rendering_device();
-	if (rd == nullptr) {
-		return false;
-	}
-
-	return true;
-}
-
 void VoxelEngine::push_gpu_task(IGPUTask *task) {
 	_gpu_task_runner.push(task);
 }

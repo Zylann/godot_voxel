@@ -222,7 +222,6 @@ public:
 	void push_async_io_tasks(Span<IThreadedTask *> tasks);
 
 #ifdef VOXEL_ENABLE_GPU
-	bool supports_gpu_generation() const;
 	void push_gpu_task(IGPUTask *task);
 
 	template <typename F>
