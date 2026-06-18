@@ -10,6 +10,9 @@ I try to minimize breaking changes, but there are usually a few in each release 
 Development - master branch
 -----------------------------
 
+- Improvements
+    - Added compute shader caching (thanks to chalecampb #866)
+
 - Fixes
     - Extension: fixed crash when expanding plugin resources in the inspector and other similar actions involving previews (see https://github.com/godotengine/godot-cpp/pull/1928)
     - Noises: editor: allow to set `period` larger than what inspector sliders allow, by typing the value.
