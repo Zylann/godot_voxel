@@ -213,13 +213,17 @@ def get_sources(env, is_editor_build):
             "thirdparty/meshoptimizer/*.cpp"
         ]
 
+        if tests_enabled:
+            sources += [
+                "tests/voxel/test_transvoxel.cpp"
+            ]
+
         if gpu_enabled:
             sources += ["engine/detail_rendering/render_detail_texture_gpu_task.cpp"]
 
             if tests_enabled:
                 sources += [
-                    "tests/voxel/test_detail_rendering_gpu.cpp",
-                    "tests/voxel/test_transvoxel.cpp"
+                    "tests/voxel/test_detail_rendering_gpu.cpp"
                 ]
         
     if modifiers_enabled:

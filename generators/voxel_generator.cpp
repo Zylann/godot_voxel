@@ -3,6 +3,7 @@
 #include "../shaders/shaders.h"
 #include "../storage/voxel_buffer_gd.h"
 #include "../util/godot/core/array.h" // for `varray` in GDExtension builds
+#include "../util/godot/core/class_db.h"
 #include "../util/profiling.h"
 #include "generate_block_task.h"
 
