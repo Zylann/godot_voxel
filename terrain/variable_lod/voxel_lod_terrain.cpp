@@ -48,6 +48,10 @@
 #include "../../util/godot/core/class_db.h"
 #endif
 
+#ifdef VOXEL_ENABLE_GPU
+#include "../../util/godot/classes/rendering_server.h"
+#endif
+
 namespace zylann::voxel {
 
 namespace {
@@ -2960,7 +2964,7 @@ void VoxelLodTerrain::get_configuration_warnings(PackedStringArray &warnings) co
 			warnings.append(String("`use_gpu_generation` is enabled, but {0} does not support running on the GPU.")
 									.format(varray(generator->get_class())));
 		}
-		if (!VoxelEngine::get_singleton().has_rendering_device()) {
+		if (!zylann::godot::supports_rendering_device()) {
 			warnings.append(String("`use_gpu_generation` is enabled, but the selected renderer does not support the "
 								   "RenderingDevice API ({0}).")
 									.format(varray(get_current_rendering_method())));
