@@ -44,7 +44,7 @@ inline void free_rendering_server_rid(RenderingServer &rs, const RID &rid) {
 }
 
 #ifdef VOXEL_ENABLE_GPU
-inline bool supports_gpu_generation() {
+inline bool supports_rendering_device() {
 	RenderingServer *rs = RenderingServer::get_singleton();
 	if (rs == nullptr) {
 		return false;
