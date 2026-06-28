@@ -896,4 +896,35 @@ unsigned int get_detail_texture_tile_resolution_for_lod(
 	return tile_resolution;
 }
 
+void copy_2d_region_from_packed_to_atlased(
+		Span<uint8_t> dst,
+		const Vector2i dst_size,
+		const Span<const uint8_t> src,
+		const Vector2i src_size,
+		const Vector2i dst_pos,
+		const unsigned int item_size_in_bytes
+) {
+#ifdef DEBUG_ENABLED
+	ZN_ASSERT(src_size.x >= 0 && src_size.y >= 0);
+	ZN_ASSERT(dst_size.x >= 0 && dst_size.y >= 0);
+	ZN_ASSERT(
+			dst_pos.x >= 0 && dst_pos.y >= 0 && dst_pos.x + src_size.x <= dst_size.x &&
+			dst_pos.y + src_size.y <= dst_size.y
+	);
+	ZN_ASSERT(src.size() == src_size.x * src_size.y * item_size_in_bytes);
+	ZN_ASSERT(dst.size() == dst_size.x * dst_size.y * item_size_in_bytes);
+	ZN_ASSERT(!src.overlaps(dst));
+#endif
+	const unsigned int dst_begin = (dst_pos.x + dst_pos.y * dst_size.x) * item_size_in_bytes;
+	const unsigned int src_row_size = src_size.x * item_size_in_bytes;
+	const unsigned int dst_row_size = dst_size.x * item_size_in_bytes;
+	uint8_t *dst_p = dst.data() + dst_begin;
+	const uint8_t *src_p = src.data();
+	for (unsigned int src_y = 0; src_y < (unsigned int)src_size.y; ++src_y) {
+		memcpy(dst_p, src_p, src_row_size);
+		dst_p += dst_row_size;
+		src_p += src_row_size;
+	}
+}
+
 } // namespace zylann::voxel
