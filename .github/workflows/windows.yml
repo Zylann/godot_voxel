@@ -12,7 +12,7 @@ concurrency:
 # Global Cache Settings
 # SCONS_CACHE for windows must be set in the build environment
 env:
-  GODOT_BASE_BRANCH: "4.6-stable"
+  GODOT_BASE_BRANCH: "4.7-stable"
   SCONS_CACHE_MSVC_CONFIG: true
   SCONS_CACHE_LIMIT_GB: 4
 
@@ -25,12 +25,12 @@ jobs:
     strategy:
       matrix:
         include:
-          - name: 4.6 Editor
+          - name: 4.7 Editor
             target: editor
             precision: single
             executable_name: godot.windows.editor.x86_64.exe
 
-          - name: 4.6 Editor + Tracy 0.13.1
+          - name: 4.7 Editor + Tracy 0.13.1
             target: editor
             precision: single
             executable_name: godot.windows.tracy.editor.x86_64.exe
@@ -39,12 +39,12 @@ jobs:
             # So we use a relative path, but currently Godot's Tracy integration looks them up relative to core/profiling
             extra_scons_params: profiler=tracy "profiler_path=../../thirdparty/tracy/public"
 
-          - name: 4.6 Editor Float64
+          - name: 4.7 Editor Float64
             target: editor
             precision: double
             executable_name: godot.windows.editor.double.x86_64.exe
 
-          - name: 4.6 Template
+          - name: 4.7 Template
             target: template_release
             precision: single
             executable_name: godot.windows.template_release.x86_64.exe
