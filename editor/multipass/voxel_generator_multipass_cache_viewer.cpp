@@ -79,8 +79,8 @@ void VoxelGeneratorMultipassCacheViewer::update_image() {
 	const Color bg_color(0.3, 0.3, 0.3);
 
 	if (_image.is_null() || //
-			_image->get_width() != view_rect_tiles.size.x || //
-			_image->get_height() != view_rect_tiles.size.y) {
+		_image->get_width() != view_rect_tiles.size.x || //
+		_image->get_height() != view_rect_tiles.size.y) {
 		_image = zylann::godot::create_empty_image(
 				view_rect_tiles.size.x, view_rect_tiles.size.y, false, Image::FORMAT_RGB8);
 		_image->fill(bg_color);
@@ -198,8 +198,15 @@ void VoxelGeneratorMultipassCacheViewer::draw() {
 			pos.x += color_rect.size.x * 1.2f;
 			pos.y += font_ascent;
 
-			draw_string(font, pos, String("Pass {0}").format(varray(pass_index)), HORIZONTAL_ALIGNMENT_LEFT, -1.f,
-					font_size, text_color);
+			draw_string(
+					font,
+					pos,
+					String("Pass {0}").format(varray(pass_index)),
+					HORIZONTAL_ALIGNMENT_LEFT,
+					-1.f,
+					font_size,
+					text_color
+			);
 
 			anchor_pos.y += line_height;
 		}
