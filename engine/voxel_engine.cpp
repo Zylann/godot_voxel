@@ -8,7 +8,6 @@
 #include "../util/godot/classes/os.h"
 #include "../util/godot/classes/project_settings.h"
 #include "../util/godot/classes/rd_sampler_state.h"
-#include "../util/godot/classes/rendering_device.h"
 #include "../util/godot/classes/rendering_server.h"
 #include "../util/io/log.h"
 #include "../util/macros.h"

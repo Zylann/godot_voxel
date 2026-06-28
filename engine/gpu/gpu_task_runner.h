@@ -79,7 +79,6 @@ public:
 	void stop();
 	void push(IGPUTask *task);
 	unsigned int get_pending_task_count() const;
-	bool has_rendering_device() const;
 	bool is_running() const;
 
 private:
@@ -87,7 +86,6 @@ private:
 
 	RenderingDevice *_rendering_device = nullptr;
 	// mutable Mutex _rendering_device_ptr_mutex;
-	bool _has_rendering_device = false;
 
 	GPUStorageBufferPool _storage_buffer_pool;
 	BaseGPUResources _base_resources;

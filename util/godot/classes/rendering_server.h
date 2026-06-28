@@ -43,6 +43,17 @@ inline void free_rendering_server_rid(RenderingServer &rs, const RID &rid) {
 #endif
 }
 
+#ifdef VOXEL_ENABLE_GPU
+inline bool supports_rendering_device() {
+	RenderingServer *rs = RenderingServer::get_singleton();
+	if (rs == nullptr) {
+		return false;
+	}
+
+	return rs->get_rendering_device() != nullptr;
+}
+#endif
+
 struct ShaderParameterInfo {
 	String name;
 	Variant::Type type;
