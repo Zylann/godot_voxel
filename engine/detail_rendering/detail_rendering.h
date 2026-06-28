@@ -161,14 +161,15 @@ inline unsigned int get_square_grid_size_from_item_count(unsigned int item_count
 	return int(Math::ceil(Math::sqrt(double(item_count))));
 }
 
-// Copies data from a fully packed array into a sub-region of a 2D array (where each rows may be spaced apart).
+// Copies data from a fully packed array into a sub-region of a 2D array (therefore each row of pixels may be spaced
+// apart in memory).
 inline void copy_2d_region_from_packed_to_atlased(
 		Span<uint8_t> dst,
-		Vector2i dst_size,
-		Span<const uint8_t> src,
-		Vector2i src_size,
-		Vector2i dst_pos,
-		unsigned int item_size_in_bytes
+		const Vector2i dst_size,
+		const Span<const uint8_t> src,
+		const Vector2i src_size,
+		const Vector2i dst_pos,
+		const unsigned int item_size_in_bytes
 ) {
 #ifdef DEBUG_ENABLED
 	ZN_ASSERT(src_size.x >= 0 && src_size.y >= 0);

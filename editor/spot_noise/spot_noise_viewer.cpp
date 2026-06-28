@@ -101,7 +101,7 @@ void draw_grid(Image &im, float cell_size, Color color) {
 void ZN_SpotNoiseViewer::update_preview() {
 	const Vector2i preview_size(PREVIEW_WIDTH, PREVIEW_HEIGHT);
 
-	Ref<Image> im = godot::create_empty_image(preview_size.x, preview_size.y, false, Image::FORMAT_RGB8);
+	Ref<Image> im = godot::create_empty_image(preview_size.x, preview_size.y, false, Image::FORMAT_L8);
 
 	if (_noise.is_valid()) {
 		for (int y = 0; y < preview_size.y; ++y) {

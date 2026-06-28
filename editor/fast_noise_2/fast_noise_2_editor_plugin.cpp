@@ -122,7 +122,7 @@ private:
 
 		const Vector2i preview_size(PREVIEW_WIDTH, PREVIEW_HEIGHT);
 
-		Ref<Image> im = Image::create_empty(preview_size.x, preview_size.y, false, Image::FORMAT_RGB8);
+		Ref<Image> im = Image::create_empty(preview_size.x, preview_size.y, false, Image::FORMAT_L8);
 
 		if (_noise.is_valid()) {
 			_noise->generate_image(im, false);

@@ -319,32 +319,33 @@ RenderDetailTextureGPUTask *RenderDetailTextureTask::make_gpu_task() {
 // 	return dst;
 // }
 
-void convert_pixels_from_rgba8_to_rgb8_in_place(PackedByteArray &pba) {
-	ZN_ASSERT((pba.size() % 4) == 0);
-	const unsigned int pixel_count = pba.size() / 4;
-	uint8_t *pba_w = pba.ptrw();
-	for (unsigned int pi = 0; pi < pixel_count; ++pi) {
-		const unsigned int src_i = pi * 4;
-		const unsigned int dst_i = pi * 3;
-		pba_w[dst_i] = pba_w[src_i];
-		pba_w[dst_i + 1] = pba_w[src_i + 1];
-		pba_w[dst_i + 2] = pba_w[src_i + 2];
-	}
-	pba.resize(pixel_count * 3);
-}
+// static void convert_pixels_from_rgba8_to_rgb8_in_place(PackedByteArray &pba) {
+// 	ZN_ASSERT((pba.size() % 4) == 0);
+// 	const unsigned int pixel_count = pba.size() / 4;
+// 	uint8_t *pba_w = pba.ptrw();
+// 	for (unsigned int pi = 0; pi < pixel_count; ++pi) {
+// 		const unsigned int src_i = pi * 4;
+// 		const unsigned int dst_i = pi * 3;
+// 		pba_w[dst_i] = pba_w[src_i];
+// 		pba_w[dst_i + 1] = pba_w[src_i + 1];
+// 		pba_w[dst_i + 2] = pba_w[src_i + 2];
+// 	}
+// 	pba.resize(pixel_count * 3);
+// }
 
-void combine_edited_tiles(
+static void combine_edited_tiles(
 		PackedByteArray &atlas_data,
-		unsigned int tile_size_pixels,
-		Vector2i atlas_size_pixels,
-		const DetailTextureData &edited_tiles_normalmap_data
+		const unsigned int tile_size_pixels,
+		const Vector2i atlas_size_pixels,
+		const DetailTextureData &edited_tiles_normalmap_data,
+		const unsigned int pixel_size
 ) {
 	ZN_PROFILE_SCOPE();
 
 	uint8_t *dst_w = atlas_data.ptrw();
 	Span<uint8_t> dst(dst_w, atlas_data.size());
 
-	const unsigned int tile_size_in_bytes = math::squared(tile_size_pixels) * 3;
+	const unsigned int tile_size_in_bytes = math::squared(tile_size_pixels) * pixel_size;
 	const unsigned int tiles_x = atlas_size_pixels.x / tile_size_pixels;
 
 	for (unsigned int tile_index = 0; tile_index < edited_tiles_normalmap_data.tiles.size(); ++tile_index) {
@@ -357,7 +358,12 @@ void combine_edited_tiles(
 				Vector2i(dst_tile_index % tiles_x, dst_tile_index / tiles_x) * tile_size_pixels;
 
 		copy_2d_region_from_packed_to_atlased(
-				dst, atlas_size_pixels, src_pixels, Vector2i(tile_size_pixels, tile_size_pixels), dst_tile_pos_pixels, 3
+				dst,
+				atlas_size_pixels,
+				src_pixels,
+				Vector2i(tile_size_pixels, tile_size_pixels),
+				dst_tile_pos_pixels,
+				pixel_size
 		);
 	}
 }
@@ -371,22 +377,27 @@ void RenderDetailTexturePass2Task::run(ThreadedTaskContext &ctx) {
 	// and get the edits later, even if that means computing tiles redundantly, because at least we get a
 	// result quicker rather than a "hole" of lack of detail
 
-	convert_pixels_from_rgba8_to_rgb8_in_place(atlas_data);
+	// We don't really use the alpha channel so far, but otherwise Godot complains RGB8 isn't supported by GPU
+	const Image::Format atlas_pixel_format = Image::FORMAT_RGBA8;
+	const unsigned int atlas_pixel_size = 4;
 
 	// TODO Optimization: currently, the GPU task still generates tiles that would otherwise be replaced with edited
 	// tiles. Maybe we should find a way to tell the GPU task to exclude these tiles efficiently?
 	if (edited_tiles_texture_data.tiles.size() > 0) {
 		combine_edited_tiles(
-				atlas_data, tile_size_pixels, Vector2i(atlas_width, atlas_height), edited_tiles_texture_data
+				atlas_data,
+				tile_size_pixels,
+				Vector2i(atlas_width, atlas_height),
+				edited_tiles_texture_data,
+				atlas_pixel_size
 		);
 	}
 
 	DetailImages images;
 
 	// TODO Octahedral compression
-	images.atlas = Image::create_from_data(atlas_width, atlas_height, false, Image::FORMAT_RGB8, atlas_data);
+	images.atlas = Image::create_from_data(atlas_width, atlas_height, false, atlas_pixel_format, atlas_data);
 	ERR_FAIL_COND(images.atlas.is_null());
-	// images.atlas->convert(Image::FORMAT_RGB8);
 
 	images.lookup = store_lookup_to_image(tile_data, mesh_block_size);
 

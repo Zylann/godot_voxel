@@ -164,7 +164,7 @@ void test_normalmap_render_gpu() {
 			atlas_texture_size.x, atlas_texture_size.y, false, Image::FORMAT_RGBA8, atlas_texture_data
 	);
 	ERR_FAIL_COND(gpu_atlas_image.is_null());
-	gpu_atlas_image->convert(Image::FORMAT_RGB8);
+	// gpu_atlas_image->convert(Image::FORMAT_RGB8);
 
 	// ZN_DELETE(gpu_task);
 

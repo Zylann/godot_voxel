@@ -82,7 +82,12 @@ void VoxelGeneratorMultipassCacheViewer::update_image() {
 		_image->get_width() != view_rect_tiles.size.x || //
 		_image->get_height() != view_rect_tiles.size.y) {
 		_image = zylann::godot::create_empty_image(
-				view_rect_tiles.size.x, view_rect_tiles.size.y, false, Image::FORMAT_RGB8);
+				view_rect_tiles.size.x,
+				view_rect_tiles.size.y,
+				false,
+				// We don't use alpha, but otherwise Godot complains that RGB8 isn't supported by GPU
+				Image::FORMAT_RGBA8
+		);
 		_image->fill(bg_color);
 	}
 

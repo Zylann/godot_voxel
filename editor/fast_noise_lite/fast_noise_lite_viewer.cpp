@@ -88,9 +88,11 @@ void ZN_FastNoiseLiteViewer::_notification(int p_what) {
 void ZN_FastNoiseLiteViewer::update_preview() {
 	const Vector2i preview_size(PREVIEW_WIDTH, PREVIEW_HEIGHT);
 
-	Ref<Image> im = godot::create_empty_image(preview_size.x, preview_size.y, false, Image::FORMAT_RGB8);
+	Ref<Image> im;
 
 	if (_noise.is_valid()) {
+		im = godot::create_empty_image(preview_size.x, preview_size.y, false, Image::FORMAT_L8);
+
 		for (int y = 0; y < preview_size.y; ++y) {
 			for (int x = 0; x < preview_size.x; ++x) {
 				// Assuming -1..1 output. Some noise types can have different range though.
@@ -101,6 +103,8 @@ void ZN_FastNoiseLiteViewer::update_preview() {
 		}
 
 	} else if (_noise_gradient.is_valid()) {
+		im = godot::create_empty_image(preview_size.x, preview_size.y, false, Image::FORMAT_RG8);
+
 		const float amp = _noise_gradient->get_amplitude();
 		float m = (amp == 0.f ? 1.f : 1.f / amp);
 		for (int y = 0; y < preview_size.y; ++y) {

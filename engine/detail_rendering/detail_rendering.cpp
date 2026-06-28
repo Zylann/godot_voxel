@@ -762,8 +762,13 @@ Vector<Ref<Image>> store_atlas_to_image_array(
 ) {
 	ZN_PROFILE_SCOPE();
 
-	const unsigned int pixel_size = octahedral_encoding ? 2 : 3;
-	const Image::Format format = octahedral_encoding ? Image::FORMAT_RG8 : Image::FORMAT_RGB8;
+	const unsigned int pixel_size = octahedral_encoding ? 2 : 4;
+	const Image::Format format =
+			octahedral_encoding ? Image::FORMAT_RG8 :
+								// We don't use the alpha channel, but Godot would spam warnings about RGB8 not being
+								// supported by GPU. So we waste a bit of memory for now, which is unfortunate for a
+								// kind of texture stored in large numbers. Maybe one day it will be used for something.
+			Image::FORMAT_RGBA8;
 	const unsigned int tile_size_in_pixels = math::squared(tile_resolution);
 	const unsigned int tile_size_in_bytes = tile_size_in_pixels * pixel_size;
 
@@ -796,8 +801,13 @@ Ref<Image> store_atlas_to_image(
 ) {
 	ZN_PROFILE_SCOPE();
 
-	const unsigned int pixel_size = octahedral_encoding ? 2 : 3;
-	const Image::Format format = octahedral_encoding ? Image::FORMAT_RG8 : Image::FORMAT_RGB8;
+	const unsigned int pixel_size = octahedral_encoding ? 2 : 4;
+	const Image::Format format =
+			octahedral_encoding ? Image::FORMAT_RG8 :
+								// We don't use the alpha channel, but Godot would spam warnings about RGB8 not being
+								// supported by GPU. So we waste a bit of memory for now, which is unfortunate for a
+								// kind of texture stored in large numbers. Maybe one day it will be used for something.
+			Image::FORMAT_RGBA8;
 	const unsigned int tile_size_in_pixels = math::squared(tile_resolution);
 	const unsigned int tile_size_in_bytes = tile_size_in_pixels * pixel_size;
 
