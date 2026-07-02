@@ -141,7 +141,7 @@ You can check which platforms are provided by the extension in the config file a
 - Android x86_64
 - Android arm64
 
-If what you need is not in this list, you may try [Building yourslef](development.md#gdextension).
+If what you need is not in this list, you may try [Building yourself](development.md#gdextension).
 
 
 #### Stripping out icons
