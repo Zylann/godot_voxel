@@ -108,7 +108,6 @@ bool parse_graph_nodes_doc_xml(XMLParser &parser, StdVector<GraphNodeDocumentati
 }
 
 String strip_eols(String text) {
-	String out;
 	int pos = 0;
 	for (; pos < text.length(); ++pos) {
 		char32_t c = text[pos];
