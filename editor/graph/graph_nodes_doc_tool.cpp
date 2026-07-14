@@ -107,10 +107,10 @@ bool parse_graph_nodes_doc_xml(XMLParser &parser, StdVector<GraphNodeDocumentati
 	return true;
 }
 
-String strip_eols(String text) {
+String strip_eols(const String &text) {
 	int pos = 0;
 	for (; pos < text.length(); ++pos) {
-		char32_t c = text[pos];
+		const char32_t c = text[pos];
 		if (c == '\r' || c == '\n') {
 			continue;
 		}
@@ -118,7 +118,7 @@ String strip_eols(String text) {
 	}
 	const int begin = pos;
 	for (pos = text.length() - 1; pos >= 0; --pos) {
-		char32_t c = text[pos];
+		const char32_t c = text[pos];
 		if (c == '\r' || c == '\n') {
 			continue;
 		}
