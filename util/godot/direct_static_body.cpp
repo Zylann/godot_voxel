@@ -20,7 +20,7 @@ void DirectStaticBody::create() {
 	PhysicsServer3D &ps = *PhysicsServer3D::get_singleton();
 	_body = ps.body_create();
 	ps.body_set_ray_pickable(_body, false);
-	ps.body_set_mode(_body, PhysicsServer3D::BODY_MODE_STATIC);
+	ps.body_set_mode(_body, PhysicsServer3DEnums::BODY_MODE_STATIC);
 }
 
 void DirectStaticBody::destroy() {
@@ -43,7 +43,7 @@ bool DirectStaticBody::is_valid() const {
 void DirectStaticBody::set_transform(Transform3D transform) {
 	ZN_PROFILE_SCOPE();
 	ERR_FAIL_COND(!_body.is_valid());
-	PhysicsServer3D::get_singleton()->body_set_state(_body, PhysicsServer3D::BODY_STATE_TRANSFORM, transform);
+	PhysicsServer3D::get_singleton()->body_set_state(_body, PhysicsServer3DEnums::BODY_STATE_TRANSFORM, transform);
 
 	if (_debug_mesh_instance.is_valid()) {
 		_debug_mesh_instance.set_transform(transform);
@@ -125,7 +125,7 @@ void DirectStaticBody::set_debug(bool enabled, World3D *world) {
 		_debug_mesh_instance.set_world(world);
 
 		const Transform3D transform =
-				PhysicsServer3D::get_singleton()->body_get_state(_body, PhysicsServer3D::BODY_STATE_TRANSFORM);
+				PhysicsServer3D::get_singleton()->body_get_state(_body, PhysicsServer3DEnums::BODY_STATE_TRANSFORM);
 		_debug_mesh_instance.set_transform(transform);
 
 		if (_shape.is_valid()) {
