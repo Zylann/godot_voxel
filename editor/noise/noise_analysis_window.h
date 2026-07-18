@@ -2,13 +2,14 @@
 #define NOISE_ANALYSIS_WINDOW_H
 
 #include "../../util/godot/classes/accept_dialog.h"
+#include "../../util/godot/macros.h"
 #include "../../util/noise/fast_noise_lite/fast_noise_lite.h"
 #include "noise_adapter.h"
 
-class SpinBox;
-class LineEdit;
-class ProgressBar;
-class OptionButton;
+ZN_GODOT_FORWARD_DECLARE(class SpinBox)
+ZN_GODOT_FORWARD_DECLARE(class LineEdit)
+ZN_GODOT_FORWARD_DECLARE(class ProgressBar)
+ZN_GODOT_FORWARD_DECLARE(class OptionButton)
 
 namespace zylann {
 
