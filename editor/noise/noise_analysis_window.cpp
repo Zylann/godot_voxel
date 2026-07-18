@@ -345,7 +345,8 @@ void ZN_NoiseAnalysisWindow::_process() {
 	}
 
 	_results.maximum_derivative = math::max(max_derivative, _results.maximum_derivative);
-	_results.maximum_derivative_per_step_length.write[_current_step] = Vector2(step_length, max_derivative);
+	Span<Vector2> max_derivative_per_step_length = to_span(_results.maximum_derivative_per_step_length);
+	max_derivative_per_step_length[_current_step] = Vector2(step_length, max_derivative);
 
 	++_current_step;
 
@@ -354,7 +355,7 @@ void ZN_NoiseAnalysisWindow::_process() {
 	if (_current_step >= _analysis_params.step_count) {
 		set_process(false);
 
-		_chart_view->set_points(to_span(_results.maximum_derivative_per_step_length));
+		_chart_view->set_points(max_derivative_per_step_length);
 		_chart_view->auto_fit_view(Vector2(0.1, 0.1));
 
 		_minimum_value_line_edit->set_text(String::num_real(_results.minimum_value));

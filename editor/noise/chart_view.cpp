@@ -1,5 +1,6 @@
 #include "chart_view.h"
 #include "../../util/godot/classes/line_2d.h"
+#include "../../util/godot/core/packed_arrays.h"
 #include "../../util/godot/editor_scale.h"
 #include "../../util/godot/string_names.h"
 #include "../../util/math/funcs.h"
@@ -18,10 +19,7 @@ ZN_ChartView::ZN_ChartView() {
 
 void ZN_ChartView::set_points(Span<const Vector2> points) {
 	_points.resize(points.size());
-	for (size_t i = 0; i < points.size(); ++i) {
-		_points.write[i] = points[i];
-	}
-
+	points.copy_to(to_span(_points));
 	queue_redraw();
 }
 
@@ -99,8 +97,10 @@ void ZN_ChartView::on_draw() {
 	if (_visual_points.size() != _points.size()) {
 		_visual_points.resize(_points.size());
 	}
+	// Note, writing to an index has different syntax between Godot core and GDExtensions
+	Span<Vector2> visual_points = to_span(_visual_points);
 	for (int i = 0; i < _points.size(); ++i) {
-		_visual_points.write[i] = m.xform(_points[i]);
+		visual_points[i] = m.xform(_points[i]);
 	}
 
 	// draw_polyline(_visual_points, line_color, 2.0, true);
