@@ -159,7 +159,7 @@ public:
 			debug_profiler_times.clear();
 		}
 
-		inline void add_execution_time(uint32_t execution_map_index, uint32_t time) {
+		inline void add_execution_time(const uint32_t execution_map_index, const uint32_t time) {
 #if DEBUG_ENABLED
 			CRASH_COND(execution_map_index >= debug_profiler_times.size());
 #endif
