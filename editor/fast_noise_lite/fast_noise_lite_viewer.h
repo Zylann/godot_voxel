@@ -5,6 +5,9 @@
 #include "../../util/godot/macros.h"
 #include "../../util/noise/fast_noise_lite/fast_noise_lite.h"
 
+// Required in header for GDExtension builds, due to how virtual methods are implemented
+#include "../../util/godot/classes/input_event.h"
+
 ZN_GODOT_FORWARD_DECLARE(class TextureRect)
 ZN_GODOT_FORWARD_DECLARE(class PopupMenu)
 
