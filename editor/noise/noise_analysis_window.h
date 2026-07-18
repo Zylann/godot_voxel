@@ -21,7 +21,9 @@ class ZN_NoiseAnalysisWindow : public AcceptDialog {
 public:
 	ZN_NoiseAnalysisWindow();
 
+#ifdef VOXEL_ENABLE_FAST_NOISE_2
 	void set_noise(Ref<FastNoise2> noise);
+#endif
 	void set_noise(Ref<ZN_FastNoiseLite> noise);
 
 private:

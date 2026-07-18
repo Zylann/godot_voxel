@@ -162,9 +162,11 @@ ZN_NoiseAnalysisWindow::ZN_NoiseAnalysisWindow() {
 	add_child(vbox_container);
 }
 
+#ifdef VOXEL_ENABLE_FAST_NOISE_2
 void ZN_NoiseAnalysisWindow::set_noise(Ref<FastNoise2> noise) {
 	_adapter.set(noise);
 }
+#endif
 
 void ZN_NoiseAnalysisWindow::set_noise(Ref<ZN_FastNoiseLite> noise) {
 	_adapter.set(noise);
@@ -242,7 +244,7 @@ void ZN_NoiseAnalysisWindow::_notification(int p_what) {
 		case NOTIFICATION_VISIBILITY_CHANGED:
 			if (!is_visible()) {
 				// Release reference when the window is closed
-				set_noise(Ref<FastNoise2>());
+				set_noise(Ref<ZN_FastNoiseLite>());
 			}
 			break;
 

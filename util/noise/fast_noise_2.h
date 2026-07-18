@@ -1,6 +1,10 @@
 #ifndef VOXEL_FAST_NOISE_2_H
 #define VOXEL_FAST_NOISE_2_H
 
+#ifndef VOXEL_ENABLE_FAST_NOISE_2
+#error "FastNoise2 is disabled, it shouldn't be #included"
+#endif
+
 #include "../containers/span.h"
 #include "../math/interval.h"
 
