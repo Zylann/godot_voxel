@@ -6,7 +6,7 @@
 
 namespace zylann {
 
-ChartView::ChartView() {
+ZN_ChartView::ZN_ChartView() {
 	_line_renderer = memnew(Line2D);
 	add_child(_line_renderer);
 
@@ -16,7 +16,7 @@ ChartView::ChartView() {
 	_view_max = Vector2(1, 1);
 }
 
-void ChartView::set_points(Span<const Vector2> points) {
+void ZN_ChartView::set_points(Span<const Vector2> points) {
 	_points.resize(points.size());
 	for (size_t i = 0; i < points.size(); ++i) {
 		_points.write[i] = points[i];
@@ -25,7 +25,7 @@ void ChartView::set_points(Span<const Vector2> points) {
 	queue_redraw();
 }
 
-void ChartView::auto_fit_view(Vector2 margin_ratios) {
+void ZN_ChartView::auto_fit_view(Vector2 margin_ratios) {
 	if (_points.size() > 0) {
 		Vector2 min_point = _points[0];
 		Vector2 max_point = min_point;
@@ -47,7 +47,7 @@ void ChartView::auto_fit_view(Vector2 margin_ratios) {
 	queue_redraw();
 }
 
-void ChartView::_notification(int p_what) {
+void ZN_ChartView::_notification(int p_what) {
 	switch (p_what) {
 		case NOTIFICATION_DRAW:
 			_draw();
@@ -62,7 +62,7 @@ void ChartView::_notification(int p_what) {
 	}
 }
 
-void ChartView::_draw() {
+void ZN_ChartView::_draw() {
 	const Color line_color(Color(0.8, 0.8, 0.8, 1.0));
 	const Color x_axis_color(Color(1.0, 1.0, 1.0, 0.5));
 	const Color y_axis_color(Color(1.0, 1.0, 1.0, 0.5));
@@ -125,10 +125,24 @@ void ChartView::_draw() {
 
 	const int font_height = font->get_height(font_size);
 	const Vector2 text_offset(2.f * EDSCALE, -2.f * EDSCALE);
-	draw_string(font, Vector2(0, font_height) + text_offset, String::num_real(_view_max.y), HORIZONTAL_ALIGNMENT_LEFT,
-			-1.f, font_size, text_color);
-	draw_string(font, Vector2(0, view_size_pixels.y) + text_offset, String::num_real(_view_min.y),
-			HORIZONTAL_ALIGNMENT_LEFT, -1.f, font_size, text_color);
+	draw_string(
+			font,
+			Vector2(0, font_height) + text_offset,
+			String::num_real(_view_max.y),
+			HORIZONTAL_ALIGNMENT_LEFT,
+			-1.f,
+			font_size,
+			text_color
+	);
+	draw_string(
+			font,
+			Vector2(0, view_size_pixels.y) + text_offset,
+			String::num_real(_view_min.y),
+			HORIZONTAL_ALIGNMENT_LEFT,
+			-1.f,
+			font_size,
+			text_color
+	);
 
 	// TODO Draw hovered value
 }

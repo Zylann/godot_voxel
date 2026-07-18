@@ -2,6 +2,8 @@
 #define NOISE_ANALYSIS_WINDOW_H
 
 #include "../../util/noise/fast_noise_2.h"
+#include "../../util/noise/fast_noise_lite/fast_noise_lite.h"
+#include "../noise/noise_adapter.h"
 #include <scene/gui/dialogs.h>
 
 class SpinBox;
@@ -11,16 +13,17 @@ class OptionButton;
 
 namespace zylann {
 
-class ChartView;
+class ZN_ChartView;
 
 // This is an experimental tool to check noise properties empirically,
 // by sampling it a lot of times and seeing what the minimum and maximum values are.
-class NoiseAnalysisWindow : public AcceptDialog {
-	GDCLASS(NoiseAnalysisWindow, AcceptDialog)
+class ZN_NoiseAnalysisWindow : public AcceptDialog {
+	GDCLASS(ZN_NoiseAnalysisWindow, AcceptDialog)
 public:
-	NoiseAnalysisWindow();
+	ZN_NoiseAnalysisWindow();
 
 	void set_noise(Ref<FastNoise2> noise);
+	void set_noise(Ref<ZN_FastNoiseLite> noise);
 
 private:
 	enum Dimension { //
@@ -35,7 +38,7 @@ private:
 
 	static void _bind_methods();
 
-	Ref<FastNoise2> _noise;
+	NoiseAdapter _adapter;
 
 	OptionButton *_dimension_option_button = nullptr;
 	SpinBox *_step_count_spinbox = nullptr;
@@ -44,7 +47,7 @@ private:
 	SpinBox *_area_size_spinbox = nullptr;
 	SpinBox *_samples_count_spinbox = nullptr;
 
-	ChartView *_chart_view = nullptr;
+	ZN_ChartView *_chart_view = nullptr;
 
 	ProgressBar *_progress_bar = nullptr;
 

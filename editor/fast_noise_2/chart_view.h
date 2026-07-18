@@ -10,10 +10,10 @@ class Line2D;
 
 namespace zylann {
 
-class ChartView : public Control {
-	GDCLASS(ChartView, Control)
+class ZN_ChartView : public Control {
+	GDCLASS(ZN_ChartView, Control)
 public:
-	ChartView();
+	ZN_ChartView();
 
 	void set_points(Span<const Vector2> points);
 	void auto_fit_view(Vector2 margin_ratios);

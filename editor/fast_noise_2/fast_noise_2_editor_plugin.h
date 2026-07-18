@@ -5,7 +5,7 @@
 
 namespace zylann {
 
-class NoiseAnalysisWindow;
+class ZN_NoiseAnalysisWindow;
 
 class FastNoise2EditorPlugin : public zylann::godot::ZN_EditorPlugin {
 	GDCLASS(FastNoise2EditorPlugin, zylann::godot::ZN_EditorPlugin)
@@ -23,7 +23,7 @@ private:
 
 	static void _bind_methods() {}
 
-	NoiseAnalysisWindow *_noise_analysis_window = nullptr;
+	ZN_NoiseAnalysisWindow *_noise_analysis_window = nullptr;
 };
 
 } // namespace zylann

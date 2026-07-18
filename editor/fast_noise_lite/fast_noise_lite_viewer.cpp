@@ -2,8 +2,10 @@
 #include "../../util/godot/classes/image.h"
 #include "../../util/godot/classes/image_texture.h"
 #include "../../util/godot/classes/node.h"
+#include "../../util/godot/classes/popup_menu.h"
 #include "../../util/godot/classes/texture_rect.h"
 #include "../../util/godot/editor_scale.h"
+#include "../fast_noise_2/noise_analysis_window.h"
 
 #ifdef ZN_GODOT
 #include "../../util/godot/core/callable_mp.h"
@@ -42,6 +44,8 @@ void ZN_FastNoiseLiteViewer::set_noise(Ref<ZN_FastNoiseLite> noise) {
 		set_process(false);
 		_time_before_update = -1.f;
 	}
+
+	update_context_menu();
 }
 
 void ZN_FastNoiseLiteViewer::set_noise_gradient(Ref<ZN_FastNoiseLiteGradient> noise_gradient) {
@@ -64,6 +68,58 @@ void ZN_FastNoiseLiteViewer::set_noise_gradient(Ref<ZN_FastNoiseLiteGradient> no
 	} else {
 		set_process(false);
 		_time_before_update = -1.f;
+	}
+
+	update_context_menu();
+}
+
+void ZN_FastNoiseLiteViewer::update_context_menu() {
+	if (_noise.is_valid()) {
+		if (_context_menu == nullptr) {
+			_context_menu = memnew(PopupMenu);
+			_context_menu->add_item("Analyze...", MENU_ANALYZE);
+			_context_menu->connect(
+					"id_pressed", callable_mp(this, &ZN_FastNoiseLiteViewer::on_context_menu_id_pressed)
+			);
+			add_child(_context_menu);
+		}
+	} else {
+		if (_context_menu != nullptr) {
+			_context_menu->queue_free();
+			_context_menu = nullptr;
+		}
+	}
+}
+
+#ifdef ZN_GODOT
+void ZN_FastNoiseLiteViewer::gui_input(const Ref<InputEvent> &p_event) {
+#elif defined(ZN_GODOT_EXTENSION)
+void ZN_FastNoiseLiteViewer::_gui_input(const Ref<InputEvent> &p_event) {
+#endif
+	if (_context_menu == nullptr) {
+		return;
+	}
+	Ref<InputEventMouseButton> mb = p_event;
+	if (mb.is_valid()) {
+		if (mb->get_button_index() == MouseButton::RIGHT && mb->is_pressed()) {
+			_context_menu->set_position(mb->get_global_position());
+			_context_menu->popup();
+		}
+	}
+}
+
+void ZN_FastNoiseLiteViewer::on_context_menu_id_pressed(int id) {
+	switch (id) {
+		case MENU_ANALYZE:
+			ERR_FAIL_COND(_noise_analysis_window == nullptr);
+			ERR_FAIL_COND(_noise.is_null());
+			_noise_analysis_window->set_noise(_noise);
+			_noise_analysis_window->popup_centered();
+			break;
+
+		default:
+			ERR_PRINT(String("Unknown ID pressed: {0}").format(varray(id)));
+			break;
 	}
 }
 

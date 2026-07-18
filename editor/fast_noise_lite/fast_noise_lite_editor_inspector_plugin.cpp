@@ -16,6 +16,7 @@ void ZN_FastNoiseLiteEditorInspectorPlugin::_zn_parse_begin(Object *p_object) {
 
 		ZN_FastNoiseLiteViewer *viewer = memnew(ZN_FastNoiseLiteViewer);
 		viewer->set_noise(noise);
+		viewer->set_noise_analysis_window(_noise_analysis_window);
 		add_custom_control(viewer);
 		return;
 	}

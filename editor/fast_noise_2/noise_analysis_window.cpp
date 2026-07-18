@@ -13,7 +13,7 @@
 
 namespace zylann {
 
-NoiseAnalysisWindow::NoiseAnalysisWindow() {
+ZN_NoiseAnalysisWindow::ZN_NoiseAnalysisWindow() {
 	set_title(TTR("Noise Analysis"));
 	set_min_size(Vector2(300.f * EDSCALE, 0));
 
@@ -78,7 +78,7 @@ NoiseAnalysisWindow::NoiseAnalysisWindow() {
 
 			_area_size_spinbox = memnew(SpinBox);
 			_area_size_spinbox->set_min(0.0);
-			_area_size_spinbox->set_max(100000.0);
+			_area_size_spinbox->set_max(1'000'000.0);
 			_area_size_spinbox->set_step(1.0);
 			_area_size_spinbox->set_value(4000);
 			gc1->add_child(_area_size_spinbox);
@@ -90,9 +90,9 @@ NoiseAnalysisWindow::NoiseAnalysisWindow() {
 
 			_samples_count_spinbox = memnew(SpinBox);
 			_samples_count_spinbox->set_min(1);
-			_samples_count_spinbox->set_max(100000);
+			_samples_count_spinbox->set_max(1'000'000);
 			_samples_count_spinbox->set_step(1);
-			_samples_count_spinbox->set_value(10000);
+			_samples_count_spinbox->set_value(10'000);
 			gc1->add_child(_samples_count_spinbox);
 		}
 		vbox_container->add_child(gc1);
@@ -100,7 +100,7 @@ NoiseAnalysisWindow::NoiseAnalysisWindow() {
 	{
 		_calculate_button = memnew(Button);
 		_calculate_button->set_text(TTR("Calculate"));
-		_calculate_button->connect("pressed", callable_mp(this, &NoiseAnalysisWindow::_on_calculate_button_pressed));
+		_calculate_button->connect("pressed", callable_mp(this, &ZN_NoiseAnalysisWindow::_on_calculate_button_pressed));
 		vbox_container->add_child(_calculate_button);
 	}
 
@@ -119,7 +119,7 @@ NoiseAnalysisWindow::NoiseAnalysisWindow() {
 		vbox_container->add_child(label);
 	}
 
-	_chart_view = memnew(ChartView);
+	_chart_view = memnew(ZN_ChartView);
 	_chart_view->set_custom_minimum_size(Vector2(0, 150.0 * EDSCALE));
 	_chart_view->set_v_size_flags(Control::SIZE_EXPAND_FILL);
 	vbox_container->add_child(_chart_view);
@@ -163,8 +163,12 @@ NoiseAnalysisWindow::NoiseAnalysisWindow() {
 	add_child(vbox_container);
 }
 
-void NoiseAnalysisWindow::set_noise(Ref<FastNoise2> noise) {
-	_noise = noise;
+void ZN_NoiseAnalysisWindow::set_noise(Ref<FastNoise2> noise) {
+	_adapter.set(noise);
+}
+
+void ZN_NoiseAnalysisWindow::set_noise(Ref<ZN_FastNoiseLite> noise) {
+	_adapter.set(noise);
 }
 
 namespace {
@@ -178,8 +182,8 @@ StdVector<Vector3> &get_tls_precomputed_unit_vectors_3d() {
 }
 } // namespace
 
-void NoiseAnalysisWindow::_on_calculate_button_pressed() {
-	ERR_FAIL_COND(_noise.is_null());
+void ZN_NoiseAnalysisWindow::_on_calculate_button_pressed() {
+	ERR_FAIL_COND(_adapter.is_null());
 
 	_analysis_params.dimension = Dimension(_dimension_option_button->get_selected_id());
 	ERR_FAIL_INDEX(_analysis_params.dimension, _DIMENSION_COUNT);
@@ -196,9 +200,9 @@ void NoiseAnalysisWindow::_on_calculate_button_pressed() {
 	_results.maximum_derivative_per_step_length.resize(_analysis_params.step_count);
 	_results.maximum_derivative = 0.f;
 	if (_analysis_params.dimension == DIMENSION_2D) {
-		_results.minimum_value = _noise->get_noise_2d_single(Vector2());
+		_results.minimum_value = _adapter.get_noise_2d(Vector2());
 	} else {
-		_results.minimum_value = _noise->get_noise_3d_single(Vector3());
+		_results.minimum_value = _adapter.get_noise_3d(Vector3());
 	}
 	_results.maximum_value = _results.minimum_value;
 
@@ -230,7 +234,7 @@ void NoiseAnalysisWindow::_on_calculate_button_pressed() {
 	set_process(true);
 }
 
-void NoiseAnalysisWindow::_notification(int p_what) {
+void ZN_NoiseAnalysisWindow::_notification(int p_what) {
 	switch (p_what) {
 		case NOTIFICATION_PROCESS:
 			_process();
@@ -248,8 +252,8 @@ void NoiseAnalysisWindow::_notification(int p_what) {
 	}
 }
 
-void NoiseAnalysisWindow::_process() {
-	ERR_FAIL_COND(_noise.is_null());
+void ZN_NoiseAnalysisWindow::_process() {
+	ERR_FAIL_COND(_adapter.is_null());
 	ERR_FAIL_COND(_analysis_params.step_count <= 0);
 
 	if (!is_processing()) {
@@ -288,7 +292,7 @@ void NoiseAnalysisWindow::_process() {
 			y_cache[i] = y;
 		}
 
-		_noise->get_noise_2d_series(to_span_const(x_cache), to_span_const(y_cache), to_span(noise_cache));
+		_adapter.get_noise_2d_series(to_span_const(x_cache), to_span_const(y_cache), to_span(noise_cache));
 
 		StdVector<Vector2> &precomputed_unit_vectors_2d = get_tls_precomputed_unit_vectors_2d();
 
@@ -298,7 +302,7 @@ void NoiseAnalysisWindow::_process() {
 			y_cache[i] += u.y;
 		}
 
-		_noise->get_noise_2d_series(to_span_const(x_cache), to_span_const(y_cache), to_span(noise_cache2));
+		_adapter.get_noise_2d_series(to_span_const(x_cache), to_span_const(y_cache), to_span(noise_cache2));
 
 	} else {
 		// 3D
@@ -313,7 +317,7 @@ void NoiseAnalysisWindow::_process() {
 
 		StdVector<Vector3> &precomputed_unit_vectors_3d = get_tls_precomputed_unit_vectors_3d();
 
-		_noise->get_noise_3d_series(
+		_adapter.get_noise_3d_series(
 				to_span_const(x_cache), to_span_const(y_cache), to_span_const(z_cache), to_span(noise_cache)
 		);
 
@@ -324,7 +328,7 @@ void NoiseAnalysisWindow::_process() {
 			z_cache[i] += u.z;
 		}
 
-		_noise->get_noise_3d_series(
+		_adapter.get_noise_3d_series(
 				to_span_const(x_cache), to_span_const(y_cache), to_span_const(z_cache), to_span(noise_cache2)
 		);
 	}
@@ -358,6 +362,6 @@ void NoiseAnalysisWindow::_process() {
 	}
 }
 
-void NoiseAnalysisWindow::_bind_methods() {}
+void ZN_NoiseAnalysisWindow::_bind_methods() {}
 
 } // namespace zylann

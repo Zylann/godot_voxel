@@ -5,6 +5,8 @@
 
 namespace zylann {
 
+class ZN_NoiseAnalysisWindow;
+
 class ZN_FastNoiseLiteEditorPlugin : public zylann::godot::ZN_EditorPlugin {
 	GDCLASS(ZN_FastNoiseLiteEditorPlugin, zylann::godot::ZN_EditorPlugin)
 public:
@@ -14,8 +16,12 @@ protected:
 	String _zn_get_plugin_name() const override;
 
 private:
+	void _notification(int p_what);
+
 	// When compiling with GodotCpp, `_bind_methods` is not optional
 	static void _bind_methods() {}
+
+	ZN_NoiseAnalysisWindow *_noise_analysis_window = nullptr;
 };
 
 } // namespace zylann

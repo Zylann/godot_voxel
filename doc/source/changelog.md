@@ -12,6 +12,7 @@ Development - master branch
 
 - Improvements
     - Added compute shader caching (thanks to chalecampb #866)
+    - `ZN_FastNoiseLite`: added support for noise analysis window, formerly present only on `FastNoise2` (This is mainly a debug tool for internal development of graph generators).
 
 - Fixes
     - Extension: fixed crash when expanding plugin resources in the inspector and other similar actions involving previews (see https://github.com/godotengine/godot-cpp/pull/1928)
