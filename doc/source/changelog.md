@@ -12,7 +12,7 @@ Development - master branch
 
 - Improvements
     - Added compute shader caching (thanks to chalecampb #866)
-    - `ZN_FastNoiseLite`: added support for noise analysis window, formerly present only on `FastNoise2` (This is mainly a debug tool for internal development of graph generators).
+    - `ZN_FastNoiseLite`: Editor: added support for noise analysis window, formerly present only on `FastNoise2` (This is mainly a debug tool for internal development of graph generators).
     - Editor: range analysis debugging now also shows actual min/max on outputs connected to `SdfPreview` nodes. This is mainly to investigate internal bugs.
 
 - Fixes
@@ -21,6 +21,7 @@ Development - master branch
     - `VoxelBlockSerializer`: fixed incorrect serialization when using a compression mode. LZ4 mode was incorrectly writing the LZ4_BE header, which couldn't be deserialized (and still can't without manually replacing the header with LZ4), and ZSTD mode was producing LZ4 instead.
     - `VoxelBlockyModelFluid`: fixed fluid voxels below another fluid voxel were producing mesh collisions. They should never do because mesh collisions are for solid stuff.
     - `VoxelBoxMover`: fixed some cases where step climbing didn't trigger or made player intersect with blocks (thanks to help from NuclearPhoenixx #813)
+    - `VoxelGeneratorGraph`: fixed FastNoiseLite cellular noise range wasn't properly estimated when a fractal was used, leading to disappearing chunks at close range
     - `VoxelInstanceLibraryMultimeshItem`: fixed mesh LOD distances did not scale properly with `lod_index` when using `VoxelLodTerrain` with the `Octree` streaming system
     - `VoxelTool`: fixed `do_path` was sometimes generating `is_valid_block_position` errors
     - `VoxelToolBuffer`: `paste_masked_writable_list` is now implemented
