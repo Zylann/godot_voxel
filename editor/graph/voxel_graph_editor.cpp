@@ -334,6 +334,7 @@ void VoxelGraphEditor::set_voxel_node(VoxelNode *node) {
 	} else {
 		ZN_PRINT_VERBOSE(format("Reference node for VoxelGraph gizmos: {}", String(node->get_path())));
 		_debug_renderer.set_world(node->get_world_3d().ptr());
+		update_range_analysis_gizmo();
 	}
 }
 

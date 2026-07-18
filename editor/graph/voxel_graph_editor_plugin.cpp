@@ -150,7 +150,17 @@ void VoxelGraphEditorPlugin::_zn_edit(Object *p_object) {
 			}
 		}
 		_voxel_node.set(voxel_node);
-		_graph_editor->set_voxel_node(voxel_node);
+		// TODO Sometimes Godot doesn't give me the node anymore, it gets null, despite it still being selected in the
+		//      scene tree. But LOL NO because I selected a resource somehow that throws it off I guess??
+		//      This causes the in-scene preview gizmos (such as range analysis) to disappear for
+		//      no reason, and it drives me crazy when debugging bugs that are already painful to investigate.
+		//      It happens if you select a graph node, and then the graph's background (i.e editing the graph resource).
+		//      The only way to get non-null is to manually select the terrain node again in the scene tree.
+		//      So I workaround this by... never setting it to null. It absolutely sucks.
+		//      It shouldnt have pointer safety problems since we use an ObjectWeakRef.
+		if (voxel_node != nullptr) {
+			_graph_editor->set_voxel_node(voxel_node);
+		}
 	}
 
 	if (_graph_editor_window != nullptr) {
