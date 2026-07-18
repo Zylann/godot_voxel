@@ -3,6 +3,7 @@
 
 #include "../../util/containers/span.h"
 #include "../../util/godot/classes/control.h"
+#include "../../util/godot/core/packed_vector2_array.h"
 #include "../../util/godot/macros.h"
 
 ZN_GODOT_FORWARD_DECLARE(class Line2D)
