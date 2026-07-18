@@ -1,10 +1,13 @@
 #include "fast_noise_lite_viewer.h"
 #include "../../util/godot/classes/image.h"
 #include "../../util/godot/classes/image_texture.h"
+#include "../../util/godot/classes/input_event_mouse_button.h"
 #include "../../util/godot/classes/node.h"
 #include "../../util/godot/classes/popup_menu.h"
 #include "../../util/godot/classes/texture_rect.h"
+#include "../../util/godot/core/mouse_button.h"
 #include "../../util/godot/editor_scale.h"
+#include "../../util/string/format.h"
 #include "../noise/noise_analysis_window.h"
 
 #ifdef ZN_GODOT
@@ -101,7 +104,7 @@ void ZN_FastNoiseLiteViewer::_gui_input(const Ref<InputEvent> &p_event) {
 	}
 	Ref<InputEventMouseButton> mb = p_event;
 	if (mb.is_valid()) {
-		if (mb->get_button_index() == MouseButton::RIGHT && mb->is_pressed()) {
+		if (mb->get_button_index() == ZN_GODOT_MouseButton_RIGHT && mb->is_pressed()) {
 			_context_menu->set_position(mb->get_global_position());
 			_context_menu->popup();
 		}
@@ -118,7 +121,7 @@ void ZN_FastNoiseLiteViewer::on_context_menu_id_pressed(int id) {
 			break;
 
 		default:
-			ERR_PRINT(String("Unknown ID pressed: {0}").format(varray(id)));
+			ZN_PRINT_ERROR(format("Unknown ID pressed: {}", id));
 			break;
 	}
 }

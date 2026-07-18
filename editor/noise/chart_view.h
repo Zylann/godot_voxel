@@ -19,6 +19,9 @@ public:
 	void auto_fit_view(Vector2 margin_ratios);
 
 private:
+	// When compiling with GodotCpp, `_bind_methods` is not optional.
+	static void _bind_methods() {}
+
 	void _notification(int p_what);
 	void on_draw();
 

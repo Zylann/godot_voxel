@@ -170,6 +170,8 @@
 #include "editor/graph/voxel_range_analysis_dialog.h"
 #include "editor/mesh_sdf/voxel_mesh_sdf_viewer.h"
 #include "editor/multipass/voxel_generator_multipass_cache_viewer.h"
+#include "editor/noise/chart_view.h"
+#include "editor/noise/noise_analysis_window.h"
 #include "editor/spot_noise/spot_noise_editor_inspector_plugin.h"
 #include "editor/spot_noise/spot_noise_viewer.h"
 #include "editor/terrain/editor_property_aabb_min_max.h"
@@ -461,6 +463,7 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_internal_class<ZN_FastNoiseLiteEditorPlugin>();
 		ClassDB::register_internal_class<ZN_FastNoiseLiteEditorInspectorPlugin>();
 		ClassDB::register_internal_class<ZN_FastNoiseLiteViewer>();
+		ClassDB::register_internal_class<ZN_ChartView>();
 		ClassDB::register_internal_class<ZN_NoiseAnalysisWindow>();
 
 		ClassDB::register_internal_class<ZN_SpotNoiseEditorPlugin>();
