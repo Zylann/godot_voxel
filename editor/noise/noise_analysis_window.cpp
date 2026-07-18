@@ -1,6 +1,7 @@
 #include "noise_analysis_window.h"
 #include "../../util/containers/std_vector.h"
 #include "../../util/godot/classes/grid_container.h"
+#include "../../util/godot/classes/line_edit.h"
 #include "../../util/godot/classes/option_button.h"
 #include "../../util/godot/classes/progress_bar.h"
 #include "../../util/godot/classes/spin_box.h"
