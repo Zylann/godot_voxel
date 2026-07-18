@@ -2,7 +2,6 @@
 #define NOISE_ANALYSIS_WINDOW_H
 
 #include "../../util/godot/classes/accept_dialog.h"
-#include "../../util/noise/fast_noise_2.h"
 #include "../../util/noise/fast_noise_lite/fast_noise_lite.h"
 #include "noise_adapter.h"
 
