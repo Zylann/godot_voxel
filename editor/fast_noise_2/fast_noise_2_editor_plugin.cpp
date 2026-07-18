@@ -6,7 +6,7 @@
 #include "../../util/godot/classes/texture_rect.h"
 #include "../../util/godot/editor_scale.h"
 #include "../../util/noise/fast_noise_2.h"
-#include "noise_analysis_window.h"
+#include "../noise/noise_analysis_window.h"
 
 #include <core/core_string_names.h>
 

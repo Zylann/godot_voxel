@@ -3,7 +3,7 @@
 
 #include "../../util/noise/fast_noise_2.h"
 #include "../../util/noise/fast_noise_lite/fast_noise_lite.h"
-#include "../noise/noise_adapter.h"
+#include "noise_adapter.h"
 #include <scene/gui/dialogs.h>
 
 class SpinBox;

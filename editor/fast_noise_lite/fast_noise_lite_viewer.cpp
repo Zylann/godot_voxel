@@ -5,7 +5,7 @@
 #include "../../util/godot/classes/popup_menu.h"
 #include "../../util/godot/classes/texture_rect.h"
 #include "../../util/godot/editor_scale.h"
-#include "../fast_noise_2/noise_analysis_window.h"
+#include "../noise/noise_analysis_window.h"
 
 #ifdef ZN_GODOT
 #include "../../util/godot/core/callable_mp.h"
