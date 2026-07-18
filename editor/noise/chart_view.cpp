@@ -49,7 +49,7 @@ void ZN_ChartView::auto_fit_view(Vector2 margin_ratios) {
 void ZN_ChartView::_notification(int p_what) {
 	switch (p_what) {
 		case NOTIFICATION_DRAW:
-			_draw();
+			on_draw();
 			break;
 
 			// case NOTIFICATION_RESIZED:
@@ -61,7 +61,7 @@ void ZN_ChartView::_notification(int p_what) {
 	}
 }
 
-void ZN_ChartView::_draw() {
+void ZN_ChartView::on_draw() {
 	const Color line_color(Color(0.8, 0.8, 0.8, 1.0));
 	const Color x_axis_color(Color(1.0, 1.0, 1.0, 0.5));
 	const Color y_axis_color(Color(1.0, 1.0, 1.0, 0.5));

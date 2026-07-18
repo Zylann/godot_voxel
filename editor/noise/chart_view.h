@@ -3,8 +3,9 @@
 
 #include "../../util/containers/span.h"
 #include "../../util/godot/classes/control.h"
+#include "../../util/godot/macros.h"
 
-class Line2D;
+ZN_GODOT_FORWARD_DECLARE(class Line2D)
 
 namespace zylann {
 
@@ -18,8 +19,7 @@ public:
 
 private:
 	void _notification(int p_what);
-
-	void _draw();
+	void on_draw();
 
 private:
 	PackedVector2Array _points;
