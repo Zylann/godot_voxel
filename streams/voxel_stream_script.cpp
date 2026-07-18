@@ -10,7 +10,6 @@
 namespace zylann::voxel {
 
 void VoxelStreamScript::load_voxel_block(VoxelStream::VoxelQueryData &query_data) {
-	Variant output;
 	// Create a temporary wrapper so Godot can pass it to scripts
 	Ref<godot::VoxelBuffer> buffer_wrapper(memnew(
 			godot::VoxelBuffer(static_cast<godot::VoxelBuffer::Allocator>(query_data.voxel_buffer.get_allocator()))
