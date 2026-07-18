@@ -7,13 +7,14 @@
 #include "../../util/godot/classes/v_box_container.h"
 #include "../../util/godot/core/callable_mp.h"
 #include "../../util/godot/core/packed_arrays.h"
+#include "../../util/godot/core/string.h"
 #include "../../util/godot/editor_scale.h"
 #include "chart_view.h"
 
 namespace zylann {
 
 ZN_NoiseAnalysisWindow::ZN_NoiseAnalysisWindow() {
-	set_title(TTR("Noise Analysis"));
+	set_title(ZN_TTR("Noise Analysis"));
 	set_min_size(Vector2(300.f * EDSCALE, 0));
 
 	VBoxContainer *vbox_container = memnew(VBoxContainer);
@@ -24,18 +25,18 @@ ZN_NoiseAnalysisWindow::ZN_NoiseAnalysisWindow() {
 
 		{
 			Label *label = memnew(Label);
-			label->set_text(TTR("Dimension"));
+			label->set_text(ZN_TTR("Dimension"));
 			gc1->add_child(label);
 
 			_dimension_option_button = memnew(OptionButton);
-			_dimension_option_button->get_popup()->add_item(TTR("2D"), DIMENSION_2D);
-			_dimension_option_button->get_popup()->add_item(TTR("3D"), DIMENSION_3D);
+			_dimension_option_button->get_popup()->add_item(ZN_TTR("2D"), DIMENSION_2D);
+			_dimension_option_button->get_popup()->add_item(ZN_TTR("3D"), DIMENSION_3D);
 			_dimension_option_button->select(0);
 			gc1->add_child(_dimension_option_button);
 		}
 		{
 			Label *label = memnew(Label);
-			label->set_text(TTR("Step count"));
+			label->set_text(ZN_TTR("Step count"));
 			gc1->add_child(label);
 
 			_step_count_spinbox = memnew(SpinBox);
@@ -48,7 +49,7 @@ ZN_NoiseAnalysisWindow::ZN_NoiseAnalysisWindow() {
 		}
 		{
 			Label *label = memnew(Label);
-			label->set_text(TTR("Step minimum length"));
+			label->set_text(ZN_TTR("Step minimum length"));
 			gc1->add_child(label);
 
 			_step_minimum_length_spinbox = memnew(SpinBox);
@@ -60,7 +61,7 @@ ZN_NoiseAnalysisWindow::ZN_NoiseAnalysisWindow() {
 		}
 		{
 			Label *label = memnew(Label);
-			label->set_text(TTR("Step maximum length"));
+			label->set_text(ZN_TTR("Step maximum length"));
 			gc1->add_child(label);
 
 			_step_maximum_length_spinbox = memnew(SpinBox);
@@ -72,7 +73,7 @@ ZN_NoiseAnalysisWindow::ZN_NoiseAnalysisWindow() {
 		}
 		{
 			Label *label = memnew(Label);
-			label->set_text(TTR("Area size"));
+			label->set_text(ZN_TTR("Area size"));
 			gc1->add_child(label);
 
 			_area_size_spinbox = memnew(SpinBox);
@@ -84,7 +85,7 @@ ZN_NoiseAnalysisWindow::ZN_NoiseAnalysisWindow() {
 		}
 		{
 			Label *label = memnew(Label);
-			label->set_text(TTR("Samples count"));
+			label->set_text(ZN_TTR("Samples count"));
 			gc1->add_child(label);
 
 			_samples_count_spinbox = memnew(SpinBox);
@@ -98,7 +99,7 @@ ZN_NoiseAnalysisWindow::ZN_NoiseAnalysisWindow() {
 	}
 	{
 		_calculate_button = memnew(Button);
-		_calculate_button->set_text(TTR("Calculate"));
+		_calculate_button->set_text(ZN_TTR("Calculate"));
 		_calculate_button->connect("pressed", callable_mp(this, &ZN_NoiseAnalysisWindow::_on_calculate_button_pressed));
 		vbox_container->add_child(_calculate_button);
 	}
@@ -109,10 +110,10 @@ ZN_NoiseAnalysisWindow::ZN_NoiseAnalysisWindow() {
 
 	{
 		Label *label = memnew(Label);
-		label->set_text(TTR("Maximum derivative over step length*:"));
+		label->set_text(ZN_TTR("Maximum derivative over step length*:"));
 		label->set_tooltip_text(
-				TTR("Depending on the noise type, this measure can vary due to very small discontinuities, "
-					"so it may be interesting to try multiple step lengths, from shortest to longest.")
+				ZN_TTR("Depending on the noise type, this measure can vary due to very small discontinuities, "
+					   "so it may be interesting to try multiple step lengths, from shortest to longest.")
 		);
 		label->set_mouse_filter(Control::MOUSE_FILTER_STOP);
 		vbox_container->add_child(label);
@@ -129,7 +130,7 @@ ZN_NoiseAnalysisWindow::ZN_NoiseAnalysisWindow() {
 
 		{
 			Label *label = memnew(Label);
-			label->set_text(TTR("Minimum value"));
+			label->set_text(ZN_TTR("Minimum value"));
 			gc2->add_child(label);
 
 			_minimum_value_line_edit = memnew(LineEdit);
@@ -139,7 +140,7 @@ ZN_NoiseAnalysisWindow::ZN_NoiseAnalysisWindow() {
 		}
 		{
 			Label *label = memnew(Label);
-			label->set_text(TTR("Maximum value"));
+			label->set_text(ZN_TTR("Maximum value"));
 			gc2->add_child(label);
 
 			_maximum_value_line_edit = memnew(LineEdit);
@@ -148,7 +149,7 @@ ZN_NoiseAnalysisWindow::ZN_NoiseAnalysisWindow() {
 		}
 		{
 			Label *label = memnew(Label);
-			label->set_text(TTR("Maximum derivative"));
+			label->set_text(ZN_TTR("Maximum derivative"));
 			gc2->add_child(label);
 
 			_maximum_derivative_line_edit = memnew(LineEdit);
