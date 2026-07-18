@@ -1,10 +1,8 @@
-#ifndef CHART_VIEW_H
-#define CHART_VIEW_H
+#ifndef ZN_CHART_VIEW_H
+#define ZN_CHART_VIEW_H
 
 #include "../../util/containers/span.h"
-
-#include "scene/gui/control.h"
-#include <vector>
+#include "../../util/godot/classes/control.h"
 
 class Line2D;
 
@@ -33,4 +31,4 @@ private:
 
 } // namespace zylann
 
-#endif // CHART_VIEW_H
+#endif // ZN_CHART_VIEW_H

@@ -11,7 +11,7 @@
 #endif
 
 #elif defined(ZN_GODOT_EXTENSION)
-#include <godot_cpp/classes/item_list.hpp>
+#include <godot_cpp/classes/hinge_joint3d.hpp>
 using namespace godot;
 #endif
 

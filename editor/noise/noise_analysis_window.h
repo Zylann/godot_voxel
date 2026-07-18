@@ -1,10 +1,10 @@
 #ifndef NOISE_ANALYSIS_WINDOW_H
 #define NOISE_ANALYSIS_WINDOW_H
 
+#include "../../util/godot/classes/accept_dialog.h"
 #include "../../util/noise/fast_noise_2.h"
 #include "../../util/noise/fast_noise_lite/fast_noise_lite.h"
 #include "noise_adapter.h"
-#include <scene/gui/dialogs.h>
 
 class SpinBox;
 class LineEdit;

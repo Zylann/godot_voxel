@@ -1,15 +1,14 @@
 #include "noise_analysis_window.h"
 #include "../../util/containers/std_vector.h"
+#include "../../util/godot/classes/grid_container.h"
+#include "../../util/godot/classes/option_button.h"
+#include "../../util/godot/classes/progress_bar.h"
+#include "../../util/godot/classes/spin_box.h"
+#include "../../util/godot/classes/v_box_container.h"
 #include "../../util/godot/core/callable_mp.h"
 #include "../../util/godot/core/packed_arrays.h"
 #include "../../util/godot/editor_scale.h"
 #include "chart_view.h"
-
-#include <scene/gui/box_container.h>
-#include <scene/gui/grid_container.h>
-#include <scene/gui/option_button.h>
-#include <scene/gui/progress_bar.h>
-#include <scene/gui/spin_box.h>
 
 namespace zylann {
 
