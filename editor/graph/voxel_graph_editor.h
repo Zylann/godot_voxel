@@ -2,6 +2,7 @@
 #define VOXEL_GRAPH_EDITOR_H
 
 #include "../../generators/graph/voxel_generator_graph.h"
+#include "../../util/containers/std_vector.h"
 #include "../../util/godot/classes/control.h"
 #include "../../util/godot/classes/editor_undo_redo_manager.h"
 #include "../../util/godot/classes/graph_edit_connection.h"
@@ -9,6 +10,7 @@
 #include "../../util/godot/object_weak_ref.h"
 #include "../../util/math/vector2f.h"
 #include "graph_preview_mode.h"
+#include "voxel_graph_editor_node_preview_info.h"
 
 ZN_GODOT_NAMESPACE_BEGIN
 class GraphEdit;
@@ -80,6 +82,7 @@ private:
 
 	void schedule_preview_update();
 	void update_previews(bool with_live_update);
+	StdVector<VoxelGraphEditorNodePreviewInfo> get_slice_previews() const;
 	void update_slice_previews();
 	void update_range_analysis_previews();
 	void update_range_analysis_gizmo();

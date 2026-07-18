@@ -1137,6 +1137,86 @@ void VoxelGraphEditor::update_range_analysis_previews() {
 	ERR_FAIL_COND(!adapter.is_good());
 
 	const AABB aabb = _range_analysis_dialog->get_aabb();
+
+	// Compute actual ranges at outputs connected to preview nodes
+	StdUnorderedMap<uint32_t, math::Interval> actual_ranges;
+	{
+		StdVector<VoxelGraphEditorNodePreviewInfo> slice_preview_infos = get_slice_previews();
+
+		const Vector3i min_pos = to_vec3i(math::floor(aabb.position));
+		const Vector3i max_pos = to_vec3i(math::ceil(aabb.position + aabb.size));
+		const Vector3i res = max_pos - min_pos;
+		const uint64_t volume64 = Vector3iUtil::get_volume_u64(res);
+		const uint64_t max_volume = 256 * 256 * 256;
+
+		if (volume64 < max_volume) {
+			const uint32_t volume = static_cast<uint32_t>(volume64);
+			const uint32_t chunk_size = 256;
+			const uint32_t num_chunks = math::ceildiv(volume, chunk_size);
+			ZN_ASSERT_RETURN(num_chunks > 0);
+
+			StdVector<float> x_vec;
+			StdVector<float> y_vec;
+			StdVector<float> z_vec;
+
+			ZN_ASSERT_RETURN((num_chunks * chunk_size) >= volume);
+			const uint32_t last_chunk_size = (num_chunks * chunk_size) == volume ? chunk_size : volume % chunk_size;
+			const uint32_t last_chunk_index = num_chunks - 1;
+
+			Vector3i voxel_pos = min_pos;
+
+			for (uint32_t chunk_index = 0; chunk_index < num_chunks; ++chunk_index) {
+				const uint32_t rel_size = chunk_index < last_chunk_index ? chunk_size : last_chunk_size;
+
+				x_vec.resize(rel_size);
+				y_vec.resize(rel_size);
+				z_vec.resize(rel_size);
+
+				for (unsigned int rel_index = 0; rel_index < rel_size; ++rel_index) {
+					++voxel_pos.x;
+					if (voxel_pos.x == max_pos.x) {
+						voxel_pos.x = min_pos.x;
+						++voxel_pos.y;
+						if (voxel_pos.y == max_pos.y) {
+							voxel_pos.y = min_pos.y;
+							++voxel_pos.z;
+						}
+					}
+
+					x_vec[rel_index] = voxel_pos.x;
+					y_vec[rel_index] = voxel_pos.y;
+					z_vec[rel_index] = voxel_pos.z;
+				}
+
+				{
+					Span<float> x_coords = to_span(x_vec);
+					Span<float> y_coords = to_span(y_vec);
+					Span<float> z_coords = to_span(z_vec);
+
+					adapter.generate_set(x_coords, y_coords, z_coords);
+				}
+
+				const pg::Runtime::State &last_state = adapter.get_last_state_from_current_thread();
+
+				for (const VoxelGraphEditorNodePreviewInfo &info : slice_preview_infos) {
+					const pg::Runtime::Buffer &buffer = last_state.get_buffer(info.address);
+
+					ZN_ASSERT_CONTINUE(buffer.data != nullptr);
+					Span<const float> buffer_s(buffer.data, buffer.size);
+					ZN_ASSERT_CONTINUE(buffer_s.size() > 0);
+
+					math::Interval range = math::Interval::from_single_value(buffer_s[0]);
+					for (const float v : buffer_s) {
+						range.add_point(v);
+					}
+
+					math::Interval &accum_range = actual_ranges[info.address];
+					accum_range.add_interval(range);
+				}
+			}
+		}
+	}
+
 	adapter.debug_analyze_range(math::floor_to_int(aabb.position), math::floor_to_int(aabb.position + aabb.size));
 
 	const pg::Runtime::State &state = adapter.get_last_state_from_current_thread();
@@ -1157,7 +1237,7 @@ void VoxelGraphEditor::update_range_analysis_previews() {
 		// TODO Would be nice if GraphEdit's minimap would take such coloring into account...
 		node_view->set_modulate(greyed_out_color);
 
-		node_view->update_range_analysis_tooltips(adapter, state);
+		node_view->update_range_analysis_tooltips(adapter, state, actual_ranges);
 	}
 
 	// Highlight only nodes that will actually run.
@@ -1202,9 +1282,9 @@ void VoxelGraphEditor::update_range_analysis_gizmo() {
 	_debug_renderer.end();
 }
 
-void VoxelGraphEditor::update_slice_previews() {
+StdVector<VoxelGraphEditorNodePreviewInfo> VoxelGraphEditor::get_slice_previews() const {
 	GraphEditorAdapter adapter(_generator, _graph);
-	StdVector<VoxelGraphEditorNodePreview::PreviewInfo> previews;
+	StdVector<VoxelGraphEditorNodePreviewInfo> previews;
 
 	// Gather preview nodes
 	for (int i = 0; i < _graph_edit->get_child_count(); ++i) {
@@ -1220,7 +1300,7 @@ void VoxelGraphEditor::update_slice_previews() {
 			// Not connected?
 			continue;
 		}
-		VoxelGraphEditorNodePreview::PreviewInfo info;
+		VoxelGraphEditorNodePreviewInfo info;
 		info.control = node->get_preview();
 		if (!adapter.try_get_output_port_address(src, info.address)) {
 			// Not part of the compiled result
@@ -1230,6 +1310,12 @@ void VoxelGraphEditor::update_slice_previews() {
 		previews.push_back(info);
 	}
 
+	return previews;
+}
+
+void VoxelGraphEditor::update_slice_previews() {
+	StdVector<VoxelGraphEditorNodePreviewInfo> previews = get_slice_previews();
+	GraphEditorAdapter adapter(_generator, _graph);
 	VoxelGraphEditorNodePreview::update_previews(
 			adapter, to_span(previews), _node_preview_mode, _preview_scale, _preview_offset
 	);

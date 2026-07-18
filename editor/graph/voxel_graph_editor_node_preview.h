@@ -9,6 +9,7 @@
 #include "../../util/macros.h"
 #include "../../util/math/vector2f.h"
 #include "graph_preview_mode.h"
+#include "voxel_graph_editor_node_preview_info.h"
 
 ZN_GODOT_FORWARD_DECLARE(class TextureRect)
 
@@ -34,15 +35,9 @@ public:
 	void update_from_buffer(const pg::Runtime::Buffer &buffer);
 	void update_display_settings(const pg::VoxelGraphFunction &graph, uint32_t node_id);
 
-	struct PreviewInfo {
-		VoxelGraphEditorNodePreview *control;
-		uint32_t address;
-		uint32_t node_id;
-	};
-
 	static void update_previews(
 			GraphEditorAdapter &adapter,
-			Span<const PreviewInfo> previews,
+			Span<const VoxelGraphEditorNodePreviewInfo> previews,
 			const GraphEditorPreview::ViewMode view_mode,
 			const float transform_scale,
 			const Vector2f transform_offset

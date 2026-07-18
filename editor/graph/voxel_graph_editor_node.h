@@ -26,7 +26,11 @@ public:
 	void update_title(const pg::VoxelGraphFunction &graph);
 	void poll(const pg::VoxelGraphFunction &graph);
 
-	void update_range_analysis_tooltips(const GraphEditorAdapter &adapter, const pg::Runtime::State &state);
+	void update_range_analysis_tooltips(
+			const GraphEditorAdapter &adapter,
+			const pg::Runtime::State &state,
+			const StdUnorderedMap<uint32_t, math::Interval> &actual_ranges
+	);
 	void clear_range_analysis_tooltips();
 
 	void update_layout(const pg::VoxelGraphFunction &graph);

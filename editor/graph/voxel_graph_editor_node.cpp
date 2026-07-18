@@ -339,7 +339,8 @@ void VoxelGraphEditorNode::poll_params(const VoxelGraphFunction &graph) {
 
 void VoxelGraphEditorNode::update_range_analysis_tooltips(
 		const GraphEditorAdapter &adapter,
-		const pg::Runtime::State &state
+		const pg::Runtime::State &state,
+		const StdUnorderedMap<uint32_t, math::Interval> &actual_ranges
 ) {
 	for (unsigned int port_index = 0; port_index < _output_labels.size(); ++port_index) {
 		ProgramGraph::PortLocation loc;
@@ -350,8 +351,27 @@ void VoxelGraphEditorNode::update_range_analysis_tooltips(
 			continue;
 		}
 		const math::Interval range = state.get_range(address);
+		String text = String("Min: {0}\nMax: {1}").format(varray(range.min, range.max));
+
+		const auto actual_range_it = actual_ranges.find(address);
+		if (actual_range_it != actual_ranges.end()) {
+			const math::Interval actual_range = actual_range_it->second;
+
+			text += String("\nActual Min: {0}").format(varray(actual_range.min));
+			const float min_err = range.min - actual_range.min;
+			if (min_err > 0.f) {
+				text += String(" | ERROR: {0}").format(varray(min_err));
+			}
+
+			text += String("\nActual Max: {0}").format(varray(actual_range.max));
+			const float max_err = actual_range.max - range.max;
+			if (max_err > 0.f) {
+				text += String(" | ERROR: {0}").format(varray(max_err));
+			}
+		}
+
 		Control *label = _output_labels[port_index];
-		label->set_tooltip_text(String("Min: {0}\nMax: {1}").format(varray(range.min, range.max)));
+		label->set_tooltip_text(text);
 	}
 }
 

@@ -123,7 +123,7 @@ void VoxelGraphEditorNodePreview::update_display_settings(const pg::VoxelGraphFu
 
 void VoxelGraphEditorNodePreview::update_previews(
 		GraphEditorAdapter &adapter,
-		Span<const PreviewInfo> previews,
+		Span<const VoxelGraphEditorNodePreviewInfo> previews,
 		const GraphEditorPreview::ViewMode view_mode,
 		const float transform_scale,
 		const Vector2f transform_offset
@@ -183,7 +183,7 @@ void VoxelGraphEditorNodePreview::update_previews(
 	const pg::Runtime::State &last_state = adapter.get_last_state_from_current_thread();
 
 	// Update previews
-	for (const PreviewInfo &info : previews) {
+	for (const VoxelGraphEditorNodePreviewInfo &info : previews) {
 		const pg::Runtime::Buffer &buffer = last_state.get_buffer(info.address);
 		info.control->update_from_buffer(buffer);
 		info.control->update_display_settings(**adapter.graph, info.node_id);
