@@ -144,6 +144,7 @@ def get_sources(env, is_editor_build):
         "util/godot/direct_static_body.cpp",
         "util/godot/file_utils.cpp",
         "util/godot/shader_material_pool.cpp",
+        "util/godot/string_names.cpp",
 
         "util/io/*.cpp",
 

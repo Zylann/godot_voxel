@@ -1,6 +1,7 @@
 #include "chart_view.h"
 #include "../../util/godot/classes/line_2d.h"
 #include "../../util/godot/editor_scale.h"
+#include "../../util/godot/string_names.h"
 #include "../../util/math/funcs.h"
 
 namespace zylann {
@@ -70,7 +71,9 @@ void ZN_ChartView::on_draw() {
 
 	// Background
 
-	draw_style_box(get_theme_stylebox(SNAME("bg"), SNAME("Tree")), Rect2(Point2(), view_size_pixels));
+	const zylann::godot::StringNames &sn = zylann::godot::StringNames::get_singleton();
+
+	draw_style_box(get_theme_stylebox(sn.bg, sn.Tree), Rect2(Point2(), view_size_pixels));
 
 	if (_view_min.is_equal_approx(_view_max) || _points.size() == 0) {
 		return;
@@ -118,9 +121,9 @@ void ZN_ChartView::on_draw() {
 
 	// Markings
 
-	Ref<Font> font = get_theme_font(SNAME("font"), SNAME("Label"));
-	const int font_size = get_theme_font_size(SNAME("font_size"), SNAME("Label"));
-	const Color text_color = get_theme_color(SNAME("font_color"), SNAME("Editor"));
+	Ref<Font> font = get_theme_font(sn.font, sn.Label);
+	const int font_size = get_theme_font_size(sn.font_size, sn.Label);
+	const Color text_color = get_theme_color(sn.font_color, sn.Editor);
 
 	const int font_height = font->get_height(font_size);
 	const Vector2 text_offset(2.f * EDSCALE, -2.f * EDSCALE);

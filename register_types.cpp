@@ -44,6 +44,7 @@
 #include "terrain/voxel_save_completion_tracker.h"
 #include "terrain/voxel_viewer.h"
 #include "util/godot/check_ref_ownership.h"
+#include "util/godot/string_names.h"
 #include "util/macros.h"
 #include "util/noise/fast_noise_lite/fast_noise_lite.h"
 #include "util/noise/fast_noise_lite/fast_noise_lite_gradient.h"
@@ -403,6 +404,7 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		// Setup engine after classes are registered.
 		// This is necessary when using GDExtension because classes can't be instantiated until they are registered.
 
+		zylann::godot::StringNames::create_singleton();
 		VoxelMemoryPool::create_singleton();
 		VoxelStringNames::create_singleton();
 		pg::NodeTypeDB::create_singleton();
@@ -594,6 +596,8 @@ void uninitialize_voxel_module(ModuleInitializationLevel p_level) {
 
 		// Do this last as VoxelEngine might still be holding some refs to voxel blocks
 		VoxelMemoryPool::destroy_singleton();
+
+		zylann::godot::StringNames::destroy_singleton();
 
 #ifdef ZN_DEBUG_LOG_FILE_ENABLED
 		close_log_file();
