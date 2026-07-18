@@ -213,6 +213,8 @@ void ZN_NoiseAnalysisWindow::_on_calculate_button_pressed() {
 
 	_current_step = 0;
 
+	_rng.seed(131183);
+
 	// Precompute unit vectors
 	const int precomputed_vectors_count = 256;
 	if (_analysis_params.dimension == DIMENSION_2D) {
@@ -228,7 +230,7 @@ void ZN_NoiseAnalysisWindow::_on_calculate_button_pressed() {
 		for (int i = 0; i < precomputed_vectors_count; ++i) {
 			// TODO Uniform repartition of 3D vectors?
 			precomputed_unit_vectors_3d[i] =
-					Vector3(Math::random(-1.f, 1.f), Math::random(-1.f, 1.f), Math::random(-1.f, 1.f)).normalized();
+					Vector3(_rng.random(-1.0, 1.0), _rng.random(-1.0, 1.0), _rng.random(-1.0, 1.0)).normalized();
 		}
 	}
 
@@ -291,8 +293,8 @@ void ZN_NoiseAnalysisWindow::process() {
 	if (_analysis_params.dimension == DIMENSION_2D) {
 		// 2D
 		for (int i = 0; i < _analysis_params.samples_count; ++i) {
-			const float x = Math::random(-_analysis_params.area_size, _analysis_params.area_size);
-			const float y = Math::random(-_analysis_params.area_size, _analysis_params.area_size);
+			const float x = _rng.random(-_analysis_params.area_size, _analysis_params.area_size);
+			const float y = _rng.random(-_analysis_params.area_size, _analysis_params.area_size);
 			x_cache[i] = x;
 			y_cache[i] = y;
 		}
@@ -312,9 +314,9 @@ void ZN_NoiseAnalysisWindow::process() {
 	} else {
 		// 3D
 		for (int i = 0; i < _analysis_params.samples_count; ++i) {
-			const float x = Math::random(-_analysis_params.area_size, _analysis_params.area_size);
-			const float y = Math::random(-_analysis_params.area_size, _analysis_params.area_size);
-			const float z = Math::random(-_analysis_params.area_size, _analysis_params.area_size);
+			const float x = _rng.random(-_analysis_params.area_size, _analysis_params.area_size);
+			const float y = _rng.random(-_analysis_params.area_size, _analysis_params.area_size);
+			const float z = _rng.random(-_analysis_params.area_size, _analysis_params.area_size);
 			x_cache[i] = x;
 			y_cache[i] = y;
 			z_cache[i] = z;

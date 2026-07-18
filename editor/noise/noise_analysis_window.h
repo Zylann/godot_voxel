@@ -2,6 +2,7 @@
 #define NOISE_ANALYSIS_WINDOW_H
 
 #include "../../util/godot/classes/accept_dialog.h"
+#include "../../util/godot/core/random_pcg.h"
 #include "../../util/godot/macros.h"
 #include "../../util/noise/fast_noise_lite/fast_noise_lite.h"
 #include "noise_adapter.h"
@@ -79,6 +80,8 @@ private:
 	};
 
 	AnalysisResults _results;
+
+	RandomPCG _rng;
 };
 
 } // namespace zylann
