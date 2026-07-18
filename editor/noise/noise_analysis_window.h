@@ -36,7 +36,7 @@ private:
 
 	void _on_calculate_button_pressed();
 	void _notification(int p_what);
-	void _process();
+	void process();
 
 	static void _bind_methods();
 

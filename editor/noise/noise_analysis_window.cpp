@@ -240,7 +240,7 @@ void ZN_NoiseAnalysisWindow::_on_calculate_button_pressed() {
 void ZN_NoiseAnalysisWindow::_notification(int p_what) {
 	switch (p_what) {
 		case NOTIFICATION_PROCESS:
-			_process();
+			process();
 			break;
 
 		case NOTIFICATION_VISIBILITY_CHANGED:
@@ -255,7 +255,7 @@ void ZN_NoiseAnalysisWindow::_notification(int p_what) {
 	}
 }
 
-void ZN_NoiseAnalysisWindow::_process() {
+void ZN_NoiseAnalysisWindow::process() {
 	ERR_FAIL_COND(_adapter.is_null());
 	ERR_FAIL_COND(_analysis_params.step_count <= 0);
 
