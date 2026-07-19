@@ -1,14 +1,14 @@
 Instancing
 =============
 
-The module provides an instancing system with the [VoxelInstancer](api/VoxelInstancer.md) node. This node must be added as child of a voxel terrain. It allows to spawn 3D models on top of the terrain's surface, which can later be removed when modified.
+The module provides an instancing system with the [VoxelInstancer](api/VoxelInstancer.md) node. This node must be added as child of a voxel terrain. It supports spawning 3D models on top of the terrain's surface, which can later be removed when modified.
 
 It can spawn two different kinds of objects:
 
 - **Multimesh instances**. They can be extremely numerous, and can optionally have collision.
 - **Scene instances**. They use regular scenes, however it is much slower so should be tuned to low numbers.
 
-This system is primarily intented at natural spawning: grass, rocks, trees and other kinds of semi-random foliage. It is not suited for complex man-made structures like houses or villages, although scene instances can be used in some cases, if the available features suit your game.
+This system is primarily intended at natural spawning: grass, rocks, trees and other kinds of semi-random foliage. It is not suited for complex man-made structures like houses or villages, although scene instances can be used in some cases, if the available features suit your game.
 
 
 VoxelInstanceLibrary
