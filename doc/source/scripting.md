@@ -67,6 +67,7 @@ Here is how to make a bare bones generator usable with a blocky terrain. Make su
 Create a standalone script `my_generator.gd` with the following contents:
 
 ```gdscript
+@tool
 extends VoxelGeneratorScript
 
 const channel : int = VoxelBuffer.CHANNEL_TYPE
@@ -82,6 +83,9 @@ func _generate_block(buffer : VoxelBuffer, origin : Vector3i, lod : int) -> void
 	if origin.x == origin.z and origin.y < 1:
         buffer.fill(1, channel)
 ```
+
+!!! note
+    VoxelGeneratorScript subtypes do not necessarily need to be `@tool` scripts, but it is necessary if you make use of the "Run Stream in Editor" feature.
 
 In your terrain scene, add another script to a node, which will setup your generator when the game starts. Code might differ a bit depending on how you structure your scene.
 
@@ -108,7 +112,10 @@ Getting a similar result with smooth voxels like in the previous example is more
 
 First you have to change your mesher to `VoxelMesherTranvoxel`. Next, here is how you could generate ground with varying height:
 
-```
+```gdscript
+@tool
+extends VoxelGeneratorScript
+
 # Change channel to SDF
 const channel : int = VoxelBuffer.CHANNEL_SDF
 
