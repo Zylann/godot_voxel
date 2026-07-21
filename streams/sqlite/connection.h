@@ -60,6 +60,12 @@ public:
 	bool begin_transaction();
 	bool end_transaction();
 
+	// Rolls back a transaction that may still be active on this connection, and clears leftover error state on the
+	// transaction statements. Use this to recover a connection after `begin_transaction` or `end_transaction`
+	// failed, so it can be reused. Returns false if the connection could not be recovered, in which case it must not
+	// be reused. Safe to call when no transaction is active.
+	bool rollback_transaction();
+
 	bool save_block(const BlockLocation loc, const Span<const uint8_t> block_data, const BlockType type);
 
 	VoxelStream::ResultCode load_block(
@@ -102,6 +108,7 @@ private:
 	sqlite3_stmt *_load_version_statement = nullptr;
 	sqlite3_stmt *_begin_statement = nullptr;
 	sqlite3_stmt *_end_statement = nullptr;
+	sqlite3_stmt *_rollback_statement = nullptr;
 	sqlite3_stmt *_update_voxel_block_statement = nullptr;
 	sqlite3_stmt *_get_voxel_block_statement = nullptr;
 	sqlite3_stmt *_update_instance_block_statement = nullptr;

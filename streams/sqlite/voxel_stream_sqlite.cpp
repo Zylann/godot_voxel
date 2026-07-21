@@ -36,6 +36,18 @@ VoxelStreamSQLite::CoordinateFormat to_exposed_coordinate_format(BlockLocation::
 	return static_cast<VoxelStreamSQLite::CoordinateFormat>(format);
 }
 
+// Brings a connection back to a usable state after a transaction failed on it, and tells whether it may be reused.
+// A failed COMMIT notably leaves the transaction open, and SQLite has no nested transactions, so without this every
+// later `begin_transaction` on that connection would fail with "cannot start a transaction within a transaction".
+bool recover_after_failed_transaction(sqlite::Connection &con) {
+	if (con.rollback_transaction()) {
+		ZN_PRINT_VERBOSE("VoxelStreamSQLite: recovered connection after a failed transaction");
+		return true;
+	}
+	ZN_PRINT_ERROR("VoxelStreamSQLite: could not recover connection after a failed transaction, dropping it");
+	return false;
+}
+
 bool validate_range(Vector3i pos, unsigned int lod_index, const Box3i coordinate_range, unsigned int lod_count) {
 	if (!coordinate_range.contains(pos)) {
 		ZN_PRINT_ERROR(format("Block position {} is outside of supported range {}", pos, coordinate_range));
@@ -79,6 +91,8 @@ void VoxelStreamSQLite::set_database_path(String path) {
 		// Since Godot helpfully sets the property for every character typed in the inspector.
 		// So there can be lots of errors in the editor if you type it.
 		if (con.open(_globalized_connection_path.data(), to_internal_coordinate_format(_preferred_coordinate_format))) {
+			// Failure deliberately not handled: the connection is local and destroyed right after, so there is
+			// nothing to recover, and the path is changing anyway.
 			flush_cache_to_connection(&con);
 		}
 	}
@@ -142,7 +156,7 @@ void VoxelStreamSQLite::load_voxel_blocks(Span<VoxelStream::VoxelQueryData> p_bl
 
 	sqlite::Connection *con = con_res.connection;
 
-	const ScopeRecycle con_scope(this, con);
+	ScopeRecycle con_scope(this, con);
 
 	// Check the cache first
 	StdVector<unsigned int> blocks_to_load;
@@ -168,8 +182,10 @@ void VoxelStreamSQLite::load_voxel_blocks(Span<VoxelStream::VoxelQueryData> p_bl
 		return;
 	}
 
-	// TODO We should handle busy return codes
-	ERR_FAIL_COND(con->begin_transaction() == false);
+	if (con->begin_transaction() == false) {
+		con_scope.broken = !recover_after_failed_transaction(*con);
+		return;
+	}
 
 	for (unsigned int i = 0; i < blocks_to_load.size(); ++i) {
 		const unsigned int ri = blocks_to_load[i];
@@ -191,7 +207,9 @@ void VoxelStreamSQLite::load_voxel_blocks(Span<VoxelStream::VoxelQueryData> p_bl
 		q.result = res;
 	}
 
-	ERR_FAIL_COND(con->end_transaction() == false);
+	if (con->end_transaction() == false) {
+		con_scope.broken = !recover_after_failed_transaction(*con);
+	}
 }
 
 void VoxelStreamSQLite::save_voxel_blocks(Span<VoxelStream::VoxelQueryData> p_blocks) {
@@ -277,10 +295,12 @@ void VoxelStreamSQLite::load_instance_blocks(Span<VoxelStream::InstancesQueryDat
 	}
 
 	sqlite::Connection *con = con_res.connection;
-	const ScopeRecycle con_scope(this, con);
+	ScopeRecycle con_scope(this, con);
 
-	// TODO We should handle busy return codes
-	ERR_FAIL_COND(con->begin_transaction() == false);
+	if (con->begin_transaction() == false) {
+		con_scope.broken = !recover_after_failed_transaction(*con);
+		return;
+	}
 
 	for (unsigned int i = 0; i < blocks_to_load.size(); ++i) {
 		const unsigned int ri = blocks_to_load[i];
@@ -313,7 +333,9 @@ void VoxelStreamSQLite::load_instance_blocks(Span<VoxelStream::InstancesQueryDat
 		q.result = res;
 	}
 
-	ERR_FAIL_COND(con->end_transaction() == false);
+	if (con->end_transaction() == false) {
+		con_scope.broken = !recover_after_failed_transaction(*con);
+	}
 }
 
 void VoxelStreamSQLite::save_instance_blocks(Span<VoxelStream::InstancesQueryData> p_blocks) {
@@ -450,8 +472,10 @@ void VoxelStreamSQLite::flush_cache() {
 	}
 	sqlite::Connection *con = con_res.connection;
 
-	const ScopeRecycle con_scope(this, con);
-	flush_cache_to_connection(con);
+	ScopeRecycle con_scope(this, con);
+	if (!flush_cache_to_connection(con)) {
+		con_scope.broken = !recover_after_failed_transaction(*con);
+	}
 }
 
 void VoxelStreamSQLite::flush() {
@@ -459,12 +483,16 @@ void VoxelStreamSQLite::flush() {
 }
 
 // This function does not lock any mutex for internal use.
-void VoxelStreamSQLite::flush_cache_to_connection(sqlite::Connection *p_connection) {
+// Returns false if the transaction failed, in which case the connection may need to be recovered before reuse (see
+// `recover_after_failed_transaction`).
+bool VoxelStreamSQLite::flush_cache_to_connection(sqlite::Connection *p_connection) {
 	ZN_PROFILE_SCOPE();
 	ZN_PRINT_VERBOSE(format("VoxelStreamSQLite: Flushing cache ({} elements)", _cache.get_indicative_block_count()));
 
-	ERR_FAIL_COND(p_connection == nullptr);
-	ERR_FAIL_COND(p_connection->begin_transaction() == false);
+	ERR_FAIL_COND_V(p_connection == nullptr, false);
+	if (p_connection->begin_transaction() == false) {
+		return false;
+	}
 
 #ifdef VOXEL_ENABLE_INSTANCER
 	StdVector<uint8_t> &temp_data = get_tls_temp_block_data();
@@ -522,7 +550,11 @@ void VoxelStreamSQLite::flush_cache_to_connection(sqlite::Connection *p_connecti
 		// TODO Optimization: add a version of the query that can update both at once
 	});
 
-	ERR_FAIL_COND(p_connection->end_transaction() == false);
+	if (p_connection->end_transaction() == false) {
+		return false;
+	}
+
+	return true;
 }
 
 VoxelStreamSQLite::ConnectionResult VoxelStreamSQLite::get_connection() {
@@ -574,6 +606,12 @@ void VoxelStreamSQLite::recycle_connection(sqlite::Connection *con) {
 			return;
 		}
 	}
+	delete con;
+}
+
+void VoxelStreamSQLite::destroy_connection(sqlite::Connection *con) {
+	// Defined here rather than inline in the header, where `Connection` is only forward-declared and its destructor
+	// would therefore not run.
 	delete con;
 }
 

@@ -101,10 +101,15 @@ private:
 
 	ConnectionResult get_connection();
 	void recycle_connection(sqlite::Connection *con);
+	void destroy_connection(sqlite::Connection *con);
 
 	struct ScopeRecycle {
 		VoxelStreamSQLite *stream;
 		sqlite::Connection *connection;
+		// Set when the connection could not be recovered after a failed transaction. Such a connection may still be
+		// inside a transaction at the SQLite level, and would then fail every subsequent `begin_transaction` with
+		// "cannot start a transaction within a transaction", so it must not go back into the pool.
+		bool broken = false;
 
 		ScopeRecycle(VoxelStreamSQLite *p_stream, sqlite::Connection *p_connection) :
 				stream(p_stream), connection(p_connection) {
@@ -115,11 +120,15 @@ private:
 		}
 
 		~ScopeRecycle() {
-			stream->recycle_connection(connection);
+			if (broken) {
+				stream->destroy_connection(connection);
+			} else {
+				stream->recycle_connection(connection);
+			}
 		}
 	};
 
-	void flush_cache_to_connection(sqlite::Connection *p_connection);
+	bool flush_cache_to_connection(sqlite::Connection *p_connection);
 
 	static void _bind_methods();
 

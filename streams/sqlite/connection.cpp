@@ -156,6 +156,15 @@ struct TransactionScope {
 	}
 };
 
+// How long a connection waits for a lock held by another connection before giving up with SQLITE_BUSY.
+// Several connections of the same stream can be open on the same file at once (see VoxelStreamSQLite's connection
+// pool), so they do contend: a background streaming thread loading blocks, and a `flush()` called from game code,
+// for example. Transactions here are bounded (a cache flush writes at most VoxelStreamSQLite::CACHE_SIZE blocks), so
+// realistic waits are much shorter than this; the timeout is a safety net rather than an expected cost. It is kept
+// modest because `flush()` is callable from the main thread, where a long block would be a visible freeze, and
+// because exceeding it is no longer fatal: callers recover the connection with `rollback_transaction`.
+const int TRANSACTION_BUSY_TIMEOUT_MS = 1000;
+
 static bool prepare(sqlite3 *db, sqlite3_stmt **s, const char *sql) {
 	const int rc = sqlite3_prepare_v2(db, sql, -1, s, nullptr);
 	if (rc != SQLITE_OK) {
@@ -190,6 +199,10 @@ bool Connection::open(const char *fpath, const BlockLocation::CoordinateFormat p
 		close();
 		return false;
 	}
+
+	// Without a busy handler, any statement that can't take a lock held by another connection fails immediately
+	// instead of waiting for it. That notably affects COMMIT, which leaves the transaction open when it fails.
+	sqlite3_busy_timeout(_db, TRANSACTION_BUSY_TIMEOUT_MS);
 
 	// Note, SQLite uses UTF-8 encoding by default. We rely on that.
 	// https://www.sqlite.org/c3ref/open.html
@@ -265,6 +278,9 @@ bool Connection::open(const char *fpath, const BlockLocation::CoordinateFormat p
 		return false;
 	}
 	if (!prepare(db, &_end_statement, "END")) {
+		return false;
+	}
+	if (!prepare(db, &_rollback_statement, "ROLLBACK")) {
 		return false;
 	}
 	if (!prepare(db, &_load_meta_statement, "SELECT * FROM meta")) {
@@ -352,6 +368,7 @@ void Connection::close() {
 	}
 	finalize(_begin_statement);
 	finalize(_end_statement);
+	finalize(_rollback_statement);
 	finalize(_load_version_statement);
 	finalize(_update_voxel_block_statement);
 	finalize(_get_voxel_block_statement);
@@ -396,6 +413,37 @@ bool Connection::end_transaction() {
 		return false;
 	}
 	rc = sqlite3_step(_end_statement);
+	if (rc != SQLITE_DONE) {
+		ERR_PRINT(sqlite3_errmsg(_db));
+		return false;
+	}
+	return true;
+}
+
+bool Connection::rollback_transaction() {
+	if (_db == nullptr) {
+		return false;
+	}
+
+	// `sqlite3_reset` returns the error code of the *previous* evaluation of the statement, so a statement that
+	// failed once keeps reporting that same failure the next time it is used, even though the reset itself did
+	// happen. Clear that leftover state here, otherwise the recovered connection would spuriously fail its next
+	// `begin_transaction`.
+	sqlite3_reset(_begin_statement);
+	sqlite3_reset(_end_statement);
+
+	// No transaction is active, so there is nothing to roll back. Issuing ROLLBACK anyway would fail with
+	// "cannot rollback - no transaction is active".
+	if (sqlite3_get_autocommit(_db) != 0) {
+		return true;
+	}
+
+	int rc = sqlite3_reset(_rollback_statement);
+	if (rc != SQLITE_OK) {
+		ERR_PRINT(sqlite3_errmsg(_db));
+		return false;
+	}
+	rc = sqlite3_step(_rollback_statement);
 	if (rc != SQLITE_DONE) {
 		ERR_PRINT(sqlite3_errmsg(_db));
 		return false;

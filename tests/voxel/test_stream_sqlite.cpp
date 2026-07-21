@@ -1,9 +1,11 @@
 #include "test_stream_sqlite.h"
 #include "../../streams/sqlite/block_location.h"
+#include "../../streams/sqlite/connection.h"
 #include "../../streams/sqlite/voxel_stream_sqlite.h"
 #include "../../streams/voxel_block_serializer_gd.h"
 #include "../../util/containers/container_funcs.h"
 #include "../../util/godot/core/random_pcg.h"
+#include "../../util/godot/core/string.h"
 #include "../../util/math/conv.h"
 #include "../../util/math/vector3i.h"
 #include "../../util/profiling.h"
@@ -333,6 +335,40 @@ void test_voxel_stream_sqlite_key_blob80_encoding() {
 	test_voxel_stream_sqlite_key_blob80_encoding(max_pos, max_lod_index);
 	test_voxel_stream_sqlite_key_blob80_encoding(Vector3i(min_pos.x, max_pos.y, min_pos.z), max_lod_index);
 	test_voxel_stream_sqlite_key_blob80_encoding(Vector3i(max_pos.x, min_pos.y, max_pos.z), max_lod_index);
+}
+
+// When COMMIT fails (typically with SQLITE_BUSY, if another connection on the same file holds the write lock),
+// SQLite does not roll the transaction back: the connection is left inside it. Every later BEGIN on that connection
+// then fails with "cannot start a transaction within a transaction". Since connections are pooled and reused, such a
+// connection would keep failing for the rest of the session. This checks it can be brought back to a usable state.
+void test_voxel_stream_sqlite_transaction_recovery() {
+	using namespace sqlite;
+
+	zylann::testing::TestDirectory test_dir;
+	ZN_TEST_ASSERT(test_dir.is_valid());
+
+	const String database_path = test_dir.get_path().path_join("database.sqlite");
+	const StdString database_path_str = zylann::godot::to_std_string(database_path);
+
+	Connection con;
+	ZN_TEST_ASSERT(con.open(database_path_str.c_str(), BlockLocation::FORMAT_STRING_CSD));
+
+	// Rolling back with no transaction active is a no-op, not an error.
+	ZN_TEST_ASSERT(con.rollback_transaction());
+
+	ZN_TEST_ASSERT(con.begin_transaction());
+
+	// Reproduces the state a failed COMMIT leaves behind: still inside a transaction, so this must fail.
+	// Note this legitimately prints "cannot start a transaction within a transaction" while the test passes;
+	// it is the very error being reproduced here.
+	ZN_TEST_ASSERT(con.begin_transaction() == false);
+
+	ZN_TEST_ASSERT(con.rollback_transaction());
+
+	// The connection has to be usable again. This also covers `sqlite3_reset` returning the error code of the
+	// previous evaluation of a statement, which would otherwise make this first BEGIN fail once more.
+	ZN_TEST_ASSERT(con.begin_transaction());
+	ZN_TEST_ASSERT(con.end_transaction());
 }
 
 } // namespace zylann::voxel::tests
