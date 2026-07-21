@@ -51,7 +51,9 @@ public:
 	int get_used_channels_mask() const override;
 
 	void flush() override;
-	void flush_cache();
+	// Returns false if flushing did not complete. In that case, cached blocks are retained if the transaction could
+	// not start, but are lost if the commit itself failed.
+	bool flush_cache();
 
 	// Might improve query performance if saved data is very sparse (like when only edited blocks are saved).
 	void set_key_cache_enabled(bool enable);

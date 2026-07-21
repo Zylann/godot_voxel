@@ -148,11 +148,21 @@ inline bool read_block_location(
 
 struct TransactionScope {
 	Connection &db;
+	bool began;
 	TransactionScope(Connection &p_db) : db(p_db) {
-		db.begin_transaction();
+		began = db.begin_transaction();
+		if (!began) {
+			// Attempt to clear any leftover transaction state so the connection remains usable. The scoped
+			// queries will still run, just not atomically.
+			db.rollback_transaction();
+		}
 	}
 	~TransactionScope() {
-		db.end_transaction();
+		if (began && !db.end_transaction()) {
+			// A COMMIT that fails (SQLITE_BUSY notably) leaves the transaction open, which would make every
+			// later BEGIN on this connection fail. Roll it back so the connection can be reused.
+			db.rollback_transaction();
+		}
 	}
 };
 
