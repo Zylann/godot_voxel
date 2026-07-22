@@ -144,6 +144,18 @@ static void set_result_codes(Span<VoxelStream::InstancesQueryData> p_blocks, Vox
 }
 #endif
 
+// Only sets the given subset, leaving blocks already resolved from the cache untouched.
+template <typename TBlockQueryData>
+static void set_result_codes(
+		Span<TBlockQueryData> p_blocks,
+		const StdVector<unsigned int> &p_indices,
+		const VoxelStream::ResultCode code
+) {
+	for (const unsigned int i : p_indices) {
+		p_blocks[i].result = code;
+	}
+}
+
 void VoxelStreamSQLite::load_voxel_blocks(Span<VoxelStream::VoxelQueryData> p_blocks) {
 	ZN_PROFILE_SCOPE();
 
@@ -192,9 +204,7 @@ void VoxelStreamSQLite::load_voxel_blocks(Span<VoxelStream::VoxelQueryData> p_bl
 
 	if (con->begin_transaction() == false) {
 		ZN_PRINT_ERROR("VoxelStreamSQLite: failed to begin transaction, blocks were not loaded");
-		for (const unsigned int ri : blocks_to_load) {
-			p_blocks[ri].result = RESULT_ERROR;
-		}
+		set_result_codes(p_blocks, blocks_to_load, RESULT_ERROR);
 		con_scope.broken = !recover_after_failed_transaction(*con);
 		return;
 	}
@@ -318,9 +328,7 @@ void VoxelStreamSQLite::load_instance_blocks(Span<VoxelStream::InstancesQueryDat
 
 	if (con->begin_transaction() == false) {
 		ZN_PRINT_ERROR("VoxelStreamSQLite: failed to begin transaction, instance blocks were not loaded");
-		for (const unsigned int ri : blocks_to_load) {
-			out_blocks[ri].result = RESULT_ERROR;
-		}
+		set_result_codes(out_blocks, blocks_to_load, RESULT_ERROR);
 		con_scope.broken = !recover_after_failed_transaction(*con);
 		return;
 	}
