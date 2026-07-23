@@ -52,7 +52,7 @@ fn2_sources_arm = [
 env_fn2 = env_voxel.Clone()
 # In case we need common options for FastNoise2 we can add them here
 
-# Note: when compiling with clang-cl on Windows, `env.msvc` is still True because clang-cl behaves like an MSVC 
+# Note: when compiling with clang-cl on Windows, `env.msvc` is still True because clang-cl behaves like an MSVC
 # frontend. However, Clang is more picky and generates more warnings, so we use Clang options anyways.
 if env.msvc and not env["use_llvm"]:
     # Avoid a compiler bug in VS 2022 (doesn't occur in VS 2019).
@@ -68,7 +68,7 @@ else:
     # We compile with `-Wall`, but FastNoise2 does not, so a lot of pedantic things show up treated as errors
     env_fn2.Append(CXXFLAGS=["-Wno-parentheses"])
     # This one might be legitimate in SmartNode.cpp but we assume the devs got the `memset` right
-    env_fn2.Append(CXXFLAGS=["-Wno-class-memaccess"]) 
+    env_fn2.Append(CXXFLAGS=["-Wno-class-memaccess"])
     # Since may 2023 Godot build scripts warn heavily against variable name shadowing.
     # Example: Metadata.h NameDesc constructor, prevents from building because treated as error.
     # TODO This doesn't work because for some reason `-Wshadow` FOLLOWS this parameter in the command line, as if Godot
@@ -87,9 +87,8 @@ env_fn2_sse42 = env_fn2.Clone()
 env_fn2_avx2 = env_fn2.Clone()
 env_fn2_avx512 = env_fn2.Clone()
 env_fn2_arm = env_fn2.Clone()
-# TODO NEON?
 
-# Note: when compiling with clang-cl on Windows, `env.msvc` is still True because clang-cl behaves like an MSVC 
+# Note: when compiling with clang-cl on Windows, `env.msvc` is still True because clang-cl behaves like an MSVC
 # frontend. However, Clang is more picky about architecture, so we have to specify each option, which MSVC doesnt have.
 # Since Clang still allows to pass `-`style arguments, might as well use the non-MSVC path...
 if env.msvc and not env["use_llvm"]:
@@ -130,20 +129,16 @@ else: # Clang, GCC, AppleClang, Clang-Cl
 
 env_fn2.add_source_files(env.modules_sources, fn2_sources_common)
 env_fn2_scalar.add_source_files(env.modules_sources, fn2_sources_scalar)
-env_fn2_sse2.add_source_files(env.modules_sources, fn2_sources_sse2)
-env_fn2_sse3.add_source_files(env.modules_sources, fn2_sources_sse3)
-env_fn2_ssse3.add_source_files(env.modules_sources, fn2_sources_ssse3)
-env_fn2_sse41.add_source_files(env.modules_sources, fn2_sources_sse41)
-env_fn2_sse42.add_source_files(env.modules_sources, fn2_sources_sse42)
 
-# if env["platform"] == "android":
-#     # Both Android and IOS have ARM chips, but only android build tools have necessary headers
-#     env_fn2_arm.add_source_files(env.modules_sources, fn2_sources_arm)
+if env["arch"].startswith("x86"):
+	env_fn2_sse2.add_source_files(env.modules_sources, fn2_sources_sse2)
+	env_fn2_sse3.add_source_files(env.modules_sources, fn2_sources_sse3)
+	env_fn2_ssse3.add_source_files(env.modules_sources, fn2_sources_ssse3)
+	env_fn2_sse41.add_source_files(env.modules_sources, fn2_sources_sse41)
+	env_fn2_sse42.add_source_files(env.modules_sources, fn2_sources_sse42)
+	env_fn2_avx2.add_source_files(env.modules_sources, fn2_sources_avx2)
+	env_fn2_avx512.add_source_files(env.modules_sources, fn2_sources_avx512)
 
-# elif env["platform"] in ["windows", "linuxbsd", "osx"]:
-#     # AVX is supported on desktop only
-#     env_fn2_avx2.add_source_files(env.modules_sources, fn2_sources_avx2)
-#     env_fn2_avx512.add_source_files(env.modules_sources, fn2_sources_avx512)
-
-env_fn2_avx2.add_source_files(env.modules_sources, fn2_sources_avx2)
-env_fn2_avx512.add_source_files(env.modules_sources, fn2_sources_avx512)
+elif env["arch"].startswith("arm"):
+	# Both Android and IOS have ARM chips, but only android build tools have necessary headers
+	env_fn2_arm.add_source_files(env.modules_sources, fn2_sources_arm)
