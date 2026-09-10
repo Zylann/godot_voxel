@@ -7,6 +7,13 @@ At the moment, this module doesn't have a distinct release schedule, so this cha
 
 I try to minimize breaking changes, but there are usually a few in each release which I list in detail, so watch out for that section.
 
+1.7.1 dev - master branch
+-------------------------------
+
+- Improvements
+    - `VoxelGeneratorGraph`: Editor: added `Select` menu listing all named nodes
+
+
 1.7 - 20/08/2026 - tag `v1.7`
 -------------------------------
 

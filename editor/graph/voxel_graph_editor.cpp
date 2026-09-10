@@ -159,6 +159,18 @@ VoxelGraphEditor::VoxelGraphEditor() {
 			toolbar->add_child(menu_button);
 			_debug_menu_button = menu_button;
 		}
+		{
+			MenuButton *menu_button = memnew(MenuButton);
+			menu_button->set_text(ZN_TTR("Select"));
+			menu_button->set_switch_on_hover(true);
+			menu_button->connect("pressed", callable_mp(this, &Self::on_select_menu_pressed));
+
+			PopupMenu *popup_menu = menu_button->get_popup();
+			popup_menu->connect("id_pressed", callable_mp(this, &Self::on_select_menu_id_pressed));
+
+			toolbar->add_child(menu_button);
+			_select_menu_button = menu_button;
+		}
 
 		_profile_label = memnew(Label);
 		toolbar->add_child(_profile_label);
@@ -882,6 +894,75 @@ void VoxelGraphEditor::_on_menu_id_pressed(int id) {
 		default:
 			ERR_PRINT("Unknown menu item");
 			break;
+	}
+}
+
+void VoxelGraphEditor::on_select_menu_pressed() {
+	ZN_ASSERT_RETURN(_graph.is_valid());
+
+	PopupMenu *popup_menu = _select_menu_button->get_popup();
+	popup_menu->clear();
+
+	struct NameIDPair {
+		String name;
+		int id;
+	};
+
+	StdVector<NameIDPair> names;
+
+	for (int child_index = 0; child_index < _graph_edit->get_child_count(); ++child_index) {
+		VoxelGraphEditorNode *node_view = Object::cast_to<VoxelGraphEditorNode>(_graph_edit->get_child(child_index));
+		if (node_view == nullptr) {
+			continue;
+		}
+		const int node_id = node_view->get_generator_node_id();
+		const String name = String(_graph->get_node_name(node_id));
+		if (name.is_empty()) {
+			continue;
+		}
+		names.push_back({ name, node_id });
+	}
+
+	if (names.size() == 0) {
+		const int i = popup_menu->get_item_count();
+		popup_menu->add_item(ZN_TTR("No named nodes"));
+		popup_menu->set_item_disabled(i, true);
+		return;
+	}
+
+	struct Sorter {
+		bool operator()(const NameIDPair &a, const NameIDPair &b) const {
+			return a.name < b.name;
+		}
+	};
+
+	SortArray<NameIDPair, Sorter> sa;
+	sa.sort(names.data(), names.size());
+
+	for (const NameIDPair &p : names) {
+		popup_menu->add_item(p.name, p.id);
+	}
+}
+
+static void scroll_to_node(GraphEdit &graph, const GraphNode &node) {
+	// Found that by trial and error. Dunno if there is a smarter way?
+	graph.set_scroll_offset(
+			(node.get_position_offset() + node.get_size() * 0.5) * graph.get_zoom() - graph.get_size() * 0.5
+	);
+}
+
+void VoxelGraphEditor::on_select_menu_id_pressed(int id) {
+	const String node_view_path = node_to_gui_name(id);
+	GraphNode *selected_node = get_node_typed<GraphNode>(*_graph_edit, node_view_path);
+	ZN_ASSERT_RETURN(selected_node != nullptr);
+
+	scroll_to_node(*_graph_edit, *selected_node);
+
+	for (int child_index = 0; child_index < _graph_edit->get_child_count(); ++child_index) {
+		GraphNode *node = Object::cast_to<GraphNode>(_graph_edit->get_child(child_index));
+		if (node != nullptr) {
+			node->set_selected(node == selected_node);
+		}
 	}
 }
 

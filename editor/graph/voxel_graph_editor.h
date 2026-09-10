@@ -137,6 +137,8 @@ private:
 	void _on_graph_node_preview_gui_input(Ref<InputEvent> event);
 	void _on_graph_edit_copy_nodes_request();
 	void _on_graph_edit_paste_nodes_request();
+	void on_select_menu_pressed();
+	void on_select_menu_id_pressed(int id);
 
 	void _check_nothing_selected();
 
@@ -168,6 +170,7 @@ private:
 	Button *_popout_button = nullptr;
 	MenuButton *_graph_menu_button = nullptr;
 	MenuButton *_debug_menu_button = nullptr;
+	MenuButton *_select_menu_button = nullptr;
 	PopupMenu *_preview_axes_menu = nullptr;
 	VoxelGraphNodeDialog *_node_dialog = nullptr;
 	PopupMenu *_context_menu = nullptr;
