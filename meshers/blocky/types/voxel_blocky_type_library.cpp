@@ -79,7 +79,9 @@ void VoxelBlockyTypeLibrary::bake() {
 			// Find existing slot in the ID map. If found, use pre-allocated index.
 			if (!find(to_span_const(_id_map), id, model_index)) {
 				// If not found, pick an empty slot if any
-				if (!find(to_span_const(_id_map), VoxelID(), model_index)) {
+				if (find(to_span_const(_id_map), VoxelID(), model_index)) {
+					_id_map[model_index] = id;
+				} else {
 					// If not found, allocate a new index at the end
 					model_index = _baked_data.models.size();
 					_baked_data.models.push_back(blocky::BakedModel());
@@ -147,7 +149,9 @@ void VoxelBlockyTypeLibrary::update_id_map(StdVector<VoxelID> &id_map, StdVector
 			// Find existing slot in the ID map. If found, use pre-allocated index.
 			if (!find(to_span_const(id_map), id, model_index)) {
 				// If not found, pick an empty slot if any
-				if (!find(to_span_const(id_map), VoxelID(), model_index)) {
+				if (find(to_span_const(id_map), VoxelID(), model_index)) {
+					id_map[model_index] = id;
+				} else {
 					// If not found, allocate a new index at the end
 					model_index = id_map.size();
 					id_map.push_back(id);
