@@ -946,8 +946,8 @@ void VoxelGraphEditor::on_select_menu_pressed() {
 
 static void scroll_to_node(GraphEdit &graph, const GraphNode &node) {
 	// Found that by trial and error. Dunno if there is a smarter way?
-	graph.set_scroll_offset(
-			(node.get_position_offset() + node.get_size() * 0.5) * graph.get_zoom() - graph.get_size() * 0.5
+	set_graph_edit_scroll_offset(
+			graph, (node.get_position_offset() + node.get_size() * 0.5) * graph.get_zoom() - graph.get_size() * 0.5
 	);
 }
 

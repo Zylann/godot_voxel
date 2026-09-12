@@ -79,6 +79,14 @@ Vector2 get_graph_edit_scroll_offset(const GraphEdit &self) {
 #endif
 }
 
+void set_graph_edit_scroll_offset(GraphEdit &self, const Vector2 offset) {
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR <= 1
+	return self.set_scroll_ofs(offset);
+#else
+	return self.set_scroll_offset(offset);
+#endif
+}
+
 bool is_graph_edit_using_snapping(const GraphEdit &self) {
 #if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR <= 1
 	return self.is_using_snap();
