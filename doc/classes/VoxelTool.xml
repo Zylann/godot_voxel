@@ -307,7 +307,7 @@
 			When editing [constant VoxelBuffer.CHANNEL_SDF], will subtract matter. Useful for digging.
 		</constant>
 		<constant name="MODE_SET" value="2" enum="Mode">
-			Replace voxel values without any blending. Useful for blocky voxels.
+			Replace voxel values without any blending. Useful for blocky voxels and smooth voxels using a single texture index format.
 		</constant>
 		<constant name="MODE_TEXTURE_PAINT" value="3" enum="Mode">
 			When editing [constant VoxelBuffer.CHANNEL_SDF] in smooth Terrain, enables texture painting. The value of [member texture_index] will be added to texture indices of the affected voxels. The texture's weight will be blended based on the values of [member texture_falloff] and [member texture_opacity]. Results will differ depending on which texturing mode is used by the mesher.
