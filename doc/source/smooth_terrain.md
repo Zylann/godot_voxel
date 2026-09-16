@@ -282,7 +282,7 @@ The mesher will include texturing information in the `CUSTOM1` attribute of vert
 - `CUSTOM1.x` will contain 4 indices, encoded as 4 bytes, which can be obtained by reinterpreting the float number as an integer and using bit-shifting operators.
 - `CUSTOM1.y` will contain 4 weights, again encoded as 4 bytes.
 
-Each index tells which texture needs to be used, and each weight respectively tells how much of that texture should be blended. It is essentially the same as a classic color splatmap, except textures can vary, which allows for more than 4 possibe textures.
+Each index tells which texture needs to be used, and each weight respectively tells how much of that texture should be blended. It is essentially the same as a classic color splatmap, except textures can vary, which allows for more than 4 possible textures.
 One minor downside is that you cannot blend more than 4 textures per voxel, so if this happens, it might cause artifacts. But in practice, it is assumed this case is so infrequent it can be ignored.
 
 
