@@ -5,6 +5,7 @@ A C++ module/extension for creating volumetric terrains in Godot Engine 4.
 
 [![🚪 Windows Builds](https://github.com/Zylann/godot_voxel/actions/workflows/windows.yml/badge.svg)](https://github.com/Zylann/godot_voxel/actions/workflows/windows.yml)
 [![🐧 Linux Builds](https://github.com/Zylann/godot_voxel/actions/workflows/linux.yml/badge.svg)](https://github.com/Zylann/godot_voxel/actions/workflows/linux.yml)
+[![🍎 macOS Builds](https://github.com/Zylann/godot_voxel/actions/workflows/macos.yml/badge.svg)](https://github.com/Zylann/godot_voxel/actions/workflows/macos.yml)
 [![🐒 Mono Builds](https://github.com/Zylann/godot_voxel/actions/workflows/mono.yml/badge.svg)](https://github.com/Zylann/godot_voxel/actions/workflows/mono.yml)
 [![🧩 GDExtension Builds](https://github.com/Zylann/godot_voxel/actions/workflows/extension_ci.yml/badge.svg)](https://github.com/Zylann/godot_voxel/actions/workflows/extension_ci.yml)
 [![Documentation Status](https://readthedocs.org/projects/voxel-tools/badge/?version=latest)](https://voxel-tools.readthedocs.io/en/latest/?badge=latest)
