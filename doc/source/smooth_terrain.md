@@ -210,7 +210,7 @@ Voxel texturing can be split in 2 parts:
 
 #### Single
 
-The simplest format is to give every voxel a 8-bit index telling what texture they have. This allows to choose whithin a pool of 256 possible textures. This is usually way more than enough for smooth terrains. This format cannot represent gradients, so painting has no falloff.
+The simplest format is to give every voxel an 8-bit index that indicates what texture it has. This allows you to choose from a pool of 256 possible textures. This is usually way more than enough for smooth terrains. This format cannot represent gradients, so painting has no falloff.
 
 This data is stored in the [INDICES](api/VoxelBuffer.md#i_CHANNEL_INDICES) channel, using a depth of 8-bits.
 
