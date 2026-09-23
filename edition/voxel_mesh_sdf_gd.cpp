@@ -158,7 +158,7 @@ void VoxelMeshSDF::bake() {
 	}
 
 	if (_boundary_sign_fix && _bake_mode != BAKE_MODE_APPROX_FLOODFILL) {
-		mesh_sdf::fix_sdf_sign_from_boundary(sdf_grid, res, min_pos, max_pos);
+		mesh_sdf::fix_sdf_sign_from_boundary(sdf_grid, res, box_min_pos, box_max_pos);
 	}
 
 	_voxel_buffer = vbgd;
