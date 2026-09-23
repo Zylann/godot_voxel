@@ -173,6 +173,7 @@ void VoxelMeshSDF::bake_async(Object *scene_tree_o) {
 void VoxelMeshSDF::bake_async(SceneTree *scene_tree) {
 #endif
 	ZN_ASSERT_RETURN(scene_tree != nullptr);
+	// We're going to use the task system, which relies on the existence of VoxelEngine's updater
 	VoxelEngineUpdater::ensure_existence(scene_tree);
 
 	// ZN_ASSERT_RETURN_MSG(!_is_baking, "Already baking");
