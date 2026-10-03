@@ -47,9 +47,17 @@ protected:
 
 private:
 	static void _bind_methods();
+	Transform3D get_terrain_local_transform() const;
+	VoxelLodTerrain *get_ancestor_volume() const;
 
 	Operation _operation = OPERATION_ADD;
 	float _smoothness = 0.f;
+
+	// Tracks the last-known transform of the modifier, in terrain-local space.
+	// This alows us to distinguish between transform updates caused by the entire terrain moving
+	// from updates caused by the modifier moving relative to the terrain. Only the latter requires
+	// a remesh.
+	Transform3D _last_tl_transform;
 };
 
 // Helpers
