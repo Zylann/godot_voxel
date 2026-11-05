@@ -459,8 +459,15 @@ void Runtime::generate_set(
 	Span<const ExecutionMap::OperationInfo> operation_infos = to_span(execution_map.operations);
 	const Span<const ExecutionMap::ConstantFill> constant_fills = to_span(execution_map.constant_fills);
 
+	unsigned int constant_fill_index = 0;
+
 	if (skip_outer_group && operation_infos.size() > 0) {
 		const unsigned int offset = execution_map.inner_group_start_index;
+		// Constant fills of skipped operations must be skipped too, otherwise the remaining operations would
+		// apply the fills of the outer group.
+		for (unsigned int i = 0; i < offset; ++i) {
+			constant_fill_index += operation_infos[i].constant_fill_count;
+		}
 		operation_infos = operation_infos.sub(offset);
 	}
 
@@ -468,8 +475,6 @@ void Runtime::generate_set(
 	ProfilingClock profiling_clock;
 	const bool profile = state.debug_profiler_times.size() > 0;
 #endif
-
-	unsigned int constant_fill_index = 0;
 
 	for (unsigned int execution_map_index = 0; execution_map_index < operation_infos.size(); ++execution_map_index) {
 		const ExecutionMap::OperationInfo op_info = operation_infos[execution_map_index];

@@ -16,6 +16,7 @@ I try to minimize breaking changes, but there are usually a few in each release 
 - Fixes
     - Fixed some cases of very long shutdowns due to generation or meshing tasks not getting cancelled
     - `VoxelBlockyTypeLibrary`: fixed new types sometimes not getting registered in the ID list, if vacant entries already existed (#891)
+    - `VoxelGeneratorGraph`: fixed `use_xz_caching` never skipping any operation (inputs other than X and Z dragged the whole graph into the outer group), and constant fills of skipped operations being applied to the wrong ones once it does
 
 
 1.7 - 20/08/2026 - tag `v1.7`
