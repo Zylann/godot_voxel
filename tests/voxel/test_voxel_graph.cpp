@@ -2816,10 +2816,12 @@ void test_voxel_graph_xz_caching() {
 		// ClampX and ClampY are skipped, Add1 and Mul1 are the outer group
 		ZN_TEST_ASSERT(optimized_map.constant_fills.size() == 2);
 		ZN_TEST_ASSERT(optimized_map.inner_group_start_index == 2);
+		// The constant fill of ClampX is used by the outer group, the one of ClampY by the inner group
+		ZN_TEST_ASSERT(optimized_map.inner_group_start_constant_fill_index == 1);
 		ZN_TEST_ASSERT(optimized_map.operations.size() > optimized_map.inner_group_start_index);
 	}
 
-	// Results must be the same with and without caching
+	// Results must be exactly the same with and without caching
 	{
 		Ref<VoxelGeneratorGraph> generator_cached = L::create_generator(true);
 		Ref<VoxelGeneratorGraph> generator_not_cached = L::create_generator(false);
@@ -2846,25 +2848,16 @@ void test_voxel_graph_xz_caching() {
 						VoxelBuffer::COMPRESSION_UNIFORM
 				);
 
-				Vector3i pos;
-				for (pos.z = 0; pos.z < block_size.z; ++pos.z) {
-					for (pos.x = 0; pos.x < block_size.x; ++pos.x) {
-						for (pos.y = 0; pos.y < block_size.y; ++pos.y) {
-							const float sd_cached = block_cached.get_voxel_f(pos, VoxelBuffer::CHANNEL_SDF);
-							const float sd_not_cached = block_not_cached.get_voxel_f(pos, VoxelBuffer::CHANNEL_SDF);
-							if (sd_cached != sd_not_cached) {
-								ZN_PRINT_ERROR(format(
-										"Mismatch at {} (optimized execution map: {}): {} with XZ caching, {} without",
-										origin + pos,
-										use_optimized_execution_map,
-										sd_cached,
-										sd_not_cached
-								));
-							}
-							ZN_TEST_ASSERT(sd_cached == sd_not_cached);
-						}
-					}
+				// Caching must not change the result at all, so compare without error margin
+				const bool equal = block_cached.equals(block_not_cached);
+				if (!equal) {
+					ZN_PRINT_ERROR(format(
+							"Results differ with and without XZ caching, block {} (optimized execution map: {})",
+							origin,
+							use_optimized_execution_map
+					));
 				}
+				ZN_TEST_ASSERT(equal);
 			}
 		}
 	}

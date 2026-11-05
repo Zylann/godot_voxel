@@ -1475,7 +1475,11 @@ namespace {
 // so they can be moved in the outer loop when blocks are generated, running less times.
 // Moves them all at the beginning.
 // `order` is a previously computed order of execution of each node.
-uint32_t move_outer_group_operations_up(StdVector<uint32_t> &order, const ProgramGraph &graph) {
+uint32_t move_outer_group_operations_up(
+		StdVector<uint32_t> &order,
+		const ProgramGraph &graph,
+		const NodeTypeDB &type_db
+) {
 	ZN_PROFILE_SCOPE();
 	StdVector<uint32_t> immediate_deps;
 	StdUnorderedSet<uint32_t> outer_group_node_ids;
@@ -1492,11 +1496,9 @@ uint32_t move_outer_group_operations_up(StdVector<uint32_t> &order, const Progra
 		// Inputs other than X and Z have no dependencies, so the check below would consider them part of the outer
 		// group, and drag every other node along with them. The inner group would always be empty, and
 		// `use_xz_caching` would never skip any operation.
-		const bool is_inner_input = node.type_id == VoxelGraphFunction::NODE_INPUT_Y ||
-				node.type_id == VoxelGraphFunction::NODE_INPUT_SDF ||
-				node.type_id == VoxelGraphFunction::NODE_CUSTOM_INPUT;
+		const bool is_input = type_db.get_type(node.type_id).category == pg::CATEGORY_INPUT;
 
-		if (is_inner_input) {
+		if (!is_outer_group && is_input) {
 			order_inner_group.push_back(node_id);
 			continue;
 		}
@@ -1583,7 +1585,7 @@ CompilationResult Runtime::compile_preprocessed_graph(
 	StdVector<uint32_t> order;
 	compute_node_execution_order(order, graph, debug, type_db);
 
-	const uint32_t inner_group_start_index = move_outer_group_operations_up(order, graph);
+	const uint32_t inner_group_start_index = move_outer_group_operations_up(order, graph, type_db);
 
 	struct MemoryHelper {
 		StdVector<BufferSpec> &buffer_specs;

@@ -236,6 +236,7 @@ void Runtime::generate_optimized_execution_map(
 					// This should be correct as long as the list of nodes in the graph follows the same re-ordered
 					// optimization done in `compile()` such that all nodes not depending on Y come first
 					execution_map.inner_group_start_index = execution_map.operations.size();
+					execution_map.inner_group_start_constant_fill_index = execution_map.constant_fills.size();
 					inner_group_start_not_assigned = false;
 				}
 
@@ -463,12 +464,10 @@ void Runtime::generate_set(
 
 	if (skip_outer_group && operation_infos.size() > 0) {
 		const unsigned int offset = execution_map.inner_group_start_index;
+		operation_infos = operation_infos.sub(offset);
 		// Constant fills of skipped operations must be skipped too, otherwise the remaining operations would
 		// apply the fills of the outer group.
-		for (unsigned int i = 0; i < offset; ++i) {
-			constant_fill_index += operation_infos[i].constant_fill_count;
-		}
-		operation_infos = operation_infos.sub(offset);
+		constant_fill_index = execution_map.inner_group_start_constant_fill_index;
 	}
 
 #ifdef TOOLS_ENABLED
