@@ -84,6 +84,14 @@ VoxelEngine::~VoxelEngine() {
 #ifdef VOXEL_ENABLE_GPU
 	_gpu_task_runner.stop();
 #endif
+
+	// Main thread tasks can still be pending, for example if the game quits right after terrains unloaded some
+	// blocks. Flush them explicitly instead of relying on member destruction order: time-spread tasks can push
+	// progressive tasks (destroying a mesh block queues a `FreeMeshTask`), but members are destroyed in reverse
+	// declaration order, so `_progressive_task_runner` would already be destroyed when `_time_spread_task_runner`
+	// flushes its remaining tasks.
+	_time_spread_task_runner.flush();
+	_progressive_task_runner.flush();
 }
 
 static bool auto_detect_threaded_graphics_resource_building_support() {
