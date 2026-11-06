@@ -84,6 +84,29 @@ VoxelEngine::~VoxelEngine() {
 #ifdef VOXEL_ENABLE_GPU
 	_gpu_task_runner.stop();
 #endif
+
+	// Main thread tasks can still be pending, for example if the game quits right after terrains unloaded some
+	// blocks. Flush them explicitly instead of relying on member destruction order, because tasks of one runner can
+	// push tasks into the other (destroying a mesh block in a time-spread task queues a `FreeMeshTask`), which would
+	// crash if that other runner was already destroyed. Since this can go either way, flush both until both are empty.
+	{
+		const unsigned int max_iterations = 100;
+		unsigned int iteration = 0;
+		while (_time_spread_task_runner.get_pending_count() != 0 || _progressive_task_runner.get_pending_count() != 0) {
+			if (iteration == max_iterations) {
+				// Tasks should not keep pushing each other endlessly, that's a bug in the tasks themselves.
+				ZN_PRINT_ERROR(
+						format("Main thread tasks were still pending after {} flushes on shutdown, they might be "
+							   "pushing each other endlessly",
+							   max_iterations)
+				);
+				break;
+			}
+			_time_spread_task_runner.flush();
+			_progressive_task_runner.flush();
+			++iteration;
+		}
+	}
 }
 
 static bool auto_detect_threaded_graphics_resource_building_support() {

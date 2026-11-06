@@ -120,10 +120,12 @@ jobs:
     runs-on: "macos-latest"
 
     steps:
+      # We need Godot again to get some stuff for making the bundle
       - uses: actions/checkout@v4
         with:
           repository: godotengine/godot
-          ref: ${{matrix.godot_base_branch}}
+          # Must be same version as what we compiled; `matrix.*` not available from here
+          ref: "4.7.2-stable"
      
       - uses: actions/download-artifact@v4
         with:
@@ -131,7 +133,8 @@ jobs:
           merge-multiple: true
           path: bin
       
-      # Use `ditto` # macos specific archiver to workaround https://github.com/actions/upload-artifact/issues/38
+      # https://docs.godotengine.org/en/stable/engine_details/development/compiling/compiling_for_macos.html#manual-app-bundle-creation
+      # Using `ditto` # macos specific archiver to workaround https://github.com/actions/upload-artifact/issues/38
       - name: Create editor .app bundle
         run: | 
           cp -r misc/dist/macos_tools.app ./macos_editor.app

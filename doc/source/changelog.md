@@ -15,8 +15,11 @@ I try to minimize breaking changes, but there are usually a few in each release 
 
 - Fixes
     - Fixed some cases of very long shutdowns due to generation or meshing tasks not getting cancelled
+    - Fixed crash on exit when mesh blocks were still queued for destruction (they pushed tasks to an already destroyed task runner)
     - `VoxelBlockyTypeLibrary`: fixed new types sometimes not getting registered in the ID list, if vacant entries already existed (#891)
     - `VoxelGeneratorGraph`: fixed `use_xz_caching` never skipping any operation (inputs other than X and Z dragged the whole graph into the outer group), and constant fills of skipped operations being applied to the wrong ones once it does
+    - `VoxelGeneratorImage`: removed error spam when assigning a new instance to a terrain in the editor before an image was set
+    - `VoxelMeshSDF`: fixed different result between `bake` and `bake_async` when not using floodfill mode (#898)
 
 
 1.7 - 20/08/2026 - tag `v1.7`
