@@ -97,6 +97,10 @@ public:
 		// group". This is the index from which operations won't only depend on the outer group.
 		unsigned int inner_group_start_index = 0;
 
+		// Index of the first constant fill used by operations of the inner group. Fills before this index belong to
+		// operations of the outer group, so they must be skipped too when the outer group is skipped.
+		unsigned int inner_group_start_constant_fill_index = 0;
+
 		struct ConstantFill {
 			float *data = nullptr;
 			float value = 0;
@@ -112,6 +116,7 @@ public:
 			operations.clear();
 			debug_nodes.clear();
 			inner_group_start_index = 0;
+			inner_group_start_constant_fill_index = 0;
 			constant_fills.clear();
 		}
 	};
