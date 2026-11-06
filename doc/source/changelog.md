@@ -15,6 +15,7 @@ I try to minimize breaking changes, but there are usually a few in each release 
 
 - Fixes
     - Fixed some cases of very long shutdowns due to generation or meshing tasks not getting cancelled
+    - Fixed crash on exit when mesh blocks were still queued for destruction (they pushed tasks to an already destroyed task runner)
     - `VoxelBlockyTypeLibrary`: fixed new types sometimes not getting registered in the ID list, if vacant entries already existed (#891)
     - `VoxelMeshSDF`: fixed different result between `bake` and `bake_async` when not using floodfill mode (#898)
 
