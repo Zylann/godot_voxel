@@ -71,7 +71,12 @@ VoxelGenerator::Result VoxelGeneratorImage::generate_block(VoxelGenerator::Voxel
 
 	Result result;
 
-	ERR_FAIL_COND_V(params.image.is_null(), result);
+	if (params.image.is_null()) {
+		// This legit happens when assigning a new instance of that generator in the editor, the user hasn't assigned
+		// the image yet, so we can't really spam an error right away I guess...
+		return result;
+	}
+
 	const Image &image = **params.image;
 
 	if (params.blur_enabled) {
