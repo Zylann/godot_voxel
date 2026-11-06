@@ -16,6 +16,7 @@ I try to minimize breaking changes, but there are usually a few in each release 
 - Fixes
     - Fixed some cases of very long shutdowns due to generation or meshing tasks not getting cancelled
     - `VoxelBlockyTypeLibrary`: fixed new types sometimes not getting registered in the ID list, if vacant entries already existed (#891)
+    - `VoxelMeshSDF`: fixed different result between `bake` and `bake_async` when not using floodfill mode (#898)
 
 
 1.7 - 20/08/2026 - tag `v1.7`
