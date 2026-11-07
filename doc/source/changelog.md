@@ -18,6 +18,7 @@ I try to minimize breaking changes, but there are usually a few in each release 
     - Fixed crash on exit when mesh blocks were still queued for destruction (they pushed tasks to an already destroyed task runner)
     - `VoxelBlockyTypeLibrary`: fixed new types sometimes not getting registered in the ID list, if vacant entries already existed (#891)
     - `VoxelGeneratorImage`: removed error spam when assigning a new instance to a terrain in the editor before an image was set
+    - `VoxelGeneratorImage`: fixed crash after assigning an image of size (0,0)
     - `VoxelMeshSDF`: fixed different result between `bake` and `bake_async` when not using floodfill mode (#898)
 
 
