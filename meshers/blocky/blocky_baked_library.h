@@ -10,6 +10,7 @@
 #include "../../util/math/color.h"
 #include "../../util/math/vector2f.h"
 #include "../../util/math/vector3f.h"
+#include "blocky_round_geometry_table.h"
 
 // This is data directly consumed by the blocky mesher.
 
@@ -121,6 +122,9 @@ struct BakedModel {
 	bool culls_neighbors;
 	bool contributes_to_ao;
 	bool empty = true;
+	bool rounding_enabled = false;
+	bool rounding_affects_neighbors = true;
+	bool is_full_cube = false;
 	bool is_random_tickable;
 	bool is_transparent;
 	bool cutout_sides_enabled = false;
@@ -135,6 +139,9 @@ struct BakedModel {
 	inline void clear() {
 		model.clear();
 		empty = true;
+		rounding_enabled = false;
+		rounding_affects_neighbors = true;
+		is_full_cube = false;
 	}
 };
 
@@ -166,6 +173,13 @@ struct BakedFluid {
 };
 
 struct BakedLibrary {
+	// Shared by meshing readers; rebuilt only while holding the library write lock.
+	round_geometry::GeometryTable rounding_geometry;
+	float rounding_amount = 0.1f;
+	float rounding_taper_distance = 0.4f;
+	// Matches VoxelBlockyLibraryBase::RoundingTaperProfile.
+	uint8_t rounding_taper_profile = 0;
+
 	// 2D array: { X : pattern A, Y : pattern B } => Does A occlude B
 	// Where index is X + Y * pattern count
 	DynamicBitset side_pattern_culling;

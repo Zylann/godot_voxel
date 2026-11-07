@@ -23,6 +23,26 @@ public:
 
 	static constexpr uint32_t NULL_INDEX = 0xFFFFFFFF;
 
+	enum RoundingTaperProfile {
+		ROUNDING_TAPER_LINEAR,
+		ROUNDING_TAPER_EASE_IN,
+		ROUNDING_TAPER_EASE_OUT,
+		ROUNDING_TAPER_SMOOTHSTEP
+	};
+
+	void set_rounding_amount(float amount);
+	float get_rounding_amount() const {
+		return _rounding_amount;
+	}
+	void set_rounding_taper_distance(float distance);
+	float get_rounding_taper_distance() const {
+		return _rounding_taper_distance;
+	}
+	void set_rounding_taper_profile(RoundingTaperProfile profile);
+	RoundingTaperProfile get_rounding_taper_profile() const {
+		return _rounding_taper_profile;
+	}
+
 	bool get_bake_tangents() const {
 		return _bake_tangents;
 	}
@@ -61,6 +81,14 @@ private:
 	static void _bind_methods();
 
 protected:
+	// Call only while holding the baked-data write lock.
+	void bake_rounding_settings();
+	// Call after models are baked, while holding the same write lock.
+	void bake_rounding_geometry();
+	float _rounding_amount = 0.1f;
+	float _rounding_taper_distance = 0.4f;
+	RoundingTaperProfile _rounding_taper_profile = ROUNDING_TAPER_LINEAR;
+
 	int _legacy_atlas_size = 16;
 	bool _needs_baking = true;
 	bool _bake_tangents = true;
@@ -80,5 +108,7 @@ void generate_side_culling_matrix(blocky::BakedLibrary &baked_data);
 } // namespace blocky
 
 } // namespace zylann::voxel
+
+VARIANT_ENUM_CAST(zylann::voxel::VoxelBlockyLibraryBase::RoundingTaperProfile)
 
 #endif // VOXEL_BLOCKY_LIBRARY_BASE_H

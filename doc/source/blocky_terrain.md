@@ -88,6 +88,38 @@ You can choose to export materials from here too, but it is recommended to do it
 	If your voxels use mesh-based physics (GodotPhysics, Jolt...) and you export your game with "Export as dedicated server" in the resources tab of an export preset, make sure meshes you used in `VoxelBlockyModelMesh` are **not** stripped. Mesh data is required at runtime to generate colliders. If you don't do this, models using a mesh will not generate any mesh-based collision.
 
 
+### Optional cube rounding
+
+`VoxelMesherBlocky` can round exposed cube edges and corners, including the underside.
+The result depends on neighboring voxels: where a rounded edge meets a square model
+or a blocked concave contact, it tapers back to a square edge to keep the join closed.
+
+To set this up in the Inspector:
+
+1. Expand the terrain's **Mesher**, then its **Library** resource.
+2. Open the models you want to round in the **Models** array and check **Enabled**
+   in their **Rounding** group. With `VoxelBlockyTypeLibrary`, configure the base or
+   explicit variant models of each type instead; generated rotations keep this setting.
+3. Adjust the library's **Rounding** group to give enabled models shared settings,
+   so adjacent materials meet consistently. See [VoxelBlockyLibraryBase](api/VoxelBlockyLibraryBase.md)
+   for the controls and their defaults.
+
+Use full unit cubes or compatible imported cube meshes; see
+[rounding_enabled](api/VoxelBlockyModel.md#i_rounding_enabled) for the mesh and UV requirements.
+Other shapes retain their original geometry. For decorations or mesh-based water that
+should let neighboring edges round, uncheck **Affects Neighbors** in the model's
+**Rounding** group and leave **Enabled** unchecked.
+
+Rounded previews are not implemented yet: the Inspector currently shows the original
+model. Check the result in generated terrain, where the surrounding voxels determine
+which edges are exposed.
+
+Rounding adds triangles to the terrain mesh. Mesh-based collisions follow the rounded
+geometry, while `VoxelBoxMover` continues to use the model's box collision shapes.
+If a library is shared by multiple terrains, make its resources unique before changing
+settings that should apply to only one of them.
+
+
 ### Fluids
 
 If you need to make flowing water with different levels and a similar style as Minecraft, [VoxelBlockyModelFluid](api/VoxelBlockyModelFluid.md) is available.

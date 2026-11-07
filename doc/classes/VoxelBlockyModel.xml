@@ -62,6 +62,13 @@
 		</method>
 	</methods>
 	<members>
+		<member name="rounding_affects_neighbors" type="bool" setter="set_rounding_affects_neighbors" getter="get_rounding_affects_neighbors" default="true">
+			If false, this model is treated as air only when determining the rounded edges of neighboring blocks. Useful for transparent grass tufts, shrubs and mesh-based water. This does not enable rounding on the model itself or change its rendering, face culling, or collision settings. Defaults to true. Bake the library and remesh after changing it.
+		</member>
+		<member name="rounding_enabled" type="bool" setter="set_rounding_enabled" getter="get_rounding_enabled" default="false">
+			Opts this model into neighborhood-aware rounding using the shared settings of [VoxelBlockyLibraryBase]. Disabled by default. Supported models are full unit cubes, including imported meshes with two triangles per face. UV coordinates must match at vertices shared by the two triangles of each face; different cube faces may use separate UV regions and materials. Unsupported shapes retain their original geometry and report a warning when baked.
+			Rounding changes terrain mesh generation, not the stored voxel IDs or box collision AABBs. Rounded previews are not implemented yet; static model previews currently show the original model. After changing this property at runtime, bake the library and remesh affected terrain.
+		</member>
 		<member name="collision_aabbs" type="AABB[]" setter="set_collision_aabbs" getter="get_collision_aabbs" default="[]">
 			List of bounding boxes relative to the model. They are used for box-based collision, using [VoxelBoxMover]. They are not used with mesh-based collision.
 		</member>
