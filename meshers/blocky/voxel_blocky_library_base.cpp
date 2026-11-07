@@ -2,6 +2,7 @@
 #include "../../util/containers/container_funcs.h"
 #include "../../util/containers/small_vector.h"
 #include "../../util/math/box2f.h"
+#include "../../util/math/funcs.h"
 #include "../../util/math/triangle.h"
 #include "../../util/math/vector4f.h"
 #include "../../util/profiling.h"
@@ -9,12 +10,55 @@
 #include "voxel_blocky_model.h"
 #include "voxel_mesher_blocky.h"
 #include <bitset>
+#include <cmath>
 
 #ifdef ZN_GODOT
 #include "../../util/godot/core/class_db.h"
 #endif
 
 namespace zylann::voxel {
+
+void VoxelBlockyLibraryBase::set_rounding_amount(float amount) {
+	ERR_FAIL_COND(!std::isfinite(amount));
+	amount = math::clamp(amount, 0.f, 0.25f);
+	// Bevels below 0.001 voxel collapse at float mesh precision in short tapers.
+	if (amount < 0.001f) {
+		amount = 0.f;
+	}
+	if (_rounding_amount == amount) {
+		return;
+	}
+	_rounding_amount = amount;
+	_needs_baking = true;
+	emit_changed();
+}
+
+void VoxelBlockyLibraryBase::set_rounding_taper_distance(float distance) {
+	ERR_FAIL_COND(!std::isfinite(distance));
+	distance = math::clamp(distance, 0.01f, 1.f);
+	if (_rounding_taper_distance == distance) {
+		return;
+	}
+	_rounding_taper_distance = distance;
+	_needs_baking = true;
+	emit_changed();
+}
+
+void VoxelBlockyLibraryBase::set_rounding_taper_profile(RoundingTaperProfile profile) {
+	ERR_FAIL_COND(profile < ROUNDING_TAPER_LINEAR || profile > ROUNDING_TAPER_SMOOTHSTEP);
+	if (_rounding_taper_profile == profile) {
+		return;
+	}
+	_rounding_taper_profile = profile;
+	_needs_baking = true;
+	emit_changed();
+}
+
+void VoxelBlockyLibraryBase::bake_rounding_settings() {
+	_baked_data.rounding_amount = _rounding_amount;
+	_baked_data.rounding_taper_distance = _rounding_taper_distance;
+	_baked_data.rounding_taper_profile = _rounding_taper_profile;
+}
 
 void VoxelBlockyLibraryBase::load_default() {
 	ZN_PRINT_ERROR("Not implemented");
@@ -69,6 +113,40 @@ void VoxelBlockyLibraryBase::get_configuration_warnings(PackedStringArray &out_w
 #endif
 
 void VoxelBlockyLibraryBase::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("set_rounding_amount", "value"), &VoxelBlockyLibraryBase::set_rounding_amount);
+	ClassDB::bind_method(D_METHOD("get_rounding_amount"), &VoxelBlockyLibraryBase::get_rounding_amount);
+	ClassDB::bind_method(
+			D_METHOD("set_rounding_taper_distance", "value"), &VoxelBlockyLibraryBase::set_rounding_taper_distance
+	);
+	ClassDB::bind_method(D_METHOD("get_rounding_taper_distance"), &VoxelBlockyLibraryBase::get_rounding_taper_distance);
+	ClassDB::bind_method(
+			D_METHOD("set_rounding_taper_profile", "value"), &VoxelBlockyLibraryBase::set_rounding_taper_profile
+	);
+	ClassDB::bind_method(D_METHOD("get_rounding_taper_profile"), &VoxelBlockyLibraryBase::get_rounding_taper_profile);
+	ADD_GROUP("Rounding", "rounding_");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::FLOAT, "rounding_amount", PROPERTY_HINT_RANGE, "0,0.25,0.001"),
+			"set_rounding_amount",
+			"get_rounding_amount"
+	);
+	ADD_PROPERTY(
+			PropertyInfo(Variant::FLOAT, "rounding_taper_distance", PROPERTY_HINT_RANGE, "0.01,1,0.01"),
+			"set_rounding_taper_distance",
+			"get_rounding_taper_distance"
+	);
+	ADD_PROPERTY(
+			PropertyInfo(
+					Variant::INT, "rounding_taper_profile", PROPERTY_HINT_ENUM, "Linear,Ease In,Ease Out,Smoothstep"
+			),
+			"set_rounding_taper_profile",
+			"get_rounding_taper_profile"
+	);
+	ADD_GROUP("", "");
+	BIND_ENUM_CONSTANT(ROUNDING_TAPER_LINEAR);
+	BIND_ENUM_CONSTANT(ROUNDING_TAPER_EASE_IN);
+	BIND_ENUM_CONSTANT(ROUNDING_TAPER_EASE_OUT);
+	BIND_ENUM_CONSTANT(ROUNDING_TAPER_SMOOTHSTEP);
+
 	ClassDB::bind_method(D_METHOD("get_materials"), &VoxelBlockyLibraryBase::_b_get_materials);
 
 	ClassDB::bind_method(D_METHOD("get_bake_tangents"), &VoxelBlockyLibraryBase::get_bake_tangents);

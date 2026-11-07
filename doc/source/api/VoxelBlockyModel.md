@@ -17,6 +17,8 @@ A model can be setup in various ways, see child classes.
 
 Type                                                                        | Name                                         | Default           
 --------------------------------------------------------------------------- | -------------------------------------------- | ------------------
+[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) | [rounding_affects_neighbors](#i_rounding_affects_neighbors) | true
+[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)      | [rounding_enabled](#i_rounding_enabled)      | false
 [AABB[]](https://docs.godotengine.org/en/stable/classes/class_aabb[].html)  | [collision_aabbs](#i_collision_aabbs)        | []                
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)        | [collision_mask](#i_collision_mask)          | 1                 
 [Color](https://docs.godotengine.org/en/stable/classes/class_color.html)    | [color](#i_color)                            | Color(1, 1, 1, 1) 
@@ -55,6 +57,16 @@ enum **Side**:
 
 
 ## Property Descriptions
+
+### [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_rounding_affects_neighbors"></span> **rounding_affects_neighbors** = true
+
+If false, this model is treated as air only when determining the rounded edges of neighboring blocks. Useful for transparent grass tufts, shrubs and mesh-based water. This does not enable rounding on the model itself or change its rendering, face culling, or collision settings. Defaults to true. Bake the library and remesh after changing it.
+
+### [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_rounding_enabled"></span> **rounding_enabled** = false
+
+Opts this model into neighborhood-aware rounding using the shared settings of [VoxelBlockyLibraryBase](VoxelBlockyLibraryBase.md). Disabled by default. Supported models are full unit cubes, including imported meshes with two triangles per face and continuous corner UVs. Unsupported shapes retain their original geometry and report a warning when baked.
+
+Rounding changes terrain mesh generation, not the stored voxel IDs or box collision AABBs. Static model previews do not show neighborhood-dependent rounding. After changing this property at runtime, bake the library and remesh affected terrain.
 
 ### [AABB[]](https://docs.godotengine.org/en/stable/classes/class_aabb[].html)<span id="i_collision_aabbs"></span> **collision_aabbs** = []
 
@@ -122,4 +134,4 @@ Enables or disables mesh-based collision on a specific surface. It allows a mode
 
 Gets the 90-degree rotation ID that will be applied to the model when the library is baked. This is a number representing one of 24 possible 90-degree rotations. You can also use [rotate_90](VoxelBlockyModel.md#i_rotate_90).
 
-_Generated on Aug 20, 2026_
+_Generated on Nov 07, 2026_

@@ -13,6 +13,7 @@
 #include "../../util/profiling.h"
 #include "blocky_fluids_meshing_impl.h"
 #include "blocky_lod_skirts.h"
+#include "blocky_round_meshing.h"
 #include "blocky_shadow_occluders.h"
 
 #ifdef ZN_GODOT
@@ -171,6 +172,67 @@ void generate_mesh(
 					}
 
 					visible_sides_mask |= (1 << side);
+				}
+
+				if (visible_sides_mask != 0 && voxel.rounding_enabled && voxel.is_full_cube && library.rounding_amount > 0.f) {
+					const uint64_t shape = round_geometry::shape_key([&](int dx, int dy, int dz) {
+						const unsigned int id = type_buffer[voxel_index + dx * row_size + dy + dz * deck_size];
+						if (id == AIR_ID || !library.has_model(id)) {
+							return 0;
+						}
+						const BakedModel &neighbor = library.models[id];
+						// Transparent decorations and mesh-based water can opt out of this
+						// geometric neighborhood without changing rendering or collision rules.
+						if (neighbor.empty || neighbor.fluid_index != NULL_FLUID_INDEX ||
+							!neighbor.rounding_affects_neighbors) {
+							return 0;
+						}
+						return neighbor.rounding_enabled && neighbor.is_full_cube ? 1 : 2;
+					});
+					if (shape != 0) {
+						FixedArray<FixedArray<uint8_t, 4>, 6> occlusion{};
+						if (bake_occlusion) {
+							for (unsigned int side = 0; side < Cube::SIDE_COUNT; ++side) {
+								uint8_t corners[8] = {};
+								for (unsigned int j = 0; j < 4; ++j) {
+									const unsigned int edge = Cube::g_side_edges[side][j];
+									if (contributes_to_ao(
+												library, type_buffer[voxel_index + edge_neighbor_lut[edge]]
+										)) {
+										++corners[Cube::g_edge_corners[edge][0]];
+										++corners[Cube::g_edge_corners[edge][1]];
+									}
+								}
+								for (unsigned int j = 0; j < 4; ++j) {
+									const unsigned int corner = Cube::g_side_corners[side][j];
+									if (corners[corner] == 2) {
+										corners[corner] = 3;
+									} else if (contributes_to_ao(
+													   library, type_buffer[voxel_index + corner_neighbor_lut[corner]]
+											   )) {
+										++corners[corner];
+									}
+									occlusion[side][j] = corners[corner];
+								}
+							}
+						}
+						if (append_rounded_model(
+									shape,
+									voxel,
+									library,
+									visible_sides_mask,
+									Vector3f(x - 1, y - 1, z - 1),
+									voxel.color * tint_sampler.evaluate(Vector3i(x, y, z)),
+									occlusion,
+									baked_occlusion_darkness,
+									out_arrays_per_material,
+									index_offsets,
+									collision_surface,
+									collision_surface_index_offset
+							)) {
+							continue;
+						}
+					}
 				}
 
 				uint8_t model_surface_count = model.surface_count;

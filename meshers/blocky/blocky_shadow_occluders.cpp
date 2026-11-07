@@ -203,6 +203,11 @@ void classify_chunk_occlusion_from_voxels(
 			}
 			const BakedModel &b0 = baked_data.models[v0];
 			const BakedModel &b1 = baked_data.models[v1];
+			// A rounded contact may not cover the full square at a chunk boundary.
+			if (baked_data.rounding_amount > 0.f &&
+				((b0.rounding_enabled && b0.is_full_cube) || (b1.rounding_enabled && b1.is_full_cube))) {
+				return false;
+			}
 			if (b0.empty || b1.empty) {
 				return false;
 			}

@@ -46,6 +46,17 @@ public:
 
 	// Properties
 
+	// Whether this model participates as a solid neighbor in edge rounding.
+	void set_rounding_affects_neighbors(bool affects);
+	bool get_rounding_affects_neighbors() const {
+		return _rounding_affects_neighbors;
+	}
+
+	void set_rounding_enabled(bool enabled);
+	bool get_rounding_enabled() const {
+		return _rounding_enabled;
+	}
+
 	void set_color(Color color);
 	_FORCE_INLINE_ Color get_color() const {
 		return _color;
@@ -185,6 +196,8 @@ private:
 	uint8_t _mesh_ortho_rotation = 0;
 
 	bool _lod_skirts = true;
+	bool _rounding_enabled = false;
+	bool _rounding_affects_neighbors = true;
 
 	Color _color;
 

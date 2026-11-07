@@ -15,6 +15,7 @@
 #include "util/test_threaded_task_runner.h"
 
 #include "voxel/test_block_serializer.h"
+#include "voxel/test_blocky_rounding.h"
 #include "voxel/test_curve_range.h"
 #include "voxel/test_edition_funcs.h"
 #include "voxel/test_octree.h"
@@ -59,6 +60,7 @@ void run_voxel_tests(const testing::TestOptions &options) {
 
 	using namespace zylann::tests;
 
+	VOXEL_TEST(test_blocky_rounding);
 	VOXEL_TEST(test_wrap);
 	VOXEL_TEST(test_int32_to_string_base10);
 	VOXEL_TEST(test_string_base10_to_int32);

@@ -11,6 +11,7 @@
 #include "blocky_material_indexer.h"
 #include "blocky_model_baking_context.h"
 #include "voxel_blocky_library.h"
+#include <cmath>
 
 #ifdef ZN_GODOT
 #include "../../util/godot/core/class_db.h"
@@ -201,6 +202,22 @@ void VoxelBlockyModel::set_culls_neighbors(bool cn) {
 	_culls_neighbors = cn;
 }
 
+void VoxelBlockyModel::set_rounding_affects_neighbors(bool affects) {
+	if (_rounding_affects_neighbors == affects) {
+		return;
+	}
+	_rounding_affects_neighbors = affects;
+	emit_changed();
+}
+
+void VoxelBlockyModel::set_rounding_enabled(bool enabled) {
+	if (_rounding_enabled == enabled) {
+		return;
+	}
+	_rounding_enabled = enabled;
+	emit_changed();
+}
+
 void VoxelBlockyModel::set_lod_skirts_enabled(bool enabled) {
 	_lod_skirts = enabled;
 }
@@ -222,6 +239,103 @@ void VoxelBlockyModel::set_collision_mask(uint32_t mask) {
 	_collision_mask = mask;
 }
 
+namespace {
+
+// A conservative test for the topology accepted by the rounded-cube mesher. Keep
+// the original surfaces and their UVs: imported cubes need not use an atlas.
+bool is_full_cube(const blocky::BakedModel &baked) {
+	const blocky::BakedModel::Model &model = baked.model;
+	if (baked.empty || baked.cutout_sides_enabled || baked.fluid_index != blocky::NULL_FLUID_INDEX ||
+		model.surface_count == 0) {
+		return false;
+	}
+	for (unsigned int surface_index = 0; surface_index < model.surface_count; ++surface_index) {
+		if (!model.surfaces[surface_index].positions.empty() || !model.surfaces[surface_index].indices.empty()) {
+			return false;
+		}
+	}
+	for (unsigned int side = 0; side < Cube::SIDE_COUNT; ++side) {
+		const blocky::BakedModel::SideSurface *face = nullptr;
+		for (unsigned int surface_index = 0; surface_index < model.surface_count; ++surface_index) {
+			const blocky::BakedModel::SideSurface &candidate = model.sides_surfaces[side][surface_index];
+			if (candidate.indices.empty()) {
+				continue;
+			}
+			if (face != nullptr) {
+				return false;
+			}
+			face = &candidate;
+		}
+		if (face == nullptr || face->indices.size() != 6 || face->positions.size() < 4 || face->positions.size() > 6 ||
+			face->uvs.size() != face->positions.size()) {
+			return false;
+		}
+		const Vector3i normal = Cube::g_side_normals[side];
+		const unsigned int axis = normal.x != 0 ? 0 : (normal.y != 0 ? 1 : 2);
+		const unsigned int u_axis = (axis + 1) % 3;
+		const unsigned int v_axis = (axis + 2) % 3;
+		const float plane = normal[axis] > 0 ? 1.f : 0.f;
+		unsigned int triangle_masks[2] = { 0, 0 };
+		unsigned int seen_corners = 0;
+		unsigned int referenced_vertices = 0;
+		Vector2f corner_uvs[4];
+		for (unsigned int i = 0; i < 6; ++i) {
+			const int index = face->indices[i];
+			if (index < 0 || static_cast<unsigned int>(index) >= face->positions.size()) {
+				return false;
+			}
+			referenced_vertices |= 1 << index;
+			const Vector3f pos = face->positions[index];
+			if (!std::isfinite(pos.x) || !std::isfinite(pos.y) || !std::isfinite(pos.z)) {
+				return false;
+			}
+			const unsigned int u = pos[u_axis] > 0.5f ? 1 : 0;
+			const unsigned int v = pos[v_axis] > 0.5f ? 1 : 0;
+			const float epsilon = 0.00001f;
+			if (std::abs(pos[axis] - plane) > epsilon || std::abs(pos[u_axis] - u) > epsilon ||
+				std::abs(pos[v_axis] - v) > epsilon) {
+				return false;
+			}
+			const unsigned int corner = u + 2 * v;
+			const unsigned int bit = 1 << corner;
+			if ((triangle_masks[i / 3] & bit) != 0) {
+				return false;
+			}
+			triangle_masks[i / 3] |= bit;
+			const Vector2f uv = face->uvs[index];
+			if (!std::isfinite(uv.x) || !std::isfinite(uv.y)) {
+				return false;
+			}
+			if ((seen_corners & bit) != 0 &&
+				(std::abs(corner_uvs[corner].x - uv.x) > epsilon || std::abs(corner_uvs[corner].y - uv.y) > epsilon)) {
+				return false;
+			}
+			corner_uvs[corner] = uv;
+			seen_corners |= bit;
+		}
+		const unsigned int diagonal = triangle_masks[0] & triangle_masks[1];
+		if (seen_corners != 15 || (diagonal != 6 && diagonal != 9) ||
+			referenced_vertices != ((1u << face->positions.size()) - 1u)) {
+			return false;
+		}
+		// Reject folded or oppositely wound face triangles.
+		for (unsigned int triangle = 0; triangle < 2; ++triangle) {
+			const Vector3f a = face->positions[face->indices[3 * triangle]];
+			const Vector3f b = face->positions[face->indices[3 * triangle + 1]];
+			const Vector3f c = face->positions[face->indices[3 * triangle + 2]];
+			const float winding = (b[u_axis] - a[u_axis]) * (c[v_axis] - a[v_axis]) -
+					(b[v_axis] - a[v_axis]) * (c[u_axis] - a[u_axis]);
+			// Godot front faces have clockwise winding.
+			if (winding * normal[axis] >= 0.f) {
+				return false;
+			}
+		}
+	}
+	return true;
+}
+
+} // namespace
+
 void VoxelBlockyModel::bake(blocky::ModelBakingContext &ctx) const {
 	// TODO That's a bit iffy, design something better?
 	// The following logic must run after derived classes, should not be called directly
@@ -238,6 +352,16 @@ void VoxelBlockyModel::bake(blocky::ModelBakingContext &ctx) const {
 	baked_data.tags_mask = _tags_mask;
 	baked_data.box_collision_aabbs = _collision_aabbs;
 	baked_data.lod_skirts = _lod_skirts;
+	baked_data.rounding_enabled = _rounding_enabled;
+	baked_data.rounding_affects_neighbors = _rounding_affects_neighbors;
+	baked_data.is_full_cube = is_full_cube(baked_data);
+	if (_rounding_enabled && !baked_data.is_full_cube) {
+		ZN_PRINT_WARNING(
+				format("Rounding ignored for model '{}': requires a full unit cube with two triangles and continuous "
+					   "UVs per face.",
+					   get_name())
+		);
+	}
 
 	blocky::BakedModel::Model &model = baked_data.model;
 
@@ -348,6 +472,8 @@ bool VoxelBlockyModel::is_empty() const {
 
 void VoxelBlockyModel::copy_base_properties_from(const VoxelBlockyModel &src) {
 	_surface_params = src._surface_params;
+	_rounding_enabled = src._rounding_enabled;
+	_rounding_affects_neighbors = src._rounding_affects_neighbors;
 	// _surface_count = src._surface_count;
 	_transparency_index = src._transparency_index;
 	_culls_neighbors = src._culls_neighbors;
@@ -578,6 +704,21 @@ void VoxelBlockyModel::_b_rotate_90(Vector3i::Axis axis, bool clockwise) {
 // }
 
 void VoxelBlockyModel::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("set_rounding_enabled", "enabled"), &VoxelBlockyModel::set_rounding_enabled);
+	ClassDB::bind_method(D_METHOD("get_rounding_enabled"), &VoxelBlockyModel::get_rounding_enabled);
+	ClassDB::bind_method(
+			D_METHOD("set_rounding_affects_neighbors", "affects"), &VoxelBlockyModel::set_rounding_affects_neighbors
+	);
+	ClassDB::bind_method(D_METHOD("get_rounding_affects_neighbors"), &VoxelBlockyModel::get_rounding_affects_neighbors);
+	ADD_GROUP("Rounding", "rounding_");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "rounding_enabled"), "set_rounding_enabled", "get_rounding_enabled");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::BOOL, "rounding_affects_neighbors"),
+			"set_rounding_affects_neighbors",
+			"get_rounding_affects_neighbors"
+	);
+	ADD_GROUP("", "");
+
 	ClassDB::bind_method(D_METHOD("set_color", "color"), &VoxelBlockyModel::set_color);
 	ClassDB::bind_method(D_METHOD("get_color"), &VoxelBlockyModel::get_color);
 

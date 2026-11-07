@@ -403,3 +403,26 @@ If you still want to use a custom mesher, the only current ways are:
 - Modify an existing mesher in the module itself, or start from a copy of one.
 
 While in theory we could expose a way for GDScript to inherit `VoxelMesher`, scripts are too slow to take on the task of individually polygonize each voxel, and it's not yet clear what form the API would take. A development branch [mesher_script](https://github.com/Zylann/godot_voxel/tree/mesher_script) attempts to implement that, but isn't ready to use.
+
+
+### Optional cube rounding
+
+Rounding is opt-in for each `VoxelBlockyModel` through `rounding_enabled` (off by default).
+Enable it on selected models in a `VoxelBlockyLibrary`, or on the base/variant models of a
+`VoxelBlockyTypeLibrary`. Full unit `VoxelBlockyModelCube` models and imported cube meshes
+with two triangles and continuous corner UVs per face are supported. Slabs, stairs, fluids
+and other unsupported shapes retain their original geometry and report a bake warning.
+
+The library owns one shared `rounding_amount` in voxel units (0 to 0.25, default 0.1).
+This keeps neighboring rounded models consistent. Values below 0.001 are treated as zero and use the original geometry.
+`rounding_taper_distance` controls how far along one voxel edge the bevel takes to reach full
+width (0.01 to 1, default 0.4). The comparison settings 5%, 40%, 60%, 80% and 100% are distances
+0.05, 0.4, 0.6, 0.8 and 1.0, not changes to the bevel radius.
+`rounding_taper_profile` selects linear, quadratic ease-in, quadratic ease-out, or smoothstep
+interpolation over that distance.
+
+Rounding depends on neighboring voxels, so static model previews do not display the final
+terrain shape. Voxel IDs and box collision AABBs remain unchanged. When changing settings
+at runtime, call `bake()` on the library and request a remesh of the affected terrain.
+
+See [the rounding guide](blocky_rounding.md) for array setup, runtime changes, profiles and validation.

@@ -24,11 +24,32 @@
 		</method>
 	</methods>
 	<members>
+		<member name="rounding_amount" type="float" setter="set_rounding_amount" getter="get_rounding_amount" default="0.1">
+			Shared bevel radius in voxel units, clamped to 0 through 0.25. Values below 0.001 are treated as zero to keep generated triangles stable at floating-point mesh precision. Zero disables rounding geometry. Only models with [member VoxelBlockyModel.rounding_enabled] enabled and supported cube geometry are affected. Bake the library and remesh affected terrain after changing this at runtime.
+		</member>
+		<member name="rounding_taper_distance" type="float" setter="set_rounding_taper_distance" getter="get_rounding_taper_distance" default="0.4">
+			Distance in voxel units along an edge over which its bevel transitions to full width, clamped to 0.01 through 1.0. Values 0.4, 0.6, 0.8 and 1.0 mean 40%, 60%, 80% and 100% of one voxel edge. This setting is independent of the bevel radius. Bake the library and remesh affected terrain after changing this at runtime.
+		</member>
+		<member name="rounding_taper_profile" type="int" setter="set_rounding_taper_profile" getter="get_rounding_taper_profile" enum="VoxelBlockyLibraryBase.RoundingTaperProfile" default="0">
+			Shape of the edge transition over [member rounding_taper_distance], independent of [member rounding_amount]. Bake the library and remesh affected terrain after changing this at runtime.
+		</member>
 		<member name="bake_tangents" type="bool" setter="set_bake_tangents" getter="get_bake_tangents" default="true">
 			Enable this option if you need normal mapping on your voxels. If you don't need it, disabling can reduce memory usage and give a small speed boost.
 		</member>
 	</members>
 	<constants>
+		<constant name="ROUNDING_TAPER_LINEAR" value="0" enum="RoundingTaperProfile">
+			Linear transition: t. Here t is normalized distance through the taper.
+		</constant>
+		<constant name="ROUNDING_TAPER_EASE_IN" value="1" enum="RoundingTaperProfile">
+			Quadratic ease-in transition: t squared. Here t is normalized distance through the taper.
+		</constant>
+		<constant name="ROUNDING_TAPER_EASE_OUT" value="2" enum="RoundingTaperProfile">
+			Quadratic ease-out transition: 1 minus (1 minus t) squared. Here t is normalized distance through the taper.
+		</constant>
+		<constant name="ROUNDING_TAPER_SMOOTHSTEP" value="3" enum="RoundingTaperProfile">
+			Smoothstep transition: t squared times (3 minus 2 times t). Here t is normalized distance through the taper.
+		</constant>
 		<constant name="MAX_MODELS" value="65536">
 		</constant>
 		<constant name="MAX_MATERIALS" value="65536">

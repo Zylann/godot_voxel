@@ -43,6 +43,7 @@ void VoxelBlockyTypeLibrary::bake() {
 	ZN_PROFILE_SCOPE();
 
 	RWLockWrite lock(_baked_data_rw_lock);
+	bake_rounding_settings();
 
 	const uint64_t time_before = Time::get_singleton()->get_ticks_usec();
 
