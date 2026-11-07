@@ -2699,4 +2699,168 @@ void test_voxel_graph_get_io_indices() {
 	}
 }
 
+void test_voxel_graph_xz_caching() {
+	// With `use_xz_caching`, operations that only depend on X and Z (the "outer group") run once per block for the
+	// first Y slice, and are re-used for the next slices. Inputs other than X and Z must not be considered part of
+	// the outer group, otherwise they drag every node that uses them along, and nothing is ever skipped.
+	// Skipping the outer group must also skip its constant fills (from the optimized execution map), otherwise the
+	// remaining operations would apply the fills of the skipped ones.
+
+	struct L {
+		static void load_graph(VoxelGraphFunction &g) {
+			//  X --- ClampX --- Add1 --- Mul1 --- Add2 --- Mul2 --- Add3 --- Out
+			//                  /                 /         /        /
+			//                 Z                 Y      ClampY      Z
+			//                                           /
+			//                                          Y
+			//
+			// ClampX, Add1 and Mul1 only depend on X and Z.
+			// ClampX and ClampY are constant in the blocks we test, so the optimized execution map replaces them
+			// with constant fills.
+
+			const uint32_t n_x = g.create_node(VoxelGraphFunction::NODE_INPUT_X);
+			const uint32_t n_y = g.create_node(VoxelGraphFunction::NODE_INPUT_Y);
+			const uint32_t n_z = g.create_node(VoxelGraphFunction::NODE_INPUT_Z);
+			const uint32_t n_clamp_x = g.create_node(VoxelGraphFunction::NODE_CLAMP);
+			const uint32_t n_add1 = g.create_node(VoxelGraphFunction::NODE_ADD);
+			const uint32_t n_mul1 = g.create_node(VoxelGraphFunction::NODE_MULTIPLY);
+			const uint32_t n_add2 = g.create_node(VoxelGraphFunction::NODE_ADD);
+			const uint32_t n_clamp_y = g.create_node(VoxelGraphFunction::NODE_CLAMP);
+			const uint32_t n_mul2 = g.create_node(VoxelGraphFunction::NODE_MULTIPLY);
+			const uint32_t n_add3 = g.create_node(VoxelGraphFunction::NODE_ADD);
+			const uint32_t n_out = g.create_node(VoxelGraphFunction::NODE_OUTPUT_SDF);
+
+			g.set_node_default_input(n_clamp_x, 1, -5.f);
+			g.set_node_default_input(n_clamp_x, 2, -3.f);
+			g.set_node_default_input(n_mul1, 1, 0.5f);
+			g.set_node_default_input(n_clamp_y, 1, -2.f);
+			g.set_node_default_input(n_clamp_y, 2, -1.f);
+
+			g.add_connection(n_x, 0, n_clamp_x, 0);
+			g.add_connection(n_clamp_x, 0, n_add1, 0);
+			g.add_connection(n_z, 0, n_add1, 1);
+			g.add_connection(n_add1, 0, n_mul1, 0);
+			g.add_connection(n_mul1, 0, n_add2, 0);
+			g.add_connection(n_y, 0, n_add2, 1);
+			g.add_connection(n_y, 0, n_clamp_y, 0);
+			g.add_connection(n_add2, 0, n_mul2, 0);
+			g.add_connection(n_clamp_y, 0, n_mul2, 1);
+			g.add_connection(n_mul2, 0, n_add3, 0);
+			g.add_connection(n_z, 0, n_add3, 1);
+			g.add_connection(n_add3, 0, n_out, 0);
+		}
+
+		static Ref<VoxelGeneratorGraph> create_generator(bool use_xz_caching) {
+			Ref<VoxelGeneratorGraph> generator;
+			generator.instantiate();
+			load_graph(**generator->get_main_function());
+			generator->set_use_xz_caching(use_xz_caching);
+			// Generate every voxel, we want to compare them all
+			generator->set_sdf_clip_threshold(10000.f);
+			const CompilationResult result = generator->compile(false);
+			ZN_TEST_ASSERT_MSG(
+					result.success,
+					String("Failed to compile graph: {0}: {1}").format(varray(result.node_id, result.message))
+			);
+			return generator;
+		}
+	};
+
+	const Vector3i block_size(16, 16, 16);
+
+	// Blocks where both clamps are constant, and one where they aren't
+	const Vector3i origins[] = { Vector3i(0, 0, 0), Vector3i(-32, 16, -48), Vector3i(-8, -8, -8) };
+
+	// Structure of the compiled program
+	{
+		Ref<VoxelGraphFunction> func;
+		func.instantiate();
+		L::load_graph(**func);
+		func->auto_pick_inputs_and_outputs();
+
+		Runtime runtime;
+		const CompilationResult result = runtime.compile(**func, false);
+		ZN_TEST_ASSERT(result.success);
+
+		// ClampX, Add1 and Mul1 are the outer group
+		const Runtime::ExecutionMap &default_map = runtime.get_default_execution_map();
+		ZN_TEST_ASSERT(default_map.inner_group_start_index == 3);
+		ZN_TEST_ASSERT(default_map.operations.size() > default_map.inner_group_start_index);
+
+		Runtime::State state;
+		runtime.prepare_state(state, block_size.x * block_size.z, false);
+
+		const Vector3i min_pos = origins[0];
+		const Vector3i max_pos = origins[0] + block_size - Vector3i(1, 1, 1);
+		Span<const VoxelGraphFunction::Port> input_defs = func->get_input_definitions();
+		StdVector<math::Interval> input_ranges;
+		for (const VoxelGraphFunction::Port &port : input_defs) {
+			switch (port.type) {
+				case VoxelGraphFunction::NODE_INPUT_X:
+					input_ranges.push_back(math::Interval(min_pos.x, max_pos.x));
+					break;
+				case VoxelGraphFunction::NODE_INPUT_Y:
+					input_ranges.push_back(math::Interval(min_pos.y, max_pos.y));
+					break;
+				case VoxelGraphFunction::NODE_INPUT_Z:
+					input_ranges.push_back(math::Interval(min_pos.z, max_pos.z));
+					break;
+				default:
+					ZN_TEST_ASSERT(false);
+			}
+		}
+		runtime.analyze_range(state, to_span(input_ranges));
+
+		Runtime::ExecutionMap optimized_map;
+		runtime.generate_optimized_execution_map(state, optimized_map, false);
+		// ClampX and ClampY are skipped, Add1 and Mul1 are the outer group
+		ZN_TEST_ASSERT(optimized_map.constant_fills.size() == 2);
+		ZN_TEST_ASSERT(optimized_map.inner_group_start_index == 2);
+		// The constant fill of ClampX is used by the outer group, the one of ClampY by the inner group
+		ZN_TEST_ASSERT(optimized_map.inner_group_start_constant_fill_index == 1);
+		ZN_TEST_ASSERT(optimized_map.operations.size() > optimized_map.inner_group_start_index);
+	}
+
+	// Results must be exactly the same with and without caching
+	{
+		Ref<VoxelGeneratorGraph> generator_cached = L::create_generator(true);
+		Ref<VoxelGeneratorGraph> generator_not_cached = L::create_generator(false);
+
+		for (const bool use_optimized_execution_map : { false, true }) {
+			generator_cached->set_use_optimized_execution_map(use_optimized_execution_map);
+			generator_not_cached->set_use_optimized_execution_map(use_optimized_execution_map);
+
+			for (const Vector3i origin : origins) {
+				VoxelBuffer block_cached(VoxelBuffer::ALLOCATOR_DEFAULT);
+				block_cached.set_channel_depth(VoxelBuffer::CHANNEL_SDF, VoxelBuffer::DEPTH_32_BIT);
+				block_cached.create(block_size);
+
+				VoxelBuffer block_not_cached(VoxelBuffer::ALLOCATOR_DEFAULT);
+				block_not_cached.set_channel_depth(VoxelBuffer::CHANNEL_SDF, VoxelBuffer::DEPTH_32_BIT);
+				block_not_cached.create(block_size);
+
+				generator_cached->generate_block(VoxelGenerator::VoxelQueryData{ block_cached, origin, 0 });
+				generator_not_cached->generate_block(VoxelGenerator::VoxelQueryData{ block_not_cached, origin, 0 });
+
+				// The block must not be uniform, otherwise the test would not test much
+				ZN_TEST_ASSERT(
+						block_cached.get_channel_compression(VoxelBuffer::CHANNEL_SDF) !=
+						VoxelBuffer::COMPRESSION_UNIFORM
+				);
+
+				// Caching must not change the result at all, so compare without error margin
+				const bool equal = block_cached.equals(block_not_cached);
+				if (!equal) {
+					ZN_PRINT_ERROR(format(
+							"Results differ with and without XZ caching, block {} (optimized execution map: {})",
+							origin,
+							use_optimized_execution_map
+					));
+				}
+				ZN_TEST_ASSERT(equal);
+			}
+		}
+	}
+}
+
 } // namespace zylann::voxel::tests

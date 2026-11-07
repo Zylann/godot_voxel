@@ -1475,7 +1475,11 @@ namespace {
 // so they can be moved in the outer loop when blocks are generated, running less times.
 // Moves them all at the beginning.
 // `order` is a previously computed order of execution of each node.
-uint32_t move_outer_group_operations_up(StdVector<uint32_t> &order, const ProgramGraph &graph) {
+uint32_t move_outer_group_operations_up(
+		StdVector<uint32_t> &order,
+		const ProgramGraph &graph,
+		const NodeTypeDB &type_db
+) {
 	ZN_PROFILE_SCOPE();
 	StdVector<uint32_t> immediate_deps;
 	StdUnorderedSet<uint32_t> outer_group_node_ids;
@@ -1488,6 +1492,16 @@ uint32_t move_outer_group_operations_up(StdVector<uint32_t> &order, const Progra
 		// We consider X and Z as the beginning of the outer group.
 		bool is_outer_group =
 				node.type_id == VoxelGraphFunction::NODE_INPUT_X || node.type_id == VoxelGraphFunction::NODE_INPUT_Z;
+
+		// Inputs other than X and Z have no dependencies, so the check below would consider them part of the outer
+		// group, and drag every other node along with them. The inner group would always be empty, and
+		// `use_xz_caching` would never skip any operation.
+		const bool is_input = type_db.get_type(node.type_id).category == pg::CATEGORY_INPUT;
+
+		if (!is_outer_group && is_input) {
+			order_inner_group.push_back(node_id);
+			continue;
+		}
 
 		if (!is_outer_group) {
 			immediate_deps.clear();
@@ -1571,7 +1585,7 @@ CompilationResult Runtime::compile_preprocessed_graph(
 	StdVector<uint32_t> order;
 	compute_node_execution_order(order, graph, debug, type_db);
 
-	const uint32_t inner_group_start_index = move_outer_group_operations_up(order, graph);
+	const uint32_t inner_group_start_index = move_outer_group_operations_up(order, graph, type_db);
 
 	struct MemoryHelper {
 		StdVector<BufferSpec> &buffer_specs;
@@ -1651,6 +1665,8 @@ CompilationResult Runtime::compile_preprocessed_graph(
 		node_id_to_dependency_graph.insert(std::make_pair(node_id, dg_node_index));
 	}
 
+	bool default_execution_map_inner_group_start_assigned = false;
+
 	// Run through each node in order, and turn them into program instructions
 	for (size_t order_index = 0; order_index < order.size(); ++order_index) {
 		const uint32_t node_id = order[order_index];
@@ -1729,8 +1745,11 @@ CompilationResult Runtime::compile_preprocessed_graph(
 
 		ZN_ASSERT(node.type_id <= std::numeric_limits<uint16_t>::max());
 
-		if (order_index == inner_group_start_index) {
+		// The inner group can start with nodes that don't produce operations (like the Y input), so this has to be
+		// assigned at the first operation of the inner group, not only at its first node.
+		if (order_index >= inner_group_start_index && !default_execution_map_inner_group_start_assigned) {
 			program.default_execution_map.inner_group_start_index = program.default_execution_map.operations.size();
+			default_execution_map_inner_group_start_assigned = true;
 		}
 		program.default_execution_map.operations.push_back(
 				ExecutionMap::OperationInfo{ uint16_t(operations.size()), 0 }
