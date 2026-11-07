@@ -64,9 +64,9 @@ If false, this model is treated as air only when determining the rounded edges o
 
 ### [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_rounding_enabled"></span> **rounding_enabled** = false
 
-Opts this model into neighborhood-aware rounding using the shared settings of [VoxelBlockyLibraryBase](VoxelBlockyLibraryBase.md). Disabled by default. Supported models are full unit cubes, including imported meshes with two triangles per face and continuous corner UVs. Unsupported shapes retain their original geometry and report a warning when baked.
+Opts this model into neighborhood-aware rounding using the shared settings of [VoxelBlockyLibraryBase](VoxelBlockyLibraryBase.md). Disabled by default. Supported models are full unit cubes, including imported meshes with two triangles per face. UV coordinates must match at vertices shared by the two triangles of each face; different cube faces may use separate UV regions and materials. Unsupported shapes retain their original geometry and report a warning when baked.
 
-Rounding changes terrain mesh generation, not the stored voxel IDs or box collision AABBs. Static model previews do not show neighborhood-dependent rounding. After changing this property at runtime, bake the library and remesh affected terrain.
+Rounding changes terrain mesh generation, not the stored voxel IDs or box collision AABBs. Rounded previews are not implemented yet; static model previews currently show the original model. After changing this property at runtime, bake the library and remesh affected terrain.
 
 ### [AABB[]](https://docs.godotengine.org/en/stable/classes/class_aabb[].html)<span id="i_collision_aabbs"></span> **collision_aabbs** = []
 
