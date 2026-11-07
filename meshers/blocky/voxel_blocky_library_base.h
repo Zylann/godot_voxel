@@ -83,6 +83,8 @@ private:
 protected:
 	// Call only while holding the baked-data write lock.
 	void bake_rounding_settings();
+	// Call after models are baked, while holding the same write lock.
+	void bake_rounding_geometry();
 	float _rounding_amount = 0.1f;
 	float _rounding_taper_distance = 0.4f;
 	RoundingTaperProfile _rounding_taper_profile = ROUNDING_TAPER_LINEAR;

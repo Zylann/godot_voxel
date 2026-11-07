@@ -3,23 +3,16 @@
 
 // Material-independent rounded unit-cube geometry. All axes use the same policy.
 // Shape data does not consume voxel IDs, and never changes the input voxel buffer.
+#include "blocky_round_geometry_data.h"
 #include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstdint>
-#include <map>
 #include <utility>
-#include <vector>
 
 namespace zylann::voxel::blocky::round_geometry {
-using V = std::array<double, 3>;
-using P = std::vector<V>;
+using P = StdVector<V>;
 constexpr double PI = 3.14159265358979323846;
-struct Settings {
-	double radius = .1;
-	double taper_distance = .4;
-	unsigned int profile = 0;
-};
 struct Edge {
 	int a, b, along, sa, sb;
 };
@@ -125,7 +118,7 @@ inline V midpoint(const P &p) {
 }
 inline P sorted_plane(const P &points, V n) {
 	P p;
-	std::map<V, size_t> seen;
+	StdMap<V, size_t> seen;
 	for (V v : points) {
 		auto r = seen.emplace(key(v), p.size());
 		if (r.second)
@@ -148,8 +141,8 @@ struct Face {
 	V center{};
 	P p;
 };
-inline std::vector<Face> planes(uint64_t shape, const Settings &s) {
-	std::vector<Face> cuts;
+inline StdVector<Face> planes(uint64_t shape, const Settings &s) {
+	StdVector<Face> cuts;
 	for (unsigned int i = 0; i < 12; ++i) {
 		if ((shape & (uint64_t(1) << i)) == 0) {
 			continue;
@@ -169,8 +162,8 @@ inline std::vector<Face> planes(uint64_t shape, const Settings &s) {
 	}
 	return cuts;
 }
-inline std::vector<Face> base_faces(const std::vector<Face> &cuts) {
-	std::vector<Face> faces;
+inline StdVector<Face> base_faces(const StdVector<Face> &cuts) {
+	StdVector<Face> faces;
 	for (int f = 0; f < 6; ++f) {
 		const int axis = f / 2, sign = (f & 1) ? 1 : -1;
 		V n{};
@@ -189,7 +182,7 @@ inline std::vector<Face> base_faces(const std::vector<Face> &cuts) {
 		faces.push_back({ n, value * sign, -1, f, {}, sorted_plane(p, n) });
 	}
 	for (const Face &plane : cuts) {
-		std::vector<Face> next;
+		StdVector<Face> next;
 		P intersections;
 		for (Face f : faces) {
 			P out;
@@ -209,7 +202,7 @@ inline std::vector<Face> base_faces(const std::vector<Face> &cuts) {
 			if (f.p.size() >= 3)
 				next.push_back(f);
 		}
-		std::map<V, bool> unique;
+		StdMap<V, bool> unique;
 		for (V p : intersections)
 			unique[key(p)] = true;
 		if (unique.size() >= 3) {
@@ -278,7 +271,7 @@ inline V move(uint64_t shape, V p, const Settings &s) {
 	}
 	return key(q);
 }
-inline V normal(uint64_t shape, const Face &face, V p, const std::vector<Face> &cuts, const Settings &s) {
+inline V normal(uint64_t shape, const Face &face, V p, const StdVector<Face> &cuts, const Settings &s) {
 	if (face.edge_index < 0) {
 		return face.n;
 	}
@@ -292,7 +285,7 @@ inline V normal(uint64_t shape, const Face &face, V p, const std::vector<Face> &
 		n[e.along] = s.radius * f.derivative * (1 - (a + b) / s.radius);
 		return norm(n);
 	}
-	std::map<int, V> gradients;
+	StdMap<int, V> gradients;
 	for (const Face &cut : cuts) {
 		if (std::abs(dot(cut.n, p) - cut.d) < 1e-7) {
 			const Edge ce = edge(cut.edge_index);
@@ -308,21 +301,8 @@ inline V normal(uint64_t shape, const Face &face, V p, const std::vector<Face> &
 	}
 	return norm(n);
 }
-struct Vertex {
-	V p, n, source_p;
-	int face;
-};
-struct Triangle {
-	std::array<int, 3> indices;
-	int flat_side;
-};
-struct Mesh {
-	std::vector<Vertex> vertices;
-	std::vector<Triangle> triangles;
-	bool valid = true;
-};
-inline std::vector<P> split(const P &p, int axis, double value) {
-	std::vector<P> out;
+inline StdVector<P> split(const P &p, int axis, double value) {
+	StdVector<P> out;
 	for (int sign : { -1, 1 }) {
 		P o;
 		for (size_t j = 0; j < p.size(); ++j) {
@@ -340,9 +320,9 @@ inline std::vector<P> split(const P &p, int axis, double value) {
 	}
 	return out;
 }
-inline bool triangulate(const P &p, V n, std::vector<std::array<int, 3>> &out) {
+inline bool triangulate(const P &p, V n, StdVector<std::array<int, 3>> &out) {
 	auto [u, v] = basis(n);
-	std::vector<std::array<double, 2>> a;
+	StdVector<std::array<double, 2>> a;
 	for (V q : p)
 		a.push_back({ dot(q, u), dot(q, v) });
 	double area = 0;
@@ -350,7 +330,7 @@ inline bool triangulate(const P &p, V n, std::vector<std::array<int, 3>> &out) {
 		auto x = a[i], y = a[(i + 1) % a.size()];
 		area += x[0] * y[1] - y[0] * x[1];
 	}
-	std::vector<int> order;
+	StdVector<int> order;
 	for (int i = 0; i < int(a.size()); ++i)
 		order.push_back(area > 0 ? i : int(a.size()) - 1 - i);
 	auto turn = [&](int x, int y, int z) {
@@ -389,9 +369,9 @@ inline Mesh generate_legacy(uint64_t shape, const Settings &settings) {
 	}
 	const auto cuts = planes(shape, settings);
 	const auto faces = base_faces(cuts);
-	std::vector<Face> split_faces;
+	StdVector<Face> split_faces;
 	for (const Face &f : faces) {
-		std::vector<P> polygons{ f.p };
+		StdVector<P> polygons{ f.p };
 		if (f.edge_index >= 0) {
 			const unsigned int i = f.edge_index;
 			const int axis = edge(i).along;
@@ -407,7 +387,7 @@ inline Mesh generate_legacy(uint64_t shape, const Settings &settings) {
 					if (cut <= 1e-9 || cut >= 1 - 1e-9) {
 						continue;
 					}
-					std::vector<P> next;
+					StdVector<P> next;
 					for (const P &p : polygons) {
 						// A cut coincident with a polygon edge must not duplicate it.
 						double lo = 1, hi = 0;
@@ -433,7 +413,7 @@ inline Mesh generate_legacy(uint64_t shape, const Settings &settings) {
 		}
 	}
 	P candidates;
-	std::map<V, size_t> seen;
+	StdMap<V, size_t> seen;
 	for (auto &f : split_faces)
 		for (V p : f.p) {
 			auto r = seen.emplace(key(p), candidates.size());
@@ -443,7 +423,7 @@ inline Mesh generate_legacy(uint64_t shape, const Settings &settings) {
 				candidates[r.first->second] = p;
 		}
 	Mesh mesh;
-	std::map<std::array<double, 10>, int> vertices;
+	StdMap<std::array<double, 10>, int> vertices;
 	for (const Face &face : split_faces) {
 		P augmented;
 		if (shape >> 12) {
@@ -452,7 +432,7 @@ inline Mesh generate_legacy(uint64_t shape, const Settings &settings) {
 				double den = dot(ab, ab);
 				if (den < 1e-20)
 					continue;
-				std::vector<std::pair<double, V>> points{ { 0, a } };
+				StdVector<std::pair<double, V>> points{ { 0, a } };
 				for (V p : candidates) {
 					double t = dot(sub(p, a), ab) / den;
 					V d = sub(p, add(a, mul(ab, t)));
@@ -466,7 +446,7 @@ inline Mesh generate_legacy(uint64_t shape, const Settings &settings) {
 		} else
 			for (V p : face.p)
 				augmented.push_back(key(p));
-		std::vector<std::pair<V, V>> mapped;
+		StdVector<std::pair<V, V>> mapped;
 		for (V p : augmented) {
 			V q = shape >> 12 ? move(shape, p, settings) : p;
 			if (mapped.empty() || q != mapped.back().second)
@@ -485,7 +465,7 @@ inline Mesh generate_legacy(uint64_t shape, const Settings &settings) {
 		if (dot(area, area) < 1e-18)
 			continue;
 		V n = shape >> 12 ? norm(area) : face.n;
-		std::vector<int> ids;
+		StdVector<int> ids;
 		for (auto [p, q] : mapped) {
 			V vertex_normal = key(normal(shape, face, p, cuts, settings));
 			const int source_face = face.source_face;
@@ -501,7 +481,7 @@ inline Mesh generate_legacy(uint64_t shape, const Settings &settings) {
 				mesh.vertices.push_back({ q, vertex_normal, source_p, source_face });
 			ids.push_back(r.first->second);
 		}
-		std::vector<std::array<int, 3>> tris;
+		StdVector<std::array<int, 3>> tris;
 		if (!triangulate(points, n, tris)) {
 			mesh.valid = false;
 			return mesh;
@@ -521,8 +501,8 @@ struct Corner {
 	std::array<int, 3> signs;
 	std::array<unsigned int, 3> edges; // Indexed by the direction along the edge.
 };
-inline std::vector<Corner> free_corners(uint64_t shape) {
-	std::vector<Corner> corners;
+inline StdVector<Corner> free_corners(uint64_t shape) {
+	StdVector<Corner> corners;
 	for (unsigned int bits = 0; bits < 8; ++bits) {
 		Corner c;
 		for (int axis = 0; axis < 3; ++axis)
@@ -550,7 +530,7 @@ inline V corner_point(const Corner &corner, V distances) {
 
 inline bool append_corner_polygon(
 		Mesh &mesh,
-		std::map<std::array<double, 10>, int> &vertices,
+		StdMap<std::array<double, 10>, int> &vertices,
 		const P &input_points,
 		const P &input_normals,
 		int source_face,
@@ -577,10 +557,10 @@ inline bool append_corner_polygon(
 	V expected{};
 	for (V n : normals)
 		expected = add(expected, n);
-	std::vector<std::array<int, 3>> triangles;
+	StdVector<std::array<int, 3>> triangles;
 	if (!triangulate(points, norm(expected), triangles))
 		return false;
-	std::vector<int> ids;
+	StdVector<int> ids;
 	for (size_t i = 0; i < points.size(); ++i) {
 		const V p = key(points[i]), n = key(norm(normals[i]));
 		V source_p = p;
@@ -602,7 +582,7 @@ inline bool append_corner_polygon(
 
 struct ConnectedEdge {
 	bool cap_start = false, cap_end = false;
-	std::vector<double> stations;
+	StdVector<double> stations;
 };
 using ConnectedEdges = std::array<ConnectedEdge, 12>;
 inline unsigned int edge_index(int a, int sa, int b, int sb) {
@@ -655,7 +635,7 @@ inline void sample_connected_interval(
 	} else
 		ce.stations.push_back(b);
 }
-inline ConnectedEdges connected_edges(uint64_t shape, const std::vector<Corner> &corners, const Settings &s) {
+inline ConnectedEdges connected_edges(uint64_t shape, const StdVector<Corner> &corners, const Settings &s) {
 	ConnectedEdges edges;
 	for (const Corner &c : corners)
 		for (int a = 0; a < 3; ++a) {
@@ -668,7 +648,7 @@ inline ConnectedEdges connected_edges(uint64_t shape, const std::vector<Corner> 
 		auto &ce = edges[i];
 		const double a = ce.cap_start ? CORNER_RADIUS_RATIO * s.radius : 0;
 		const double b = ce.cap_end ? 1 - CORNER_RADIUS_RATIO * s.radius : 1;
-		std::vector<double> breaks{ a, b };
+		StdVector<double> breaks{ a, b };
 		for (unsigned int end = 0; end < 2; ++end) {
 			if (!(shape & (uint64_t(1) << (12 + 2 * i + end))))
 				continue;
@@ -742,7 +722,7 @@ inline P connected_face_corner(
 }
 inline Mesh generate_connected(uint64_t shape, const Settings &s) {
 	Mesh mesh;
-	std::map<std::array<double, 10>, int> vertices;
+	StdMap<std::array<double, 10>, int> vertices;
 	const auto corners = free_corners(shape);
 	const auto edges = connected_edges(shape, corners, s);
 	const double cap_radius = CORNER_RADIUS_RATIO * s.radius;

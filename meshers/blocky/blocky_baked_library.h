@@ -10,6 +10,7 @@
 #include "../../util/math/color.h"
 #include "../../util/math/vector2f.h"
 #include "../../util/math/vector3f.h"
+#include "blocky_round_geometry_table.h"
 
 // This is data directly consumed by the blocky mesher.
 
@@ -172,6 +173,8 @@ struct BakedFluid {
 };
 
 struct BakedLibrary {
+	// Shared by meshing readers; rebuilt only while holding the library write lock.
+	round_geometry::GeometryTable rounding_geometry;
 	float rounding_amount = 0.1f;
 	float rounding_taper_distance = 0.4f;
 	// Matches VoxelBlockyLibraryBase::RoundingTaperProfile.

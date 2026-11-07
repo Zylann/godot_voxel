@@ -60,6 +60,20 @@ void VoxelBlockyLibraryBase::bake_rounding_settings() {
 	_baked_data.rounding_taper_profile = _rounding_taper_profile;
 }
 
+void VoxelBlockyLibraryBase::bake_rounding_geometry() {
+	bool enabled = false;
+	for (const blocky::BakedModel &model : _baked_data.models) {
+		if (model.rounding_enabled && model.is_full_cube) {
+			enabled = true;
+			break;
+		}
+	}
+	_baked_data.rounding_geometry.update(
+			{ _baked_data.rounding_amount, _baked_data.rounding_taper_distance, _baked_data.rounding_taper_profile },
+			enabled
+	);
+}
+
 void VoxelBlockyLibraryBase::load_default() {
 	ZN_PRINT_ERROR("Not implemented");
 	// Implemented in child classes

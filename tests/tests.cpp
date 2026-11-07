@@ -61,6 +61,7 @@ void run_voxel_tests(const testing::TestOptions &options) {
 	using namespace zylann::tests;
 
 	VOXEL_TEST(test_blocky_rounding);
+	VOXEL_TEST(test_blocky_rounding_table);
 	VOXEL_TEST(test_wrap);
 	VOXEL_TEST(test_int32_to_string_base10);
 	VOXEL_TEST(test_string_base10_to_int32);

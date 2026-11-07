@@ -116,6 +116,7 @@ void VoxelBlockyTypeLibrary::bake() {
 	_baked_data.indexed_materials_count = _indexed_materials.size();
 
 	generate_side_culling_matrix(_baked_data);
+	bake_rounding_geometry();
 
 	const uint64_t time_spent = Time::get_singleton()->get_ticks_usec() - time_before;
 	ZN_PRINT_VERBOSE(

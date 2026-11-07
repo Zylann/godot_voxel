@@ -4,35 +4,8 @@
 #include "blocky_baked_library.h"
 #include "blocky_round_geometry.h"
 #include "voxel_mesher_blocky.h"
-#include <unordered_map>
 
 namespace zylann::voxel::blocky {
-
-// The geometry cache contains no resources, materials, voxel IDs, or library pointers.
-// It is private to a worker, bounded, and invalidated by changes to shared settings.
-inline const round_geometry::Mesh &get_rounded_geometry(uint64_t shape, const BakedLibrary &library) {
-	struct Cache {
-		round_geometry::Settings settings;
-		std::unordered_map<uint64_t, round_geometry::Mesh> shapes;
-	};
-	static thread_local Cache cache;
-	const round_geometry::Settings settings{ library.rounding_amount,
-											 library.rounding_taper_distance,
-											 library.rounding_taper_profile };
-	if (cache.settings.radius != settings.radius || cache.settings.taper_distance != settings.taper_distance ||
-		cache.settings.profile != settings.profile) {
-		cache.shapes.clear();
-		cache.settings = settings;
-	}
-	auto it = cache.shapes.find(shape);
-	if (it != cache.shapes.end()) {
-		return it->second;
-	}
-	if (cache.shapes.size() >= 512) {
-		cache.shapes.clear();
-	}
-	return cache.shapes.emplace(shape, round_geometry::generate(shape, settings)).first->second;
-}
 
 inline unsigned int rounded_cube_side(int side) {
 	// The engine's historic X side indices are reversed.
@@ -91,9 +64,14 @@ inline bool append_rounded_model(
 		VoxelMesher::Output::CollisionSurface *collision_surface,
 		int &collision_index_offset
 ) {
-	const round_geometry::Mesh &mesh = get_rounded_geometry(shape, library);
+	const round_geometry::Mesh *mesh_ptr = library.rounding_geometry.get(shape);
+	if (mesh_ptr == nullptr) {
+		ZN_PRINT_ERROR("Missing baked rounded-cube geometry; retaining original geometry.");
+		return false;
+	}
+	const round_geometry::Mesh &mesh = *mesh_ptr;
 	if (!mesh.valid) {
-		ZN_PRINT_ERROR_ONCE("Could not triangulate rounded cube; retaining original geometry.");
+		ZN_PRINT_ERROR("Could not triangulate rounded cube; retaining original geometry.");
 		return false;
 	}
 	FixedArray<RoundedFaceMap, 6> maps;
@@ -106,7 +84,7 @@ inline bool append_rounded_model(
 			}
 		}
 	}
-	static thread_local std::vector<int> remap;
+	static thread_local StdVector<int> remap;
 	for (unsigned int surface_index = 0; surface_index < model.model.surface_count; ++surface_index) {
 		const BakedModel::Surface &surface = model.model.surfaces[surface_index];
 		VoxelMesherBlocky::Arrays &arrays = out_arrays[surface.material_id];
