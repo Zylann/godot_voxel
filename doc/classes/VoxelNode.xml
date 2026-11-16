@@ -30,6 +30,14 @@
 				You can keep it in a member variable to avoid creating one again, as long as the node still exists.
 			</description>
 		</method>
+		<method name="save_modified_blocks">
+			<return type="VoxelSaveCompletionTracker" />
+			<description>
+				Requests saving of all modified voxels. Saving is asynchronous and will complete some time in the future. If the game quits, the engine will ensure saving tasks get completed before the application shuts down.
+				Use the returned tracker object to know when saving has completed. However, saves occurring after calling this method won't be tracked by this object.
+				Note that blocks getting unloaded as the viewer moves around can also trigger saving tasks, independently from this function. Additionally, this will only have an effect if the stream setup on this terrain supports saving.
+			</description>
+		</method>
 	</methods>
 	<members>
 		<member name="cast_shadow" type="int" setter="set_shadow_casting" getter="get_shadow_casting" enum="GeometryInstance3D.ShadowCastingSetting" default="1">

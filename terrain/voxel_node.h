@@ -18,6 +18,7 @@ namespace zylann::voxel {
 
 class VoxelTool;
 class VoxelData;
+class VoxelSaveCompletionTracker;
 
 // Base class for voxel volumes
 class VoxelNode : public Node3D {
@@ -54,6 +55,7 @@ public:
 	virtual std::shared_ptr<StreamingDependency> get_streaming_dependency() const;
 
 	virtual Ref<VoxelTool> get_voxel_tool();
+	virtual void save_all_modified_blocks(bool with_copy, std::shared_ptr<AsyncDependencyTracker> tracker);
 
 	enum NodeConversionFlags {
 		NODE_CONVERSION_INCLUDE_INSTANCER = 1 << 0,
@@ -104,6 +106,8 @@ private:
 	}
 
 	void _b_on_format_changed();
+	
+	Ref<VoxelSaveCompletionTracker> _b_save_modified_blocks();
 
 	static void _bind_methods();
 

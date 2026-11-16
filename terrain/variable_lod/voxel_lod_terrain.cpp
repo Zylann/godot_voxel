@@ -3042,13 +3042,6 @@ void VoxelLodTerrain::get_configuration_warnings(PackedStringArray &warnings) co
 
 #endif // TOOLS_ENABLED
 
-Ref<VoxelSaveCompletionTracker> VoxelLodTerrain::_b_save_modified_blocks() {
-	std::shared_ptr<AsyncDependencyTracker> tracker = make_shared_instance<AsyncDependencyTracker>();
-	save_all_modified_blocks(true, tracker);
-	ZN_ASSERT_RETURN_V(tracker != nullptr, Ref<VoxelSaveCompletionTracker>());
-	return VoxelSaveCompletionTracker::create(tracker);
-}
-
 void VoxelLodTerrain::_b_set_voxel_bounds(AABB aabb) {
 	ERR_FAIL_COND(!math::is_valid_size(aabb.size));
 	set_voxel_bounds(Box3i(math::round_to_int(aabb.position), math::round_to_int(aabb.size)));
@@ -3846,8 +3839,6 @@ void VoxelLodTerrain::_bind_methods() {
 	ClassDB::bind_method(
 			D_METHOD("voxel_to_mesh_block_position", "voxel_position", "lod_index"), &Self::voxel_to_mesh_block_position
 	);
-
-	ClassDB::bind_method(D_METHOD("save_modified_blocks"), &Self::_b_save_modified_blocks);
 
 	ClassDB::bind_method(D_METHOD("is_area_meshed", "area_in_voxels", "lod_index"), &Self::_b_is_area_meshed);
 

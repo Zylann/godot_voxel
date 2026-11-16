@@ -236,7 +236,7 @@ private:
 	void try_schedule_mesh_update(VoxelMeshBlockVT &block);
 	void try_schedule_mesh_update_from_data(const Box3i &box_in_voxels);
 
-	void save_all_modified_blocks(bool with_copy, std::shared_ptr<AsyncDependencyTracker> tracker);
+	void save_all_modified_blocks(bool with_copy, std::shared_ptr<AsyncDependencyTracker> tracker) override;
 	void get_viewer_pos_and_direction(Vector3 &out_pos, Vector3 &out_direction) const;
 	void send_data_load_requests();
 	void consume_block_data_save_requests(
@@ -275,7 +275,6 @@ private:
 	Vector3i _b_voxel_to_data_block(Vector3 pos) const;
 	Vector3i _b_data_block_to_voxel(Vector3i pos) const;
 	// void _force_load_blocks_binding(Vector3 center, Vector3 extents) { force_load_blocks(center, extents); }
-	Ref<VoxelSaveCompletionTracker> _b_save_modified_blocks();
 	void _b_save_block(Vector3i p_block_pos);
 	void _b_set_bounds(AABB aabb);
 	AABB _b_get_bounds() const;

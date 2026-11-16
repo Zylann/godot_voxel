@@ -332,7 +332,7 @@ private:
 
 	void update_shader_material_pool_template();
 
-	void save_all_modified_blocks(bool with_copy, std::shared_ptr<AsyncDependencyTracker> tracker);
+	void save_all_modified_blocks(bool with_copy, std::shared_ptr<AsyncDependencyTracker> tracker) override;
 
 	void process_deferred_collision_updates(uint32_t timeout_msec);
 	void process_fading_blocks(float delta);
@@ -350,7 +350,6 @@ private:
 
 	// Bindings
 
-	Ref<VoxelSaveCompletionTracker> _b_save_modified_blocks();
 	void _b_set_voxel_bounds(AABB aabb);
 	AABB _b_get_voxel_bounds() const;
 
