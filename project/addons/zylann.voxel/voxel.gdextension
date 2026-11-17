@@ -7,6 +7,8 @@ compatibility_minimum = "4.4.1"
 
 windows.debug.x86_64 = "res://addons/zylann.voxel/bin/libvoxel.windows.editor.dev.x86_64.dll"
 
+macos.debug = "res://addons/zylann.voxel/bin/libvoxel.macos.template_debug.universal.framework/libvoxel.macos.template_debug.universal"
+
 [icons]
 
 ;<generated-icons>
