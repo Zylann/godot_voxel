@@ -3,6 +3,7 @@
 *.d
 *.log
 *.o
+*.os
 *.obj
 *.pyc
 *.tmp
