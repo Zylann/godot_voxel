@@ -189,14 +189,6 @@
 				When streaming terrain, this can be used to determine if an area has fully "loaded", in case the game relies meshes or mesh colliders.
 			</description>
 		</method>
-		<method name="save_modified_blocks">
-			<return type="VoxelSaveCompletionTracker" />
-			<description>
-				Requests saving of all modified voxels. Saving is asynchronous and will complete some time in the future. If the game quits, the engine will ensure saving tasks get completed before the application shuts down.
-				Use the returned tracker object to know when saving has completed. However, saves occurring after calling this method won't be tracked by this object.
-				Note that blocks getting unloaded as the viewer moves around can also trigger saving tasks, independently from this function.
-			</description>
-		</method>
 		<method name="set_normalmap_generator_override">
 			<return type="void" />
 			<param index="0" name="generator_override" type="VoxelGenerator" />

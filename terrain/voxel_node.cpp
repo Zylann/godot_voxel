@@ -1,4 +1,5 @@
 #include "voxel_node.h"
+#include "voxel_save_completion_tracker.h"
 #include "../constants/voxel_string_names.h"
 #include "../edition/voxel_tool.h"
 #include "../generators/graph/voxel_generator_graph.h"
@@ -116,6 +117,17 @@ Ref<VoxelTool> VoxelNode::get_voxel_tool() {
 	ZN_PRINT_ERROR("Not implemented");
 	// Implemented in subclasses
 	return Ref<VoxelTool>();
+}
+
+void VoxelNode::save_all_modified_blocks(bool with_copy, std::shared_ptr<AsyncDependencyTracker> tracker) {
+	ZN_PRINT_ERROR("Not implemented");
+}
+
+Ref<VoxelSaveCompletionTracker> VoxelNode::_b_save_modified_blocks() {
+	std::shared_ptr<AsyncDependencyTracker> tracker = make_shared_instance<AsyncDependencyTracker>();
+	save_all_modified_blocks(true, tracker);
+	ZN_ASSERT_RETURN_V(tracker != nullptr, Ref<VoxelSaveCompletionTracker>());
+	return VoxelSaveCompletionTracker::create(tracker);
 }
 
 Node3D *VoxelNode::convert_to_nodes(const BitField<NodeConversionFlags> flags) const {
@@ -381,6 +393,7 @@ void VoxelNode::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_render_layers_mask"), &VoxelNode::get_render_layers_mask);
 
 	ClassDB::bind_method(D_METHOD("get_voxel_tool"), &VoxelNode::get_voxel_tool);
+	ClassDB::bind_method(D_METHOD("save_modified_blocks"), &VoxelNode::_b_save_modified_blocks);
 
 	ClassDB::bind_method(D_METHOD("convert_to_nodes", "flags"), &VoxelNode::convert_to_nodes);
 

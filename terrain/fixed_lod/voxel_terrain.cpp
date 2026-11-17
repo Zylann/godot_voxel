@@ -2341,13 +2341,6 @@ Vector3i VoxelTerrain::_b_data_block_to_voxel(Vector3i pos) const {
 	return _data->block_to_voxel(pos);
 }
 
-Ref<VoxelSaveCompletionTracker> VoxelTerrain::_b_save_modified_blocks() {
-	std::shared_ptr<AsyncDependencyTracker> tracker = make_shared_instance<AsyncDependencyTracker>();
-	save_all_modified_blocks(true, tracker);
-	ZN_ASSERT_RETURN_V(tracker != nullptr, Ref<VoxelSaveCompletionTracker>());
-	return VoxelSaveCompletionTracker::create(tracker);
-}
-
 // Explicitly ask to save a block if it was modified
 void VoxelTerrain::_b_save_block(Vector3i p_block_pos) {
 	VoxelData::BlockToSave to_save;
@@ -2454,7 +2447,6 @@ void VoxelTerrain::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("get_statistics"), &Self::_b_get_statistics);
 
-	ClassDB::bind_method(D_METHOD("save_modified_blocks"), &Self::_b_save_modified_blocks);
 	ClassDB::bind_method(D_METHOD("save_block", "position"), &Self::_b_save_block);
 
 	ClassDB::bind_method(D_METHOD("set_automatic_loading_enabled", "enable"), &Self::set_automatic_loading_enabled);
