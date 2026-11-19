@@ -431,7 +431,7 @@ void compute_detail_texture_data(
 	const float max_deviation_cosine = Math::cos(max_deviation_radians);
 	const float max_deviation_sine = Math::sin(max_deviation_radians);
 
-	const unsigned int encoded_normal_size = octahedral_encoding ? 2 : 3;
+	const unsigned int encoded_normal_size = octahedral_encoding ? 2 : 4;
 
 	const unsigned int cell_size = 1 << lod_index;
 	const float step = float(cell_size) / tile_resolution;
@@ -698,6 +698,7 @@ void compute_detail_texture_data(
 				normal_map_data.normals[offset + 0] = unorm_to_u8(n.x);
 				normal_map_data.normals[offset + 1] = unorm_to_u8(n.y);
 				normal_map_data.normals[offset + 2] = unorm_to_u8(n.z);
+				normal_map_data.normals[offset + 3] = 255;
 			}
 		}
 	}

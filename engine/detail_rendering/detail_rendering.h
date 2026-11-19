@@ -45,7 +45,7 @@ struct DetailRenderingSettings {
 	// If the angle between geometry normals and computed normals exceeds this angle, their direction will be clamped.
 	uint8_t max_deviation_degrees = 60;
 	// If enabled, encodes normalmaps using octahedral compression, which trades a bit of quality for
-	// significantly reduced memory usage (using 2 bytes per pixel instead of 3).
+	// significantly reduced memory usage (using 2 bytes per pixel instead of 4).
 	bool octahedral_encoding_enabled = false;
 
 	static constexpr uint8_t MIN_DEVIATION_DEGREES = 1;
