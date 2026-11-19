@@ -189,6 +189,7 @@ def get_sources(env, is_editor_build):
             "tests/util/*.cpp",
 
             "tests/voxel/test_block_serializer.cpp",
+            "tests/voxel/test_blocky_rounding.cpp",
             "tests/voxel/test_curve_range.cpp",
             "tests/voxel/test_edition_funcs.cpp",
             "tests/voxel/test_octree.cpp",
